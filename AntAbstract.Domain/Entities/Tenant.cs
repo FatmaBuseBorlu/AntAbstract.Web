@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AntAbstract.Domain.Entities;
 
-namespace AntAbstract.Domain
+namespace AntAbstract.Domain.Entities
 {
     public class Tenant
     {

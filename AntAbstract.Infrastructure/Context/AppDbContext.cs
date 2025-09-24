@@ -1,4 +1,5 @@
 ﻿using AntAbstract.Domain;
+using AntAbstract.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,8 @@ namespace AntAbstract.Infrastructure.Context
         {
         }
         public DbSet<Tenant> Tenants => Set<Tenant>();
+        public DbSet<Conference> Conferences => Set<Conference>();
+        public DbSet<Submission> Submissions => Set<Submission>();
 
         protected override void OnModelCreating(ModelBuilder b)
         {

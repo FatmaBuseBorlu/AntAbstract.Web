@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Identity;
 
 
 
-namespace AntAbstract.Domain
+namespace AntAbstract.Domain.Entities
 {
     public class AppUser : IdentityUser
     {

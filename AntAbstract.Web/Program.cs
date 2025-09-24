@@ -1,5 +1,4 @@
-using AntAbstract.Domain;
-using AntAbstract.Infrastructure;
+using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

@@ -1,5 +1,4 @@
-﻿using AntAbstract.Domain;
-using AntAbstract.Infrastructure.Context;
+﻿using AntAbstract.Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -8,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AntAbstract.Infrastructure
+namespace AntAbstract.Infrastructure.Context
 {
     public interface ITenantResolver
     {

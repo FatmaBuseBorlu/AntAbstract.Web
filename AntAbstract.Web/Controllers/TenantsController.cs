@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using AntAbstract.Domain;
+using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 
 namespace AntAbstract.Web.Controllers
