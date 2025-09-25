@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AntAbstract.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250915225131_AddTenant")]
-    partial class AddTenant
+    [Migration("20250925220607_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,7 +25,7 @@ namespace AntAbstract.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("AntAbstract.Domain.AppUser", b =>
+            modelBuilder.Entity("AntAbstract.Domain.Entities.AppUser", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
@@ -93,7 +93,171 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("AntAbstract.Domain.Tenant", b =>
+            modelBuilder.Entity("AntAbstract.Domain.Entities.Conference", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("Conferences");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.Review", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AssignmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CommentsToAuthor")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime?>("CompletedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ConfidentialComments")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Recommendation")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("Score")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignmentId")
+                        .IsUnique();
+
+                    b.ToTable("Reviews");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewAssignment", b =>
+                {
+                    b.Property<Guid>("ReviewAssignmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AssignedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ReviewerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("SubmissionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("ReviewAssignmentId");
+
+                    b.HasIndex("ReviewerId");
+
+                    b.HasIndex("SubmissionId");
+
+                    b.ToTable("ReviewAssignments");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.Reviewer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AppUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid>("ConferenceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ExpertiseAreas")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppUserId");
+
+                    b.HasIndex("ConferenceId");
+
+                    b.ToTable("Reviewers");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.Submission", b =>
+                {
+                    b.Property<Guid>("SubmissionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AbstractText")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AuthorId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid>("ConferenceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FilePath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("SubmissionId");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("ConferenceId");
+
+                    b.ToTable("Submissions");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.Tenant", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -248,6 +412,85 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("AntAbstract.Domain.Entities.Conference", b =>
+                {
+                    b.HasOne("AntAbstract.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.Review", b =>
+                {
+                    b.HasOne("AntAbstract.Domain.Entities.ReviewAssignment", "Assignment")
+                        .WithOne("Review")
+                        .HasForeignKey("AntAbstract.Domain.Entities.Review", "AssignmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Assignment");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewAssignment", b =>
+                {
+                    b.HasOne("AntAbstract.Domain.Entities.Reviewer", "Reviewer")
+                        .WithMany()
+                        .HasForeignKey("ReviewerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AntAbstract.Domain.Entities.Submission", "Submission")
+                        .WithMany()
+                        .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Reviewer");
+
+                    b.Navigation("Submission");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.Reviewer", b =>
+                {
+                    b.HasOne("AntAbstract.Domain.Entities.AppUser", "AppUser")
+                        .WithMany()
+                        .HasForeignKey("AppUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AntAbstract.Domain.Entities.Conference", "Conference")
+                        .WithMany()
+                        .HasForeignKey("ConferenceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AppUser");
+
+                    b.Navigation("Conference");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.Submission", b =>
+                {
+                    b.HasOne("AntAbstract.Domain.Entities.AppUser", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AntAbstract.Domain.Entities.Conference", "Conference")
+                        .WithMany()
+                        .HasForeignKey("ConferenceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+
+                    b.Navigation("Conference");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -259,7 +502,7 @@ namespace AntAbstract.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("AntAbstract.Domain.AppUser", null)
+                    b.HasOne("AntAbstract.Domain.Entities.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -268,7 +511,7 @@ namespace AntAbstract.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("AntAbstract.Domain.AppUser", null)
+                    b.HasOne("AntAbstract.Domain.Entities.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -283,7 +526,7 @@ namespace AntAbstract.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("AntAbstract.Domain.AppUser", null)
+                    b.HasOne("AntAbstract.Domain.Entities.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -292,10 +535,16 @@ namespace AntAbstract.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("AntAbstract.Domain.AppUser", null)
+                    b.HasOne("AntAbstract.Domain.Entities.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewAssignment", b =>
+                {
+                    b.Navigation("Review")
                         .IsRequired();
                 });
 #pragma warning restore 612, 618

@@ -1,11 +1,11 @@
-﻿using AntAbstract.Domain.Entities;
+﻿@using AntAbstract.Domain.Entities
 @inject AntAbstract.Infrastructure.Context.TenantContext Tc
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
+    <meta charset="utf-t" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@(Tc.Current?.Name ?? "AntAbstract.Web") - @ViewData["Title"]</title>
 
@@ -17,7 +17,6 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container-fluid">
-                <!-- Marka: slug'ı koruyarak Home/Index'e gider -->
                 <a class="navbar-brand"
                    asp-controller="Home"
                    asp-action="Index"
@@ -31,7 +30,7 @@
                 </button>
 
                 <div class="collapse navbar-collapse d-sm-inline-flex justify-content-between" id="mainNavbar">
-                    <!-- Sol Menü -->
+
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
                             <a class="nav-link text-dark"
@@ -50,9 +49,44 @@
                                asp-controller="Tenants"
                                asp-action="Index">Tenants</a>
                         </li>
+
+                        @* Organizator ve Admin için Yönetim Linkleri (Tek bir blokta birleştirildi) *@
+                        @if (User.IsInRole("Admin") || User.IsInRole("Organizator"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark"
+                                   asp-controller="Reviewer"
+                                   asp-action="Index"
+                                   asp-route-tenant="@(Tc.Current?.Slug)">Hakemler</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark"
+                                   asp-controller="Assignment"
+                                   asp-action="Index"
+                                   asp-route-tenant="@(Tc.Current?.Slug)">Özet Atama</a>
+                            </li>
+                        }
+
+                        @* Sadece Giriş Yapmış Kullanıcılar İçin Link *@
+                        @if (User.Identity != null && User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Submission" asp-action="Index">Özetlerim</a>
+                            </li>
+                        }
+
+                    @* Sadece Hakemler İçin Link *@
+                    @if (User.IsInRole("Reviewer"))
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link text-dark"
+                               asp-controller="Review"
+                               asp-action="Index"
+                               asp-route-tenant="@(Tc.Current?.Slug)">Değerlendirmelerim</a>
+                        </li>
+                    }
                     </ul>
 
-                    <!-- Sağ: Login/Register (Identity için) -->
                     <ul class="navbar-nav">
                         <partial name="_LoginPartial" />
                     </ul>

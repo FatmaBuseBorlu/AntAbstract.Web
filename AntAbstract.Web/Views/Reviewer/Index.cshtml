@@ -1,0 +1,78 @@
+﻿@using AntAbstract.Domain.Entities
+@model List<Reviewer>
+
+@{
+    ViewData["Title"] = "Hakem Yönetimi";
+}
+
+<div class="row">
+    <div class="col-12">
+        <h1 class="display-5">@ViewData["Title"]</h1>
+        <p class="lead">Aktif Kongreye Hakem Atama ve Yönetim Ekranı</p>
+        <hr />
+
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    </div>
+</div>
+
+@if (ViewBag.ErrorMessage != null)
+{
+    <div class="alert alert-danger mt-3">@ViewBag.ErrorMessage</div>
+    return;
+}
+<div class="row mb-5">
+    <div class="col-md-6">
+        <h3 class="h4">Hakem Atama</h3>
+        <form asp-action="Assign" method="post">
+            <div class="mb-3">
+                <label class="form-label">Kullanıcı Seçin (Rol Atama)</label>
+                <select name="userId" class="form-control" asp-items="@ViewBag.AllUsers">
+                    <option value="">-- Hakem Yapılacak Kullanıcı --</option>
+                </select>
+                @* Gizli alan: Hakemi hangi kongreye atadığımızı Controller'a göndeririz *@
+                <input type="hidden" name="conferenceId" value="@ViewBag.CurrentConferenceId" />
+            </div>
+
+            <button type="submit" class="btn btn-success">Hakem Rolü Ata & Kongreye Ekle</button>
+        </form>
+    </div>
+
+    <div class="col-md-6">
+        <h3 class="h4">Kayıtlı Hakemler</h3>
+        @if (Model != null && Model.Any())
+        {
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Durum</th>
+                        <th>İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var reviewer in Model)
+                    {
+                        <tr>
+                            <td>@reviewer.AppUser.Email</td>
+                            <td>@(reviewer.IsActive ? "Aktif" : "Pasif")</td>
+                            <td>
+                                <a href="#" class="btn btn-sm btn-info">Düzenle</a>
+                                <a href="#" class="btn btn-sm btn-danger">Pasifleştir</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="alert alert-warning">Bu kongreye henüz atanmış bir hakem bulunmamaktadır.</div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

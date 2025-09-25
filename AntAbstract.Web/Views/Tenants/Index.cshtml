@@ -1,47 +1,29 @@
-﻿@model IEnumerable<Tenant>
-
+﻿@model IEnumerable<AntAbstract.Domain.Entities.Tenant>
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Kongreler";
 }
 
-<h1>Index</h1>
+<h1>@ViewData["Title"]</h1>
+<p><a asp-action="Create">Yeni Kongre Oluştur</a></p>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
 <table class="table">
     <thead>
         <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Slug)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Name)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.ThemeJson)
-            </th>
+            <th>Kongre Adı</th>
+            <th>Kısa Ad (Slug)</th>
             <th></th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Slug)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ThemeJson)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Name</td>
+                <td>@item.Slug</td>
+                <td>
+                    @* İleride Edit/Details/Delete linkleri buraya gelecek *@
+                </td>
+            </tr>
+        }
     </tbody>
 </table>

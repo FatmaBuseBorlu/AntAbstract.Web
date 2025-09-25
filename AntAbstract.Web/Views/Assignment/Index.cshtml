@@ -1,0 +1,60 @@
+﻿@using AntAbstract.Domain.Entities
+@model IEnumerable<Submission>
+
+@{
+    ViewData["Title"] = "Özet Atama Yönetimi";
+}
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+<h1 class="display-5">@ViewData["Title"]</h1>
+<p class="lead">Değerlendirilmek üzere hakem atanacak özetlerin listesi.</p>
+<hr />
+
+@if (ViewBag.ErrorMessage != null)
+{
+    <div class="alert alert-danger">@ViewBag.ErrorMessage</div>
+    return;
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        Bu kongreye henüz gönderilmiş bir özet bulunmamaktadır.
+    </div>
+}
+else
+{
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Başlık</th>
+                <th>Yazar</th>
+                <th>Gönderim Tarihi</th>
+                <th style="width: 15%;">İşlemler</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td><strong>@item.Title</strong></td>
+                    <td>@item.Author.Email</td>
+                    <td>@item.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
+                    <td>
+                        @* ✅ LİNKİN DOĞRU HALİ *@
+                        <a asp-controller="Assignment"
+                           asp-action="Assign"
+                           asp-route-id="@item.SubmissionId"
+                           class="btn btn-primary btn-sm">Hakem Ata</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

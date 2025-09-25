@@ -1,0 +1,50 @@
+﻿@using AntAbstract.Domain.Entities
+@model Submission
+
+@{
+    ViewData["Title"] = "Hakem Ata";
+}
+
+<h1 class="display-5">@ViewData["Title"]</h1>
+<hr />
+
+<div class="row">
+    <div class="col-md-8">
+        <h4>Aşağıdaki Özete Hakem Atanacak:</h4>
+        <dl class="row mt-3">
+            <dt class="col-sm-3">Başlık</dt>
+            <dd class="col-sm-9">@Model.Title</dd>
+
+            <dt class="col-sm-3">Yazar</dt>
+            <dd class="col-sm-9">@Model.Author.Email</dd>
+
+            <dt class="col-sm-3">Özet Metni</dt>
+            <dd class="col-sm-9">@Model.AbstractText</dd>
+        </dl>
+
+        <hr />
+
+        <form asp-action="Assign" method="post">
+            <input type="hidden" name="submissionId" value="@Model.SubmissionId" />
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group mb-3">
+                <label for="reviewerId" class="control-label">Müsait Hakemler</label>
+                <select name="reviewerId" class="form-control" asp-items="ViewBag.ReviewerId">
+                    <option value="">-- Lütfen bir hakem seçin --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Atamayı Tamamla" class="btn btn-success" />
+                <a asp-action="Index" class="btn btn-outline-secondary">Geri Dön</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

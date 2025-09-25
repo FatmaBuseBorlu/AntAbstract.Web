@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using AntAbstract.Domain.Entities;
+﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
+    // TODO: Bu controller'a daha sonra Admin/Organizator yetkisi ekleyeceğiz
     public class TenantsController : Controller
     {
         private readonly AppDbContext _context;
@@ -22,25 +20,8 @@ namespace AntAbstract.Web.Controllers
         // GET: Tenants
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Tenants.ToListAsync());
-        }
-
-        // GET: Tenants/Details/5
-        public async Task<IActionResult> Details(Guid? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var tenant = await _context.Tenants
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (tenant == null)
-            {
-                return NotFound();
-            }
-
-            return View(tenant);
+            var tenants = await _context.Tenants.ToListAsync();
+            return View(tenants);
         }
 
         // GET: Tenants/Create
@@ -50,109 +31,30 @@ namespace AntAbstract.Web.Controllers
         }
 
         // POST: Tenants/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Slug,Name,ThemeJson")] Tenant tenant)
+        public async Task<IActionResult> Create(Tenant tenant)
         {
-            if (ModelState.IsValid)
+            // DİKKAT: GEÇİCİ OLARAK ModelState KONTROLÜNÜ TAMAMEN KALDIRDIK
+            try
             {
-                tenant.Id = Guid.NewGuid();
+                // Modelin Id'si kendi içinde oluştuğu için direkt eklemeyi deniyoruz.
                 _context.Add(tenant);
                 await _context.SaveChangesAsync();
+
+                // Başarılı olursa listeye yönlendir.
                 return RedirectToAction(nameof(Index));
             }
-            return View(tenant);
-        }
-
-        // GET: Tenants/Edit/5
-        public async Task<IActionResult> Edit(Guid? id)
-        {
-            if (id == null)
+            catch (Exception ex)
             {
-                return NotFound();
+                // EĞER VERİTABANI KAYDI SIRASINDA BİR HATA VARSA, BURADA YAKALAYACAĞIZ
+                // ve hatayı Output penceresine yazdıracağız.
+                System.Diagnostics.Debug.WriteLine("KAYIT SIRASINDA VERİTABANI HATASI: " + ex.ToString());
+
+                // Hata olursa, formu tekrar gösterelim ve kullanıcıya bilgi verelim.
+                ModelState.AddModelError("", "Kayıt sırasında beklenmedik bir veritabanı hatası oluştu. Lütfen sistem yöneticisine başvurun.");
+                return View(tenant);
             }
-
-            var tenant = await _context.Tenants.FindAsync(id);
-            if (tenant == null)
-            {
-                return NotFound();
-            }
-            return View(tenant);
-        }
-
-        // POST: Tenants/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Slug,Name,ThemeJson")] Tenant tenant)
-        {
-            if (id != tenant.Id)
-            {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(tenant);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!TenantExists(tenant.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            return View(tenant);
-        }
-
-        // GET: Tenants/Delete/5
-        public async Task<IActionResult> Delete(Guid? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var tenant = await _context.Tenants
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (tenant == null)
-            {
-                return NotFound();
-            }
-
-            return View(tenant);
-        }
-
-        // POST: Tenants/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(Guid id)
-        {
-            var tenant = await _context.Tenants.FindAsync(id);
-            if (tenant != null)
-            {
-                _context.Tenants.Remove(tenant);
-            }
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-
-        private bool TenantExists(Guid id)
-        {
-            return _context.Tenants.Any(e => e.Id == id);
         }
     }
 }

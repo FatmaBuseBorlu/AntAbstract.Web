@@ -2,6 +2,9 @@ using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using AntAbstract.Infrastructure.Services;
+using AntAbstract.Web.StartupServices; 
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +24,11 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(opt =>
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// EKLENECEK 1. SATIR
+builder.Services.AddRazorPages();
+builder.Services.AddSingleton<IEmailSender, DummyEmailSender>();
+
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();
 
@@ -39,7 +47,6 @@ app.Use(async (ctx, next) =>
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -59,4 +66,15 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.Run();
+
+app.MapRazorPages();
+
+//  ROLLERÝ BAÞLATMA VE OLUÞTURMA KISMI
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    await IdentityDbInitializer.InitializeAsync(services);
+}
+// ----------------------------------------
+
+app.Run(); // ?? Bu satýr en altta kalmalýdýr.

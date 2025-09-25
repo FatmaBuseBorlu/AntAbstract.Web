@@ -1,0 +1,44 @@
+﻿@using AntAbstract.Domain.Entities
+@model IEnumerable<ReviewAssignment>
+
+@{
+    ViewData["Title"] = "Değerlendirme Görevlerim";
+}
+
+<h1 class="display-5">@ViewData["Title"]</h1>
+<p class="lead">Size atanmış ve değerlendirmenizi bekleyen özetlerin listesi.</p>
+<hr />
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        Size atanmış aktif bir değerlendirme görevi bulunmamaktadır.
+    </div>
+}
+else
+{
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Özet Başlığı</th>
+                <th>Atama Durumu</th>
+                <th>Son Teslim Tarihi</th>
+                <th style="width: 15%;">İşlemler</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td><strong>@item.Submission.Title</strong></td>
+                    <td><span class="badge bg-primary">@item.Status</span></td>
+                    <td>@item.DueDate.ToLocalTime().ToString("dd MMMM yyyy")</td>
+                    <td>
+                        @* Bu linki bir sonraki adımda yapacağız *@
+                        <a asp-action="Evaluate" asp-route-id="@item.ReviewAssignmentId" class="btn btn-success btn-sm">Değerlendir</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

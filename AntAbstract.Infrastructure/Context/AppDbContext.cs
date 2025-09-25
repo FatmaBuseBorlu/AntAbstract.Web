@@ -20,10 +20,35 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<Conference> Conferences => Set<Conference>();
         public DbSet<Submission> Submissions => Set<Submission>();
 
-        protected override void OnModelCreating(ModelBuilder b)
+        // Hakemlik Modülü Tabloları
+        public DbSet<Reviewer> Reviewers { get; set; }
+        public DbSet<ReviewAssignment> ReviewAssignments { get; set; }
+        public DbSet<Review> Reviews { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder builder)
         {
-            base.OnModelCreating(b);
-            // İlerde Tenant, Conference vb. haritalamalar buraya gelecek
+            base.OnModelCreating(builder);
+
+            // Submission-Author ilişkisi için zincirleme silmeyi devre dışı bırak
+            builder.Entity<Submission>()
+                .HasOne(s => s.Author)
+                .WithMany() // AppUser'da Submissions listesi olmadığı için WithMany() boş
+                .HasForeignKey(s => s.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict); // Veya .NoAction
+
+            // ReviewAssignment-Submission ilişkisi için zincirleme silmeyi devre dışı bırak
+            builder.Entity<ReviewAssignment>()
+                .HasOne(ra => ra.Submission)
+                .WithMany()
+                .HasForeignKey(ra => ra.SubmissionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ReviewAssignment-Reviewer ilişkisi için zincirleme silmeyi devre dışı bırak
+            builder.Entity<ReviewAssignment>()
+                .HasOne(ra => ra.Reviewer)
+                .WithMany()
+                .HasForeignKey(ra => ra.ReviewerId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
