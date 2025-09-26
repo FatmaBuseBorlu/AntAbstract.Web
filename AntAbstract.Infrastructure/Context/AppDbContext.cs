@@ -29,21 +29,21 @@ namespace AntAbstract.Infrastructure.Context
         {
             base.OnModelCreating(builder);
 
-            // Submission-Author ilişkisi için zincirleme silmeyi devre dışı bırak
+            // Submission ve ReviewAssignment arasındaki ilişkiyi manuel olarak yapılandır
+            // Bu, "SubmissionId1" gibi hayalet sütunların oluşmasını engeller.
+            builder.Entity<Submission>()
+                .HasMany(s => s.ReviewAssignments) // Bir Submission'ın çok sayıda ReviewAssignment'ı vardır
+                .WithOne(ra => ra.Submission)      // Bir ReviewAssignment'ın ise bir tane Submission'ı vardır
+                .HasForeignKey(ra => ra.SubmissionId) // Bu ilişki SubmissionId sütunu üzerinden kurulur
+                .OnDelete(DeleteBehavior.Cascade); // Bir özet silinirse, ona bağlı tüm atamalar da silinsin.
+
+            // Diğer ilişkiler için zincirleme silmeyi kısıtla (daha önce eklemiştik)
             builder.Entity<Submission>()
                 .HasOne(s => s.Author)
-                .WithMany() // AppUser'da Submissions listesi olmadığı için WithMany() boş
-                .HasForeignKey(s => s.AuthorId)
-                .OnDelete(DeleteBehavior.Restrict); // Veya .NoAction
-
-            // ReviewAssignment-Submission ilişkisi için zincirleme silmeyi devre dışı bırak
-            builder.Entity<ReviewAssignment>()
-                .HasOne(ra => ra.Submission)
                 .WithMany()
-                .HasForeignKey(ra => ra.SubmissionId)
+                .HasForeignKey(s => s.AuthorId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // ReviewAssignment-Reviewer ilişkisi için zincirleme silmeyi devre dışı bırak
             builder.Entity<ReviewAssignment>()
                 .HasOne(ra => ra.Reviewer)
                 .WithMany()

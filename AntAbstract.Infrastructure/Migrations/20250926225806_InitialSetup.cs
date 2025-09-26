@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace AntAbstract.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialSetup : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -177,7 +177,7 @@ namespace AntAbstract.Infrastructure.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Code = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
@@ -229,6 +229,8 @@ namespace AntAbstract.Infrastructure.Migrations
                     AbstractText = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     FilePath = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    FinalDecision = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    DecisionDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     ConferenceId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     AuthorId = table.Column<string>(type: "nvarchar(450)", nullable: false)
                 },
@@ -274,7 +276,7 @@ namespace AntAbstract.Infrastructure.Migrations
                         column: x => x.SubmissionId,
                         principalTable: "Submissions",
                         principalColumn: "SubmissionId",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(

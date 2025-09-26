@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AntAbstract.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250925220607_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250926231945_MakeReviewCommentsOptional")]
+    partial class MakeReviewCommentsOptional
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -99,8 +99,7 @@ namespace AntAbstract.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Code")
-                        .IsRequired()
+                    b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("EndDate")
@@ -133,7 +132,6 @@ namespace AntAbstract.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CommentsToAuthor")
-                        .IsRequired()
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
 
@@ -141,12 +139,10 @@ namespace AntAbstract.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ConfidentialComments")
-                        .IsRequired()
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
 
                     b.Property<string>("Recommendation")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -241,7 +237,13 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DecisionDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("FilePath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FinalDecision")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
@@ -443,9 +445,9 @@ namespace AntAbstract.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("AntAbstract.Domain.Entities.Submission", "Submission")
-                        .WithMany()
+                        .WithMany("ReviewAssignments")
                         .HasForeignKey("SubmissionId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Reviewer");
@@ -546,6 +548,11 @@ namespace AntAbstract.Infrastructure.Migrations
                 {
                     b.Navigation("Review")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.Submission", b =>
+                {
+                    b.Navigation("ReviewAssignments");
                 });
 #pragma warning restore 612, 618
         }

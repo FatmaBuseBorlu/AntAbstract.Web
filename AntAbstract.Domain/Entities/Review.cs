@@ -20,13 +20,13 @@ namespace AntAbstract.Domain.Entities
         public int? Score { get; set; }
 
         [StringLength(4000)]
-        public string CommentsToAuthor { get; set; } = string.Empty;
+        public string? CommentsToAuthor { get; set; }
 
         [StringLength(4000)]
-        public string ConfidentialComments { get; set; } = string.Empty;
+        public string? ConfidentialComments { get; set; }
 
         [StringLength(50)]
-        public string Recommendation { get; set; } = string.Empty;
+        public string? Recommendation { get; set; }
 
         public DateTime? CompletedDate { get; set; }
 

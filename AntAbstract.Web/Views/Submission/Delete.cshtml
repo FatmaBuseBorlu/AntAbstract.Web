@@ -1,0 +1,15 @@
+﻿@model AntAbstract.Domain.Entities.Submission
+@{
+    ViewData["Title"] = "Silme Onayı";
+}
+
+<h1 class="text-danger">Silme Onayı</h1>
+<h3>"@Model.Title" başlıklı özeti kalıcı olarak silmek istediğinizden emin misiniz?</h3>
+<div>
+    <hr />
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="SubmissionId" />
+        <input type="submit" value="Evet, Sil" class="btn btn-danger" />
+        <a asp-action="Index" class="btn btn-secondary">İptal</a>
+    </form>
+</div>

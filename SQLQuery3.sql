@@ -1,0 +1,1 @@
+﻿DELETE FROM Tenants WHERE Slug = 'icc2025';

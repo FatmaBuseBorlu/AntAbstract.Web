@@ -18,7 +18,7 @@
     Gönderdiğiniz özetlerin listesi bu sayfada görüntülenecektir.
 </p>
 
-@* ✅ DÜZELTME: Modelin null veya boş olup olmadığını kontrol eder *@
+@*  DÜZELTME: Modelin null veya boş olup olmadığını kontrol eder *@
 @if (Model == null || !Model.Any())
 {
     <div class="alert alert-info" role="alert">
@@ -42,12 +42,12 @@ else
             {
                 <tr>
                     <td><strong>@item.Title</strong></td>
-                    <td>@(item.AbstractText?.Length > 100 ? item.AbstractText.Substring(0, 100) + "..." : item.AbstractText)</td>
-                    <td>@item.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
+                    <td>@(item.AbstractText != null && item.AbstractText.Length > 100 ? item.AbstractText.Substring(0, 100) + "..." : item.AbstractText)</td>
+                    <td>@item.CreatedAt.ToLocalTime().ToString("dd Eyl yyyy HH:mm")</td>
                     <td>
-                        <a href="#" class="btn btn-sm btn-info me-2">Detay</a>
-                        <a href="#" class="btn btn-sm btn-warning">Düzenle</a>
-                        @* İleride silme butonu buraya gelecek *@
+                        <a asp-action="Details" asp-route-submissionId="@item.SubmissionId" class="btn btn-sm btn-outline-info">Detay</a>
+                        <a asp-action="Edit" asp-route-submissionId="@item.SubmissionId" class="btn btn-sm btn-outline-warning">Düzenle</a>
+                        <a asp-action="Delete" asp-route-submissionId="@item.SubmissionId" class="btn btn-sm btn-outline-danger">Sil</a>
                     </td>
                 </tr>
             }

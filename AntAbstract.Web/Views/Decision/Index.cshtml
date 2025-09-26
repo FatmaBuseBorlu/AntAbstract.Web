@@ -1,0 +1,50 @@
+﻿@using AntAbstract.Domain.Entities
+@model IEnumerable<Submission>
+
+@{
+    ViewData["Title"] = "Karar Ekranı";
+}
+
+<h1 class="display-5">@ViewData["Title"]</h1>
+<p class="lead">Değerlendirmesi tamamlanmış ve nihai karar bekleyen özetler.</p>
+<hr />
+
+@if (ViewBag.ErrorMessage != null)
+{
+    <div class="alert alert-danger">@ViewBag.ErrorMessage</div>
+    return;
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        Şu anda karar bekleyen bir özet bulunmamaktadır.
+    </div>
+}
+else
+{
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Başlık</th>
+                <th>Yazar</th>
+                <th>Hakem Sayısı</th>
+                <th style="width: 15%;">İşlemler</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td><strong>@item.Title</strong></td>
+                    <td>@item.Author.Email</td>
+                    <td>@item.ReviewAssignments.Count() Değerlendirme</td>
+                    <td>
+                        @* Bu linki bir sonraki adımda yapacağız *@
+                        <a href="#" class="btn btn-info btn-sm">Karar Ver</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

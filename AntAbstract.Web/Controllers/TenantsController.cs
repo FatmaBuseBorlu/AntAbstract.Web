@@ -1,8 +1,10 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
@@ -20,8 +22,25 @@ namespace AntAbstract.Web.Controllers
         // GET: Tenants
         public async Task<IActionResult> Index()
         {
-            var tenants = await _context.Tenants.ToListAsync();
-            return View(tenants);
+            return View(await _context.Tenants.ToListAsync());
+        }
+
+        // GET: Tenants/Details/5
+        public async Task<IActionResult> Details(Guid? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var tenant = await _context.Tenants
+                .FirstOrDefaultAsync(m => m.Id == id);
+            if (tenant == null)
+            {
+                return NotFound();
+            }
+
+            return View(tenant);
         }
 
         // GET: Tenants/Create
@@ -33,28 +52,112 @@ namespace AntAbstract.Web.Controllers
         // POST: Tenants/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Tenant tenant)
+        public async Task<IActionResult> Create(IFormCollection collection)
         {
-            // DİKKAT: GEÇİCİ OLARAK ModelState KONTROLÜNÜ TAMAMEN KALDIRDIK
             try
             {
-                // Modelin Id'si kendi içinde oluştuğu için direkt eklemeyi deniyoruz.
-                _context.Add(tenant);
-                await _context.SaveChangesAsync();
+                var newTenant = new Tenant
+                {
+                    Slug = collection["Slug"],
+                    Name = collection["Name"],
+                    ThemeJson = collection["ThemeJson"]
+                };
 
-                // Başarılı olursa listeye yönlendir.
+                _context.Add(newTenant);
+                await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            catch (Exception ex)
+            catch
             {
-                // EĞER VERİTABANI KAYDI SIRASINDA BİR HATA VARSA, BURADA YAKALAYACAĞIZ
-                // ve hatayı Output penceresine yazdıracağız.
-                System.Diagnostics.Debug.WriteLine("KAYIT SIRASINDA VERİTABANI HATASI: " + ex.ToString());
-
-                // Hata olursa, formu tekrar gösterelim ve kullanıcıya bilgi verelim.
-                ModelState.AddModelError("", "Kayıt sırasında beklenmedik bir veritabanı hatası oluştu. Lütfen sistem yöneticisine başvurun.");
-                return View(tenant);
+                return View();
             }
         }
+
+        // GET: Tenants/Edit/5
+        public async Task<IActionResult> Edit(Guid? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var tenant = await _context.Tenants.FindAsync(id);
+            if (tenant == null)
+            {
+                return NotFound();
+            }
+            return View(tenant);
+        }
+
+        // POST: Tenants/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(Guid id, IFormCollection collection)
+        {
+            var tenantToUpdate = await _context.Tenants.FindAsync(id);
+            if (tenantToUpdate == null)
+            {
+                return NotFound();
+            }
+
+            tenantToUpdate.Slug = collection["Slug"];
+            tenantToUpdate.Name = collection["Name"];
+            tenantToUpdate.ThemeJson = collection["ThemeJson"];
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!TenantExists(tenantToUpdate.Id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        // GET: Tenants/Delete/5
+        public async Task<IActionResult> Delete(Guid? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var tenant = await _context.Tenants
+                .FirstOrDefaultAsync(m => m.Id == id);
+            if (tenant == null)
+            {
+                return NotFound();
+            }
+
+            return View(tenant);
+        }
+
+        // POST: Tenants/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        {
+            var tenant = await _context.Tenants.FindAsync(id);
+            if (tenant != null)
+            {
+                _context.Tenants.Remove(tenant);
+            }
+
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
+        }
+
+        private bool TenantExists(Guid id)
+        {
+            return _context.Tenants.Any(e => e.Id == id);
+        }
     }
-}
+} 

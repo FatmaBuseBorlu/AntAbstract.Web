@@ -5,10 +5,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-t" />
+    <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@(Tc.Current?.Name ?? "AntAbstract.Web") - @ViewData["Title"]</title>
-
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/AntAbstract.Web.styles.css" asp-append-version="true" />
@@ -23,78 +22,69 @@
                    asp-route-tenant="@(Tc.Current?.Slug)">
                     @(Tc.Current?.Name ?? "AntAbstract.Web")
                 </a>
-
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
-                        aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-
-                <div class="collapse navbar-collapse d-sm-inline-flex justify-content-between" id="mainNavbar">
-
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark"
-                               asp-controller="Home"
-                               asp-action="Index"
-                               asp-route-tenant="@(Tc.Current?.Slug)">Home</a>
+                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">Home</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark"
-                               asp-controller="Home"
-                               asp-action="Privacy"
-                               asp-route-tenant="@(Tc.Current?.Slug)">Privacy</a>
+                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Privacy" asp-route-tenant="@(Tc.Current?.Slug)">Privacy</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark"
-                               asp-controller="Tenants"
-                               asp-action="Index">Tenants</a>
+                            <a class="nav-link text-dark" asp-controller="Tenants" asp-action="Index">Tenants</a>
                         </li>
 
-                        @* Organizator ve Admin için Yönetim Linkleri (Tek bir blokta birleştirildi) *@
-                        @if (User.IsInRole("Admin") || User.IsInRole("Organizator"))
+                        @* Sadece Giriş Yapmış Kullanıcılar İçin Linkler *@
+                        @if (User.Identity?.IsAuthenticated ?? false)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark"
-                                   asp-controller="Reviewer"
-                                   asp-action="Index"
-                                   asp-route-tenant="@(Tc.Current?.Slug)">Hakemler</a>
+                                <a class="nav-link text-dark" asp-controller="Submission" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">Özetlerim</a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark"
-                                   asp-controller="Assignment"
-                                   asp-action="Index"
-                                   asp-route-tenant="@(Tc.Current?.Slug)">Özet Atama</a>
-                            </li>
+
+                            @* Sadece Hakemler İçin Link *@
+                            @if (User.IsInRole("Reviewer"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark"
+                                       asp-controller="Review"
+                                       asp-action="Index"
+                                       asp-route-tenant="@(Tc.Current?.Slug)">Değerlendirmelerim</a>
+                                </li>
+                            }
+
+                            @* Sadece Admin ve Organizatorler İçin Linkler *@
+                            @if (User.IsInRole("Admin") || User.IsInRole("Organizator"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark"
+                                       asp-controller="Reviewer"
+                                       asp-action="Index"
+                                       asp-route-tenant="@(Tc.Current?.Slug)">Hakemler</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark"
+                                       asp-controller="Assignment"
+                                       asp-action="Index"
+                                       asp-route-tenant="@(Tc.Current?.Slug)">Özet Atama</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark"
+                                       asp-controller="Decision"
+                                       asp-action="Index"
+                                       asp-route-tenant="@(Tc.Current?.Slug)">Karar Ekranı</a>
+                                </li>
+                            }
                         }
-
-                        @* Sadece Giriş Yapmış Kullanıcılar İçin Link *@
-                        @if (User.Identity != null && User.Identity.IsAuthenticated)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Submission" asp-action="Index">Özetlerim</a>
-                            </li>
-                        }
-
-                    @* Sadece Hakemler İçin Link *@
-                    @if (User.IsInRole("Reviewer"))
-                    {
-                        <li class="nav-item">
-                            <a class="nav-link text-dark"
-                               asp-controller="Review"
-                               asp-action="Index"
-                               asp-route-tenant="@(Tc.Current?.Slug)">Değerlendirmelerim</a>
-                        </li>
-                    }
                     </ul>
-
-                    <ul class="navbar-nav">
-                        <partial name="_LoginPartial" />
-                    </ul>
+                    <partial name="_LoginPartial" />
                 </div>
             </div>
         </nav>
     </header>
-
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()
@@ -103,11 +93,9 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; @DateTime.Now.Year - @(Tc.Current?.Name ?? "AntAbstract.Web") -
-            <a asp-controller="Home" asp-action="Privacy" asp-route-tenant="@(Tc.Current?.Slug)">Privacy</a>
+            &copy; @DateTime.Now.Year - @(Tc.Current?.Name ?? "AntAbstract.Web") - <a asp-controller="Home" asp-action="Privacy" asp-route-tenant="@(Tc.Current?.Slug)">Privacy</a>
         </div>
     </footer>
-
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

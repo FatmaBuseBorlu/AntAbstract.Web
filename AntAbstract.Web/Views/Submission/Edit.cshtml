@@ -1,0 +1,32 @@
+﻿@model AntAbstract.Domain.Entities.Submission
+@{
+    ViewData["Title"] = "Özeti Düzenle";
+}
+
+<h1>Özeti Düzenle</h1>
+<hr />
+<div class="row">
+    <div class="col-md-8">
+        <form asp-action="Edit" enctype="multipart/form-data">
+            <input type="hidden" asp-for="SubmissionId" />
+            <div class="mb-3">
+                <label asp-for="Title" class="form-label fw-bold"></label>
+                <input asp-for="Title" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label asp-for="AbstractText" class="form-label fw-bold">Özet Metni</label>
+                <textarea asp-for="AbstractText" class="form-control" rows="8"></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Mevcut Dosya</label>
+                <p><a href="@Model.FilePath" target="_blank">@Model.FilePath</a></p>
+                <label for="newSubmissionFile" class="form-label fw-bold">Dosyayı Değiştir (İsteğe Bağlı)</label>
+                <input type="file" name="newSubmissionFile" class="form-control" />
+            </div>
+            <div class="form-group mt-4">
+                <input type="submit" value="Kaydet" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-outline-secondary">İptal</a>
+            </div>
+        </form>
+    </div>
+</div>

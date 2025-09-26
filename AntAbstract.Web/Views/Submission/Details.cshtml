@@ -1,0 +1,42 @@
+﻿@model AntAbstract.Domain.Entities.Submission
+
+@{
+    ViewData["Title"] = "Özet Detayları";
+}
+
+<h1 class="display-5">@Model.Title</h1>
+<hr />
+<div>
+    <h4>Özet Detayları</h4>
+    <dl class="row bg-light p-3 rounded mt-3">
+        <dt class="col-sm-3 fw-bold">
+            Başlık
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Title)
+        </dd>
+        <dt class="col-sm-3 fw-bold">
+            Özet Metni
+        </dt>
+        <dd class="col-sm-9" style="white-space: pre-wrap;">
+            @Html.DisplayFor(model => model.AbstractText)
+        </dd>
+        <dt class="col-sm-3 fw-bold">
+            Gönderim Tarihi
+        </dt>
+        <dd class="col-sm-9">
+            @Model.CreatedAt.ToLocalTime().ToString("dd MMMM yyyy, HH:mm")
+        </dd>
+        <dt class="col-sm-3 fw-bold">
+            Dosya
+        </dt>
+        <dd class="col-sm-9">
+            <a href="@Model.FilePath" target="_blank">Dosyayı Görüntüle</a>
+        </dd>
+    </dl>
+</div>
+
+<div class="mt-4">
+    <a asp-action="Edit" asp-route-submissionId="@Model.SubmissionId" class="btn btn-warning">Düzenle</a>
+    <a asp-action="Index" class="btn btn-outline-secondary">Özetlerime Geri Dön</a>
+</div>

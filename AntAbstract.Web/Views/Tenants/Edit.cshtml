@@ -1,15 +1,18 @@
 ﻿@model AntAbstract.Domain.Entities.Tenant
 
 @{
-    ViewData["Title"] = "Yeni Kongre Oluştur";
+    ViewData["Title"] = "Kongre Düzenle";
 }
 
 <h1 class="display-5">@ViewData["Title"]</h1>
+<h4>@Model.Name</h4>
 <hr />
 <div class="row">
     <div class="col-md-8">
-        <form asp-action="Create">
+        <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+
             <div class="form-group mb-3">
                 <label asp-for="Slug" class="control-label fw-bold"></label>
                 <input asp-for="Slug" class="form-control" />
@@ -22,14 +25,20 @@
             </div>
             <div class="form-group mb-3">
                 <label asp-for="ThemeJson" class="control-label fw-bold">Tema (Opsiyonel)</label>
-                <input asp-for="ThemeJson" class="form-control" placeholder="Şimdilik boş bırakılabilir..." />
+                <input asp-for="ThemeJson" class="form-control" />
                 <span asp-validation-for="ThemeJson" class="text-danger"></span>
             </div>
 
             <div class="form-group mt-4">
-                <input type="submit" value="Oluştur" class="btn btn-success" />
+                <input type="submit" value="Kaydet" class="btn btn-primary" />
                 <a asp-action="Index" class="btn btn-outline-secondary">Listeye Geri Dön</a>
             </div>
         </form>
     </div>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
