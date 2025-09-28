@@ -1,5 +1,5 @@
-﻿@using AntAbstract.Domain.Entities
-@model IEnumerable<Submission>
+﻿@using AntAbstract.Web.Models.ViewModels
+@model DecisionIndexViewModel
 
 @{
     ViewData["Title"] = "Karar Ekranı";
@@ -15,7 +15,8 @@
     return;
 }
 
-@if (!Model.Any())
+<h3 class="mt-4">Karar Bekleyen Özetler</h3>
+@if (!Model.AwaitingDecision.Any())
 {
     <div class="alert alert-info">
         Şu anda karar bekleyen bir özet bulunmamaktadır.
@@ -33,16 +34,46 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var item in Model)
+            @foreach (var item in Model.AwaitingDecision)
             {
                 <tr>
                     <td><strong>@item.Title</strong></td>
                     <td>@item.Author.Email</td>
                     <td>@item.ReviewAssignments.Count() Değerlendirme</td>
                     <td>
-                        @* Bu linki bir sonraki adımda yapacağız *@
-                        <a href="#" class="btn btn-info btn-sm">Karar Ver</a>
+                        <a asp-action="MakeDecision" asp-route-id="@item.SubmissionId" class="btn btn-info btn-sm">Karar Ver</a>
                     </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+
+<h3 class="mt-5">Kararı Verilmiş Özetler</h3>
+@if (!Model.AlreadyDecided.Any())
+{
+    <div class="alert alert-secondary">
+        Henüz nihai kararı verilmiş bir özet bulunmamaktadır.
+    </div>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Başlık</th>
+                <th>Yazar</th>
+                <th>Nihai Karar</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.AlreadyDecided)
+            {
+                <tr>
+                    <td>@item.Title</td>
+                    <td>@item.Author.Email</td>
+                    <td><strong class="text-success">@item.FinalDecision</strong></td>
                 </tr>
             }
         </tbody>
