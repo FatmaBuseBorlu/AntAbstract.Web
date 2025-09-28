@@ -83,7 +83,9 @@ namespace AntAbstract.Web.Controllers
                     Slug = slug,
                     Name = name,
                     ScientificFieldId = scientificFieldId,
-                    CongressTypeId = congressTypeId
+                    CongressTypeId = congressTypeId,
+                    LogoUrl = collection["LogoUrl"],
+
                 };
 
                 _context.Add(newTenant);
@@ -132,6 +134,7 @@ namespace AntAbstract.Web.Controllers
             tenantToUpdate.Name = collection["Name"];
             tenantToUpdate.ScientificFieldId = !string.IsNullOrEmpty(collection["ScientificFieldId"]) ? int.Parse(collection["ScientificFieldId"]) : null;
             tenantToUpdate.CongressTypeId = !string.IsNullOrEmpty(collection["CongressTypeId"]) ? int.Parse(collection["CongressTypeId"]) : null;
+            tenantToUpdate.LogoUrl = collection["LogoUrl"];
 
             try
             {

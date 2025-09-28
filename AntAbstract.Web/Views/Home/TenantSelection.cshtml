@@ -14,11 +14,23 @@
     @foreach (var tenant in Model)
     {
         <div class="col">
-            <div class="card h-100">
+            <div class="card h-100 text-center">
+                <div class="card-header">
+                    @if (!string.IsNullOrEmpty(tenant.LogoUrl))
+                    {
+                        <img src="@tenant.LogoUrl" class="card-img-top" alt="@tenant.Name Logosu" style="max-height: 80px; width: auto;" />
+                    }
+                    else
+                    {
+                        <i class="bi bi-person-workspace" style="font-size: 48px;"></i>
+                    }
+                </div>
                 <div class="card-body">
                     <h5 class="card-title">@tenant.Name</h5>
                     <p class="card-text text-muted">/@tenant.Slug</p>
-                    <a asp-controller="Home" asp-action="Index" asp-route-tenant="@tenant.Slug" class="btn btn-primary">Yönet</a>
+                </div>
+                <div class="card-footer">
+                    <a asp-controller="Home" asp-action="Index" asp-route-tenant="@tenant.Slug" class="btn btn-primary w-100">Yönet</a>
                 </div>
             </div>
         </div>

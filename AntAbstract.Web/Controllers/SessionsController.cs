@@ -1,14 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using AntAbstract.Domain.Entities;
+using AntAbstract.Infrastructure.Context;
+using AntAbstract.Web.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using AntAbstract.Domain.Entities;
-using AntAbstract.Infrastructure.Context;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -195,6 +196,56 @@ namespace AntAbstract.Web.Controllers
         private bool SessionExists(Guid id)
         {
             return _context.Sessions.Any(e => e.Id == id);
+        }
+        // GET: Sessions/Manage/5
+        // Bir oturumun detaylarını ve o oturuma atanmış/atanabilecek özetleri gösterir.
+        public async Task<IActionResult> Manage(Guid? id)
+        {
+            if (id == null) return NotFound();
+
+            var session = await _context.Sessions
+                .Include(s => s.Submissions) // Oturuma atanmış özetleri yükle
+                .FirstOrDefaultAsync(s => s.Id == id);
+
+            if (session == null) return NotFound();
+
+            // Bu konferansta "Kabul Edildi" durumunda olan VE
+            // henüz bu oturuma atanmamış olan diğer özetleri bul.
+            var availableSubmissions = await _context.Submissions
+                .Where(s => s.ConferenceId == session.ConferenceId &&
+                             s.FinalDecision == "Kabul Edildi" &&
+                             s.SessionId != session.Id)
+                .ToListAsync();
+
+            var viewModel = new SessionDetailViewModel
+            {
+                Session = session,
+                AvailableSubmissions = new SelectList(availableSubmissions, "SubmissionId", "Title")
+            };
+
+            return View(viewModel);
+        }
+
+        // POST: Sessions/AssignSubmission
+        // Bir özeti bir oturuma atar.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AssignSubmission(Guid sessionId, Guid submissionIdToAdd)
+        {
+            var submission = await _context.Submissions.FindAsync(submissionIdToAdd);
+            var session = await _context.Sessions.FindAsync(sessionId);
+
+            if (submission == null || session == null)
+            {
+                return NotFound();
+            }
+
+            // Özeti oturuma ata
+            submission.SessionId = sessionId;
+            await _context.SaveChangesAsync();
+
+            // Kullanıcıyı tekrar yönetim sayfasına yönlendir.
+            return RedirectToAction(nameof(Manage), new { id = sessionId });
         }
     }
 }

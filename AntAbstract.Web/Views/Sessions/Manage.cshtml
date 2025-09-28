@@ -1,0 +1,52 @@
+﻿@using AntAbstract.Web.Models.ViewModels
+@model SessionDetailViewModel
+
+@{
+    ViewData["Title"] = "Oturumu Yönet";
+}
+
+<h1 class="display-5">@Model.Session.Title</h1>
+<p class="lead">Oturum Tarihi: @Model.Session.SessionDate.ToLocalTime().ToString("dd MMMM yyyy, HH:mm") | Yer: @Model.Session.Location</p>
+<hr />
+
+<div class="row">
+    <div class="col-md-7">
+        <h4>Bu Oturumdaki Sunumlar</h4>
+        @if (!Model.Session.Submissions.Any())
+        {
+            <div class="alert alert-info">Bu oturuma henüz bir sunum atanmamış.</div>
+        }
+        else
+        {
+            <ul class="list-group">
+                @foreach (var sub in Model.Session.Submissions)
+                {
+                    <li class="list-group-item">@sub.Title</li>
+                }
+            </ul>
+        }
+    </div>
+    <div class="col-md-5">
+        <h4>Oturuma Yeni Sunum Ekle</h4>
+        <div class="card bg-light">
+            <div class="card-body">
+                <form asp-action="AssignSubmission" method="post">
+                    <input type="hidden" name="sessionId" value="@Model.Session.Id" />
+                    <div class="form-group mb-3">
+                        <label for="submissionIdToAdd" class="control-label fw-bold">Atanacak Özeti Seçin</label>
+                        <select name="submissionIdToAdd" class="form-control" asp-items="Model.AvailableSubmissions">
+                            <option value="">-- Kabul Edilmiş Özetler --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <input type="submit" value="Sunumu Ekle" class="btn btn-success" />
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a asp-action="Index" class="btn btn-outline-secondary">Tüm Oturumlara Geri Dön</a>
+</div>
