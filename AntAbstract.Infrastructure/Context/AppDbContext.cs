@@ -27,6 +27,7 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<Message> Messages { get; set; }
         public DbSet<ScientificField> ScientificFields { get; set; }
         public DbSet<CongressType> CongressTypes { get; set; }
+        public DbSet<Session> Sessions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -66,6 +67,13 @@ namespace AntAbstract.Infrastructure.Context
                 .WithMany()
                 .HasForeignKey(m => m.ReceiverId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // OnModelCreating metodu içine ekle
+            builder.Entity<Session>()
+                .HasOne(s => s.Conference)
+                .WithMany() // Conference'da Sessions listesi olmadığı için WithMany() boş
+                .HasForeignKey(s => s.ConferenceId)
+                .OnDelete(DeleteBehavior.Cascade); // Bir konferans silinirse, tüm oturumları da silinsin.
         }
     }
 }

@@ -2,6 +2,7 @@
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
@@ -46,6 +47,9 @@ namespace AntAbstract.Web.Controllers
         // GET: Tenants/Create
         public IActionResult Create()
         {
+            // View'a gönderilecek dropdown listelerini hazırla
+            ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields, "Id", "Name");
+            ViewBag.CongressTypeId = new SelectList(_context.CongressTypes, "Id", "Name");
             return View();
         }
 
@@ -56,11 +60,30 @@ namespace AntAbstract.Web.Controllers
         {
             try
             {
+                // 1. Veriyi formdan manuel olarak oku (yeni alanlar dahil)
+                string slug = collection["Slug"];
+                string name = collection["Name"];
+
+                // Gelen ID'leri int'e çevirmeye çalış, boşsa null ata
+                int? scientificFieldId = !string.IsNullOrEmpty(collection["ScientificFieldId"]) ? int.Parse(collection["ScientificFieldId"]) : null;
+                int? congressTypeId = !string.IsNullOrEmpty(collection["CongressTypeId"]) ? int.Parse(collection["CongressTypeId"]) : null;
+
+                if (string.IsNullOrEmpty(slug) || string.IsNullOrEmpty(name))
+                {
+                    ModelState.AddModelError("", "Slug ve Name alanları boş olamaz.");
+                    // Hata durumunda dropdown'ları tekrar doldurup formu geri gönder
+                    ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields, "Id", "Name");
+                    ViewBag.CongressTypeId = new SelectList(_context.CongressTypes, "Id", "Name");
+                    return View();
+                }
+
+                // 2. Tenant nesnesini manuel olarak oluştur
                 var newTenant = new Tenant
                 {
-                    Slug = collection["Slug"],
-                    Name = collection["Name"],
-                    ThemeJson = collection["ThemeJson"]
+                    Slug = slug,
+                    Name = name,
+                    ScientificFieldId = scientificFieldId,
+                    CongressTypeId = congressTypeId
                 };
 
                 _context.Add(newTenant);
@@ -86,6 +109,10 @@ namespace AntAbstract.Web.Controllers
             {
                 return NotFound();
             }
+
+            // View'a gönderilecek dropdown listelerini, mevcut seçimi de belirterek hazırla
+            ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields, "Id", "Name", tenant.ScientificFieldId);
+            ViewBag.CongressTypeId = new SelectList(_context.CongressTypes, "Id", "Name", tenant.CongressTypeId);
             return View(tenant);
         }
 
@@ -100,9 +127,11 @@ namespace AntAbstract.Web.Controllers
                 return NotFound();
             }
 
+            // Formdan gelen yeni verileri manuel olarak oku ve ata
             tenantToUpdate.Slug = collection["Slug"];
             tenantToUpdate.Name = collection["Name"];
-            tenantToUpdate.ThemeJson = collection["ThemeJson"];
+            tenantToUpdate.ScientificFieldId = !string.IsNullOrEmpty(collection["ScientificFieldId"]) ? int.Parse(collection["ScientificFieldId"]) : null;
+            tenantToUpdate.CongressTypeId = !string.IsNullOrEmpty(collection["CongressTypeId"]) ? int.Parse(collection["CongressTypeId"]) : null;
 
             try
             {
@@ -110,14 +139,8 @@ namespace AntAbstract.Web.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!TenantExists(tenantToUpdate.Id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                // ... (hata yönetimi) ...
+                throw;
             }
             return RedirectToAction(nameof(Index));
         }

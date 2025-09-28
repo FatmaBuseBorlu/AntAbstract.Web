@@ -98,6 +98,12 @@
             </li>
             <li>
                 <a class="dropdown-item" 
+                asp-controller="Sessions" 
+                asp-action="Index" 
+                asp-route-tenant="@(Tc.Current?.Slug)">Oturum Yönetimi</a>
+            </li>
+            <li>
+                <a class="dropdown-item" 
                 asp-controller="Reviewer" 
                 asp-action="Index" 
                 asp-route-tenant="@(Tc.Current?.Slug)">Hakem Yönetimi</a>
@@ -109,9 +115,6 @@
             </li>
             <li>
                 <hr class="dropdown-divider">
-            </li>
-            <li>
-                <h6 class="dropdown-header">Genel Ayarlar</h6>
             </li>
             <li>
                 <a class="dropdown-item" 
@@ -127,6 +130,9 @@
                 <a class="dropdown-item" 
                 asp-controller="CongressTypes" 
                 asp-action="Index">Kongre Türleri</a>
+            </li>
+            <li>
+                <h6 class="dropdown-header">Genel Ayarlar</h6>
             </li>
         </ul>
     </li>

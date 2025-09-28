@@ -20,10 +20,18 @@
                 <input asp-for="Name" class="form-control" />
                 <span asp-validation-for="Name" class="text-danger"></span>
             </div>
+
             <div class="form-group mb-3">
-                <label asp-for="ThemeJson" class="control-label fw-bold">Tema (Opsiyonel)</label>
-                <input asp-for="ThemeJson" class="form-control" placeholder="Şimdilik boş bırakılabilir..." />
-                <span asp-validation-for="ThemeJson" class="text-danger"></span>
+                <label asp-for="ScientificFieldId" class="control-label fw-bold">Bilimsel Alan</label>
+                <select asp-for="ScientificFieldId" class="form-control" asp-items="ViewBag.ScientificFieldId">
+                    <option value="">-- Alan Seçin --</option>
+                </select>
+            </div>
+            <div class="form-group mb-3">
+                <label asp-for="CongressTypeId" class="control-label fw-bold">Kongre Türü</label>
+                <select asp-for="CongressTypeId" class="form-control" asp-items="ViewBag.CongressTypeId">
+                    <option value="">-- Tür Seçin --</option>
+                </select>
             </div>
 
             <div class="form-group mt-4">

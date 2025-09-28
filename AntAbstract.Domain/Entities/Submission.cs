@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using AntAbstract.Domain;
 using AntAbstract.Domain.Entities;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AntAbstract.Domain.Entities
 {
@@ -34,7 +35,11 @@ namespace AntAbstract.Domain.Entities
 
         [BindNever]
         public string AuthorId { get; set; } = null!;
-        public AppUser? Author { get; set; } 
+        public AppUser? Author { get; set; }
+        public Guid? SessionId { get; set; } 
+
+        [ForeignKey("SessionId")]
+        public Session? Session { get; set; }
 
         public ICollection<ReviewAssignment> ReviewAssignments { get; set; } = new List<ReviewAssignment>();
     }
