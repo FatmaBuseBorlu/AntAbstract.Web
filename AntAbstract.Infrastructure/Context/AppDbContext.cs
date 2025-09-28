@@ -24,6 +24,9 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<Reviewer> Reviewers { get; set; }
         public DbSet<ReviewAssignment> ReviewAssignments { get; set; }
         public DbSet<Review> Reviews { get; set; }
+        public DbSet<Message> Messages { get; set; }
+        public DbSet<ScientificField> ScientificFields { get; set; }
+        public DbSet<CongressType> CongressTypes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -48,6 +51,20 @@ namespace AntAbstract.Infrastructure.Context
                 .HasOne(ra => ra.Reviewer)
                 .WithMany()
                 .HasForeignKey(ra => ra.ReviewerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Message-Sender ilişkisi için zincirleme silmeyi kısıtla
+            builder.Entity<Message>()
+                .HasOne(m => m.Sender)
+                .WithMany()
+                .HasForeignKey(m => m.SenderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Message-Receiver ilişkisi için zincirleme silmeyi kısıtla
+            builder.Entity<Message>()
+                .HasOne(m => m.Receiver)
+                .WithMany()
+                .HasForeignKey(m => m.ReceiverId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

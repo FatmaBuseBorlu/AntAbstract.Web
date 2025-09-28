@@ -1,0 +1,76 @@
+﻿@using AntAbstract.Web.Models.ViewModels
+@model DashboardViewModel
+
+@{
+    ViewData["Title"] = "Kullanıcı Paneli";
+}
+
+<h1 class="display-5">@ViewData["Title"]</h1>
+<p class="lead">Sisteme hoş geldiniz. Rollerinize göre görevleriniz aşağıda özetlenmiştir.</p>
+<hr />
+
+<div class="row">
+    @if (User.IsInRole("Admin") || User.IsInRole("Organizator"))
+    {
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header fw-bold">Organizator Paneli</div>
+                <div class="card-body">
+                    <p><strong>Hakem Ataması Bekleyen Özet Sayısı:</strong> @Model.SubmissionsAwaitingAssignment</p>
+                    <p><strong>Nihai Karar Bekleyen Özet Sayısı:</strong> @Model.SubmissionsAwaitingDecision</p>
+                    <a asp-controller="Assignment" asp-action="Index" class="btn btn-primary">Özetleri Yönet</a>
+                    <a asp-controller="Decision" asp-action="Index" class="btn btn-info">Karar Ekranına Git</a>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (User.IsInRole("Reviewer"))
+    {
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header fw-bold">Hakem Paneli</div>
+                <div class="card-body">
+                    <h5>Değerlendirmenizi Bekleyen Görevler</h5>
+                    @if (Model.MyReviewAssignments != null && Model.MyReviewAssignments.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var assignment in Model.MyReviewAssignments)
+                            {
+                                <li class="list-group-item">@assignment.Submission.Title</li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p>Bekleyen bir değerlendirme göreviniz bulunmamaktadır.</p>
+                    }
+                    <a asp-controller="Review" asp-action="Index" class="btn btn-success mt-3">Tüm Görevleri Gör</a>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header fw-bold">Yazar Paneli</div>
+            <div class="card-body">
+                <h5>Son Gönderdiğiniz Özetler</h5>
+                @if (Model.MySubmissions != null && Model.MySubmissions.Any())
+                {
+                    <ul class="list-group">
+                        @foreach (var submission in Model.MySubmissions)
+                        {
+                            <li class="list-group-item">@submission.Title</li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p>Henüz bir özet göndermediniz.</p>
+                }
+                <a asp-controller="Submission" asp-action="Index" class="btn btn-secondary mt-3">Özetlerime Git</a>
+            </div>
+        </div>
+    </div>
+</div>

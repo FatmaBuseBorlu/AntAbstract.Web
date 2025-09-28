@@ -29,21 +29,25 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">Home</a>
+                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">Ana Sayfa</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Privacy" asp-route-tenant="@(Tc.Current?.Slug)">Privacy</a>
+                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Privacy" asp-route-tenant="@(Tc.Current?.Slug)">Gizlilik</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Tenants" asp-action="Index">Tenants</a>
+                            <a class="nav-link text-dark" asp-controller="Tenants" asp-action="Index">Kongre Yönetimi</a>
                         </li>
 
                         @* Sadece Giriş Yapmış Kullanıcılar İçin Linkler *@
                         @if (User.Identity?.IsAuthenticated ?? false)
                         {
-                            <li class="nav-item">
+                           <li class="nav-item">
                                 <a class="nav-link text-dark" asp-controller="Submission" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">Özetlerim</a>
-                            </li>
+                           </li>
+
+                          <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Message" asp-action="Inbox">Mesajlar</a>
+                          </li>
 
                             @* Sadece Hakemler İçin Link *@
                             @if (User.IsInRole("Reviewer"))
@@ -59,24 +63,73 @@
                             @* Sadece Admin ve Organizatorler İçin Linkler *@
                             @if (User.IsInRole("Admin") || User.IsInRole("Organizator"))
                             {
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark"
-                                       asp-controller="Reviewer"
-                                       asp-action="Index"
-                                       asp-route-tenant="@(Tc.Current?.Slug)">Hakemler</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark"
-                                       asp-controller="Assignment"
-                                       asp-action="Index"
-                                       asp-route-tenant="@(Tc.Current?.Slug)">Özet Atama</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark"
-                                       asp-controller="Decision"
-                                       asp-action="Index"
-                                       asp-route-tenant="@(Tc.Current?.Slug)">Karar Ekranı</a>
-                                </li>
+                                <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle text-dark" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Yönetim Paneli
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <li><a class="dropdown-item" 
+                asp-controller="Dashboard" 
+                asp-action="Index" 
+                asp-route-tenant="@(Tc.Current?.Slug)">Ana Panel</a>
+            </li>
+            <li><a class="dropdown-item" 
+                asp-controller="Reports" 
+                asp-action="Index" 
+                asp-route-tenant="@(Tc.Current?.Slug)">Raporlar</a>
+            </li>
+            <li>
+                <hr class="dropdown-divider">
+            </li>
+            <li>
+                <a class="dropdown-item" 
+                asp-controller="Assignment" 
+                asp-action="Index" 
+                asp-route-tenant="@(Tc.Current?.Slug)">Özet Atama</a>
+            </li>
+            <li>
+                <a class="dropdown-item" 
+                asp-controller="Decision" 
+                asp-action="Index" 
+                asp-route-tenant="@(Tc.Current?.Slug)">Karar Ekranı</a>
+            </li>
+            <li>
+                <hr class="dropdown-divider">
+            </li>
+            <li>
+                <a class="dropdown-item" 
+                asp-controller="Reviewer" 
+                asp-action="Index" 
+                asp-route-tenant="@(Tc.Current?.Slug)">Hakem Yönetimi</a>
+            </li>
+            <li>
+                <a class="dropdown-item" 
+                asp-controller="Admin" 
+                asp-action="UserList">Kullanıcı Yönetimi</a>
+            </li>
+            <li>
+                <hr class="dropdown-divider">
+            </li>
+            <li>
+                <h6 class="dropdown-header">Genel Ayarlar</h6>
+            </li>
+            <li>
+                <a class="dropdown-item" 
+                asp-controller="Tenants" 
+                asp-action="Index">Kongre Tanımları</a>
+            </li>
+            <li>
+                <a class="dropdown-item" 
+                asp-controller="ScientificFields"
+                asp-action="Index">Bilimsel Alanlar</a>
+            </li>
+            <li>
+                <a class="dropdown-item" 
+                asp-controller="CongressTypes" 
+                asp-action="Index">Kongre Türleri</a>
+            </li>
+        </ul>
+    </li>
                             }
                         }
                     </ul>

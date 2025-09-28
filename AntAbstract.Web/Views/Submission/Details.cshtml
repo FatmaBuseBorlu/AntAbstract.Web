@@ -37,6 +37,9 @@
 </div>
 
 <div class="mt-4">
-    <a asp-action="Edit" asp-route-submissionId="@Model.SubmissionId" class="btn btn-warning">Düzenle</a>
+    @if (Model.Status == "Yeni Gönderildi")
+    {
+        <a asp-action="Edit" asp-route-submissionId="@Model.SubmissionId" class="btn btn-warning">Düzenle</a>
+    }
     <a asp-action="Index" class="btn btn-outline-secondary">Özetlerime Geri Dön</a>
 </div>

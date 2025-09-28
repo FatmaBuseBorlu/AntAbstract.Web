@@ -4,6 +4,7 @@ using AntAbstract.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AntAbstract.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250928173114_AddStatusToSubmissions")]
+    partial class AddStatusToSubmissions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -119,61 +122,6 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.ToTable("Conferences");
                 });
 
-            modelBuilder.Entity("AntAbstract.Domain.Entities.CongressType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("CongressTypes");
-                });
-
-            modelBuilder.Entity("AntAbstract.Domain.Entities.Message", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("ReceiverId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("SenderId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("SentDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Subject")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReceiverId");
-
-                    b.HasIndex("SenderId");
-
-                    b.ToTable("Messages");
-                });
-
             modelBuilder.Entity("AntAbstract.Domain.Entities.Review", b =>
                 {
                     b.Property<Guid>("Id")
@@ -270,24 +218,6 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.ToTable("Reviewers");
                 });
 
-            modelBuilder.Entity("AntAbstract.Domain.Entities.ScientificField", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ScientificFields");
-                });
-
             modelBuilder.Entity("AntAbstract.Domain.Entities.Submission", b =>
                 {
                     b.Property<Guid>("SubmissionId")
@@ -339,15 +269,9 @@ namespace AntAbstract.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int?>("CongressTypeId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("ScientificFieldId")
-                        .HasColumnType("int");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -357,10 +281,6 @@ namespace AntAbstract.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CongressTypeId");
-
-                    b.HasIndex("ScientificFieldId");
 
                     b.ToTable("Tenants");
                 });
@@ -509,25 +429,6 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Navigation("Tenant");
                 });
 
-            modelBuilder.Entity("AntAbstract.Domain.Entities.Message", b =>
-                {
-                    b.HasOne("AntAbstract.Domain.Entities.AppUser", "Receiver")
-                        .WithMany()
-                        .HasForeignKey("ReceiverId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("AntAbstract.Domain.Entities.AppUser", "Sender")
-                        .WithMany()
-                        .HasForeignKey("SenderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Receiver");
-
-                    b.Navigation("Sender");
-                });
-
             modelBuilder.Entity("AntAbstract.Domain.Entities.Review", b =>
                 {
                     b.HasOne("AntAbstract.Domain.Entities.ReviewAssignment", "Assignment")
@@ -594,21 +495,6 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Navigation("Author");
 
                     b.Navigation("Conference");
-                });
-
-            modelBuilder.Entity("AntAbstract.Domain.Entities.Tenant", b =>
-                {
-                    b.HasOne("AntAbstract.Domain.Entities.CongressType", "CongressType")
-                        .WithMany()
-                        .HasForeignKey("CongressTypeId");
-
-                    b.HasOne("AntAbstract.Domain.Entities.ScientificField", "ScientificField")
-                        .WithMany()
-                        .HasForeignKey("ScientificFieldId");
-
-                    b.Navigation("CongressType");
-
-                    b.Navigation("ScientificField");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

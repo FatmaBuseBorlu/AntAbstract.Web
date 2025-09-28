@@ -1,7 +1,9 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
+using AntAbstract.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -17,13 +19,20 @@ namespace AntAbstract.Web.Controllers
     {
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
+        private readonly IEmailService _emailService; 
+        private readonly UserManager<AppUser> _userManager; 
 
-        public SubmissionController(AppDbContext context, TenantContext tenantContext)
+        // CONSTRUCTOR GÜNCELLENDİ
+        public SubmissionController(AppDbContext context,
+                                    TenantContext tenantContext,
+                                    IEmailService emailService,
+                                    UserManager<AppUser> userManager)
         {
             _context = context;
             _tenantContext = tenantContext;
+            _emailService = emailService;
+            _userManager = userManager;
         }
-
         // GET: Submission/Index
         public async Task<IActionResult> Index()
         {
@@ -89,15 +98,38 @@ namespace AntAbstract.Web.Controllers
                     FilePath = "/uploads/" + uniqueFileName,
                     AuthorId = User.FindFirstValue(ClaimTypes.NameIdentifier),
                     ConferenceId = conference.Id,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    Status = "Yeni Gönderildi" // Durumu net bir şekilde belirle
                 };
 
                 _context.Add(newSubmission);
                 await _context.SaveChangesAsync();
+                try
+                {
+                    var user = await _userManager.FindByIdAsync(newSubmission.AuthorId);
+                    if (user != null && !string.IsNullOrEmpty(user.Email))
+                    {
+                        var subject = "Özetiniz Başarıyla Alındı";
+                        var message = $@"
+                            <h1>Merhaba {user.Email},</h1>
+                            <p>'{newSubmission.Title}' başlıklı özetiniz başarıyla sistemimize kaydedilmiştir.</p>
+                            <p>Değerlendirme süreci hakkında sizi bilgilendirmeye devam edeceğiz.</p>
+                            <p>İyi çalışmalar dileriz,<br>Kongre Yönetim Sistemi</p>";
 
+                        await _emailService.SendEmailAsync(user.Email, subject, message);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // E-posta gönderimi başarısız olursa programın çökmesini engelle.
+                    // Bu hatayı bir yere loglamak iyi bir pratik olacaktır.
+                    System.Diagnostics.Debug.WriteLine($"E-POSTA GÖNDERİM HATASI: {ex.Message}");
+                }
+                // --- E-POSTA GÖNDERME KODU BİTİŞİ ---
                 TempData["SuccessMessage"] = "Özetiniz başarıyla gönderildi.";
                 return RedirectToAction(nameof(Index));
             }
+
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine("ÖZET GÖNDERME HATASI: " + ex.ToString());
@@ -106,7 +138,7 @@ namespace AntAbstract.Web.Controllers
             }
         }
 
-        // --- ✅ YENİ EKLENEN DETAY, DÜZENLEME VE SİLME METOTLARI ---
+        // YENİ EKLENEN DETAY, DÜZENLEME VE SİLME METOTLARI ---
 
         // GET: Submission/Details/5
         public async Task<IActionResult> Details(Guid? submissionId)
@@ -202,6 +234,70 @@ namespace AntAbstract.Web.Controllers
             }
 
             await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
+        }
+
+        // GET: Submission/UploadRevision/5
+        // Revizyon yükleme formunu gösterir
+        public async Task<IActionResult> UploadRevision(Guid? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+            var submission = await _context.Submissions.FindAsync(id);
+            if (submission == null)
+            {
+                return NotFound();
+            }
+            return View(submission);
+        }
+        // POST: Submission/UploadRevision/5
+        // Yazarın gönderdiği revizyonu kaydeder.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadRevision(Guid submissionId, IFormCollection collection, IFormFile revisionFile)
+        {
+            var submissionToUpdate = await _context.Submissions.FindAsync(submissionId);
+            if (submissionToUpdate == null)
+            {
+                return NotFound();
+            }
+
+            // 1. Yeni dosyanın gelip gelmediğini kontrol et
+            if (revisionFile == null || revisionFile.Length == 0)
+            {
+                ModelState.AddModelError("", "Lütfen revize edilmiş yeni özet dosyasını seçin.");
+                return View(submissionToUpdate); // Hata olursa formu geri göster
+            }
+
+            // 2. Eski dosyayı sunucudan sil
+            if (!string.IsNullOrEmpty(submissionToUpdate.FilePath))
+            {
+                var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", submissionToUpdate.FilePath.TrimStart('/'));
+                if (System.IO.File.Exists(oldFilePath))
+                {
+                    System.IO.File.Delete(oldFilePath);
+                }
+            }
+
+            // 3. Yeni dosyayı sunucuya kaydet
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+            var uniqueFileName = Guid.NewGuid().ToString() + "_revised_" + Path.GetExtension(revisionFile.FileName);
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+            await using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await revisionFile.CopyToAsync(fileStream);
+            }
+
+            // 4. Özetin bilgilerini güncelle
+            submissionToUpdate.AbstractText = collection["AbstractText"];
+            submissionToUpdate.FilePath = "/uploads/" + uniqueFileName;
+            submissionToUpdate.Status = "Revizyon Tamamlandı"; // Durumu güncelle
+
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Revizyonunuz başarıyla gönderildi. Tekrar değerlendirmeye alınacaktır.";
             return RedirectToAction(nameof(Index));
         }
     }

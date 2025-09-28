@@ -54,10 +54,31 @@
                     {
                         <tr>
                             <td>@reviewer.AppUser.Email</td>
-                            <td>@(reviewer.IsActive ? "Aktif" : "Pasif")</td>
                             <td>
-                                <a href="#" class="btn btn-sm btn-info">Düzenle</a>
-                                <a href="#" class="btn btn-sm btn-danger">Pasifleştir</a>
+                                @if (reviewer.IsActive)
+                                {
+                                    <span class="badge bg-success">Aktif</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Pasif</span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-action="Edit" asp-route-id="@reviewer.Id" class="btn btn-sm btn-outline-warning">Düzenle</a>
+
+                                @if (reviewer.IsActive)
+                                {
+                                    <form asp-action="Deactivate" asp-route-id="@reviewer.Id" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Pasifleştir</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-action="Activate" asp-route-id="@reviewer.Id" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-success">Aktif Et</button>
+                                    </form>
+                                }
                             </td>
                         </tr>
                     }

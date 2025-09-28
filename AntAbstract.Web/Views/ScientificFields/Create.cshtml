@@ -1,0 +1,23 @@
+﻿@model AntAbstract.Domain.Entities.ScientificField
+@{
+    ViewData["Title"] = "Yeni Bilimsel Alan Oluştur";
+}
+
+<h1 class="display-5">@ViewData["Title"]</h1>
+<hr />
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group mb-3">
+                <label asp-for="Name" class="control-label fw-bold"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="form-group mt-4">
+                <input type="submit" value="Oluştur" class="btn btn-success" />
+                <a asp-action="Index" class="btn btn-outline-secondary">Listeye Geri Dön</a>
+            </div>
+        </form>
+    </div>
+</div>

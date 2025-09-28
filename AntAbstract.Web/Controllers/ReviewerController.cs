@@ -60,15 +60,13 @@ namespace AntAbstract.Web.Controllers
             // 3. Sisteme kayıtlı tüm kullanıcıları al (Dropdown için)
             var allUsers = await _userManager.Users.ToListAsync();
             ViewBag.AllUsers = new SelectList(allUsers, "Id", "Email");
-
-            // ❌ ESKİ HATALI KOD KALDIRILDI
+   
             // ViewBag.ConferenceId = new SelectList(...);
 
             return View(assignedReviewers);
         }
 
         // POST: Reviewer/Assign
-        // Bu metot doğru çalışıyor, değişikliğe gerek yok.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Assign(string userId, Guid conferenceId)
@@ -103,6 +101,87 @@ namespace AntAbstract.Web.Controllers
                 await _context.SaveChangesAsync();
             }
 
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Deactivate(Guid id)
+        {
+            var reviewer = await _context.Reviewers.FindAsync(id);
+            if (reviewer != null)
+            {
+                reviewer.IsActive = false;
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Activate(Guid id)
+        {
+            var reviewer = await _context.Reviewers.FindAsync(id);
+            if (reviewer != null)
+            {
+                reviewer.IsActive = true;
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        // GET: Reviewer/Edit/5
+        // Hakem düzenleme formunu gösterir
+        public async Task<IActionResult> Edit(Guid? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var reviewer = await _context.Reviewers
+                .Include(r => r.AppUser) // Email'i gösterebilmek için AppUser'ı dahil et
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (reviewer == null)
+            {
+                return NotFound();
+            }
+            return View(reviewer);
+        }
+
+        // POST: Reviewer/Edit/5
+        // Hakem düzenleme formundan gelen bilgileri kaydeder
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(Guid id, string expertiseAreas, bool isActive)
+        {
+            var reviewerToUpdate = await _context.Reviewers.FindAsync(id);
+            if (reviewerToUpdate == null)
+            {
+                return NotFound();
+            }
+
+            // Formdan gelen yeni verileri ata
+            reviewerToUpdate.ExpertiseAreas = expertiseAreas;
+            reviewerToUpdate.IsActive = isActive;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Hata yönetimi (eğer kayıt o sırada başkası tarafından silinirse vb.)
+                if (!_context.Reviewers.Any(e => e.Id == id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
             return RedirectToAction(nameof(Index));
         }
     }

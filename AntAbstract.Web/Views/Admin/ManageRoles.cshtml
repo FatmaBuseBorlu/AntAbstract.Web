@@ -1,0 +1,39 @@
+﻿@using AntAbstract.Web.Models.ViewModels
+@model ManageUserRolesViewModel
+
+@{
+    ViewData["Title"] = "Rolleri Yönet";
+}
+
+<h1 class="display-5">@ViewData["Title"]</h1>
+<h4>Kullanıcı: @Model.UserEmail</h4>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+        <form method="post">
+            <input asp-for="UserId" type="hidden" />
+            <div class="card">
+                <div class="card-header">
+                    Bu kullanıcıya rol ata veya rollerini kaldır
+                </div>
+                <div class="card-body">
+                    @for (int i = 0; i < Model.Roles.Count; i++)
+                    {
+                        <div class="form-check m-1">
+                            <input type="hidden" asp-for="@Model.Roles[i].RoleName" />
+                            <input asp-for="@Model.Roles[i].IsSelected" class="form-check-input" />
+                            <label class="form-check-label" asp-for="@Model.Roles[i].IsSelected">
+                                @Model.Roles[i].RoleName
+                            </label>
+                        </div>
+                    }
+                </div>
+                <div class="card-footer">
+                    <input type="submit" value="Güncelle" class="btn btn-primary" />
+                    <a asp-action="UserList" class="btn btn-secondary">İptal</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

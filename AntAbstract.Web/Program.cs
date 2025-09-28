@@ -22,12 +22,16 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(opt =>
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
 
+
+// Email Ayarlarýný Yükle
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+// Email Servisini Kaydet
+builder.Services.AddTransient<IEmailService, EmailService>();
+
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-
-// EKLENECEK 1. SATIR
 builder.Services.AddRazorPages();
-builder.Services.AddSingleton<IEmailSender, DummyEmailSender>();
+
 
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();

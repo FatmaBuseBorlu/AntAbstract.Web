@@ -1,13 +1,17 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@inject AntAbstract.Infrastructure.Context.TenantContext Tc
+
+@{
+    // Eğer bir kongre seçiliyse, sayfa başlığı o kongrenin adı olsun
+    ViewData["Title"] = Tc.Current?.Name ?? "Ana Sayfa";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
-@if (ViewBag.TenantSlug != null)
+@if (Tc.Current != null)
 {
-    <p>Current tenant: <strong>@ViewBag.TenantSlug</strong> (@ViewBag.TenantName)</p>
+    <div class="text-center">
+        <h1 class="display-4">@Tc.Current.Name'e Hoş Geldiniz</h1>
+        <p class="lead">Bu kongre için yönetimsel işlemlerinizi menüden yapabilirsiniz.</p>
+    </div>
 }
-
+else
+{
+}

@@ -4,33 +4,48 @@ using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using AntAbstract.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
+using AntAbstract.Domain.Entities; 
+using Microsoft.EntityFrameworkCore; 
+using System.Threading.Tasks; 
 
 
 namespace AntAbstract.Web.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-        private readonly TenantContext _tc;
+        private readonly AppDbContext _context; // DbContext'i ekledik
+        private readonly TenantContext _tenantContext;
 
-        // TEK constructor: Logger + TenantContext birlikte
-        public HomeController(ILogger<HomeController> logger, TenantContext tc)
+        public HomeController(AppDbContext context, TenantContext tenantContext)
         {
-            _logger = logger;
-            _tc = tc;
+            _context = context;
+            _tenantContext = tenantContext;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            ViewBag.TenantSlug = _tc.Current?.Slug;
-            ViewBag.TenantName = _tc.Current?.Name;
+            // Eðer URL'de bir kongre adý VARSA (/icc2025 gibi),
+            // kullanýcýyý o kongrenin kiþisel paneline (Dashboard) yönlendir.
+            if (_tenantContext.Current != null)
+            {
+                return RedirectToAction("Index", "Dashboard");
+            }
+
+            // Eðer URL'de bir kongre adý YOKSA (/), tüm kongreleri listeleyen
+            // seçim sayfasýný göster.
+            var allTenants = await _context.Tenants.ToListAsync();
+            return View("TenantSelection", allTenants);
+        }
+
+        public IActionResult Privacy()
+        {
             return View();
         }
 
-        public IActionResult Privacy() => View();
-
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
-            => View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        {
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
     }
 }

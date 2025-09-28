@@ -16,6 +16,9 @@ namespace AntAbstract.Domain.Entities
         public string? AbstractText { get; set; }
 
         [BindNever]
+        public string Status { get; set; } = "Yeni Gönderildi";
+
+        [BindNever]
         public string? FilePath { get; set; }
         [BindNever]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

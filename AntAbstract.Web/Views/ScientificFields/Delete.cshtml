@@ -1,0 +1,29 @@
+﻿@model AntAbstract.Domain.Entities.ScientificField
+
+@{
+    ViewData["Title"] = "Silme Onayı";
+}
+
+<h1 class="display-5 text-danger">@ViewData["Title"]</h1>
+
+<h3>Aşağıdaki bilimsel alan kaydını kalıcı olarak silmek istediğinizden emin misiniz?</h3>
+<p class="text-muted">Bu işlem geri alınamaz.</p>
+<hr />
+
+<div>
+    <h4>Bilimsel Alan</h4>
+    <dl class="row bg-light p-3 rounded mt-3">
+        <dt class="col-sm-3 fw-bold">
+            Alan Adı
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Name)
+        </dd>
+    </dl>
+
+    <form asp-action="Delete" asp-route-id="@Model.Id" class="mt-4">
+        <input type="hidden" asp-for="Id" />
+        <input type="submit" value="Evet, Sil" class="btn btn-danger" />
+        <a asp-action="Index" class="btn btn-secondary">İptal / Listeye Geri Dön</a>
+    </form>
+</div>

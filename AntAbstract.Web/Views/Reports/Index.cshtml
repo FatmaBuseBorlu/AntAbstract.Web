@@ -1,0 +1,75 @@
+﻿@using AntAbstract.Web.Models.ViewModels
+@model ReportsViewModel
+
+@{
+    ViewData["Title"] = "Yönetim Paneli & Raporlar";
+}
+
+<h1 class="display-5">@ViewData["Title"]</h1>
+<p class="lead">Kongrenin genel durumuna ilişkin anlık istatistikler.</p>
+<hr />
+
+<h3>Özet Durumları</h3>
+<div class="row">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Toplam Özet</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalSubmissions</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Kabul Edilen</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.AcceptedSubmissions</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-danger shadow h-100 py-2">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Reddedilen</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.RejectedSubmissions</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Revizyonda Olan</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.RevisionSubmissions</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr />
+<h3>Görev Durumları</h3>
+<div class="row">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Atama Bekleyen</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.AwaitingAssignmentSubmissions</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-dark shadow h-100 py-2">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">Karar Bekleyen</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.AwaitingDecisionSubmissions</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-secondary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">Aktif Hakem Sayısı</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalReviewers</div>
+            </div>
+        </div>
+    </div>
+</div>

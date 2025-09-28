@@ -1,6 +1,8 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
+using AntAbstract.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -16,11 +18,18 @@ namespace AntAbstract.Web.Controllers
     {
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
+        private readonly IEmailService _emailService;
+        private readonly UserManager<AppUser> _userManager;
 
-        public AssignmentController(AppDbContext context, TenantContext tenantContext)
+        public AssignmentController(AppDbContext context,
+                                            TenantContext tenantContext,
+                                            IEmailService emailService,
+                                            UserManager<AppUser> userManager)
         {
             _context = context;
             _tenantContext = tenantContext;
+            _emailService = emailService;
+            _userManager = userManager;
         }
 
         // GET: Assignment/Index (Bu metot sende zaten vardı)
@@ -113,9 +122,35 @@ namespace AntAbstract.Web.Controllers
             _context.ReviewAssignments.Add(newAssignment);
             await _context.SaveChangesAsync();
 
+            // --- ✅ YENİ E-POSTA GÖNDERME KODU BURAYA EKLENDİ ---
+            try
+            {
+                // Atama yapılan hakemin bilgilerini bul
+                var reviewer = await _context.Reviewers.Include(r => r.AppUser).FirstOrDefaultAsync(r => r.Id == reviewerId);
+                var submission = await _context.Submissions.FindAsync(submissionId);
+
+                if (reviewer != null && submission != null && !string.IsNullOrEmpty(reviewer.AppUser.Email))
+                {
+                    var subject = "Yeni Değerlendirme Görevi Atandı";
+                    var message = $@"
+                        <h1>Merhaba {reviewer.AppUser.Email},</h1>
+                        <p>Size '{submission.Title}' başlıklı yeni bir özet değerlendirme görevi atanmıştır.</p>
+                        <p>Değerlendirmeyi tamamlamak için son tarih: <strong>{newAssignment.DueDate.ToShortDateString()}</strong></p>
+                        <p>Görevi görüntülemek ve değerlendirmenizi yapmak için lütfen sisteme giriş yapın.</p>
+                        <p>İyi çalışmalar dileriz,<br>Kongre Yönetim Sistemi</p>";
+
+                    await _emailService.SendEmailAsync(reviewer.AppUser.Email, subject, message);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"HAKEME E-POSTA GÖNDERİM HATASI: {ex.Message}");
+            }
+            // --- E-POSTA GÖNDERME KODU BİTİŞİ ---
+
             TempData["SuccessMessage"] = "Atama başarıyla yapıldı.";
             return RedirectToAction(nameof(Index));
         }
 
-    } // <- Controller sınıfının kapanış parantezi. Tüm metotlar bunun içinde olmalı.
+    } 
 }

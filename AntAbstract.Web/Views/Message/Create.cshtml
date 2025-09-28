@@ -1,0 +1,46 @@
+﻿@model AntAbstract.Domain.Entities.Message
+
+@{
+    ViewData["Title"] = "Yeni Mesaj Oluştur";
+}
+
+<h1 class="display-5">@ViewData["Title"]</h1>
+<hr />
+<div class="row">
+    <div class="col-md-8">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group mb-3">
+                <label asp-for="ReceiverId" class="control-label fw-bold">Alıcı</label>
+                <select asp-for="ReceiverId" class="form-control" asp-items="ViewBag.Users">
+                    <option value="">-- Lütfen bir alıcı seçin --</option>
+                </select>
+                <span asp-validation-for="ReceiverId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Subject" class="control-label fw-bold">Konu</label>
+                <input asp-for="Subject" class="form-control" />
+                <span asp-validation-for="Subject" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Content" class="control-label fw-bold">Mesajınız</label>
+                <textarea asp-for="Content" class="form-control" rows="8"></textarea>
+                <span asp-validation-for="Content" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Gönder" class="btn btn-primary" />
+                <a asp-action="Inbox" class="btn btn-secondary">İptal</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

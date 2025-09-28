@@ -1,0 +1,26 @@
+﻿@using AntAbstract.Domain.Entities
+@model IEnumerable<Tenant>
+
+@{
+    ViewData["Title"] = "Kongre Seçimi";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Kongre Yönetim Sistemine Hoş Geldiniz</h1>
+    <p class="lead">Lütfen yönetmek istediğiniz kongreyi seçin.</p>
+</div>
+
+<div class="row row-cols-1 row-cols-md-3 g-4 mt-4">
+    @foreach (var tenant in Model)
+    {
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">@tenant.Name</h5>
+                    <p class="card-text text-muted">/@tenant.Slug</p>
+                    <a asp-controller="Home" asp-action="Index" asp-route-tenant="@tenant.Slug" class="btn btn-primary">Yönet</a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
