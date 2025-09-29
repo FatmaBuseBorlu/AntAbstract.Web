@@ -2,9 +2,7 @@
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Web.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -30,32 +28,22 @@ namespace AntAbstract.Web.Controllers
         {
             if (_tenantContext.Current == null) return RedirectToAction("Index", "Home");
 
-            var conference = await _context.Conferences.FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
-            if (conference == null) return View(new List<Session>());
+            var conference = await _context.Conferences
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
+
+            if (conference == null)
+            {
+                ViewBag.ErrorMessage = "Bu kongre için henüz bir etkinlik (conference) tanımlanmamış. Oturum ekleyebilmek için önce etkinlik oluşturulmalıdır.";
+                return View(new List<Session>());
+            }
 
             var sessions = await _context.Sessions
                 .Where(s => s.ConferenceId == conference.Id)
+                .OrderBy(s => s.SessionDate)
                 .ToListAsync();
+
             return View(sessions);
-        }
-
-        // GET: Sessions/Details/5
-        public async Task<IActionResult> Details(Guid? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var session = await _context.Sessions
-                .Include(s => s.Conference)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (session == null)
-            {
-                return NotFound();
-            }
-
-            return View(session);
         }
 
         // GET: Sessions/Create
@@ -63,77 +51,109 @@ namespace AntAbstract.Web.Controllers
         {
             if (_tenantContext.Current == null) return RedirectToAction("Index", "Home");
 
-            // O anki kongreye ait Konferans'ı bul ve ID'sini View'a gönder
             var conference = await _context.Conferences
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
 
-            if (conference == null)
-            {
-                // Hata yönetimi
-                return RedirectToAction(nameof(Index));
-            }
+            if (conference == null) return RedirectToAction(nameof(Index));
 
-            ViewBag.ConferenceId = conference.Id;
-            return View();
+            var session = new Session { ConferenceId = conference.Id };
+            return View(session);
         }
 
         // POST: Sessions/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(IFormCollection collection)
+        public async Task<IActionResult> Create([Bind("Title,SessionDate,Location,ConferenceId")] Session session)
         {
-            try
+            if (ModelState.IsValid)
             {
-                Guid conferenceId = Guid.Parse(collection["ConferenceId"]);
-                var session = new Session
-                {
-                    Title = collection["Title"],
-                    SessionDate = DateTime.Parse(collection["SessionDate"]),
-                    Location = collection["Location"],
-                    ConferenceId = conferenceId
-                };
-
+                session.Id = Guid.NewGuid();
                 _context.Add(session);
                 await _context.SaveChangesAsync();
 
                 var tenantSlug = _tenantContext.Current?.Slug;
                 return RedirectToAction(nameof(Index), new { tenant = tenantSlug });
             }
-            catch
+            return View(session);
+        }
+
+        // GET: Sessions/Manage/5
+        public async Task<IActionResult> Manage(Guid id)
+        {
+            var session = await _context.Sessions
+                .Include(s => s.Conference)
+                .FirstOrDefaultAsync(s => s.Id == id);
+
+            if (session == null) return NotFound();
+
+            var assignedSubmissions = await _context.Submissions
+                .Include(s => s.Author)
+                .Where(s => s.SessionId == id)
+                .OrderBy(s => s.Title)
+                .ToListAsync();
+
+            // ✅ ÖNEMLİ DÜZELTME: Karar alanı "FinalDecision" ve değeri "Kabul Edildi" olarak güncellendi.
+            var availableSubmissions = await _context.Submissions
+                .Include(s => s.Author)
+                .Where(s => s.ConferenceId == session.ConferenceId &&
+                            s.FinalDecision == "Kabul Edildi" &&
+                            s.SessionId == null)
+                .OrderBy(s => s.Title)
+                .ToListAsync();
+
+            var viewModel = new SessionManageViewModel
             {
-                return View();
+                Session = session,
+                AssignedSubmissions = assignedSubmissions,
+                AvailableSubmissions = availableSubmissions
+            };
+
+            return View("Manage", viewModel);
+        }
+
+        // POST: Sessions/AddToSession
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddToSession(Guid sessionId, Guid submissionId)
+        {
+            var submission = await _context.Submissions.FindAsync(submissionId);
+            if (submission != null)
+            {
+                submission.SessionId = sessionId;
+                await _context.SaveChangesAsync();
             }
+            return RedirectToAction(nameof(Manage), new { id = sessionId });
+        }
+
+        // POST: Sessions/RemoveFromSession
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RemoveFromSession(Guid sessionId, Guid submissionId)
+        {
+            var submission = await _context.Submissions.FindAsync(submissionId);
+            if (submission != null)
+            {
+                submission.SessionId = null;
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(Manage), new { id = sessionId });
         }
 
         // GET: Sessions/Edit/5
         public async Task<IActionResult> Edit(Guid? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
+            if (id == null) return NotFound();
             var session = await _context.Sessions.FindAsync(id);
-            if (session == null)
-            {
-                return NotFound();
-            }
-            ViewData["ConferenceId"] = new SelectList(_context.Conferences, "Id", "Title", session.ConferenceId);
+            if (session == null) return NotFound();
             return View(session);
         }
 
-        // POST: Sessions/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, [Bind("Id,Title,SessionDate,Location,ConferenceId")] Session session)
         {
-            if (id != session.Id)
-            {
-                return NotFound();
-            }
+            if (id != session.Id) return NotFound();
 
             if (ModelState.IsValid)
             {
@@ -144,36 +164,24 @@ namespace AntAbstract.Web.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!SessionExists(session.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    if (!SessionExists(session.Id)) return NotFound();
+                    else throw;
                 }
-                return RedirectToAction(nameof(Index));
+                var tenantSlug = _tenantContext.Current?.Slug;
+                return RedirectToAction(nameof(Index), new { tenant = tenantSlug });
             }
-            ViewData["ConferenceId"] = new SelectList(_context.Conferences, "Id", "Title", session.ConferenceId);
             return View(session);
         }
 
         // GET: Sessions/Delete/5
         public async Task<IActionResult> Delete(Guid? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var session = await _context.Sessions
                 .Include(s => s.Conference)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (session == null)
-            {
-                return NotFound();
-            }
+            if (session == null) return NotFound();
 
             return View(session);
         }
@@ -188,64 +196,15 @@ namespace AntAbstract.Web.Controllers
             {
                 _context.Sessions.Remove(session);
             }
-
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+
+            var tenantSlug = _tenantContext.Current?.Slug;
+            return RedirectToAction(nameof(Index), new { tenant = tenantSlug });
         }
 
         private bool SessionExists(Guid id)
         {
             return _context.Sessions.Any(e => e.Id == id);
-        }
-        // GET: Sessions/Manage/5
-        // Bir oturumun detaylarını ve o oturuma atanmış/atanabilecek özetleri gösterir.
-        public async Task<IActionResult> Manage(Guid? id)
-        {
-            if (id == null) return NotFound();
-
-            var session = await _context.Sessions
-                .Include(s => s.Submissions) // Oturuma atanmış özetleri yükle
-                .FirstOrDefaultAsync(s => s.Id == id);
-
-            if (session == null) return NotFound();
-
-            // Bu konferansta "Kabul Edildi" durumunda olan VE
-            // henüz bu oturuma atanmamış olan diğer özetleri bul.
-            var availableSubmissions = await _context.Submissions
-                .Where(s => s.ConferenceId == session.ConferenceId &&
-                             s.FinalDecision == "Kabul Edildi" &&
-                             s.SessionId != session.Id)
-                .ToListAsync();
-
-            var viewModel = new SessionDetailViewModel
-            {
-                Session = session,
-                AvailableSubmissions = new SelectList(availableSubmissions, "SubmissionId", "Title")
-            };
-
-            return View(viewModel);
-        }
-
-        // POST: Sessions/AssignSubmission
-        // Bir özeti bir oturuma atar.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AssignSubmission(Guid sessionId, Guid submissionIdToAdd)
-        {
-            var submission = await _context.Submissions.FindAsync(submissionIdToAdd);
-            var session = await _context.Sessions.FindAsync(sessionId);
-
-            if (submission == null || session == null)
-            {
-                return NotFound();
-            }
-
-            // Özeti oturuma ata
-            submission.SessionId = sessionId;
-            await _context.SaveChangesAsync();
-
-            // Kullanıcıyı tekrar yönetim sayfasına yönlendir.
-            return RedirectToAction(nameof(Manage), new { id = sessionId });
         }
     }
 }

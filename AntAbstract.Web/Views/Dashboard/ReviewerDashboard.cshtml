@@ -1,0 +1,85 @@
+﻿@model AntAbstract.Web.Models.ViewModels.ReviewerDashboardViewModel
+
+@{
+    ViewData["Title"] = "Hakem Paneli";
+}
+
+<h1 class="display-5">@ViewData["Title"]</h1>
+<p class="lead">Size atanan görevler ve değerlendirme süreçlerinizle ilgili genel durum özeti.</p>
+<hr />
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-info shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0">Toplam Görev</h5>
+                        <h2 class="display-4">@Model.TotalAssigned</h2>
+                    </div>
+                    <i class="bi bi-journal-text" style="font-size: 4rem; opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card text-white bg-success shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0">Tamamlanan</h5>
+                        <h2 class="display-4">@Model.CompletedReviews</h2>
+                    </div>
+                    <i class="bi bi-check2-circle" style="font-size: 4rem; opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card text-dark bg-warning shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0">Bekleyen</h5>
+                        <h2 class="display-4">@Model.PendingReviews</h2>
+                    </div>
+                    <i class="bi bi-hourglass-split" style="font-size: 4rem; opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h5 class="mb-0">Değerlendirme Bekleyen Son Görevleriniz</h5>
+    </div>
+    <div class="card-body">
+        @if (!Model.PendingAssignments.Any())
+        {
+            <div class="alert alert-success">
+                <i class="bi bi-patch-check-fill me-2"></i>
+                Tebrikler! Değerlendirme bekleyen bir göreviniz bulunmamaktadır.
+            </div>
+        }
+        else
+        {
+            <ul class="list-group list-group-flush">
+                @foreach (var assignment in Model.PendingAssignments)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Özet Başlığı:</strong> @assignment.Submission.Title <br />
+                            <small class="text-muted">Son Teslim Tarihi: @assignment.DueDate.ToString("dd MMMM yyyy")</small>
+                        </div>
+                        <a asp-controller="Review" asp-action="PerformReview" asp-route-id="@assignment.ReviewAssignmentId" class="btn btn-primary">
+                            <i class="bi bi-pencil-square me-2"></i>Değerlendir
+                        </a>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>

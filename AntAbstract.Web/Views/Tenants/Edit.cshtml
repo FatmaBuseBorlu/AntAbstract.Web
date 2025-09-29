@@ -12,11 +12,7 @@
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Id" />
-            <div class="form-group mb-3">
-                <label asp-for="Slug" class="control-label fw-bold"></label>
-                <input asp-for="Slug" class="form-control" />
-                <span asp-validation-for="Slug" class="text-danger"></span>
-            </div>
+
             <div class="form-group mb-3">
                 <label asp-for="Name" class="control-label fw-bold"></label>
                 <input asp-for="Name" class="form-control" />
@@ -24,12 +20,32 @@
             </div>
 
             <div class="form-group mb-3">
-                <label asp-for="ScientificFieldId" class="control-label fw-bold">Bilimsel Alan</label>
-                <select asp-for="ScientificFieldId" class="form-control" asp-items="ViewBag.ScientificFieldId"></select>
+                <label asp-for="Slug" class="control-label fw-bold"></label>
+                <input asp-for="Slug" class="form-control" />
+                <span asp-validation-for="Slug" class="text-danger"></span>
             </div>
+
             <div class="form-group mb-3">
-                <label asp-for="CongressTypeId" class="control-label fw-bold">Kongre Türü</label>
-                <select asp-for="CongressTypeId" class="form-control" asp-items="ViewBag.CongressTypeId"></select>
+                <label asp-for="ScientificFieldId" class="control-label fw-bold"></label>
+                <select asp-for="ScientificFieldId" class="form-select" asp-items="ViewBag.ScientificFieldId">
+                    <option value="">-- Alan Seçilmemiş --</option>
+                </select>
+                <span asp-validation-for="ScientificFieldId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="CongressTypeId" class="control-label fw-bold"></label>
+                <select asp-for="CongressTypeId" class="form-select" asp-items="ViewBag.CongressTypeId">
+                    <option value="">-- Tür Seçilmemiş --</option>
+                </select>
+                <span asp-validation-for="CongressTypeId" class="text-danger"></span>
+            </div>
+
+            @* Eğer LogoUrl'i düzenleme ekranına da eklemek istersen, buraya ekleyebilirsin *@
+            <div class="form-group mb-3">
+                <label asp-for="LogoUrl" class="control-label fw-bold"></label>
+                <input asp-for="LogoUrl" class="form-control" />
+                <span asp-validation-for="LogoUrl" class="text-danger"></span>
             </div>
 
             <div class="form-group mt-4">

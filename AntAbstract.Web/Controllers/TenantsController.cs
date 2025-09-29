@@ -1,6 +1,5 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -23,7 +22,11 @@ namespace AntAbstract.Web.Controllers
         // GET: Tenants
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Tenants.ToListAsync());
+            // İlgili Bilimsel Alan ve Kongre Türü isimlerini de getirmek için Include kullanıyoruz.
+            var tenants = _context.Tenants
+                .Include(t => t.ScientificField)
+                .Include(t => t.CongressType);
+            return View(await tenants.ToListAsync());
         }
 
         // GET: Tenants/Details/5
@@ -35,7 +38,10 @@ namespace AntAbstract.Web.Controllers
             }
 
             var tenant = await _context.Tenants
+                .Include(t => t.ScientificField)
+                .Include(t => t.CongressType)
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (tenant == null)
             {
                 return NotFound();
@@ -47,55 +53,29 @@ namespace AntAbstract.Web.Controllers
         // GET: Tenants/Create
         public IActionResult Create()
         {
-            // View'a gönderilecek dropdown listelerini hazırla
-            ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields, "Id", "Name");
-            ViewBag.CongressTypeId = new SelectList(_context.CongressTypes, "Id", "Name");
+            // View'a gönderilecek dropdown listelerini hazırla (isme göre sıralı)
+            ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields.OrderBy(s => s.Name), "Id", "Name");
+            ViewBag.CongressTypeId = new SelectList(_context.CongressTypes.OrderBy(c => c.Name), "Id", "Name");
             return View();
         }
 
         // POST: Tenants/Create
+        // GÜVENLİ VE DOĞRU VERSİYON: IFormCollection yerine Model Binding kullanılıyor.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(IFormCollection collection)
+        public async Task<IActionResult> Create([Bind("Name,Slug,LogoUrl,ScientificFieldId,CongressTypeId")] Tenant tenant)
         {
-            try
+            if (ModelState.IsValid)
             {
-                // 1. Veriyi formdan manuel olarak oku (yeni alanlar dahil)
-                string slug = collection["Slug"];
-                string name = collection["Name"];
-
-                // Gelen ID'leri int'e çevirmeye çalış, boşsa null ata
-                int? scientificFieldId = !string.IsNullOrEmpty(collection["ScientificFieldId"]) ? int.Parse(collection["ScientificFieldId"]) : null;
-                int? congressTypeId = !string.IsNullOrEmpty(collection["CongressTypeId"]) ? int.Parse(collection["CongressTypeId"]) : null;
-
-                if (string.IsNullOrEmpty(slug) || string.IsNullOrEmpty(name))
-                {
-                    ModelState.AddModelError("", "Slug ve Name alanları boş olamaz.");
-                    // Hata durumunda dropdown'ları tekrar doldurup formu geri gönder
-                    ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields, "Id", "Name");
-                    ViewBag.CongressTypeId = new SelectList(_context.CongressTypes, "Id", "Name");
-                    return View();
-                }
-
-                // 2. Tenant nesnesini manuel olarak oluştur
-                var newTenant = new Tenant
-                {
-                    Slug = slug,
-                    Name = name,
-                    ScientificFieldId = scientificFieldId,
-                    CongressTypeId = congressTypeId,
-                    LogoUrl = collection["LogoUrl"],
-
-                };
-
-                _context.Add(newTenant);
+                tenant.Id = Guid.NewGuid();
+                _context.Add(tenant);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            catch
-            {
-                return View();
-            }
+            // Hata durumunda dropdown'ları yeniden doldur ve formu geri gönder
+            ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields.OrderBy(s => s.Name), "Id", "Name", tenant.ScientificFieldId);
+            ViewBag.CongressTypeId = new SelectList(_context.CongressTypes.OrderBy(c => c.Name), "Id", "Name", tenant.CongressTypeId);
+            return View(tenant);
         }
 
         // GET: Tenants/Edit/5
@@ -113,39 +93,46 @@ namespace AntAbstract.Web.Controllers
             }
 
             // View'a gönderilecek dropdown listelerini, mevcut seçimi de belirterek hazırla
-            ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields, "Id", "Name", tenant.ScientificFieldId);
-            ViewBag.CongressTypeId = new SelectList(_context.CongressTypes, "Id", "Name", tenant.CongressTypeId);
+            ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields.OrderBy(s => s.Name), "Id", "Name", tenant.ScientificFieldId);
+            ViewBag.CongressTypeId = new SelectList(_context.CongressTypes.OrderBy(c => c.Name), "Id", "Name", tenant.CongressTypeId);
             return View(tenant);
         }
 
         // POST: Tenants/Edit/5
+        // GÜVENLİ VE DOĞRU VERSİYON: IFormCollection yerine Model Binding kullanılıyor.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, IFormCollection collection)
+        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name,Slug,LogoUrl,ScientificFieldId,CongressTypeId")] Tenant tenant)
         {
-            var tenantToUpdate = await _context.Tenants.FindAsync(id);
-            if (tenantToUpdate == null)
+            if (id != tenant.Id)
             {
                 return NotFound();
             }
 
-            // Formdan gelen yeni verileri manuel olarak oku ve ata
-            tenantToUpdate.Slug = collection["Slug"];
-            tenantToUpdate.Name = collection["Name"];
-            tenantToUpdate.ScientificFieldId = !string.IsNullOrEmpty(collection["ScientificFieldId"]) ? int.Parse(collection["ScientificFieldId"]) : null;
-            tenantToUpdate.CongressTypeId = !string.IsNullOrEmpty(collection["CongressTypeId"]) ? int.Parse(collection["CongressTypeId"]) : null;
-            tenantToUpdate.LogoUrl = collection["LogoUrl"];
-
-            try
+            if (ModelState.IsValid)
             {
-                await _context.SaveChangesAsync();
+                try
+                {
+                    _context.Update(tenant);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!TenantExists(tenant.Id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                return RedirectToAction(nameof(Index));
             }
-            catch (DbUpdateConcurrencyException)
-            {
-                // ... (hata yönetimi) ...
-                throw;
-            }
-            return RedirectToAction(nameof(Index));
+            // Hata durumunda dropdown'ları yeniden doldur ve formu geri gönder
+            ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields.OrderBy(s => s.Name), "Id", "Name", tenant.ScientificFieldId);
+            ViewBag.CongressTypeId = new SelectList(_context.CongressTypes.OrderBy(c => c.Name), "Id", "Name", tenant.CongressTypeId);
+            return View(tenant);
         }
 
         // GET: Tenants/Delete/5
@@ -157,7 +144,10 @@ namespace AntAbstract.Web.Controllers
             }
 
             var tenant = await _context.Tenants
+                .Include(t => t.ScientificField)
+                .Include(t => t.CongressType)
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (tenant == null)
             {
                 return NotFound();
@@ -186,4 +176,4 @@ namespace AntAbstract.Web.Controllers
             return _context.Tenants.Any(e => e.Id == id);
         }
     }
-} 
+}

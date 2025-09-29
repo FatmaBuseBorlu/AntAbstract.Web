@@ -3,17 +3,16 @@ using AntAbstract.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using AntAbstract.Domain.Entities;
-using Microsoft.AspNetCore.Identity;
-using AntAbstract.Domain.Entities; 
-using Microsoft.EntityFrameworkCore; 
-using System.Threading.Tasks; 
-
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace AntAbstract.Web.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly AppDbContext _context; // DbContext'i ekledik
+        private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
 
         public HomeController(AppDbContext context, TenantContext tenantContext)
@@ -24,17 +23,39 @@ namespace AntAbstract.Web.Controllers
 
         public async Task<IActionResult> Index()
         {
-            // Eðer URL'de bir kongre adý VARSA (/icc2025 gibi),
-            // kullanýcýyý o kongrenin kiþisel paneline (Dashboard) yönlendir.
             if (_tenantContext.Current != null)
             {
                 return RedirectToAction("Index", "Dashboard");
             }
 
-            // Eðer URL'de bir kongre adý YOKSA (/), tüm kongreleri listeleyen
-            // seçim sayfasýný göster.
             var allTenants = await _context.Tenants.ToListAsync();
             return View("TenantSelection", allTenants);
+        }
+
+        //  YENÝ EKLENEN METOT
+        public async Task<IActionResult> Program()
+        {
+            // O anki kongreye ait Conference nesnesini bul.
+            var conference = await _context.Conferences
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
+
+            if (conference == null)
+            {
+                // Henüz bir etkinlik tanýmlanmamýþsa hata mesajý göster.
+                ViewBag.ErrorMessage = "Bu kongre için henüz bir program yayýnlanmamýþtýr.";
+                return View(new List<Session>());
+            }
+
+            // Bu konferansa ait tüm oturumlarý, tarih sýrasýna göre, içindeki özet ve yazar bilgileriyle birlikte çek.
+            var sessions = await _context.Sessions
+                .Where(s => s.ConferenceId == conference.Id && s.Submissions.Any()) // Sadece içinde sunum olan oturumlarý getir
+                .Include(s => s.Submissions)
+                .ThenInclude(sub => sub.Author)
+                .OrderBy(s => s.SessionDate)
+                .ToListAsync();
+
+            return View(sessions);
         }
 
         public IActionResult Privacy()

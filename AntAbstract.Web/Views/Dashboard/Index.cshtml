@@ -1,76 +1,146 @@
-﻿@using AntAbstract.Web.Models.ViewModels
-@model DashboardViewModel
+﻿@model AntAbstract.Web.Models.ViewModels.DashboardViewModel
 
 @{
-    ViewData["Title"] = "Kullanıcı Paneli";
+    ViewData["Title"] = "Yönetim Paneli";
 }
 
 <h1 class="display-5">@ViewData["Title"]</h1>
-<p class="lead">Sisteme hoş geldiniz. Rollerinize göre görevleriniz aşağıda özetlenmiştir.</p>
+<p class="lead">Kongreye ait genel istatistikler ve durum özeti.</p>
 <hr />
 
-<div class="row">
-    @if (User.IsInRole("Admin") || User.IsInRole("Organizator"))
-    {
-        <div class="col-md-6 mb-4">
-            <div class="card">
-                <div class="card-header fw-bold">Organizator Paneli</div>
-                <div class="card-body">
-                    <p><strong>Hakem Ataması Bekleyen Özet Sayısı:</strong> @Model.SubmissionsAwaitingAssignment</p>
-                    <p><strong>Nihai Karar Bekleyen Özet Sayısı:</strong> @Model.SubmissionsAwaitingDecision</p>
-                    <a asp-controller="Assignment" asp-action="Index" class="btn btn-primary">Özetleri Yönet</a>
-                    <a asp-controller="Decision" asp-action="Index" class="btn btn-info">Karar Ekranına Git</a>
-                </div>
-            </div>
-        </div>
-    }
-
-    @if (User.IsInRole("Reviewer"))
-    {
-        <div class="col-md-6 mb-4">
-            <div class="card">
-                <div class="card-header fw-bold">Hakem Paneli</div>
-                <div class="card-body">
-                    <h5>Değerlendirmenizi Bekleyen Görevler</h5>
-                    @if (Model.MyReviewAssignments != null && Model.MyReviewAssignments.Any())
-                    {
-                        <ul class="list-group">
-                            @foreach (var assignment in Model.MyReviewAssignments)
-                            {
-                                <li class="list-group-item">@assignment.Submission.Title</li>
-                            }
-                        </ul>
-                    }
-                    else
-                    {
-                        <p>Bekleyen bir değerlendirme göreviniz bulunmamaktadır.</p>
-                    }
-                    <a asp-controller="Review" asp-action="Index" class="btn btn-success mt-3">Tüm Görevleri Gör</a>
-                </div>
-            </div>
-        </div>
-    }
-
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header fw-bold">Yazar Paneli</div>
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary shadow">
             <div class="card-body">
-                <h5>Son Gönderdiğiniz Özetler</h5>
-                @if (Model.MySubmissions != null && Model.MySubmissions.Any())
-                {
-                    <ul class="list-group">
-                        @foreach (var submission in Model.MySubmissions)
-                        {
-                            <li class="list-group-item">@submission.Title</li>
-                        }
-                    </ul>
-                }
-                else
-                {
-                    <p>Henüz bir özet göndermediniz.</p>
-                }
-                <a asp-controller="Submission" asp-action="Index" class="btn btn-secondary mt-3">Özetlerime Git</a>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0">Toplam Kullanıcı</h5>
+                        <h2 class="display-4">@Model.TotalUsers</h2>
+                    </div>
+                    <i class="bi bi-people-fill" style="font-size: 4rem; opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0">Toplam Özet</h5>
+                        <h2 class="display-4">@Model.TotalSubmissions</h2>
+                    </div>
+                    <i class="bi bi-file-earmark-text-fill" style="font-size: 4rem; opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-warning shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0">Toplam Değerlendirme</h5>
+                        <h2 class="display-4">@Model.TotalReviews</h2>
+                    </div>
+                    <i class="bi bi-check2-square" style="font-size: 4rem; opacity: 0.5;"></i>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<div class="row mt-5 g-4">
+
+    <div class="col-md-7">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-pie-chart-fill me-2"></i>
+                    Özet Karar Dağılımı
+                </h5>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                @if (Model.ChartData.Any())
+                {
+                    <canvas id="decisionChart"></canvas>
+                }
+                else
+                {
+                    <p class="text-muted">Grafiği oluşturacak yeterli veri (kararı verilmiş özet) bulunmamaktadır.</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-tools me-2"></i>
+                    Hızlı İşlemler
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>Sık kullanılan yönetimsel işlemleri buradan başlatabilirsiniz.</p>
+                <div class="list-group">
+                    <a asp-controller="Certificate" asp-action="GenerateForAllAcceptedAuthors" class="list-group-item list-group-item-action">
+                        <i class="bi bi-award-fill me-2"></i>
+                        Kabul Edilen Yazarlara Sertifika Üret
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+@section Scripts {
+    @if (Model.ChartData.Any())
+    {
+        var chartLabelsJson = Json.Serialize(Model.ChartLabels);
+        var chartDataJson = Json.Serialize(Model.ChartData);
+
+        <script>
+            const labels = @Html.Raw(chartLabelsJson);
+            const data = @Html.Raw(chartDataJson);
+
+            const colorMap = {
+                'Kabul Edildi': 'rgba(25, 135, 84, 0.8)',      // Yeşil
+                'Reddedildi': 'rgba(220, 53, 69, 0.8)',      // Kırmızı
+                'Büyük Revizyon Gerekli': 'rgba(13, 110, 253, 0.8)', // MAVİ
+                'Küçük Revizyon Gerekli': 'rgba(255, 193, 7, 0.8)'   // SARI
+            };
+
+            const backgroundColors = labels.map(label => colorMap[label] || 'rgba(108, 117, 125, 0.8)');
+
+            const ctx = document.getElementById('decisionChart');
+
+            new Chart(ctx, {
+                type: 'bar', // ✅ TEK DEĞİŞİKLİK BURADA: 'pie' -> 'bar'
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Özet Sayısı',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: backgroundColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false // Çubuk grafikte etiketler altta olduğu için buna gerek yok
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true // Y ekseni 0'dan başlasın
+                        }
+                    }
+                }
+            });
+        </script>
+    }
+}

@@ -1,80 +1,102 @@
-﻿using AntAbstract.Domain.Entities;
-using AntAbstract.Infrastructure.Context;
+﻿using AntAbstract.Infrastructure.Context;
 using AntAbstract.Web.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using System;
 
 namespace AntAbstract.Web.Controllers
 {
-    [Authorize] // Bu sayfayı sadece giriş yapmış kullanıcılar görebilir
+    [Authorize]
     public class DashboardController : Controller
     {
         private readonly AppDbContext _context;
-        private readonly UserManager<AppUser> _userManager;
         private readonly TenantContext _tenantContext;
 
-        public DashboardController(AppDbContext context, UserManager<AppUser> userManager, TenantContext tenantContext)
+        public DashboardController(AppDbContext context, TenantContext tenantContext)
         {
             _context = context;
-            _userManager = userManager;
             _tenantContext = tenantContext;
         }
 
         public async Task<IActionResult> Index()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _userManager.FindByIdAsync(userId);
-            var roles = await _userManager.GetRolesAsync(user);
-
-            var viewModel = new DashboardViewModel();
-
-            // Yazar Paneli Verileri
-            viewModel.MySubmissions = await _context.Submissions
-                .Where(s => s.AuthorId == userId)
-                .OrderByDescending(s => s.CreatedAt)
-                .Take(5) // Son 5 özeti göster
-                .ToListAsync();
-
-            // Hakem Paneli Verileri
-            if (roles.Contains("Reviewer"))
+            if (User.IsInRole("Admin") || User.IsInRole("Organizator"))
             {
-                viewModel.MyReviewAssignments = await _context.ReviewAssignments
-                    .Include(ra => ra.Submission)
-                    .Where(ra => ra.Reviewer.AppUserId == userId && ra.Status == "Atandı")
-                    .OrderBy(ra => ra.DueDate)
-                    .Take(5) // Yaklaşan 5 görevi göster
+                // --- ORGANİZATÖR PANELİ ---
+                var tenantId = _tenantContext.Current?.Id;
+                if (tenantId == null) return View("Error");
+
+                var conference = await _context.Conferences.FirstOrDefaultAsync(c => c.TenantId == tenantId);
+                if (conference == null) return View("Error");
+
+                var totalUsers = await _context.Users.CountAsync();
+                var allSubmissions = _context.Submissions.Where(s => s.ConferenceId == conference.Id);
+                var totalSubmissions = await allSubmissions.CountAsync();
+                var totalReviews = await _context.ReviewAssignments.Where(ra => ra.Submission.ConferenceId == conference.Id).CountAsync();
+
+                // ---  GRAFİK VERİSİNİ HAZIRLAMA BAŞLANGIÇ ---
+
+                // 1. Özetleri nihai karar durumuna göre grupla ve her grubun sayısını al.
+                var submissionStats = await allSubmissions
+                    .Where(s => s.FinalDecision != null) // Sadece kararı verilmiş olanları say
+                    .GroupBy(s => s.FinalDecision)
+                    .Select(g => new { Decision = g.Key, Count = g.Count() })
                     .ToListAsync();
-            }
 
-            // Organizatör Paneli Verileri
-            if (roles.Contains("Admin") || roles.Contains("Organizator"))
-            {
-                if (_tenantContext.Current != null)
+                // --- GRAFİK VERİSİNİ HAZIRLAMA BİTİŞ ---
+
+                var viewModel = new DashboardViewModel
                 {
-                    var conference = await _context.Conferences
-                        .FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
+                    TotalUsers = totalUsers,
+                    TotalSubmissions = totalSubmissions,
+                    TotalReviews = totalReviews,
+                    //  ViewModel'a grafiğe özel verileri ekle
+                    ChartLabels = submissionStats.Select(s => s.Decision).ToList(),
+                    ChartData = submissionStats.Select(s => s.Count).ToList()
+                };
 
-                    if (conference != null)
-                    {
-                        // Henüz hiçbir hakeme atanmamış özetlerin sayısı
-                        viewModel.SubmissionsAwaitingAssignment = await _context.Submissions
-                            .Where(s => s.ConferenceId == conference.Id && !s.ReviewAssignments.Any())
-                            .CountAsync();
-
-                        // Değerlendirmesi bitmiş, karar bekleyen özetlerin sayısı
-                        viewModel.SubmissionsAwaitingDecision = await _context.Submissions
-                            .Where(s => s.ConferenceId == conference.Id && s.FinalDecision == null && s.ReviewAssignments.Any() && s.ReviewAssignments.All(ra => ra.Status == "Değerlendirildi"))
-                            .CountAsync();
-                    }
-                }
+                return View("Index", viewModel);
             }
+            else if (User.IsInRole("Reviewer"))
+            {
+                // --- YENİ HAKEM PANELİ ---
+                var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(currentUserId)) return Unauthorized();
 
-            return View(viewModel);
+                var currentUserIdGuid = Guid.Parse(currentUserId);
+
+                var allAssignments = _context.ReviewAssignments.Where(ra => ra.ReviewerId == currentUserIdGuid);
+
+                int total = await allAssignments.CountAsync();
+                int completed = await allAssignments.CountAsync(ra => ra.Status == "Completed");
+
+                // ✅ DÜZELTME: "AssignmentDate" -> "AssignedDate" olarak değiştirildi.
+                var pendingList = await allAssignments
+                    .Where(ra => ra.Status != "Completed")
+                    .Include(ra => ra.Submission)
+                    .OrderByDescending(ra => ra.AssignedDate) // <--- HATA BURADAYDI
+                    .Take(5)
+                    .ToListAsync();
+
+                var viewModel = new ReviewerDashboardViewModel
+                {
+                    TotalAssigned = total,
+                    CompletedReviews = completed,
+                    PendingReviews = total - completed,
+                    PendingAssignments = pendingList
+                };
+
+                return View("ReviewerDashboard", viewModel);
+            }
+            else
+            {
+                // --- Diğer kullanıcılar (Yazar vb.) ---
+                return RedirectToAction("Index", "Submission");
+            }
         }
     }
 }

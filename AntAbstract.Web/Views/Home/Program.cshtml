@@ -1,0 +1,52 @@
+﻿@model IEnumerable<AntAbstract.Domain.Entities.Session>
+
+@{
+    ViewData["Title"] = "Kongre Programı";
+}
+
+<div class="container mt-4">
+    <div class="text-center mb-5">
+        <h1 class="display-4">@ViewData["Title"]</h1>
+        <p class="lead text-muted">Oturumlar ve sunumların tam listesi.</p>
+    </div>
+
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-info">@ViewBag.ErrorMessage</div>
+    }
+    else if (!Model.Any())
+    {
+        <div class="alert alert-info">Bu kongre için henüz programa eklenmiş bir oturum bulunmamaktadır.</div>
+    }
+    else
+    {
+        foreach (var session in Model)
+        {
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">@session.Title</h4>
+                        <span class="badge bg-light text-dark">@session.SessionDate.ToString("dd MMMM yyyy, HH:mm")</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(session.Location))
+                    {
+                        <small><i class="bi bi-geo-alt-fill me-2"></i>@session.Location</small>
+                    }
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        @foreach (var submission in session.Submissions.OrderBy(s => s.Title))
+                        {
+                            <li class="list-group-item">
+                                <h6 class="mb-1">@submission.Title</h6>
+                                <p class="mb-0 text-muted">
+                                    <i class="bi bi-person-fill me-2"></i>Sunan: @submission.Author?.Email
+                                </p>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        }
+    }
+</div>

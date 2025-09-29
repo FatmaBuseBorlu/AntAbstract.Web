@@ -1,18 +1,22 @@
-﻿using AntAbstract.Domain.Entities;
-using System.Collections.Generic;
+﻿using System.Collections.Generic; // List için eklendi
 
 namespace AntAbstract.Web.Models.ViewModels
 {
     public class DashboardViewModel
     {
-        // Yazar için
-        public List<Submission>? MySubmissions { get; set; }
+        public int TotalUsers { get; set; }
+        public int TotalSubmissions { get; set; }
+        public int TotalReviews { get; set; }
 
-        // Hakem için
-        public List<ReviewAssignment>? MyReviewAssignments { get; set; }
+        //  GRAFİK İÇİN YENİ EKLENEN ALANLAR
+        public List<string> ChartLabels { get; set; }
+        public List<int> ChartData { get; set; }
 
-        // Organizatör için
-        public int SubmissionsAwaitingAssignment { get; set; }
-        public int SubmissionsAwaitingDecision { get; set; }
+        public DashboardViewModel()
+        {
+            // Listelerin null olmasını engellemek için boş olarak başlatıyoruz.
+            ChartLabels = new List<string>();
+            ChartData = new List<int>();
+        }
     }
 }

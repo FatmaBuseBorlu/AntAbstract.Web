@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using AntAbstract.Infrastructure.Services;
 using AntAbstract.Web.StartupServices; 
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +36,9 @@ builder.Services.AddRazorPages();
 
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();
+
+// PDF
+QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
 //  Tenant middleware

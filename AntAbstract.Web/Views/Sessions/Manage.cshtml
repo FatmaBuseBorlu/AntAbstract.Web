@@ -1,52 +1,96 @@
-﻿@using AntAbstract.Web.Models.ViewModels
-@model SessionDetailViewModel
+﻿@model AntAbstract.Web.Models.ViewModels.SessionManageViewModel
 
 @{
-    ViewData["Title"] = "Oturumu Yönet";
+    ViewData["Title"] = "Oturum Programını Yönet";
 }
 
-<h1 class="display-5">@Model.Session.Title</h1>
-<p class="lead">Oturum Tarihi: @Model.Session.SessionDate.ToLocalTime().ToString("dd MMMM yyyy, HH:mm") | Yer: @Model.Session.Location</p>
+<h1 class="display-5">@ViewData["Title"]</h1>
+<h4 class="text-muted fw-light">Oturum: @Model.Session.Title</h4>
 <hr />
 
-<div class="row">
-    <div class="col-md-7">
-        <h4>Bu Oturumdaki Sunumlar</h4>
-        @if (!Model.Session.Submissions.Any())
-        {
-            <div class="alert alert-info">Bu oturuma henüz bir sunum atanmamış.</div>
-        }
-        else
-        {
-            <ul class="list-group">
-                @foreach (var sub in Model.Session.Submissions)
-                {
-                    <li class="list-group-item">@sub.Title</li>
-                }
-            </ul>
-        }
-    </div>
-    <div class="col-md-5">
-        <h4>Oturuma Yeni Sunum Ekle</h4>
-        <div class="card bg-light">
+<div class="row g-4">
+
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="bi bi-plus-circle-dotted me-2"></i>
+                    Atanabilecek Özetler
+                    <span class="badge bg-secondary ms-1">@Model.AvailableSubmissions.Count</span>
+                </h5>
+            </div>
             <div class="card-body">
-                <form asp-action="AssignSubmission" method="post">
-                    <input type="hidden" name="sessionId" value="@Model.Session.Id" />
-                    <div class="form-group mb-3">
-                        <label for="submissionIdToAdd" class="control-label fw-bold">Atanacak Özeti Seçin</label>
-                        <select name="submissionIdToAdd" class="form-control" asp-items="Model.AvailableSubmissions">
-                            <option value="">-- Kabul Edilmiş Özetler --</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <input type="submit" value="Sunumu Ekle" class="btn btn-success" />
-                    </div>
-                </form>
+                @if (!Model.AvailableSubmissions.Any())
+                {
+                    <p class="text-muted">Bu oturuma atanabilecek uygun bir özet bulunmuyor.</p>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var sub in Model.AvailableSubmissions)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>@sub.Title</strong><br />
+                                    <small class="text-muted">Yazar: @sub.Author?.Email</small>
+                                </div>
+                                <form asp-action="AddToSession" method="post" class="ms-2">
+                                    <input type="hidden" name="sessionId" value="@Model.Session.Id" />
+                                    <input type="hidden" name="submissionId" value="@sub.SubmissionId" />
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Oturuma Ekle">
+                                        <i class="bi bi-arrow-right-circle"></i> Ekle
+                                    </button>
+                                </form>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-calendar-check-fill me-2"></i>
+                    Bu Oturumdaki Özetler
+                    <span class="badge bg-light text-dark ms-1">@Model.AssignedSubmissions.Count</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (!Model.AssignedSubmissions.Any())
+                {
+                    <p class="text-muted">Bu oturuma henüz bir özet atanmamış.</p>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var sub in Model.AssignedSubmissions)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>@sub.Title</strong><br />
+                                    <small class="text-muted">Yazar: @sub.Author?.Email</small>
+                                </div>
+                                <form asp-action="RemoveFromSession" method="post" class="ms-2">
+                                    <input type="hidden" name="sessionId" value="@Model.Session.Id" />
+                                    <input type="hidden" name="submissionId" value="@sub.SubmissionId" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Oturumdan Çıkar">
+                                        <i class="bi bi-x-circle"></i> Çıkar
+                                    </button>
+                                </form>
+                            </li>
+                        }
+                    </ul>
+                }
             </div>
         </div>
     </div>
 </div>
 
 <div class="mt-4">
-    <a asp-action="Index" class="btn btn-outline-secondary">Tüm Oturumlara Geri Dön</a>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Oturum Listesine Geri Dön
+    </a>
 </div>
