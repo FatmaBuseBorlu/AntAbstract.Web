@@ -1,0 +1,33 @@
+﻿@model AntAbstract.Domain.Entities.ReviewForm
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
+@{
+    ViewData["Title"] = Localizer["PageTitle"];
+}
+
+<h1 class="display-5 text-danger">@Localizer["PageTitle"]</h1>
+<h3>@Localizer["ConfirmationMessage"]</h3>
+<hr />
+
+<div class="alert alert-danger">
+    <dl class="row">
+        <dt class="col-sm-3">
+            @Localizer["TitleLabel"]
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Title)
+        </dd>
+        <dt class="col-sm-3">
+            @Localizer["ConferenceLabel"]
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Conference.Title)
+        </dd>
+    </dl>
+</div>
+
+<form asp-action="Delete">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">@Localizer["DeleteButton"]</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">@Localizer["BackToListLink"]</a>
+</form>

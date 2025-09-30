@@ -4,6 +4,7 @@ using AntAbstract.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AntAbstract.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250930162417_FinalizeIdUnification")]
+    partial class FinalizeIdUnification
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -202,48 +205,15 @@ namespace AntAbstract.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<Guid>("ReviewAssignmentId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("ReviewDate")
-                        .HasColumnType("datetime2");
-
                     b.Property<int?>("Score")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ReviewAssignmentId")
+                    b.HasIndex("AssignmentId")
                         .IsUnique();
 
                     b.ToTable("Reviews");
-                });
-
-            modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewAnswer", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CriterionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("ReviewId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("Score")
-                        .HasColumnType("int");
-
-                    b.Property<string>("TextAnswer")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CriterionId");
-
-                    b.HasIndex("ReviewId");
-
-                    b.ToTable("ReviewAnswers");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewAssignment", b =>
@@ -277,56 +247,6 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.HasIndex("SubmissionId");
 
                     b.ToTable("ReviewAssignments");
-                });
-
-            modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewCriterion", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CriterionType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("FormId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("QuestionText")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FormId");
-
-                    b.ToTable("ReviewCriteria");
-                });
-
-            modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewForm", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("ConferenceId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ConferenceId");
-
-                    b.ToTable("ReviewForms");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.Reviewer", b =>
@@ -658,32 +578,13 @@ namespace AntAbstract.Infrastructure.Migrations
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.Review", b =>
                 {
-                    b.HasOne("AntAbstract.Domain.Entities.ReviewAssignment", "ReviewAssignment")
+                    b.HasOne("AntAbstract.Domain.Entities.ReviewAssignment", "Assignment")
                         .WithOne("Review")
-                        .HasForeignKey("AntAbstract.Domain.Entities.Review", "ReviewAssignmentId")
+                        .HasForeignKey("AntAbstract.Domain.Entities.Review", "AssignmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("ReviewAssignment");
-                });
-
-            modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewAnswer", b =>
-                {
-                    b.HasOne("AntAbstract.Domain.Entities.ReviewCriterion", "Criterion")
-                        .WithMany()
-                        .HasForeignKey("CriterionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("AntAbstract.Domain.Entities.Review", "Review")
-                        .WithMany("Answers")
-                        .HasForeignKey("ReviewId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Criterion");
-
-                    b.Navigation("Review");
+                    b.Navigation("Assignment");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewAssignment", b =>
@@ -703,28 +604,6 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Navigation("AppUser");
 
                     b.Navigation("Submission");
-                });
-
-            modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewCriterion", b =>
-                {
-                    b.HasOne("AntAbstract.Domain.Entities.ReviewForm", "Form")
-                        .WithMany("Criteria")
-                        .HasForeignKey("FormId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Form");
-                });
-
-            modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewForm", b =>
-                {
-                    b.HasOne("AntAbstract.Domain.Entities.Conference", "Conference")
-                        .WithMany()
-                        .HasForeignKey("ConferenceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Conference");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.Reviewer", b =>
@@ -848,20 +727,10 @@ namespace AntAbstract.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("AntAbstract.Domain.Entities.Review", b =>
-                {
-                    b.Navigation("Answers");
-                });
-
             modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewAssignment", b =>
                 {
                     b.Navigation("Review")
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewForm", b =>
-                {
-                    b.Navigation("Criteria");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.Session", b =>

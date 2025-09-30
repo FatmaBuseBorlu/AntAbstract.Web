@@ -1,0 +1,63 @@
+﻿@model AntAbstract.Web.Models.ViewModels.PerformReviewViewModel
+
+@{
+    ViewData["Title"] = "Özeti Değerlendir";
+}
+
+<h1 class="display-5">@ViewData["Title"]</h1>
+<p class="lead text-muted">Özet: <strong>@Model.Assignment.Submission.Title</strong></p>
+<hr />
+
+<div class="alert alert-light">
+    <h5>Özet Metni</h5>
+    <p>@Model.Assignment.Submission.AbstractText</p>
+    <h5>Anahtar Kelimeler</h5>
+    <p><span class="badge bg-info">@Model.Assignment.Submission.Keywords</span></p>
+</div>
+
+
+<form asp-action="PerformReview" method="post">
+    <input type="hidden" asp-for="Assignment.ReviewAssignmentId" />
+
+    <h4>Değerlendirme Kriterleri</h4>
+    <hr />
+
+    @for (int i = 0; i < Model.Criteria.Count; i++)
+    {
+        var criterion = Model.Criteria[i];
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <strong>@(i + 1). @criterion.QuestionText</strong>
+            </div>
+            <div class="card-body">
+                <input type="hidden" name="Answers[@i].CriterionId" value="@criterion.Id" />
+
+                @if (criterion.CriterionType == "Scale1To10" || criterion.CriterionType == "Scale1To5")
+                {
+                    <div class="form-group">
+                        <label class="form-label">Puanınız</label>
+                        <select name="Answers[@i].Score" class="form-select" required>
+                            <option value="">-- Puan Seçin --</option>
+                            @for (int score = 1; score <= (criterion.CriterionType == "Scale1To10" ? 10 : 5); score++)
+                            {
+                                <option value="@score">@score</option>
+                            }
+                        </select>
+                    </div>
+                }
+                else if (criterion.CriterionType == "FreeText")
+                {
+                    <div class="form-group">
+                        <label class="form-label">Yorumunuz</label>
+                        <textarea name="Answers[@i].TextAnswer" class="form-control" rows="4" required></textarea>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="form-group mt-4">
+        <button type="submit" class="btn btn-success btn-lg">Değerlendirmeyi Gönder</button>
+    </div>
+</form>

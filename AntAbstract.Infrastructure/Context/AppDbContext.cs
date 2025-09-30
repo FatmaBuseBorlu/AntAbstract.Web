@@ -28,6 +28,9 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<ScientificField> ScientificFields { get; set; }
         public DbSet<CongressType> CongressTypes { get; set; }
         public DbSet<Session> Sessions { get; set; }
+        public DbSet<ReviewForm> ReviewForms { get; set; }
+        public DbSet<ReviewCriterion> ReviewCriteria { get; set; }
+        public DbSet<ReviewAnswer> ReviewAnswers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -49,7 +52,7 @@ namespace AntAbstract.Infrastructure.Context
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<ReviewAssignment>()
-                .HasOne(ra => ra.Reviewer)
+                .HasOne(ra => ra.AppUser) // DÜZELTME BU SATIRDA
                 .WithMany()
                 .HasForeignKey(ra => ra.ReviewerId)
                 .OnDelete(DeleteBehavior.Restrict);
@@ -75,6 +78,22 @@ namespace AntAbstract.Infrastructure.Context
                 .HasForeignKey(s => s.ConferenceId)
                 .OnDelete(DeleteBehavior.Cascade); // Bir konferans silinirse, tüm oturumları da silinsin.
                                                    // OnModelCreating(ModelBuilder builder) metodu içine eklenecek.
+
+            // OnModelCreating(ModelBuilder builder) metodu içine eklenecek.
+
+            // Bir Review silindiğinde, ona bağlı ReviewAnswer'ların silinmesini engelle (döngüsel çakışmayı önlemek için)
+            builder.Entity<Review>()
+                .HasMany(r => r.Answers)
+                .WithOne(a => a.Review)
+                .HasForeignKey(a => a.ReviewId)
+                .OnDelete(DeleteBehavior.Restrict); // DİKKAT: Geçen seferki hatayı önlemek için 'Restrict' kullanıyoruz.
+
+            // Bir ReviewForm silindiğinde, ona bağlı tüm ReviewCriterion'lar da silinsin (bu güvenli).
+            builder.Entity<ReviewForm>()
+                .HasMany(f => f.Criteria)
+                .WithOne(c => c.Form)
+                .HasForeignKey(c => c.FormId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

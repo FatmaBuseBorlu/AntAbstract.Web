@@ -29,10 +29,12 @@ namespace AntAbstract.Domain.Entities
         public string? Recommendation { get; set; }
 
         public DateTime? CompletedDate { get; set; }
+        public Guid ReviewAssignmentId { get; set; }
+        [ForeignKey("ReviewAssignmentId")]
+        public ReviewAssignment ReviewAssignment { get; set; }
+        public DateTime ReviewDate { get; set; }
+        public ICollection<ReviewAnswer> Answers { get; set; } = new List<ReviewAnswer>();
 
-        [ForeignKey(nameof(AssignmentId))]
-        public ReviewAssignment Assignment { get; set; }
-     
-      
+
     }
 }

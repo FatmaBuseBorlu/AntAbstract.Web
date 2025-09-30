@@ -4,6 +4,7 @@ using AntAbstract.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AntAbstract.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250930164034_AddDynamicReviewFormsModule")]
+    partial class AddDynamicReviewFormsModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -202,18 +205,12 @@ namespace AntAbstract.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<Guid>("ReviewAssignmentId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("ReviewDate")
-                        .HasColumnType("datetime2");
-
                     b.Property<int?>("Score")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ReviewAssignmentId")
+                    b.HasIndex("AssignmentId")
                         .IsUnique();
 
                     b.ToTable("Reviews");
@@ -658,13 +655,13 @@ namespace AntAbstract.Infrastructure.Migrations
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.Review", b =>
                 {
-                    b.HasOne("AntAbstract.Domain.Entities.ReviewAssignment", "ReviewAssignment")
+                    b.HasOne("AntAbstract.Domain.Entities.ReviewAssignment", "Assignment")
                         .WithOne("Review")
-                        .HasForeignKey("AntAbstract.Domain.Entities.Review", "ReviewAssignmentId")
+                        .HasForeignKey("AntAbstract.Domain.Entities.Review", "AssignmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("ReviewAssignment");
+                    b.Navigation("Assignment");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewAnswer", b =>

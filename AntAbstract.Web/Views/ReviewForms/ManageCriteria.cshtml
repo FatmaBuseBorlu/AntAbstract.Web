@@ -1,0 +1,96 @@
+﻿@model AntAbstract.Web.Models.ViewModels.ManageCriteriaViewModel
+
+@{
+    ViewData["Title"] = "Kriterleri Yönet";
+}
+
+<h1 class="display-5">@Model.Form.Title</h1>
+<p class="lead text-muted">Bu değerlendirme formuna ait soruları (kriterleri) yönetin.</p>
+<hr />
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+
+<div class="row g-5">
+    <div class="col-md-7">
+        <h4>Mevcut Kriterler</h4>
+        @if (!Model.ExistingCriteria.Any())
+        {
+            <p>Bu forma henüz bir kriter eklenmemiş.</p>
+        }
+        else
+        {
+            <ul class="list-group">
+                @foreach (var criterion in Model.ExistingCriteria)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <span>@criterion.DisplayOrder. @criterion.QuestionText</span>
+                            <span class="badge bg-secondary ms-2">@criterion.CriterionType</span>
+                        </div>
+
+                        <div class="d-flex">
+                            <a asp-action="EditCriterion" asp-route-id="@criterion.Id" class="btn btn-sm btn-outline-warning me-2" title="Düzenle">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form asp-action="DeleteCriterion" method="post" onsubmit="return confirm('Bu kriteri silmek istediğinizden emin misiniz?');">
+                                <input type="hidden" name="criterionId" value="@criterion.Id" />
+                                <input type="hidden" name="formId" value="@Model.Form.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Sil">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+
+    <div class="col-md-5">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h4 class="card-title">Yeni Kriter Ekle</h4>
+                <form asp-action="AddCriterion" method="post">
+                    <input type="hidden" asp-for="NewCriterion.FormId" />
+
+                    <div class="mb-3">
+                        <label asp-for="NewCriterion.QuestionText" class="form-label fw-bold">Soru Metni</label>
+                        <textarea asp-for="NewCriterion.QuestionText" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="NewCriterion.QuestionText" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="NewCriterion.CriterionType" class="form-label fw-bold">Soru Tipi</label>
+                        <select asp-for="NewCriterion.CriterionType" asp-items="Model.CriterionTypes" class="form-select">
+                            <option value="">-- Tip Seçin --</option>
+                        </select>
+                        <span asp-validation-for="NewCriterion.CriterionType" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="NewCriterion.DisplayOrder" class="form-label fw-bold">Görünme Sırası</label>
+                        <input asp-for="NewCriterion.DisplayOrder" type="number" class="form-control" />
+                        <span asp-validation-for="NewCriterion.DisplayOrder" class="text-danger"></span>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success">Ekle</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Form Listesine Geri Dön
+    </a>
+</div>
