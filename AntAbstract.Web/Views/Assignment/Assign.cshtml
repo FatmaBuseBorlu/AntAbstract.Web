@@ -1,50 +1,63 @@
-﻿@using AntAbstract.Domain.Entities
-@model Submission
+﻿@model AntAbstract.Web.Models.ViewModels.AssignReviewerViewModel
 
 @{
     ViewData["Title"] = "Hakem Ata";
 }
 
-<h1 class="display-5">@ViewData["Title"]</h1>
+<h1 class="display-5">@Model.Submission.Title</h1>
+<p class="lead text-muted">"<strong>@Model.Submission.Author.DisplayName</strong>" tarafından gönderilen bu özete hakem atayın.</p>
+<p><strong>Anahtar Kelimeler:</strong> <span class="badge bg-info">@Model.Submission.Keywords</span></p>
 <hr />
 
-<div class="row">
-    <div class="col-md-8">
-        <h4>Aşağıdaki Özete Hakem Atanacak:</h4>
-        <dl class="row mt-3">
-            <dt class="col-sm-3">Başlık</dt>
-            <dd class="col-sm-9">@Model.Title</dd>
-
-            <dt class="col-sm-3">Yazar</dt>
-            <dd class="col-sm-9">@Model.Author.Email</dd>
-
-            <dt class="col-sm-3">Özet Metni</dt>
-            <dd class="col-sm-9">@Model.AbstractText</dd>
-        </dl>
-
-        <hr />
-
-        <form asp-action="Assign" method="post">
-            <input type="hidden" name="submissionId" value="@Model.SubmissionId" />
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-            <div class="form-group mb-3">
-                <label for="reviewerId" class="control-label">Müsait Hakemler</label>
-                <select name="reviewerId" class="form-control" asp-items="ViewBag.ReviewerId">
-                    <option value="">-- Lütfen bir hakem seçin --</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <input type="submit" value="Atamayı Tamamla" class="btn btn-success" />
-                <a asp-action="Index" class="btn btn-outline-secondary">Geri Dön</a>
-            </div>
-        </form>
-    </div>
-</div>
-
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+<h4>
+    <i class="bi bi-stars text-warning"></i> Önerilen Hakemler
+</h4>
+@if (!Model.RecommendedReviewers.Any())
+{
+    <div class="alert alert-secondary">Bu özet için uygun bir öneri bulunamadı.</div>
 }
+else
+{
+    <table class="table table-sm table-striped">
+        <tbody>
+            @foreach (var reviewer in Model.RecommendedReviewers)
+            {
+                <tr>
+                    <td>@reviewer.DisplayName</td>
+                    <td>@reviewer.Email</td>
+                    <td><span class="badge bg-light text-dark">@reviewer.ExpertiseAreas</span></td>
+                    <td>
+                        <form asp-action="AssignReviewer" method="post">
+                            <input type="hidden" name="submissionId" value="@Model.Submission.SubmissionId" />
+                            <input type="hidden" name="reviewerId" value="@reviewer.Id" />
+                            <button type="submit" class="btn btn-sm btn-warning">Bu Hakemi Ata</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<hr class="my-4" />
+
+<h4>Tüm Hakemler</h4>
+<table class="table table-sm table-hover">
+    <tbody>
+        @foreach (var reviewer in Model.AllOtherReviewers)
+        {
+            <tr>
+                <td>@reviewer.DisplayName</td>
+                <td>@reviewer.Email</td>
+                <td><span class="badge bg-light text-dark">@reviewer.ExpertiseAreas</span></td>
+                <td>
+                    <form asp-action="AssignReviewer" method="post">
+                        <input type="hidden" name="submissionId" value="@Model.Submission.SubmissionId" />
+                        <input type="hidden" name="reviewerId" value="@reviewer.Id" />
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Ata</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

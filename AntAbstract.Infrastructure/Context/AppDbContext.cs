@@ -74,6 +74,7 @@ namespace AntAbstract.Infrastructure.Context
                 .WithMany() // Conference'da Sessions listesi olmadığı için WithMany() boş
                 .HasForeignKey(s => s.ConferenceId)
                 .OnDelete(DeleteBehavior.Cascade); // Bir konferans silinirse, tüm oturumları da silinsin.
+                                                   // OnModelCreating(ModelBuilder builder) metodu içine eklenecek.
         }
     }
 }

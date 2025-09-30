@@ -1,12 +1,13 @@
-﻿using System;
+﻿using AntAbstract.Domain;
+using AntAbstract.Domain.Entities;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using AntAbstract.Domain;
-using AntAbstract.Domain.Entities;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AntAbstract.Domain.Entities
 {
@@ -42,5 +43,8 @@ namespace AntAbstract.Domain.Entities
         public Session? Session { get; set; }
 
         public ICollection<ReviewAssignment> ReviewAssignments { get; set; } = new List<ReviewAssignment>();
+
+        [StringLength(500)]
+        public string? Keywords { get; set; } // Örn: "yapay zeka, makine öğrenmesi, NLP"
     }
 }

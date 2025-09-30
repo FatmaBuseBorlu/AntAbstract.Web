@@ -32,5 +32,7 @@ namespace AntAbstract.Domain.Entities
 
         [ForeignKey(nameof(AssignmentId))]
         public ReviewAssignment Assignment { get; set; }
+     
+      
     }
 }

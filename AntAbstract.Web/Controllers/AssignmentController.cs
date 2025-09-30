@@ -1,6 +1,7 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services;
+using AntAbstract.Web.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -19,17 +20,20 @@ namespace AntAbstract.Web.Controllers
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly IEmailService _emailService;
+        private readonly IReviewerRecommendationService _recommendationService;
         private readonly UserManager<AppUser> _userManager;
 
         public AssignmentController(AppDbContext context,
                                             TenantContext tenantContext,
                                             IEmailService emailService,
-                                            UserManager<AppUser> userManager)
+                                            UserManager<AppUser> userManager, 
+                                            IReviewerRecommendationService recommendationService)
         {
             _context = context;
             _tenantContext = tenantContext;
             _emailService = emailService;
             _userManager = userManager;
+            _recommendationService = recommendationService;
         }
 
         // GET: Assignment/Index (Bu metot sende zaten vardı)
@@ -62,6 +66,31 @@ namespace AntAbstract.Web.Controllers
 
         // GET: Assignment/Assign/5
         // Belirli bir özete hakem atama formunu gösterir.
+        public async Task<IActionResult> Assign(Guid id)
+        {
+            var submission = await _context.Submissions.Include(s => s.Author).FirstOrDefaultAsync(s => s.SubmissionId == id);
+            if (submission == null) return NotFound();
+
+            // 1. Akıllı servisten önerileri al.
+            var recommendedReviewers = await _recommendationService.GetRecommendationsAsync(id);
+
+            // 2. Sistemdeki diğer tüm hakemleri al.
+            var allReviewers = await _userManager.GetUsersInRoleAsync("Reviewer");
+
+            // 3. Önerilenler listesinde zaten olanları, "diğer hakemler" listesinden çıkar.
+            var allOtherReviewers = allReviewers.Except(recommendedReviewers).ToList();
+
+            // 4. Tüm verileri ViewModel'a doldur.
+            var viewModel = new AssignReviewerViewModel
+            {
+                Submission = submission,
+                RecommendedReviewers = recommendedReviewers.ToList(),
+                AllOtherReviewers = allOtherReviewers
+            };
+
+            return View(viewModel);
+        }
+
         public async Task<IActionResult> Assign(Guid? id)
         {
             if (id == null)

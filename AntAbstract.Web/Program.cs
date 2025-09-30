@@ -2,18 +2,20 @@ using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using AntAbstract.Web.StartupServices;
+using QuestPDF.Infrastructure;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using AntAbstract.Infrastructure.Services;
-using AntAbstract.Web.StartupServices; 
-using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// EF Core ve SQL Server
+// --- Servis Konfigürasyonlarý ---
+
+// Veritabaný ve EF Core
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
-// Identity
+// Identity (Kullanýcý Sistemi)
 builder.Services.AddIdentity<AppUser, IdentityRole>(opt =>
 {
     opt.Password.RequiredLength = 6;
@@ -23,25 +25,31 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(opt =>
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
 
-
-// Email Ayarlarýný Yükle
+// Email Ayarlarýný appsettings.json'dan yükle
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-// Email Servisini Kaydet
+// Email Servisini sisteme tanýt
 builder.Services.AddTransient<IEmailService, EmailService>();
 
-// Add services to the container.
-builder.Services.AddControllersWithViews();
-builder.Services.AddRazorPages();
-
-
+// Multi-Tenant (Kongre) Altyapýsý
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();
+builder.Services.AddScoped<IReviewerRecommendationService, ReviewerRecommendationService>();
 
-// PDF
-QuestPDF.Settings.License = LicenseType.Community;
+// Çoklu Dil Desteði (Localization)
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
+builder.Services.AddControllersWithViews()
+    .AddViewLocalization(Microsoft.AspNetCore.Mvc.Razor.LanguageViewLocationExpanderFormat.Suffix)
+    .AddDataAnnotationsLocalization();
+
+builder.Services.AddRazorPages();
+
+// --- Uygulamanýn Ýnþa Edilmesi ---
 var app = builder.Build();
-//  Tenant middleware
+
+// --- Middleware Pipeline Konfigürasyonlarý ---
+
+// Tenant (Kongre) Middleware'i - HER ORTAMDA ÇALIÞMALI
 app.Use(async (ctx, next) =>
 {
     var resolver = ctx.RequestServices.GetRequiredService<ITenantResolver>();
@@ -50,8 +58,7 @@ app.Use(async (ctx, next) =>
     await next();
 });
 
-
-// Configure the HTTP request pipeline.
+// Hata Yönetimi
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -61,11 +68,20 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+// Çoklu Dil Middleware'i
+var supportedCultures = new[] { "tr-TR", "en-US" };
+var localizationOptions = new RequestLocalizationOptions()
+    .SetDefaultCulture(supportedCultures[0])
+    .AddSupportedCultures(supportedCultures)
+    .AddSupportedUICultures(supportedCultures);
+app.UseRequestLocalization(localizationOptions);
+
 app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Rotalama
 app.MapControllerRoute(
     name: "tenant",
     pattern: "{tenant}/{controller=Home}/{action=Index}/{id?}");
@@ -74,15 +90,14 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-
 app.MapRazorPages();
 
-//  ROLLERÝ BAÞLATMA VE OLUÞTURMA KISMI
+// Veritabaný Baþlatýcý (Rolleri vb. oluþturur)
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     await IdentityDbInitializer.InitializeAsync(services);
 }
-// ----------------------------------------
 
-app.Run(); // ?? Bu satýr en altta kalmalýdýr.
+// Uygulamayý Çalýþtýr
+app.Run();

@@ -1,11 +1,13 @@
-﻿@using AntAbstract.Domain.Entities
+﻿@using System.Globalization
+@using Microsoft.AspNetCore.Localization
 @inject AntAbstract.Infrastructure.Context.TenantContext Tc
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="utf-8" />
+    <meta charset="utf-t-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@(Tc.Current?.Name ?? "AntAbstract") - @ViewData["Title"]</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -27,29 +29,29 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">Ana Sayfa</a>
+                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">@Localizer["HomePage"]</a>
                         </li>
 
                         @if (Tc.Current != null)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Home" asp-action="Program" asp-route-tenant="@(Tc.Current?.Slug)">Program</a>
+                                <a class="nav-link text-dark" asp-controller="Home" asp-action="Program" asp-route-tenant="@(Tc.Current?.Slug)">@Localizer["Program"]</a>
                             </li>
                         }
 
                         @if (User.Identity?.IsAuthenticated ?? false)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Submission" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">Özetlerim</a>
+                                <a class="nav-link text-dark" asp-controller="Submission" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">@Localizer["MySubmissions"]</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Message" asp-action="Inbox">Mesajlar</a>
+                                <a class="nav-link text-dark" asp-controller="Message" asp-action="Inbox">@Localizer["Messages"]</a>
                             </li>
 
                             @if (User.IsInRole("Reviewer"))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-controller="Review" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">Değerlendirmelerim</a>
+                                    <a class="nav-link text-dark" asp-controller="Review" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">@Localizer["MyReviews"]</a>
                                 </li>
                             }
 
@@ -57,29 +59,57 @@
                             {
                                 <li class="nav-item dropdown">
                                     <a class="nav-link dropdown-toggle text-dark" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        Yönetim Paneli
+                                        @Localizer["ManagementPanel"]
                                     </a>
                                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                        <li><h6 class="dropdown-header">Kongre Akışı</h6></li>
-                                        <li><a class="dropdown-item" asp-controller="Dashboard" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">Ana Panel</a></li>
-                                        <li><a class="dropdown-item" asp-controller="Reports" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">Raporlar</a></li>
-                                        <li><a class="dropdown-item" asp-controller="Assignment" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">Özet Atama</a></li>
-                                        <li><a class="dropdown-item" asp-controller="Decision" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">Karar Ekranı</a></li>
+                                        <li><h6 class="dropdown-header">@Localizer["HeaderWorkflow"]</h6></li>
+                                        <li><a class="dropdown-item" asp-controller="Dashboard" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">@Localizer["ItemDashboard"]</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Reports" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">@Localizer["ItemReports"]</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Assignment" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">@Localizer["ItemAssignAbstract"]</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Decision" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">@Localizer["ItemDecisionScreen"]</a></li>
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><h6 class="dropdown-header">Yönetim</h6></li>
-                                        <li><a class="dropdown-item" asp-controller="Sessions" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">Oturum Yönetimi</a></li>
-                                        <li><a class="dropdown-item" asp-controller="Reviewer" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">Hakem Yönetimi</a></li>
-                                        <li><a class="dropdown-item" asp-controller="Admin" asp-action="UserList">Kullanıcı Yönetimi</a></li>
+                                        <li><h6 class="dropdown-header">@Localizer["HeaderManagement"]</h6></li>
+                                        <li><a class="dropdown-item" asp-controller="Sessions" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">@Localizer["ItemSessionManagement"]</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Reviewer" asp-action="Index" asp-route-tenant="@(Tc.Current?.Slug)">@Localizer["ItemReviewerManagement"]</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Admin" asp-action="UserList">@Localizer["ItemUserManagement"]</a></li>
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><h6 class="dropdown-header">Sistem Ayarları</h6></li>
-                                        <li><a class="dropdown-item" asp-controller="Tenants" asp-action="Index">Kongre Tanımları</a></li>
-                                        <li><a class="dropdown-item" asp-controller="ScientificFields" asp-action="Index">Bilimsel Alanlar</a></li>
-                                        <li><a class="dropdown-item" asp-controller="CongressTypes" asp-action="Index">Kongre Türleri</a></li>
+                                        <li><h6 class="dropdown-header">@Localizer["HeaderSystemSettings"]</h6></li>
+                                        <li><a class="dropdown-item" asp-controller="Tenants" asp-action="Index">@Localizer["ItemCongressDefinitions"]</a></li>
+                                        <li><a class="dropdown-item" asp-controller="ScientificFields" asp-action="Index">@Localizer["ItemScientificFields"]</a></li>
+                                        <li><a class="dropdown-item" asp-controller="CongressTypes" asp-action="Index">@Localizer["ItemCongressTypes"]</a></li>
                                     </ul>
                                 </li>
                             }
                         }
                     </ul>
+
+                    @{
+                        var requestCulture = Context.Features.Get<IRequestCultureFeature>();
+                        var cultureItems = new[]
+                        {
+                                        new SelectListItem { Value = "tr-TR", Text = "Türkçe (TR)" },
+                                        new SelectListItem { Value = "en-US", Text = "English (US)" },
+                                        };
+                    }
+
+                    <form class="d-flex" asp-controller="Home" asp-action="SetLanguage"
+                          asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)" method="post">
+                        <div class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-dark" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-globe"></i> @requestCulture.RequestCulture.UICulture.TwoLetterISOLanguageName.ToUpper()
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                @foreach (var item in cultureItems)
+                                {
+                                    <li>
+                                        <button type="submit" class="dropdown-item" name="culture" value="@item.Value">
+                                            @item.Text
+                                        </button>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    </form>
                     <partial name="_LoginPartial" />
                 </div>
             </div>
@@ -93,14 +123,12 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; @DateTime.Now.Year - @(Tc.Current?.Name ?? "AntAbstract") - <a asp-controller="Home" asp-action="Privacy" asp-route-tenant="@(Tc.Current?.Slug)">Gizlilik</a>
+            &copy; @DateTime.Now.Year - @(Tc.Current?.Name ?? "AntAbstract") - <a asp-controller="Home" asp-action="Privacy" asp-route-tenant="@(Tc.Current?.Slug)">@Localizer["Gizlilik"]</a> @* Footer için de bir anahtar ekledim *@
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
