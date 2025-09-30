@@ -31,43 +31,71 @@ namespace AntAbstract.Web.Controllers
         //  GÜNCELLENMİŞ VE DÜZELTİLMİŞ METOT
         public async Task<IActionResult> Index()
         {
-            // Tenant kontrolü (URL'de /slug olmalı)
-            if (_tenantContext.Current == null)
-            {
-                return RedirectToAction("Index", "Home"); // Ana sayfaya yönlendir
-            }
+            var conference = await _context.Conferences.FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
+            if (conference == null) return View(new System.Collections.Generic.List<Reviewer>());
 
-            // 1. Bu Tenant'a ait olan Konferansı bul
-            var currentConference = await _context.Conferences
-                .FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
-
-            // Eğer bu slug'a ait bir konferans veritabanında yoksa, hata göster.
-            if (currentConference == null)
-            {
-                ViewBag.ErrorMessage = "Bu kongre için henüz bir konferans detayı oluşturulmamış.";
-                return View(new List<Reviewer>()); // Boş bir model ile View'ı göster
-            }
-
-            //  DÜZELTME: Konferans ID'sini ViewBag'e direkt atıyoruz.
-            ViewBag.CurrentConferenceId = currentConference.Id;
-
-            // 2. Bu Konferansa atanmış hakemleri al
-            var assignedReviewers = await _context.Reviewers
-                .Where(r => r.ConferenceId == currentConference.Id) // Doğru ID ile sorgulama
-                .Include(r => r.AppUser) // Kullanıcı bilgilerini yükle
+            var reviewers = await _context.Reviewers
+                .Where(r => r.ConferenceId == conference.Id)
+                .Include(r => r.AppUser)
                 .ToListAsync();
 
-            // 3. Sisteme kayıtlı tüm kullanıcıları al (Dropdown için)
-            var allUsers = await _userManager.Users.ToListAsync();
-            ViewBag.AllUsers = new SelectList(allUsers, "Id", "Email");
-   
-            // ViewBag.ConferenceId = new SelectList(...);
-
-            return View(assignedReviewers);
+            return View(reviewers);
         }
 
-        // POST: Reviewer/Assign
+        public async Task<IActionResult> Create()
+        {
+            // Sisteme kayıtlı ama bu konferansta henüz hakem olarak atanmamış kullanıcıları listele
+            var conference = await _context.Conferences.FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
+            var existingReviewerUserIds = await _context.Reviewers
+                .Where(r => r.ConferenceId == conference.Id)
+                .Select(r => r.AppUserId)
+                .ToListAsync();
+
+            var potentialReviewers = await _userManager.Users
+                .Where(u => !existingReviewerUserIds.Contains(u.Id))
+                .ToListAsync();
+
+            ViewBag.AppUserId = new SelectList(potentialReviewers, "Id", "Email");
+            return View();
+        }
+
         [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create([Bind("AppUserId,IsActive")] Reviewer reviewer)
+        {
+            var conference = await _context.Conferences.FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
+            reviewer.ConferenceId = conference.Id;
+
+            // AppUserId'nin Guid değil string olduğunu varsayarak doğrulama yapısını düzeltiyoruz.
+            ModelState.Remove(nameof(reviewer.Conference));
+            ModelState.Remove(nameof(reviewer.AppUser));
+
+            if (ModelState.IsValid)
+            {
+                _context.Add(reviewer);
+                await _context.SaveChangesAsync();
+
+                // Kullanıcıya "Reviewer" rolünü ata (eğer zaten yoksa)
+                var user = await _userManager.FindByIdAsync(reviewer.AppUserId);
+                if (user != null && !await _userManager.IsInRoleAsync(user, "Reviewer"))
+                {
+                    await _userManager.AddToRoleAsync(user, "Reviewer");
+                }
+
+                return RedirectToAction(nameof(Index));
+            }
+            // Hata durumunda dropdown'ı tekrar doldur
+            var existingReviewerUserIds = await _context.Reviewers.Where(r => r.ConferenceId == conference.Id).Select(r => r.AppUserId).ToListAsync();
+            var potentialReviewers = await _userManager.Users.Where(u => !existingReviewerUserIds.Contains(u.Id)).ToListAsync();
+            ViewBag.AppUserId = new SelectList(potentialReviewers, "Id", "Email", reviewer.AppUserId);
+            return View(reviewer);
+        }
+
+        // Diğer Edit, Details, Delete metotları scaffolding ile oluşturulabilir veya 
+        // bu mantığa göre uyarlanabilir. Bu temel yapı, hatayı çözmelidir.
+
+// POST: Reviewer/Assign
+[HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Assign(string userId, Guid conferenceId)
         {

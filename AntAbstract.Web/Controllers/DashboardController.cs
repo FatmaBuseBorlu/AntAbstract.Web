@@ -67,9 +67,7 @@ namespace AntAbstract.Web.Controllers
                 var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (string.IsNullOrEmpty(currentUserId)) return Unauthorized();
 
-                var currentUserIdGuid = Guid.Parse(currentUserId);
-
-                var allAssignments = _context.ReviewAssignments.Where(ra => ra.ReviewerId == currentUserIdGuid);
+                var allAssignments = _context.ReviewAssignments.Where(ra => ra.ReviewerId == currentUserId);
 
                 int total = await allAssignments.CountAsync();
                 int completed = await allAssignments.CountAsync(ra => ra.Status == "Completed");

@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 using MailKit.Net.Smtp;
 using Microsoft.Extensions.Options;
 using MimeKit;
+using Microsoft.AspNetCore.Identity.UI.Services;
 
 namespace AntAbstract.Infrastructure.Services
 {
-    public class EmailService : IEmailService
+    public class EmailService : IEmailService, IEmailSender
     {
         private readonly EmailSettings _emailSettings;
 

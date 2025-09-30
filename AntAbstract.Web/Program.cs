@@ -29,6 +29,7 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(opt =>
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 // Email Servisini sisteme tanýt
 builder.Services.AddTransient<IEmailService, EmailService>();
+builder.Services.AddTransient<IEmailSender, EmailService>();
 
 // Multi-Tenant (Kongre) Altyapýsý
 builder.Services.AddScoped<TenantContext>();

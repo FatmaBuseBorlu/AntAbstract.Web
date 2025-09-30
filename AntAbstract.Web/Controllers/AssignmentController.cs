@@ -71,16 +71,10 @@ namespace AntAbstract.Web.Controllers
             var submission = await _context.Submissions.Include(s => s.Author).FirstOrDefaultAsync(s => s.SubmissionId == id);
             if (submission == null) return NotFound();
 
-            // 1. Akıllı servisten önerileri al.
             var recommendedReviewers = await _recommendationService.GetRecommendationsAsync(id);
-
-            // 2. Sistemdeki diğer tüm hakemleri al.
             var allReviewers = await _userManager.GetUsersInRoleAsync("Reviewer");
-
-            // 3. Önerilenler listesinde zaten olanları, "diğer hakemler" listesinden çıkar.
             var allOtherReviewers = allReviewers.Except(recommendedReviewers).ToList();
 
-            // 4. Tüm verileri ViewModel'a doldur.
             var viewModel = new AssignReviewerViewModel
             {
                 Submission = submission,
@@ -91,94 +85,59 @@ namespace AntAbstract.Web.Controllers
             return View(viewModel);
         }
 
-        public async Task<IActionResult> Assign(Guid? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var submission = await _context.Submissions
-                .Include(s => s.Author)
-                .FirstOrDefaultAsync(m => m.SubmissionId == id);
-
-            if (submission == null)
-            {
-                return NotFound();
-            }
-
-            var reviewers = await _context.Reviewers
-                .Where(r => r.ConferenceId == submission.ConferenceId && r.IsActive)
-                .Include(r => r.AppUser)
-                .ToListAsync();
-
-            ViewBag.ReviewerId = new SelectList(reviewers, "Id", "AppUser.Email");
-
-            return View(submission);
-        }
-
         // POST: Assignment/Assign
-        // Formdan gelen bilgilerle yeni bir hakem ataması oluşturur.
+        // AssignmentController.cs içine eklenecek
+
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Assign(Guid submissionId, Guid reviewerId)
+        public async Task<IActionResult> AssignReviewer(Guid submissionId, string reviewerId)
         {
-            if (submissionId == Guid.Empty || reviewerId == Guid.Empty)
-            {
-                TempData["ErrorMessage"] = "Özet veya Hakem seçimi geçersiz.";
-                return RedirectToAction(nameof(Index));
-            }
+            // 1. Bu atamanın daha önce yapılıp yapılmadığını kontrol et
+            var alreadyExists = await _context.ReviewAssignments
+                .AnyAsync(ra => ra.SubmissionId == submissionId && ra.ReviewerId == reviewerId);
 
-            var existingAssignment = await _context.ReviewAssignments
-                .AnyAsync(a => a.SubmissionId == submissionId && a.ReviewerId == reviewerId);
-
-            if (existingAssignment)
+            if (alreadyExists)
             {
                 TempData["ErrorMessage"] = "Bu hakem bu özete zaten atanmış.";
                 return RedirectToAction("Assign", new { id = submissionId });
             }
 
+            // 2. Yeni atama kaydını oluştur
             var newAssignment = new ReviewAssignment
             {
                 ReviewAssignmentId = Guid.NewGuid(),
                 SubmissionId = submissionId,
                 ReviewerId = reviewerId,
                 AssignedDate = DateTime.UtcNow,
-                Status = "Atandı",
-                DueDate = DateTime.UtcNow.AddDays(14)
+                DueDate = DateTime.UtcNow.AddDays(14), // Örnek olarak 2 hafta süre verelim
+                Status = "Bekleniyor"
             };
 
             _context.ReviewAssignments.Add(newAssignment);
             await _context.SaveChangesAsync();
 
-            // --- ✅ YENİ E-POSTA GÖNDERME KODU BURAYA EKLENDİ ---
+            // 3. (İsteğe bağlı ama önerilir) Hakeme bilgilendirme e-postası gönder
             try
             {
-                // Atama yapılan hakemin bilgilerini bul
-                var reviewer = await _context.Reviewers.Include(r => r.AppUser).FirstOrDefaultAsync(r => r.Id == reviewerId);
+                var reviewer = await _userManager.FindByIdAsync(reviewerId);
                 var submission = await _context.Submissions.FindAsync(submissionId);
-
-                if (reviewer != null && submission != null && !string.IsNullOrEmpty(reviewer.AppUser.Email))
+                if (reviewer != null && submission != null)
                 {
-                    var subject = "Yeni Değerlendirme Görevi Atandı";
-                    var message = $@"
-                        <h1>Merhaba {reviewer.AppUser.Email},</h1>
-                        <p>Size '{submission.Title}' başlıklı yeni bir özet değerlendirme görevi atanmıştır.</p>
-                        <p>Değerlendirmeyi tamamlamak için son tarih: <strong>{newAssignment.DueDate.ToShortDateString()}</strong></p>
-                        <p>Görevi görüntülemek ve değerlendirmenizi yapmak için lütfen sisteme giriş yapın.</p>
-                        <p>İyi çalışmalar dileriz,<br>Kongre Yönetim Sistemi</p>";
-
-                    await _emailService.SendEmailAsync(reviewer.AppUser.Email, subject, message);
+                    var subject = "Yeni Değerlendirme Görevi";
+                    var message = $"Merhaba {reviewer.DisplayName},<br><br>'{submission.Title}' başlıklı özeti değerlendirmeniz için görevlendirilmiş bulunmaktasınız. Sisteme giriş yaparak detayları görebilirsiniz.";
+                    await _emailService.SendEmailAsync(reviewer.Email, subject, message);
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"HAKEME E-POSTA GÖNDERİM HATASI: {ex.Message}");
+                // E-posta hatası olursa logla ama programı durdurma
+                System.Diagnostics.Debug.WriteLine($"E-POSTA GÖNDERİM HATASI (HAKEM ATAMA): {ex.Message}");
             }
-            // --- E-POSTA GÖNDERME KODU BİTİŞİ ---
 
-            TempData["SuccessMessage"] = "Atama başarıyla yapıldı.";
-            return RedirectToAction(nameof(Index));
+
+            TempData["SuccessMessage"] = $"Hakem başarıyla atandı.";
+            // Kullanıcıyı ana özet atama listesine geri yönlendir
+            return RedirectToAction("Index");
         }
 
     } 

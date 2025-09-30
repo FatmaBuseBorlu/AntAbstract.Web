@@ -16,9 +16,6 @@ namespace AntAbstract.Domain.Entities
         [Required]
         public Guid SubmissionId { get; set; }
 
-        [Required]
-        public Guid ReviewerId { get; set; }
-
         public DateTime AssignedDate { get; set; } = DateTime.UtcNow;
         public DateTime DueDate { get; set; }
 
@@ -29,8 +26,11 @@ namespace AntAbstract.Domain.Entities
         [ForeignKey(nameof(SubmissionId))]
         public Submission Submission { get; set; }
 
+        [Required]
+        public string ReviewerId { get; set; }
+
         [ForeignKey(nameof(ReviewerId))]
-        public Reviewer Reviewer { get; set; }
+        public AppUser AppUser { get; set; } // Tip "Reviewer"dan "AppUser"a değiştirildi ve ismi AppUser oldu.
 
         public Review Review { get; set; }
     }
