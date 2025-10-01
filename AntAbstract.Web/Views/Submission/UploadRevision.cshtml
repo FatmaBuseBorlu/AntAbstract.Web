@@ -1,12 +1,13 @@
 ﻿@model AntAbstract.Domain.Entities.Submission
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Revizyon Yükle";
+    ViewData["Title"] = Localizer["PageTitle"];
 }
 
-<h1 class="display-5">Revizyon Yükle</h1>
-<h4>"@Model.Title"</h4>
-<p class="lead">Lütfen hakem yorumları doğrultusunda güncellediğiniz özet metnini ve dosyasını yükleyin.</p>
+<h1 class="display-5">@Localizer["PageTitle"]</h1>
+<h4 class="text-muted fw-light">"@Model.Title"</h4>
+<p class="lead">@Localizer["PageLead"]</p>
 <hr />
 <div class="row">
     <div class="col-md-8">
@@ -15,24 +16,24 @@
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
             <div class="mb-3">
-                <label asp-for="Title" class="form-label fw-bold">Başlık (Değiştirilemez)</label>
+                <label asp-for="Title" class="form-label fw-bold">@Localizer["TitleLabel"]</label>
                 <input asp-for="Title" class="form-control" readonly />
             </div>
 
             <div class="mb-3">
-                <label asp-for="AbstractText" class="form-label fw-bold">Güncellenmiş Özet Metni</label>
+                <label asp-for="AbstractText" class="form-label fw-bold">@Localizer["AbstractTextLabel"]</label>
                 <textarea asp-for="AbstractText" class="form-control" rows="8"></textarea>
             </div>
 
             <div class="mb-3">
-                <label for="revisionFile" class="form-label fw-bold">Yeni Özet Dosyası</label>
-                <p class="text-muted">Mevcut Dosya: <a href="@Model.FilePath" target="_blank">@Model.FilePath</a></p>
+                <label for="revisionFile" class="form-label fw-bold">@Localizer["FileLabel"]</label>
+                <p class="text-muted">@Localizer["CurrentFile"] <a href="@Model.FilePath" target="_blank">@Model.FilePath</a></p>
                 <input type="file" name="revisionFile" class="form-control" required />
             </div>
 
             <div class="form-group mt-4">
-                <input type="submit" value="Revizyonu Gönder" class="btn btn-primary" />
-                <a asp-action="Index" class="btn btn-outline-secondary">İptal</a>
+                <button type="submit" class="btn btn-primary">@Localizer["SubmitButton"]</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">@Localizer["CancelButton"]</a>
             </div>
         </form>
     </div>

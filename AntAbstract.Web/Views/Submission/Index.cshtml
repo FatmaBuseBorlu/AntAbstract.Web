@@ -18,9 +18,6 @@
     </p>
 </div>
 
-<p class="lead">
-    Gönderdiğiniz özetlerin listesi ve güncel durumları bu sayfada görüntülenecektir.
-</p>
 @if (TempData["SuccessMessage"] != null)
 {
     <div class="alert alert-success">@TempData["SuccessMessage"]</div>
@@ -29,18 +26,18 @@
 @if (!Model.Any())
 {
     <div class="alert alert-info mt-4">
-        Henüz gönderilmiş bir özetiniz bulunmamaktadır. İlk özetinizi göndermek için yukarıdaki butonu kullanın.
+        @Localizer["EmptyListMessage"]
     </div>
 }
 else
 {
     <table class="table table-hover">
-        <thead>
+        <thead class="table-light">
             <tr>
-                <th>Başlık</th>
-                <th>Durum</th>
-                <th>Gönderim Tarihi</th>
-                <th style="width: 25%;">İşlemler</th>
+                <th>@Localizer["TableHeaderTitle"]</th>
+                <th>@Localizer["TableHeaderStatus"]</th>
+                <th>@Localizer["TableHeaderDate"]</th>
+                <th style="width: 25%;">@Localizer["TableHeaderActions"]</th>
             </tr>
         </thead>
         <tbody>
@@ -49,41 +46,28 @@ else
                 <tr>
                     <td><strong>@item.Title</strong></td>
                     <td>
-                        @if (item.Status == "Kabul Edildi")
-                        {
-                            <span class="badge bg-success">@item.Status</span>
+                        @{
+                            var statusText = Localizer[item.Status ?? ""];
+                            var statusClass = "bg-secondary"; // Varsayılan renk
+                            if (item.Status == "Kabul Edildi") { statusClass = "bg-success"; }
+                            else if (item.Status == "Reddedildi") { statusClass = "bg-danger"; }
+                            else if (item.Status == "Revizyon Tamamlandı") { statusClass = "bg-info"; }
+                            else if (item.Status == "Küçük Revizyon Gerekli" || item.Status == "Büyük Revizyon Gerekli") { statusClass = "bg-warning text-dark"; }
                         }
-                        else if (item.Status == "Reddedildi")
-                        {
-                            <span class="badge bg-danger">@item.Status</span>
-                        }
-                        else if (item.Status == "Revizyon Tamamlandı")
-                        {
-                            <span class="badge bg-info">@item.Status</span>
-                        }
-                        else if (item.Status == "Küçük Revizyon Gerekli" || item.Status == "Büyük Revizyon Gerekli")
-                        {
-                            <span class="badge bg-warning text-dark">@item.Status</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-secondary">@item.Status</span>
-                        }
+                        <span class="badge @statusClass">@statusText</span>
                     </td>
                     <td>@item.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
                     <td>
-                        <a asp-action="Details" asp-route-submissionId="@item.SubmissionId" class="btn btn-sm btn-outline-info">Detay</a>
+                        <a asp-action="Details" asp-route-submissionId="@item.SubmissionId" class="btn btn-sm btn-outline-info">@Localizer["DetailsButton"]</a>
 
                         @if (item.Status == "Küçük Revizyon Gerekli" || item.Status == "Büyük Revizyon Gerekli")
                         {
-                            // Eğer revizyon istenmişse, "Revizyon Yükle" butonu göster
-                            <a asp-action="UploadRevision" asp-route-id="@item.SubmissionId" class="btn btn-sm btn-success">Revizyon Yükle</a>
+                            <a asp-action="UploadRevision" asp-route-id="@item.SubmissionId" class="btn btn-sm btn-success">@Localizer["UploadRevisionButton"]</a>
                         }
                         else if (item.Status == "Yeni Gönderildi")
                         {
-                            // Sadece yeni gönderilmişse düzenleyip silebilsin
-                            <a asp-action="Edit" asp-route-submissionId="@item.SubmissionId" class="btn btn-sm btn-outline-warning">Düzenle</a>
-                            <a asp-action="Delete" asp-route-submissionId="@item.SubmissionId" class="btn btn-sm btn-outline-danger">Sil</a>
+                            <a asp-action="Edit" asp-route-submissionId="@item.SubmissionId" class="btn btn-sm btn-outline-warning">@Localizer["EditButton"]</a>
+                            <a asp-action="Delete" asp-route-submissionId="@item.SubmissionId" class="btn btn-sm btn-outline-danger">@Localizer["DeleteButton"]</a>
                         }
                     </td>
                 </tr>

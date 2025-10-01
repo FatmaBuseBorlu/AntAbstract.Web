@@ -1,11 +1,12 @@
 ﻿@model AntAbstract.Web.Models.ViewModels.ManageCriteriaViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Kriterleri Yönet";
+    ViewData["Title"] = Localizer["PageTitle"];
 }
 
 <h1 class="display-5">@Model.Form.Title</h1>
-<p class="lead text-muted">Bu değerlendirme formuna ait soruları (kriterleri) yönetin.</p>
+<p class="lead text-muted">@Localizer["PageLead"]</p>
 <hr />
 
 @if (TempData["SuccessMessage"] != null)
@@ -19,10 +20,10 @@
 
 <div class="row g-5">
     <div class="col-md-7">
-        <h4>Mevcut Kriterler</h4>
+        <h4>@Localizer["ExistingCriteriaHeader"]</h4>
         @if (!Model.ExistingCriteria.Any())
         {
-            <p>Bu forma henüz bir kriter eklenmemiş.</p>
+            <p>@Localizer["NoExistingCriteria"]</p>
         }
         else
         {
@@ -34,15 +35,14 @@
                             <span>@criterion.DisplayOrder. @criterion.QuestionText</span>
                             <span class="badge bg-secondary ms-2">@criterion.CriterionType</span>
                         </div>
-
                         <div class="d-flex">
-                            <a asp-action="EditCriterion" asp-route-id="@criterion.Id" class="btn btn-sm btn-outline-warning me-2" title="Düzenle">
+                            <a asp-action="EditCriterion" asp-route-id="@criterion.Id" class="btn btn-sm btn-outline-warning me-2" title="@Localizer["EditButton"]">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <form asp-action="DeleteCriterion" method="post" onsubmit="return confirm('Bu kriteri silmek istediğinizden emin misiniz?');">
+                            <form asp-action="DeleteCriterion" method="post" onsubmit="return confirm('@Localizer["DeleteConfirm"]');">
                                 <input type="hidden" name="criterionId" value="@criterion.Id" />
                                 <input type="hidden" name="formId" value="@Model.Form.Id" />
-                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Sil">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="@Localizer["DeleteButton"]">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
@@ -56,32 +56,32 @@
     <div class="col-md-5">
         <div class="card bg-light">
             <div class="card-body">
-                <h4 class="card-title">Yeni Kriter Ekle</h4>
+                <h4 class="card-title">@Localizer["AddNewCriterionHeader"]</h4>
                 <form asp-action="AddCriterion" method="post">
                     <input type="hidden" asp-for="NewCriterion.FormId" />
 
                     <div class="mb-3">
-                        <label asp-for="NewCriterion.QuestionText" class="form-label fw-bold">Soru Metni</label>
+                        <label asp-for="NewCriterion.QuestionText" class="form-label fw-bold">@Localizer["QuestionLabel"]</label>
                         <textarea asp-for="NewCriterion.QuestionText" class="form-control" rows="3"></textarea>
                         <span asp-validation-for="NewCriterion.QuestionText" class="text-danger"></span>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="NewCriterion.CriterionType" class="form-label fw-bold">Soru Tipi</label>
+                        <label asp-for="NewCriterion.CriterionType" class="form-label fw-bold">@Localizer["TypeLabel"]</label>
                         <select asp-for="NewCriterion.CriterionType" asp-items="Model.CriterionTypes" class="form-select">
-                            <option value="">-- Tip Seçin --</option>
+                            <option value="">@Localizer["SelectType"]</option>
                         </select>
                         <span asp-validation-for="NewCriterion.CriterionType" class="text-danger"></span>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="NewCriterion.DisplayOrder" class="form-label fw-bold">Görünme Sırası</label>
+                        <label asp-for="NewCriterion.DisplayOrder" class="form-label fw-bold">@Localizer["OrderLabel"]</label>
                         <input asp-for="NewCriterion.DisplayOrder" type="number" class="form-control" />
                         <span asp-validation-for="NewCriterion.DisplayOrder" class="text-danger"></span>
                     </div>
 
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-success">Ekle</button>
+                        <button type="submit" class="btn btn-success">@Localizer["AddButton"]</button>
                     </div>
                 </form>
             </div>
@@ -91,6 +91,6 @@
 
 <div class="mt-4">
     <a asp-action="Index" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Form Listesine Geri Dön
+        <i class="bi bi-arrow-left"></i> @Localizer["BackToListLink"]
     </a>
 </div>

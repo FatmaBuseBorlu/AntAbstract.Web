@@ -6,14 +6,14 @@
 }
 
 <h1 class="display-5">@Localizer["PageTitle"]</h1>
-<p class="lead text-muted">@Localizer["PageLead"]</p>
+<p class="lead text-muted">@Localizer["PageLead", Model.Title]</p>
 <hr />
 
 <div class="row">
     <div class="col-md-6">
-        <form asp-action="Create" method="post">
+        <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
+            <input type="hidden" asp-for="Id" />
             <input type="hidden" asp-for="ConferenceId" />
 
             <div class="form-group mb-3">
@@ -23,7 +23,7 @@
             </div>
 
             <div class="form-group mt-4">
-                <button type="submit" class="btn btn-success">@Localizer["CreateButton"]</button>
+                <button type="submit" class="btn btn-primary">@Localizer["SaveButton"]</button>
                 <a asp-action="Index" class="btn btn-outline-secondary">@Localizer["BackToListLink"]</a>
             </div>
         </form>
@@ -31,5 +31,7 @@
 </div>
 
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

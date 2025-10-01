@@ -1,29 +1,34 @@
-﻿@using AntAbstract.Domain.Entities
-@model IEnumerable<ReviewAssignment>
+﻿@model IEnumerable<AntAbstract.Domain.Entities.ReviewAssignment>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Değerlendirme Görevlerim";
+    ViewData["Title"] = Localizer["PageTitle"];
 }
 
-<h1 class="display-5">@ViewData["Title"]</h1>
-<p class="lead">Size atanmış ve değerlendirmenizi bekleyen özetlerin listesi.</p>
+<h1 class="display-5">@Localizer["PageTitle"]</h1>
+<p class="lead text-muted">@Localizer["PageLead"]</p>
 <hr />
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+}
 
 @if (!Model.Any())
 {
     <div class="alert alert-info">
-        Size atanmış aktif bir değerlendirme görevi bulunmamaktadır.
+        @Localizer["EmptyListMessage"]
     </div>
 }
 else
 {
     <table class="table table-hover">
-        <thead>
+        <thead class="table-light">
             <tr>
-                <th>Özet Başlığı</th>
-                <th>Atama Durumu</th>
-                <th>Son Teslim Tarihi</th>
-                <th style="width: 15%;">İşlemler</th>
+                <th>@Localizer["TableHeaderTitle"]</th>
+                <th>@Localizer["TableHeaderStatus"]</th>
+                <th>@Localizer["TableHeaderDueDate"]</th>
+                <th style="width: 15%;">@Localizer["TableHeaderActions"]</th>
             </tr>
         </thead>
         <tbody>
@@ -31,11 +36,18 @@ else
             {
                 <tr>
                     <td><strong>@item.Submission.Title</strong></td>
-                    <td><span class="badge bg-primary">@item.Status</span></td>
+                    <td>
+                        @{
+                            var statusClass = item.Status == "Completed" ? "bg-success" : "bg-primary";
+                        }
+                        <span class="badge @statusClass">@Localizer[item.Status ?? "Bekleniyor"]</span>
+                    </td>
                     <td>@item.DueDate.ToLocalTime().ToString("dd MMMM yyyy")</td>
                     <td>
-                        @* Bu linki bir sonraki adımda yapacağız *@
-                        <a asp-action="PerformReview" asp-route-id="@item.ReviewAssignmentId" class="btn btn-primary">Değerlendir</a>
+                        @if (item.Status != "Completed")
+                        {
+                            <a asp-action="PerformReview" asp-route-id="@item.ReviewAssignmentId" class="btn btn-primary">@Localizer["ReviewButton"]</a>
+                        }
                     </td>
                 </tr>
             }

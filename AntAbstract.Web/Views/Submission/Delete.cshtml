@@ -1,15 +1,18 @@
 ﻿@model AntAbstract.Domain.Entities.Submission
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
 @{
-    ViewData["Title"] = "Silme Onayı";
+    ViewData["Title"] = Localizer["PageTitle"];
 }
 
-<h1 class="text-danger">Silme Onayı</h1>
-<h3>"@Model.Title" başlıklı özeti kalıcı olarak silmek istediğinizden emin misiniz?</h3>
+<h1 class="text-danger">@Localizer["PageTitle"]</h1>
+<h3>@Localizer["ConfirmationMessage", Model.Title]</h3>
+<hr />
+
 <div>
-    <hr />
     <form asp-action="Delete">
         <input type="hidden" asp-for="SubmissionId" />
-        <input type="submit" value="Evet, Sil" class="btn btn-danger" />
-        <a asp-action="Index" class="btn btn-secondary">İptal</a>
+        <button type="submit" class="btn btn-danger">@Localizer["DeleteButton"]</button>
+        <a asp-action="Index" class="btn btn-secondary">@Localizer["CancelButton"]</a>
     </form>
 </div>

@@ -1,68 +1,68 @@
-﻿@using AntAbstract.Domain.Entities
-@model ReviewAssignment
+﻿@model AntAbstract.Domain.Entities.ReviewAssignment
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Özeti Değerlendir";
+    ViewData["Title"] = Localizer["PageTitle"];
 }
 
-<h1 class="display-5">@ViewData["Title"]</h1>
-<p class="lead">Lütfen aşağıdaki özeti dikkatlice inceleyerek görüşlerinizi belirtin.</p>
+<h1 class="display-5">@Localizer["PageTitle"]</h1>
+<p class="lead text-muted">@Localizer["PageLead"]</p>
 <hr />
 
 <div class="row">
     <div class="col-md-8">
-        <h4>Değerlendirilen Özet</h4>
+        <h4>@Localizer["AbstractHeader"]</h4>
         <dl class="row mt-3 bg-light p-3 rounded">
-            <dt class="col-sm-3">Başlık</dt>
+            <dt class="col-sm-3">@Localizer["TitleLabel"]</dt>
             <dd class="col-sm-9">@Model.Submission.Title</dd>
 
-            <dt class="col-sm-3">Özet Metni</dt>
+            <dt class="col-sm-3">@Localizer["AbstractTextLabel"]</dt>
             <dd class="col-sm-9" style="white-space: pre-wrap;">@Model.Submission.AbstractText</dd>
         </dl>
 
         <hr />
 
-        <h4 class="mt-4">Değerlendirmeniz</h4>
+        <h4 class="mt-4">@Localizer["YourReviewHeader"]</h4>
         <form asp-action="Evaluate" method="post">
             <input type="hidden" name="assignmentId" value="@Model.ReviewAssignmentId" />
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
             <div class="form-group mb-3">
-                <label for="recommendation" class="control-label fw-bold">Öneriniz</label>
+                <label for="recommendation" class="control-label fw-bold">@Localizer["RecommendationLabel"]</label>
                 <select name="recommendation" class="form-select" required>
-                    <option value="">-- Lütfen bir karar seçin --</option>
-                    <option value="Kabul Et">Kabul Et</option>
-                    <option value="Reddet">Reddet</option>
-                    <option value="Küçük Revizyon">Küçük Revizyon</option>
-                    <option value="Büyük Revizyon">Büyük Revizyon</option>
+                    <option value="">@Localizer["SelectRecommendation"]</option>
+                    <option value="Kabul Et">@Localizer["Accept"]</option>
+                    <option value="Reddet">@Localizer["Reject"]</option>
+                    <option value="Küçük Revizyon">@Localizer["MinorRevision"]</option>
+                    <option value="Büyük Revizyon">@Localizer["MajorRevision"]</option>
                 </select>
             </div>
 
             <div class="form-group mb-3">
-                <label for="score" class="control-label fw-bold">Genel Puan (1-5 Arası)</label>
+                <label for="score" class="control-label fw-bold">@Localizer["ScoreLabel"]</label>
                 <select name="score" class="form-select" required>
-                    <option value="">-- Puan --</option>
-                    <option value="1">1 - Çok Zayıf</option>
-                    <option value="2">2 - Zayıf</option>
-                    <option value="3">3 - Orta</option>
-                    <option value="4">4 - İyi</option>
-                    <option value="5">5 - Çok İyi</option>
+                    <option value="">@Localizer["SelectScore"]</option>
+                    <option value="1">@Localizer["Score1"]</option>
+                    <option value="2">@Localizer["Score2"]</option>
+                    <option value="3">@Localizer["Score3"]</option>
+                    <option value="4">@Localizer["Score4"]</option>
+                    <option value="5">@Localizer["Score5"]</option>
                 </select>
             </div>
 
             <div class="form-group mb-3">
-                <label for="commentsToAuthor" class="control-label fw-bold">Yazara Yorumlarınız (Bu yorumlar yazar tarafından görülecektir)</label>
+                <label for="commentsToAuthor" class="control-label fw-bold">@Localizer["AuthorCommentsLabel"]</label>
                 <textarea name="commentsToAuthor" class="form-control" rows="6"></textarea>
             </div>
 
             <div class="form-group mb-3">
-                <label for="confidentialComments" class="control-label fw-bold">Editöre Özel Yorumlarınız (Bu yorumlar sadece kongre komitesi tarafından görülecektir)</label>
+                <label for="confidentialComments" class="control-label fw-bold">@Localizer["EditorCommentsLabel"]</label>
                 <textarea name="confidentialComments" class="form-control" rows="4"></textarea>
             </div>
 
             <div class="form-group mt-4">
-                <input type="submit" value="Değerlendirmeyi Gönder" class="btn btn-primary" />
-                <a asp-action="Index" class="btn btn-outline-secondary">İptal</a>
+                <button type="submit" class="btn btn-primary">@Localizer["SubmitButton"]</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">@Localizer["CancelButton"]</a>
             </div>
         </form>
     </div>

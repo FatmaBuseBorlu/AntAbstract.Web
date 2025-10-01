@@ -17,42 +17,31 @@
     </p>
 </div>
 
-
-@if (!Model.Any())
-{
-    <div class="alert alert-info">@Localizer["EmptyListMessage"]</div>
-}
-else
-{
-    <table class="table table-hover">
-        <thead class="table-light">
+<table class="table table-hover">
+    <thead class="table-light">
+        <tr>
+            <th>@Localizer["TableHeaderTitle"]</th>
+            <th>@Localizer["TableHeaderDate"]</th>
+            <th>@Localizer["TableHeaderLocation"]</th>
+            <th>@Localizer["TableHeaderConference"]</th>
+            <th style="width: 25%;">@Localizer["TableHeaderActions"]</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
             <tr>
-                <th>@Localizer["TableHeaderTitle"]</th>
-                <th>@Localizer["TableHeaderDate"]</th>
-                <th>@Localizer["TableHeaderLocation"]</th>
-                <th style="width: 30%;">@Localizer["TableHeaderActions"]</th>
+                <td>@Html.DisplayFor(modelItem => item.Title)</td>
+                <td>@Html.DisplayFor(modelItem => item.SessionDate)</td>
+                <td>@Html.DisplayFor(modelItem => item.Location)</td>
+                <td>@Html.DisplayFor(modelItem => item.Conference.Title)</td>
+                <td>
+                    <a asp-action="Manage" asp-route-id="@item.Id" class="btn btn-sm btn-primary">@Localizer["ManageButton"]</a>
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">@Localizer["EditButton"]</a>
+                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">@Localizer["DetailsButton"]</a>
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">@Localizer["DeleteButton"]</a>
+                </td>
             </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
-            {
-                <tr>
-                    <td><strong>@item.Title</strong></td>
-                    <td>@item.SessionDate.ToString("dd MMM yyyy, HH:mm")</td>
-                    <td>@item.Location</td>
-                    <td>
-                        <a asp-action="Manage" asp-route-id="@item.Id" class="btn btn-sm btn-success">
-                            <i class="bi bi-calendar-check me-1"></i> @Localizer["ManageButton"]
-                        </a>
-                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">
-                            <i class="bi bi-pencil me-1"></i> @Localizer["EditButton"]
-                        </a>
-                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">
-                            <i class="bi bi-trash me-1"></i> @Localizer["DeleteButton"]
-                        </a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+        }
+    </tbody>
+</table>

@@ -1,11 +1,12 @@
 ﻿@model AntAbstract.Domain.Entities.ScientificField
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Bilimsel Alanı Düzenle";
+    ViewData["Title"] = Localizer["PageTitle"];
 }
 
-<h1 class="display-5">@ViewData["Title"]</h1>
-<h4>@Model.Name</h4>
+<h1 class="display-5">@Localizer["PageTitle"]</h1>
+<p class="lead text-muted">@Model.Name</p>
 <hr />
 <div class="row">
     <div class="col-md-6">
@@ -13,13 +14,13 @@
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Id" />
             <div class="form-group mb-3">
-                <label asp-for="Name" class="control-label fw-bold">Alan Adı</label>
+                <label asp-for="Name" class="control-label fw-bold">@Localizer["NameLabel"]</label>
                 <input asp-for="Name" class="form-control" />
                 <span asp-validation-for="Name" class="text-danger"></span>
             </div>
             <div class="form-group mt-4">
-                <input type="submit" value="Kaydet" class="btn btn-primary" />
-                <a asp-action="Index" class="btn btn-outline-secondary">Listeye Geri Dön</a>
+                <button type="submit" class="btn btn-primary">@Localizer["SaveButton"]</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">@Localizer["BackToListLink"]</a>
             </div>
         </form>
     </div>
