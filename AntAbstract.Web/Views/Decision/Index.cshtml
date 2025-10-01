@@ -1,12 +1,12 @@
-﻿@using AntAbstract.Web.Models.ViewModels
-@model DecisionIndexViewModel
+﻿@model AntAbstract.Web.Models.ViewModels.DecisionIndexViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Karar Ekranı";
+    ViewData["Title"] = Localizer["PageTitle"];
 }
 
-<h1 class="display-5">@ViewData["Title"]</h1>
-<p class="lead">Değerlendirmesi tamamlanmış ve nihai karar bekleyen özetler.</p>
+<h1 class="display-5">@Localizer["PageTitle"]</h1>
+<p class="lead text-muted">@Localizer["PageLead"]</p>
 <hr />
 
 @if (ViewBag.ErrorMessage != null)
@@ -15,22 +15,22 @@
     return;
 }
 
-<h3 class="mt-4">Karar Bekleyen Özetler</h3>
+<h3 class="mt-4">@Localizer["AwaitingDecisionHeader"]</h3>
 @if (!Model.AwaitingDecision.Any())
 {
     <div class="alert alert-info">
-        Şu anda karar bekleyen bir özet bulunmamaktadır.
+        @Localizer["NoAwaitingDecision"]
     </div>
 }
 else
 {
     <table class="table table-hover">
-        <thead>
+        <thead class="table-light">
             <tr>
-                <th>Başlık</th>
-                <th>Yazar</th>
-                <th>Hakem Sayısı</th>
-                <th style="width: 15%;">İşlemler</th>
+                <th>@Localizer["TableHeaderTitle"]</th>
+                <th>@Localizer["TableHeaderAuthor"]</th>
+                <th>@Localizer["TableHeaderReviewCount"]</th>
+                <th style="width: 15%;">@Localizer["TableHeaderActions"]</th>
             </tr>
         </thead>
         <tbody>
@@ -39,9 +39,9 @@ else
                 <tr>
                     <td><strong>@item.Title</strong></td>
                     <td>@item.Author.Email</td>
-                    <td>@item.ReviewAssignments.Count() Değerlendirme</td>
+                    <td>@item.ReviewAssignments.Count() @Localizer["ReviewCountText"]</td>
                     <td>
-                        <a asp-action="MakeDecision" asp-route-id="@item.SubmissionId" class="btn btn-info btn-sm">Karar Ver</a>
+                        <a asp-action="MakeDecision" asp-route-id="@item.SubmissionId" class="btn btn-primary btn-sm">@Localizer["MakeDecisionButton"]</a>
                     </td>
                 </tr>
             }
@@ -50,30 +50,34 @@ else
 }
 
 
-<h3 class="mt-5">Kararı Verilmiş Özetler</h3>
+<h3 class="mt-5">@Localizer["DecidedHeader"]</h3>
 @if (!Model.AlreadyDecided.Any())
 {
     <div class="alert alert-secondary">
-        Henüz nihai kararı verilmiş bir özet bulunmamaktadır.
+        @Localizer["NoDecided"]
     </div>
 }
 else
 {
-    <table class="table table-striped">
-        <thead>
+    <table class="table table-striped table-sm">
+        <thead class="table-light">
             <tr>
-                <th>Başlık</th>
-                <th>Yazar</th>
-                <th>Nihai Karar</th>
+                <th>@Localizer["TableHeaderTitle"]</th>
+                <th>@Localizer["TableHeaderAuthor"]</th>
+                <th>@Localizer["TableHeaderFinalDecision"]</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var item in Model.AlreadyDecided)
             {
-                <tr>
+                // Karara göre satır rengini dinamik olarak ayarla
+                var rowClass = item.FinalDecision == "Kabul Edildi" ? "table-success"
+                : item.FinalDecision == "Reddedildi" ? "table-danger"
+                : "table-warning";
+                <tr class="@rowClass">
                     <td>@item.Title</td>
                     <td>@item.Author.Email</td>
-                    <td><strong class="text-success">@item.FinalDecision</strong></td>
+                    <td><strong>@Localizer[item.FinalDecision]</strong></td>
                 </tr>
             }
         </tbody>

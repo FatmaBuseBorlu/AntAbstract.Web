@@ -1,33 +1,36 @@
 ﻿@model AntAbstract.Domain.Entities.Reviewer
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Hakem Düzenle";
+    ViewData["Title"] = Localizer["PageTitle"];
 }
 
-<h1 class="display-5">@ViewData["Title"]</h1>
-<h4>@Model.AppUser.Email</h4>
+<h1 class="display-5">@Localizer["PageTitle"]</h1>
+<h4 class="text-muted fw-light">@Model.AppUser.Email</h4>
 <hr />
 <div class="row">
     <div class="col-md-8">
         <form asp-action="Edit" asp-route-id="@Model.Id">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="AppUserId" />
+            <input type="hidden" asp-for="ConferenceId" />
 
             <div class="form-group mb-3">
-                <label asp-for="ExpertiseAreas" class="control-label fw-bold">Uzmanlık Alanları</label>
-                <textarea asp-for="ExpertiseAreas" class="form-control" rows="4" placeholder="Örn: Yapay Zeka, Veri Madenciliği, Web Güvenliği..."></textarea>
-                <span asp-validation-for="ExpertiseAreas" class="text-danger"></span>
+                <label asp-for="AppUser.ExpertiseAreas" class="control-label fw-bold">@Localizer["ExpertiseLabel"]</label>
+                <textarea asp-for="AppUser.ExpertiseAreas" class="form-control" rows="4" placeholder="@Localizer["ExpertisePlaceholder"]"></textarea>
+                <span asp-validation-for="AppUser.ExpertiseAreas" class="text-danger"></span>
             </div>
 
             <div class="form-group form-check mb-3">
                 <label class="form-check-label">
-                    <input class="form-check-input" asp-for="IsActive" /> @Html.DisplayNameFor(model => model.IsActive)
+                    <input class="form-check-input" asp-for="IsActive" /> @Localizer["IsActiveLabel"]
                 </label>
             </div>
 
             <div class="form-group mt-4">
-                <input type="submit" value="Kaydet" class="btn btn-primary" />
-                <a asp-action="Index" class="btn btn-outline-secondary">Listeye Geri Dön</a>
+                <button type="submit" class="btn btn-primary">@Localizer["SaveButton"]</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">@Localizer["BackToListLink"]</a>
             </div>
         </form>
     </div>

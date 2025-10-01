@@ -2,11 +2,11 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Yönetim Paneli";
+    ViewData["Title"] = Localizer["PanelTitle"];
 }
 
-<h1>@Localizer["PanelTitle"]</h1>
-<p class="lead">Kongreye ait genel istatistikler ve durum özeti.</p>
+<h1 class="display-5">@Localizer["PanelTitle"]</h1>
+<p class="lead text-muted">@Localizer["PageLead"]</p>
 <hr />
 
 <div class="row g-4">
@@ -15,7 +15,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h5 class="card-title mb-0">Toplam Kullanıcı</h5>
+                        <h5 class="card-title mb-0">@Localizer["CardTotalUsers"]</h5>
                         <h2 class="display-4">@Model.TotalUsers</h2>
                     </div>
                     <i class="bi bi-people-fill" style="font-size: 4rem; opacity: 0.5;"></i>
@@ -28,7 +28,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h5 class="card-title mb-0">Toplam Özet</h5>
+                        <h5 class="card-title mb-0">@Localizer["CardTotalSubmissions"]</h5>
                         <h2 class="display-4">@Model.TotalSubmissions</h2>
                     </div>
                     <i class="bi bi-file-earmark-text-fill" style="font-size: 4rem; opacity: 0.5;"></i>
@@ -41,7 +41,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h5 class="card-title mb-0">Toplam Değerlendirme</h5>
+                        <h5 class="card-title mb-0">@Localizer["CardTotalReviews"]</h5>
                         <h2 class="display-4">@Model.TotalReviews</h2>
                     </div>
                     <i class="bi bi-check2-square" style="font-size: 4rem; opacity: 0.5;"></i>
@@ -52,13 +52,11 @@
 </div>
 
 <div class="row mt-5 g-4">
-
     <div class="col-md-7">
         <div class="card shadow-sm h-100">
             <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="bi bi-pie-chart-fill me-2"></i>
-                    Özet Karar Dağılımı
+                    <i class="bi bi-pie-chart-fill me-2"></i> @Localizer["ChartTitle"]
                 </h5>
             </div>
             <div class="card-body d-flex align-items-center justify-content-center">
@@ -68,60 +66,54 @@
                 }
                 else
                 {
-                    <p class="text-muted">Grafiği oluşturacak yeterli veri (kararı verilmiş özet) bulunmamaktadır.</p>
+                    <p class="text-muted">@Localizer["ChartNoData"]</p>
                 }
             </div>
         </div>
     </div>
-
     <div class="col-md-5">
         <div class="card shadow-sm h-100">
             <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="bi bi-tools me-2"></i>
-                    Hızlı İşlemler
+                    <i class="bi bi-tools me-2"></i> @Localizer["QuickActionsHeader"]
                 </h5>
             </div>
             <div class="card-body">
-                <p>Sık kullanılan yönetimsel işlemleri buradan başlatabilirsiniz.</p>
+                <p>@Localizer["QuickActionsLead"]</p>
                 <div class="list-group">
                     <a asp-controller="Certificate" asp-action="GenerateForAllAcceptedAuthors" class="list-group-item list-group-item-action">
-                        <i class="bi bi-award-fill me-2"></i>
-                        Kabul Edilen Yazarlara Sertifika Üret
+                        <i class="bi bi-award-fill me-2"></i> @Localizer["GenerateCertificatesLink"]
                     </a>
                 </div>
             </div>
         </div>
     </div>
-
 </div>
+
 @section Scripts {
     @if (Model.ChartData.Any())
     {
-        var chartLabelsJson = Json.Serialize(Model.ChartLabels);
+        var chartLabelsJson = Json.Serialize(Model.ChartLabels.Select(l => Localizer[l].Value));
         var chartDataJson = Json.Serialize(Model.ChartData);
 
         <script>
             const labels = @Html.Raw(chartLabelsJson);
             const data = @Html.Raw(chartDataJson);
-
             const colorMap = {
-                'Kabul Edildi': 'rgba(25, 135, 84, 0.8)',      // Yeşil
-                'Reddedildi': 'rgba(220, 53, 69, 0.8)',      // Kırmızı
-                'Büyük Revizyon Gerekli': 'rgba(13, 110, 253, 0.8)', // MAVİ
-                'Küçük Revizyon Gerekli': 'rgba(255, 193, 7, 0.8)'   // SARI
+                '@Localizer["Kabul Edildi"]': 'rgba(25, 135, 84, 0.8)',
+                '@Localizer["Reddedildi"]': 'rgba(220, 53, 69, 0.8)',
+                '@Localizer["Büyük Revizyon Gerekli"]': 'rgba(13, 110, 253, 0.8)',
+                '@Localizer["Küçük Revizyon Gerekli"]': 'rgba(255, 193, 7, 0.8)'
             };
-
             const backgroundColors = labels.map(label => colorMap[label] || 'rgba(108, 117, 125, 0.8)');
-
             const ctx = document.getElementById('decisionChart');
 
             new Chart(ctx, {
-                type: 'bar', // ✅ TEK DEĞİŞİKLİK BURADA: 'pie' -> 'bar'
+                type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Özet Sayısı',
+                        label: '@Localizer["CardTotalSubmissions"]',
                         data: data,
                         backgroundColor: backgroundColors,
                         borderColor: backgroundColors,
@@ -130,16 +122,8 @@
                 },
                 options: {
                     responsive: true,
-                    plugins: {
-                        legend: {
-                            display: false // Çubuk grafikte etiketler altta olduğu için buna gerek yok
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true // Y ekseni 0'dan başlasın
-                        }
-                    }
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
                 }
             });
         </script>

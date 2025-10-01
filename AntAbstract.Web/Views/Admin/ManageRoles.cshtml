@@ -1,12 +1,12 @@
-﻿@using AntAbstract.Web.Models.ViewModels
-@model ManageUserRolesViewModel
+﻿@model AntAbstract.Web.Models.ViewModels.ManageUserRolesViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Rolleri Yönet";
+    ViewData["Title"] = Localizer["PageTitle"];
 }
 
-<h1 class="display-5">@ViewData["Title"]</h1>
-<h4>Kullanıcı: @Model.UserEmail</h4>
+<h1 class="display-5">@Localizer["PageTitle"]</h1>
+<h4>@Localizer["UserLabel"] @Model.UserEmail</h4>
 <hr />
 
 <div class="row">
@@ -15,7 +15,7 @@
             <input asp-for="UserId" type="hidden" />
             <div class="card">
                 <div class="card-header">
-                    Bu kullanıcıya rol ata veya rollerini kaldır
+                    @Localizer["CardHeader"]
                 </div>
                 <div class="card-body">
                     @for (int i = 0; i < Model.Roles.Count; i++)
@@ -30,8 +30,8 @@
                     }
                 </div>
                 <div class="card-footer">
-                    <input type="submit" value="Güncelle" class="btn btn-primary" />
-                    <a asp-action="UserList" class="btn btn-secondary">İptal</a>
+                    <button type="submit" class="btn btn-primary">@Localizer["UpdateButton"]</button>
+                    <a asp-action="UserList" class="btn btn-secondary">@Localizer["CancelButton"]</a>
                 </div>
             </div>
         </form>

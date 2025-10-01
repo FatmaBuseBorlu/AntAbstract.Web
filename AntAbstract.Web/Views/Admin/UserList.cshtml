@@ -1,24 +1,23 @@
 ﻿@using AntAbstract.Domain.Entities
 @using Microsoft.AspNetCore.Identity
 @model IEnumerable<AppUser>
-
-@* UserManager'ı View içinde kullanabilmek için enjekte ediyoruz *@
 @inject UserManager<AppUser> UserManager
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Kullanıcı Yönetimi";
+    ViewData["Title"] = Localizer["PageTitle"];
 }
 
-<h1 class="display-5">@ViewData["Title"]</h1>
-<p class="lead">Sisteme kayıtlı tüm kullanıcıların listesi ve rolleri.</p>
+<h1 class="display-5">@Localizer["PageTitle"]</h1>
+<p class="lead text-muted">@Localizer["PageLead"]</p>
 <hr />
 
 <table class="table table-hover">
-    <thead>
+    <thead class="table-light">
         <tr>
-            <th>Email</th>
-            <th>Roller</th>
-            <th style="width: 20%;">İşlemler</th>
+            <th>@Localizer["TableHeaderEmail"]</th>
+            <th>@Localizer["TableHeaderRoles"]</th>
+            <th style="width: 20%;">@Localizer["TableHeaderActions"]</th>
         </tr>
     </thead>
     <tbody>
@@ -28,15 +27,12 @@
                 <td>@user.Email</td>
                 <td>
                     @{
-                        // Her kullanıcı için rollerini alıyoruz
                         var roles = await UserManager.GetRolesAsync(user);
-                        // Rolleri virgülle ayırarak tek bir satırda yazdırıyoruz
                         <span>@string.Join(", ", roles)</span>
                     }
                 </td>
                 <td>
-                    @* Bu butonu bir sonraki adımda çalışır hale getireceğiz *@
-                    <a asp-action="ManageRoles" asp-route-userId="@user.Id" class="btn btn-sm btn-primary">Rolleri Yönet</a>
+                    <a asp-action="ManageRoles" asp-route-userId="@user.Id" class="btn btn-sm btn-primary">@Localizer["ManageRolesButton"]</a>
                 </td>
             </tr>
         }

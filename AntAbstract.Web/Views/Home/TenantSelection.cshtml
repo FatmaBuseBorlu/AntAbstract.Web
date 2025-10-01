@@ -1,28 +1,28 @@
-﻿@using AntAbstract.Domain.Entities
-@model IEnumerable<Tenant>
+﻿@model IEnumerable<AntAbstract.Domain.Entities.Tenant>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Kongre Seçimi";
+    ViewData["Title"] = Localizer["PageTitle"];
 }
 
 <div class="text-center">
-    <h1 class="display-4">Kongre Yönetim Sistemine Hoş Geldiniz</h1>
-    <p class="lead">Lütfen yönetmek istediğiniz kongreyi seçin.</p>
+    <h1 class="display-4">@Localizer["WelcomeMessage"]</h1>
+    <p class="lead text-muted">@Localizer["PageLead"]</p>
 </div>
 
 <div class="row row-cols-1 row-cols-md-3 g-4 mt-4">
     @foreach (var tenant in Model)
     {
         <div class="col">
-            <div class="card h-100 text-center">
-                <div class="card-header">
+            <div class="card h-100 text-center shadow-sm">
+                <div class="card-header py-3">
                     @if (!string.IsNullOrEmpty(tenant.LogoUrl))
                     {
                         <img src="@tenant.LogoUrl" class="card-img-top" alt="@tenant.Name Logosu" style="max-height: 80px; width: auto;" />
                     }
                     else
                     {
-                        <i class="bi bi-person-workspace" style="font-size: 48px;"></i>
+                        <i class="bi bi-person-workspace" style="font-size: 48px; color: #6c757d;"></i>
                     }
                 </div>
                 <div class="card-body">
@@ -30,7 +30,7 @@
                     <p class="card-text text-muted">/@tenant.Slug</p>
                 </div>
                 <div class="card-footer">
-                    <a asp-controller="Home" asp-action="Index" asp-route-tenant="@tenant.Slug" class="btn btn-primary w-100">Yönet</a>
+                    <a asp-controller="Home" asp-action="Index" asp-route-tenant="@tenant.Slug" class="btn btn-primary w-100">@Localizer["ManageButton"]</a>
                 </div>
             </div>
         </div>

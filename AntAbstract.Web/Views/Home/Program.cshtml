@@ -1,13 +1,14 @@
 ﻿@model IEnumerable<AntAbstract.Domain.Entities.Session>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Kongre Programı";
+    ViewData["Title"] = Localizer["PageTitle"];
 }
 
 <div class="container mt-4">
     <div class="text-center mb-5">
-        <h1 class="display-4">@ViewData["Title"]</h1>
-        <p class="lead text-muted">Oturumlar ve sunumların tam listesi.</p>
+        <h1 class="display-4">@Localizer["PageTitle"]</h1>
+        <p class="lead text-muted">@Localizer["PageLead"]</p>
     </div>
 
     @if (ViewBag.ErrorMessage != null)
@@ -16,7 +17,7 @@
     }
     else if (!Model.Any())
     {
-        <div class="alert alert-info">Bu kongre için henüz programa eklenmiş bir oturum bulunmamaktadır.</div>
+        <div class="alert alert-info">@Localizer["EmptyListMessage"]</div>
     }
     else
     {
@@ -40,7 +41,7 @@
                             <li class="list-group-item">
                                 <h6 class="mb-1">@submission.Title</h6>
                                 <p class="mb-0 text-muted">
-                                    <i class="bi bi-person-fill me-2"></i>Sunan: @submission.Author?.Email
+                                    <i class="bi bi-person-fill me-2"></i>@Localizer["PresenterLabel"] @submission.Author?.DisplayName
                                 </p>
                             </li>
                         }

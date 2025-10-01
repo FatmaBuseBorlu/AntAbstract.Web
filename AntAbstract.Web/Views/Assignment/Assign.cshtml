@@ -1,24 +1,33 @@
 ﻿@model AntAbstract.Web.Models.ViewModels.AssignReviewerViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Hakem Ata";
+    ViewData["Title"] = Localizer["PageTitle"];
 }
 
 <h1 class="display-5">@Model.Submission.Title</h1>
-<p class="lead text-muted">"<strong>@Model.Submission.Author.DisplayName</strong>" tarafından gönderilen bu özete hakem atayın.</p>
-<p><strong>Anahtar Kelimeler:</strong> <span class="badge bg-info">@Model.Submission.Keywords</span></p>
+<p class="lead text-muted">@Localizer["PageLead", Model.Submission.Author.DisplayName]</p>
+<p><strong>@Localizer["KeywordsLabel"]</strong> <span class="badge bg-info">@Model.Submission.Keywords</span></p>
 <hr />
 
 <h4>
-    <i class="bi bi-stars text-warning"></i> Önerilen Hakemler
+    <i class="bi bi-stars text-warning"></i> @Localizer["RecommendedHeader"]
 </h4>
 @if (!Model.RecommendedReviewers.Any())
 {
-    <div class="alert alert-secondary">Bu özet için uygun bir öneri bulunamadı.</div>
+    <div class="alert alert-secondary">@Localizer["NoRecommendations"]</div>
 }
 else
 {
     <table class="table table-sm table-striped">
+        <thead>
+            <tr>
+                <th>@Localizer["TableHeaderName"]</th>
+                <th>@Localizer["TableHeaderEmail"]</th>
+                <th>@Localizer["TableHeaderExpertise"]</th>
+                <th></th>
+            </tr>
+        </thead>
         <tbody>
             @foreach (var reviewer in Model.RecommendedReviewers)
             {
@@ -30,7 +39,7 @@ else
                         <form asp-action="AssignReviewer" method="post">
                             <input type="hidden" name="submissionId" value="@Model.Submission.SubmissionId" />
                             <input type="hidden" name="reviewerId" value="@reviewer.Id" />
-                            <button type="submit" class="btn btn-sm btn-warning">Bu Hakemi Ata</button>
+                            <button type="submit" class="btn btn-sm btn-warning">@Localizer["AssignRecommendedBtn"]</button>
                         </form>
                     </td>
                 </tr>
@@ -41,8 +50,16 @@ else
 
 <hr class="my-4" />
 
-<h4>Tüm Hakemler</h4>
+<h4>@Localizer["AllReviewersHeader"]</h4>
 <table class="table table-sm table-hover">
+    <thead>
+        <tr>
+            <th>@Localizer["TableHeaderName"]</th>
+            <th>@Localizer["TableHeaderEmail"]</th>
+            <th>@Localizer["TableHeaderExpertise"]</th>
+            <th></th>
+        </tr>
+    </thead>
     <tbody>
         @foreach (var reviewer in Model.AllOtherReviewers)
         {
@@ -54,7 +71,7 @@ else
                     <form asp-action="AssignReviewer" method="post">
                         <input type="hidden" name="submissionId" value="@Model.Submission.SubmissionId" />
                         <input type="hidden" name="reviewerId" value="@reviewer.Id" />
-                        <button type="submit" class="btn btn-sm btn-outline-primary">Ata</button>
+                        <button type="submit" class="btn btn-sm btn-outline-primary">@Localizer["AssignBtn"]</button>
                     </form>
                 </td>
             </tr>

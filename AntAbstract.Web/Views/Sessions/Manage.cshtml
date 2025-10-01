@@ -1,89 +1,89 @@
-﻿@model AntAbstract.Web.Models.ViewModels.SessionManageViewModel
+﻿@model AntAbstract.Web.Models.ViewModels.ManageCriteriaViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Oturum Programını Yönet";
+    ViewData["Title"] = Localizer["PageTitle"];
 }
 
-<h1 class="display-5">@ViewData["Title"]</h1>
-<h4 class="text-muted fw-light">Oturum: @Model.Session.Title</h4>
+<h1 class="display-5">@Model.Form.Title</h1>
+<p class="lead text-muted">@Localizer["PageLead"]</p>
 <hr />
 
-<div class="row g-4">
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
 
-    <div class="col-md-6">
-        <div class="card shadow-sm">
-            <div class="card-header bg-light">
-                <h5 class="mb-0">
-                    <i class="bi bi-plus-circle-dotted me-2"></i>
-                    Atanabilecek Özetler
-                    <span class="badge bg-secondary ms-1">@Model.AvailableSubmissions.Count</span>
-                </h5>
-            </div>
-            <div class="card-body">
-                @if (!Model.AvailableSubmissions.Any())
+<div class="row g-5">
+    <div class="col-md-7">
+        <h4>@Localizer["ExistingCriteriaHeader"]</h4>
+        @if (!Model.ExistingCriteria.Any())
+        {
+            <p>@Localizer["NoExistingCriteria"]</p>
+        }
+        else
+        {
+            <ul class="list-group">
+                @foreach (var criterion in Model.ExistingCriteria)
                 {
-                    <p class="text-muted">Bu oturuma atanabilecek uygun bir özet bulunmuyor.</p>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <span>@criterion.DisplayOrder. @criterion.QuestionText</span>
+                            <span class="badge bg-secondary ms-2">@criterion.CriterionType</span>
+                        </div>
+                        <div class="d-flex">
+                            <a asp-action="EditCriterion" asp-route-id="@criterion.Id" class="btn btn-sm btn-outline-warning me-2" title="@Localizer["EditButton"]">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form asp-action="DeleteCriterion" method="post" onsubmit="return confirm('@Localizer["DeleteConfirm"]');">
+                                <input type="hidden" name="criterionId" value="@criterion.Id" />
+                                <input type="hidden" name="formId" value="@Model.Form.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="@Localizer["DeleteButton"]">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </li>
                 }
-                else
-                {
-                    <ul class="list-group list-group-flush">
-                        @foreach (var sub in Model.AvailableSubmissions)
-                        {
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong>@sub.Title</strong><br />
-                                    <small class="text-muted">Yazar: @sub.Author?.Email</small>
-                                </div>
-                                <form asp-action="AddToSession" method="post" class="ms-2">
-                                    <input type="hidden" name="sessionId" value="@Model.Session.Id" />
-                                    <input type="hidden" name="submissionId" value="@sub.SubmissionId" />
-                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Oturuma Ekle">
-                                        <i class="bi bi-arrow-right-circle"></i> Ekle
-                                    </button>
-                                </form>
-                            </li>
-                        }
-                    </ul>
-                }
-            </div>
-        </div>
+            </ul>
+        }
     </div>
 
-    <div class="col-md-6">
-        <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-calendar-check-fill me-2"></i>
-                    Bu Oturumdaki Özetler
-                    <span class="badge bg-light text-dark ms-1">@Model.AssignedSubmissions.Count</span>
-                </h5>
-            </div>
+    <div class="col-md-5">
+        <div class="card bg-light">
             <div class="card-body">
-                @if (!Model.AssignedSubmissions.Any())
-                {
-                    <p class="text-muted">Bu oturuma henüz bir özet atanmamış.</p>
-                }
-                else
-                {
-                    <ul class="list-group list-group-flush">
-                        @foreach (var sub in Model.AssignedSubmissions)
-                        {
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong>@sub.Title</strong><br />
-                                    <small class="text-muted">Yazar: @sub.Author?.Email</small>
-                                </div>
-                                <form asp-action="RemoveFromSession" method="post" class="ms-2">
-                                    <input type="hidden" name="sessionId" value="@Model.Session.Id" />
-                                    <input type="hidden" name="submissionId" value="@sub.SubmissionId" />
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Oturumdan Çıkar">
-                                        <i class="bi bi-x-circle"></i> Çıkar
-                                    </button>
-                                </form>
-                            </li>
-                        }
-                    </ul>
-                }
+                <h4 class="card-title">@Localizer["AddNewCriterionHeader"]</h4>
+                <form asp-action="AddCriterion" method="post">
+                    <input type="hidden" asp-for="NewCriterion.FormId" />
+
+                    <div class="mb-3">
+                        <label asp-for="NewCriterion.QuestionText" class="form-label fw-bold">@Localizer["QuestionLabel"]</label>
+                        <textarea asp-for="NewCriterion.QuestionText" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="NewCriterion.QuestionText" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="NewCriterion.CriterionType" class="form-label fw-bold">@Localizer["TypeLabel"]</label>
+                        <select asp-for="NewCriterion.CriterionType" asp-items="Model.CriterionTypes" class="form-select">
+                            <option value="">@Localizer["SelectType"]</option>
+                        </select>
+                        <span asp-validation-for="NewCriterion.CriterionType" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="NewCriterion.DisplayOrder" class="form-label fw-bold">@Localizer["OrderLabel"]</label>
+                        <input asp-for="NewCriterion.DisplayOrder" type="number" class="form-control" />
+                        <span asp-validation-for="NewCriterion.DisplayOrder" class="text-danger"></span>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success">@Localizer["AddButton"]</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -91,6 +91,6 @@
 
 <div class="mt-4">
     <a asp-action="Index" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Oturum Listesine Geri Dön
+        <i class="bi bi-arrow-left"></i> @Localizer["BackToListLink"]
     </a>
 </div>

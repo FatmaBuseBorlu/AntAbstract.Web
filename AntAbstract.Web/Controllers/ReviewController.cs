@@ -74,6 +74,8 @@ namespace AntAbstract.Web.Controllers
         }
         // ReviewController.cs içine eklenecek
 
+        // ReviewController.cs içine eklenecek
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> PerformReview(PerformReviewViewModel viewModel)
@@ -92,7 +94,7 @@ namespace AntAbstract.Web.Controllers
                 ReviewDate = DateTime.UtcNow
             };
             _context.Reviews.Add(newReview);
-            // Ana Review nesnesini kaydet ki ID'si oluşsun.
+            // Ana Review nesnesini kaydet ki ID'si oluşsun ve cevapları ona bağlayabilelim.
             await _context.SaveChangesAsync();
 
             // 3. Formdan gelen her bir cevabı işle.

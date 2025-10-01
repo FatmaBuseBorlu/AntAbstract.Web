@@ -1,45 +1,48 @@
-﻿@using AntAbstract.Domain.Entities
-@model Submission
+﻿@model AntAbstract.Domain.Entities.Submission
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Nihai Karar Ver";
+    ViewData["Title"] = Localizer["PageTitle"];
 }
 
 <h1 class="display-5">@Model.Title</h1>
-<p class="lead">Yazar: @Model.Author?.Email</p>
+<p class="lead text-muted">@Localizer["AuthorLabel"] @Model.Author?.Email</p>
 <hr />
 
 <div class="row">
     <div class="col-md-7">
-        <h4>Hakem Değerlendirmeleri</h4>
+        <h4>@Localizer["ReviewsHeader"]</h4>
         @if (Model.ReviewAssignments.Any())
         {
             @foreach (var assignment in Model.ReviewAssignments)
             {
                 <div class="card mb-3">
                     <div class="card-header fw-bold">
-                        Hakem Değerlendirmesi
+                        @Localizer["ReviewerHeader"] (@assignment.AppUser?.Email)
                     </div>
                     <div class="card-body">
-                        @if (assignment.Review != null)
+                        @if (assignment.Review != null && assignment.Review.Answers.Any())
                         {
                             <dl class="row">
-                                <dt class="col-sm-4">Öneri</dt>
-                                <dd class="col-sm-8"><strong>@assignment.Review.Recommendation</strong></dd>
-
-                                <dt class="col-sm-4">Puan</dt>
-                                <dd class="col-sm-8">@assignment.Review.Score / 5</dd>
-
-                                <dt class="col-sm-4">Yazara Yorumlar</dt>
-                                <dd class="col-sm-8" style="white-space: pre-wrap;">@assignment.Review.CommentsToAuthor</dd>
-
-                                <dt class="col-sm-4">Editöre Özel Yorumlar</dt>
-                                <dd class="col-sm-8" style="white-space: pre-wrap;">@assignment.Review.ConfidentialComments</dd>
+                                @foreach (var answer in assignment.Review.Answers.OrderBy(a => a.Criterion.DisplayOrder))
+                                {
+                                    <dt class="col-sm-5">@answer.Criterion.QuestionText</dt>
+                                    <dd class="col-sm-7">
+                                        @if (answer.Criterion.CriterionType.StartsWith("Scale"))
+                                        {
+                                            <strong>@answer.Score</strong>
+                                        }
+                                        else
+                                        {
+                                            <span style="white-space: pre-wrap;">@answer.TextAnswer</span>
+                                        }
+                                    </dd>
+                                }
                             </dl>
                         }
                         else
                         {
-                            <p class="text-muted">Bu hakem henüz değerlendirmesini tamamlamamış.</p>
+                            <p class="text-muted">@Localizer["NoReviewMessage"]</p>
                         }
                     </div>
                 </div>
@@ -47,29 +50,29 @@
         }
         else
         {
-            <div class="alert alert-warning">Bu özete atanmış bir hakem bulunmamaktadır.</div>
+            <div class="alert alert-warning">@Localizer["NoReviewerMessage"]</div>
         }
     </div>
     <div class="col-md-5">
-        <h4>Kararınız</h4>
+        <h4>@Localizer["DecisionHeader"]</h4>
         <div class="card bg-light">
             <div class="card-body">
                 <form asp-action="MakeDecision" method="post">
                     <input type="hidden" name="SubmissionId" value="@Model.SubmissionId" />
 
                     <div class="form-group mb-3">
-                        <label for="FinalDecision" class="control-label fw-bold">Nihai Karar</label>
+                        <label for="FinalDecision" class="control-label fw-bold">@Localizer["FinalDecisionLabel"]</label>
                         <select name="FinalDecision" class="form-select" required>
-                            <option value="">-- Kararınızı Seçin --</option>
-                            <option value="Kabul Edildi">Kabul Edildi</option>
-                            <option value="Reddedildi">Reddedildi</option>
-                            <option value="Küçük Revizyon Gerekli">Küçük Revizyon Gerekli</option>
-                            <option value="Büyük Revizyon Gerekli">Büyük Revizyon Gerekli</option>
+                            <option value="">@Localizer["SelectDecision"]</option>
+                            <option value="Kabul Edildi">@Localizer["Kabul Edildi"]</option>
+                            <option value="Reddedildi">@Localizer["Reddedildi"]</option>
+                            <option value="Küçük Revizyon Gerekli">@Localizer["Küçük Revizyon Gerekli"]</option>
+                            <option value="Büyük Revizyon Gerekli">@Localizer["Büyük Revizyon Gerekli"]</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <input type="submit" value="Kararı Kaydet" class="btn btn-success" />
+                        <input type="submit" value="@Localizer["SaveDecisionButton"]" class="btn btn-success" />
                     </div>
                 </form>
             </div>
@@ -78,5 +81,5 @@
 </div>
 
 <div class="mt-4">
-    <a asp-action="Index" class="btn btn-outline-secondary">Karar Listesine Geri Dön</a>
+    <a asp-action="Index" class="btn btn-outline-secondary">@Localizer["BackToListLink"]</a>
 </div>
