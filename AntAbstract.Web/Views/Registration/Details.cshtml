@@ -1,0 +1,58 @@
+﻿@model AntAbstract.Domain.Entities.Registration
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
+@{
+    ViewData["Title"] = Localizer["PageTitle"];
+}
+
+<h1 class="display-5">@Localizer["PageTitle"]</h1>
+<p class="lead text-muted">@Localizer["PageLead"]</p>
+<hr />
+
+<div class="row">
+    <div class="col-md-8">
+        <dl class="row">
+            <dt class="col-sm-4">@Localizer["UserLabel"]</dt>
+            <dd class="col-sm-8">@Model.AppUser.DisplayName (@Model.AppUser.Email)</dd>
+
+            <dt class="col-sm-4">@Localizer["TypeLabel"]</dt>
+            <dd class="col-sm-8">@Model.RegistrationType.Name</dd>
+
+            <dt class="col-sm-4">@Localizer["PriceLabel"]</dt>
+            <dd class="col-sm-8"><strong>@Model.RegistrationType.Price.ToString("C", new System.Globalization.CultureInfo("tr-TR"))</strong></dd>
+
+            <dt class="col-sm-4">@Localizer["DateLabel"]</dt>
+            <dd class="col-sm-8">@Model.RegistrationDate.ToLocalTime().ToString("dd MMMM yyyy")</dd>
+
+            <dt class="col-sm-4">@Localizer["StatusLabel"]</dt>
+            <dd class="col-sm-8">
+                @if (Model.IsPaid)
+                {
+                    <span class="badge bg-success fs-6">@Localizer["StatusPaid"]</span>
+                }
+                else
+                {
+                    <span class="badge bg-warning text-dark fs-6">@Localizer["StatusUnpaid"]</span>
+                }
+            </dd>
+        </dl>
+
+        <div class="mt-4">
+            @if (!Model.IsPaid)
+            {
+                <form asp-controller="Payment" asp-action="CreateCheckoutSession" method="post">
+                    <input type="hidden" name="registrationId" value="@Model.Id" />
+                    <button type="submit" class="btn btn-lg btn-success">
+                        <i class="bi bi-credit-card-fill me-2"></i> @Localizer["PayNowButton"]
+                    </button>
+                </form>
+            }
+            else
+            {
+                <div class="alert alert-success">
+                    @Localizer["PaidMessage"]
+                </div>
+            }
+        </div>
+    </div>
+</div>

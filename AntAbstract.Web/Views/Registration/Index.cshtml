@@ -1,0 +1,41 @@
+﻿@model IEnumerable<AntAbstract.Domain.Entities.RegistrationType>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
+@{
+    ViewData["Title"] = Localizer["PageTitle"];
+}
+
+<div class="text-center">
+    <h1 class="display-4">@Localizer["PageTitle"]</h1>
+    <p class="lead text-muted">@Localizer["PageLead"]</p>
+</div>
+
+<div class="row row-cols-1 row-cols-md-3 g-4 mt-4">
+    @foreach (var type in Model)
+    {
+        <div class="col">
+            <div class="card h-100 text-center shadow-sm">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">@type.Name</h5>
+                </div>
+                <div class="card-body">
+                    <h1 class="card-title pricing-card-title">@type.Price.ToString("C", new System.Globalization.CultureInfo(type.Currency == "TRY" ? "tr-TR" : "en-US"))</h1>
+                    <p class="card-text">@type.Description</p>
+                </div>
+                <div class="card-footer">
+                    <form asp-action="Register" method="post">
+                        <input type="hidden" name="registrationTypeId" value="@type.Id" />
+                        <button type="submit" class="btn btn-lg btn-outline-primary w-100">@Localizer["SelectButton"]</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info mt-4">
+        @Localizer["NoTypesMessage"]
+    </div>
+}

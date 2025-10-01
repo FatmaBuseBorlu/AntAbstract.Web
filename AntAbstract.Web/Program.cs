@@ -1,11 +1,12 @@
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using AntAbstract.Web.StartupServices;
-using QuestPDF.Infrastructure;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using AntAbstract.Infrastructure.Services;
+using AntAbstract.Web.StartupServices;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.EntityFrameworkCore;
+using QuestPDF.Infrastructure;
+using Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,8 +48,7 @@ builder.Services.AddRazorPages();
 
 // --- Uygulamanýn Ýnþa Edilmesi ---
 var app = builder.Build();
-
-// --- Middleware Pipeline Konfigürasyonlarý ---
+StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
 // Tenant (Kongre) Middleware'i - HER ORTAMDA ÇALIÞMALI
 app.Use(async (ctx, next) =>
