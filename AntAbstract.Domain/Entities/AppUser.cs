@@ -16,5 +16,10 @@ namespace AntAbstract.Domain.Entities
         public string? DisplayName { get; set; }
         [StringLength(500)]
         public string? ExpertiseAreas { get; set; } // Örn: "yapay zeka, siber güvenlik, veritabanı"
+        [StringLength(100)]
+        public string? Title { get; set; } // Unvan (Örn: Prof. Dr.)
+
+        [StringLength(200)]
+        public string? Institution { get; set; } // Kurum (Örn: İstanbul Teknik Üniversitesi)
     }
 }

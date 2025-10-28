@@ -1,14 +1,14 @@
-﻿using AntAbstract.Infrastructure.Context;
+﻿using AntAbstract.Domain.Entities;
+using AntAbstract.Infrastructure.Context;
 using AntAbstract.Web.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using System;
-using AntAbstract.Domain.Entities; // AppUser için eklendi
-using Microsoft.AspNetCore.Identity; // UserManager için eklendi
 
 namespace AntAbstract.Web.Controllers
 {
@@ -36,12 +36,21 @@ namespace AntAbstract.Web.Controllers
 
                 var allSubmissions = _context.Submissions.Where(s => s.ConferenceId == conference.Id);
 
+                // ✅ YENİ EKLENDİ: Grafik verisini hazırlayan sorgu
+                var submissionStats = await allSubmissions
+                    .Where(s => s.FinalDecision != null) // Sadece kararı verilmiş olanları say
+                    .GroupBy(s => s.FinalDecision)
+                    .Select(g => new { Decision = g.Key, Count = g.Count() })
+                    .ToListAsync();
+
                 var viewModel = new DashboardViewModel
                 {
                     TotalUsers = await _userManager.Users.CountAsync(),
                     TotalSubmissions = await allSubmissions.CountAsync(),
-                    TotalReviews = await _context.ReviewAssignments.CountAsync(ra => ra.Submission.ConferenceId == conference.Id)
-                    // Gerekirse diğer istatistikler buraya eklenebilir.
+                    TotalReviews = await _context.ReviewAssignments.CountAsync(ra => ra.Submission.ConferenceId == conference.Id),
+                    // ✅ YENİ EKLENDİ: Grafik verilerini ViewModel'a ata
+                    ChartLabels = submissionStats.Select(s => s.Decision).ToList(),
+                    ChartData = submissionStats.Select(s => s.Count).ToList()
                 };
 
                 return View("Index", viewModel);
