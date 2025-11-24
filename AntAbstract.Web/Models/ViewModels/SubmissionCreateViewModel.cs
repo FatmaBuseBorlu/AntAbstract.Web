@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic; // List için gerekli
+using AntAbstract.Web.Models.ViewModels; // SubmissionAuthorViewModel için gerekli
 
-// Namespace'i klasör yapınıza uygun hale getirdik
 namespace AntAbstract.Web.Models.ViewModels
 {
     public class SubmissionCreateViewModel
@@ -22,8 +23,17 @@ namespace AntAbstract.Web.Models.ViewModels
         [Display(Name = "Sunum Türü")]
         public int PresentationTypeId { get; set; }
 
+        // --- HATA VEREN VE TEKRAR EDEN KISIM TEMİZLENDİ ---
         [Required(ErrorMessage = "Bildiri dosyası yüklemelisiniz.")]
         [Display(Name = "Bildiri Dosyası (Word/PDF)")]
+        // SubmissionFile'ın tanımını buraya aldık.
         public IFormFile SubmissionFile { get; set; }
+
+        // --- CONTROLLER'IN ARADIĞI ORTAK YAZARLAR LİSTESİ ---
+        [Required(ErrorMessage = "En az bir yazar (siz dahil) olmalıdır.")]
+        public List<SubmissionAuthorViewModel> Authors { get; set; } = new List<SubmissionAuthorViewModel>();
+
+        // Bu ViewModel'in var olduğundan emin olun:
+        // public SubmissionAuthorViewModel SubmissionAuthor { get; set; } 
     }
 }

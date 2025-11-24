@@ -1,109 +1,87 @@
 ﻿@using AntAbstract.Domain.Entities
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
-@model IEnumerable<Submission>
+@using AntAbstract.Web.Models.ViewModels
+@model SubmissionListViewModel
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"];
+    ViewData["Title"] = "Bildirilerim";
+    Layout = "_LayoutDashboard"; // Dashboard şablonunu kullanıyoruz
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="display-5">@Localizer["PageTitle"]</h1>
-        <p class="lead text-muted">@Localizer["PageLead"]</p>
-    </div>
-    <p>
-        <a asp-action="Create" class="btn btn-primary">
-            <i class="bi bi-plus-circle-fill me-2"></i> @Localizer["SubmitNewButton"]
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1">Bildirilerim Listesi</h4>
+            <p class="text-muted small mb-0">Gönderdiğiniz tüm bilimsel çalışmaları buradan takip edebilirsiniz.</p>
+        </div>
+        <a href="/Submission/Create" class="btn btn-primary">
+            <i class="fas fa-plus-circle me-1"></i> Yeni Bildiri Gönder
         </a>
-    </p>
-</div>
-
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
-}
-
-@if (!Model.Any())
-{
-    <div class="alert alert-info mt-4">
-        @Localizer["EmptyListMessage"]
     </div>
-}
-else
-{
-    <table class="table table-hover">
-        <thead class="table-light">
-            <tr>
-                <th>@Localizer["TableHeaderTitle"]</th>
-                <th>@Localizer["TableHeaderStatus"]</th>
-                <th>@Localizer["TableHeaderDate"]</th>
-                <th style="width: 25%;">@Localizer["TableHeaderActions"]</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
-            {
-                var statusClass = "bg-secondary";
-                var statusText = Localizer[item.Status.ToString()];
 
-                if (item.Status == SubmissionStatus.Accepted)
-                {
-                    statusClass = "bg-success";
-                }
-                else if (item.Status == SubmissionStatus.Rejected)
-                {
-                    statusClass = "bg-danger";
-                }
-                else if (item.Status == SubmissionStatus.UnderReview)
-                {
-                    statusClass = "bg-info";
-                }
-                else if (item.Status == SubmissionStatus.RevisionRequired)
-                {
-                    statusClass = "bg-warning text-dark";
-                }
-
-                <tr>
-                    <td><strong>@item.Title</strong></td>
-
-                    <td>
-                        <span class="badge @statusClass">@statusText</span>
-                    </td>
-
-                    <td>@item.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
-
-                    <td>
-                        <a asp-action="Details"
-                           asp-route-submissionId="@item.SubmissionId"
-                           class="btn btn-sm btn-outline-info">
-                            @Localizer["DetailsButton"]
-                        </a>
-
-                        @if (item.Status == SubmissionStatus.RevisionRequired)
-                        {
-                            <a asp-action="UploadRevision"
-                               asp-route-id="@item.SubmissionId"
-                               class="btn btn-sm btn-success">
-                                @Localizer["UploadRevisionButton"]
-                            </a>
-                        }
-                        else if (item.Status == SubmissionStatus.New)
-                        {
-                            <a asp-action="Edit"
-                               asp-route-submissionId="@item.SubmissionId"
-                               class="btn btn-sm btn-outline-warning">
-                                @Localizer["EditButton"]
-                            </a>
-
-                            <a asp-action="Delete"
-                               asp-route-submissionId="@item.SubmissionId"
-                               class="btn btn-sm btn-outline-danger">
-                                @Localizer["DeleteButton"]
-                            </a>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+    <div class="card dashboard-card p-4">
+        @if (Model.Submissions != null && Model.Submissions.Any())
+        {
+            <table class="table table-hover align-middle">
+                <thead class="bg-light">
+                    <tr>
+                        <th style="width: 5%;">#</th>
+                        <th>Bildiri Başlığı & Yazarlar</th>
+                        <th>Durum</th>
+                        <th>Son Güncelleme</th>
+                        <th style="width: 15%;">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Submissions.Select((s, index) => new { Submission = s, Index = index }))
+                    {
+                        <tr>
+                            <td>@(item.Index + 1)</td>
+                            <td>
+                                <strong class="text-dark">@item.Submission.Title</strong>
+                                <small class="d-block text-muted">
+                                    Yazar Sayısı: @(item.Submission.SubmissionAuthors.Count)
+                                </small>
+                            </td>
+                            <td>
+                                @* STATUS GÖRÜNTÜLEME (Enum'ı Türkçe ve Renkli Gösterir) *@
+                                @switch (item.Submission.Status)
+                                {
+                                    case SubmissionStatus.New:
+                                        <span class="badge bg-info">Yeni Gönderildi</span>
+                                        break;
+                                    case SubmissionStatus.UnderReview:
+                                        <span class="badge bg-warning text-dark">Hakem Değerlendiriyor</span>
+                                        break;
+                                    case SubmissionStatus.RevisionRequired:
+                                        <span class="badge bg-primary">Revizyon İsteniyor</span>
+                                        break;
+                                    case SubmissionStatus.Accepted:
+                                        <span class="badge bg-success">Kabul Edildi</span>
+                                        break;
+                                    case SubmissionStatus.Rejected:
+                                        <span class="badge bg-danger">Reddedildi</span>
+                                        break;
+                                    default:
+                                        <span class="badge bg-secondary">Bilinmiyor</span>
+                                        break;
+                                }
+                            </td>
+                            <td>@item.Submission.CreatedAt.ToString("dd MMM yyyy")</td>
+                            <td>
+                                <a href="/Submission/Edit/@item.Submission.SubmissionId" class="btn btn-sm btn-outline-secondary">Düzenle</a>
+                                <a href="/Submission/Details/@item.Submission.SubmissionId" class="btn btn-sm btn-outline-info">Detay</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle me-2"></i> Henüz gönderilmiş bir bildiriniz bulunmamaktadır.
+                <a href="/Submission/Create" class="alert-link fw-bold">Yeni Bildiri Gönderin.</a>
+            </div>
+        }
+    </div>
+</div>

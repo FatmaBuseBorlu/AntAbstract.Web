@@ -37,5 +37,9 @@ namespace AntAbstract.Domain.Entities
         // Eski kodlarda Conference kullanıldığı için geri açtık
         public Guid ConferenceId { get; set; }
         public Conference? Conference { get; set; }
+        // Submission.cs içine mevcut property'lerin arasına ekleyin:
+
+        public ICollection<SubmissionAuthor> SubmissionAuthors { get; set; } = new List<SubmissionAuthor>();
+        // Not: Diğer collection'lar da (Files, ReviewAssignments) burada olmalıdır.
     }
 }

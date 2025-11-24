@@ -585,6 +585,51 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.ToTable("Submissions");
                 });
 
+            modelBuilder.Entity("AntAbstract.Domain.Entities.SubmissionAuthor", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Email")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Institution")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsCorrespondingAuthor")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ORCID")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SubmissionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubmissionId");
+
+                    b.ToTable("SubmissionAuthor");
+                });
+
             modelBuilder.Entity("AntAbstract.Domain.Entities.SubmissionFile", b =>
                 {
                     b.Property<int>("Id")
@@ -986,6 +1031,17 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Navigation("Session");
                 });
 
+            modelBuilder.Entity("AntAbstract.Domain.Entities.SubmissionAuthor", b =>
+                {
+                    b.HasOne("AntAbstract.Domain.Entities.Submission", "Submission")
+                        .WithMany("SubmissionAuthors")
+                        .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Submission");
+                });
+
             modelBuilder.Entity("AntAbstract.Domain.Entities.SubmissionFile", b =>
                 {
                     b.HasOne("AntAbstract.Domain.Entities.Submission", "Submission")
@@ -1089,6 +1145,8 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Navigation("Files");
 
                     b.Navigation("ReviewAssignments");
+
+                    b.Navigation("SubmissionAuthors");
                 });
 #pragma warning restore 612, 618
         }

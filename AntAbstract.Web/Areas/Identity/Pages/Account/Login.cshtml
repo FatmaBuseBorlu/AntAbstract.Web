@@ -1,6 +1,5 @@
 ﻿@page
 @model LoginModel
-
 @{
     ViewData["Title"] = "Giriş Yap";
     Layout = "_Layout";
@@ -35,11 +34,21 @@
         border-radius: 8px 0 0 8px;
         color: #6c757d;
     }
-    /* İkon gelince inputun sol köşesini düzelt */
+
     .input-group .form-control {
         border-left: none;
         border-radius: 0 8px 8px 0;
     }
+
+    .btn-orcid {
+        background-color: #F8F8F8;
+        border-color: #D3D3D3;
+        color: #000;
+    }
+
+        .btn-orcid:hover {
+            background-color: #EAEAEA;
+        }
 </style>
 
 <div class="container py-5 mt-5">
@@ -55,13 +64,13 @@
                 </div>
 
                 <form id="account" method="post">
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm mb-3" role="alert"></div>
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm mb-3"></div>
 
                     <div class="mb-3">
                         <label asp-for="Input.Email" class="form-label fw-bold small text-muted">E-Posta Adresi</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                            <input asp-for="Input.Email" class="form-control" placeholder="ornek@email.com" autocomplete="username" />
+                            <input asp-for="Input.Email" class="form-control" autocomplete="username" />
                         </div>
                         <span asp-validation-for="Input.Email" class="text-danger small"></span>
                     </div>
@@ -69,11 +78,11 @@
                     <div class="mb-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <label asp-for="Input.Password" class="form-label fw-bold small text-muted">Şifre</label>
-                            <a id="forgot-password" asp-page="./ForgotPassword" class="small text-decoration-none" style="color: #00aeef;">Şifremi Unuttum?</a>
+                            <a asp-page="./ForgotPassword" class="small text-decoration-none" style="color: #00aeef;">Şifremi Unuttum?</a>
                         </div>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                            <input asp-for="Input.Password" class="form-control" placeholder="******" autocomplete="current-password" />
+                            <input asp-for="Input.Password" class="form-control" autocomplete="current-password" />
                         </div>
                         <span asp-validation-for="Input.Password" class="text-danger small"></span>
                     </div>
@@ -88,29 +97,53 @@
                     </div>
 
                     <div class="d-grid mb-4">
-                        <button id="login-submit" type="submit" class="btn btn-primary py-3 fw-bold shadow-sm" style="background-color: #00aeef; border: none;">
+                        <button type="submit" class="btn btn-primary py-3 fw-bold shadow-sm" style="background-color: #00aeef;">
                             GİRİŞ YAP
                         </button>
                     </div>
 
                     <div class="text-center small">
-                        <p class="text-muted mb-1">Hesabınız yok mu? <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="fw-bold text-decoration-none" style="color: #0056b3;">Kayıt Ol</a></p>
-                        <a id="resend-confirmation" asp-page="./ResendEmailConfirmation" class="text-muted text-decoration-none" style="font-size: 0.8rem;">Onay mailini tekrar gönder</a>
+                        <p class="text-muted mb-1">
+                            Hesabınız yok mu?
+                            <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="fw-bold text-decoration-none" style="color: #0056b3;">Kayıt Ol</a>
+                        </p>
+                        <a asp-page="./ResendEmailConfirmation" class="text-muted text-decoration-none" style="font-size: 0.8rem;">
+                            Onay mailini tekrar gönder
+                        </a>
                     </div>
                 </form>
 
                 @if ((Model.ExternalLogins?.Count ?? 0) > 0)
                 {
                     <div class="text-center mt-4">
-                        <p class="text-muted small mb-2">veya şununla devam et</p>
-                        <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="form-horizontal">
-                            <div class="d-flex justify-content-center gap-2">
-                                @foreach (var provider in Model.ExternalLogins!)
+                        <div class="divider mb-3 small text-muted">Veya şu hesapla devam et</div>
+
+                        <form asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                            <div class="d-grid gap-2 col-9 mx-auto">
+
+                                @foreach (var provider in Model.ExternalLogins)
                                 {
-                                    <button type="submit" class="btn btn-outline-secondary btn-sm" name="provider" value="@provider.Name" title="@provider.DisplayName hesabınızla giriş yapın">
-                                        @provider.DisplayName
-                                    </button>
+                                    if (provider.Name == "ORCID")
+                                    {
+                                        <button type="submit"
+                                                class="btn btn-outline-dark btn-orcid fw-bold w-100 py-2 rounded-pill shadow-sm"
+                                                name="provider"
+                                                value="@provider.Name">
+                                            <i class="fab fa-orcid me-2" style="color:#A6CE39;"></i>
+                                            ORCID ile giriş yap
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit"
+                                                class="btn btn-outline-dark fw-bold w-100 py-2 rounded-pill shadow-sm"
+                                                name="provider"
+                                                value="@provider.Name">
+                                            @provider.DisplayName
+                                        </button>
+                                    }
                                 }
+
                             </div>
                         </form>
                     </div>

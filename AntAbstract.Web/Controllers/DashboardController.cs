@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using AntAbstract.Domain.Entities;
+using AntAbstract.Infrastructure.Context;
+using AntAbstract.Web.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AntAbstract.Domain.Entities;
-using AntAbstract.Infrastructure.Context;
-using Microsoft.AspNetCore.Authorization;
-using AntAbstract.Web.Models.ViewModels;
-using Microsoft.AspNetCore.Identity;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -17,9 +15,8 @@ namespace AntAbstract.Web.Controllers
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly AppDbContext _context;
-        // Eğer Tenant bazlı filtreleme gerekiyorsa bunu da kullanırız, şimdilik yorum satırı:
-        // private readonly TenantContext _tenantContext; 
 
+        // TenantContext bağımlılığı KALDIRILDI.
         public DashboardController(AppDbContext context, UserManager<AppUser> userManager)
         {
             _context = context;
@@ -30,21 +27,22 @@ namespace AntAbstract.Web.Controllers
         {
             var user = await _userManager.GetUserAsync(User);
 
-            // SADELEŞTİRİLMİŞ SORGULAMA: Sadece yazar ID'sine göre filtrelenir.
+            // SORGULAMA MANTIĞI: Sadece AuthorId'ye göre filtrele. 
+            // Kullanıcı, katıldığı tüm kongrelerdeki bildirilerini görür.
             var submissions = _context.Submissions
                 .Where(s => s.AuthorId == user.Id);
 
-            // YENİ VIEW MODEL OLUŞTURUYORUZ
+            // View Modelini doldur
             var viewModel = new DashboardViewModel
             {
                 TotalSubmissions = await submissions.CountAsync(),
-
-                // Status alanında problem yok, hepsi Enum ile karşılaştırılıyor.
                 AcceptedSubmissions = await submissions.CountAsync(s => s.Status == SubmissionStatus.Accepted),
                 AwaitingDecision = await submissions.CountAsync(s => s.Status == SubmissionStatus.UnderReview || s.Status == SubmissionStatus.New)
             };
 
-            return View(viewModel); // View'a bu modeli gönderiyoruz
+            return View(viewModel);
         }
+
+        // ... Diğer dashboard action'ları buraya eklenecektir ...
     }
 }
