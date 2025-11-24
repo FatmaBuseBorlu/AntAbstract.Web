@@ -1,6 +1,7 @@
-﻿@{
+﻿@model AntAbstract.Web.Models.ViewModels.DashboardViewModel
+@{
     ViewData["Title"] = "Panel";
-    Layout = "_LayoutDashboard"; // Az önce yaptığımız özel layoutu kullan
+    Layout = "_LayoutDashboard";
 }
 
 <div class="row g-4 mb-4">
@@ -11,7 +12,7 @@
             </div>
             <div>
                 <h6 class="text-muted mb-1">Toplam Bildiri</h6>
-                <h3 class="fw-bold mb-0">0</h3>
+                <h3 class="fw-bold mb-0">@Model.TotalSubmissions</h3>
             </div>
         </div>
     </div>
@@ -22,8 +23,8 @@
                 <i class="fas fa-clock fa-2x"></i>
             </div>
             <div>
-                <h6 class="text-muted mb-1">Bekleyen</h6>
-                <h3 class="fw-bold mb-0">0</h3>
+                <h6 class="text-muted mb-1">Bekleyen Karar</h6>
+                <h3 class="fw-bold mb-0">@Model.AwaitingDecision</h3>
             </div>
         </div>
     </div>
@@ -35,7 +36,7 @@
             </div>
             <div>
                 <h6 class="text-muted mb-1">Kabul Edilen</h6>
-                <h3 class="fw-bold mb-0">0</h3>
+                <h3 class="fw-bold mb-0">@Model.AcceptedSubmissions</h3>
             </div>
         </div>
     </div>
@@ -49,11 +50,18 @@
                 <a href="#" class="small text-decoration-none">Tümünü Gör</a>
             </div>
 
-            <div class="text-center py-5">
-                <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="80" class="mb-3 opacity-50" alt="Empty">
-                <p class="text-muted">Henüz bir işlem yapmadınız.</p>
-                <a href="/Submission/Create" class="btn btn-primary btn-sm">İlk Bildirini Gönder</a>
-            </div>
+            @if (Model.TotalSubmissions == 0)
+            {
+                <div class="text-center py-5">
+                    <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="80" class="mb-3 opacity-50" alt="Empty">
+                    <p class="text-muted">Henüz bir işlem yapmadınız.</p>
+                    <a href="/Submission/Create" class="btn btn-primary btn-sm">İlk Bildirini Gönder</a>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted">Liste buraya gelecek...</p>
+            }
         </div>
     </div>
 

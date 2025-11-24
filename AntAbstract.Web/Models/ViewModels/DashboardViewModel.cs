@@ -12,6 +12,9 @@ namespace AntAbstract.Web.Models.ViewModels
         public List<string> ChartLabels { get; set; }
         public List<int> ChartData { get; set; }
 
+        public int AcceptedSubmissions { get; set; }
+        public int AwaitingDecision { get; set; }
+
         public DashboardViewModel()
         {
             // Listelerin null olmasını engellemek için boş olarak başlatıyoruz.

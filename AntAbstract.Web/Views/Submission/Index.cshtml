@@ -43,31 +43,63 @@ else
         <tbody>
             @foreach (var item in Model)
             {
+                var statusClass = "bg-secondary";
+                var statusText = Localizer[item.Status.ToString()];
+
+                if (item.Status == SubmissionStatus.Accepted)
+                {
+                    statusClass = "bg-success";
+                }
+                else if (item.Status == SubmissionStatus.Rejected)
+                {
+                    statusClass = "bg-danger";
+                }
+                else if (item.Status == SubmissionStatus.UnderReview)
+                {
+                    statusClass = "bg-info";
+                }
+                else if (item.Status == SubmissionStatus.RevisionRequired)
+                {
+                    statusClass = "bg-warning text-dark";
+                }
+
                 <tr>
                     <td><strong>@item.Title</strong></td>
+
                     <td>
-                        @{
-                            var statusText = Localizer[item.Status ?? ""];
-                            var statusClass = "bg-secondary"; // Varsayılan renk
-                            if (item.Status == "Kabul Edildi") { statusClass = "bg-success"; }
-                            else if (item.Status == "Reddedildi") { statusClass = "bg-danger"; }
-                            else if (item.Status == "Revizyon Tamamlandı") { statusClass = "bg-info"; }
-                            else if (item.Status == "Küçük Revizyon Gerekli" || item.Status == "Büyük Revizyon Gerekli") { statusClass = "bg-warning text-dark"; }
-                        }
                         <span class="badge @statusClass">@statusText</span>
                     </td>
-                    <td>@item.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
-                    <td>
-                        <a asp-action="Details" asp-route-submissionId="@item.SubmissionId" class="btn btn-sm btn-outline-info">@Localizer["DetailsButton"]</a>
 
-                        @if (item.Status == "Küçük Revizyon Gerekli" || item.Status == "Büyük Revizyon Gerekli")
+                    <td>@item.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
+
+                    <td>
+                        <a asp-action="Details"
+                           asp-route-submissionId="@item.SubmissionId"
+                           class="btn btn-sm btn-outline-info">
+                            @Localizer["DetailsButton"]
+                        </a>
+
+                        @if (item.Status == SubmissionStatus.RevisionRequired)
                         {
-                            <a asp-action="UploadRevision" asp-route-id="@item.SubmissionId" class="btn btn-sm btn-success">@Localizer["UploadRevisionButton"]</a>
+                            <a asp-action="UploadRevision"
+                               asp-route-id="@item.SubmissionId"
+                               class="btn btn-sm btn-success">
+                                @Localizer["UploadRevisionButton"]
+                            </a>
                         }
-                        else if (item.Status == "Yeni Gönderildi")
+                        else if (item.Status == SubmissionStatus.New)
                         {
-                            <a asp-action="Edit" asp-route-submissionId="@item.SubmissionId" class="btn btn-sm btn-outline-warning">@Localizer["EditButton"]</a>
-                            <a asp-action="Delete" asp-route-submissionId="@item.SubmissionId" class="btn btn-sm btn-outline-danger">@Localizer["DeleteButton"]</a>
+                            <a asp-action="Edit"
+                               asp-route-submissionId="@item.SubmissionId"
+                               class="btn btn-sm btn-outline-warning">
+                                @Localizer["EditButton"]
+                            </a>
+
+                            <a asp-action="Delete"
+                               asp-route-submissionId="@item.SubmissionId"
+                               class="btn btn-sm btn-outline-danger">
+                                @Localizer["DeleteButton"]
+                            </a>
                         }
                     </td>
                 </tr>

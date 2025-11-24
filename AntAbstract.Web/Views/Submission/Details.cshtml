@@ -1,4 +1,5 @@
 ﻿@model AntAbstract.Domain.Entities.Submission
+@using AntAbstract.Domain.Entities
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
@@ -15,18 +16,21 @@
         <dd class="col-sm-9">
             @Html.DisplayFor(model => model.Title)
         </dd>
+
         <dt class="col-sm-3 fw-bold">
             @Localizer["AbstractTextLabel"]
         </dt>
         <dd class="col-sm-9" style="white-space: pre-wrap;">
             @Html.DisplayFor(model => model.AbstractText)
         </dd>
+
         <dt class="col-sm-3 fw-bold">
             @Localizer["DateLabel"]
         </dt>
         <dd class="col-sm-9">
             @Model.CreatedAt.ToLocalTime().ToString("dd MMMM yyyy, HH:mm")
         </dd>
+
         <dt class="col-sm-3 fw-bold">
             @Localizer["FileLabel"]
         </dt>
@@ -37,9 +41,15 @@
 </div>
 
 <div class="mt-4">
-    @if (Model.Status == "Yeni Gönderildi")
+    @if (Model.Status == SubmissionStatus.New)
     {
-        <a asp-action="Edit" asp-route-submissionId="@Model.SubmissionId" class="btn btn-warning">@Localizer["EditButton"]</a>
+        <a asp-action="Edit"
+           asp-route-submissionId="@Model.SubmissionId"
+           class="btn btn-warning">
+            @Localizer["EditButton"]
+        </a>
     }
-    <a asp-action="Index" class="btn btn-outline-secondary">@Localizer["BackToListLink"]</a>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        @Localizer["BackToListLink"]
+    </a>
 </div>

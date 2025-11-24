@@ -1,18 +1,28 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using AntAbstract.Domain.Entities;
-using Microsoft.AspNetCore.Identity;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using AntAbstract.Domain.Entities;
+using AntAbstract.Infrastructure.Context;
+using Microsoft.AspNetCore.Authorization;
+using AntAbstract.Web.Models.ViewModels;
+using Microsoft.AspNetCore.Identity;
 
 namespace AntAbstract.Web.Controllers
 {
-    [Authorize] // DİKKAT: Sadece giriş yapmış üyeler girebilir!
+    [Authorize]
     public class DashboardController : Controller
     {
         private readonly UserManager<AppUser> _userManager;
+        private readonly AppDbContext _context;
+        // Eğer Tenant bazlı filtreleme gerekiyorsa bunu da kullanırız, şimdilik yorum satırı:
+        // private readonly TenantContext _tenantContext; 
 
-        public DashboardController(UserManager<AppUser> userManager)
+        public DashboardController(AppDbContext context, UserManager<AppUser> userManager)
         {
+            _context = context;
             _userManager = userManager;
         }
 
@@ -20,10 +30,21 @@ namespace AntAbstract.Web.Controllers
         {
             var user = await _userManager.GetUserAsync(User);
 
-            // Buraya ileride istatistikleri (Bildiri sayısı vb.) göndereceğiz.
-            ViewBag.UserName = user.FirstName + " " + user.LastName;
+            // SADELEŞTİRİLMİŞ SORGULAMA: Sadece yazar ID'sine göre filtrelenir.
+            var submissions = _context.Submissions
+                .Where(s => s.AuthorId == user.Id);
 
-            return View();
+            // YENİ VIEW MODEL OLUŞTURUYORUZ
+            var viewModel = new DashboardViewModel
+            {
+                TotalSubmissions = await submissions.CountAsync(),
+
+                // Status alanında problem yok, hepsi Enum ile karşılaştırılıyor.
+                AcceptedSubmissions = await submissions.CountAsync(s => s.Status == SubmissionStatus.Accepted),
+                AwaitingDecision = await submissions.CountAsync(s => s.Status == SubmissionStatus.UnderReview || s.Status == SubmissionStatus.New)
+            };
+
+            return View(viewModel); // View'a bu modeli gönderiyoruz
         }
     }
 }
