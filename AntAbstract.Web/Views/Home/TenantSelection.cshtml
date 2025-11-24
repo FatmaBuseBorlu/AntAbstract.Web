@@ -1,38 +1,73 @@
-﻿@model IEnumerable<AntAbstract.Domain.Entities.Tenant>
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+﻿@model IEnumerable<AntAbstract.Domain.Entities.Conference>
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"];
+    ViewData["Title"] = "Aktif Kongreler";
 }
 
-<div class="text-center">
-    <h1 class="display-4">@Localizer["WelcomeMessage"]</h1>
-    <p class="lead text-muted">@Localizer["PageLead"]</p>
+<div class="container mt-5">
+    <div class="text-center mb-5">
+        <h2 class="display-4 text-primary">Açık Kongreler</h2>
+        <p class="lead text-muted">Detaylı bilgi ve kayıt için ilgilendiğiniz kongreye tıklayınız.</p>
+        <hr class="w-25 mx-auto border-primary">
+    </div>
+
+    <div class="row">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var item in Model)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 shadow-sm border-0 hover-effect">
+
+                        <a asp-controller="Home" asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none text-dark">
+
+                            <div class="card-header bg-light text-center py-4">
+                                @if (!string.IsNullOrEmpty(item.LogoPath))
+                                {
+                                    <img src="@item.LogoPath" alt="@item.Title" style="max-height: 100px; max-width: 100%;">
+                                }
+                                else
+                                {
+                                    <i class="fa fa-university fa-4x text-muted"></i>
+                                }
+                            </div>
+
+                            <div class="card-body">
+                                <h5 class="card-title font-weight-bold">@item.Title</h5>
+                                <p class="card-text text-muted small">
+                                    <i class="fa fa-map-marker text-danger"></i> @item.City
+                                </p>
+                                <p class="card-text text-muted small">
+                                    <i class="fa fa-calendar text-primary"></i> @item.StartDate.ToString("dd.MM.yyyy")
+                                </p>
+                            </div>
+                        </a>
+
+                        <div class="card-footer bg-white d-flex justify-content-between">
+                            <a href="/Register/@item.Id" class="btn btn-sm btn-outline-primary">Kayıt Ol</a>
+                            <a asp-controller="Home" asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-primary">İncele</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12 text-center">
+                <div class="alert alert-warning">Şu anda aktif bir kongre bulunmamaktadır.</div>
+            </div>
+        }
+    </div>
 </div>
 
-<div class="row row-cols-1 row-cols-md-3 g-4 mt-4">
-    @foreach (var tenant in Model)
-    {
-        <div class="col">
-            <div class="card h-100 text-center shadow-sm">
-                <div class="card-header py-3">
-                    @if (!string.IsNullOrEmpty(tenant.LogoUrl))
-                    {
-                        <img src="@tenant.LogoUrl" class="card-img-top" alt="@tenant.Name Logosu" style="max-height: 80px; width: auto;" />
-                    }
-                    else
-                    {
-                        <i class="bi bi-person-workspace" style="font-size: 48px; color: #6c757d;"></i>
-                    }
-                </div>
-                <div class="card-body">
-                    <h5 class="card-title">@tenant.Name</h5>
-                    <p class="card-text text-muted">/@tenant.Slug</p>
-                </div>
-                <div class="card-footer">
-                    <a asp-controller="Home" asp-action="Index" asp-route-tenant="@tenant.Slug" class="btn btn-primary w-100">@Localizer["ManageButton"]</a>
-                </div>
-            </div>
-        </div>
+<style>
+    /* Karta mouse ile gelince yukarı kalkma efekti */
+    .hover-effect {
+        transition: transform 0.3s, box-shadow 0.3s;
     }
-</div>
+
+        .hover-effect:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
+        }
+</style>

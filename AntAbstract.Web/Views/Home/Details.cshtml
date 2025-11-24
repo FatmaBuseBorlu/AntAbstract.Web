@@ -1,0 +1,48 @@
+﻿@model AntAbstract.Domain.Entities.Conference
+
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="jumbotron jumbotron-fluid text-white bg-dark" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('@Model.BannerPath'); background-size: cover; background-position: center;">
+    <div class="container text-center">
+        @if (!string.IsNullOrEmpty(Model.LogoPath))
+        {
+            <img src="@Model.LogoPath" style="max-height: 120px; background: #fff; padding: 10px; border-radius: 10px;" class="mb-3">
+        }
+        <h1 class="display-4">@Model.Title</h1>
+        <p class="lead"><i class="fa fa-calendar"></i> @Model.StartDate.ToString("dd MMMM yyyy") - @Model.EndDate.ToString("dd MMMM yyyy")</p>
+        <p><i class="fa fa-map-marker"></i> @Model.City, @Model.Country</p>
+    </div>
+</div>
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">Kongre Bilgileri</div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><strong>Başlangıç:</strong> @Model.StartDate.ToShortDateString()</li>
+                    <li class="list-group-item"><strong>Bitiş:</strong> @Model.EndDate.ToShortDateString()</li>
+                    <li class="list-group-item"><strong>Web Sitesi:</strong> <a href="https://antabstract.com/@Model.Tenant?.Name" target="_blank">Siteye Git</a></li>
+                </ul>
+            </div>
+
+            <a href="/Register/@Model.Id" class="btn btn-success btn-lg btn-block mb-3">Kayıt Ol</a>
+            <a href="/Payment/@Model.Id" class="btn btn-info btn-lg btn-block">Ödeme Yap</a>
+        </div>
+
+        <div class="col-md-8">
+            <h3>Kongre Hakkında</h3>
+            <hr>
+            <div class="content-text">
+                @Html.Raw(Model.Description ?? "Açıklama girilmemiş.")
+            </div>
+
+            <div class="mt-5">
+                <h4>Konum</h4>
+                <p>@Model.Venue</p>
+            </div>
+        </div>
+    </div>
+</div>

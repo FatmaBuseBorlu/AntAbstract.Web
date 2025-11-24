@@ -1,5 +1,8 @@
-﻿@inject AntAbstract.Infrastructure.Context.TenantContext Tc
+﻿@using AntAbstract.Domain.Entities
+@inject AntAbstract.Infrastructure.Context.TenantContext Tc
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
+@model IEnumerable<Conference>
 
 @{
     if (Tc.Current != null)
@@ -11,15 +14,91 @@
         ViewData["Title"] = Localizer["PageTitle"];
     }
 }
+
 @if (Tc.Current != null)
 {
+    // --- SENARYO A: BELİRLİ BİR KONGRE SİTESİNDEYİZ ---
     <div class="text-center">
-        @* Dinamik veri içeren anahtarı bu şekilde kullanıyoruz *@
         <h1 class="display-4">@Localizer["WelcomeMessage", Tc.Current.Name]</h1>
         <p class="lead text-muted">@Localizer["PageLead"]</p>
+
     </div>
 }
 else
 {
-   
+    // --- SENARYO B: ANA PORTALDAYIZ (LİSTELEME) ---
+
+    <div class="container mt-5">
+        <h3 class="text-center mb-4 text-primary">AÇIK KONGRELER</h3>
+        <hr class="mb-5" style="width: 100px; border: 2px solid #00aeef; margin: 0 auto 3rem auto;">
+
+        <div class="row">
+            @if (Model != null && Model.Any())
+            {
+                @foreach (var kongre in Model)
+                {
+                    <div class="col-md-3 mb-4">
+                        <div class="card h-100 shadow-sm congress-card">
+
+                            <a asp-controller="Conference" asp-action="Details" asp-route-id="@kongre.Id" class="text-decoration-none text-dark">
+
+                                <div class="card-img-top p-3 text-center" style="height: 150px; display: flex; align-items: center; justify-content: center; background: #f8f9fa;">
+                                    @if (!string.IsNullOrEmpty(kongre.LogoPath))
+                                    {
+                                        <img src="@kongre.LogoPath" alt="@kongre.Title" style="max-height: 100%; max-width: 100%;">
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Görsel Yok</span>
+                                    }
+                                </div>
+
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between text-muted small mb-2">
+                                        <span><i class="fa fa-bookmark"></i> @kongre.Slug</span>
+                                        <span><i class="fa fa-calendar"></i> @kongre.StartDate.ToString("dd.MM.yyyy")</span>
+                                    </div>
+
+                                    <h6 class="card-title font-weight-bold" style="min-height: 3rem;">
+                                        @kongre.Title
+                                    </h6>
+
+                                    <p class="card-text text-muted small">
+                                        <i class="fa fa-map-marker text-primary"></i> @kongre.City (@((kongre.EndDate - kongre.StartDate).Days) gün)
+                                    </p>
+                                </div>
+                            </a>
+
+                            <div class="card-footer bg-white border-top-0 d-flex justify-content-between">
+                                <a href="/Register/@kongre.Id" class="btn btn-sm btn-link text-info font-weight-bold p-0">
+                                    <i class="fa fa-tag"></i> KAYIT
+                                </a>
+                                <a href="/Payment/@kongre.Id" class="btn btn-sm btn-link text-info font-weight-bold p-0">
+                                    <i class="fa fa-credit-card"></i> ÖDEME
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="col-12 text-center">
+                    <div class="alert alert-warning">Şu anda aktif bir kongre bulunmamaktadır.</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    /* CSS: Hover efekti için */
+    <style>
+        .congress-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .congress-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+            border-color: #00aeef;
+        }
+    </style>
 }
