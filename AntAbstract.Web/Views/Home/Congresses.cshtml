@@ -1,0 +1,148 @@
+﻿@model IEnumerable<AntAbstract.Domain.Entities.Conference>
+
+@{
+    ViewData["Title"] = "Kongreler";
+    Layout = "_Layout";
+}
+
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+
+    .search-input {
+        border-radius: 50px 0 0 50px;
+        border: 1px solid #e0e0e0;
+        padding-left: 25px;
+        height: 55px;
+    }
+
+        .search-input:focus {
+            box-shadow: none;
+            border-color: #00aeef;
+        }
+
+    .search-btn {
+        border-radius: 0 50px 50px 0;
+        padding-left: 30px;
+        padding-right: 30px;
+        background-color: #00aeef;
+        border: none;
+        color: white;
+        font-weight: bold;
+        transition: background-color 0.3s;
+    }
+
+        .search-btn:hover {
+            background-color: #008acb;
+        }
+
+    .congress-card {
+        border: none;
+        border-radius: 15px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        overflow: hidden;
+    }
+
+        .congress-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+
+    .card-img-wrapper {
+        height: 200px;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        border-bottom: 1px solid #f1f1f1;
+    }
+</style>
+
+<div class="container mt-5 pt-5 pb-5">
+
+    <div class="text-center mb-5 mt-4">
+        <h6 class="text-primary fw-bold text-uppercase ls-md mb-2">ETKİNLİK TAKVİMİ</h6>
+        <h1 class="display-4 fw-bold text-dark mb-3">Kongreler & Etkinlikler</h1>
+        <p class="text-muted lead mx-auto" style="max-width: 600px;">
+            Alanınızdaki en güncel bilimsel etkinlikleri keşfedin, kayıt olun ve yerinizi ayırtın.
+        </p>
+
+        <div class="row justify-content-center mt-4">
+            <div class="col-md-8 col-lg-6">
+                <div class="input-group shadow-sm rounded-pill bg-white">
+                    <input type="text" class="form-control search-input border-end-0" placeholder="Kongre adı, şehir veya konu ara...">
+                    <button class="btn search-btn" type="button">
+                        <i class="fas fa-search me-2"></i> ARA
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var kongre in Model)
+            {
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 shadow-sm congress-card">
+
+                        <a asp-controller="Home" asp-action="Details" asp-route-id="@kongre.Id" class="text-decoration-none text-dark">
+
+                            <div class="card-img-wrapper p-4">
+                                @if (!string.IsNullOrEmpty(kongre.LogoPath))
+                                {
+                                    <img src="@kongre.LogoPath" alt="@kongre.Title" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                                }
+                                else
+                                {
+                                    <div class="text-muted text-center opacity-50">
+                                        <i class="fa fa-university fa-3x mb-2"></i>
+                                        <div class="small">Görsel Yok</div>
+                                    </div>
+                                }
+
+                                <div class="position-absolute top-0 end-0 m-3 bg-white rounded-3 shadow-sm p-2 text-center border" style="min-width: 60px;">
+                                    <div class="fw-bold text-primary fs-4 lh-1">@kongre.StartDate.Day</div>
+                                    <div class="small text-uppercase text-muted fw-bold" style="font-size: 0.7rem;">@kongre.StartDate.ToString("MMM")</div>
+                                </div>
+                            </div>
+
+                            <div class="card-body p-4">
+                                <div class="mb-2">
+                                    <span class="badge bg-light text-primary border rounded-pill px-3">@kongre.Slug</span>
+                                </div>
+
+                                <h5 class="card-title fw-bold mb-3 text-dark" style="min-height: 3rem; line-height: 1.4;">
+                                    @kongre.Title
+                                </h5>
+
+                                <div class="d-flex align-items-center text-muted small">
+                                    <i class="fas fa-map-marker-alt text-danger me-2"></i>
+                                    <span>@(kongre.City ?? "Online / Belirtilmemiş")</span>
+                                </div>
+                            </div>
+                        </a>
+
+                        <div class="card-footer bg-white border-top-0 p-4 pt-0 d-flex justify-content-between gap-2">
+                            <a href="/Register/@kongre.Id" class="btn btn-outline-primary fw-bold flex-fill rounded-3">KAYIT</a>
+                            <a href="/Payment/@kongre.Id" class="btn btn-primary fw-bold flex-fill text-white rounded-3" style="background-color: #00aeef; border-color: #00aeef;">ÖDEME</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12 text-center py-5">
+                <div class="alert alert-light border shadow-sm d-inline-block px-5 rounded-4">
+                    <i class="fas fa-search text-muted mb-3 opacity-50" style="font-size: 3rem;"></i>
+                    <h5 class="fw-bold text-muted">Sonuç Bulunamadı</h5>
+                    <p class="mb-0 text-muted small">Şu anda listelenecek aktif kongre bulunmamaktadır.</p>
+                </div>
+            </div>
+        }
+    </div>
+</div>

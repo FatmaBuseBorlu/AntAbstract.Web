@@ -5,100 +5,152 @@
 @model IEnumerable<Conference>
 
 @{
-    if (Tc.Current != null)
+    ViewData["Title"] = Tc.Current != null ? Tc.Current.Name : "Ana Sayfa";
+    Layout = "_Layout";
+}
+
+<style>
+    /* Navbar'ın altında kalmaması için üst boşluk */
+    .page-content-wrapper {
+        padding-top: 120px; /* Menü payı */
+    }
+
+    /* O büyük mavi resmi zorla küçült */
+    .hero-image-container img {
+        max-height: 350px !important; /* Yüksekliği sınırla */
+        width: auto !important;
+        max-width: 100%;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.15); /* Şık gölge */
+    }
+
+    /* Animasyon */
+    .floating-anim {
+        animation: float 6s ease-in-out infinite;
+    }
+    @@keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-15px); }
+        100% { transform: translateY(0px); }
+    }
+
+    /* Kart hover efekti */
+    .congress-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .congress-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+    }
+</style>
+
+<div class="page-content-wrapper">
+    @if (Tc.Current != null)
     {
-        ViewData["Title"] = Tc.Current.Name;
+        <div class="container text-center">
+            <h1 class="display-4">@Localizer["WelcomeMessage", Tc.Current.Name]</h1>
+            <p class="lead text-muted">@Localizer["PageLead"]</p>
+        </div>
     }
     else
     {
-        ViewData["Title"] = Localizer["PageTitle"];
-    }
-}
-
-@if (Tc.Current != null)
-{
-    // --- SENARYO A: BELİRLİ BİR KONGRE SİTESİNDEYİZ ---
-    <div class="text-center">
-        <h1 class="display-4">@Localizer["WelcomeMessage", Tc.Current.Name]</h1>
-        <p class="lead text-muted">@Localizer["PageLead"]</p>
-
-    </div>
-}
-else
-{
-    // --- SENARYO B: ANA PORTALDAYIZ (LİSTELEME) ---
-
-    <div class="container mt-5">
-        <h3 class="text-center mb-4 text-primary">AÇIK KONGRELER</h3>
-        <hr class="mb-5" style="width: 100px; border: 2px solid #00aeef; margin: 0 auto 3rem auto;">
-
-        <div class="row">
-            @if (Model != null && Model.Any())
-            {
-                @foreach (var kongre in Model)
-                {
-                    <div class="col-md-3 mb-4">
-                        <div class="card h-100 shadow-sm congress-card">
-
-                            <a asp-controller="Conference" asp-action="Details" asp-route-id="@kongre.Id" class="text-decoration-none text-dark">
-
-                                <div class="card-img-top p-3 text-center" style="height: 150px; display: flex; align-items: center; justify-content: center; background: #f8f9fa;">
-                                    @if (!string.IsNullOrEmpty(kongre.LogoPath))
-                                    {
-                                        <img src="@kongre.LogoPath" alt="@kongre.Title" style="max-height: 100%; max-width: 100%;">
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">Görsel Yok</span>
-                                    }
-                                </div>
-
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between text-muted small mb-2">
-                                        <span><i class="fa fa-bookmark"></i> @kongre.Slug</span>
-                                        <span><i class="fa fa-calendar"></i> @kongre.StartDate.ToString("dd.MM.yyyy")</span>
-                                    </div>
-
-                                    <h6 class="card-title font-weight-bold" style="min-height: 3rem;">
-                                        @kongre.Title
-                                    </h6>
-
-                                    <p class="card-text text-muted small">
-                                        <i class="fa fa-map-marker text-primary"></i> @kongre.City (@((kongre.EndDate - kongre.StartDate).Days) gün)
-                                    </p>
-                                </div>
-                            </a>
-
-                            <div class="card-footer bg-white border-top-0 d-flex justify-content-between">
-                                <a href="/Register/@kongre.Id" class="btn btn-sm btn-link text-info font-weight-bold p-0">
-                                    <i class="fa fa-tag"></i> KAYIT
-                                </a>
-                                <a href="/Payment/@kongre.Id" class="btn btn-sm btn-link text-info font-weight-bold p-0">
-                                    <i class="fa fa-credit-card"></i> ÖDEME
-                                </a>
-                            </div>
+        <section class="hero-modern mb-5">
+            <div class="container">
+                <div class="row align-items-center">
+                    
+                    <div class="col-lg-6 text-center text-lg-start mb-5 mb-lg-0">
+                        <div class="d-inline-block bg-light text-primary border border-primary rounded-pill px-3 py-1 mb-3 fw-bold small">
+                            🚀 Yeni Nesil Kongre Sistemi
+                        </div>
+                        <h1 class="display-4 fw-bold lh-sm mb-3">
+                            Bilimsel Etkinlikleri <br>
+                            <span style="color: #00aeef;">Zirveye Taşıyın</span>
+                        </h1>
+                        <p class="lead text-muted mb-4 pe-lg-5">
+                            Kongre süreçlerinizi tek platformdan yönetin. Özet, hakem, kayıt ve konaklama işlemleri artık çok kolay.
+                        </p>
+                        <div class="d-flex justify-content-center justify-content-lg-start gap-3">
+                             <a href="#" class="btn btn-primary btn-lg px-4 shadow-sm" style="background-color: #00aeef; border: none;">Kongre Planla</a>
+                             <a href="#congress-list" class="btn btn-outline-dark btn-lg px-4">İncele</a>
                         </div>
                     </div>
-                }
-            }
-            else
-            {
-                <div class="col-12 text-center">
-                    <div class="alert alert-warning">Şu anda aktif bir kongre bulunmamaktadır.</div>
-                </div>
-            }
-        </div>
-    </div>
 
-    /* CSS: Hover efekti için */
-    <style>
-        .congress-card {
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .congress-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-            border-color: #00aeef;
-        }
-    </style>
-}
+                    <div class="col-lg-6 hero-image-container position-relative text-center">
+                        <img src="https://placehold.co/600x350/0056b3/ffffff?text=Dashboard+Onizleme" 
+                             alt="Panel" 
+                             class="img-fluid rounded-3 floating-anim border border-4 border-white">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div id="congress-list" class="bg-light py-5 mt-5">
+            <div class="container">
+                <div class="text-center mb-5">
+                    <h3 class="fw-bold" style="color: #00aeef;">AÇIK KONGRELER</h3>
+                    <p class="text-muted">Katılım sağlayabileceğiniz aktif etkinlikler</p>
+                    <div style="width: 50px; height: 3px; background: #00aeef; margin: 15px auto;"></div>
+                </div>
+
+                <div class="row">
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var kongre in Model)
+                        {
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card h-100 shadow-sm border-0 congress-card">
+                                    
+                                    <a asp-controller="Home" asp-action="Details" asp-route-id="@kongre.Id" class="text-decoration-none text-dark">
+                                        
+                                        <div class="card-img-top bg-white border-bottom d-flex align-items-center justify-content-center position-relative p-4" style="height: 180px;">
+                                            @if (!string.IsNullOrEmpty(kongre.LogoPath))
+                                            {
+                                                <img src="@kongre.LogoPath" alt="@kongre.Title" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                                            }
+                                            else
+                                            {
+                                                <div class="text-muted text-center opacity-50">
+                                                    <i class="fa fa-university fa-3x mb-2"></i>
+                                                    <div class="small">Görsel Yok</div>
+                                                </div>
+                                            }
+                                            
+                                            <div class="position-absolute top-0 end-0 m-3 bg-light rounded shadow-sm p-2 text-center lh-1 border">
+                                                <div class="fw-bold text-primary fs-5">@kongre.StartDate.Day</div>
+                                                <div class="small text-uppercase text-muted" style="font-size: 0.7rem;">@kongre.StartDate.ToString("MMM")</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="card-body">
+                                            <span class="badge bg-light text-dark border mb-2">@kongre.Tenant?.Slug</span>
+                                            <h5 class="card-title fw-bold mb-3 text-truncate" title="@kongre.Title">@kongre.Title</h5>
+                                            <p class="card-text text-muted small">
+                                                <i class="fa fa-map-marker-alt text-danger me-1"></i> @(kongre.City ?? "Online")
+                                            </p>
+                                        </div>
+                                    </a>
+
+                                    <div class="card-footer bg-white border-0 pb-3 d-flex justify-content-between gap-2">
+                                        <a href="/Register/@kongre.Id" class="btn btn-outline-primary btn-sm flex-fill fw-bold" style="color: #00aeef; border-color: #00aeef;">KAYIT</a>
+                                        <a href="/Payment/@kongre.Id" class="btn btn-primary btn-sm flex-fill fw-bold text-white" style="background-color: #00aeef; border: none;">ÖDEME</a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="col-12 text-center">
+                            <div class="alert alert-white shadow-sm d-inline-block px-5 border">
+                                <i class="fas fa-info-circle text-primary mb-3 fs-2"></i>
+                                <p class="mb-0 text-muted">Şu anda aktif bir kongre bulunmamaktadır.</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>

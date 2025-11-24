@@ -1,81 +1,123 @@
 ﻿@page
 @model LoginModel
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = Localizer["Title"];
+    ViewData["Title"] = "Giriş Yap";
+    Layout = "_Layout";
 }
 
-<h1>@ViewData["Title"]</h1>
-<div class="row">
-    <div class="col-md-4">
-        <section>
-            <form id="account" method="post">
-                <h2>@Localizer["Subtitle"]</h2>
-                <hr />
-                <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
-                <div class="form-floating mb-3">
-                    <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                    <label asp-for="Input.Email" class="form-label">Email</label>
-                    <span asp-validation-for="Input.Email" class="text-danger"></span>
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+
+    .login-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+    }
+
+    .form-control {
+        border-radius: 8px;
+        padding: 12px 15px;
+        border: 1px solid #e0e0e0;
+    }
+
+        .form-control:focus {
+            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
+            border-color: #00aeef;
+        }
+
+    .input-group-text {
+        background-color: #f8f9fa;
+        border: 1px solid #e0e0e0;
+        border-right: none;
+        border-radius: 8px 0 0 8px;
+        color: #6c757d;
+    }
+    /* İkon gelince inputun sol köşesini düzelt */
+    .input-group .form-control {
+        border-left: none;
+        border-radius: 0 8px 8px 0;
+    }
+</style>
+
+<div class="container py-5 mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+
+            <div class="card login-card bg-white p-4 p-md-5">
+
+                <div class="text-center mb-4">
+                    <h2 class="fw-bold text-dark">Tekrar Hoş Geldiniz</h2>
+                    <p class="text-muted small">Hesabınıza erişmek için bilgilerinizi giriniz.</p>
+                    <div style="width: 50px; height: 3px; background-color: #00aeef; margin: 0 auto; border-radius: 2px;"></div>
                 </div>
-                <div class="form-floating mb-3">
-                    <input asp-for="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
-                    <label asp-for="Input.Password" class="form-label">Password</label>
-                    <span asp-validation-for="Input.Password" class="text-danger"></span>
-                </div>
-                <div class="checkbox mb-3">
-                    <label asp-for="Input.RememberMe" class="form-label">
-                        <input class="form-check-input" asp-for="Input.RememberMe" />
-                        @Html.DisplayNameFor(m => m.Input.RememberMe)
-                    </label>
-                </div>
-                <div>
-                    <button id="login-submit" type="submit" class="w-100 btn btn-lg btn-primary">@Localizer["LoginButton"]</button>
-                </div>
-                <div class="mt-3">
-                    <p>
-                        <a id="forgot-password" asp-page="./ForgotPassword">@Localizer["ForgotPasswordLink"]</a>
-                    </p>
-                    <p>
-                        <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl">@Localizer["RegisterLink"]</a>
-                    </p>
-                    <p>
-                        <a id="resend-confirmation" asp-page="./ResendEmailConfirmation">@Localizer["ResendConfirmationLink"]</a>
-                    </p>
-                </div>
-            </form>
-        </section>
-    </div>
-    <div class="col-md-6 col-md-offset-2">
-        <section>
-            <h3>@Localizer["ExternalLoginTitle"]</h3>
-            <hr />
-            @{
-                if ((Model.ExternalLogins?.Count ?? 0) == 0)
-                {
-                    <div>
-                        <p>
-                            There are no external authentication services configured. See this <a href="https://go.microsoft.com/fwlink/?LinkID=532715">article
-                            about setting up this ASP.NET application to support logging in via external services</a>.
-                        </p>
+
+                <form id="account" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm mb-3" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.Email" class="form-label fw-bold small text-muted">E-Posta Adresi</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                            <input asp-for="Input.Email" class="form-control" placeholder="ornek@email.com" autocomplete="username" />
+                        </div>
+                        <span asp-validation-for="Input.Email" class="text-danger small"></span>
                     </div>
-                }
-                else
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label asp-for="Input.Password" class="form-label fw-bold small text-muted">Şifre</label>
+                            <a id="forgot-password" asp-page="./ForgotPassword" class="small text-decoration-none" style="color: #00aeef;">Şifremi Unuttum?</a>
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                            <input asp-for="Input.Password" class="form-control" placeholder="******" autocomplete="current-password" />
+                        </div>
+                        <span asp-validation-for="Input.Password" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input asp-for="Input.RememberMe" class="form-check-input" />
+                            <label asp-for="Input.RememberMe" class="form-check-label small text-muted">
+                                @Html.DisplayNameFor(m => m.Input.RememberMe)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="d-grid mb-4">
+                        <button id="login-submit" type="submit" class="btn btn-primary py-3 fw-bold shadow-sm" style="background-color: #00aeef; border: none;">
+                            GİRİŞ YAP
+                        </button>
+                    </div>
+
+                    <div class="text-center small">
+                        <p class="text-muted mb-1">Hesabınız yok mu? <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="fw-bold text-decoration-none" style="color: #0056b3;">Kayıt Ol</a></p>
+                        <a id="resend-confirmation" asp-page="./ResendEmailConfirmation" class="text-muted text-decoration-none" style="font-size: 0.8rem;">Onay mailini tekrar gönder</a>
+                    </div>
+                </form>
+
+                @if ((Model.ExternalLogins?.Count ?? 0) > 0)
                 {
-                    <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="form-horizontal">
-                        <div>
-                            <p>
+                    <div class="text-center mt-4">
+                        <p class="text-muted small mb-2">veya şununla devam et</p>
+                        <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="form-horizontal">
+                            <div class="d-flex justify-content-center gap-2">
                                 @foreach (var provider in Model.ExternalLogins!)
                                 {
-                                    <button type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm" name="provider" value="@provider.Name" title="@provider.DisplayName hesabınızla giriş yapın">
+                                        @provider.DisplayName
+                                    </button>
                                 }
-                            </p>
-                        </div>
-                    </form>
+                            </div>
+                        </form>
+                    </div>
                 }
-            }
-        </section>
+            </div>
+
+        </div>
     </div>
 </div>
 

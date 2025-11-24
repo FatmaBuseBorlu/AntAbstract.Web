@@ -1,47 +1,167 @@
-﻿@model AntAbstract.Domain.Entities.Conference
+﻿@using AntAbstract.Domain.Entities
+@model AntAbstract.Domain.Entities.Conference
 
 @{
     ViewData["Title"] = Model.Title;
+    Layout = "_Layout";
 }
 
-<div class="jumbotron jumbotron-fluid text-white bg-dark" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('@Model.BannerPath'); background-size: cover; background-position: center;">
-    <div class="container text-center">
+<style>
+    /* Navbar'dan kurtulmak için üst boşluk */
+    .hero-detail {
+        padding: 100px 0 50px 0;
+        background: linear-gradient(135deg, #0056b3 0%, #00aeef 100%);
+        position: relative;
+        overflow: hidden;
+    }
+
+        .hero-detail::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .hero-detail .container {
+            z-index: 10;
+        }
+
+    /* Nav Sekmeleri */
+    .nav-tabs .nav-link {
+        color: #4a5568;
+    }
+
+        .nav-tabs .nav-link.active {
+            color: #00aeef !important;
+            border-color: #00aeef #00aeef #fff !important;
+            font-weight: bold;
+        }
+
+    /* Kart ve Buton Stilleri */
+    .detail-card {
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+
+    .btn-action-primary {
+        background-color: #00aeef;
+        border-color: #00aeef;
+    }
+</style>
+
+<div class="hero-detail text-white pt-5 mt-5" style="background-image: url('@Model.BannerPath'); background-size: cover; background-position: center;">
+    <div class="container text-center py-5">
         @if (!string.IsNullOrEmpty(Model.LogoPath))
         {
-            <img src="@Model.LogoPath" style="max-height: 120px; background: #fff; padding: 10px; border-radius: 10px;" class="mb-3">
+            <img src="@Model.LogoPath" style="max-height: 120px; background: #fff; padding: 10px; border-radius: 10px;" class="mb-4 shadow-lg">
         }
-        <h1 class="display-4">@Model.Title</h1>
-        <p class="lead"><i class="fa fa-calendar"></i> @Model.StartDate.ToString("dd MMMM yyyy") - @Model.EndDate.ToString("dd MMMM yyyy")</p>
-        <p><i class="fa fa-map-marker"></i> @Model.City, @Model.Country</p>
+        <h1 class="display-4 fw-bold">@Model.Title</h1>
+        <p class="lead mb-1"><i class="fa fa-calendar me-2"></i> @Model.StartDate.ToString("dd MMMM yyyy") - @Model.EndDate.ToString("dd MMMM yyyy")</p>
+        <p><i class="fa fa-map-marker me-2"></i> @Model.City, @Model.Country</p>
     </div>
 </div>
 
-<div class="container mt-5">
-    <div class="row">
+<div class="container mt-5 mb-5 pb-5">
+    <div class="row g-5">
+
         <div class="col-md-4">
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">Kongre Bilgileri</div>
+
+            <div class="card mb-4 shadow-sm detail-card">
+                <div class="card-header bg-primary text-white rounded-top-2">
+                    <h5 class="mb-0 fw-bold">Kongre Bilgileri</h5>
+                </div>
                 <ul class="list-group list-group-flush">
-                    <li class="list-group-item"><strong>Başlangıç:</strong> @Model.StartDate.ToShortDateString()</li>
-                    <li class="list-group-item"><strong>Bitiş:</strong> @Model.EndDate.ToShortDateString()</li>
-                    <li class="list-group-item"><strong>Web Sitesi:</strong> <a href="https://antabstract.com/@Model.Tenant?.Name" target="_blank">Siteye Git</a></li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <strong><i class="fas fa-calendar-alt me-2 text-muted"></i> Başlangıç:</strong> <span>@Model.StartDate.ToString("dd.MM.yyyy")</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <strong><i class="fas fa-calendar-alt me-2 text-muted"></i> Bitiş:</strong> <span>@Model.EndDate.ToString("dd.MM.yyyy")</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <strong><i class="fas fa-city me-2 text-muted"></i> Şehir:</strong> <span>@Model.City</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <strong><i class="fas fa-globe me-2 text-muted"></i> Web Sitesi:</strong>
+                        <span>
+                            @if (Model.Tenant != null)
+                            {
+                                <a href="https://antabstract.com/@Model.Tenant.Name" target="_blank" class="text-decoration-none">Siteye Git <i class="fa fa-external-link-alt small"></i></a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">-</span>
+                            }
+                        </span>
+                    </li>
                 </ul>
             </div>
 
-            <a href="/Register/@Model.Id" class="btn btn-success btn-lg btn-block mb-3">Kayıt Ol</a>
-            <a href="/Payment/@Model.Id" class="btn btn-info btn-lg btn-block">Ödeme Yap</a>
+            <div class="d-grid gap-3">
+                <a href="/Register/@Model.Id" class="btn btn-success btn-lg w-100 text-white fw-bold shadow-sm rounded-pill">
+                    <i class="fa fa-user-plus me-2"></i> KAYIT OL
+                </a>
+
+                <a href="/Payment/@Model.Id" class="btn btn-primary btn-lg w-100 text-white fw-bold shadow-sm rounded-pill btn-action-primary">
+                    <i class="fa fa-credit-card me-2"></i> ÖDEME YAP
+                </a>
+            </div>
+
         </div>
 
         <div class="col-md-8">
-            <h3>Kongre Hakkında</h3>
-            <hr>
-            <div class="content-text">
-                @Html.Raw(Model.Description ?? "Açıklama girilmemiş.")
-            </div>
 
-            <div class="mt-5">
-                <h4>Konum</h4>
-                <p>@Model.Venue</p>
+            <ul class="nav nav-tabs mb-4" id="contentTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="desc-tab" data-bs-toggle="tab" data-bs-target="#desc" type="button" role="tab">Kongre Hakkında</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="dates-tab" data-bs-toggle="tab" data-bs-target="#dates" type="button" role="tab">Önemli Tarihler</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="location-tab" data-bs-toggle="tab" data-bs-target="#location" type="button" role="tab">Konum & Mekan</button>
+                </li>
+            </ul>
+
+            <div class="tab-content detail-content" id="contentTabsContent">
+
+                <div class="tab-pane fade show active" id="desc" role="tabpanel" aria-labelledby="desc-tab">
+                    <h3 class="fw-bold text-dark mb-3">Genel Açıklama</h3>
+                    <div class="content-text" style="line-height: 1.8;">
+                        @Html.Raw(Model.Description ?? "Kongre açıklaması henüz girilmemiştir. Lütfen yönetici panelinden içeriği güncelleyiniz.")
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="dates" role="tabpanel" aria-labelledby="dates-tab">
+                    <h3 class="fw-bold text-dark mb-3">Önemli Son Başvuru Tarihleri</h3>
+
+                    <ul class="list-group list-group-flush shadow-sm rounded-3">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong><i class="fas fa-file-export text-primary me-2"></i> Bildiri Gönderim Sonu</strong>
+                            <span class="fw-bold text-danger">30 Ocak 2026</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong><i class="fas fa-gavel text-warning me-2"></i> Hakem Değerlendirme Sonu</strong>
+                            <span class="fw-bold">15 Mart 2026</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong><i class="fas fa-tag text-success me-2"></i> Erken Kayıt Sonu</strong>
+                            <span class="fw-bold">15 Mayıs 2026</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="tab-pane fade" id="location" role="tabpanel" aria-labelledby="location-tab">
+                    <h3 class="fw-bold text-dark mb-3">Mekan Bilgisi</h3>
+                    <div class="alert alert-info">
+                        <h5 class="fw-bold">@Model.Venue</h5>
+                        <p class="mb-0">@Model.City, @Model.Country</p>
+                    </div>
+                    <p class="text-muted small">Mekan bilgisi ve ulaşım detayları yakında eklenecektir.</p>
+                </div>
+
             </div>
         </div>
     </div>

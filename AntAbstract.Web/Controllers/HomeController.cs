@@ -40,9 +40,29 @@ namespace AntAbstract.Web.Controllers
                 .Include(c => c.Tenant) // Link oluþturmak için Tenant bilgisi lazým
                 .OrderBy(c => c.StartDate)
                 .ToListAsync();
+            return View(activeConferences);
+        }
+        // HomeController.cs içine ekleyin:// HomeController.cs içine ekleyin:
 
-            // DÝKKAT: View adý "TenantSelection", gönderilen model "activeConferences"
-            return View("TenantSelection", activeConferences);
+        public IActionResult About()
+        {
+            return View();
+        }
+
+        public IActionResult Contact()
+        {
+            return View();
+        }
+
+        public async Task<IActionResult> Congresses()
+        {
+            // Tüm kongreleri tarihe göre (en yakýndan uzaða) sýralayýp getiriyoruz
+            var allCongresses = await _context.Conferences
+                .Include(c => c.Tenant)
+                .OrderBy(c => c.StartDate)
+                .ToListAsync();
+
+            return View(allCongresses);
         }
 
         public async Task<IActionResult> Details(Guid id)

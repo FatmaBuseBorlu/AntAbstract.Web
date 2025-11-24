@@ -1,64 +1,159 @@
 ﻿@page
 @model RegisterModel
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
-    ViewData["Title"] = Localizer["Title"];
+    ViewData["Title"] = "Kayıt Ol";
+    Layout = "_Layout";
 }
-<h1>@ViewData["Title"]</h1>
 
-<div class="row">
-    <div class="col-md-4">
-        <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
-                <h2>@Localizer["Subtitle"]</h2>
-            <hr />
-            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
-            <div class="form-floating mb-3">
-                <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                <label asp-for="Input.Email">Email</label>
-                <span asp-validation-for="Input.Email" class="text-danger"></span>
-            </div>
-            <div class="form-floating mb-3">
-                <input asp-for="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label asp-for="Input.Password">Password</label>
-                <span asp-validation-for="Input.Password" class="text-danger"></span>
-            </div>
-            <div class="form-floating mb-3">
-                <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label asp-for="Input.ConfirmPassword">Confirm Password</label>
-                <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
-            </div>
-            <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
-        </form>
-    </div>
-    <div class="col-md-6 col-md-offset-2">
-        <section>
-            <h3>@Localizer["ExternalLoginTitle"]</h3>
-            <hr />
-            @{
-                if ((Model.ExternalLogins?.Count ?? 0) == 0)
-                {
-                    <div>
-                        <p>
-                            There are no external authentication services configured. See this <a href="https://go.microsoft.com/fwlink/?LinkID=532715">article
-                            about setting up this ASP.NET application to support logging in via external services</a>.
-                        </p>
-                    </div>
-                }
-                else
-                {
-                    <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="form-horizontal">
-                        <div>
-                            <p>
-                                @foreach (var provider in Model.ExternalLogins!)
-                                {
-                                    <button type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
-                                }
-                            </p>
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+
+    .form-control {
+        border-radius: 8px; /* Input köşelerini yuvarla */
+        border: 1px solid #e0e0e0;
+        padding: 12px 15px; /* İç boşluğu artır */
+    }
+
+        .form-control:focus {
+            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1); /* Tıklayınca mavi hare */
+            border-color: #00aeef;
+        }
+
+    .form-label {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 6px;
+    }
+
+    .register-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.08); /* Yumuşak gölge */
+    }
+</style>
+
+<div class="container py-5 mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-9">
+
+            <div class="card register-card bg-white p-4 p-md-5">
+
+                <div class="text-center mb-5">
+                    <h2 class="fw-bold text-dark">Aramıza Katılın</h2>
+                    <p class="text-muted">Kongre sistemine tam erişim için formu doldurunuz.</p>
+                    <div style="width: 50px; height: 4px; background-color: #00aeef; margin: 0 auto; border-radius: 2px;"></div>
+                </div>
+
+                <form asp-route-returnUrl="@Model.ReturnUrl" method="post" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm mb-4" role="alert"></div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label asp-for="Input.FirstName" class="form-label">İsim <span class="text-danger">*</span></label>
+                            <input asp-for="Input.FirstName" class="form-control" placeholder="Adınız" />
+                            <span asp-validation-for="Input.FirstName" class="text-danger small"></span>
                         </div>
-                    </form>
-                }
-            }
-        </section>
+                        <div class="col-md-4">
+                            <label asp-for="Input.LastName" class="form-label">Soyisim <span class="text-danger">*</span></label>
+                            <input asp-for="Input.LastName" class="form-control" placeholder="Soyadınız" />
+                            <span asp-validation-for="Input.LastName" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Input.IdentityNumber" class="form-label">TC / Pasaport No <span class="text-danger">*</span></label>
+                            <input asp-for="Input.IdentityNumber" class="form-control" placeholder="Kimlik No" />
+                            <span asp-validation-for="Input.IdentityNumber" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label asp-for="Input.Email" class="form-label">E-Posta <span class="text-danger">*</span></label>
+                            <input asp-for="Input.Email" class="form-control" placeholder="ornek@email.com" />
+                            <span asp-validation-for="Input.Email" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Input.AlternativeEmail" class="form-label">Alternatif E-Posta</label>
+                            <input asp-for="Input.AlternativeEmail" class="form-control" placeholder="Opsiyonel" />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Input.PhoneNumber" class="form-label">Telefon</label>
+                            <input asp-for="Input.PhoneNumber" class="form-control" placeholder="555 123 45 67" />
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label asp-for="Input.University" class="form-label">Üniversite / Kurum</label>
+                            <input asp-for="Input.University" class="form-control" placeholder="Kurum Adı" />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Input.Title" class="form-label">Ünvan</label>
+                            <input asp-for="Input.Title" class="form-control" placeholder="Prof. Dr. vb." />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Input.Profession" class="form-label">Meslek / Uzmanlık</label>
+                            <input asp-for="Input.Profession" class="form-control" placeholder="Alanınız" />
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label asp-for="Input.City" class="form-label">Şehir</label>
+                            <input asp-for="Input.City" class="form-control" placeholder="Şehir" />
+                        </div>
+                        <div class="col-md-8">
+                            <label asp-for="Input.Address" class="form-label">Adres</label>
+                            <input asp-for="Input.Address" class="form-control" placeholder="Açık adresiniz" />
+                        </div>
+                    </div>
+
+                    <div class="p-3 mb-3 rounded-3" style="background-color: #f8fcfd; border: 1px dashed #bfe7f5;">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="Input.Password" class="form-label">Şifre <span class="text-danger">*</span></label>
+                                <input asp-for="Input.Password" class="form-control" placeholder="******" />
+                                <span asp-validation-for="Input.Password" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Input.ConfirmPassword" class="form-label">Şifre Tekrar <span class="text-danger">*</span></label>
+                                <input asp-for="Input.ConfirmPassword" class="form-control" placeholder="******" />
+                                <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 align-items-center mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="Input.ProfileImage" class="form-label">Profil Resmi</label>
+                            <input asp-for="Input.ProfileImage" type="file" class="form-control" />
+                            <small class="text-muted" style="font-size: 0.75rem;">Vesikalık formatında yükleyiniz.</small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-check p-3 rounded bg-light border">
+                                <input asp-for="Input.TermsAccepted" class="form-check-input mt-1" type="checkbox" />
+                                <label class="form-check-label small text-muted ms-2">
+                                    <a href="#" class="text-decoration-none fw-bold" style="color: #00aeef;">Kullanım Koşullarını</a> okudum ve kabul ediyorum.
+                                </label>
+                            </div>
+                            <span asp-validation-for="Input.TermsAccepted" class="text-danger d-block small mt-1"></span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm" style="background-color: #00aeef; border: none; font-size: 1.1rem;">
+                        KAYDI TAMAMLA
+                    </button>
+
+                    <div class="text-center mt-4">
+                        <p class="text-muted">Zaten bir hesabınız var mı? <a asp-page="./Login" class="fw-bold text-decoration-none" style="color: #0056b3;">Giriş Yap</a></p>
+                    </div>
+
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 

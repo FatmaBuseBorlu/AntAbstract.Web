@@ -1,49 +1,80 @@
-﻿@model AntAbstract.Domain.Entities.Submission
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+﻿@model AntAbstract.Web.Models.ViewModels.SubmissionCreateViewModel
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"];
+    ViewData["Title"] = "Yeni Bildiri Gönder";
+    Layout = "_LayoutDashboard"; // Dashboard şablonunu kullanıyoruz
 }
 
-<h1 class="display-5">@Localizer["PageTitle"]</h1>
-<p class="lead text-muted">@Localizer["PageLead"]</p>
-<hr />
+<div class="container-fluid">
 
-<div class="row">
-    <div class="col-md-8">
-        <form asp-action="Create" enctype="multipart/form-data" method="post">
-            <div asp-validation-summary="All" class="text-danger"></div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1">Yeni Bildiri Gönder</h4>
+            <p class="text-muted small mb-0">Bilimsel çalışmanızı sisteme yükleyin.</p>
+        </div>
+        <a href="/Dashboard" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Geri Dön
+        </a>
+    </div>
 
-            <div class="mb-3">
-                <label asp-for="Title" class="form-label fw-bold">@Localizer["TitleLabel"]</label>
-                <input asp-for="Title" class="form-control" />
-            </div>
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card dashboard-card border-0 shadow-sm">
+                <div class="card-body p-4">
 
-            <div class="mb-3">
-                <label asp-for="AbstractText" class="form-label fw-bold">@Localizer["AbstractTextLabel"]</label>
-                <textarea asp-for="AbstractText" class="form-control" rows="8"></textarea>
-            </div>
-            <div class="form-group mb-3">
-                <label asp-for="Keywords" class="control-label fw-bold">@Localizer["KeywordsLabel"]</label>
-                <textarea asp-for="Keywords" class="form-control" rows="3"></textarea>
-                <small class="form-text text-muted">@Localizer["KeywordsHelpText"]</small>
-                <span asp-validation-for="Keywords" class="text-danger"></span>
-            </div>
-            <div class="mb-3">
-                <label for="submissionFile" class="form-label fw-bold">@Localizer["FileLabel"]</label>
-                <input type="file" name="submissionFile" class="form-control" required />
-            </div>
+                    <form asp-action="Create" enctype="multipart/form-data" method="post">
 
-            <div class="form-group mt-4">
-                <button type="submit" class="btn btn-primary">@Localizer["SubmitButton"]</button>
-                <a asp-action="Index" class="btn btn-outline-secondary">@Localizer["CancelButton"]</a>
+                        <div class="mb-4">
+                            <label asp-for="Title" class="form-label fw-bold text-dark">Bildiri Başlığı <span class="text-danger">*</span></label>
+                            <input asp-for="Title" class="form-control form-control-lg bg-light border-0" placeholder="Çalışmanızın başlığını giriniz..." />
+                            <span asp-validation-for="Title" class="text-danger small"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-bold text-dark">Sunum Türü</label>
+                                <select asp-for="PresentationTypeId" class="form-select bg-light border-0">
+                                    <option value="0">Sözlü Sunum</option>
+                                    <option value="1">Poster Sunum</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <label asp-for="Keywords" class="form-label fw-bold text-dark">Anahtar Kelimeler</label>
+                                <input asp-for="Keywords" class="form-control bg-light border-0" placeholder="Örn: Yapay Zeka, Veri Madenciliği..." />
+                                <span asp-validation-for="Keywords" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="AbstractText" class="form-label fw-bold text-dark">Özet Metni <span class="text-danger">*</span></label>
+                            <textarea asp-for="AbstractText" class="form-control bg-light border-0" rows="8" placeholder="Özetinizi buraya yapıştırın veya yazın..."></textarea>
+                            <span asp-validation-for="AbstractText" class="text-danger small"></span>
+                            <div class="form-text text-end" id="wordCount">0 kelime</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="SubmissionFile" class="form-label fw-bold text-dark">Tam Metin Dosyası</label>
+                            <div class="p-4 bg-light border border-2 border-dashed rounded-3 text-center">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                <p class="mb-2">Dosyanızı sürükleyin veya seçmek için tıklayın</p>
+                                <input asp-for="SubmissionFile" type="file" class="form-control" />
+                                <small class="text-muted">PDF veya Word dosyası (Maks 10MB)</small>
+                            </div>
+                            <span asp-validation-for="SubmissionFile" class="text-danger small"></span>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-paper-plane me-2"></i> BİLDİRİYİ GÖNDER
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
             </div>
-        </form>
+        </div>
     </div>
 </div>
-
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-}

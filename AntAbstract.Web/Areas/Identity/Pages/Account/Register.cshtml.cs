@@ -1,49 +1,39 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-#nullable disable
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.Encodings.Web;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using AntAbstract.Domain.Entities; // AppUser burada
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
-using AntAbstract.Domain.Entities; // EKLENDİ
+using Microsoft.AspNetCore.Http; // Dosya yükleme için
 
 namespace AntAbstract.Web.Areas.Identity.Pages.Account
 {
+    [AllowAnonymous]
     public class RegisterModel : PageModel
     {
         private readonly SignInManager<AppUser> _signInManager;
         private readonly UserManager<AppUser> _userManager;
-        private readonly IUserStore<AppUser> _userStore;
-        private readonly IUserEmailStore<AppUser> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
-        private readonly IEmailSender _emailSender;
+        // private readonly IEmailSender _emailSender; // Email servisi varsa açılır
 
         public RegisterModel(
             UserManager<AppUser> userManager,
-            IUserStore<AppUser> userStore,
             SignInManager<AppUser> signInManager,
-            ILogger<RegisterModel> logger,
-            IEmailSender emailSender)
+            ILogger<RegisterModel> logger)
         {
             _userManager = userManager;
-            _userStore = userStore;
-            _emailStore = GetEmailStore();
             _signInManager = signInManager;
             _logger = logger;
-            _emailSender = emailSender;
         }
 
         [BindProperty]
@@ -51,103 +41,145 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
 
         public string ReturnUrl { get; set; }
 
-        public IList<AuthenticationScheme> ExternalLogins { get; set; }
-
+        // --- FORM VERİ MODELİ (INPUT MODEL) ---
         public class InputModel
         {
-            [Required]
-            [EmailAddress]
+            [Required(ErrorMessage = "İsim zorunludur")]
+            [Display(Name = "İsim")]
+            public string FirstName { get; set; }
+
+            [Required(ErrorMessage = "Soyisim zorunludur")]
+            [Display(Name = "Soyisim")]
+            public string LastName { get; set; }
+
+            [Required(ErrorMessage = "TC/Pasaport No zorunludur")]
+            [Display(Name = "TC No")]
+            public string IdentityNumber { get; set; }
+
+            [Required(ErrorMessage = "E-Posta zorunludur")]
+            [EmailAddress(ErrorMessage = "Geçerli bir E-Posta giriniz")]
             [Display(Name = "Email")]
             public string Email { get; set; }
 
-            [Required]
-            [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+            [EmailAddress]
+            [Display(Name = "Alternatif E-Posta")]
+            public string? AlternativeEmail { get; set; }
+
+            [Phone]
+            [Display(Name = "Cep Telefonu")]
+            public string PhoneNumber { get; set; }
+
+            [Display(Name = "Üniversite")]
+            public string University { get; set; }
+
+            [Display(Name = "Ünvan")]
+            public string Title { get; set; }
+
+            [Display(Name = "Meslek/Uzmanlık")]
+            public string Profession { get; set; }
+
+            [Display(Name = "Şehir")]
+            public string City { get; set; }
+
+            [Display(Name = "Adres")]
+            public string Address { get; set; }
+
+            [Required(ErrorMessage = "Şifre zorunludur")]
+            [StringLength(100, ErrorMessage = "{0} en az {2} karakter olmalıdır.", MinimumLength = 6)]
             [DataType(DataType.Password)]
-            [Display(Name = "Password")]
+            [Display(Name = "Şifre")]
             public string Password { get; set; }
 
             [DataType(DataType.Password)]
-            [Display(Name = "Confirm password")]
-            [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+            [Display(Name = "Şifre Tekrar")]
+            [Compare("Password", ErrorMessage = "Şifreler eşleşmiyor.")]
             public string ConfirmPassword { get; set; }
+
+            // Dosya Yükleme
+            [Display(Name = "Profil Resmi")]
+            public IFormFile? ProfileImage { get; set; }
+
+            [Range(typeof(bool), "true", "true", ErrorMessage = "Lütfen kullanım koşullarını kabul ediniz.")]
+            public bool TermsAccepted { get; set; }
         }
 
-
-        public async Task OnGetAsync(string returnUrl = null)
+        public void OnGet(string returnUrl = null)
         {
             ReturnUrl = returnUrl;
-            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         }
 
+        // --- KAYIT BUTONUNA BASINCA ÇALIŞAN METOT ---
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {
             returnUrl ??= Url.Content("~/");
-            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+
             if (ModelState.IsValid)
             {
-                var user = CreateUser();
+                var user = new AppUser
+                {
+                    UserName = Input.Email,
+                    Email = Input.Email,
+                    FirstName = Input.FirstName,
+                    LastName = Input.LastName,
+                    IdentityNumber = Input.IdentityNumber,
+                    AlternativeEmail = Input.AlternativeEmail,
+                    PhoneNumber = Input.PhoneNumber,
+                    University = Input.University,
+                    Title = Input.Title,
+                    Profession = Input.Profession,
+                    City = Input.City,
+                    Address = Input.Address
+                };
 
-                await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
-                await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+                // --- RESİM KAYDETME İŞLEMİ ---
+                if (Input.ProfileImage != null)
+                {
+                    try
+                    {
+                        var extension = Path.GetExtension(Input.ProfileImage.FileName);
+                        var newFileName = Guid.NewGuid().ToString() + extension;
+
+                        // Klasör: wwwroot/uploads/users
+                        var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "users");
+                        if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
+
+                        var filePath = Path.Combine(folderPath, newFileName);
+
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await Input.ProfileImage.CopyToAsync(stream);
+                        }
+
+                        user.ProfileImagePath = "/uploads/users/" + newFileName;
+                    }
+                    catch (Exception ex)
+                    {
+                        // Resim yüklenemezse bile kayıt devam etsin ama log düşelim
+                        _logger.LogError("Resim yüklenirken hata oluştu: " + ex.Message);
+                    }
+                }
+
+                // --- KULLANICI OLUŞTURMA ---
                 var result = await _userManager.CreateAsync(user, Input.Password);
 
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User created a new account with password.");
 
-                    var userId = await _userManager.GetUserIdAsync(user);
-                    var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                    code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-                    var callbackUrl = Url.Page(
-                        "/Account/ConfirmEmail",
-                        pageHandler: null,
-                        values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
-                        protocol: Request.Scheme);
-
-                    await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
-                        $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
-
-                    if (_userManager.Options.SignIn.RequireConfirmedAccount)
-                    {
-                        return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl = returnUrl });
-                    }
-                    else
-                    {
-                        await _signInManager.SignInAsync(user, isPersistent: false);
-                        return LocalRedirect(returnUrl);
-                    }
+                    // Direkt giriş yaptır ve yönlendir
+                    await _signInManager.SignInAsync(user, isPersistent: false);
+                    return LocalRedirect(returnUrl);
                 }
+
+                // Hata varsa (örn: Şifre yetersiz, email kayıtlı)
                 foreach (var error in result.Errors)
                 {
                     ModelState.AddModelError(string.Empty, error.Description);
                 }
             }
 
-            // If we got this far, something failed, redisplay form
+            // Hata varsa formu tekrar göster
             return Page();
-        }
-
-        private AppUser CreateUser()
-        {
-            try
-            {
-                return Activator.CreateInstance<AppUser>();
-            }
-            catch
-            {
-                throw new InvalidOperationException($"Can't create an instance of '{nameof(AppUser)}'. " +
-                    $"Ensure that '{nameof(AppUser)}' is not an abstract class and has a parameterless constructor, or alternatively " +
-                    $"override the register page in /Areas/Identity/Pages/Account/Register.cshtml");
-            }
-        }
-
-        private IUserEmailStore<AppUser> GetEmailStore()
-        {
-            if (!_userManager.SupportsUserEmail)
-            {
-                throw new NotSupportedException("The default UI requires a user store with email support.");
-            }
-            return (IUserEmailStore<AppUser>)_userStore;
         }
     }
 }

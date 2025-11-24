@@ -1,9 +1,12 @@
-﻿using AntAbstract.Infrastructure.Context;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using AntAbstract.Domain.Entities;
+using AntAbstract.Infrastructure.Context;
+using Microsoft.AspNetCore.Authorization;
 using AntAbstract.Web.Models.ViewModels;
 
 namespace AntAbstract.Web.Controllers
@@ -43,15 +46,24 @@ namespace AntAbstract.Web.Controllers
                 TotalSubmissions = await submissions.CountAsync(),
                 TotalReviewers = await _context.Reviewers.CountAsync(r => r.ConferenceId == conference.Id && r.IsActive),
 
-                // Yeni istatistikler
-                AcceptedSubmissions = await submissions.CountAsync(s => s.FinalDecision == "Kabul Edildi"),
-                RejectedSubmissions = await submissions.CountAsync(s => s.FinalDecision == "Reddedildi"),
-                RevisionSubmissions = await submissions.CountAsync(s => s.Status.Contains("Revizyon")),
+                // --- YENİ İSTATİSTİKLER (ENUM KULLANILARAK) ---
+                // Kabul Edilenler
+                AcceptedSubmissions = await submissions.CountAsync(s => s.Status == SubmissionStatus.Accepted),
 
+                // Reddedilenler
+                RejectedSubmissions = await submissions.CountAsync(s => s.Status == SubmissionStatus.Rejected),
+
+                // Revizyon İstenenler
+                RevisionSubmissions = await submissions.CountAsync(s => s.Status == SubmissionStatus.RevisionRequired),
+
+                // Karar Bekleyenler (Hakem değerlendirmesi bitmiş, karar verilmemiş)
                 AwaitingDecisionSubmissions = await submissions
-                    .CountAsync(s => s.FinalDecision == null && (s.ReviewAssignments.Any() && s.ReviewAssignments.All(ra => ra.Status == "Değerlendirildi") || s.Status == "Revizyon Tamamlandı")),
+                    .CountAsync(s => s.Status == SubmissionStatus.UnderReview &&
+                                     s.ReviewAssignments.Any() &&
+                                     s.ReviewAssignments.All(ra => ra.Status == "Completed")), // NOT: ra.Status string'i kontrol edildi
 
-                AwaitingAssignmentSubmissions = await submissions.CountAsync(s => !s.ReviewAssignments.Any())
+                // Atama Bekleyenler (Henüz hiçbir hakeme atanmamış)
+                AwaitingAssignmentSubmissions = await submissions.CountAsync(s => s.Status == SubmissionStatus.New && !s.ReviewAssignments.Any())
             };
 
             return View(viewModel);
