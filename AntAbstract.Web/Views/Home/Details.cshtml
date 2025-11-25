@@ -7,162 +7,221 @@
 }
 
 <style>
-    /* Navbar'dan kurtulmak için üst boşluk */
-    .hero-detail {
-        padding: 100px 0 50px 0;
-        background: linear-gradient(135deg, #0056b3 0%, #00aeef 100%);
-        position: relative;
-        overflow: hidden;
+    /* Sayfa Yapısı */
+    body {
+        background-color: #f8f9fa;
     }
 
-        .hero-detail::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.2);
-        }
+    /* HERO ALANI (Banner) */
+    .congress-hero {
+        position: relative;
+        background-color: #0f172a; /* Resim yüklenmezse koyu renk */
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        color: white;
+        padding-top: 140px; /* Navbar payı */
+        padding-bottom: 80px;
+        margin-bottom: 40px;
+    }
 
-        .hero-detail .container {
-            z-index: 10;
-        }
+    /* Resmin üzerine gelen karartma katmanı - Okunabilirlik için şart */
+    .hero-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.65); /* %65 Siyah Filtre */
+        z-index: 1;
+    }
 
-    /* Nav Sekmeleri */
+    /* İçeriği üste çıkarma */
+    .hero-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    /* Logo Tasarımı */
+    .congress-logo {
+        width: 120px;
+        height: 120px;
+        object-fit: contain;
+        background: #fff;
+        padding: 10px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        margin-bottom: 25px;
+    }
+
+    /* Sekme (Tab) Tasarımı */
     .nav-tabs .nav-link {
         color: #4a5568;
+        font-weight: 600;
+        border: none;
+        border-bottom: 3px solid transparent;
+        padding-bottom: 15px;
     }
 
         .nav-tabs .nav-link.active {
-            color: #00aeef !important;
-            border-color: #00aeef #00aeef #fff !important;
-            font-weight: bold;
+            color: #00aeef;
+            background: none;
+            border-bottom: 3px solid #00aeef;
         }
 
-    /* Kart ve Buton Stilleri */
-    .detail-card {
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    .nav-tabs {
+        border-bottom: 1px solid #e2e8f0;
+        margin-bottom: 30px;
     }
 
-    .btn-action-primary {
-        background-color: #00aeef;
-        border-color: #00aeef;
+    /* Kart Gölgeleri */
+    .info-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        overflow: hidden;
     }
 </style>
 
-<div class="hero-detail text-white pt-5 mt-5" style="background-image: url('@Model.BannerPath'); background-size: cover; background-position: center;">
-    <div class="container text-center py-5">
+<div class="congress-hero" style="background-image: url('@(string.IsNullOrEmpty(Model.BannerPath) ? "https://placehold.co/1920x600/1a202c/FFF?text=Kongre+Banner" : Model.BannerPath)');">
+    <div class="hero-overlay"></div>
+
+    <div class="container hero-content text-center">
+
         @if (!string.IsNullOrEmpty(Model.LogoPath))
         {
-            <img src="@Model.LogoPath" style="max-height: 120px; background: #fff; padding: 10px; border-radius: 10px;" class="mb-4 shadow-lg">
+            <img src="@Model.LogoPath" alt="@Model.Title" class="congress-logo">
         }
-        <h1 class="display-4 fw-bold">@Model.Title</h1>
-        <p class="lead mb-1"><i class="fa fa-calendar me-2"></i> @Model.StartDate.ToString("dd MMMM yyyy") - @Model.EndDate.ToString("dd MMMM yyyy")</p>
-        <p><i class="fa fa-map-marker me-2"></i> @Model.City, @Model.Country</p>
+        else
+        {
+            <div class="d-inline-block bg-white text-primary p-4 rounded-4 mb-4 shadow-lg">
+                <i class="fas fa-university fa-3x"></i>
+            </div>
+        }
+
+        <h1 class="display-5 fw-bold mb-3">@Model.Title</h1>
+
+        <div class="d-flex justify-content-center align-items-center gap-4 flex-wrap text-light opacity-75">
+            <div class="d-flex align-items-center">
+                <i class="far fa-calendar-alt me-2 fs-5"></i>
+                <span class="fs-5">@Model.StartDate.ToString("d MMMM yyyy") - @Model.EndDate.ToString("d MMMM yyyy")</span>
+            </div>
+            <div class="d-none d-md-block">|</div>
+            <div class="d-flex align-items-center">
+                <i class="fas fa-map-marker-alt me-2 fs-5"></i>
+                <span class="fs-5">@Model.City, @Model.Country</span>
+            </div>
+        </div>
+
     </div>
 </div>
 
-<div class="container mt-5 mb-5 pb-5">
-    <div class="row g-5">
+<div class="container pb-5">
+    <div class="row">
 
-        <div class="col-md-4">
+        <div class="col-lg-4 mb-4">
 
-            <div class="card mb-4 shadow-sm detail-card">
-                <div class="card-header bg-primary text-white rounded-top-2">
-                    <h5 class="mb-0 fw-bold">Kongre Bilgileri</h5>
+            <div class="card info-card mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold m-0 text-primary"><i class="fas fa-info-circle me-2"></i> Kongre Bilgileri</h6>
                 </div>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between">
-                        <strong><i class="fas fa-calendar-alt me-2 text-muted"></i> Başlangıç:</strong> <span>@Model.StartDate.ToString("dd.MM.yyyy")</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <strong><i class="fas fa-calendar-alt me-2 text-muted"></i> Bitiş:</strong> <span>@Model.EndDate.ToString("dd.MM.yyyy")</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <strong><i class="fas fa-city me-2 text-muted"></i> Şehir:</strong> <span>@Model.City</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <strong><i class="fas fa-globe me-2 text-muted"></i> Web Sitesi:</strong>
-                        <span>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between py-3 px-4">
+                            <span class="text-muted">Başlangıç</span>
+                            <span class="fw-bold">@Model.StartDate.ToShortDateString()</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between py-3 px-4">
+                            <span class="text-muted">Bitiş</span>
+                            <span class="fw-bold">@Model.EndDate.ToShortDateString()</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between py-3 px-4">
+                            <span class="text-muted">Konum</span>
+                            <span class="fw-bold">@Model.City</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between py-3 px-4">
+                            <span class="text-muted">Web Sitesi</span>
                             @if (Model.Tenant != null)
                             {
-                                <a href="https://antabstract.com/@Model.Tenant.Name" target="_blank" class="text-decoration-none">Siteye Git <i class="fa fa-external-link-alt small"></i></a>
+                                <a href="https://antabstract.com/@Model.Tenant.Name" target="_blank" class="text-decoration-none fw-bold">Ziyaret Et <i class="fas fa-external-link-alt small ms-1"></i></a>
                             }
                             else
                             {
                                 <span class="text-muted">-</span>
                             }
-                        </span>
-                    </li>
-                </ul>
-            </div>
-
-            <div class="d-grid gap-3">
-                <a href="/Register/@Model.Id" class="btn btn-success btn-lg w-100 text-white fw-bold shadow-sm rounded-pill">
-                    <i class="fa fa-user-plus me-2"></i> KAYIT OL
-                </a>
-
-                <a href="/Payment/@Model.Id" class="btn btn-primary btn-lg w-100 text-white fw-bold shadow-sm rounded-pill btn-action-primary">
-                    <i class="fa fa-credit-card me-2"></i> ÖDEME YAP
-                </a>
-            </div>
-
-        </div>
-
-        <div class="col-md-8">
-
-            <ul class="nav nav-tabs mb-4" id="contentTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="desc-tab" data-bs-toggle="tab" data-bs-target="#desc" type="button" role="tab">Kongre Hakkında</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="dates-tab" data-bs-toggle="tab" data-bs-target="#dates" type="button" role="tab">Önemli Tarihler</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="location-tab" data-bs-toggle="tab" data-bs-target="#location" type="button" role="tab">Konum & Mekan</button>
-                </li>
-            </ul>
-
-            <div class="tab-content detail-content" id="contentTabsContent">
-
-                <div class="tab-pane fade show active" id="desc" role="tabpanel" aria-labelledby="desc-tab">
-                    <h3 class="fw-bold text-dark mb-3">Genel Açıklama</h3>
-                    <div class="content-text" style="line-height: 1.8;">
-                        @Html.Raw(Model.Description ?? "Kongre açıklaması henüz girilmemiştir. Lütfen yönetici panelinden içeriği güncelleyiniz.")
-                    </div>
-                </div>
-
-                <div class="tab-pane fade" id="dates" role="tabpanel" aria-labelledby="dates-tab">
-                    <h3 class="fw-bold text-dark mb-3">Önemli Son Başvuru Tarihleri</h3>
-
-                    <ul class="list-group list-group-flush shadow-sm rounded-3">
-                        <li class="list-group-item d-flex justify-content-between">
-                            <strong><i class="fas fa-file-export text-primary me-2"></i> Bildiri Gönderim Sonu</strong>
-                            <span class="fw-bold text-danger">30 Ocak 2026</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            <strong><i class="fas fa-gavel text-warning me-2"></i> Hakem Değerlendirme Sonu</strong>
-                            <span class="fw-bold">15 Mart 2026</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            <strong><i class="fas fa-tag text-success me-2"></i> Erken Kayıt Sonu</strong>
-                            <span class="fw-bold">15 Mayıs 2026</span>
                         </li>
                     </ul>
                 </div>
+            </div>
 
-                <div class="tab-pane fade" id="location" role="tabpanel" aria-labelledby="location-tab">
-                    <h3 class="fw-bold text-dark mb-3">Mekan Bilgisi</h3>
-                    <div class="alert alert-info">
-                        <h5 class="fw-bold">@Model.Venue</h5>
-                        <p class="mb-0">@Model.City, @Model.Country</p>
+            <div class="d-grid gap-3">
+                <a href="/Register/@Model.Id" class="btn btn-primary btn-lg shadow-sm fw-bold py-3" style="background-color: #00aeef; border: none;">
+                    <i class="fas fa-user-plus me-2"></i> KAYIT OL
+                </a>
+                <a href="/Payment/@Model.Id" class="btn btn-outline-dark btn-lg fw-bold py-3">
+                    <i class="fas fa-credit-card me-2"></i> ÖDEME YAP
+                </a>
+            </div>
+
+        </div>
+
+        <div class="col-lg-8">
+
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button">Kongre Hakkında</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="dates-tab" data-bs-toggle="tab" data-bs-target="#dates" type="button">Önemli Tarihler</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="venue-tab" data-bs-toggle="tab" data-bs-target="#venue" type="button">Konum & Mekan</button>
+                </li>
+            </ul>
+
+            <div class="tab-content bg-white p-4 rounded-bottom info-card border-top-0" id="myTabContent">
+
+                <div class="tab-pane fade show active" id="home" role="tabpanel">
+                    <h4 class="fw-bold mb-3 text-dark">Genel Bilgiler</h4>
+                    <div class="text-muted" style="line-height: 1.8;">
+                        @Html.Raw(Model.Description ?? "<p>Kongre detayları yakında eklenecektir.</p>")
                     </div>
-                    <p class="text-muted small">Mekan bilgisi ve ulaşım detayları yakında eklenecektir.</p>
+                </div>
+
+                <div class="tab-pane fade" id="dates" role="tabpanel">
+                    <h4 class="fw-bold mb-4 text-dark">Önemli Tarihler</h4>
+                    <div class="timeline">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="badge bg-primary p-2 me-3" style="width: 100px;">30 Oca 2026</div>
+                            <div><strong>Özet Gönderimi Son Tarihi</strong></div>
+                        </div>
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="badge bg-warning text-dark p-2 me-3" style="width: 100px;">15 Şub 2026</div>
+                            <div><strong>Erken Kayıt Son Tarihi</strong></div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="badge bg-success p-2 me-3" style="width: 100px;">@Model.StartDate.ToString("dd MMM yyyy")</div>
+                            <div><strong>Kongre Başlangıcı</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="venue" role="tabpanel">
+                    <h4 class="fw-bold mb-3 text-dark">Etkinlik Mekanı</h4>
+                    <div class="alert alert-light border d-flex align-items-center">
+                        <i class="fas fa-map-marker-alt text-danger fs-3 me-3"></i>
+                        <div>
+                            <h5 class="mb-0 fw-bold">@Model.Venue</h5>
+                            <p class="mb-0 text-muted">@Model.City, @Model.Country</p>
+                        </div>
+                    </div>
+                    <p class="text-muted small">Ulaşım ve konaklama detayları için kongre sekreteryası ile iletişime geçebilirsiniz.</p>
                 </div>
 
             </div>
+
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

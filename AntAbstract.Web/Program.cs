@@ -72,6 +72,8 @@ builder.Services.AddRazorPages();
 var app = builder.Build();
 
 // Ýlk DB Seeding
+// Program.cs içinde DB Seeding bölümü:
+
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -80,7 +82,11 @@ using (var scope = app.Services.CreateScope())
         var userManager = services.GetRequiredService<UserManager<AppUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
-        await AntAbstract.Infrastructure.Data.DbInitializer.Initialize(userManager, roleManager);
+        // YENÝ EKLENEN SATIR: Context servisini çaðýrýyoruz
+        var context = services.GetRequiredService<AppDbContext>();
+
+        // Parametre olarak context'i de gönderiyoruz
+        await AntAbstract.Infrastructure.Data.DbInitializer.Initialize(userManager, roleManager, context);
     }
     catch (Exception ex)
     {
