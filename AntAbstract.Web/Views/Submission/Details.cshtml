@@ -1,55 +1,225 @@
-﻿@model AntAbstract.Domain.Entities.Submission
-@using AntAbstract.Domain.Entities
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+﻿@using AntAbstract.Domain.Entities
+@model AntAbstract.Domain.Entities.Submission
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"];
+    ViewData["Title"] = "Bildiri Detayı";
+    Layout = "_LayoutDashboard";
 }
 
-<h1 class="display-5">@Model.Title</h1>
-<hr />
-<div>
-    <dl class="row bg-light p-3 rounded mt-3">
-        <dt class="col-sm-3 fw-bold">
-            @Localizer["TitleLabel"]
-        </dt>
-        <dd class="col-sm-9">
-            @Html.DisplayFor(model => model.Title)
-        </dd>
+<div class="container-fluid">
 
-        <dt class="col-sm-3 fw-bold">
-            @Localizer["AbstractTextLabel"]
-        </dt>
-        <dd class="col-sm-9" style="white-space: pre-wrap;">
-            @Html.DisplayFor(model => model.AbstractText)
-        </dd>
-
-        <dt class="col-sm-3 fw-bold">
-            @Localizer["DateLabel"]
-        </dt>
-        <dd class="col-sm-9">
-            @Model.CreatedAt.ToLocalTime().ToString("dd MMMM yyyy, HH:mm")
-        </dd>
-
-        <dt class="col-sm-3 fw-bold">
-            @Localizer["FileLabel"]
-        </dt>
-        <dd class="col-sm-9">
-            <a href="@Model.FilePath" target="_blank">@Localizer["ViewFileLink"]</a>
-        </dd>
-    </dl>
-</div>
-
-<div class="mt-4">
-    @if (Model.Status == SubmissionStatus.New)
-    {
-        <a asp-action="Edit"
-           asp-route-submissionId="@Model.SubmissionId"
-           class="btn btn-warning">
-            @Localizer["EditButton"]
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1">Bildiri Detayı</h4>
+            <p class="text-muted small mb-0">Referans No: #@Model.SubmissionId.ToString().Substring(0, 8).ToUpper()</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Listeye Dön
         </a>
-    }
-    <a asp-action="Index" class="btn btn-outline-secondary">
-        @Localizer["BackToListLink"]
-    </a>
+    </div>
+
+    <div class="row g-4 mb-4">
+
+        <div class="col-md-4">
+            <div class="card dashboard-card border-0 h-100 p-3 shadow-sm">
+                <h6 class="fw-bold text-muted small text-uppercase">Mevcut Durum</h6>
+                <div class="mt-2">
+                    @switch (Model.Status)
+                    {
+                        case SubmissionStatus.New:
+                            <span class="badge bg-primary fs-6 px-3 py-2">Yeni Gönderildi</span>
+                            break;
+                        case SubmissionStatus.UnderReview:
+                            <span class="badge bg-warning text-dark fs-6 px-3 py-2">Hakem Değerlendiriyor</span>
+                            break;
+                        case SubmissionStatus.RevisionRequired:
+                            <span class="badge bg-info text-dark fs-6 px-3 py-2">Revizyon İsteniyor</span>
+                            break;
+                        case SubmissionStatus.Accepted:
+                            <span class="badge bg-success fs-6 px-3 py-2">Kabul Edildi</span>
+                            break;
+                        case SubmissionStatus.Rejected:
+                            <span class="badge bg-danger fs-6 px-3 py-2">Reddedildi</span>
+                            break;
+                    }
+                </div>
+                <small class="text-muted mt-2">Son Güncelleme: @(Model.DecisionDate?.ToString("dd MMM yyyy") ?? Model.CreatedAt.ToString("dd MMM yyyy"))</small>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+<div class="card dashboard-card border-0 h-100 p-3 shadow-sm">
+    <h6 class="fw-bold text-muted small text-uppercase">İşlemler</h6>
+    <div class="mt-2">
+        
+        @if (Model.Status == SubmissionStatus.RevisionRequired)
+        {
+            }
+        /* --- YENİ EKLENEN KISIM: KABUL MEKTUBU BUTONU --- */
+        else if (Model.Status == SubmissionStatus.Accepted)
+        {
+            <div class="alert alert-success mb-2 small border-success">
+                <i class="fas fa-check-circle me-1"></i> Tebrikler! Bildiriniz kabul edildi.
+            </div>
+            
+            <a asp-action="DownloadAcceptanceLetter" asp-route-id="@Model.SubmissionId" target="_blank" class="btn btn-sm btn-success w-100 fw-bold shadow-sm">
+                <i class="fas fa-file-pdf me-1"></i> Kabul Mektubu İndir
+            </a>
+        }
+        /* ------------------------------------------------ */
+        else
+        {
+            <p class="text-muted small mb-0">Şu an yapmanız gereken bir işlem bulunmuyor.</p>
+        }
+    </div>
+</div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card dashboard-card border-0 h-100 p-3 shadow-sm">
+                <h6 class="fw-bold text-muted small text-uppercase">Bilgiler</h6>
+                <ul class="list-unstyled small mt-2 mb-0">
+                    <li class="mb-2"><i class="fas fa-calendar-alt text-primary me-2"></i> <strong>Gönderim:</strong> @Model.CreatedAt.ToLocalTime().ToString("dd MMMM yyyy")</li>
+                    <li class="mb-2"><i class="fas fa-users text-primary me-2"></i> <strong>Yazar Sayısı:</strong> @(Model.SubmissionAuthors?.Count ?? 1)</li>
+                    <li><i class="fas fa-tag text-primary me-2"></i> <strong>Tür:</strong> Sözlü Sunum</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="card dashboard-card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+            <ul class="nav nav-tabs card-header-tabs" id="detailTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active fw-bold" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button">Bildiri Özeti</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-bold" id="authors-tab" data-bs-toggle="tab" data-bs-target="#authors" type="button">Yazarlar</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-bold" id="files-tab" data-bs-toggle="tab" data-bs-target="#files" type="button">Dosya Geçmişi</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-bold" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button">Hakem Yorumları</button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="tab-content" id="detailTabsContent">
+
+                <div class="tab-pane fade show active" id="info" role="tabpanel">
+                    <h5 class="fw-bold text-dark mb-3">@Model.Title</h5>
+                    <div class="p-3 bg-light rounded border">
+                        <p class="mb-0" style="white-space: pre-wrap; line-height: 1.7;">@Model.AbstractText</p>
+                    </div>
+                    <div class="mt-3">
+                        <strong class="text-primary">Anahtar Kelimeler:</strong>
+                        <span class="text-muted">@Model.Keywords</span>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="authors" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Sıra</th>
+                                    <th>Ad Soyad</th>
+                                    <th>Kurum</th>
+                                    <th>Email</th>
+                                    <th>Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.SubmissionAuthors != null)
+                                {
+                                    @foreach (var author in Model.SubmissionAuthors.OrderBy(a => a.Order))
+                                    {
+                                        <tr>
+                                            <td>@author.Order</td>
+                                            <td class="fw-bold">@author.FirstName @author.LastName</td>
+                                            <td>@author.Institution</td>
+                                            <td>@author.Email</td>
+                                            <td>
+                                                @if (author.IsCorrespondingAuthor)
+                                                {
+                                                    <span class="badge bg-info text-dark">Sorumlu Yazar</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="files" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Versiyon</th>
+                                    <th>Dosya Adı</th>
+                                    <th>Yükleme Tarihi</th>
+                                    <th>İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Files != null && Model.Files.Any())
+                                {
+                                    @foreach (var file in Model.Files.OrderByDescending(f => f.Version))
+                                    {
+                                        <tr>
+                                            <td><span class="badge bg-secondary">V.@file.Version</span></td>
+                                            <td>@file.FileName</td>
+                                            <td>@file.UploadedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                                            <td>
+                                                <a href="@file.FilePath" target="_blank" class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-download me-1"></i> İndir
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">Dosya bulunamadı.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="reviews" role="tabpanel">
+                    @if (Model.ReviewAssignments != null && Model.ReviewAssignments.Any(r => r.Review != null))
+                    {
+                        @foreach (var assignment in Model.ReviewAssignments.Where(r => r.Review != null))
+                        {
+                            <div class="card mb-3 border-warning">
+                                <div class="card-header bg-warning bg-opacity-10 border-warning">
+                                    <strong class="text-dark">Hakem Değerlendirmesi</strong>
+                                    <span class="float-end badge bg-white text-dark border">@assignment.Review.Recommendation</span>
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="card-title text-muted small fw-bold">Yazara Notlar:</h6>
+                                    <p class="card-text">@assignment.Review.CommentsToAuthor</p>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i> Henüz hakem yorumu bulunmamaktadır veya değerlendirme süreci devam etmektedir.
+                        </div>
+                    }
+                </div>
+
+            </div>
+        </div>
+    </div>
 </div>

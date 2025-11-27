@@ -1,5 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+﻿
 #nullable disable
 
 using System;
@@ -9,6 +8,8 @@ using AntAbstract.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Http; 
+using System.IO; 
 
 namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
 {
@@ -24,28 +25,35 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
             _userManager = userManager;
             _signInManager = signInManager;
         }
-
         public string Username { get; set; }
-
         [TempData]
         public string StatusMessage { get; set; }
-
         [BindProperty]
         public InputModel Input { get; set; }
-
         public class InputModel
         {
             [Phone]
-            [Display(Name = "Phone number")]
+            [Display(Name = "Telefon Numarası")]
             public string PhoneNumber { get; set; }
 
-            // DEĞİŞTİ: FullName -> DisplayName
-            [Display(Name = "Görünen Ad")]
-            public string DisplayName { get; set; }
+            [Display(Name = "Ad")]
+            public string FirstName { get; set; }
 
-            [Display(Name = "Uzmanlık Alanları")]
+            [Display(Name = "Soyad")]
+            public string LastName { get; set; }
+
+            [Display(Name = "Ünvan")]
+            public string Title { get; set; }
+
+            [Display(Name = "Üniversite/Kurum")]
+            public string University { get; set; }
+
+            [Display(Name = "Uzmanlık Alanları (Virgülle ayırın)")]
             [StringLength(500)]
             public string ExpertiseAreas { get; set; }
+
+            [Display(Name = "Profil Resmi")]
+            public IFormFile ProfileImage { get; set; } 
         }
 
         private async Task LoadAsync(AppUser user)
@@ -58,9 +66,14 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
             Input = new InputModel
             {
                 PhoneNumber = phoneNumber,
-                DisplayName = user.DisplayName, // DEĞİŞTİ: FullName -> DisplayName
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Title = user.Title,
+                University = user.University,
                 ExpertiseAreas = user.ExpertiseAreas
             };
+
+            ViewData["CurrentProfileImage"] = user.ProfileImagePath;
         }
 
         public async Task<IActionResult> OnGetAsync()
@@ -95,26 +108,38 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
                 var setPhoneResult = await _userManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
                 if (!setPhoneResult.Succeeded)
                 {
-                    StatusMessage = "Unexpected error when trying to set phone number.";
+                    StatusMessage = "Telefon numarası güncellenirken hata oluştu.";
                     return RedirectToPage();
                 }
             }
 
-            // DEĞİŞTİ: FullName -> DisplayName
-            if (user.DisplayName != Input.DisplayName)
-            {
-                user.DisplayName = Input.DisplayName;
-            }
+            if (Input.FirstName != user.FirstName) user.FirstName = Input.FirstName;
+            if (Input.LastName != user.LastName) user.LastName = Input.LastName;
+            if (Input.Title != user.Title) user.Title = Input.Title;
+            if (Input.University != user.University) user.University = Input.University;
+            if (Input.ExpertiseAreas != user.ExpertiseAreas) user.ExpertiseAreas = Input.ExpertiseAreas;
 
-            if (user.ExpertiseAreas != Input.ExpertiseAreas)
+            if (Input.ProfileImage != null)
             {
-                user.ExpertiseAreas = Input.ExpertiseAreas;
-            }
+                var extension = Path.GetExtension(Input.ProfileImage.FileName);
+                var newFileName = "profile_" + user.Id + "_" + Guid.NewGuid().ToString().Substring(0, 4) + extension;
 
+                var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "users");
+                if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
+
+                var filePath = Path.Combine(folderPath, newFileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await Input.ProfileImage.CopyToAsync(stream);
+                }
+
+                user.ProfileImagePath = "/uploads/users/" + newFileName;
+            }
             await _userManager.UpdateAsync(user);
-
             await _signInManager.RefreshSignInAsync(user);
-            StatusMessage = "Profiliniz güncellendi";
+
+            StatusMessage = "Profiliniz başarıyla güncellendi";
             return RedirectToPage();
         }
     }

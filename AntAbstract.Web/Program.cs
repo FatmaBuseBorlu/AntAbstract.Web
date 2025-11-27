@@ -8,7 +8,8 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Stripe;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication.OAuth; // Eklenen using (Gerekli olmasa da dursun)
+using Rotativa.AspNetCore;
+using Microsoft.AspNetCore.Authentication.OAuth;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -149,5 +150,5 @@ app.MapControllerRoute(
     pattern: "{tenant}/{controller=Home}/{action=Index}/{id?}");
 
 app.MapRazorPages();
-
+app.UseRotativa();
 app.Run();

@@ -4,130 +4,118 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.Blazor;
+using System;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
-    [Authorize] // Bu sayfaya sadece giriş yapmış kullanıcılar erişebilsin
+    [Authorize] // Kayıt olmak için giriş yapmış olmak şart
     public class RegistrationController : Controller
     {
         private readonly AppDbContext _context;
-        private readonly TenantContext _tenantContext;
         private readonly UserManager<AppUser> _userManager;
 
-        public RegistrationController(AppDbContext context, TenantContext tenantContext, UserManager<AppUser> userManager)
+        public RegistrationController(AppDbContext context, UserManager<AppUser> userManager)
         {
             _context = context;
-            _tenantContext = tenantContext;
             _userManager = userManager;
         }
 
-        // GET: /Registration/Index
-        // Mevcut kayıt türlerini listeleyen ve kullanıcıya seçim sunan sayfa
-        public async Task<IActionResult> Index()
+        // GET: /Registration/Index/{conferenceId}
+        [HttpGet]
+        public async Task<IActionResult> Index(Guid id)
         {
+            if (id == Guid.Empty) return NotFound();
+
+            var user = await _userManager.GetUserAsync(User);
+
+            // 1. Kongreyi ve Bilet Tiplerini Çek
             var conference = await _context.Conferences
-                .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
+                .Include(c => c.Tenant)
+                // Eğer RegistrationTypes (Bilet Tipleri) tablonuzda veri varsa buraya Include eklenmeli
+                // .Include(c => c.RegistrationTypes) 
+                .FirstOrDefaultAsync(c => c.Id == id);
 
-            if (conference == null) return Content("Bu kongre için kayıt seçenekleri henüz aktif değil.");
+            if (conference == null) return NotFound("Kongre bulunamadı.");
 
-            // Kullanıcının bu kongreye zaten bir kaydı var mı diye kontrol et
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // 2. Kullanıcı zaten kayıtlı mı kontrol et
             var existingRegistration = await _context.Registrations
-                .Include(r => r.RegistrationType)
-                .FirstOrDefaultAsync(r => r.AppUserId == userId && r.ConferenceId == conference.Id);
+                .FirstOrDefaultAsync(r => r.ConferenceId == id && r.AppUserId == user.Id);
 
-            // Eğer zaten bir kaydı varsa, onu detay sayfasına yönlendir
             if (existingRegistration != null)
             {
-                return RedirectToAction(nameof(Details), new { id = existingRegistration.Id });
+                // Zaten kayıtlıysa direkt ödeme veya bilgi sayfasına yönlendir
+                TempData["InfoMessage"] = "Bu kongreye zaten kaydınız bulunmaktadır.";
+                // return RedirectToAction("Details", "Home", new { id = id }); 
+                // VEYA Ödeme sayfasına:
+                return RedirectToAction("Index", "Payment", new { id = existingRegistration.Id });
             }
 
-            // Eğer kaydı yoksa, mevcut kayıt türlerini listele
-            var registrationTypes = await _context.RegistrationTypes
-                .Where(rt => rt.ConferenceId == conference.Id)
-                .ToListAsync();
-
-            return View(registrationTypes);
+            return View(conference);
         }
-        // Controllers/RegistrationController.cs içine eklenecek
+
+        // RegistrationController.cs içindeki Create (POST) metodu
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(Guid registrationTypeId)
+        public async Task<IActionResult> Create(Guid conferenceId)
         {
-            // 1. Gerekli bilgileri al: aktif kullanıcı, aktif kongre
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var conference = await _context.Conferences
-                .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
+            var user = await _userManager.GetUserAsync(User);
 
-            if (conference == null || string.IsNullOrEmpty(userId))
-            {
-                // Gerekli bilgiler yoksa hata yönetimi
-                return RedirectToAction("Index", "Home");
-            }
-
-            // 2. Kullanıcının bu kongreye zaten bir kaydı var mı diye tekrar kontrol et
-            var alreadyRegistered = await _context.Registrations
-                .AnyAsync(r => r.AppUserId == userId && r.ConferenceId == conference.Id);
+            // 1. Mükerrer kayıt kontrolü
+            bool alreadyRegistered = await _context.Registrations
+                .AnyAsync(r => r.ConferenceId == conferenceId && r.AppUserId == user.Id);
 
             if (alreadyRegistered)
             {
-                // Zaten kayıtlıysa bir uyarı göster
-                TempData["ErrorMessage"] = "Bu kongreye zaten kayıt olmuşsunuz.";
-                return RedirectToAction(nameof(Index));
+                // Zaten kayıtlıysa o kaydı bul ve ödemeye git
+                var existingReg = await _context.Registrations
+                    .FirstOrDefaultAsync(r => r.ConferenceId == conferenceId && r.AppUserId == user.Id);
+                return RedirectToAction("Index", "Payment", new { id = existingReg.Id });
             }
 
-            // 3. Yeni bir kayıt (Registration) nesnesi oluştur
-            var newRegistration = new Registration
+            // --- HATA ÇÖZÜMÜ: BİLET TİPİ ATAMA ---
+            // Bu kongre için tanımlı bir bilet tipi (RegistrationType) var mı?
+            var defaultRegType = await _context.RegistrationTypes
+                .FirstOrDefaultAsync(rt => rt.ConferenceId == conferenceId);
+
+            // Eğer yoksa, OTOMATİK bir tane oluştur (Hata almamak için)
+            if (defaultRegType == null)
             {
-                AppUserId = userId,
-                ConferenceId = conference.Id,
-                RegistrationTypeId = registrationTypeId,
+                defaultRegType = new RegistrationType
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Standart Katılım",
+                    Description = "Genel kongre katılımı",
+                    Price = 0, // Veya varsayılan bir fiyat
+                    Currency = "TRY",
+                    ConferenceId = conferenceId
+                };
+                _context.RegistrationTypes.Add(defaultRegType);
+                await _context.SaveChangesAsync(); // Önce tipi kaydet
+            }
+            // -------------------------------------
+
+            // 2. Yeni Kayıt Oluştur
+            var registration = new Registration
+            {
+                AppUserId = user.Id,
+                ConferenceId = conferenceId,
                 RegistrationDate = DateTime.UtcNow,
-                IsPaid = false // Ödeme henüz yapılmadı
+                IsPaid = false,
+
+                // BURASI EKSİKTİ, ŞİMDİ DOLU GİDİYOR:
+                RegistrationTypeId = defaultRegType.Id
             };
 
-            // 4. Yeni kaydı veritabanına ekle
-            _context.Registrations.Add(newRegistration);
+            _context.Registrations.Add(registration);
             await _context.SaveChangesAsync();
 
-            // 5. Kullanıcıyı, kaydının detaylarını göreceği bir sonraki sayfaya yönlendir
-            //    Bu sayfa aynı zamanda "Şimdi Öde" butonunu içerecek
-            return RedirectToAction(nameof(Details), new { id = newRegistration.Id });
+            TempData["SuccessMessage"] = "Kaydınız başarıyla oluşturuldu. Ödeme adımına geçebilirsiniz.";
+
+            // Kayıt olduktan sonra Ödeme Sayfasına yönlendir
+            return RedirectToAction("Index", "Payment", new { id = registration.Id });
         }
-
-        // Controllers/RegistrationController.cs içine eklenecek
-
-        // GET: /Registration/Details/5
-        public async Task<IActionResult> Details(Guid id)
-        {
-            var registration = await _context.Registrations
-                .Include(r => r.AppUser)
-                .Include(r => r.Conference)
-                .Include(r => r.RegistrationType)
-                .FirstOrDefaultAsync(r => r.Id == id);
-
-            if (registration == null)
-            {
-                return NotFound();
-            }
-
-            // Güvenlik kontrolü: Sadece kendi kaydını görebilmesini sağla
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (registration.AppUserId != userId && !User.IsInRole("Admin"))
-            {
-                return Forbid();
-            }
-
-            return View(registration);
-        }
-
-
     }
 }

@@ -1,41 +1,55 @@
-﻿@model IEnumerable<AntAbstract.Domain.Entities.RegistrationType>
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+﻿@model AntAbstract.Domain.Entities.Conference
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"];
+    ViewData["Title"] = "Kongre Kaydı";
+    Layout = "_Layout";
 }
 
-<div class="text-center">
-    <h1 class="display-4">@Localizer["PageTitle"]</h1>
-    <p class="lead text-muted">@Localizer["PageLead"]</p>
-</div>
+<div class="container mt-5 pt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0 rounded-3">
 
-<div class="row row-cols-1 row-cols-md-3 g-4 mt-4">
-    @foreach (var type in Model)
-    {
-        <div class="col">
-            <div class="card h-100 text-center shadow-sm">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">@type.Name</h5>
+                <div class="card-header bg-primary text-white p-4 rounded-top-3">
+                    <h4 class="mb-0 fw-bold"><i class="fas fa-user-plus me-2"></i> Kongre Kayıt İşlemi</h4>
                 </div>
-                <div class="card-body">
-                    <h1 class="card-title pricing-card-title">@type.Price.ToString("C", new System.Globalization.CultureInfo(type.Currency == "TRY" ? "tr-TR" : "en-US"))</h1>
-                    <p class="card-text">@type.Description</p>
-                </div>
-                <div class="card-footer">
-                    <form asp-action="Register" method="post">
-                        <input type="hidden" name="registrationTypeId" value="@type.Id" />
-                        <button type="submit" class="btn btn-lg btn-outline-primary w-100">@Localizer["SelectButton"]</button>
+
+                <div class="card-body p-5">
+
+                    <div class="text-center mb-4">
+                        @if (!string.IsNullOrEmpty(Model.LogoPath))
+                        {
+                            <img src="@Model.LogoPath" style="height: 80px; object-fit: contain;" class="mb-3">
+                        }
+                        <h3 class="fw-bold text-dark">@Model.Title</h3>
+                        <p class="text-muted">
+                            <i class="far fa-calendar-alt me-1"></i> @Model.StartDate.ToString("dd MMMM yyyy")
+                            <span class="mx-2">|</span>
+                            <i class="fas fa-map-marker-alt me-1"></i> @Model.City
+                        </p>
+                    </div>
+
+                    <div class="alert alert-light border border-primary border-start-4 mb-4">
+                        <h6 class="fw-bold text-primary"><i class="fas fa-info-circle me-2"></i> Bilgilendirme</h6>
+                        <p class="mb-0 small">
+                            Sayın katılımcı, aşağıdaki butona tıklayarak kongreye ön kaydınızı oluşturacaksınız.
+                            Kayıt işleminden sonra ödeme sayfasına yönlendirileceksiniz.
+                        </p>
+                    </div>
+
+                    <form asp-action="Create" method="post">
+                        <input type="hidden" name="conferenceId" value="@Model.Id" />
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg fw-bold py-3 shadow-sm">
+                                <i class="fas fa-check-circle me-2"></i> KAYDI ONAYLA VE İLERLE
+                            </button>
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">İptal</a>
+                        </div>
                     </form>
+
                 </div>
             </div>
         </div>
-    }
-</div>
-
-@if (!Model.Any())
-{
-    <div class="alert alert-info mt-4">
-        @Localizer["NoTypesMessage"]
     </div>
-}
+</div>

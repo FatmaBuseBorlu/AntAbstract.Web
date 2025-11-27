@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -33,6 +34,7 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<ReviewAnswer> ReviewAnswers { get; set; }
         public DbSet<RegistrationType> RegistrationTypes { get; set; }
         public DbSet<Registration> Registrations { get; set; }
+        public DbSet<Payment> Payments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -88,7 +90,6 @@ namespace AntAbstract.Infrastructure.Context
                 .HasForeignKey(c => c.FormId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Conference -> Registration ve RegistrationType ilişkileri (daha önce eklemiştik)
             builder.Entity<Conference>()
                 .HasMany<Registration>()
                 .WithOne(r => r.Conference)
@@ -100,6 +101,11 @@ namespace AntAbstract.Infrastructure.Context
                 .WithOne(rt => rt.Conference)
                 .HasForeignKey(rt => rt.ConferenceId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Payment>()
+                .Property(p => p.Amount)
+                .HasColumnType("decimal(18, 2)");
+
         }
     }
 }
