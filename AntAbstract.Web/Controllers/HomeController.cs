@@ -88,22 +88,27 @@ namespace AntAbstract.Web.Controllers
         // Kongreler Sayfasý (Menüden gelen)
         public async Task<IActionResult> Congresses()
         {
-            // Burada da ayný kayýt kontrolünü yapmak isterseniz yukarýdaki mantýðý buraya da eklemelisiniz.
-            // Þimdilik sadece listeyi döndürelim.
             var allCongresses = await _context.Conferences
                .Include(c => c.Tenant)
                .OrderBy(c => c.StartDate)
                .ToListAsync();
 
-            // Kullanýcý giriþ yapmýþsa kayýtlý olduðu kongreleri buraya da gönderebiliriz
+            // --- KULLANICI KAYITLARI ---
             var user = await _userManager.GetUserAsync(User);
             if (user != null)
             {
-                ViewBag.RegisteredConferenceIds = await _context.Registrations
+                var registeredIds = await _context.Registrations
                    .Where(r => r.AppUserId == user.Id)
                    .Select(r => r.ConferenceId)
                    .ToListAsync();
+
+                ViewBag.RegisteredConferenceIds = registeredIds;
             }
+            else
+            {
+                ViewBag.RegisteredConferenceIds = new List<Guid>();
+            }
+            // ---------------------------
 
             return View(allCongresses);
         }
