@@ -10,9 +10,7 @@
     ViewData["Title"] = Tc.Current != null ? Tc.Current.Name : "Ana Sayfa";
     Layout = "_Layout";
 }
-@{
-    var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
-}
+
 <style>
     /* Sayfa Yapısı */
     .page-content-wrapper { padding-top: 100px; }
@@ -52,6 +50,12 @@
     }
     .card-body { flex: 1; }
 
+    /* Arama Çubuğu Stilleri */
+    .search-input { border-radius: 50px 0 0 50px; border: 1px solid #e0e0e0; padding-left: 25px; height: 55px; }
+    .search-input:focus { box-shadow: none; border-color: #00aeef; }
+    .search-btn { border-radius: 0 50px 50px 0; padding-left: 30px; padding-right: 30px; background-color: #00aeef; border: none; color: white; font-weight: bold; transition: background-color 0.3s; }
+    .search-btn:hover { background-color: #008acb; }
+
     /* İSTATİSTİK ŞERİDİ */
     .stats-section {
         background: linear-gradient(135deg, #00aeef 0%, #007bb5 100%);
@@ -65,9 +69,11 @@
     .stat-icon { opacity: 0.8; margin-bottom: 15px; font-size: 2.5rem; }
     .stat-number { font-size: 2.5rem; font-weight: 800; line-height: 1; margin-bottom: 5px; }
     .stat-label { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; }
+    
     @@media (max-width: 768px) {
         .stat-item { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 30px; margin-bottom: 30px; }
         .stat-item:last-child { border-bottom: none; margin-bottom: 0; }
+        .hero-image-container img { margin-top: 40px; }
     }
 </style>
 
@@ -95,9 +101,16 @@
                         <p class="lead text-muted mb-4 pe-lg-5">
                             Kongre süreçlerinizi tek platformdan yönetin. Özet, hakem, kayıt ve konaklama işlemleri artık çok kolay.
                         </p>
-                        <div class="d-flex justify-content-center justify-content-lg-start gap-3">
-                             <a href="#congress-list" class="btn btn-primary btn-lg px-5 shadow-sm" style="background-color: #00aeef; border: none;">Kongreleri İncele</a>
+                        
+                        <div class="mt-4">
+                            <div class="input-group shadow-sm rounded-pill bg-white" style="max-width: 500px;">
+                                <input type="text" class="form-control search-input border-end-0" placeholder="Kongre adı veya şehir ara...">
+                                <button class="btn search-btn" type="button">
+                                    <i class="fas fa-search me-2"></i> ARA
+                                </button>
+                            </div>
                         </div>
+                        
                     </div>
                     <div class="col-lg-6 hero-image-container position-relative text-center">
                         <img src="https://placehold.co/600x350/0056b3/ffffff?text=Dashboard+Onizleme" class="img-fluid rounded-3 floating-anim border border-4 border-white">
@@ -149,19 +162,32 @@
                                     </a>
                                     
                                     <div class="card-footer bg-white border-0 pb-3 pt-0">
-                                        @if (SignInManager.IsSignedIn(User))
+                                        @{
+                                            var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
+                                        }
+                                        
+                                        @if (registeredIds.Contains(kongre.Id))
                                         {
-                                            <a asp-controller="Registration" asp-action="Index" asp-route-id="@kongre.Id" 
-                                               class="btn btn-primary w-100 fw-bold" style="background-color: #00aeef; border: none;">
-                                                <i class="fas fa-user-plus me-2"></i> KAYIT OL
-                                            </a>
+                                            <div class="d-flex gap-2">
+                                                <div class="btn btn-sm btn-success flex-fill fw-bold disabled" style="opacity: 1;">
+                                                    <i class="fas fa-check-circle me-1"></i> KAYITLI
+                                                </div>
+                                                <a asp-controller="Payment" asp-action="PayForConference" asp-route-conferenceId="@kongre.Id"
+                                                   class="btn btn-sm btn-outline-info flex-fill fw-bold">ÖDEME</a>
+                                            </div>
                                         }
                                         else
                                         {
-                                            <a href="/Identity/Account/Register?returnUrl=/Registration/Index/@kongre.Id" 
-                                               class="btn btn-primary w-100 fw-bold" style="background-color: #00aeef; border: none;">
-                                                <i class="fas fa-user-plus me-2"></i> KAYIT OL
-                                            </a>
+                                            @if (SignInManager.IsSignedIn(User))
+                                            {
+                                                <a asp-controller="Registration" asp-action="Index" asp-route-id="@kongre.Id" 
+                                                   class="btn btn-primary w-100 fw-bold" style="background-color: #00aeef; border: none;">KAYIT OL</a>
+                                            }
+                                            else
+                                            {
+                                                <a href="/Identity/Account/Register?returnUrl=/Registration/Index/@kongre.Id" 
+                                                   class="btn btn-primary w-100 fw-bold" style="background-color: #00aeef; border: none;">KAYIT OL</a>
+                                            }
                                         }
                                     </div>
                                 </div>

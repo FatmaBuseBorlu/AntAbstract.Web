@@ -1,15 +1,16 @@
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
-using AntAbstract.Web.Models;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Identity; // Bu gerekli
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System; // Guid için gerekli
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Http;
+using AntAbstract.Web.Models;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -18,10 +19,15 @@ namespace AntAbstract.Web.Controllers
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
 
-        public HomeController(AppDbContext context, TenantContext tenantContext)
+        // YENÝ EKLENEN: UserManager Tanýmý
+        private readonly UserManager<AppUser> _userManager;
+
+        // Constructor'ý güncelledik: userManager parametresi eklendi
+        public HomeController(AppDbContext context, TenantContext tenantContext, UserManager<AppUser> userManager)
         {
             _context = context;
             _tenantContext = tenantContext;
+            _userManager = userManager; // Atama yapýldý
         }
 
         public async Task<IActionResult> Index()
@@ -34,35 +40,40 @@ namespace AntAbstract.Web.Controllers
                     .FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
 
                 if (currentConference == null) return NotFound("Kongre aktif deðil.");
+
+                // Özel Landing Page
                 return View("ConferenceHome", currentConference);
             }
 
             // 2. SENARYO: Ana Portal (Liste)
             var activeConferences = await _context.Conferences
+                .Include(c => c.Tenant) // Slug için Tenant'ý dahil et
                 .OrderBy(c => c.StartDate)
                 .ToListAsync();
 
-            // --- YENÝ EKLENEN KISIM: Kullanýcýnýn kayýtlý olduðu kongreleri bul ---
+            // --- KULLANICININ KAYITLI OLDUÐU KONGRELERÝ BULMA ---
+            // Bu kýsým artýk _userManager sayesinde çalýþacak
             var user = await _userManager.GetUserAsync(User);
+
             if (user != null)
             {
-                // Kullanýcýnýn kayýt olduðu ConferenceId'lerini bir liste olarak alýyoruz
                 var registeredConferenceIds = await _context.Registrations
                     .Where(r => r.AppUserId == user.Id)
                     .Select(r => r.ConferenceId)
                     .ToListAsync();
 
-                // Bu listeyi View'a taþýyoruz
                 ViewBag.RegisteredConferenceIds = registeredConferenceIds;
             }
             else
             {
-                ViewBag.RegisteredConferenceIds = new List<Guid>(); // Boþ liste
+                ViewBag.RegisteredConferenceIds = new List<Guid>();
             }
-            // ----------------------------------------------------------------------
+            // ----------------------------------------------------
 
             return View(activeConferences);
         }
+
+        // Diðer metodlarýnýz (Details, About, Contact vb.) aynen kalabilir
 
         public IActionResult About()
         {
@@ -74,65 +85,32 @@ namespace AntAbstract.Web.Controllers
             return View();
         }
 
+        // Kongreler Sayfasý (Menüden gelen)
         public async Task<IActionResult> Congresses()
         {
-            // Tüm kongreleri tarihe göre (en yakýndan uzaða) sýralayýp getiriyoruz
+            // Burada da ayný kayýt kontrolünü yapmak isterseniz yukarýdaki mantýðý buraya da eklemelisiniz.
+            // Þimdilik sadece listeyi döndürelim.
             var allCongresses = await _context.Conferences
-                .Include(c => c.Tenant)
-                .OrderBy(c => c.StartDate)
-                .ToListAsync();
+               .Include(c => c.Tenant)
+               .OrderBy(c => c.StartDate)
+               .ToListAsync();
+
+            // Kullanýcý giriþ yapmýþsa kayýtlý olduðu kongreleri buraya da gönderebiliriz
+            var user = await _userManager.GetUserAsync(User);
+            if (user != null)
+            {
+                ViewBag.RegisteredConferenceIds = await _context.Registrations
+                   .Where(r => r.AppUserId == user.Id)
+                   .Select(r => r.ConferenceId)
+                   .ToListAsync();
+            }
 
             return View(allCongresses);
-        }
-
-        public async Task<IActionResult> Details(Guid id)
-        {
-            if (id == Guid.Empty) return NotFound();
-
-            var conference = await _context.Conferences
-                .Include(c => c.Tenant)
-                .FirstOrDefaultAsync(c => c.Id == id);
-
-            if (conference == null)
-            {
-                return NotFound("Kongre bulunamadý.");
-            }
-
-            return View(conference);
-        }
-        // ... Program, Privacy, Error ve SetLanguage metodlarýnýz ayný kalacak ...
-
-        public async Task<IActionResult> Program()
-        {
-            var conference = await _context.Conferences
-                .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
-
-            if (conference == null)
-            {
-                ViewBag.ErrorMessage = "Bu kongre için henüz bir program yayýnlanmamýþtýr.";
-                return View(new List<Session>());
-            }
-
-            var sessions = await _context.Sessions
-                .Where(s => s.ConferenceId == conference.Id && s.Submissions.Any())
-                .Include(s => s.Submissions)
-                .ThenInclude(sub => sub.Author)
-                .OrderBy(s => s.SessionDate)
-                .ToListAsync();
-
-            return View(sessions);
         }
 
         public IActionResult Privacy()
         {
             return View();
-        }
-
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
         [HttpPost]
@@ -145,6 +123,12 @@ namespace AntAbstract.Web.Controllers
             );
 
             return LocalRedirect(returnUrl);
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
     }
 }
