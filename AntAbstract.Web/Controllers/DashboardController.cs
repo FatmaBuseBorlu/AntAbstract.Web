@@ -16,33 +16,35 @@ namespace AntAbstract.Web.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly AppDbContext _context;
 
-        // TenantContext bağımlılığı KALDIRILDI.
-        public DashboardController(AppDbContext context, UserManager<AppUser> userManager)
+        public DashboardController(UserManager<AppUser> userManager, AppDbContext context)
         {
-            _context = context;
             _userManager = userManager;
+            _context = context;
         }
 
         public async Task<IActionResult> Index()
         {
+            // 1. O anki kullanıcıyı bul
             var user = await _userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction("Login", "Account");
 
-            // SORGULAMA MANTIĞI: Sadece AuthorId'ye göre filtrele. 
-            // Kullanıcı, katıldığı tüm kongrelerdeki bildirilerini görür.
-            var submissions = _context.Submissions
-                .Where(s => s.AuthorId == user.Id);
+            // 2. Kullanıcının bildirilerini çek
+            var userSubmissions = _context.Submissions.Where(s => s.AuthorId == user.Id);
 
-            // View Modelini doldur
-            var viewModel = new DashboardViewModel
+            // 3. İstatistikleri Hesapla
+            var model = new DashboardViewModel
             {
-                TotalSubmissions = await submissions.CountAsync(),
-                AcceptedSubmissions = await submissions.CountAsync(s => s.Status == SubmissionStatus.Accepted),
-                AwaitingDecision = await submissions.CountAsync(s => s.Status == SubmissionStatus.UnderReview || s.Status == SubmissionStatus.New)
+                TotalSubmissions = await userSubmissions.CountAsync(),
+
+                // Durumu "Kabul Edildi" olanlar
+                AcceptedSubmissions = await userSubmissions.CountAsync(s => s.Status == SubmissionStatus.Accepted),
+
+                // Durumu "Yeni" veya "İnceleniyor" olanlar (Bekleyen)
+                AwaitingDecision = await userSubmissions.CountAsync(s => s.Status == SubmissionStatus.New || s.Status == SubmissionStatus.UnderReview)
             };
 
-            return View(viewModel);
+            // 4. Veriyi View'a gönder
+            return View(model);
         }
-
-        // ... Diğer dashboard action'ları buraya eklenecektir ...
     }
 }

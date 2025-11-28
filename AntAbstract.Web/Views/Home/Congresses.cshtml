@@ -1,4 +1,7 @@
-﻿@model IEnumerable<AntAbstract.Domain.Entities.Conference>
+﻿@using AntAbstract.Domain.Entities
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<AppUser> SignInManager
+@model IEnumerable<Conference>
 
 @{
     ViewData["Title"] = "Kongreler";
@@ -89,7 +92,7 @@
                 <div class="col-md-6 col-lg-4 mb-4">
                     <div class="card h-100 shadow-sm congress-card">
 
-                        <a asp-controller="Home" asp-action="Details" asp-route-id="@kongre.Id" class="text-decoration-none text-dark">
+                        <a href="/@kongre.Slug" target="_blank" class="text-decoration-none text-dark">
 
                             <div class="card-img-wrapper p-4">
                                 @if (!string.IsNullOrEmpty(kongre.LogoPath))
@@ -127,7 +130,22 @@
                         </a>
 
                         <div class="card-footer bg-white border-top-0 p-4 pt-0 d-flex justify-content-between gap-2">
-                            <a href="/Register/@kongre.Id" class="btn btn-outline-primary fw-bold flex-fill rounded-3">KAYIT</a>
+
+                            @if (SignInManager.IsSignedIn(User))
+                            {
+                                <a asp-controller="Registration" asp-action="Index" asp-route-id="@kongre.Id"
+                                   class="btn btn-outline-primary fw-bold flex-fill rounded-3">
+                                    KAYIT
+                                </a>
+                            }
+                            else
+                            {
+                                <a href="/Identity/Account/Register?returnUrl=/Registration/Index/@kongre.Id"
+                                   class="btn btn-outline-primary fw-bold flex-fill rounded-3">
+                                    KAYIT
+                                </a>
+                            }
+
                             <a href="/Payment/@kongre.Id" class="btn btn-primary fw-bold flex-fill text-white rounded-3" style="background-color: #00aeef; border-color: #00aeef;">ÖDEME</a>
                         </div>
                     </div>

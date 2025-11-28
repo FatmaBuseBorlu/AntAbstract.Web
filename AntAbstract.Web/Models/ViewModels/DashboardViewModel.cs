@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic; // List için eklendi
+﻿using System.Collections.Generic; 
+using AntAbstract.Domain.Entities;
 
 namespace AntAbstract.Web.Models.ViewModels
 {
@@ -14,7 +15,8 @@ namespace AntAbstract.Web.Models.ViewModels
 
         public int AcceptedSubmissions { get; set; }
         public int AwaitingDecision { get; set; }
-
+        public List<Submission> RecentSubmissions { get; set; }
+        public string ConferenceName { get; set; }
         public DashboardViewModel()
         {
             // Listelerin null olmasını engellemek için boş olarak başlatıyoruz.

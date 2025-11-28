@@ -8,9 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Rotativa.AspNetCore; // PDF için gerekli
-using System.Linq;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -60,7 +60,7 @@ namespace AntAbstract.Web.Controllers
                 .Include(s => s.Files)
                 .Include(s => s.ReviewAssignments)
                     .ThenInclude(ra => ra.Review)
-                .Include(s => s.Conference) // Tenant bilgisi için
+                .Include(s => s.Conference)
                     .ThenInclude(c => c.Tenant)
                 .FirstOrDefaultAsync();
 
@@ -94,12 +94,10 @@ namespace AntAbstract.Web.Controllers
                 var user = await _userManager.GetUserAsync(User);
 
                 // --- KONGRE BULMA ---
-                // Gerçek senaryoda TenantContext'ten alınır, şimdilik ilkini alıyoruz
                 var activeConference = await _context.Conferences.FirstOrDefaultAsync();
-
                 if (activeConference == null)
                 {
-                    TempData["ErrorMessage"] = "Sistemde tanımlı bir kongre bulunamadı. Lütfen yöneticiyle iletişime geçin.";
+                    TempData["ErrorMessage"] = "Sistemde tanımlı bir kongre bulunamadı.";
                     return View(model);
                 }
 
@@ -111,9 +109,7 @@ namespace AntAbstract.Web.Controllers
                 {
                     originalFileName = model.SubmissionFile.FileName;
                     string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "submissions");
-
-                    if (!Directory.Exists(uploadsFolder))
-                        Directory.CreateDirectory(uploadsFolder);
+                    if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
                     string extension = Path.GetExtension(model.SubmissionFile.FileName);
                     uniqueFileName = Guid.NewGuid().ToString() + extension;
@@ -175,13 +171,129 @@ namespace AntAbstract.Web.Controllers
                 await _context.SaveChangesAsync();
 
                 TempData["SuccessMessage"] = "Bildiriniz başarıyla gönderildi.";
-                return RedirectToAction("Index", "Submission"); // Listeye dön
+                return RedirectToAction("Index", "Submission");
             }
 
             return View(model);
         }
 
-        // 5. REVİZYON YÜKLEME FORMU (GET)
+        // 5. DÜZENLEME (EDIT) - GET
+        [HttpGet]
+        public async Task<IActionResult> Edit(Guid id)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var submission = await _context.Submissions
+                .Include(s => s.SubmissionAuthors)
+                .FirstOrDefaultAsync(s => s.SubmissionId == id && s.AuthorId == user.Id);
+
+            if (submission == null) return NotFound();
+
+            //// Eğer bildiri işlem görmüşse (UnderReview vb.) düzenlemeye kapatılabilir
+            //if (submission.Status != SubmissionStatus.New && submission.Status != SubmissionStatus.RevisionRequired)
+            //{
+            //    TempData["ErrorMessage"] = "Bu bildiri değerlendirme sürecinde olduğu için düzenlenemez.";
+            //    return RedirectToAction(nameof(Index));
+            //}
+
+            var model = new SubmissionCreateViewModel
+            {
+                Title = submission.Title,
+                AbstractText = submission.AbstractText,
+                Keywords = submission.Keywords,
+                Authors = submission.SubmissionAuthors.OrderBy(a => a.Order).Select(a => new SubmissionAuthorViewModel
+                {
+                    FirstName = a.FirstName,
+                    LastName = a.LastName,
+                    Email = a.Email,
+                    Institution = a.Institution,
+                    ORCID = a.ORCID,
+                    IsCorrespondingAuthor = a.IsCorrespondingAuthor,
+                    Order = a.Order
+                }).ToList()
+            };
+
+            ViewBag.SubmissionId = id; // View'a ID taşımak için
+            return View(model);
+        }
+
+        // 6. DÜZENLEME (EDIT) - POST
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(Guid id, SubmissionCreateViewModel model)
+        {
+            // Dosya zorunlu değil (yüklemezse eskisi kalır)
+            if (model.SubmissionFile == null) ModelState.Remove("SubmissionFile");
+
+            if (ModelState.IsValid)
+            {
+                var user = await _userManager.GetUserAsync(User);
+                var submission = await _context.Submissions
+                    .Include(s => s.SubmissionAuthors)
+                    .Include(s => s.Files)
+                    .FirstOrDefaultAsync(s => s.SubmissionId == id && s.AuthorId == user.Id);
+
+                if (submission == null) return NotFound();
+
+                // Güncelleme
+                submission.Title = model.Title;
+                submission.AbstractText = model.AbstractText;
+                submission.Keywords = model.Keywords;
+
+                // Yazarları Güncelle (Sil ve Yeniden Ekle)
+                _context.RemoveRange(submission.SubmissionAuthors);
+                if (model.Authors != null)
+                {
+                    int order = 1;
+                    foreach (var authorVm in model.Authors)
+                    {
+                        submission.SubmissionAuthors.Add(new SubmissionAuthor
+                        {
+                            SubmissionId = submission.SubmissionId,
+                            FirstName = authorVm.FirstName,
+                            LastName = authorVm.LastName,
+                            Email = authorVm.Email,
+                            Institution = authorVm.Institution,
+                            ORCID = authorVm.ORCID,
+                            IsCorrespondingAuthor = authorVm.IsCorrespondingAuthor,
+                            Order = order++
+                        });
+                    }
+                }
+
+                // Dosya Güncelleme (Varsa yeni versiyon ekle)
+                if (model.SubmissionFile != null)
+                {
+                    string extension = Path.GetExtension(model.SubmissionFile.FileName);
+                    string uniqueFileName = Guid.NewGuid().ToString() + "_EDIT" + extension;
+                    string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "submissions");
+                    string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await model.SubmissionFile.CopyToAsync(fileStream);
+                    }
+
+                    submission.Files.Add(new SubmissionFile
+                    {
+                        FileName = model.SubmissionFile.FileName,
+                        StoredFileName = uniqueFileName,
+                        FilePath = "/uploads/submissions/" + uniqueFileName,
+                        Type = SubmissionFileType.FullTextDoc,
+                        UploadedAt = DateTime.UtcNow,
+                        Version = submission.Files.Count + 1
+                    });
+                }
+
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Bildiri başarıyla güncellendi.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            ViewBag.SubmissionId = id;
+            return View(model);
+        }
+
+        // 7. REVİZYON YÜKLEME FORMU (GET)
         [HttpGet]
         public async Task<IActionResult> UploadRevision(Guid id)
         {
@@ -197,7 +309,7 @@ namespace AntAbstract.Web.Controllers
             return View(submission);
         }
 
-        // 6. REVİZYON KAYDETME (POST)
+        // 8. REVİZYON KAYDETME (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UploadRevision(Guid id, IFormFile revisionFile)
@@ -219,7 +331,6 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction("UploadRevision", new { id });
             }
 
-            // Dosya Kaydetme
             try
             {
                 var extension = Path.GetExtension(revisionFile.FileName);
@@ -260,7 +371,7 @@ namespace AntAbstract.Web.Controllers
             }
         }
 
-        // 7. KABUL MEKTUBU İNDİRME (PDF)
+        // 9. KABUL MEKTUBU İNDİRME (PDF)
         [HttpGet]
         public async Task<IActionResult> DownloadAcceptanceLetter(Guid id)
         {
@@ -290,20 +401,13 @@ namespace AntAbstract.Web.Controllers
                 ConferenceLogoPath = submission.Conference.LogoPath
             };
 
-            // SubmissionController.cs -> DownloadAcceptanceLetter metodu
-
             return new ViewAsPdf("AcceptanceLetterPreview", viewModel)
             {
                 FileName = $"Certificate_{submission.SubmissionId.ToString().Substring(0, 5)}.pdf",
                 PageSize = Rotativa.AspNetCore.Options.Size.A4,
-
-                // BURASI DEĞİŞTİ: Sayfayı Yan (Yatay) Yapıyoruz
                 PageOrientation = Rotativa.AspNetCore.Options.Orientation.Landscape,
-
-                // Kenar boşluklarını ayarlıyoruz (Tasarım kenara yakın)
                 PageMargins = { Left = 10, Right = 10, Top = 10, Bottom = 10 },
-
-                CustomSwitches = "--disable-smart-shrinking --background --print-media-type --enable-local-file-access"
+                CustomSwitches = "--disable-smart-shrinking --background --print-media-type --enable-local-file-access --viewport-size 1280x1024"
             };
         }
     }

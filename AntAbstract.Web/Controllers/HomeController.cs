@@ -1,15 +1,15 @@
+using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Web.Models;
-using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
-using AntAbstract.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System; // Guid için gerekli
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -26,23 +26,43 @@ namespace AntAbstract.Web.Controllers
 
         public async Task<IActionResult> Index()
         {
-            // 1. Eðer bir alt sitedeysek (Örn: antabstract.com/vet2025)
+            // 1. SENARYO: Kongre Sitesi (Tenant)
             if (_tenantContext.Current != null)
             {
-                // O kongrenin kendi ana sayfasýna veya Dashboard'una yönlendir
-                return RedirectToAction("Index", "Dashboard");
+                var currentConference = await _context.Conferences
+                    .Include(c => c.Tenant)
+                    .FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
+
+                if (currentConference == null) return NotFound("Kongre aktif deðil.");
+                return View("ConferenceHome", currentConference);
             }
 
-            // 2. Ana Portaldayýz (www.antabstract.com)
-            // "TenantSelection" sayfasýna kongre listesini gönderiyoruz.
-
+            // 2. SENARYO: Ana Portal (Liste)
             var activeConferences = await _context.Conferences
-                .Include(c => c.Tenant) // Link oluþturmak için Tenant bilgisi lazým
                 .OrderBy(c => c.StartDate)
                 .ToListAsync();
+
+            // --- YENÝ EKLENEN KISIM: Kullanýcýnýn kayýtlý olduðu kongreleri bul ---
+            var user = await _userManager.GetUserAsync(User);
+            if (user != null)
+            {
+                // Kullanýcýnýn kayýt olduðu ConferenceId'lerini bir liste olarak alýyoruz
+                var registeredConferenceIds = await _context.Registrations
+                    .Where(r => r.AppUserId == user.Id)
+                    .Select(r => r.ConferenceId)
+                    .ToListAsync();
+
+                // Bu listeyi View'a taþýyoruz
+                ViewBag.RegisteredConferenceIds = registeredConferenceIds;
+            }
+            else
+            {
+                ViewBag.RegisteredConferenceIds = new List<Guid>(); // Boþ liste
+            }
+            // ----------------------------------------------------------------------
+
             return View(activeConferences);
         }
-        // HomeController.cs içine ekleyin:// HomeController.cs içine ekleyin:
 
         public IActionResult About()
         {

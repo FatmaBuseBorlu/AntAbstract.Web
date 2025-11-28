@@ -1,5 +1,6 @@
 ﻿@page
 @model LoginModel
+
 @{
     ViewData["Title"] = "Giriş Yap";
     Layout = "_Layout";
@@ -22,10 +23,10 @@
         border: 1px solid #e0e0e0;
     }
 
-        .form-control:focus {
-            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
-            border-color: #00aeef;
-        }
+    .form-control:focus {
+        box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
+        border-color: #00aeef;
+    }
 
     .input-group-text {
         background-color: #f8f9fa;
@@ -34,7 +35,7 @@
         border-radius: 8px 0 0 8px;
         color: #6c757d;
     }
-
+    
     .input-group .form-control {
         border-left: none;
         border-radius: 0 8px 8px 0;
@@ -46,9 +47,9 @@
         color: #000;
     }
 
-        .btn-orcid:hover {
-            background-color: #EAEAEA;
-        }
+    .btn-orcid:hover {
+        background-color: #EAEAEA;
+    }
 </style>
 
 <div class="container py-5 mt-5">
@@ -70,7 +71,7 @@
                         <label asp-for="Input.Email" class="form-label fw-bold small text-muted">E-Posta Adresi</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                            <input asp-for="Input.Email" class="form-control" autocomplete="username" />
+                            <input asp-for="Input.Email" class="form-control" placeholder="ornek@email.com" autocomplete="username" />
                         </div>
                         <span asp-validation-for="Input.Email" class="text-danger small"></span>
                     </div>
@@ -82,7 +83,7 @@
                         </div>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                            <input asp-for="Input.Password" class="form-control" autocomplete="current-password" />
+                            <input asp-for="Input.Password" class="form-control" placeholder="******" autocomplete="current-password" />
                         </div>
                         <span asp-validation-for="Input.Password" class="text-danger small"></span>
                     </div>
@@ -97,19 +98,14 @@
                     </div>
 
                     <div class="d-grid mb-4">
-                        <button type="submit" class="btn btn-primary py-3 fw-bold shadow-sm" style="background-color: #00aeef;">
+                        <button id="login-submit" type="submit" class="btn btn-primary py-3 fw-bold shadow-sm" style="background-color: #00aeef; border: none;">
                             GİRİŞ YAP
                         </button>
                     </div>
 
                     <div class="text-center small">
-                        <p class="text-muted mb-1">
-                            Hesabınız yok mu?
-                            <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="fw-bold text-decoration-none" style="color: #0056b3;">Kayıt Ol</a>
-                        </p>
-                        <a asp-page="./ResendEmailConfirmation" class="text-muted text-decoration-none" style="font-size: 0.8rem;">
-                            Onay mailini tekrar gönder
-                        </a>
+                        <p class="text-muted mb-1">Hesabınız yok mu? <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="fw-bold text-decoration-none" style="color: #0056b3;">Kayıt Ol</a></p>
+                        <a asp-page="./ResendEmailConfirmation" class="text-muted text-decoration-none" style="font-size: 0.8rem;">Onay mailini tekrar gönder</a>
                     </div>
                 </form>
 
@@ -120,30 +116,24 @@
 
                         <form asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post">
                             <div class="d-grid gap-2 col-9 mx-auto">
-
-                                @foreach (var provider in Model.ExternalLogins)
+                                @foreach (var provider in Model.ExternalLogins!)
                                 {
-                                    if (provider.Name == "ORCID")
-                                    {
-                                        <button type="submit"
-                                                class="btn btn-outline-dark btn-orcid fw-bold w-100 py-2 rounded-pill shadow-sm"
-                                                name="provider"
-                                                value="@provider.Name">
-                                            <i class="fab fa-orcid me-2" style="color:#A6CE39;"></i>
-                                            ORCID ile giriş yap
-                                        </button>
-                                    }
-                                    else
-                                    {
-                                        <button type="submit"
-                                                class="btn btn-outline-dark fw-bold w-100 py-2 rounded-pill shadow-sm"
-                                                name="provider"
-                                                value="@provider.Name">
+                                    <button type="submit"
+                                            class="btn btn-outline-dark btn-orcid fw-bold w-100 py-2 rounded-pill shadow-sm"
+                                            name="provider"
+                                            value="@provider.Name"
+                                            title="@provider.DisplayName ile giriş yapın">
+                                        
+                                        @if (provider.Name == "ORCID")
+                                        {
+                                            <i class="fab fa-orcid me-2" style="color: #A6CE39;"></i> <span>ORCID ile Giriş Yap</span>
+                                        }
+                                        else
+                                        {
                                             @provider.DisplayName
-                                        </button>
-                                    }
+                                        }
+                                    </button>
                                 }
-
                             </div>
                         </form>
                     </div>

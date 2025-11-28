@@ -20,6 +20,29 @@ namespace AntAbstract.Web.Controllers
             _context = context;
             _userManager = userManager;
         }
+        // PaymentController.cs içine ekleyin:
+
+        // GET: /Payment/PayForConference?conferenceId=...
+        [HttpGet]
+        public async Task<IActionResult> PayForConference(Guid conferenceId)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge(); // Giriş yapmamışsa giriş sayfasına at
+
+            // 1. Kullanıcının bu kongreye kaydı var mı kontrol et
+            var registration = await _context.Registrations
+                .FirstOrDefaultAsync(r => r.ConferenceId == conferenceId && r.AppUserId == user.Id);
+
+            // 2. Kaydı YOKSA -> Önce Kayıt Ol sayfasına gönder
+            if (registration == null)
+            {
+                TempData["InfoMessage"] = "Ödeme yapabilmek için önce kayıt olmalısınız.";
+                return RedirectToAction("Index", "Registration", new { id = conferenceId });
+            }
+
+            // 3. Kaydı VARSA -> O kaydın ID'si ile Ödeme Sayfasına (Index) gönder
+            return RedirectToAction("Index", new { id = registration.Id });
+        }
 
         // GET: /Payment/Index/{id}
         // IMPORTANT: The parameter name must match the route parameter 'id'

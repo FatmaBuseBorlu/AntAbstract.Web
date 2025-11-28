@@ -114,7 +114,7 @@ namespace AntAbstract.Web.Controllers
 
             TempData["SuccessMessage"] = "Kaydınız başarıyla oluşturuldu. Ödeme adımına geçebilirsiniz.";
 
-            // Kayıt olduktan sonra Ödeme Sayfasına yönlendir
+            // Doğru Yönlendirme: Controller = "Payment", Action = "Index", routeValues = { id = registration.Id }
             return RedirectToAction("Index", "Payment", new { id = registration.Id });
         }
     }

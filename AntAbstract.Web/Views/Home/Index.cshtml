@@ -1,4 +1,6 @@
 ﻿@using AntAbstract.Domain.Entities
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<AppUser> SignInManager
 @inject AntAbstract.Infrastructure.Context.TenantContext Tc
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
@@ -8,41 +10,64 @@
     ViewData["Title"] = Tc.Current != null ? Tc.Current.Name : "Ana Sayfa";
     Layout = "_Layout";
 }
-
+@{
+    var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
+}
 <style>
-    /* Navbar'ın altında kalmaması için üst boşluk */
-    .page-content-wrapper {
-        padding-top: 120px; /* Menü payı */
-    }
+    /* Sayfa Yapısı */
+    .page-content-wrapper { padding-top: 100px; }
 
-    /* O büyük mavi resmi zorla küçült */
+    /* Hero Görsel Ayarı */
     .hero-image-container img {
-        max-height: 350px !important; /* Yüksekliği sınırla */
+        max-height: 380px !important;
         width: auto !important;
         max-width: 100%;
         object-fit: contain;
         display: block;
         margin: 0 auto;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.15); /* Şık gölge */
+        box-shadow: 0 20px 50px rgba(0,0,0,0.1);
     }
 
     /* Animasyon */
-    .floating-anim {
-        animation: float 6s ease-in-out infinite;
-    }
+    .floating-anim { animation: float 6s ease-in-out infinite; }
     @@keyframes float {
         0% { transform: translateY(0px); }
         50% { transform: translateY(-15px); }
         100% { transform: translateY(0px); }
     }
 
-    /* Kart hover efekti */
-    .congress-card {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    /* Kart Efektleri */
+    .congress-card { 
+        transition: transform 0.3s ease, box-shadow 0.3s ease; 
+        border: 1px solid #eee;
+        background-color: #fff;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
     }
-    .congress-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+    .congress-card:hover { 
+        transform: translateY(-5px); 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important; 
+        border-color: #00aeef;
+    }
+    .card-body { flex: 1; }
+
+    /* İSTATİSTİK ŞERİDİ */
+    .stats-section {
+        background: linear-gradient(135deg, #00aeef 0%, #007bb5 100%);
+        color: white;
+        padding: 60px 0;
+        margin-top: 80px;
+        position: relative;
+    }
+    .stat-item { padding: 20px; border-right: 1px solid rgba(255,255,255,0.2); }
+    .stat-item:last-child { border-right: none; }
+    .stat-icon { opacity: 0.8; margin-bottom: 15px; font-size: 2.5rem; }
+    .stat-number { font-size: 2.5rem; font-weight: 800; line-height: 1; margin-bottom: 5px; }
+    .stat-label { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; }
+    @@media (max-width: 768px) {
+        .stat-item { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 30px; margin-bottom: 30px; }
+        .stat-item:last-child { border-bottom: none; margin-bottom: 0; }
     }
 </style>
 
@@ -59,10 +84,9 @@
         <section class="hero-modern mb-5">
             <div class="container">
                 <div class="row align-items-center">
-                    
                     <div class="col-lg-6 text-center text-lg-start mb-5 mb-lg-0">
                         <div class="d-inline-block bg-light text-primary border border-primary rounded-pill px-3 py-1 mb-3 fw-bold small">
-                             Yeni Nesil Kongre Sistemi
+                            🚀 Yeni Nesil Kongre Sistemi
                         </div>
                         <h1 class="display-4 fw-bold lh-sm mb-3">
                             Bilimsel Etkinlikleri <br>
@@ -72,15 +96,11 @@
                             Kongre süreçlerinizi tek platformdan yönetin. Özet, hakem, kayıt ve konaklama işlemleri artık çok kolay.
                         </p>
                         <div class="d-flex justify-content-center justify-content-lg-start gap-3">
-                             <a href="#" class="btn btn-primary btn-lg px-4 shadow-sm" style="background-color: #00aeef; border: none;">Kongre Planla</a>
-                             <a href="#congress-list" class="btn btn-outline-dark btn-lg px-4">İncele</a>
+                             <a href="#congress-list" class="btn btn-primary btn-lg px-5 shadow-sm" style="background-color: #00aeef; border: none;">Kongreleri İncele</a>
                         </div>
                     </div>
-
                     <div class="col-lg-6 hero-image-container position-relative text-center">
-                        <img src="https://placehold.co/600x350/0056b3/ffffff?text=Dashboard+Onizleme" 
-                             alt="Panel" 
-                             class="img-fluid rounded-3 floating-anim border border-4 border-white">
+                        <img src="https://placehold.co/600x350/0056b3/ffffff?text=Dashboard+Onizleme" class="img-fluid rounded-3 floating-anim border border-4 border-white">
                     </div>
                 </div>
             </div>
@@ -94,16 +114,14 @@
                     <div style="width: 50px; height: 3px; background: #00aeef; margin: 15px auto;"></div>
                 </div>
 
-                <div class="row">
+                <div class="row"> 
                     @if (Model != null && Model.Any())
                     {
                         @foreach (var kongre in Model)
                         {
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card h-100 shadow-sm border-0 congress-card">
-                                    
-                                    <a asp-controller="Home" asp-action="Details" asp-route-id="@kongre.Id" class="text-decoration-none text-dark">
-                                        
+                                    <a href="/@kongre.Slug" target="_blank" class="text-decoration-none text-dark h-100 d-flex flex-column">
                                         <div class="card-img-top bg-white border-bottom d-flex align-items-center justify-content-center position-relative p-4" style="height: 180px;">
                                             @if (!string.IsNullOrEmpty(kongre.LogoPath))
                                             {
@@ -116,25 +134,35 @@
                                                     <div class="small">Görsel Yok</div>
                                                 </div>
                                             }
-                                            
                                             <div class="position-absolute top-0 end-0 m-3 bg-light rounded shadow-sm p-2 text-center lh-1 border">
                                                 <div class="fw-bold text-primary fs-5">@kongre.StartDate.Day</div>
                                                 <div class="small text-uppercase text-muted" style="font-size: 0.7rem;">@kongre.StartDate.ToString("MMM")</div>
                                             </div>
                                         </div>
-
-                                        <div class="card-body">
-                                            <span class="badge bg-light text-dark border mb-2">@kongre.Tenant?.Slug</span>
+                                        <div class="card-body d-flex flex-column">
+                                            <span class="badge bg-light text-dark border mb-2 align-self-start">@kongre.Slug</span>
                                             <h5 class="card-title fw-bold mb-3 text-truncate" title="@kongre.Title">@kongre.Title</h5>
-                                            <p class="card-text text-muted small">
+                                            <p class="card-text text-muted small mt-auto">
                                                 <i class="fa fa-map-marker-alt text-danger me-1"></i> @(kongre.City ?? "Online")
                                             </p>
                                         </div>
                                     </a>
-
-                                    <div class="card-footer bg-white border-0 pb-3 d-flex justify-content-between gap-2">
-                                        <a asp-controller="Registration" asp-action="Index" asp-route-id="@kongre.Id" class="btn btn-outline-primary style="color: #00aeef; ">KAYIT</a>
-                                        <a href="/Payment/@kongre.Id" class="btn btn-primary btn-sm flex-fill fw-bold text-white" style="background-color: #00aeef; border: none;">ÖDEME</a>
+                                    
+                                    <div class="card-footer bg-white border-0 pb-3 pt-0">
+                                        @if (SignInManager.IsSignedIn(User))
+                                        {
+                                            <a asp-controller="Registration" asp-action="Index" asp-route-id="@kongre.Id" 
+                                               class="btn btn-primary w-100 fw-bold" style="background-color: #00aeef; border: none;">
+                                                <i class="fas fa-user-plus me-2"></i> KAYIT OL
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <a href="/Identity/Account/Register?returnUrl=/Registration/Index/@kongre.Id" 
+                                               class="btn btn-primary w-100 fw-bold" style="background-color: #00aeef; border: none;">
+                                                <i class="fas fa-user-plus me-2"></i> KAYIT OL
+                                            </a>
+                                        }
                                     </div>
                                 </div>
                             </div>
@@ -152,5 +180,27 @@
                 </div>
             </div>
         </div>
+
+        <section class="stats-section">
+            <div class="container">
+                <div class="row text-center">
+                    <div class="col-md-4 stat-item">
+                        <i class="fas fa-users stat-icon"></i>
+                        <div class="stat-number">10,843</div>
+                        <div class="stat-label">Aktif Kullanıcı</div>
+                    </div>
+                    <div class="col-md-4 stat-item">
+                        <i class="fas fa-globe-americas stat-icon"></i>
+                        <div class="stat-number">124</div>
+                        <div class="stat-label">Düzenlenen Kongre</div>
+                    </div>
+                    <div class="col-md-4 stat-item">
+                        <i class="fas fa-file-alt stat-icon"></i>
+                        <div class="stat-number">4,238</div>
+                        <div class="stat-label">Toplam Bildiri</div>
+                    </div>
+                </div>
+            </div>
+        </section>
     }
 </div>

@@ -4,6 +4,27 @@
     Layout = "_LayoutDashboard";
 }
 
+<div class="card border-0 shadow-sm mb-4 bg-white">
+    <div class="card-body p-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h6 class="text-muted text-uppercase fw-bold small mb-1">AKTİF ORGANİZASYON</h6>
+                <h3 class="fw-bold text-primary mb-0">
+                    @(string.IsNullOrEmpty(Model.ConferenceName) ? "Genel Yönetim Paneli" : Model.ConferenceName)
+                </h3>
+            </div>
+
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-inline-block bg-light rounded-pill px-3 py-2 border">
+                    <i class="far fa-calendar-alt text-muted me-2"></i>
+                    <span class="fw-bold text-dark">@DateTime.Now.ToString("dd MMMM yyyy")</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer border-0 py-1 bg-primary"></div>
+</div>
+
 <div class="row g-4 mb-4">
     <div class="col-md-4">
         <div class="dashboard-card d-flex align-items-center">
@@ -44,10 +65,10 @@
 
 <div class="row">
     <div class="col-lg-8">
-        <div class="dashboard-card">
+        <div class="dashboard-card h-100">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h5 class="fw-bold mb-0">Son Hareketler</h5>
-                <a href="#" class="small text-decoration-none">Tümünü Gör</a>
+                <a href="/Submission/Index" class="small text-decoration-none">Tümünü Gör</a>
             </div>
 
             @if (Model.TotalSubmissions == 0)
@@ -60,16 +81,21 @@
             }
             else
             {
-                <p class="text-muted">Liste buraya gelecek...</p>
+                <div class="text-center py-4">
+                    <p class="text-muted mb-3">Mevcut başvurularınızın durumunu incelemek için listeye gidin.</p>
+                    <a href="/Submission/Index" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-list me-1"></i> Bildirilerime Git
+                    </a>
+                </div>
             }
         </div>
     </div>
 
     <div class="col-lg-4">
-        <div class="dashboard-card bg-primary text-white" style="background: linear-gradient(135deg, #00aeef 0%, #0056b3 100%); border:none;">
+        <div class="dashboard-card bg-primary text-white h-100" style="background: linear-gradient(135deg, #00aeef 0%, #0056b3 100%); border:none;">
             <h5 class="fw-bold mb-3">Yardım mı lazım?</h5>
-            <p class="small opacity-75 mb-4">Bildiri gönderimi veya sistemle ilgili sorunlarınızda destek ekibimiz yanınızda.</p>
-            <a href="/Home/Contact" class="btn btn-light text-primary fw-bold w-100">Destek Talebi Oluştur</a>
+            <p class="small opacity-75 mb-4">Bildiri gönderimi, ödeme veya sistemle ilgili teknik sorunlarınızda destek ekibimiz yanınızda.</p>
+            <a href="/Home/Contact" class="btn btn-light text-primary fw-bold w-100 shadow-sm">Destek Talebi Oluştur</a>
         </div>
     </div>
 </div>
