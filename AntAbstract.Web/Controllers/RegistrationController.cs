@@ -55,66 +55,39 @@ namespace AntAbstract.Web.Controllers
             return View(conference);
         }
 
-        // RegistrationController.cs içindeki Create (POST) metodu
-
+        // POST: /Registration/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Guid conferenceId)
         {
             var user = await _userManager.GetUserAsync(User);
 
-            // 1. Mükerrer kayıt kontrolü
+            // Mükerrer kayıt kontrolü
             bool alreadyRegistered = await _context.Registrations
                 .AnyAsync(r => r.ConferenceId == conferenceId && r.AppUserId == user.Id);
 
             if (alreadyRegistered)
             {
-                // Zaten kayıtlıysa o kaydı bul ve ödemeye git
-                var existingReg = await _context.Registrations
-                    .FirstOrDefaultAsync(r => r.ConferenceId == conferenceId && r.AppUserId == user.Id);
-                return RedirectToAction("Index", "Payment", new { id = existingReg.Id });
+                return RedirectToAction("Index", "Payment");
             }
 
-            // --- HATA ÇÖZÜMÜ: BİLET TİPİ ATAMA ---
-            // Bu kongre için tanımlı bir bilet tipi (RegistrationType) var mı?
-            var defaultRegType = await _context.RegistrationTypes
-                .FirstOrDefaultAsync(rt => rt.ConferenceId == conferenceId);
-
-            // Eğer yoksa, OTOMATİK bir tane oluştur (Hata almamak için)
-            if (defaultRegType == null)
-            {
-                defaultRegType = new RegistrationType
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "Standart Katılım",
-                    Description = "Genel kongre katılımı",
-                    Price = 0, // Veya varsayılan bir fiyat
-                    Currency = "TRY",
-                    ConferenceId = conferenceId
-                };
-                _context.RegistrationTypes.Add(defaultRegType);
-                await _context.SaveChangesAsync(); // Önce tipi kaydet
-            }
-            // -------------------------------------
-
-            // 2. Yeni Kayıt Oluştur
+            // Yeni Kayıt Oluştur
             var registration = new Registration
             {
                 AppUserId = user.Id,
                 ConferenceId = conferenceId,
                 RegistrationDate = DateTime.UtcNow,
                 IsPaid = false,
-
-                // BURASI EKSİKTİ, ŞİMDİ DOLU GİDİYOR:
-                RegistrationTypeId = defaultRegType.Id
+                // Eğer Bilet Tipi (RegistrationType) seçtiriyorsanız onun ID'sini de buraya eklemelisiniz.
+                // Şimdilik varsayılan veya null geçiyoruz.
             };
 
             _context.Registrations.Add(registration);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Kaydınız başarıyla oluşturuldu. Ödeme adımına geçebilirsiniz.";
+            TempData["SuccessMessage"] = "Kaydınız oluşturuldu. Lütfen ödeme adımına geçiniz.";
 
-            // Doğru Yönlendirme: Controller = "Payment", Action = "Index", routeValues = { id = registration.Id }
+            // Kayıt olduktan sonra Ödeme Sayfasına yönlendir
             return RedirectToAction("Index", "Payment", new { id = registration.Id });
         }
     }

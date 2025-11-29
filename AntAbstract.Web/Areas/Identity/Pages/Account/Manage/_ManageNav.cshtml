@@ -2,28 +2,68 @@
 @inject SignInManager<AppUser> SignInManager
 @{
     var hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
+
+    // Hangi sayfada olduğumuzu anlayan fonksiyon
+    string ActiveClass(string page)
+    {
+        var activePage = ViewContext.ViewData["ActivePage"] as string
+            ?? System.IO.Path.GetFileNameWithoutExtension(ViewContext.ActionDescriptor.DisplayName);
+
+        return string.Equals(activePage, page, StringComparison.OrdinalIgnoreCase) ? "active-link" : "";
+    }
 }
 
-<div class="list-group list-group-flush rounded-3 overflow-hidden">
-    <a class="list-group-item list-group-item-action py-3 @ManageNavPages.IndexNavClass(ViewContext)" id="profile" asp-page="./Index">
-        <i class="fas fa-user-circle me-2 text-primary"></i> Profil
+<style>
+    /* Normal Linkler */
+    .manage-nav-link {
+        color: #495057;
+        font-weight: 500;
+        border-radius: 8px !important; /* Köşeleri yuvarla */
+        margin-bottom: 5px;
+        transition: all 0.2s ease-in-out;
+    }
+
+        .manage-nav-link:hover {
+            background-color: #f8f9fa;
+            color: #00aeef;
+            transform: translateX(5px); /* Üzerine gelince hafif sağa kay */
+        }
+
+        /* Aktif (Seçili) Link */
+        .manage-nav-link.active-link {
+            background-color: #00aeef !important;
+            color: #fff !important;
+            font-weight: 700;
+            box-shadow: 0 4px 6px rgba(0, 174, 239, 0.2);
+        }
+
+            .manage-nav-link.active-link i {
+                color: #fff !important; /* İkonu da beyaz yap */
+            }
+</style>
+
+<div class="list-group list-group-flush p-2">
+    <a class="list-group-item list-group-item-action manage-nav-link @ActiveClass("Index")" id="profile" asp-page="./Index">
+        <i class="fas fa-user-circle me-3 text-primary"></i> Profil
     </a>
-    <a class="list-group-item list-group-item-action py-3 @ManageNavPages.EmailNavClass(ViewContext)" id="email" asp-page="./Email">
-        <i class="fas fa-envelope me-2 text-primary"></i> E-Posta
+    <a class="list-group-item list-group-item-action manage-nav-link @ActiveClass("Email")" id="email" asp-page="./Email">
+        <i class="fas fa-envelope me-3 text-primary"></i> E-Posta
     </a>
-    <a class="list-group-item list-group-item-action py-3 @ManageNavPages.ChangePasswordNavClass(ViewContext)" id="change-password" asp-page="./ChangePassword">
-        <i class="fas fa-key me-2 text-primary"></i> Şifre
+    <a class="list-group-item list-group-item-action manage-nav-link @ActiveClass("ChangePassword")" id="change-password" asp-page="./ChangePassword">
+        <i class="fas fa-key me-3 text-primary"></i> Şifre
     </a>
+
     @if (hasExternalLogins)
     {
-        <a id="external-login" class="list-group-item list-group-item-action py-3 @ManageNavPages.ExternalLoginsNavClass(ViewContext)" asp-page="./ExternalLogins">
-            <i class="fas fa-share-alt me-2 text-primary"></i> Harici Girişler
+        <a class="list-group-item list-group-item-action manage-nav-link @ActiveClass("ExternalLogins")" id="external-login" asp-page="./ExternalLogins">
+            <i class="fab fa-orcid me-3 text-primary"></i> Harici Girişler
         </a>
     }
-    <a class="list-group-item list-group-item-action py-3 @ManageNavPages.TwoFactorAuthenticationNavClass(ViewContext)" id="two-factor" asp-page="./TwoFactorAuthentication">
-        <i class="fas fa-shield-alt me-2 text-primary"></i> İki Faktörlü Doğrulama
+
+    <a class="list-group-item list-group-item-action manage-nav-link @ActiveClass("TwoFactorAuthentication")" id="two-factor" asp-page="./TwoFactorAuthentication">
+        <i class="fas fa-shield-alt me-3 text-primary"></i> İki Faktörlü Doğrulama
     </a>
-    <a class="list-group-item list-group-item-action py-3 @ManageNavPages.PersonalDataNavClass(ViewContext)" id="personal-data" asp-page="./PersonalData">
-        <i class="fas fa-database me-2 text-primary"></i> Kişisel Veriler
+    <a class="list-group-item list-group-item-action manage-nav-link @ActiveClass("PersonalData")" id="personal-data" asp-page="./PersonalData">
+        <i class="fas fa-database me-3 text-primary"></i> Kişisel Veriler
     </a>
 </div>

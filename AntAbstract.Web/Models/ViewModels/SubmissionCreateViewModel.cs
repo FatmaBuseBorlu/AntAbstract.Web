@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AntAbstract.Web.Models.ViewModels; 
+using Microsoft.AspNetCore.Http;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Collections.Generic; // List için gerekli
-using AntAbstract.Web.Models.ViewModels; // SubmissionAuthorViewModel için gerekli
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace AntAbstract.Web.Models.ViewModels
 {
@@ -33,7 +34,11 @@ namespace AntAbstract.Web.Models.ViewModels
         [Required(ErrorMessage = "En az bir yazar (siz dahil) olmalıdır.")]
         public List<SubmissionAuthorViewModel> Authors { get; set; } = new List<SubmissionAuthorViewModel>();
 
-        // Bu ViewModel'in var olduğundan emin olun:
-        // public SubmissionAuthorViewModel SubmissionAuthor { get; set; } 
+        [Required(ErrorMessage = "Lütfen başvuru yapılacak kongreyi seçiniz.")]
+        [Display(Name = "Başvuru Yapılacak Kongre")]
+        public Guid ConferenceId { get; set; }
+
+        // Dropdown içini dolduracak liste
+        public List<SelectListItem> AvailableConferences { get; set; } = new List<SelectListItem>();
     }
 }

@@ -1,12 +1,14 @@
-﻿using AntAbstract.Domain.Entities;
-using AntAbstract.Infrastructure.Context;
-using AntAbstract.Web.Models.ViewModels;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using AntAbstract.Domain.Entities;
+using AntAbstract.Infrastructure.Context;
+using Microsoft.AspNetCore.Authorization;
+using AntAbstract.Web.Models.ViewModels;
+using Microsoft.AspNetCore.Identity;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -16,35 +18,67 @@ namespace AntAbstract.Web.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly AppDbContext _context;
 
-        public DashboardController(UserManager<AppUser> userManager, AppDbContext context)
+        // 1. ADIM: Değişkeni Tanımla
+        private readonly TenantContext _tenantContext;
+
+        // 2. ADIM: Constructor'da (Yapıcı Metot) İçeri Al
+        public DashboardController(AppDbContext context, UserManager<AppUser> userManager, TenantContext tenantContext)
         {
-            _userManager = userManager;
             _context = context;
+            _userManager = userManager;
+            _tenantContext = tenantContext; // 3. ADIM: Değişkene Ata
         }
 
         public async Task<IActionResult> Index()
         {
-            // 1. O anki kullanıcıyı bul
             var user = await _userManager.GetUserAsync(User);
-            if (user == null) return RedirectToAction("Login", "Account");
 
-            // 2. Kullanıcının bildirilerini çek
-            var userSubmissions = _context.Submissions.Where(s => s.AuthorId == user.Id);
+            // Kullanıcının sadece kendi bildirilerini çek
+            var submissions = _context.Submissions
+                .Where(s => s.AuthorId == user.Id);
 
-            // 3. İstatistikleri Hesapla
-            var model = new DashboardViewModel
+            // 4. ADIM: Kullanırken alt çizgili değişkeni kullan (_tenantContext)
+            string currentConferenceName = "Genel Yönetim Paneli";
+
+            if (_tenantContext.Current != null) // <-- DÜZELTİLEN KISIM BURASI
             {
-                TotalSubmissions = await userSubmissions.CountAsync(),
+                currentConferenceName = _tenantContext.Current.Name;
+            }
+            var myConferences = await _context.Registrations
+                .Where(r => r.AppUserId == user.Id)
+                .Include(r => r.Conference) // Kongre detaylarını al
+                .ThenInclude(c => c.Tenant) // Slug için Tenant'ı da al
+                .Select(r => r.Conference) // Sadece Conference nesnelerini seç
+                .OrderByDescending(c => c.StartDate) // En yeniden eskiye
+                .ToListAsync();
 
-                // Durumu "Kabul Edildi" olanlar
-                AcceptedSubmissions = await userSubmissions.CountAsync(s => s.Status == SubmissionStatus.Accepted),
-
-                // Durumu "Yeni" veya "İnceleniyor" olanlar (Bekleyen)
-                AwaitingDecision = await userSubmissions.CountAsync(s => s.Status == SubmissionStatus.New || s.Status == SubmissionStatus.UnderReview)
+            var viewModel = new DashboardViewModel
+            {
+                TotalSubmissions = await submissions.CountAsync(),
+                AcceptedSubmissions = await submissions.CountAsync(s => s.Status == SubmissionStatus.Accepted),
+                AwaitingDecision = await submissions.CountAsync(s => s.Status == SubmissionStatus.UnderReview || s.Status == SubmissionStatus.New),
+                ConferenceName = currentConferenceName,
+                MyConferences = myConferences
             };
 
-            // 4. Veriyi View'a gönder
-            return View(model);
+            return View(viewModel);
+        }
+        // DashboardController.cs içine ekleyin:
+
+        // GET: /Dashboard/MyConferences
+        public async Task<IActionResult> MyConferences()
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            var myConferences = await _context.Registrations
+                .Where(r => r.AppUserId == user.Id)
+                .Include(r => r.Conference)
+                    .ThenInclude(c => c.Tenant) // Slug ve Logo için
+                .OrderByDescending(r => r.RegistrationDate)
+                .Select(r => r.Conference)
+                .ToListAsync();
+
+            return View(myConferences);
         }
     }
 }

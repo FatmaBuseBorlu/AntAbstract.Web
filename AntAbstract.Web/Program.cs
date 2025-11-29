@@ -131,12 +131,14 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Tenant Middleware (Yetkilendirmeden sonra)
+// TENANT MIDDLEWARE
 app.Use(async (ctx, next) =>
 {
     var resolver = ctx.RequestServices.GetRequiredService<ITenantResolver>();
     var tc = ctx.RequestServices.GetRequiredService<TenantContext>();
-    tc.Current = await resolver.ResolveAsync(ctx.Request);
+
+    // DÜZELTME BURADA: .Request kýsmýný sildik
+    tc.Current = await resolver.ResolveAsync(ctx);
 
     await next();
 });

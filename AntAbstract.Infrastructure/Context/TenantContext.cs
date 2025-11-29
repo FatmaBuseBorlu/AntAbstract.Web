@@ -8,8 +8,8 @@ using AntAbstract.Domain.Entities;
 
 namespace AntAbstract.Infrastructure.Context
 {
-    public sealed class TenantContext
+    public class TenantContext
     {
-        public Tenant? Current { get; set; }
+        public Tenant Current { get; set; }
     }
 }

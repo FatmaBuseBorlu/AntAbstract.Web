@@ -29,6 +29,18 @@
 
                         <h5 class="fw-bold text-dark mb-3"><i class="fas fa-file-signature me-2 text-primary"></i> 1. Çalışma Bilgileri</h5>
 
+                        <div class="card bg-light border-primary mb-4">
+                            <div class="card-body">
+                                <label asp-for="ConferenceId" class="form-label fw-bold text-primary">
+                                    <i class="fas fa-globe me-1"></i> Başvuru Yapılacak Kongre <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="ConferenceId" asp-items="Model.AvailableConferences" class="form-select form-select-lg border-primary">
+                                    <option value="">-- Lütfen Kongre Seçiniz --</option>
+                                </select>
+                                <span asp-validation-for="ConferenceId" class="text-danger small"></span>
+                            </div>
+                        </div>
+
                         <div class="mb-4">
                             <label asp-for="Title" class="form-label fw-bold text-dark">Bildiri Başlığı <span class="text-danger">*</span></label>
                             <input asp-for="Title" class="form-control form-control-lg bg-light border-0" placeholder="Çalışmanızın başlığını giriniz..." />
@@ -53,8 +65,9 @@
 
                         <div class="mb-4">
                             <label asp-for="AbstractText" class="form-label fw-bold text-dark">Özet Metni <span class="text-danger">*</span></label>
-                            <textarea asp-for="AbstractText" class="form-control bg-light border-0" rows="8" placeholder="Özetinizi buraya yapıştırın veya yazın..."></textarea>
+                            <textarea asp-for="AbstractText" id="AbstractText" class="form-control bg-light border-0" rows="8" placeholder="Özetinizi buraya yapıştırın veya yazın..."></textarea>
                             <span asp-validation-for="AbstractText" class="text-danger small"></span>
+                            <div class="form-text text-end" id="wordCount">0 kelime</div>
                         </div>
 
                         <hr class="my-5">
@@ -82,7 +95,8 @@
                             <div class="p-4 bg-light border border-2 border-dashed rounded-3 text-center">
                                 <i class="fas fa-file-upload fa-3x text-muted mb-3"></i>
                                 <p class="mb-2">Dosyanızı sürükleyin veya seçmek için tıklayın</p>
-                                <input asp-for="SubmissionFile" type="file" class="form-control" />
+                                <input asp-for="SubmissionFile" type="file" class="form-control" accept=".pdf, .docx" />
+                                <small class="text-muted">PDF veya Word dosyası (Maks 10 MB)</small>
                             </div>
                             <span asp-validation-for="SubmissionFile" class="text-danger small"></span>
                         </div>
@@ -109,13 +123,32 @@
 
     <script>
         $(document).ready(function () {
+
+            // --- KELİME SAYACI ---
+            function updateWordCount() {
+                var text = $('#AbstractText').val();
+                var cleanText = text.replace(/(^\s*)|(\s*$)/gi, "").replace(/[ ]{2,}/gi, " ").replace(/\n /, "\n");
+                var wordCount = cleanText.split(' ').filter(function(str) { return str !== ""; }).length;
+                var maxWords = 500;
+
+                var countElement = $('#wordCount');
+                countElement.text(wordCount + ' kelime');
+
+                if (wordCount > maxWords) {
+                    countElement.removeClass('text-muted').addClass('text-danger');
+                    countElement.html('<span class="fw-bold">' + wordCount + '</span> kelime (Limit: ' + maxWords + ')');
+                } else {
+                    countElement.removeClass('text-danger').addClass('text-muted');
+                }
+            }
+            $('#AbstractText').on('input', updateWordCount);
+
+            // --- YAZAR EKLEME ---
             let authorIndex = 0;
 
-            // Ortak yazar satırı için HTML şablonu (C# Model Binding'e uygun)
             function getAuthorRowTemplate(index) {
                 return `
                     <div class="row g-3 mb-3 p-3 rounded-3 border author-row bg-white shadow-sm">
-
                         <input type="hidden" name="Authors.Index" value="${index}" />
 
                         <div class="col-md-3">
@@ -130,7 +163,6 @@
                             <label class="small text-muted mb-1">Kurum*</label>
                             <input name="Authors[${index}].Institution" class="form-control form-control-sm" placeholder="Üniversite/Kurum Adı" required />
                         </div>
-
                         <div class="col-md-2 d-flex align-items-end">
                             <button type="button" class="btn btn-danger btn-sm w-100 remove-author-btn">
                                 <i class="fas fa-trash-alt me-1"></i> Kaldır
@@ -138,7 +170,6 @@
                             <input type="hidden" name="Authors[${index}].Order" value="${index + 1}" />
                             <input type="hidden" name="Authors[${index}].IsCorrespondingAuthor" value="false" />
                         </div>
-
                         <div class="col-md-4">
                             <label class="small text-muted mb-1">E-Posta</label>
                             <input name="Authors[${index}].Email" class="form-control form-control-sm" type="email" placeholder="E-Posta Adresi" />
@@ -149,30 +180,24 @@
                         </div>
                         <div class="col-md-4 d-flex align-items-center justify-content-end">
                             <div class="form-check mt-3">
-                                <input class="form-check-input" type="checkbox" name="Authors[${index}].IsCorrespondingAuthor" id="isCorresponding${index}" value="true">
-                                <label class="form-check-label small" for="isCorresponding${index}">Sorumlu Yazar?</label>
+                                <input class="form-check-input" type="checkbox" name="Authors[${index}].IsCorrespondingAuthor" value="true">
+                                <label class="form-check-label small">Sorumlu Yazar?</label>
                             </div>
                         </div>
                     </div>
                 `;
             }
 
-            // Yazar Ekleme Fonksiyonu
             function addAuthorRow() {
                 $('#author-list').append(getAuthorRowTemplate(authorIndex));
                 authorIndex++;
             }
 
-            // Olay Dinleyicileri
             $('#add-author-btn').click(addAuthorRow);
 
-            // Kaldır Butonuna Tıklama Olayı
             $(document).on('click', '.remove-author-btn', function () {
                 $(this).closest('.author-row').remove();
             });
-
-            // Sayfa yüklenince bir satır ekleyelim (En az bir yazar olmalı)
-            addAuthorRow();
         });
     </script>
 }

@@ -1,15 +1,12 @@
-﻿
-#nullable disable
-
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using AntAbstract.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Http; 
-using System.IO; 
+using Microsoft.AspNetCore.Http; // Dosya yükleme için gerekli
+using System.IO;
 
 namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
 {
@@ -25,11 +22,15 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
             _userManager = userManager;
             _signInManager = signInManager;
         }
+
         public string Username { get; set; }
+
         [TempData]
         public string StatusMessage { get; set; }
+
         [BindProperty]
         public InputModel Input { get; set; }
+
         public class InputModel
         {
             [Phone]
@@ -49,11 +50,10 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
             public string University { get; set; }
 
             [Display(Name = "Uzmanlık Alanları (Virgülle ayırın)")]
-            [StringLength(500)]
             public string ExpertiseAreas { get; set; }
 
             [Display(Name = "Profil Resmi")]
-            public IFormFile ProfileImage { get; set; } 
+            public IFormFile ProfileImage { get; set; } // Resim yükleme kutusu
         }
 
         private async Task LoadAsync(AppUser user)
@@ -66,6 +66,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
             Input = new InputModel
             {
                 PhoneNumber = phoneNumber,
+                // Veritabanındaki bilgileri kutucuklara dolduruyoruz
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Title = user.Title,
@@ -73,6 +74,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
                 ExpertiseAreas = user.ExpertiseAreas
             };
 
+            // Mevcut resim yolunu View'a taşıyoruz
             ViewData["CurrentProfileImage"] = user.ProfileImagePath;
         }
 
@@ -102,15 +104,11 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
                 return Page();
             }
 
+            // 1. Değişen Alanları Kontrol Et ve Güncelle
             var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
             if (Input.PhoneNumber != phoneNumber)
             {
-                var setPhoneResult = await _userManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
-                if (!setPhoneResult.Succeeded)
-                {
-                    StatusMessage = "Telefon numarası güncellenirken hata oluştu.";
-                    return RedirectToPage();
-                }
+                await _userManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
             }
 
             if (Input.FirstName != user.FirstName) user.FirstName = Input.FirstName;
@@ -119,6 +117,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
             if (Input.University != user.University) user.University = Input.University;
             if (Input.ExpertiseAreas != user.ExpertiseAreas) user.ExpertiseAreas = Input.ExpertiseAreas;
 
+            // 2. Profil Resmi Yükleme
             if (Input.ProfileImage != null)
             {
                 var extension = Path.GetExtension(Input.ProfileImage.FileName);
@@ -136,10 +135,14 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
 
                 user.ProfileImagePath = "/uploads/users/" + newFileName;
             }
+
+            // 3. Kaydet
             await _userManager.UpdateAsync(user);
+
+            // 4. Oturumu Yenile (Yeni bilgilerin hemen görünmesi için)
             await _signInManager.RefreshSignInAsync(user);
 
-            StatusMessage = "Profiliniz başarıyla güncellendi";
+            StatusMessage = "Profiliniz başarıyla güncellendi.";
             return RedirectToPage();
         }
     }

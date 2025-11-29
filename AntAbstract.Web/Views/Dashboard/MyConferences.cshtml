@@ -1,0 +1,61 @@
+﻿@model IEnumerable<AntAbstract.Domain.Entities.Conference>
+@{
+    ViewData["Title"] = "Katıldığım Kongreler";
+    Layout = "_LayoutDashboard";
+}
+
+<div class="container-fluid">
+    <h3 class="fw-bold mb-4 text-dark">Katıldığım Etkinlikler</h3>
+
+    <div class="row g-4">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var kongre in Model)
+            {
+                <div class="col-md-6 col-xl-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="me-3">
+                                    @if (!string.IsNullOrEmpty(kongre.LogoPath))
+                                    {
+                                        <img src="@kongre.LogoPath" style="width: 60px; height: 60px; object-fit: contain;" class="rounded-circle border p-1">
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-primary" style="width: 60px; height: 60px;">
+                                            <i class="fas fa-university fs-3"></i>
+                                        </div>
+                                    }
+                                </div>
+                                <div>
+                                    <span class="badge bg-light text-primary border mb-1">@kongre.Slug</span>
+                                    <h6 class="fw-bold text-dark mb-0 line-clamp-2">@kongre.Title</h6>
+                                </div>
+                            </div>
+
+                            <div class="text-muted small mb-3">
+                                <p class="mb-1"><i class="far fa-calendar-alt me-2"></i> @kongre.StartDate.ToString("dd MMMM yyyy")</p>
+                                <p class="mb-0"><i class="fas fa-map-marker-alt me-2"></i> @(kongre.City ?? "Online")</p>
+                            </div>
+
+                            <a href="/@kongre.Slug" target="_blank" class="btn btn-outline-primary w-100 btn-sm fw-bold">
+                                Kongre Sayfasına Git
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="alert alert-light border text-center py-5">
+                    <i class="far fa-calendar-times fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Henüz kayıt olduğunuz bir kongre bulunmamaktadır.</p>
+                    <a href="/" class="btn btn-primary btn-sm">Kongreleri İncele</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>

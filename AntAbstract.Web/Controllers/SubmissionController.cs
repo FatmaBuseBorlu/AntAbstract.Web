@@ -5,12 +5,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Rotativa.AspNetCore;
 using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Rotativa.AspNetCore; // PDF için gerekli
 
 namespace AntAbstract.Web.Controllers
 {
@@ -35,6 +36,7 @@ namespace AntAbstract.Web.Controllers
 
             var userSubmissions = await _context.Submissions
                 .Where(s => s.AuthorId == user.Id)
+                .Include(s => s.Conference)
                 .Include(s => s.SubmissionAuthors)
                 .Include(s => s.Files)
                 .OrderByDescending(s => s.CreatedAt)
@@ -72,18 +74,33 @@ namespace AntAbstract.Web.Controllers
             return View(submission);
         }
 
-        // 3. YENİ BİLDİRİ FORMU (GET)
+        // 1. YENİ BİLDİRİ FORMU (GET) - LİSTEYİ DOLDURARAK AÇ
         [HttpGet]
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            return View(new SubmissionCreateViewModel());
+            // Aktif kongreleri çekip Dropdown için hazırlıyoruz
+            var conferences = await _context.Conferences
+                .OrderByDescending(c => c.StartDate)
+                .Select(c => new SelectListItem
+                {
+                    Value = c.Id.ToString(),
+                    Text = c.Title
+                }).ToListAsync();
+
+            var model = new SubmissionCreateViewModel
+            {
+                AvailableConferences = conferences
+            };
+
+            return View(model);
         }
 
-        // 4. YENİ BİLDİRİ KAYDETME (POST)
+        // 2. YENİ BİLDİRİ KAYDETME (POST) - SEÇİLEN KONGREYE KAYDET
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(SubmissionCreateViewModel model)
         {
+            // Dosya seçilmemişse hata ver
             if (model.SubmissionFile == null || model.SubmissionFile.Length == 0)
             {
                 ModelState.AddModelError("SubmissionFile", "Lütfen geçerli bir dosya yükleyiniz.");
@@ -93,11 +110,16 @@ namespace AntAbstract.Web.Controllers
             {
                 var user = await _userManager.GetUserAsync(User);
 
-                // --- KONGRE BULMA ---
-                var activeConference = await _context.Conferences.FirstOrDefaultAsync();
-                if (activeConference == null)
+                // --- HATA DÜZELTİLDİ: SEÇİLEN KONGREYİ KULLAN ---
+                // Kullanıcının formdan seçtiği ConferenceId'yi kullanıyoruz.
+                // Eğer Tenant bazlı çalışıyorsanız burada Tenant kontrolü de yapılabilir.
+
+                if (model.ConferenceId == Guid.Empty)
                 {
-                    TempData["ErrorMessage"] = "Sistemde tanımlı bir kongre bulunamadı.";
+                    ModelState.AddModelError("ConferenceId", "Lütfen bir kongre seçiniz.");
+                    // Listeyi tekrar doldur (Hata durumunda boş gelmesin)
+                    model.AvailableConferences = await _context.Conferences
+                        .Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Title }).ToListAsync();
                     return View(model);
                 }
 
@@ -109,6 +131,7 @@ namespace AntAbstract.Web.Controllers
                 {
                     originalFileName = model.SubmissionFile.FileName;
                     string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "submissions");
+
                     if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
                     string extension = Path.GetExtension(model.SubmissionFile.FileName);
@@ -130,7 +153,9 @@ namespace AntAbstract.Web.Controllers
                     AuthorId = user.Id,
                     CreatedAt = DateTime.UtcNow,
                     Status = SubmissionStatus.New,
-                    ConferenceId = activeConference.Id
+
+                    // DÜZELTME BURADA: Rastgele değil, seçilen ID'yi atıyoruz.
+                    ConferenceId = model.ConferenceId
                 };
 
                 // --- YAZARLARI EKLEME ---
@@ -173,6 +198,12 @@ namespace AntAbstract.Web.Controllers
                 TempData["SuccessMessage"] = "Bildiriniz başarıyla gönderildi.";
                 return RedirectToAction("Index", "Submission");
             }
+
+            // Hata varsa dropdown listesini tekrar doldur
+            model.AvailableConferences = await _context.Conferences
+                .OrderByDescending(c => c.StartDate)
+                .Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Title })
+                .ToListAsync();
 
             return View(model);
         }
