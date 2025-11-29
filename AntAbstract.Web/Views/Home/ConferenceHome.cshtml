@@ -6,6 +6,10 @@
 @{
     ViewData["Title"] = Model.Title;
     Layout = "_Layout";
+
+    // Kullanıcının kayıt durumunu kontrol etmek için ViewBag'den listeyi alıyoruz
+    // (Not: HomeController/Index metodunda ViewBag.RegisteredConferenceIds doldurulmalı)
+    var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
 }
 
 <style>
@@ -100,6 +104,7 @@
         box-shadow: 0 4px 15px rgba(0, 174, 239, 0.4);
         transition: all 0.3s;
         text-decoration: none;
+        display: inline-block;
     }
 
         .btn-hero-primary:hover {
@@ -127,17 +132,33 @@
         </div>
 
         <div>
-            @if (SignInManager.IsSignedIn(User))
+            @if (registeredIds.Contains(Model.Id))
             {
-                <a asp-controller="Registration" asp-action="Index" asp-route-id="@Model.Id" class="btn btn-hero-primary btn-lg">
-                    HEMEN KAYIT OL
-                </a>
+                <div class="d-flex justify-content-center gap-3">
+                    <div class="btn btn-success btn-lg px-4 fw-bold" style="cursor: default;">
+                        <i class="fas fa-check-circle me-2"></i> KAYITLISINIZ
+                    </div>
+
+                    <a asp-controller="Payment" asp-action="PayForConference" asp-route-conferenceId="@Model.Id"
+                       class="btn btn-outline-light btn-lg px-4 fw-bold">
+                        ÖDEME YAP
+                    </a>
+                </div>
             }
             else
             {
-                <a href="/Identity/Account/Register?returnUrl=/Registration/Index/@Model.Id" class="btn btn-hero-primary btn-lg">
-                    HEMEN KAYIT OL
-                </a>
+                if (SignInManager.IsSignedIn(User))
+                {
+                    <a asp-controller="Registration" asp-action="Index" asp-route-id="@Model.Id" class="btn btn-hero-primary btn-lg">
+                        HEMEN KAYIT OL
+                    </a>
+                }
+                else
+                {
+                    <a href="/Identity/Account/Register?returnUrl=/Registration/Index/@Model.Id" class="btn btn-hero-primary btn-lg">
+                        HEMEN KAYIT OL
+                    </a>
+                }
             }
         </div>
     </div>

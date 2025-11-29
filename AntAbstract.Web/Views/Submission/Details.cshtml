@@ -7,7 +7,7 @@
 }
 
 <div class="container-fluid">
-
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="fw-bold mb-1">Bildiri Detayı</h4>
@@ -19,7 +19,7 @@
     </div>
 
     <div class="row g-4 mb-4">
-
+        
         <div class="col-md-4">
             <div class="card dashboard-card border-0 h-100 p-3 shadow-sm">
                 <h6 class="fw-bold text-muted small text-uppercase">Mevcut Durum</h6>
@@ -41,6 +41,9 @@
                         case SubmissionStatus.Rejected:
                             <span class="badge bg-danger fs-6 px-3 py-2">Reddedildi</span>
                             break;
+                        default:
+                            <span class="badge bg-secondary fs-6 px-3 py-2">@Model.Status</span>
+                            break;
                     }
                 </div>
                 <small class="text-muted mt-2">Son Güncelleme: @(Model.DecisionDate?.ToString("dd MMM yyyy") ?? Model.CreatedAt.ToString("dd MMM yyyy"))</small>
@@ -48,31 +51,44 @@
         </div>
 
         <div class="col-md-4">
-<div class="card dashboard-card border-0 h-100 p-3 shadow-sm">
-    <h6 class="fw-bold text-muted small text-uppercase">İşlemler</h6>
-    <div class="mt-2">
-        
-        @if (Model.Status == SubmissionStatus.RevisionRequired)
-        {
-            }
-        /* --- YENİ EKLENEN KISIM: KABUL MEKTUBU BUTONU --- */
-        else if (Model.Status == SubmissionStatus.Accepted)
-        {
-            <div class="alert alert-success mb-2 small border-success">
-                <i class="fas fa-check-circle me-1"></i> Tebrikler! Bildiriniz kabul edildi.
+            <div class="card dashboard-card border-0 h-100 p-3 shadow-sm">
+                <h6 class="fw-bold text-muted small text-uppercase">İşlemler</h6>
+                <div class="mt-2">
+                    
+                    @if (Model.Status == SubmissionStatus.RevisionRequired)
+                    {
+                        <div class="alert alert-warning mb-2 small border-warning">
+                            <i class="fas fa-exclamation-triangle me-1"></i> Hakemler düzeltme talep etti.
+                        </div>
+                        <a asp-action="UploadRevision" asp-route-id="@Model.SubmissionId" class="btn btn-sm btn-warning w-100 fw-bold text-dark">
+                            <i class="fas fa-upload me-1"></i> Revizyon Yükle
+                        </a>
+                    }
+                    else if (Model.Status == SubmissionStatus.Accepted)
+                    {
+                        <div class="alert alert-success mb-2 small border-success">
+                            <i class="fas fa-check-circle me-1"></i> Tebrikler! Bildiriniz kabul edildi.
+                        </div>
+                        
+                        <a asp-action="DownloadAcceptanceLetter" asp-route-id="@Model.SubmissionId" target="_blank" class="btn btn-sm btn-success w-100 fw-bold">
+                            <i class="fas fa-file-pdf me-1"></i> Kabul Mektubu İndir
+                        </a>
+                    }
+                    // Eğer "Presented" durumu eklediyseniz burayı açın:
+                    /*
+                    else if (Model.Status == SubmissionStatus.Presented)
+                    {
+                        <a asp-action="DownloadAcceptanceLetter" asp-route-id="@Model.SubmissionId" target="_blank" class="btn btn-sm btn-primary w-100 fw-bold">
+                            <i class="fas fa-certificate me-1"></i> Katılım Sertifikası İndir
+                        </a>
+                    }
+                    */
+                    else
+                    {
+                        <p class="text-muted small mb-0">Şu an yapmanız gereken bir işlem bulunmuyor.</p>
+                    }
+                </div>
             </div>
-            
-            <a asp-action="DownloadAcceptanceLetter" asp-route-id="@Model.SubmissionId" target="_blank" class="btn btn-sm btn-success w-100 fw-bold shadow-sm">
-                <i class="fas fa-file-pdf me-1"></i> Kabul Mektubu İndir
-            </a>
-        }
-        /* ------------------------------------------------ */
-        else
-        {
-            <p class="text-muted small mb-0">Şu an yapmanız gereken bir işlem bulunmuyor.</p>
-        }
-    </div>
-</div>
         </div>
 
         <div class="col-md-4">
@@ -104,10 +120,10 @@
                 </li>
             </ul>
         </div>
-
+        
         <div class="card-body p-4">
             <div class="tab-content" id="detailTabsContent">
-
+                
                 <div class="tab-pane fade show active" id="info" role="tabpanel">
                     <h5 class="fw-bold text-dark mb-3">@Model.Title</h5>
                     <div class="p-3 bg-light rounded border">

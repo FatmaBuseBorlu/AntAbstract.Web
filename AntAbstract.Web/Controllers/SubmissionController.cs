@@ -100,11 +100,6 @@ namespace AntAbstract.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(SubmissionCreateViewModel model)
         {
-            // Dosya seçilmemişse hata ver
-            if (model.SubmissionFile == null || model.SubmissionFile.Length == 0)
-            {
-                ModelState.AddModelError("SubmissionFile", "Lütfen geçerli bir dosya yükleyiniz.");
-            }
 
             if (ModelState.IsValid)
             {

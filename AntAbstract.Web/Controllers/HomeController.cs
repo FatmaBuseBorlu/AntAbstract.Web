@@ -32,7 +32,23 @@ namespace AntAbstract.Web.Controllers
 
         public async Task<IActionResult> Index()
         {
-            // 1. SENARYO: Kongre Sitesi (Tenant)
+            // 1. KULLANICI KAYITLARINI ÇEK (HER ÝKÝ SENARYO ÝÇÝN)
+            var user = await _userManager.GetUserAsync(User);
+            var registeredIds = new List<Guid>();
+
+            if (user != null)
+            {
+                registeredIds = await _context.Registrations
+                    .Where(r => r.AppUserId == user.Id)
+                    .Select(r => r.ConferenceId)
+                    .ToListAsync();
+            }
+
+            // Bu listeyi View'a gönderiyoruz
+            ViewBag.RegisteredConferenceIds = registeredIds;
+
+
+            // 2. SENARYO A: Kongre Sitesi (Tenant)
             if (_tenantContext.Current != null)
             {
                 var currentConference = await _context.Conferences
@@ -41,34 +57,13 @@ namespace AntAbstract.Web.Controllers
 
                 if (currentConference == null) return NotFound("Kongre aktif deðil.");
 
-                // Özel Landing Page
                 return View("ConferenceHome", currentConference);
             }
 
-            // 2. SENARYO: Ana Portal (Liste)
+            // 3. SENARYO B: Ana Portal (Liste)
             var activeConferences = await _context.Conferences
-                .Include(c => c.Tenant) // Slug için Tenant'ý dahil et
                 .OrderBy(c => c.StartDate)
                 .ToListAsync();
-
-            // --- KULLANICININ KAYITLI OLDUÐU KONGRELERÝ BULMA ---
-            // Bu kýsým artýk _userManager sayesinde çalýþacak
-            var user = await _userManager.GetUserAsync(User);
-
-            if (user != null)
-            {
-                var registeredConferenceIds = await _context.Registrations
-                    .Where(r => r.AppUserId == user.Id)
-                    .Select(r => r.ConferenceId)
-                    .ToListAsync();
-
-                ViewBag.RegisteredConferenceIds = registeredConferenceIds;
-            }
-            else
-            {
-                ViewBag.RegisteredConferenceIds = new List<Guid>();
-            }
-            // ----------------------------------------------------
 
             return View(activeConferences);
         }

@@ -12,7 +12,8 @@ namespace AntAbstract.Domain.Entities
         UnderReview = 1,
         Accepted = 2,
         Rejected = 3,
-        RevisionRequired = 4
+        RevisionRequired = 4,
+        Presented = 5
     }
 
     public enum SubmissionFileType

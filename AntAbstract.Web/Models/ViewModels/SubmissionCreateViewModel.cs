@@ -25,7 +25,6 @@ namespace AntAbstract.Web.Models.ViewModels
         public int PresentationTypeId { get; set; }
 
         // --- HATA VEREN VE TEKRAR EDEN KISIM TEMİZLENDİ ---
-        [Required(ErrorMessage = "Bildiri dosyası yüklemelisiniz.")]
         [Display(Name = "Bildiri Dosyası (Word/PDF)")]
         // SubmissionFile'ın tanımını buraya aldık.
         public IFormFile SubmissionFile { get; set; }
