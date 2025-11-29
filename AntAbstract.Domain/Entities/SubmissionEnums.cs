@@ -13,7 +13,8 @@ namespace AntAbstract.Domain.Entities
         Accepted = 2,
         Rejected = 3,
         RevisionRequired = 4,
-        Presented = 5
+        Presented = 5,
+        Withdrawn = 6
     }
 
     public enum SubmissionFileType

@@ -1,6 +1,6 @@
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
-using Microsoft.AspNetCore.Identity; // Bu gerekli
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -18,37 +18,36 @@ namespace AntAbstract.Web.Controllers
     {
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
-
-        // YENÝ EKLENEN: UserManager Tanýmý
         private readonly UserManager<AppUser> _userManager;
 
-        // Constructor'ý güncelledik: userManager parametresi eklendi
         public HomeController(AppDbContext context, TenantContext tenantContext, UserManager<AppUser> userManager)
         {
             _context = context;
             _tenantContext = tenantContext;
-            _userManager = userManager; // Atama yapýldý
+            _userManager = userManager;
         }
 
+        // 1. ANA SAYFA
         public async Task<IActionResult> Index()
         {
-            // 1. KULLANICI KAYITLARINI ÇEK (HER ÝKÝ SENARYO ÝÇÝN)
+            // --- KULLANICININ KAYIT VE ÖDEME DURUMUNU ÇEK ---
             var user = await _userManager.GetUserAsync(User);
-            var registeredIds = new List<Guid>();
+
+            // Sözlük: <KongreID, ÖdendiMi>
+            var registrationStatus = new Dictionary<Guid, bool>();
 
             if (user != null)
             {
-                registeredIds = await _context.Registrations
+                registrationStatus = await _context.Registrations
                     .Where(r => r.AppUserId == user.Id)
-                    .Select(r => r.ConferenceId)
-                    .ToListAsync();
+                    .ToDictionaryAsync(r => r.ConferenceId, r => r.IsPaid);
             }
 
-            // Bu listeyi View'a gönderiyoruz
-            ViewBag.RegisteredConferenceIds = registeredIds;
+            // View'a bu sözlüðü gönderiyoruz (Kritik Güncelleme)
+            ViewBag.RegistrationStatus = registrationStatus;
+            // -----------------------------------------------
 
-
-            // 2. SENARYO A: Kongre Sitesi (Tenant)
+            // SENARYO A: Kongre Sitesi (Tenant)
             if (_tenantContext.Current != null)
             {
                 var currentConference = await _context.Conferences
@@ -60,15 +59,38 @@ namespace AntAbstract.Web.Controllers
                 return View("ConferenceHome", currentConference);
             }
 
-            // 3. SENARYO B: Ana Portal (Liste)
+            // SENARYO B: Ana Portal (Liste)
             var activeConferences = await _context.Conferences
+                .Include(c => c.Tenant)
                 .OrderBy(c => c.StartDate)
                 .ToListAsync();
 
             return View(activeConferences);
         }
 
-        // Diðer metodlarýnýz (Details, About, Contact vb.) aynen kalabilir
+        // 2. KONGRELER LÝSTESÝ SAYFASI
+        public async Task<IActionResult> Congresses()
+        {
+            var allCongresses = await _context.Conferences
+               .Include(c => c.Tenant)
+               .OrderBy(c => c.StartDate)
+               .ToListAsync();
+
+            // --- KAYIT DURUMUNU BURADA DA ÇEKÝYORUZ ---
+            var user = await _userManager.GetUserAsync(User);
+            var registrationStatus = new Dictionary<Guid, bool>();
+
+            if (user != null)
+            {
+                registrationStatus = await _context.Registrations
+                   .Where(r => r.AppUserId == user.Id)
+                   .ToDictionaryAsync(r => r.ConferenceId, r => r.IsPaid);
+            }
+            ViewBag.RegistrationStatus = registrationStatus;
+            // -------------------------------------------
+
+            return View(allCongresses);
+        }
 
         public IActionResult About()
         {
@@ -78,34 +100,6 @@ namespace AntAbstract.Web.Controllers
         public IActionResult Contact()
         {
             return View();
-        }
-
-        // Kongreler Sayfasý (Menüden gelen)
-        public async Task<IActionResult> Congresses()
-        {
-            var allCongresses = await _context.Conferences
-               .Include(c => c.Tenant)
-               .OrderBy(c => c.StartDate)
-               .ToListAsync();
-
-            // --- KULLANICI KAYITLARI ---
-            var user = await _userManager.GetUserAsync(User);
-            if (user != null)
-            {
-                var registeredIds = await _context.Registrations
-                   .Where(r => r.AppUserId == user.Id)
-                   .Select(r => r.ConferenceId)
-                   .ToListAsync();
-
-                ViewBag.RegisteredConferenceIds = registeredIds;
-            }
-            else
-            {
-                ViewBag.RegisteredConferenceIds = new List<Guid>();
-            }
-            // ---------------------------
-
-            return View(allCongresses);
         }
 
         public IActionResult Privacy()

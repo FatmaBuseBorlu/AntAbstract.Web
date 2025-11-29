@@ -1,0 +1,60 @@
+﻿@model AntAbstract.Web.Models.ViewModels.AcceptanceLetterViewModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            padding: 20px;
+            border: 2px solid #000;
+            height: 100%;
+        }
+
+        .conf-name {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 30px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .name {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: #000;
+        }
+
+        .inst {
+            font-size: 16px;
+            color: #333;
+        }
+
+        .role {
+            margin-top: 40px;
+            padding: 10px;
+            background-color: #00aeef;
+            color: white;
+            font-weight: bold;
+            display: inline-block;
+            width: 100%;
+        }
+
+        * {
+            -webkit-print-color-adjust: exact !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="conf-name">@Model.ConferenceName</div>
+    <div class="name">@Model.AuthorFullName</div>
+    <div class="inst">@Model.AuthorInstitution</div>
+    <div style="margin-top:50px;">
+        <div class="role">KATILIMCI</div>
+    </div>
+</body>
+</html>

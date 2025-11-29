@@ -10,8 +10,9 @@
     ViewData["Title"] = Tc.Current != null ? Tc.Current.Name : "Ana Sayfa";
     Layout = "_Layout";
     
-    // Kullanıcının kayıtlı olduğu kongreleri kontrol etmek için
-    var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
+    // Kullanıcının kayıt ve ödeme durumunu sözlükten (Dictionary) alıyoruz
+    // HomeController'dan ViewBag.RegistrationStatus olarak geliyor
+    var registrationStatus = ViewBag.RegistrationStatus as Dictionary<Guid, bool> ?? new Dictionary<Guid, bool>();
 }
 
 <style>
@@ -72,6 +73,9 @@
         .stat-item:last-child { border-bottom: none; margin-bottom: 0; }
         .hero-image-container img { margin-top: 40px; }
     }
+    
+    /* Disabled Buton */
+    .btn.disabled { opacity: 1 !important; cursor: default; }
 </style>
 
 <div class="page-content-wrapper">
@@ -152,30 +156,36 @@
                                         </div>
                                     </a>
                                     
-                                    <div class="card-footer bg-white border-0 pb-3 pt-0 d-flex gap-2">
-                                        
-                                        @if (registeredIds.Contains(kongre.Id))
+                                    <div class="card-footer bg-white border-0 pb-3 pt-0 d-flex justify-content-between gap-2">
+                                        @if (registrationStatus.ContainsKey(kongre.Id))
                                         {
-                                            /* DURUM 1: ZATEN KAYITLI */
                                             <div class="btn btn-sm btn-success flex-fill fw-bold disabled" style="opacity: 1;">
                                                 <i class="fas fa-check-circle me-1"></i> KAYITLI
                                             </div>
                                             
-                                            <a asp-controller="Payment" asp-action="PayForConference" asp-route-conferenceId="@kongre.Id"
-                                               class="btn btn-sm btn-outline-info flex-fill fw-bold">ÖDEME YAP</a>
+                                            @if (registrationStatus[kongre.Id] == true) // Ödenmişse
+                                            {
+                                                <div class="btn btn-sm btn-light text-success flex-fill fw-bold disabled" style="opacity: 1;">
+                                                    <i class="fas fa-receipt me-1"></i> ÖDENDİ
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <a asp-controller="Payment" asp-action="PayForConference" asp-route-conferenceId="@kongre.Id"
+                                                   class="btn btn-sm btn-outline-info flex-fill fw-bold">ÖDEME YAP</a>
+                                            }
                                         }
                                         else
                                         {
-                                            /* DURUM 2: KAYITLI DEĞİL */
                                             if (SignInManager.IsSignedIn(User))
                                             {
                                                 <a asp-controller="Registration" asp-action="Index" asp-route-id="@kongre.Id" 
-                                                   class="btn btn-primary w-100 fw-bold" style="background-color: #00aeef; border: none;">KAYIT OL</a>
+                                                   class="btn btn-sm btn-primary flex-fill fw-bold" style="background-color: #00aeef; border: none;">KAYIT OL</a>
                                             }
                                             else
                                             {
                                                 <a href="/Identity/Account/Register?returnUrl=/Registration/Index/@kongre.Id" 
-                                                   class="btn btn-primary w-100 fw-bold" style="background-color: #00aeef; border: none;">KAYIT OL</a>
+                                                   class="btn btn-sm btn-primary flex-fill fw-bold" style="background-color: #00aeef; border: none;">KAYIT OL</a>
                                             }
                                         }
                                     </div>

@@ -7,13 +7,11 @@
     ViewData["Title"] = Model.Title;
     Layout = "_Layout";
 
-    // Kullanıcının kayıt durumunu kontrol etmek için ViewBag'den listeyi alıyoruz
-    // (Not: HomeController/Index metodunda ViewBag.RegisteredConferenceIds doldurulmalı)
+    // Kullanıcının kayıtlı olduğu kongreleri kontrol etmek için listeyi alıyoruz
     var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
 }
 
 <style>
-    /* Hero Alanı */
     .conf-hero {
         position: relative;
         background-color: #0f172a;
@@ -33,7 +31,6 @@
         background: linear-gradient(180deg, rgba(15, 23, 42, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
     }
 
-    /* Asılı Bilgi Kartları */
     .info-cards-container {
         margin-top: -80px;
         position: relative;
@@ -54,7 +51,6 @@
             transform: translateY(-5px);
         }
 
-    /* Kart Renkleri */
     .card-dates {
         border-top-color: #00aeef;
     }
@@ -93,7 +89,6 @@
         color: #10b981;
     }
 
-    /* Butonlar */
     .btn-hero-primary {
         background-color: #00aeef;
         color: white;
@@ -165,74 +160,6 @@
 </div>
 
 <div class="container info-cards-container mb-5">
-    <div class="row g-4">
-
-        <div class="col-md-4">
-            <div class="modern-card card-dates">
-                <div class="icon-box bg-blue-light">
-                    <i class="far fa-clock"></i>
-                </div>
-                <h5 class="fw-bold text-dark mb-3">Önemli Tarihler</h5>
-                <ul class="list-unstyled text-muted small mb-0">
-                    <li class="d-flex justify-content-between mb-2">
-                        <span>Son Özet Gönderimi:</span>
-                        <span class="fw-bold text-dark">20.10.2025</span>
-                    </li>
-                    <li class="d-flex justify-content-between mb-2">
-                        <span>Erken Kayıt:</span>
-                        <span class="fw-bold text-dark">15.11.2025</span>
-                    </li>
-                    <li class="d-flex justify-content-between">
-                        <span>Kongre Tarihi:</span>
-                        <span class="fw-bold text-dark">@Model.StartDate.ToString("dd.MM.yyyy")</span>
-                    </li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="modern-card card-download text-center">
-                <div class="icon-box bg-orange-light mx-auto">
-                    <i class="fas fa-file-word"></i>
-                </div>
-                <h5 class="fw-bold text-dark mb-2">Özet Şablonu</h5>
-                <p class="text-muted small mb-4">Bildirinizi hazırlarken lütfen resmi kongre şablonunu kullanınız.</p>
-                <a href="#" class="btn btn-sm btn-outline-dark rounded-pill px-4 fw-bold">
-                    <i class="fas fa-download me-2"></i> Şablonu İndir
-                </a>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="modern-card card-contact">
-                <div class="icon-box bg-green-light">
-                    <i class="fas fa-headset"></i>
-                </div>
-                <h5 class="fw-bold text-dark mb-3">İletişim & Destek</h5>
-                <p class="text-muted small mb-1">Sorularınız için sekreterya ile iletişime geçebilirsiniz.</p>
-                <a href="mailto:info@antabstract.com" class="text-decoration-none fw-bold text-dark">
-                    info@antabstract.com
-                </a>
-            </div>
-        </div>
-
-    </div>
 </div>
-
 <div class="container py-5 my-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-8 text-center">
-            <h6 class="text-primary fw-bold text-uppercase ls-md mb-3">DAVETLİSİNİZ</h6>
-            <h2 class="fw-bold text-dark mb-4">Bilimsel Paylaşımın Merkezi</h2>
-            <div class="text-muted" style="font-size: 1.1rem; line-height: 1.8;">
-                @Html.Raw(Model.Description)
-            </div>
-
-            <div class="mt-5 pt-3 border-top">
-                <p class="small text-muted mb-0">
-                    Kongre Başkanı: <strong>Prof. Dr. Mehmet Yılmaz</strong>
-                </p>
-            </div>
-        </div>
-    </div>
 </div>

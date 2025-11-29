@@ -9,40 +9,88 @@
 @{
     ViewData["Title"] = "Kongreler";
     Layout = "_Layout";
-    
-    // Kullanıcının kayıtlı olduğu kongreleri kontrol etmek için
-    // (Not: HomeController/Congresses metodunda ViewBag.RegisteredConferenceIds doldurulmalı)
-    var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
+
+    // Kullanıcının kayıtlı olduğu kongreleri ve ödeme durumlarını kontrol etmek için
+    var registrationStatus = ViewBag.RegistrationStatus as Dictionary<Guid, bool> ?? new Dictionary<Guid, bool>();
 }
 
 <style>
     /* Sayfa Yapısı */
-    body { background-color: #f8f9fa; }
-    
+    body {
+        background-color: #f8f9fa;
+    }
+
     /* Arama Çubuğu */
-    .search-input { border-radius: 50px 0 0 50px; border: 1px solid #e0e0e0; padding-left: 25px; height: 55px; }
-    .search-input:focus { box-shadow: none; border-color: #00aeef; }
-    .search-btn { border-radius: 0 50px 50px 0; padding-left: 30px; padding-right: 30px; background-color: #00aeef; border: none; color: white; font-weight: bold; transition: background-color 0.3s; }
-    .search-btn:hover { background-color: #008acb; }
+    .search-input {
+        border-radius: 50px 0 0 50px;
+        border: 1px solid #e0e0e0;
+        padding-left: 25px;
+        height: 55px;
+    }
+
+        .search-input:focus {
+            box-shadow: none;
+            border-color: #00aeef;
+        }
+
+    .search-btn {
+        border-radius: 0 50px 50px 0;
+        padding-left: 30px;
+        padding-right: 30px;
+        background-color: #00aeef;
+        border: none;
+        color: white;
+        font-weight: bold;
+        transition: background-color 0.3s;
+    }
+
+        .search-btn:hover {
+            background-color: #008acb;
+        }
 
     /* Kart Tasarımı */
-    .congress-card { 
-        border: none; border-radius: 15px; transition: transform 0.3s ease, box-shadow 0.3s ease; 
-        overflow: hidden; height: 100%; display: flex; flex-direction: column; background: #fff;
+    .congress-card {
+        border: none;
+        border-radius: 15px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        overflow: hidden;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        background: #fff;
     }
-    .congress-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
-    
-    .card-img-wrapper { 
-        height: 200px; background: #fff; display: flex; align-items: center; justify-content: center; 
-        position: relative; border-bottom: 1px solid #f1f1f1; 
+
+        .congress-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            border-color: #00aeef;
+        }
+
+    .card-img-wrapper {
+        height: 200px;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        border-bottom: 1px solid #f1f1f1;
     }
-    .card-img-wrapper img {
-        max-height: 100%; max-width: 100%; object-fit: contain;
+
+        .card-img-wrapper img {
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+        }
+
+    .card-body {
+        flex: 1;
     }
-    .card-body { flex: 1; }
-    
+
     /* Disabled Buton */
-    .btn.disabled { opacity: 1 !important; cursor: default; }
+    .btn.disabled {
+        opacity: 1 !important;
+        cursor: default;
+    }
 </style>
 
 <div class="container mt-5 pt-5 pb-5">
@@ -75,7 +123,7 @@
                     <div class="card h-100 shadow-sm congress-card">
 
                         <a href="/@kongre.Slug" target="_blank" class="text-decoration-none text-dark h-100 d-flex flex-column">
-                            
+
                             <div class="card-img-wrapper p-4">
                                 @if (!string.IsNullOrEmpty(kongre.LogoPath))
                                 {
@@ -88,7 +136,7 @@
                                         <div class="small">Görsel Yok</div>
                                     </div>
                                 }
-                                
+
                                 <div class="position-absolute top-0 end-0 m-3 bg-white rounded-3 shadow-sm p-2 text-center border" style="min-width: 60px;">
                                     <div class="fw-bold text-primary fs-4 lh-1">@kongre.StartDate.Day</div>
                                     <div class="small text-uppercase text-muted fw-bold" style="font-size: 0.7rem;">@kongre.StartDate.ToString("MMM")</div>
@@ -105,37 +153,45 @@
                                 </h5>
 
                                 <div class="d-flex align-items-center text-muted small mt-auto">
-                                    <i class="fas fa-map-marker-alt text-danger me-2"></i> 
+                                    <i class="fas fa-map-marker-alt text-danger me-2"></i>
                                     <span>@(kongre.City ?? "Online / Belirtilmemiş")</span>
                                 </div>
                             </div>
                         </a>
 
                         <div class="card-footer bg-white border-top-0 p-4 pt-0 d-flex justify-content-between gap-2">
-                            
-                            @if (registeredIds.Contains(kongre.Id))
+
+                            @if (registrationStatus.ContainsKey(kongre.Id))
                             {
                                 <div class="btn btn-success flex-fill fw-bold disabled" style="opacity: 1;">
                                     <i class="fas fa-check-circle me-1"></i> KAYITLI
                                 </div>
-                                
-                                <a asp-controller="Payment" asp-action="PayForConference" asp-route-conferenceId="@kongre.Id"
-                                   class="btn btn-outline-info flex-fill fw-bold">ÖDEME YAP</a>
+
+                                @if (registrationStatus[kongre.Id] == true) // Ödenmişse
+                                {
+                                    <div class="btn btn-light text-success flex-fill fw-bold disabled" style="opacity: 1;">
+                                        <i class="fas fa-receipt me-1"></i> ÖDENDİ
+                                    </div>
+                                }
+                                else
+                                {
+                                    <a asp-controller="Payment" asp-action="PayForConference" asp-route-conferenceId="@kongre.Id"
+                                       class="btn btn-outline-info flex-fill fw-bold">ÖDEME YAP</a>
+                                }
                             }
                             else
                             {
                                 @if (SignInManager.IsSignedIn(User))
                                 {
-                                    <a asp-controller="Registration" asp-action="Index" asp-route-id="@kongre.Id" 
+                                    <a asp-controller="Registration" asp-action="Index" asp-route-id="@kongre.Id"
                                        class="btn btn-outline-primary fw-bold flex-fill rounded-3">KAYIT OL</a>
                                 }
                                 else
                                 {
-                                    <a href="/Identity/Account/Register?returnUrl=/Registration/Index/@kongre.Id" 
+                                    <a href="/Identity/Account/Register?returnUrl=/Registration/Index/@kongre.Id"
                                        class="btn btn-outline-primary fw-bold flex-fill rounded-3">KAYIT OL</a>
                                 }
-                                
-                                }
+                            }
                         </div>
                     </div>
                 </div>
