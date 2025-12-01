@@ -400,26 +400,41 @@ namespace AntAbstract.Web.Controllers
             };
         }
 
-        // Yaka Kartı İndirme
+        // SubmissionController.cs içinde
+
         [HttpGet]
         public async Task<IActionResult> DownloadBadge(Guid id)
         {
-            var submission = await _context.Submissions.Include(s => s.Author).Include(s => s.Conference).FirstOrDefaultAsync(s => s.SubmissionId == id);
+            var submission = await _context.Submissions
+                .Include(s => s.Author)
+                .Include(s => s.Conference) // Logo ve Başlık için
+                .FirstOrDefaultAsync(s => s.SubmissionId == id);
+
             if (submission == null) return NotFound();
 
+            // --- GÜVENLİK KONTROLÜ: Reddedilen veya Geri Çekilenler Alamaz ---
+            if (submission.Status == SubmissionStatus.Withdrawn || submission.Status == SubmissionStatus.Rejected)
+            {
+                TempData["ErrorMessage"] = "Geri çekilen veya reddedilen bildiriler için yaka kartı oluşturulamaz.";
+                return RedirectToAction(nameof(Details), new { id = id });
+            }
+
+            // Modeli Doldur
             var model = new AcceptanceLetterViewModel
             {
                 AuthorFullName = $"{submission.Author.FirstName} {submission.Author.LastName}",
-                AuthorInstitution = submission.Author.University,
-                ConferenceName = submission.Conference.Title
+                AuthorInstitution = submission.Author.University ?? "Kurum Bilgisi Yok",
+                ConferenceName = submission.Conference.Title,
+                ConferenceLogoPath = submission.Conference.LogoPath // Logo için
             };
 
+            // PDF Ayarları (A6 Boyutunda)
             return new ViewAsPdf("BadgePreview", model)
             {
                 PageSize = Rotativa.AspNetCore.Options.Size.A6,
                 PageOrientation = Rotativa.AspNetCore.Options.Orientation.Portrait,
                 PageMargins = { Left = 0, Right = 0, Top = 0, Bottom = 0 },
-                CustomSwitches = "--disable-smart-shrinking --background --print-media-type"
+                CustomSwitches = "--disable-smart-shrinking --background --print-media-type --enable-local-file-access"
             };
         }
 

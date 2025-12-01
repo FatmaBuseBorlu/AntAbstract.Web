@@ -77,7 +77,7 @@
                         </div>
                         
                         <a asp-action="DownloadAcceptanceLetter" asp-route-id="@Model.SubmissionId" target="_blank" class="btn btn-sm btn-success w-100 fw-bold mb-2">
-                            <i class="fas fa-file-pdf me-1"></i> Kabul Mektubu İndir
+                            <i class="fas fa-certificate me-1"></i> Katılım Sertifikası İndir
                         </a>
 
                         <button class="btn btn-sm btn-primary w-100 fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#uploadPresentationCollapse">
@@ -96,15 +96,6 @@
                                 </form>
                             </div>
                         </div>
-                    }
-                    else if (Model.Status == SubmissionStatus.Presented)
-                    {
-                        <div class="alert alert-primary mb-2 small border-primary p-2">
-                            <i class="fas fa-microphone me-1"></i> Sunum tamamlandı.
-                        </div>
-                        <a asp-action="DownloadAcceptanceLetter" asp-route-id="@Model.SubmissionId" target="_blank" class="btn btn-sm btn-primary w-100 fw-bold">
-                            <i class="fas fa-certificate me-1"></i> Katılım Sertifikası İndir
-                        </a>
                     }
                     else if (Model.Status == SubmissionStatus.Withdrawn)
                     {
@@ -125,9 +116,12 @@
                 <h6 class="fw-bold text-muted small text-uppercase">Belgeler & Destek</h6>
                 <div class="d-grid gap-2 mt-2">
                     
-                    <a asp-action="DownloadBadge" asp-route-id="@Model.SubmissionId" target="_blank" class="btn btn-sm btn-outline-dark text-start">
-                        <i class="fas fa-id-badge me-2"></i> Yaka Kartı Oluştur
-                    </a>
+                    @if (Model.Status != SubmissionStatus.Withdrawn && Model.Status != SubmissionStatus.Rejected)
+                    {
+                         <a asp-action="DownloadBadge" asp-route-id="@Model.SubmissionId" target="_blank" class="btn btn-sm btn-outline-dark text-start">
+                            <i class="fas fa-id-badge me-2"></i> Yaka Kartı Oluştur
+                        </a>
+                    }
 
                     <a href="#" class="btn btn-sm btn-outline-secondary text-start disabled">
                         <i class="fas fa-file-invoice-dollar me-2"></i> Fatura/Dekont (Yakında)
