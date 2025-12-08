@@ -24,8 +24,6 @@ namespace AntAbstract.Web.Controllers
             _tenantContext = tenantContext;
         }
 
-        // --- Form Yönetimi Metotları ---
-
         public async Task<IActionResult> Index()
         {
             var conference = await _context.Conferences
@@ -68,7 +66,6 @@ namespace AntAbstract.Web.Controllers
             return View(reviewForm);
         }
 
-        // --- Kriter Yönetimi Metotları ---
 
         public async Task<IActionResult> ManageCriteria(Guid id)
         {
@@ -112,13 +109,10 @@ namespace AntAbstract.Web.Controllers
             else
             {
                 TempData["ErrorMessage"] = "Kriter eklenirken bir hata oluştu. Lütfen hataları düzeltip tekrar deneyin.";
-                // Hata durumunda sayfayı yeniden oluşturup göndermek yerine, doğrudan Redirect yapalım
-                // Validation hatalarını görmek için daha önceki versiyon daha iyiydi, şimdilik basit tutalım.
             }
             return RedirectToAction(nameof(ManageCriteria), new { id = model.NewCriterion.FormId });
         }
 
-        // ✅ YENİ EKLENDİ: Kriter Silme Metodu
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteCriterion(Guid criterionId, Guid formId)
@@ -138,10 +132,7 @@ namespace AntAbstract.Web.Controllers
             return RedirectToAction(nameof(ManageCriteria), new { id = formId });
         }
 
-        // ✅ YENİ EKLENDİ: Kriter Düzenleme Metotları (GET ve POST)
-
-        // GET
-        public async Task<IActionResult> EditCriterion(Guid id) // criterionId
+        public async Task<IActionResult> EditCriterion(Guid id) 
         {
             var criterion = await _context.ReviewCriteria.FindAsync(id);
             if (criterion == null) return NotFound();
@@ -156,7 +147,6 @@ namespace AntAbstract.Web.Controllers
             return View(criterion);
         }
 
-        // POST
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditCriterion(Guid id, [Bind("Id,QuestionText,DisplayOrder,CriterionType,FormId")] ReviewCriterion criterion)
@@ -171,7 +161,6 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(ManageCriteria), new { id = criterion.FormId });
             }
 
-            // Hata durumunda dropdown'ı tekrar doldur
             ViewBag.CriterionTypes = new List<SelectListItem>
             {
                 new SelectListItem { Value = "Scale1To10", Text = "Puanlama (1-10)" },

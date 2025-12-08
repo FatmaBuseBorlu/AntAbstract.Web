@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
-    // Bu controller'a sadece Admin ve Organizator rolündekiler erişebilir
     [Authorize(Roles = "Admin,Organizator")]
     public class AdminController : Controller
     {
@@ -22,15 +21,12 @@ namespace AntAbstract.Web.Controllers
             _roleManager = roleManager; 
         }
 
-        // GET: Admin/UserList
-        // Sistemdeki tüm kullanıcıları listeler
         public async Task<IActionResult> UserList()
         {
             var users = await _userManager.Users.ToListAsync();
             return View(users);
         }
-        // GET: Admin/ManageRoles/some-user-id
-        // Bir kullanıcının rollerini yönetme formunu gösterir
+
         public async Task<IActionResult> ManageRoles(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
@@ -46,7 +42,7 @@ namespace AntAbstract.Web.Controllers
                 Roles = new List<AntAbstract.Web.Models.ViewModels.UserRoleViewModel>()
             };
 
-            // Sistemdeki tüm rolleri al
+            
             foreach (var role in _roleManager.Roles.ToList())
             {
                 var userRoleViewModel = new AntAbstract.Web.Models.ViewModels.UserRoleViewModel
@@ -58,8 +54,7 @@ namespace AntAbstract.Web.Controllers
             }
             return View(viewModel);
         }
-        // POST: Admin/ManageRoles
-        // Kullanıcının rollerini günceller
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ManageRoles(AntAbstract.Web.Models.ViewModels.ManageUserRolesViewModel model)
@@ -70,23 +65,19 @@ namespace AntAbstract.Web.Controllers
                 return NotFound();
             }
 
-            // Önce kullanıcının mevcut tüm rollerini al
+     
             var existingRoles = await _userManager.GetRolesAsync(user);
-            // Sonra bu mevcut rollerden, formda SEÇİLMEMİŞ olanları kaldır
             var result = await _userManager.RemoveFromRolesAsync(user, existingRoles);
 
             if (!result.Succeeded)
             {
-                // Hata yönetimi...
                 return View(model);
             }
 
-            // Şimdi de formda SEÇİLMİŞ olan rolleri kullanıcıya ekle
             result = await _userManager.AddToRolesAsync(user, model.Roles.Where(r => r.IsSelected).Select(r => r.RoleName));
 
             if (!result.Succeeded)
             {
-                // Hata yönetimi...
                 return View(model);
             }
 

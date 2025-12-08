@@ -21,7 +21,7 @@ namespace AntAbstract.Web.Models.ViewModels
         public List<Conference> MyConferences { get; set; } = new List<Conference>();
         public DashboardViewModel()
         {
-            // Listelerin null olmasını engellemek için boş olarak başlatıyoruz.
+         
             ChartLabels = new List<string>();
             ChartData = new List<int>();
         }

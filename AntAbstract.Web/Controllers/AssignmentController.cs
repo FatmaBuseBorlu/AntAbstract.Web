@@ -35,8 +35,6 @@ namespace AntAbstract.Web.Controllers
             _userManager = userManager;
             _recommendationService = recommendationService;
         }
-
-        // GET: Assignment/Index (Bu metot sende zaten vardı)
         public async Task<IActionResult> Index()
         {
             if (_tenantContext.Current == null)
@@ -62,10 +60,6 @@ namespace AntAbstract.Web.Controllers
             return View(submissions);
         }
 
-        // ------------------ ✅ YENİ METOTLARI BURAYA YAPIŞTIR ------------------
-
-        // GET: Assignment/Assign/5
-        // Belirli bir özete hakem atama formunu gösterir.
         public async Task<IActionResult> Assign(Guid id)
         {
             var submission = await _context.Submissions.Include(s => s.Author).FirstOrDefaultAsync(s => s.SubmissionId == id);
@@ -85,14 +79,10 @@ namespace AntAbstract.Web.Controllers
             return View(viewModel);
         }
 
-        // POST: Assignment/Assign
-        // AssignmentController.cs içine eklenecek
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AssignReviewer(Guid submissionId, string reviewerId)
         {
-            // 1. Bu atamanın daha önce yapılıp yapılmadığını kontrol et
             var alreadyExists = await _context.ReviewAssignments
                 .AnyAsync(ra => ra.SubmissionId == submissionId && ra.ReviewerId == reviewerId);
 
@@ -102,21 +92,19 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction("Assign", new { id = submissionId });
             }
 
-            // 2. Yeni atama kaydını oluştur
             var newAssignment = new ReviewAssignment
             {
                 ReviewAssignmentId = Guid.NewGuid(),
                 SubmissionId = submissionId,
                 ReviewerId = reviewerId,
                 AssignedDate = DateTime.UtcNow,
-                DueDate = DateTime.UtcNow.AddDays(14), // Örnek olarak 2 hafta süre verelim
+                DueDate = DateTime.UtcNow.AddDays(14), 
                 Status = "Bekleniyor"
             };
 
             _context.ReviewAssignments.Add(newAssignment);
             await _context.SaveChangesAsync();
 
-            // 3. (İsteğe bağlı ama önerilir) Hakeme bilgilendirme e-postası gönder
             try
             {
                 var reviewer = await _userManager.FindByIdAsync(reviewerId);
@@ -130,13 +118,11 @@ namespace AntAbstract.Web.Controllers
             }
             catch (Exception ex)
             {
-                // E-posta hatası olursa logla ama programı durdurma
                 System.Diagnostics.Debug.WriteLine($"E-POSTA GÖNDERİM HATASI (HAKEM ATAMA): {ex.Message}");
             }
 
 
             TempData["SuccessMessage"] = $"Hakem başarıyla atandı.";
-            // Kullanıcıyı ana özet atama listesine geri yönlendir
             return RedirectToAction("Index");
         }
 

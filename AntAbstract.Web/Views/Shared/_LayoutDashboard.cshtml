@@ -3,7 +3,7 @@
 @inject UserManager<AppUser> UserManager
 
 @{
-    // Kullanıcı bilgilerini ve profil resmini çekiyoruz
+   
     var user = await UserManager.GetUserAsync(User);
     var profileImg = user?.ProfileImagePath;
     var displayName = user?.FirstName ?? User.Identity.Name;
@@ -27,7 +27,6 @@
             overflow-x: hidden;
         }
 
-        /* SIDEBAR TASARIMI */
         .sidebar {
             width: 260px;
             height: 100vh;
@@ -100,8 +99,6 @@
             align-items: center;
             margin-bottom: 30px;
         }
-
-        /* KART TASARIMI */
         .dashboard-card {
             background: #fff;
             border-radius: 12px;

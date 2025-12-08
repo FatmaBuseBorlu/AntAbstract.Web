@@ -11,10 +11,8 @@ namespace AntAbstract.Infrastructure.Data
 {
     public static class DbInitializer
     {
-        // Parametreye AppDbContext eklendi
         public static async Task Initialize(UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager, AppDbContext context)
         {
-            // 1. ROLLERİ OLUŞTURMA
             string[] roleNames = { "Admin", "Organizator", "Reviewer", "Author" };
             foreach (var roleName in roleNames)
             {
@@ -24,7 +22,6 @@ namespace AntAbstract.Infrastructure.Data
                 }
             }
 
-            // 2. ADMIN KULLANICISI
             var adminUser = new AppUser
             {
                 UserName = "admin@antabstract.com",
@@ -46,12 +43,8 @@ namespace AntAbstract.Infrastructure.Data
                 }
             }
 
-            // --- YENİ EKLENEN KISIM: ÖRNEK KONGRELER ---
-
-            // Eğer veritabanında hiç Tenant yoksa ekle
             if (!context.Tenants.Any())
             {
-                // 1. Veteriner Kongresi
                 var tenantVet = new Tenant
                 {
                     Id = Guid.NewGuid(),
@@ -60,7 +53,6 @@ namespace AntAbstract.Infrastructure.Data
                     LogoUrl = "https://placehold.co/200x200/0056b3/ffffff?text=VET+LOGO"
                 };
 
-                // 2. Teknoloji Kongresi
                 var tenantTech = new Tenant
                 {
                     Id = Guid.NewGuid(),
@@ -69,7 +61,6 @@ namespace AntAbstract.Infrastructure.Data
                     LogoUrl = "https://placehold.co/200x200/ff5722/ffffff?text=AI+SUMMIT"
                 };
 
-                // 3. Turizm Kongresi
                 var tenantTourism = new Tenant
                 {
                     Id = Guid.NewGuid(),
@@ -81,7 +72,6 @@ namespace AntAbstract.Infrastructure.Data
                 context.Tenants.AddRange(tenantVet, tenantTech, tenantTourism);
                 await context.SaveChangesAsync();
 
-                // --- KONFERANSLAR (Detaylar) ---
 
                 var confVet = new Conference
                 {

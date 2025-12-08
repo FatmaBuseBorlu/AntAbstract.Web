@@ -10,7 +10,6 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace AntAbstract.Web.Controllers
 {
-    // Sadece Admin ve Organizator rolündekiler erişebilir
     [Authorize(Roles = "Admin,Organizator")]
     public class ReviewerController : Controller
     {
@@ -27,8 +26,6 @@ namespace AntAbstract.Web.Controllers
             _userManager = userManager;
         }
 
-        // GET: Reviewer/Index
-        //  GÜNCELLENMİŞ VE DÜZELTİLMİŞ METOT
         public async Task<IActionResult> Index()
         {
             var conference = await _context.Conferences.FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
@@ -44,7 +41,6 @@ namespace AntAbstract.Web.Controllers
 
         public async Task<IActionResult> Create()
         {
-            // Sisteme kayıtlı ama bu konferansta henüz hakem olarak atanmamış kullanıcıları listele
             var conference = await _context.Conferences.FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
             var existingReviewerUserIds = await _context.Reviewers
                 .Where(r => r.ConferenceId == conference.Id)
@@ -66,7 +62,6 @@ namespace AntAbstract.Web.Controllers
             var conference = await _context.Conferences.FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
             reviewer.ConferenceId = conference.Id;
 
-            // AppUserId'nin Guid değil string olduğunu varsayarak doğrulama yapısını düzeltiyoruz.
             ModelState.Remove(nameof(reviewer.Conference));
             ModelState.Remove(nameof(reviewer.AppUser));
 
@@ -75,7 +70,6 @@ namespace AntAbstract.Web.Controllers
                 _context.Add(reviewer);
                 await _context.SaveChangesAsync();
 
-                // Kullanıcıya "Reviewer" rolünü ata (eğer zaten yoksa)
                 var user = await _userManager.FindByIdAsync(reviewer.AppUserId);
                 if (user != null && !await _userManager.IsInRoleAsync(user, "Reviewer"))
                 {
@@ -84,17 +78,12 @@ namespace AntAbstract.Web.Controllers
 
                 return RedirectToAction(nameof(Index));
             }
-            // Hata durumunda dropdown'ı tekrar doldur
             var existingReviewerUserIds = await _context.Reviewers.Where(r => r.ConferenceId == conference.Id).Select(r => r.AppUserId).ToListAsync();
             var potentialReviewers = await _userManager.Users.Where(u => !existingReviewerUserIds.Contains(u.Id)).ToListAsync();
             ViewBag.AppUserId = new SelectList(potentialReviewers, "Id", "Email", reviewer.AppUserId);
             return View(reviewer);
         }
 
-        // Diğer Edit, Details, Delete metotları scaffolding ile oluşturulabilir veya 
-        // bu mantığa göre uyarlanabilir. Bu temel yapı, hatayı çözmelidir.
-
-// POST: Reviewer/Assign
 [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Assign(string userId, Guid conferenceId)
@@ -102,17 +91,15 @@ namespace AntAbstract.Web.Controllers
             if (string.IsNullOrEmpty(userId) || conferenceId == Guid.Empty)
             {
                 ModelState.AddModelError("", "Kullanıcı veya Kongre seçimi boş olamaz.");
-                return RedirectToAction(nameof(Index)); // Hata durumunda Index'e dön
+                return RedirectToAction(nameof(Index)); 
             }
 
-            // 1. Kullanıcıya "Reviewer" Rolü Atama
             var user = await _userManager.FindByIdAsync(userId);
             if (user != null && !await _userManager.IsInRoleAsync(user, "Reviewer"))
             {
                 await _userManager.AddToRoleAsync(user, "Reviewer");
             }
 
-            // 2. Reviewer Tablosuna Kayıt Ekleme (Bu Kongre için)
             var existingReviewer = await _context.Reviewers
                 .FirstOrDefaultAsync(r => r.AppUserId == userId && r.ConferenceId == conferenceId);
 
@@ -120,10 +107,10 @@ namespace AntAbstract.Web.Controllers
             {
                 var reviewer = new Reviewer
                 {
-                    Id = Guid.NewGuid(), // ID'yi burada oluşturmak daha güvenli
+                    Id = Guid.NewGuid(), 
                     AppUserId = userId,
                     ConferenceId = conferenceId,
-                    IsActive = true // Yeni atanan hakem aktif
+                    IsActive = true 
                 };
                 _context.Reviewers.Add(reviewer);
                 await _context.SaveChangesAsync();
@@ -158,8 +145,6 @@ namespace AntAbstract.Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: Reviewer/Edit/5
-        // Hakem düzenleme formunu gösterir
         public async Task<IActionResult> Edit(Guid? id)
         {
             if (id == null)
@@ -168,7 +153,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             var reviewer = await _context.Reviewers
-                .Include(r => r.AppUser) // Email'i gösterebilmek için AppUser'ı dahil et
+                .Include(r => r.AppUser) 
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             if (reviewer == null)
@@ -178,8 +163,6 @@ namespace AntAbstract.Web.Controllers
             return View(reviewer);
         }
 
-        // POST: Reviewer/Edit/5
-        // Hakem düzenleme formundan gelen bilgileri kaydeder
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, string expertiseAreas, bool isActive)
@@ -190,7 +173,7 @@ namespace AntAbstract.Web.Controllers
                 return NotFound();
             }
 
-            // Formdan gelen yeni verileri ata
+           
             reviewerToUpdate.ExpertiseAreas = expertiseAreas;
             reviewerToUpdate.IsActive = isActive;
 
@@ -200,7 +183,6 @@ namespace AntAbstract.Web.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                // Hata yönetimi (eğer kayıt o sırada başkası tarafından silinirse vb.)
                 if (!_context.Reviewers.Any(e => e.Id == id))
                 {
                     return NotFound();

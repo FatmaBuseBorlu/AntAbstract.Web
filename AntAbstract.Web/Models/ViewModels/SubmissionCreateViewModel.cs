@@ -24,12 +24,9 @@ namespace AntAbstract.Web.Models.ViewModels
         [Display(Name = "Sunum Türü")]
         public int PresentationTypeId { get; set; }
 
-        // --- HATA VEREN VE TEKRAR EDEN KISIM TEMİZLENDİ ---
         [Display(Name = "Bildiri Dosyası (Word/PDF)")]
-        // SubmissionFile'ın tanımını buraya aldık.
         public IFormFile SubmissionFile { get; set; }
 
-        // --- CONTROLLER'IN ARADIĞI ORTAK YAZARLAR LİSTESİ ---
         [Required(ErrorMessage = "En az bir yazar (siz dahil) olmalıdır.")]
         public List<SubmissionAuthorViewModel> Authors { get; set; } = new List<SubmissionAuthorViewModel>();
 
@@ -37,7 +34,6 @@ namespace AntAbstract.Web.Models.ViewModels
         [Display(Name = "Başvuru Yapılacak Kongre")]
         public Guid ConferenceId { get; set; }
 
-        // Dropdown içini dolduracak liste
         public List<SelectListItem> AvailableConferences { get; set; } = new List<SelectListItem>();
     }
 }

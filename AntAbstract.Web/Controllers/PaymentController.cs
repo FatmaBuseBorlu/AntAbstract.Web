@@ -20,32 +20,25 @@ namespace AntAbstract.Web.Controllers
             _context = context;
             _userManager = userManager;
         }
-        // PaymentController.cs içine ekleyin:
-
-        // GET: /Payment/PayForConference?conferenceId=...
         [HttpGet]
         public async Task<IActionResult> PayForConference(Guid conferenceId)
         {
             var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Challenge(); // Giriş yapmamışsa giriş sayfasına at
+            if (user == null) return Challenge(); 
 
-            // 1. Kullanıcının bu kongreye kaydı var mı kontrol et
+           
             var registration = await _context.Registrations
                 .FirstOrDefaultAsync(r => r.ConferenceId == conferenceId && r.AppUserId == user.Id);
 
-            // 2. Kaydı YOKSA -> Önce Kayıt Ol sayfasına gönder
             if (registration == null)
             {
                 TempData["InfoMessage"] = "Ödeme yapabilmek için önce kayıt olmalısınız.";
                 return RedirectToAction("Index", "Registration", new { id = conferenceId });
             }
 
-            // 3. Kaydı VARSA -> O kaydın ID'si ile Ödeme Sayfasına (Index) gönder
             return RedirectToAction("Index", new { id = registration.Id });
         }
 
-        // GET: /Payment/Index/{id}
-        // IMPORTANT: The parameter name must match the route parameter 'id'
         [HttpGet]
         public async Task<IActionResult> Index(Guid id)
         {
@@ -57,7 +50,6 @@ namespace AntAbstract.Web.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Challenge();
 
-            // Find the registration record using the ID passed in the URL
             var registration = await _context.Registrations
                 .Include(r => r.Conference)
                 .FirstOrDefaultAsync(r => r.Id == id && r.AppUserId == user.Id);
@@ -73,13 +65,11 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction("Index", "Dashboard");
             }
 
-            // Create the model for the view
             var paymentModel = new Payment
             {
-                Amount = 1500, // Example fixed amount
+                Amount = 1500, 
                 Currency = "TRY",
                 BillingName = $"{user.FirstName} {user.LastName}",
-                // Use the Registration ID for tracking
                 RelatedSubmissionId = registration.Id,
                 ConferenceId = registration.ConferenceId,
                 Conference = registration.Conference
@@ -88,14 +78,11 @@ namespace AntAbstract.Web.Controllers
             return View(paymentModel);
         }
 
-        // ... (Keep your existing ProcessPayment method here) ...
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ProcessPayment(Payment model)
         {
-            // ... (Your existing ProcessPayment logic) ...
-            // Ensure this method is also present as you wrote it before
-            return View(); // Placeholder return, use your actual logic
+            return View(); 
         }
     }
 }

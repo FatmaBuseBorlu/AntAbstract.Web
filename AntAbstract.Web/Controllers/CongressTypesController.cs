@@ -19,13 +19,11 @@ namespace AntAbstract.Web.Controllers
             _context = context;
         }
 
-        // GET: CongressTypes
         public async Task<IActionResult> Index()
         {
             return View(await _context.CongressTypes.ToListAsync());
         }
 
-        // GET: CongressTypes/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -43,15 +41,11 @@ namespace AntAbstract.Web.Controllers
             return View(congressType);
         }
 
-        // GET: CongressTypes/Create
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: CongressTypes/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Name")] CongressType congressType)
@@ -65,7 +59,6 @@ namespace AntAbstract.Web.Controllers
             return View(congressType);
         }
 
-        // GET: CongressTypes/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -81,9 +74,6 @@ namespace AntAbstract.Web.Controllers
             return View(congressType);
         }
 
-        // POST: CongressTypes/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name")] CongressType congressType)
@@ -116,7 +106,6 @@ namespace AntAbstract.Web.Controllers
             return View(congressType);
         }
 
-        // GET: CongressTypes/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -134,7 +123,6 @@ namespace AntAbstract.Web.Controllers
             return View(congressType);
         }
 
-        // POST: CongressTypes/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)

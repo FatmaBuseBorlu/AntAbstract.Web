@@ -20,8 +20,6 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<Tenant> Tenants => Set<Tenant>();
         public DbSet<Conference> Conferences => Set<Conference>();
         public DbSet<Submission> Submissions => Set<Submission>();
-
-        // Hakemlik Modülü Tabloları
         public DbSet<Reviewer> Reviewers { get; set; }
         public DbSet<ReviewAssignment> ReviewAssignments { get; set; }
         public DbSet<Review> Reviews { get; set; }
@@ -58,7 +56,6 @@ namespace AntAbstract.Infrastructure.Context
                 .HasForeignKey(ra => ra.ReviewerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // DÜZELTİLDİ: Message ilişkileri tek bir blokta birleştirildi.
             builder.Entity<Message>(entity =>
             {
                 entity.HasOne(m => m.Sender)

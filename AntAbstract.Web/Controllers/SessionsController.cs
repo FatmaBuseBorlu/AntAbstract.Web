@@ -23,7 +23,6 @@ namespace AntAbstract.Web.Controllers
             _tenantContext = tenantContext;
         }
 
-        // GET: Sessions
         public async Task<IActionResult> Index()
         {
             if (_tenantContext.Current == null) return RedirectToAction("Index", "Home");
@@ -46,7 +45,6 @@ namespace AntAbstract.Web.Controllers
             return View(sessions);
         }
 
-        // GET: Sessions/Create
         public async Task<IActionResult> Create()
         {
             if (_tenantContext.Current == null) return RedirectToAction("Index", "Home");
@@ -61,7 +59,6 @@ namespace AntAbstract.Web.Controllers
             return View(session);
         }
 
-        // POST: Sessions/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Title,SessionDate,Location,ConferenceId")] Session session)
@@ -78,7 +75,6 @@ namespace AntAbstract.Web.Controllers
             return View(session);
         }
 
-        // GET: Sessions/Manage/5
         public async Task<IActionResult> Manage(Guid id)
         {
             var session = await _context.Sessions
@@ -93,7 +89,6 @@ namespace AntAbstract.Web.Controllers
                 .OrderBy(s => s.Title)
                 .ToListAsync();
 
-            // ✅ ÖNEMLİ DÜZELTME: Karar alanı "FinalDecision" ve değeri "Kabul Edildi" olarak güncellendi.
             var availableSubmissions = await _context.Submissions
                 .Include(s => s.Author)
                 .Where(s => s.ConferenceId == session.ConferenceId &&
@@ -112,7 +107,6 @@ namespace AntAbstract.Web.Controllers
             return View("Manage", viewModel);
         }
 
-        // POST: Sessions/AddToSession
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddToSession(Guid sessionId, Guid submissionId)
@@ -126,7 +120,6 @@ namespace AntAbstract.Web.Controllers
             return RedirectToAction(nameof(Manage), new { id = sessionId });
         }
 
-        // POST: Sessions/RemoveFromSession
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RemoveFromSession(Guid sessionId, Guid submissionId)
@@ -140,7 +133,6 @@ namespace AntAbstract.Web.Controllers
             return RedirectToAction(nameof(Manage), new { id = sessionId });
         }
 
-        // GET: Sessions/Edit/5
         public async Task<IActionResult> Edit(Guid? id)
         {
             if (id == null) return NotFound();
@@ -172,8 +164,6 @@ namespace AntAbstract.Web.Controllers
             }
             return View(session);
         }
-
-        // GET: Sessions/Delete/5
         public async Task<IActionResult> Delete(Guid? id)
         {
             if (id == null) return NotFound();
@@ -186,7 +176,6 @@ namespace AntAbstract.Web.Controllers
             return View(session);
         }
 
-        // POST: Sessions/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)

@@ -27,13 +27,10 @@ namespace AntAbstract.Web.Controllers
             _userManager = userManager;
         }
 
-        // 1. ANA SAYFA
         public async Task<IActionResult> Index()
         {
-            // --- KULLANICININ KAYIT VE ÖDEME DURUMUNU ÇEK ---
             var user = await _userManager.GetUserAsync(User);
 
-            // Sözlük: <KongreID, ÖdendiMi>
             var registrationStatus = new Dictionary<Guid, bool>();
 
             if (user != null)
@@ -43,11 +40,8 @@ namespace AntAbstract.Web.Controllers
                     .ToDictionaryAsync(r => r.ConferenceId, r => r.IsPaid);
             }
 
-            // View'a bu sözlüðü gönderiyoruz (Kritik Güncelleme)
             ViewBag.RegistrationStatus = registrationStatus;
-            // -----------------------------------------------
 
-            // SENARYO A: Kongre Sitesi (Tenant)
             if (_tenantContext.Current != null)
             {
                 var currentConference = await _context.Conferences
@@ -59,7 +53,6 @@ namespace AntAbstract.Web.Controllers
                 return View("ConferenceHome", currentConference);
             }
 
-            // SENARYO B: Ana Portal (Liste)
             var activeConferences = await _context.Conferences
                 .Include(c => c.Tenant)
                 .OrderBy(c => c.StartDate)
@@ -68,7 +61,6 @@ namespace AntAbstract.Web.Controllers
             return View(activeConferences);
         }
 
-        // 2. KONGRELER LÝSTESÝ SAYFASI
         public async Task<IActionResult> Congresses()
         {
             var allCongresses = await _context.Conferences
@@ -76,7 +68,7 @@ namespace AntAbstract.Web.Controllers
                .OrderBy(c => c.StartDate)
                .ToListAsync();
 
-            // --- KAYIT DURUMUNU BURADA DA ÇEKÝYORUZ ---
+
             var user = await _userManager.GetUserAsync(User);
             var registrationStatus = new Dictionary<Guid, bool>();
 
@@ -87,7 +79,7 @@ namespace AntAbstract.Web.Controllers
                    .ToDictionaryAsync(r => r.ConferenceId, r => r.IsPaid);
             }
             ViewBag.RegistrationStatus = registrationStatus;
-            // -------------------------------------------
+
 
             return View(allCongresses);
         }

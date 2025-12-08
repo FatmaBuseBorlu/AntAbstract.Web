@@ -21,14 +21,12 @@ namespace AntAbstract.Web.Controllers
             _tenantContext = tenantContext;
         }
 
-        // GET: RegistrationTypes
         public async Task<IActionResult> Index()
         {
             var appDbContext = _context.RegistrationTypes.Include(r => r.Conference);
             return View(await appDbContext.ToListAsync());
         }
 
-        // GET: RegistrationTypes/Details/5
         public async Task<IActionResult> Details(Guid? id)
         {
             if (id == null)
@@ -47,9 +45,6 @@ namespace AntAbstract.Web.Controllers
             return View(registrationType);
         }
 
-        // Controllers/RegistrationTypesController.cs içine
-
-        // GET: RegistrationTypes/Create - GÜNCELLENDİ
         public async Task<IActionResult> Create()
         {
             var conference = await _context.Conferences
@@ -62,7 +57,6 @@ namespace AntAbstract.Web.Controllers
             return View(registrationType);
         }
 
-        // POST: RegistrationTypes/Create - GÜNCELLENDİ
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Name,Description,Price,Currency,ConferenceId")] RegistrationType registrationType)
@@ -77,7 +71,6 @@ namespace AntAbstract.Web.Controllers
             return View(registrationType);
         }
 
-        // GET: RegistrationTypes/Edit/5
         public async Task<IActionResult> Edit(Guid? id)
         {
             if (id == null)
@@ -94,9 +87,6 @@ namespace AntAbstract.Web.Controllers
             return View(registrationType);
         }
 
-        // POST: RegistrationTypes/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name,Description,Price,Currency,ConferenceId")] RegistrationType registrationType)
@@ -129,8 +119,6 @@ namespace AntAbstract.Web.Controllers
             ViewData["ConferenceId"] = new SelectList(_context.Conferences, "Id", "Title", registrationType.ConferenceId);
             return View(registrationType);
         }
-
-        // GET: RegistrationTypes/Delete/5
         public async Task<IActionResult> Delete(Guid? id)
         {
             if (id == null)
@@ -149,7 +137,6 @@ namespace AntAbstract.Web.Controllers
             return View(registrationType);
         }
 
-        // POST: RegistrationTypes/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)

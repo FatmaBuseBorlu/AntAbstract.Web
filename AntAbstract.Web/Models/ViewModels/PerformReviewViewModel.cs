@@ -8,7 +8,6 @@ namespace AntAbstract.Web.Models.ViewModels
         public ReviewAssignment Assignment { get; set; }
         public List<ReviewCriterion> Criteria { get; set; }
 
-        // Cevapları toplamak için bu listeyi kullanacağız
         public List<ReviewAnswer> Answers { get; set; }
     }
 }

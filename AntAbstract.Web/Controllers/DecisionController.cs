@@ -29,9 +29,6 @@ namespace AntAbstract.Web.Controllers
             _userManager = userManager;
         }
 
-        // GET: Decision
-        // DecisionController.cs içindeki Index() metodunun yeni hali:
-
         public async Task<IActionResult> Index()
         {
             var conference = await _context.Conferences
@@ -49,12 +46,12 @@ namespace AntAbstract.Web.Controllers
                 .Where(s => s.ConferenceId == conference.Id);
 
             var awaitingDecision = await allSubmissions
-                // FinalDecision'ın string olmasından vazgeçtik, bunun yerine Status enum'ını kontrol ediyoruz
+              
                 .Where(s => s.Status == SubmissionStatus.UnderReview && s.ReviewAssignments.Any() && s.ReviewAssignments.All(ra => ra.Status == "Completed"))
                 .ToListAsync();
 
             var decided = await allSubmissions
-                // Karar verilmiş olanları görmek için Status'un New veya UnderReview dışında bir değer alıp almadığını kontrol ediyoruz
+               
                 .Where(s => s.Status != SubmissionStatus.New && s.Status != SubmissionStatus.UnderReview)
                 .ToListAsync();
 
@@ -67,13 +64,13 @@ namespace AntAbstract.Web.Controllers
             return View(viewModel);
         }
 
-        // GET: Decision/MakeDecision/5
+        
         public async Task<IActionResult> MakeDecision(Guid id)
         {
             var submission = await _context.Submissions
                 .Include(s => s.Author)
                 .Include(s => s.ReviewAssignments)
-                    .ThenInclude(ra => ra.AppUser) // Hakem bilgilerini (AppUser) de yükle
+                    .ThenInclude(ra => ra.AppUser) 
                 .Include(s => s.ReviewAssignments)
                     .ThenInclude(ra => ra.Review)
                         .ThenInclude(r => r.Answers)
@@ -84,8 +81,6 @@ namespace AntAbstract.Web.Controllers
 
             return View(submission);
         }
-
-        // DecisionController.cs içindeki MakeDecision(POST) metodunun yeni hali:
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -100,36 +95,29 @@ namespace AntAbstract.Web.Controllers
             var submissionToUpdate = await _context.Submissions.Include(s => s.Author).FirstOrDefaultAsync(s => s.SubmissionId == submissionId);
             if (submissionToUpdate == null) return NotFound();
 
-            // --- BURASI KRİTİK DÜZELTME: STRING'İ ENUM'A ÇEVİRME ---
-            // Eğer finalDecision string'i geçerli bir Enum değeri ise atama yap.
             if (Enum.TryParse<SubmissionStatus>(finalDecision, true, out var statusEnum))
             {
                 submissionToUpdate.Status = statusEnum;
             }
             else
             {
-                // Eğer string, enum değeri değilse (örn: "Kabul Edildi" ise), hata fırlatabiliriz veya varsayılan bir duruma atayabiliriz.
-                // Şimdilik varsayılan olarak "Kabul Edildi" durumuna çevirelim.
-                submissionToUpdate.Status = SubmissionStatus.Accepted; // Veya loglanıp hata verilmeli
-            }
-            // --------------------------------------------------------
 
-            submissionToUpdate.FinalDecision = finalDecision; // FinalDecision string'ini hala tutabiliriz
+                submissionToUpdate.Status = SubmissionStatus.Accepted; 
+            }
+
+
+            submissionToUpdate.FinalDecision = finalDecision; 
             submissionToUpdate.DecisionDate = DateTime.UtcNow;
 
-            // submissionToUpdate.Status = finalDecision; <-- BU ESKİ HATALI SATIRI SİLMİŞ OLMALISINIZ
 
             await _context.SaveChangesAsync();
 
-            // ... (E-posta gönderme kısmı aynı kalacak) ...
 
             try
             {
-                // Yazarın DisplayName'ini kontrol ediyoruz
                 var author = submissionToUpdate.Author ?? await _userManager.FindByIdAsync(submissionToUpdate.AuthorId);
                 if (author != null && !string.IsNullOrEmpty(author.Email))
                 {
-                    // FinalDecision string'ini kullanıyoruz
                     var subject = $"Özetiniz Hakkında Karar Verildi: {finalDecision}";
                     var message = $"<h1>Merhaba {author.FirstName},</h1><p>'{submissionToUpdate.Title}' başlıklı özetiniz hakkında kongre komitesi tarafından bir karar verilmiştir.</p><p><strong>Nihai Karar: {finalDecision}</strong></p><p>Detayları görmek için sisteme giriş yapabilirsiniz.</p>";
                     await _emailService.SendEmailAsync(author.Email, subject, message);

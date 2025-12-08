@@ -8,18 +8,15 @@ using AntAbstract.Application.Interfaces;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using System.IO; // File.Exists için bu using eklenmeli
+using System.IO; 
 
 namespace AntAbstract.Infrastructure.Services
 {
-    // Bu sınıf, Application katmanındaki arayüzü uygular.
-    // Görevi, PDF oluşturma işlemini başlatmaktır.
     public class PdfCertificateService : ICertificateService
     {
         public byte[] GenerateAcceptanceCertificate(CertificateDataDto data)
         {
-            // QuestPDF'in topluluk lisansını kullandığımızı belirtiyoruz.
-            // Bu satırı uygulamanın başlangıcında bir kez çağırmak da yeterlidir.
+  
             QuestPDF.Settings.License = LicenseType.Community;
 
             var document = new CertificateDocument(data);
@@ -27,8 +24,6 @@ namespace AntAbstract.Infrastructure.Services
         }
     }
 
-    // Bu sınıf, PDF'in şablonunu ve içeriğini tanımlar.
-    // QuestPDF'in IDocument arayüzünü uygular.
     public class CertificateDocument : IDocument
     {
         private readonly CertificateDataDto _model;
@@ -45,16 +40,13 @@ namespace AntAbstract.Infrastructure.Services
                 {
                     page.Size(PageSizes.A4);
                     page.Margin(1.5f, Unit.Centimetre);
-                    // Not: "Calibri" fontunun sunucuda yüklü olduğundan emin olun.
                     page.DefaultTextStyle(x => x.FontSize(12).FontFamily("Calibri")); 
-
-                    // Sayfa Üst Bilgisi (Header)
                     page.Header().Row(row =>
                     {
-                        // Sol taraf: Logo ve Kongre Adı
+            
                         row.RelativeItem().Column(col =>
                         {
-                            // Logo dosyası varsa ekle
+      
                             if (!string.IsNullOrEmpty(_model.CongressLogoPath) && File.Exists(_model.CongressLogoPath))
                                 col.Item().MaxHeight(60).Image(_model.CongressLogoPath).FitArea();
 
@@ -62,16 +54,15 @@ namespace AntAbstract.Infrastructure.Services
                             col.Item().Text("an Open Access Congress").FontSize(10);
                         });
 
-                        // Sağ taraf: Rozetler/Sponsorlar (isteğe bağlı)
-                        row.ConstantItem(150); // Sağda boşluk bırakmak için veya rozet eklemek için
+                       
+                        row.ConstantItem(150); 
                     });
 
-                    // Sayfa İçeriği (Content)
                     page.Content().PaddingVertical(1, Unit.Centimetre).Column(col =>
                     {
-                        col.Spacing(25); // Öğeler arasına dikey boşluk ekle
+                        col.Spacing(25); 
 
-                        // Defne Tacı görseli
+         
                         if (!string.IsNullOrEmpty(_model.LaurelWreathImagePath) && File.Exists(_model.LaurelWreathImagePath))
                             col.Item().AlignCenter().MaxHeight(80).Image(_model.LaurelWreathImagePath).FitArea();
 
@@ -99,15 +90,14 @@ namespace AntAbstract.Infrastructure.Services
                         });
                     });
 
-                    // Sayfa Alt Bilgisi (Footer)
                     page.Footer().Row(row =>
                     {
-                        // Sol alt: Konum ve tarih
+                        
                         row.RelativeItem().Column(col => {
                             col.Item().Text($"{_model.CongressLocation}, {_model.AcceptanceDate:MMMM yyyy}");
                         });
 
-                        // Sağ alt: İmza ve Unvan
+                        
                         row.RelativeItem().AlignRight().Column(col =>
                         {
                             if (!string.IsNullOrEmpty(_model.SignatureImagePath) && File.Exists(_model.SignatureImagePath))

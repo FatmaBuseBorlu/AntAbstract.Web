@@ -7,14 +7,14 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
-using AntAbstract.Domain.Entities; // AppUser burada
+using AntAbstract.Domain.Entities; 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Http; // Dosya yükleme için
+using Microsoft.AspNetCore.Http; 
 
 namespace AntAbstract.Web.Areas.Identity.Pages.Account
 {
@@ -24,7 +24,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
         private readonly SignInManager<AppUser> _signInManager;
         private readonly UserManager<AppUser> _userManager;
         private readonly ILogger<RegisterModel> _logger;
-        // private readonly IEmailSender _emailSender; // Email servisi varsa açılır
+    
 
         public RegisterModel(
             UserManager<AppUser> userManager,
@@ -41,7 +41,6 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
 
         public string ReturnUrl { get; set; }
 
-        // --- FORM VERİ MODELİ (INPUT MODEL) ---
         public class InputModel
         {
             [Required(ErrorMessage = "İsim zorunludur")]
@@ -95,11 +94,9 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             [Compare("Password", ErrorMessage = "Şifreler eşleşmiyor.")]
             public string ConfirmPassword { get; set; }
 
-            // Dosya Yükleme
             [Display(Name = "Profil Resmi")]
             public IFormFile? ProfileImage { get; set; }
 
-            [Range(typeof(bool), "true", "true", ErrorMessage = "Lütfen kullanım koşullarını kabul ediniz.")]
             public bool TermsAccepted { get; set; }
         }
 
@@ -108,7 +105,6 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             ReturnUrl = returnUrl;
         }
 
-        // --- KAYIT BUTONUNA BASINCA ÇALIŞAN METOT ---
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {
             returnUrl ??= Url.Content("~/");
@@ -131,7 +127,6 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                     Address = Input.Address
                 };
 
-                // --- RESİM KAYDETME İŞLEMİ ---
                 if (Input.ProfileImage != null)
                 {
                     try
@@ -139,7 +134,6 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                         var extension = Path.GetExtension(Input.ProfileImage.FileName);
                         var newFileName = Guid.NewGuid().ToString() + extension;
 
-                        // Klasör: wwwroot/uploads/users
                         var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "users");
                         if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
 
@@ -154,31 +148,26 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                     }
                     catch (Exception ex)
                     {
-                        // Resim yüklenemezse bile kayıt devam etsin ama log düşelim
                         _logger.LogError("Resim yüklenirken hata oluştu: " + ex.Message);
                     }
                 }
 
-                // --- KULLANICI OLUŞTURMA ---
                 var result = await _userManager.CreateAsync(user, Input.Password);
 
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User created a new account with password.");
 
-                    // Direkt giriş yaptır ve yönlendir
                     await _signInManager.SignInAsync(user, isPersistent: false);
                     return LocalRedirect(returnUrl);
                 }
 
-                // Hata varsa (örn: Şifre yetersiz, email kayıtlı)
                 foreach (var error in result.Errors)
                 {
                     ModelState.AddModelError(string.Empty, error.Description);
                 }
             }
 
-            // Hata varsa formu tekrar göster
             return Page();
         }
     }

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
-    // TODO: Bu controller'a daha sonra Admin/Organizator yetkisi ekleyeceğiz
+
     public class TenantsController : Controller
     {
         private readonly AppDbContext _context;
@@ -19,17 +19,14 @@ namespace AntAbstract.Web.Controllers
             _context = context;
         }
 
-        // GET: Tenants
         public async Task<IActionResult> Index()
         {
-            // İlgili Bilimsel Alan ve Kongre Türü isimlerini de getirmek için Include kullanıyoruz.
             var tenants = _context.Tenants
                 .Include(t => t.ScientificField)
                 .Include(t => t.CongressType);
             return View(await tenants.ToListAsync());
         }
 
-        // GET: Tenants/Details/5
         public async Task<IActionResult> Details(Guid? id)
         {
             if (id == null)
@@ -50,17 +47,13 @@ namespace AntAbstract.Web.Controllers
             return View(tenant);
         }
 
-        // GET: Tenants/Create
         public IActionResult Create()
         {
-            // View'a gönderilecek dropdown listelerini hazırla (isme göre sıralı)
             ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields.OrderBy(s => s.Name), "Id", "Name");
             ViewBag.CongressTypeId = new SelectList(_context.CongressTypes.OrderBy(c => c.Name), "Id", "Name");
             return View();
         }
 
-        // POST: Tenants/Create
-        // GÜVENLİ VE DOĞRU VERSİYON: IFormCollection yerine Model Binding kullanılıyor.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Name,Slug,LogoUrl,ScientificFieldId,CongressTypeId")] Tenant tenant)
@@ -72,13 +65,11 @@ namespace AntAbstract.Web.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            // Hata durumunda dropdown'ları yeniden doldur ve formu geri gönder
             ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields.OrderBy(s => s.Name), "Id", "Name", tenant.ScientificFieldId);
             ViewBag.CongressTypeId = new SelectList(_context.CongressTypes.OrderBy(c => c.Name), "Id", "Name", tenant.CongressTypeId);
             return View(tenant);
         }
 
-        // GET: Tenants/Edit/5
         public async Task<IActionResult> Edit(Guid? id)
         {
             if (id == null)
@@ -92,14 +83,11 @@ namespace AntAbstract.Web.Controllers
                 return NotFound();
             }
 
-            // View'a gönderilecek dropdown listelerini, mevcut seçimi de belirterek hazırla
             ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields.OrderBy(s => s.Name), "Id", "Name", tenant.ScientificFieldId);
             ViewBag.CongressTypeId = new SelectList(_context.CongressTypes.OrderBy(c => c.Name), "Id", "Name", tenant.CongressTypeId);
             return View(tenant);
         }
 
-        // POST: Tenants/Edit/5
-        // GÜVENLİ VE DOĞRU VERSİYON: IFormCollection yerine Model Binding kullanılıyor.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name,Slug,LogoUrl,ScientificFieldId,CongressTypeId")] Tenant tenant)
@@ -129,13 +117,11 @@ namespace AntAbstract.Web.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            // Hata durumunda dropdown'ları yeniden doldur ve formu geri gönder
             ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields.OrderBy(s => s.Name), "Id", "Name", tenant.ScientificFieldId);
             ViewBag.CongressTypeId = new SelectList(_context.CongressTypes.OrderBy(c => c.Name), "Id", "Name", tenant.CongressTypeId);
             return View(tenant);
         }
 
-        // GET: Tenants/Delete/5
         public async Task<IActionResult> Delete(Guid? id)
         {
             if (id == null)
@@ -156,7 +142,6 @@ namespace AntAbstract.Web.Controllers
             return View(tenant);
         }
 
-        // POST: Tenants/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)

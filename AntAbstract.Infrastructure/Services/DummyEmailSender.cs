@@ -11,8 +11,6 @@ namespace AntAbstract.Infrastructure.Services
     {
         public Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
-            // Şimdilik hiçbir şey yapmıyoruz. Sadece hatayı çözmek için var.
-            // İleride buraya gerçek e-posta gönderme kodu yazılabilir.
             return Task.CompletedTask;
         }
     }

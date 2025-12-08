@@ -46,23 +46,22 @@ namespace AntAbstract.Web.Controllers
                 TotalSubmissions = await submissions.CountAsync(),
                 TotalReviewers = await _context.Reviewers.CountAsync(r => r.ConferenceId == conference.Id && r.IsActive),
 
-                // --- YENİ İSTATİSTİKLER (ENUM KULLANILARAK) ---
-                // Kabul Edilenler
+  
                 AcceptedSubmissions = await submissions.CountAsync(s => s.Status == SubmissionStatus.Accepted),
 
-                // Reddedilenler
+             
                 RejectedSubmissions = await submissions.CountAsync(s => s.Status == SubmissionStatus.Rejected),
 
-                // Revizyon İstenenler
+               
                 RevisionSubmissions = await submissions.CountAsync(s => s.Status == SubmissionStatus.RevisionRequired),
 
-                // Karar Bekleyenler (Hakem değerlendirmesi bitmiş, karar verilmemiş)
+         
                 AwaitingDecisionSubmissions = await submissions
                     .CountAsync(s => s.Status == SubmissionStatus.UnderReview &&
                                      s.ReviewAssignments.Any() &&
-                                     s.ReviewAssignments.All(ra => ra.Status == "Completed")), // NOT: ra.Status string'i kontrol edildi
+                                     s.ReviewAssignments.All(ra => ra.Status == "Completed")), 
 
-                // Atama Bekleyenler (Henüz hiçbir hakeme atanmamış)
+               
                 AwaitingAssignmentSubmissions = await submissions.CountAsync(s => s.Status == SubmissionStatus.New && !s.ReviewAssignments.Any())
             };
 
