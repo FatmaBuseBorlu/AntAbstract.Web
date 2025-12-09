@@ -1,0 +1,109 @@
+﻿@{
+    ViewData["Title"] = "Mesajlarım";
+    Layout = "_LayoutDashboard";
+
+    var inboxMessages = ViewBag.Inbox as List<AntAbstract.Domain.Entities.Message>;
+    var sentMessages = ViewBag.Sent as List<AntAbstract.Domain.Entities.Message>;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold m-0">Mesaj Merkezi</h4>
+
+        <a href="/Message/Create" class="btn btn-success shadow-sm">
+            <i class="fas fa-plus me-2"></i> Yeni Mesaj Yaz
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <div class="list-group shadow-sm">
+                <a class="list-group-item list-group-item-action active fw-bold" id="list-inbox-list" data-bs-toggle="list" href="#list-inbox" role="tab">
+                    <i class="fas fa-inbox me-2"></i> Gelen Kutusu
+                    <span class="badge bg-light text-primary float-end rounded-pill">@inboxMessages?.Count</span>
+                </a>
+                <a class="list-group-item list-group-item-action fw-bold" id="list-sent-list" data-bs-toggle="list" href="#list-sent" role="tab">
+                    <i class="fas fa-paper-plane me-2"></i> Gönderilenler
+                    <span class="badge bg-light text-secondary float-end rounded-pill">@sentMessages?.Count</span>
+                </a>
+                <a href="#" class="list-group-item list-group-item-action disabled text-muted">
+                    <i class="fas fa-trash-alt me-2"></i> Çöp Kutusu
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="tab-content" id="nav-tabContent">
+
+                <div class="tab-pane fade show active" id="list-inbox" role="tabpanel">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-bottom fw-bold">
+                            Gelen Mesajlar
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="list-group list-group-flush">
+                                @if (inboxMessages != null && inboxMessages.Any())
+                                {
+                                    @foreach (var msg in inboxMessages)
+                                    {
+                                        <a asp-action="Details" asp-route-id="@msg.Id" class="list-group-item list-group-item-action p-3 @(msg.IsRead ? "" : "bg-light border-start border-4 border-primary")">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <h6 class="mb-1 fw-bold">@msg.Subject</h6>
+                                                <small class="text-muted">@msg.SentDate.ToString("dd MMM HH:mm")</small>
+                                            </div>
+                                            <p class="mb-1 text-muted small text-truncate">@msg.Content</p>
+                                            <small class="text-primary">
+                                                <i class="fas fa-user-circle me-1"></i> @(msg.Sender?.FirstName ?? "Sistem") tarafından
+                                            </small>
+                                        </a>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="text-center p-5 text-muted">
+                                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                                        <p>Gelen kutunuz boş.</p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="list-sent" role="tabpanel">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-bottom fw-bold">
+                            Gönderilen Mesajlar
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="list-group list-group-flush">
+                                @if (sentMessages != null && sentMessages.Any())
+                                {
+                                    @foreach (var msg in sentMessages)
+                                    {
+                                        <div class="list-group-item list-group-item-action p-3">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <h6 class="mb-1 fw-bold">@msg.Subject</h6>
+                                                <small class="text-muted">@msg.SentDate.ToString("dd MMM HH:mm")</small>
+                                            </div>
+                                            <p class="mb-1 text-muted small text-truncate">@msg.Content</p>
+                                            <small>Alıcı: @(msg.Receiver?.FirstName ?? "Yönetici")</small>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="text-center p-5 text-muted">
+                                        <i class="fas fa-paper-plane fa-3x mb-3"></i>
+                                        <p>Henüz mesaj göndermediniz.</p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>

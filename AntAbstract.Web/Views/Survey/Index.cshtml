@@ -1,0 +1,82 @@
+﻿@{
+    ViewData["Title"] = "Kongre Değerlendirme";
+    Layout = "_LayoutDashboard";
+}
+
+<div class="container-fluid">
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <div class="card border-0 shadow-lg rounded-3">
+                <div class="card-header bg-primary text-white p-4 rounded-top">
+                    <h4 class="fw-bold mb-1"><i class="fas fa-poll-h me-2"></i> Kongre Değerlendirme Anketi</h4>
+                    <p class="mb-0 small opacity-75">Görüşleriniz, gelecekteki etkinliklerimizi geliştirmemiz için çok değerlidir.</p>
+                </div>
+
+                <div class="card-body p-5">
+                    <form asp-action="Submit" method="post">
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-dark">1. Konferans beklentilerinizi karşıladı mı?</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="fas fa-star text-warning"></i></span>
+                                <select name="q1" class="form-select" required>
+                                    <option value="">Seçiniz...</option>
+                                    <option value="Kesinlikle Karşıladı (5/5)">⭐⭐⭐⭐⭐ Kesinlikle Karşıladı</option>
+                                    <option value="Karşıladı (4/5)">⭐⭐⭐⭐ Karşıladı</option>
+                                    <option value="Kısmen (3/5)">⭐⭐⭐ Kısmen</option>
+                                    <option value="Beklentimin Altında (2/5)">⭐⭐ Beklentimin Altında</option>
+                                    <option value="Hiç Karşılamadı (1/5)">⭐ Hiç Karşılamadı</option>
+                                </select>
+                            </div>
+                            <textarea name="q1_detail" class="form-control mt-2 text-muted small" rows="2" placeholder="Varsa sebebini kısaca açıklayınız... (Opsiyonel)"></textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-dark">2. Bu konferansı alanınızdaki diğer kişilere tavsiye eder misiniz?</label>
+                            <div class="d-flex gap-4 mt-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="q2" id="q2_yes" value="Evet" required>
+                                    <label class="form-check-label" for="q2_yes">👍 Evet, ederim</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="q2" id="q2_no" value="Hayır">
+                                    <label class="form-check-label" for="q2_no">👎 Hayır, etmem</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-dark">3. Kongre network ağınızı genişletmenize katkı sağladı mı?</label>
+                            <select name="q3" class="form-select" required>
+                                <option value="">Seçiniz...</option>
+                                <option value="Çok Fazla">Evet, birçok yeni kişiyle tanıştım</option>
+                                <option value="Biraz">Evet, birkaç kişiyle tanıştım</option>
+                                <option value="Hayır">Hayır, pek etkisi olmadı</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-dark">4. Bu kongreden ne öğrendiniz?</label>
+                            <textarea name="q4" class="form-control bg-light" rows="3" placeholder="En önemli kazanımınızı yazınız..." required></textarea>
+                        </div>
+
+                        <div class="mb-5">
+                            <label class="form-label fw-bold text-dark">5. Öğrendiklerinizi çalışma alanınıza nasıl uygulamayı planlıyorsunuz?</label>
+                            <textarea name="q5" class="form-control bg-light" rows="3" placeholder="Planlarınızı kısaca anlatınız..." required></textarea>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold shadow-sm">
+                                <i class="fas fa-paper-plane me-2"></i> ANKETİ GÖNDER
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

@@ -10,25 +10,24 @@ namespace AntAbstract.Domain.Entities
         public Guid Id { get; set; } = Guid.NewGuid();
 
         [Required]
-        public string Subject { get; set; } // Mesaj Konusu
+        public string Subject { get; set; } 
 
         [Required]
-        public string Content { get; set; } // Mesaj İçeriği
+        public string Content { get; set; } 
 
         public DateTime SentDate { get; set; } = DateTime.UtcNow;
 
-        public bool IsRead { get; set; } = false; // Okundu bilgisi
+        public bool IsRead { get; set; } = false; 
 
-        // Gönderen Kullanıcı
         [Required]
         public string SenderId { get; set; }
         [ForeignKey("SenderId")]
         public AppUser Sender { get; set; }
 
-        // Alıcı Kullanıcı
         [Required]
         public string ReceiverId { get; set; }
         [ForeignKey("ReceiverId")]
         public AppUser Receiver { get; set; }
+        public bool IsDeleted { get; set; } = false;
     }
 }

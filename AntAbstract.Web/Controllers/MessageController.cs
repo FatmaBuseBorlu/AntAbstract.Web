@@ -5,14 +5,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
-    [Authorize] 
+    [Authorize]
     public class MessageController : Controller
     {
         private readonly AppDbContext _context;
@@ -24,113 +20,115 @@ namespace AntAbstract.Web.Controllers
             _userManager = userManager;
         }
 
-        public async Task<IActionResult> Inbox()
+        public async Task<IActionResult> Index()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var messages = await _context.Messages
-                .Include(m => m.Sender) 
-                .Where(m => m.ReceiverId == userId)
-                .OrderByDescending(m => m.SentDate)
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var inbox = await _context.Messages
+                .Include(m => m.Sender)
+                .Where(m => m.ReceiverId == user.Id && !m.IsDeleted)
+                .OrderByDescending(m => m.SentDate) 
                 .ToListAsync();
 
-            return View(messages);
-        }
-
-        public async Task<IActionResult> Outbox()
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var messages = await _context.Messages
-                .Include(m => m.Receiver) 
-                .Where(m => m.SenderId == userId)
-                .OrderByDescending(m => m.SentDate)
+            var sent = await _context.Messages
+                .Include(m => m.Receiver)
+                .Where(m => m.SenderId == user.Id && !m.IsDeleted) 
+                .OrderByDescending(m => m.SentDate) 
                 .ToListAsync();
 
-            return View(messages);
-        }
+            ViewBag.Inbox = inbox;
+            ViewBag.Sent = sent;
 
-        public async Task<IActionResult> Create()
-        {
-           
-            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var users = await _userManager.Users
-                .Where(u => u.Id != currentUserId)
-                .ToListAsync();
-
-            ViewBag.Users = new SelectList(users, "Id", "Email");
             return View();
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(IFormCollection collection)
+        public async Task<IActionResult> Details(Guid id) 
         {
-            try
-            {
-                string receiverId = collection["ReceiverId"];
-                string subject = collection["Subject"];
-                string content = collection["Content"];
-
-                if (string.IsNullOrEmpty(receiverId) || string.IsNullOrEmpty(subject) || string.IsNullOrEmpty(content))
-                {
-                    ModelState.AddModelError("", "Alıcı, Konu ve Mesaj alanları boş bırakılamaz.");
-                    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                    var users = await _userManager.Users.Where(u => u.Id != currentUserId).ToListAsync();
-                    ViewBag.Users = new SelectList(users, "Id", "Email");
-                    return View();
-                }
-                var newMessage = new Message
-                {
-                    SenderId = User.FindFirstValue(ClaimTypes.NameIdentifier),
-                    ReceiverId = receiverId,
-                    Subject = subject,
-                    Content = content,
-                    SentDate = DateTime.UtcNow,
-                    IsRead = false
-                };
-
-                _context.Add(newMessage);
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"]= "Mesajınız başarıyla gönderildi.";
-                return RedirectToAction(nameof(Inbox));
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = "Mesaj gönderilirken bir hata oluştu.";
-                return RedirectToAction(nameof(Create));
-            }
-        }
-
-        public async Task<IActionResult> Details(Guid? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var message = await _context.Messages
                 .Include(m => m.Sender)
-                .Include(m => m.Receiver) 
+                .Include(m => m.Receiver)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
-            if (message == null)
+            if (message == null) return NotFound();
+
+            var userId = _userManager.GetUserId(User);
+
+            if (message.ReceiverId != userId && message.SenderId != userId)
             {
-                return NotFound();
+                return Forbid();
             }
 
-            if (message.ReceiverId != currentUserId && message.SenderId != currentUserId)
-            {
-                return Forbid(); 
-            }
-
-            if (message.ReceiverId == currentUserId && !message.IsRead)
+            if (message.ReceiverId == userId && !message.IsRead)
             {
                 message.IsRead = true;
                 await _context.SaveChangesAsync();
             }
 
             return View(message);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Create()
+        {
+           
+            var admins = await _userManager.GetUsersInRoleAsync("Admin");
+            var adminUser = admins.FirstOrDefault();
+
+            if (adminUser == null)
+            {
+                adminUser = await _userManager.Users.FirstOrDefaultAsync();
+            }
+
+            ViewBag.ReceiverId = adminUser?.Id;
+            ViewBag.ReceiverName = "Kongre Yönetimi"; 
+
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(string receiverId, string subject, string content)
+        {
+            if (string.IsNullOrEmpty(receiverId) || string.IsNullOrEmpty(subject) || string.IsNullOrEmpty(content))
+            {
+                TempData["ErrorMessage"] = "Lütfen alıcı, konu ve mesaj alanlarını doldurunuz.";
+                return RedirectToAction(nameof(Create));
+            }
+
+            var newMessage = new Message
+            {
+                SenderId = _userManager.GetUserId(User),
+                ReceiverId = receiverId,
+                Subject = subject,
+                Content = content,
+                SentDate = DateTime.UtcNow, 
+                IsRead = false,
+                IsDeleted = false
+            };
+
+            _context.Messages.Add(newMessage);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Mesajınız başarıyla gönderildi.";
+            return RedirectToAction(nameof(Index)); 
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Delete(Guid id) 
+        {
+            var message = await _context.Messages.FindAsync(id);
+            var userId = _userManager.GetUserId(User);
+
+            if (message != null)
+            {
+                if (message.ReceiverId == userId || message.SenderId == userId)
+                {
+                    message.IsDeleted = true;
+                    await _context.SaveChangesAsync();
+                }
+            }
+            return RedirectToAction(nameof(Index));
         }
     }
 }

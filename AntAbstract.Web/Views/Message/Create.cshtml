@@ -1,47 +1,54 @@
-﻿@model AntAbstract.Domain.Entities.Message
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
-
-@{
-    ViewData["Title"] = Localizer["PageTitle"];
+﻿@{
+    ViewData["Title"] = "Yeni Mesaj";
+    Layout = "_LayoutDashboard";
 }
 
-<h1 class="display-5">@Localizer["PageTitle"]</h1>
-<hr />
-<div class="row">
-    <div class="col-md-8">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold m-0"><i class="fas fa-pen-nib me-2 text-primary"></i>Yeni Mesaj Oluştur</h4>
+        <a href="/Message/Index" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Geri Dön
+        </a>
+    </div>
 
-            <div class="form-group mb-3">
-                <label asp-for="ReceiverId" class="control-label fw-bold">@Localizer["ReceiverLabel"]</label>
-                <select asp-for="ReceiverId" class="form-control" asp-items="ViewBag.Users">
-                    <option value="">@Localizer["ReceiverPlaceholder"]</option>
-                </select>
-                <span asp-validation-for="ReceiverId" class="text-danger"></span>
-            </div>
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
 
-            <div class="form-group mb-3">
-                <label asp-for="Subject" class="control-label fw-bold">@Localizer["SubjectLabel"]</label>
-                <input asp-for="Subject" class="form-control" />
-                <span asp-validation-for="Subject" class="text-danger"></span>
-            </div>
+                    <form asp-action="Create" method="post">
 
-            <div class="form-group mb-3">
-                <label asp-for="Content" class="control-label fw-bold">@Localizer["ContentLabel"]</label>
-                <textarea asp-for="Content" class="form-control" rows="8"></textarea>
-                <span asp-validation-for="Content" class="text-danger"></span>
-            </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small">Kime:</label>
 
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary">@Localizer["SendButton"]</button>
-                <a asp-action="Inbox" class="btn btn-secondary">@Localizer["CancelButton"]</a>
+                            <div class="input-group">
+                                <span class="input-group-text border-0 bg-light"><i class="fas fa-user-shield text-primary"></i></span>
+                                <input type="text" class="form-control bg-light border-0 fw-bold" value="@ViewBag.ReceiverName" readonly />
+                            </div>
+
+                            <input type="hidden" name="receiverId" value="@ViewBag.ReceiverId" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small">Konu:</label>
+                            <input type="text" name="subject" class="form-control bg-light border-0" placeholder="Örn: Bildiri Hakkında Soru" required />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted small">Mesajınız:</label>
+                            <textarea name="content" class="form-control bg-light border-0" rows="8" placeholder="Mesajınızı buraya yazın..." required></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary px-4 py-2 fw-bold">
+                                <i class="fas fa-paper-plane me-2"></i> GÖNDER
+                            </button>
+                        </div>
+
+                    </form>
+
+                </div>
             </div>
-        </form>
+        </div>
     </div>
 </div>
-
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-}

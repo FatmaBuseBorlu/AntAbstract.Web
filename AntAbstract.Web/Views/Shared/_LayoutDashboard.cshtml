@@ -81,14 +81,12 @@
                 font-size: 1.1rem;
             }
 
-        /* İÇERİK ALANI */
         .main-content {
             margin-left: 260px;
             padding: 20px;
             min-height: 100vh;
         }
 
-        /* ÜST BAR (Header) */
         .top-header {
             background: #fff;
             padding: 15px 30px;
@@ -118,24 +116,46 @@
 
         <ul class="sidebar-menu">
             <li class="text-muted small fw-bold px-3 mb-2 mt-2">GENEL</li>
+
             <li>
-                <a href="/Dashboard" class="active">
+                <a href="/Dashboard" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Dashboard" && ViewContext.RouteData.Values["Action"]?.ToString() == "Index" ? "active" : "")">
                     <i class="fas fa-home"></i> Ana Panel
                 </a>
             </li>
+
+            <li>
+                <a href="/Submission/Create" class="@(ViewContext.RouteData.Values["Action"]?.ToString() == "Create" ? "active" : "")">
+                    <i class="fas fa-plus-circle me-2 text-success"></i> Yeni Bildiri Gönder
+                </a>
+            </li>
+
+            <li>
+                <a href="/Submission/Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Submission" && ViewContext.RouteData.Values["Action"]?.ToString() == "Index" ? "active" : "")">
+                    <i class="fas fa-file-contract me-2 text-info"></i> Bildirilerim
+                </a>
+            </li>
+
+            <li>
+                <a href="#">
+                    <i class="fas fa-calendar-day me-2 text-danger"></i> Kongre Programı
+                </a>
+            </li>
+
+            <li>
+                <a href="#">
+                    <i class="fas fa-book me-2" style="color: #6f42c1;"></i> Kongre Bildiri Kitabı
+                </a>
+            </li>
+
             <li>
                 <a href="/Dashboard/MyConferences">
-                    <i class="fas fa-calendar-check"></i> Katıldığım Kongreler
+                    <i class="fas fa-globe me-2 text-secondary"></i> Katıldığım Kongreler
                 </a>
             </li>
+
             <li>
-                <a href="/Submission/Index">
-                    <i class="fas fa-file-alt"></i> Bildirilerim
-                </a>
-            </li>
-            <li>
-                <a href="/Submission/Create">
-                    <i class="fas fa-plus-circle"></i> Yeni Bildiri Gönder
+                <a href="/Message/Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Message" ? "active" : "")">
+                    <i class="fas fa-envelope me-2 text-warning"></i> Mesajlarım
                 </a>
             </li>
         </ul>
