@@ -3,7 +3,7 @@
 @inject UserManager<AppUser> UserManager
 
 @{
-   
+
     var user = await UserManager.GetUserAsync(User);
     var profileImg = user?.ProfileImagePath;
     var displayName = user?.FirstName ?? User.Identity.Name;
@@ -97,6 +97,7 @@
             align-items: center;
             margin-bottom: 30px;
         }
+
         .dashboard-card {
             background: #fff;
             border-radius: 12px;

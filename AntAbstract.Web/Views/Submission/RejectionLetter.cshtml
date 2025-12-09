@@ -1,0 +1,107 @@
+﻿@model AntAbstract.Domain.Entities.Submission
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: 'Times New Roman', serif;
+            padding: 40px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #d9534f;
+        }
+        /* Kırmızı Logo */
+        .title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-decoration: underline;
+        }
+
+        .content {
+            font-size: 14px;
+            text-align: justify;
+        }
+
+        .footer {
+            margin-top: 50px;
+            font-size: 12px;
+            color: #777;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+            text-align: center;
+        }
+
+        .signature {
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo">ANT ABSTRACT KONGRE KOMİTESİ</div>
+        <div style="font-size: 14px; margin-top: 5px;">Bilimsel Değerlendirme Kurulu</div>
+    </div>
+
+    <div style="text-align: right; margin-bottom: 20px;">
+        <strong>Tarih:</strong> @DateTime.Now.ToString("dd MMMM yyyy")
+    </div>
+
+    <p><strong>Sayın @Model.SubmissionAuthors.OrderBy(a => a.Order).FirstOrDefault()?.FirstName @Model.SubmissionAuthors.OrderBy(a => a.Order).FirstOrDefault()?.LastName,</strong></p>
+
+    <div class="content">
+        <p>
+            Öncelikle <strong>"Ref: #@Model.SubmissionId.ToString().Substring(0, 8).ToUpper()"</strong> referans numaralı ve
+            <strong>"@Model.Title"</strong> başlıklı çalışmanızı kongremize gönderdiğiniz için teşekkür ederiz.
+        </p>
+
+        <p>
+            Bilimsel kurulumuz ve hakemlerimiz tarafından yapılan titiz değerlendirmeler sonucunda, ne yazık ki çalışmanızın
+            mevcut kongre programına dahil edilmek üzere <strong>kabul edilemediğini</strong> üzülerek bildiririz.
+        </p>
+
+        <p>
+            Bu yıl kongremize rekor sayıda ve yüksek nitelikli başvuru yapılmıştır. Seçim süreci oldukça rekabetçi geçmiş olup,
+            birçok değerli çalışma kontenjan sınırlaması ve tema uygunluğu gibi kriterler nedeniyle elenmek durumunda kalmıştır.
+        </p>
+
+        <p>
+            Bu karar çalışmanızın bilimsel değerini değil, sadece bu kongrenin spesifik kriterlerine uygunluğunu yansıtmaktadır.
+            Gelecekteki çalışmalarınızda ve etkinliklerimizde sizi tekrar aramızda görmekten mutluluk duyarız.
+        </p>
+
+        <p>Çalışmalarınızda başarılar dileriz.</p>
+    </div>
+
+    <div class="signature">
+        <p>Saygılarımızla,</p>
+        <br />
+        <strong>Prof. Dr. Bilim İnsanı</strong><br />
+        Kongre Başkanı<br />
+        AntAbstract Bilim Kurulu
+    </div>
+
+    <div class="footer">
+        Bu belge elektronik ortamda üretilmiştir, ıslak imza gerektirmez.<br />
+        AntAbstract Kongre Yönetim Sistemi | www.antabstract.com
+    </div>
+
+</body>
+</html>

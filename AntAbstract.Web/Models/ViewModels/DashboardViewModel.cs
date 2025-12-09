@@ -19,6 +19,8 @@ namespace AntAbstract.Web.Models.ViewModels
         public List<Guid> RegisteredConferenceIds { get; set; }
 
         public List<Conference> MyConferences { get; set; } = new List<Conference>();
+        public int RejectedSubmissions { get; internal set; }
+
         public DashboardViewModel()
         {
          

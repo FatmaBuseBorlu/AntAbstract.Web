@@ -10,7 +10,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Rotativa.AspNetCore; 
+using Rotativa.AspNetCore;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -28,6 +28,7 @@ namespace AntAbstract.Web.Controllers
             _env = env;
         }
 
+        // --- LİSTELEME ---
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
@@ -35,7 +36,7 @@ namespace AntAbstract.Web.Controllers
                 .Where(s => s.AuthorId == user.Id)
                 .Include(s => s.SubmissionAuthors)
                 .Include(s => s.Files)
-                .Include(s => s.Conference) 
+                .Include(s => s.Conference)
                 .OrderByDescending(s => s.CreatedAt)
                 .ToListAsync();
 
@@ -43,6 +44,7 @@ namespace AntAbstract.Web.Controllers
             return View(viewModel);
         }
 
+        // --- DETAY ---
         [HttpGet]
         public async Task<IActionResult> Details(Guid id)
         {
@@ -60,6 +62,7 @@ namespace AntAbstract.Web.Controllers
             return View(submission);
         }
 
+        // --- OLUŞTURMA (GET) ---
         [HttpGet]
         public async Task<IActionResult> Create()
         {
@@ -71,6 +74,7 @@ namespace AntAbstract.Web.Controllers
             return View(new SubmissionCreateViewModel { AvailableConferences = conferences });
         }
 
+        // --- OLUŞTURMA (POST) ---
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(SubmissionCreateViewModel model)
@@ -157,6 +161,7 @@ namespace AntAbstract.Web.Controllers
             return View(model);
         }
 
+        // --- DÜZENLEME (GET) ---
         [HttpGet]
         public async Task<IActionResult> Edit(Guid id)
         {
@@ -187,6 +192,7 @@ namespace AntAbstract.Web.Controllers
             return View(model);
         }
 
+        // --- DÜZENLEME (POST) ---
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, SubmissionCreateViewModel model)
@@ -256,7 +262,7 @@ namespace AntAbstract.Web.Controllers
             return View(model);
         }
 
-
+        // --- REVİZYON YÜKLEME ---
         [HttpGet]
         public async Task<IActionResult> UploadRevision(Guid id)
         {
@@ -305,6 +311,7 @@ namespace AntAbstract.Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // --- SUNUM DOSYASI YÜKLEME ---
         [HttpPost]
         public async Task<IActionResult> UploadPresentation(Guid id, IFormFile presentationFile)
         {
@@ -334,12 +341,20 @@ namespace AntAbstract.Web.Controllers
             return RedirectToAction("Details", new { id });
         }
 
+        // --- GERİ ÇEKME ---
         [HttpPost]
         public async Task<IActionResult> Withdraw(Guid id)
         {
             var submission = await _context.Submissions.FindAsync(id);
             if (submission != null)
             {
+                // Sadece Henüz Karar Verilmemişse Çekilebilir
+                if (submission.Status == SubmissionStatus.Accepted || submission.Status == SubmissionStatus.Presented)
+                {
+                    TempData["ErrorMessage"] = "Kabul edilen bildiriler geri çekilemez.";
+                    return RedirectToAction("Details", new { id });
+                }
+
                 submission.Status = SubmissionStatus.Withdrawn;
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Bildiri geri çekildi.";
@@ -347,6 +362,31 @@ namespace AntAbstract.Web.Controllers
             return RedirectToAction("Index");
         }
 
+        // --- RET MEKTUBU İNDİR ---
+        [HttpGet]
+        public async Task<IActionResult> DownloadRejectionLetter(Guid id)
+        {
+            var submission = await _context.Submissions
+                .Include(s => s.SubmissionAuthors)
+                .Include(s => s.Conference)
+                .FirstOrDefaultAsync(m => m.SubmissionId == id);
+
+            if (submission == null) return NotFound();
+
+            if (submission.Status != SubmissionStatus.Rejected)
+            {
+                return BadRequest("Bu belge sadece reddedilen bildiriler için oluşturulabilir.");
+            }
+
+            return new ViewAsPdf("RejectionLetter", submission)
+            {
+                FileName = $"Rejection_Letter_{submission.SubmissionId.ToString().Substring(0, 8)}.pdf",
+                PageSize = Rotativa.AspNetCore.Options.Size.A4,
+                PageMargins = new Rotativa.AspNetCore.Options.Margins(20, 20, 20, 20)
+            };
+        }
+
+        // --- KABUL MEKTUBU / SERTİFİKA İNDİR ---
         [HttpGet]
         public async Task<IActionResult> DownloadAcceptanceLetter(Guid id)
         {
@@ -381,13 +421,13 @@ namespace AntAbstract.Web.Controllers
             };
         }
 
-
+        // --- YAKA KARTI İNDİR ---
         [HttpGet]
         public async Task<IActionResult> DownloadBadge(Guid id)
         {
             var submission = await _context.Submissions
                 .Include(s => s.Author)
-                .Include(s => s.Conference) 
+                .Include(s => s.Conference)
                 .FirstOrDefaultAsync(s => s.SubmissionId == id);
 
             if (submission == null) return NotFound();
@@ -403,7 +443,7 @@ namespace AntAbstract.Web.Controllers
                 AuthorFullName = $"{submission.Author.FirstName} {submission.Author.LastName}",
                 AuthorInstitution = submission.Author.University ?? "Kurum Bilgisi Yok",
                 ConferenceName = submission.Conference.Title,
-                ConferenceLogoPath = submission.Conference.LogoPath 
+                ConferenceLogoPath = submission.Conference.LogoPath
             };
 
             return new ViewAsPdf("BadgePreview", model)
@@ -413,25 +453,6 @@ namespace AntAbstract.Web.Controllers
                 PageMargins = { Left = 0, Right = 0, Top = 0, Bottom = 0 },
                 CustomSwitches = "--disable-smart-shrinking --background --print-media-type --enable-local-file-access"
             };
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> SendMessage(Guid? id, string messageContent)
-        {
-            var user = await _userManager.GetUserAsync(User);
-            var msg = new Message
-            {
-                SenderId = user.Id,
-                ReceiverId = "ADMIN", 
-                Subject = id.HasValue ? $"Bildiri Sorusu: {id}" : "Genel Destek",
-                Content = messageContent,
-                SentDate = DateTime.UtcNow,
-                IsRead = false
-            };
-            _context.Messages.Add(msg);
-            await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Mesajınız iletildi.";
-            return RedirectToAction("Index", "Dashboard");
         }
     }
 }

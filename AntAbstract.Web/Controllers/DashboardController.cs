@@ -17,43 +17,60 @@ namespace AntAbstract.Web.Controllers
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly AppDbContext _context;
-
         private readonly TenantContext _tenantContext;
 
         public DashboardController(AppDbContext context, UserManager<AppUser> userManager, TenantContext tenantContext)
         {
             _context = context;
             _userManager = userManager;
-            _tenantContext = tenantContext; 
+            _tenantContext = tenantContext;
         }
 
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
 
+            // Kullanıcının tüm bildirilerini çekiyoruz
             var submissions = _context.Submissions
                 .Where(s => s.AuthorId == user.Id);
 
-      
+            // Mevcut Kongre Adını Belirle
             string currentConferenceName = "Genel Yönetim Paneli";
-
-            if (_tenantContext.Current != null) 
+            if (_tenantContext.Current != null)
             {
                 currentConferenceName = _tenantContext.Current.Name;
             }
+
+            // Katıldığım (Kayıt olduğum) Kongreleri Listele
             var myConferences = await _context.Registrations
                 .Where(r => r.AppUserId == user.Id)
-                .Include(r => r.Conference) 
-                .ThenInclude(c => c.Tenant) 
-                .Select(r => r.Conference) 
-                .OrderByDescending(c => c.StartDate) 
+                .Include(r => r.Conference)
+                .ThenInclude(c => c.Tenant)
+                .Select(r => r.Conference)
+                .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
+            // İstatistikleri Hesapla
             var viewModel = new DashboardViewModel
             {
+                // 1. Toplam Bildiri
                 TotalSubmissions = await submissions.CountAsync(),
-                AcceptedSubmissions = await submissions.CountAsync(s => s.Status == SubmissionStatus.Accepted),
-                AwaitingDecision = await submissions.CountAsync(s => s.Status == SubmissionStatus.UnderReview || s.Status == SubmissionStatus.New),
+
+                // 2. Kabul Edilenler (Kabul + Sunuldu)
+                AcceptedSubmissions = await submissions.CountAsync(s =>
+                    s.Status == SubmissionStatus.Accepted ||
+                    s.Status == SubmissionStatus.Presented),
+
+                // 3. Bekleyen Kararlar (Yeni + İnceleniyor + Revizyon İsteniyor)
+                AwaitingDecision = await submissions.CountAsync(s =>
+                    s.Status == SubmissionStatus.New ||
+                    s.Status == SubmissionStatus.UnderReview ||
+                    s.Status == SubmissionStatus.RevisionRequired),
+
+                // 4. Reddedilenler (YENİ EKLENDİ)
+                RejectedSubmissions = await submissions.CountAsync(s =>
+                    s.Status == SubmissionStatus.Rejected),
+
                 ConferenceName = currentConferenceName,
                 MyConferences = myConferences
             };
