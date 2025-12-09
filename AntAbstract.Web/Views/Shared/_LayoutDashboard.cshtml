@@ -3,7 +3,6 @@
 @inject UserManager<AppUser> UserManager
 
 @{
-
     var user = await UserManager.GetUserAsync(User);
     var profileImg = user?.ProfileImagePath;
     var displayName = user?.FirstName ?? User.Identity.Name;
@@ -27,6 +26,7 @@
             overflow-x: hidden;
         }
 
+        /* --- SIDEBAR --- */
         .sidebar {
             width: 260px;
             height: 100vh;
@@ -38,6 +38,8 @@
             display: flex;
             flex-direction: column;
             z-index: 1000;
+            /* Kayma efekti eklendi */
+            transition: margin 0.25s ease-out;
         }
 
         .sidebar-brand {
@@ -81,10 +83,13 @@
                 font-size: 1.1rem;
             }
 
+        /* --- MAIN CONTENT --- */
         .main-content {
             margin-left: 260px;
             padding: 20px;
             min-height: 100vh;
+            /* Kayma efekti eklendi */
+            transition: margin 0.25s ease-out;
         }
 
         .top-header {
@@ -105,6 +110,34 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.02);
             border: 1px solid #e5e7eb;
             height: 100%;
+        }
+
+        /* --- TOGGLE STATE (MENÜ KAPALIYKEN) --- */
+        body.sb-sidenav-toggled .sidebar {
+            margin-left: -260px; /* Menüyü sola gizle */
+        }
+
+        body.sb-sidenav-toggled .main-content {
+            margin-left: 0; /* İçeriği tam ekran yap */
+        }
+
+        /* MOBİL GÖRÜNÜM */
+        media (max-width: 768px) {
+            .sidebar
+
+        {
+            margin-left: -260px;
+        }
+        /* Mobilde varsayılan gizli */
+        .main-content {
+            margin-left: 0;
+        }
+
+        /* Mobilde butona basınca aç */
+        body.sb-sidenav-toggled .sidebar {
+            margin-left: 0;
+        }
+
         }
     </style>
 </head>
@@ -165,9 +198,16 @@
     <div class="main-content">
 
         <header class="top-header">
-            <div>
-                <h5 class="mb-0 fw-bold text-dark">Hoş Geldiniz, @displayName 👋</h5>
-                <small class="text-muted">Yönetim paneline genel bakış.</small>
+            <div class="d-flex align-items-center">
+
+                <button class="btn btn-light shadow-sm me-3 border-0" id="sidebarToggle" style="width: 40px; height: 40px; border-radius: 50%;">
+                    <i class="fas fa-bars text-primary"></i>
+                </button>
+
+                <div>
+                    <h5 class="mb-0 fw-bold text-dark">Hoş Geldiniz, @displayName 👋</h5>
+                    <small class="text-muted">Yönetim paneline genel bakış.</small>
+                </div>
             </div>
 
             <div class="d-flex align-items-center gap-3">
@@ -257,6 +297,29 @@
     </div>
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const toggleBtn = document.getElementById("sidebarToggle");
+            const body = document.body;
+
+            // Kayıtlı durumu yükle (Sayfa yenilenince menü kapalıysa kapalı kalsın)
+            if (localStorage.getItem("sidebar-toggle") === "true") {
+                body.classList.add("sb-sidenav-toggled");
+            }
+
+            if (toggleBtn) {
+                toggleBtn.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    body.classList.toggle("sb-sidenav-toggled");
+
+                    // Durumu kaydet
+                    localStorage.setItem("sidebar-toggle", body.classList.contains("sb-sidenav-toggled"));
+                });
+            }
+        });
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
