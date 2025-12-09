@@ -72,6 +72,15 @@
                     }
                     else if (Model.Status == SubmissionStatus.Accepted)
                     {
+                        <div class="mb-3">
+                            <a href="https://zoom.us/join" target="_blank" class="btn btn-danger w-100 fw-bold py-2 shadow-sm border border-danger">
+                                <i class="fas fa-video me-2"></i> KONGREYE KATIL (ZOOM)
+                                <span class="badge bg-white text-danger ms-2 animate__animated animate__flash animate__infinite">CANLI</span>
+                            </a>
+                            <div class="text-muted text-center mt-1" style="font-size: 0.7rem;">
+                                <i class="fas fa-info-circle me-1"></i> Oturum başlamadan 15 dk önce bağlanınız.
+                            </div>
+                        </div>
                         <div class="alert alert-success mb-2 small border-success p-2">
                             <i class="fas fa-check-circle me-1"></i> Bildiriniz kabul edildi.
                         </div>
@@ -99,9 +108,14 @@
                     }
                     else if (Model.Status == SubmissionStatus.Presented)
                     {
+                        <div class="mb-3">
+                            <a href="#" class="btn btn-outline-danger w-100 fw-bold py-1 mb-2 disabled">
+                                <i class="fas fa-video me-2"></i> Yayın Sona Erdi
+                            </a>
+                        </div>
+
                         @if (Model.IsFeedbackGiven)
                         {
-                            // Anket yapıldı -> Sertifika İndir
                             <div class="alert alert-success p-2 small border-success mb-1">
                                 <i class="fas fa-check-circle me-1"></i> Tebrikler! Belgeniz hazır.
                             </div>
@@ -111,7 +125,6 @@
                         }
                         else
                         {
-                            // Anket yapılmadı -> Önce Anket
                             <div class="alert alert-warning p-2 small border-warning mb-1">
                                 <i class="fas fa-lock me-1"></i> Belge için lütfen anketi doldurunuz.
                             </div>
@@ -142,18 +155,19 @@
                 <h6 class="fw-bold text-muted small text-uppercase">Belgeler & Destek</h6>
                 <div class="d-grid gap-2 mt-2">
                     
-                   @if (Model.Status == SubmissionStatus.Accepted || Model.Status == SubmissionStatus.Presented)
-{
-     <a asp-action="DownloadBadge" asp-route-id="@Model.SubmissionId" target="_blank" class="btn btn-sm btn-outline-dark text-start">
-        <i class="fas fa-id-badge me-2"></i> Yaka Kartı Oluştur
-    </a>
-}
-else
-{
-    <button class="btn btn-sm btn-light text-muted text-start border disabled" disabled>
-        <i class="fas fa-id-badge me-2"></i> Yaka Kartı (Henüz Onaylanmadı)
-    </button>
-}   
+                    @if (Model.Status == SubmissionStatus.Accepted || Model.Status == SubmissionStatus.Presented)
+                    {
+                         <a asp-action="DownloadBadge" asp-route-id="@Model.SubmissionId" target="_blank" class="btn btn-sm btn-outline-dark text-start">
+                            <i class="fas fa-id-badge me-2"></i> Yaka Kartı Oluştur
+                        </a>
+                    }
+                    else
+                    {
+                        <button class="btn btn-sm btn-light text-muted text-start border disabled" disabled>
+                            <i class="fas fa-id-badge me-2"></i> Yaka Kartı (Henüz Onaylanmadı)
+                        </button>
+                    }
+
                     <button class="btn btn-sm btn-outline-secondary text-start disabled" disabled>
                         <i class="fas fa-file-invoice-dollar me-2"></i> Fatura/Dekont (Yakında)
                     </button>
