@@ -20,22 +20,28 @@ namespace AntAbstract.Web.Controllers
         }
 
         [HttpGet]
-        public IActionResult Index()
+        public IActionResult Index(Guid? submissionId)
         {
+
+            ViewBag.SubmissionId = submissionId;
             return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Submit(string q1, string q2, string q3, string q4, string q5)
+        public async Task<IActionResult> Submit(Guid? submissionId, string q1, string q2, string q3, string q4, string q5)
         {
             var user = await _userManager.GetUserAsync(User);
 
-            // 1. Yöneticiyi Bul
             var adminUser = (await _userManager.GetUsersInRoleAsync("Admin")).FirstOrDefault()
                             ?? await _userManager.Users.FirstOrDefaultAsync();
 
-            // 2. Cevapları Okunaklı Bir Mesaj Haline Getir
+            if (adminUser == null)
+            {
+                TempData["ErrorMessage"] = "Yönetici bulunamadığı için anket gönderilemedi.";
+                return RedirectToAction("Index", "Dashboard");
+            }
+
             string surveyContent = $@"
                 <p><strong>Kullanıcı:</strong> {user.FirstName} {user.LastName} ({user.Email})</p>
                 <hr>
@@ -46,22 +52,38 @@ namespace AntAbstract.Web.Controllers
                 <p><strong>5. Uygulama planınız nedir?</strong><br>{q5}</p>
             ";
 
-            // 3. Mesaj Olarak Kaydet (Yöneticiye Gönder)
             var message = new Message
             {
                 SenderId = user.Id,
                 ReceiverId = adminUser.Id,
                 Subject = "📋 Kongre Değerlendirme Anketi",
-                Content = surveyContent, // HTML formatında kaydediyoruz
+                Content = surveyContent, 
                 SentDate = DateTime.UtcNow,
                 IsRead = false,
                 IsDeleted = false
             };
 
             _context.Messages.Add(message);
+
+            if (submissionId.HasValue)
+            {
+                var submission = await _context.Submissions.FindAsync(submissionId.Value);
+                if (submission != null)
+                {
+                    submission.IsFeedbackGiven = true; 
+                    _context.Submissions.Update(submission);
+                }
+            }
+
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Değerli geri bildiriminiz için teşekkür ederiz! Mesajınız yöneticiye iletildi.";
+
+            if (submissionId.HasValue)
+            {
+                return RedirectToAction("Details", "Submission", new { id = submissionId });
+            }
+
             return RedirectToAction("Index", "Dashboard");
         }
     }
