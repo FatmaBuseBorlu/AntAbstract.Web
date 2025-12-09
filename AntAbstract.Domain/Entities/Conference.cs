@@ -16,13 +16,13 @@ namespace AntAbstract.Domain.Entities
         public string? Description { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
-        public string? City { get; set; }      // Şehir
-        public string? Country { get; set; }   // Ülke
-        public string? Venue { get; set; }     // Mekan Adı (Otel/Kongre Merkezi)
+        public string? City { get; set; }      
+        public string? Country { get; set; } 
+        public string? Venue { get; set; }     
 
-        public string? LogoPath { get; set; }  // Logo resim yolu
-        public string? BannerPath { get; set; } // Arkaplan resim yolu
-        public string? Slug { get; set; }      // URL uzantısı (örn: vet2025)
+        public string? LogoPath { get; set; }  
+        public string? BannerPath { get; set; }
+        public string? Slug { get; set; }      
 
         public Guid TenantId { get; set; }
         public Tenant Tenant { get; set; } = null!;

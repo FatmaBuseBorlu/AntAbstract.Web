@@ -26,7 +26,6 @@
             overflow-x: hidden;
         }
 
-        /* --- SIDEBAR --- */
         .sidebar {
             width: 260px;
             height: 100vh;
@@ -38,7 +37,6 @@
             display: flex;
             flex-direction: column;
             z-index: 1000;
-            /* Kayma efekti eklendi */
             transition: margin 0.25s ease-out;
         }
 
@@ -83,12 +81,10 @@
                 font-size: 1.1rem;
             }
 
-        /* --- MAIN CONTENT --- */
         .main-content {
             margin-left: 260px;
             padding: 20px;
             min-height: 100vh;
-            /* Kayma efekti eklendi */
             transition: margin 0.25s ease-out;
         }
 
@@ -112,28 +108,25 @@
             height: 100%;
         }
 
-        /* --- TOGGLE STATE (MENÜ KAPALIYKEN) --- */
         body.sb-sidenav-toggled .sidebar {
-            margin-left: -260px; /* Menüyü sola gizle */
+            margin-left: -260px; 
         }
 
         body.sb-sidenav-toggled .main-content {
-            margin-left: 0; /* İçeriği tam ekran yap */
+            margin-left: 0; 
         }
 
-        /* MOBİL GÖRÜNÜM */
         media (max-width: 768px) {
             .sidebar
 
         {
             margin-left: -260px;
         }
-        /* Mobilde varsayılan gizli */
+      
         .main-content {
             margin-left: 0;
         }
 
-        /* Mobilde butona basınca aç */
         body.sb-sidenav-toggled .sidebar {
             margin-left: 0;
         }
@@ -303,7 +296,6 @@
             const toggleBtn = document.getElementById("sidebarToggle");
             const body = document.body;
 
-            // Kayıtlı durumu yükle (Sayfa yenilenince menü kapalıysa kapalı kalsın)
             if (localStorage.getItem("sidebar-toggle") === "true") {
                 body.classList.add("sb-sidenav-toggled");
             }
@@ -313,7 +305,6 @@
                     e.preventDefault();
                     body.classList.toggle("sb-sidenav-toggled");
 
-                    // Durumu kaydet
                     localStorage.setItem("sidebar-toggle", body.classList.contains("sb-sidenav-toggled"));
                 });
             }

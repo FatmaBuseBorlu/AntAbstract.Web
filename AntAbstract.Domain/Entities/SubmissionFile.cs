@@ -11,15 +11,14 @@ namespace AntAbstract.Domain.Entities
     {
         public int Id { get; set; }
 
-        public string FileName { get; set; } // Kullanıcının yüklediği isim
-        public string StoredFileName { get; set; } // Sunucudaki güvenli isim (Guid)
-        public string FilePath { get; set; } // Klasör yolu
+        public string FileName { get; set; } 
+        public string StoredFileName { get; set; } 
+        public string FilePath { get; set; } 
 
-        public SubmissionFileType Type { get; set; } // Enum
+        public SubmissionFileType Type { get; set; } 
         public int Version { get; set; }
         public DateTime UploadedAt { get; set; }
 
-        // İlişki
         public Guid SubmissionId { get; set; }
 
         [ForeignKey("SubmissionId")]

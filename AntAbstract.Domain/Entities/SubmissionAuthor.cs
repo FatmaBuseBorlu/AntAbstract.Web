@@ -13,7 +13,6 @@ namespace AntAbstract.Domain.Entities
     {
         public int Id { get; set; }
 
-        // Yazar Bilgileri
         [Required, StringLength(100)]
         public string FirstName { get; set; }
         [Required, StringLength(100)]
@@ -28,10 +27,9 @@ namespace AntAbstract.Domain.Entities
         [StringLength(50)]
         public string? ORCID { get; set; }
 
-        public bool IsCorrespondingAuthor { get; set; } // Sorumlu yazar mı?
-        public int Order { get; set; } // Yazar sıralaması
+        public bool IsCorrespondingAuthor { get; set; } 
+        public int Order { get; set; } 
 
-        // İlişki: Hangi bildirinin yazarı?
         public Guid SubmissionId { get; set; }
 
         [ForeignKey("SubmissionId")]
