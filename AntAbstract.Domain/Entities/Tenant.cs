@@ -11,10 +11,10 @@ namespace AntAbstract.Domain.Entities
     public class Tenant
     {
         public Guid Id { get; set; } = Guid.NewGuid();
-        public string Slug { get; set; } = null!;  // ör: icc2025
-        public string Name { get; set; } = null!;  // Kongre adı
-        public string? ThemeJson { get; set; }     // Tema bilgileri (opsiyonel)                                      
-        public string? LogoUrl { get; set; } // Logo resminin URL'sini tutacak
+        public string Slug { get; set; } = null!;  
+        public string Name { get; set; } = null!;  
+        public string? ThemeJson { get; set; }                                      
+        public string? LogoUrl { get; set; } 
         public int? ScientificFieldId { get; set; }
         [ForeignKey("ScientificFieldId")]
         public ScientificField? ScientificField { get; set; }

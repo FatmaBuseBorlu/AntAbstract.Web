@@ -14,19 +14,16 @@ namespace AntAbstract.Domain.Entities
 
         [Required]
         [StringLength(200)]
-        public string Title { get; set; } // Oturum Başlığı (Örn: Yapay Zeka ve Etik)
+        public string Title { get; set; } 
 
-        public DateTime SessionDate { get; set; } // Oturum Tarihi ve Saati
+        public DateTime SessionDate { get; set; } 
 
         [StringLength(100)]
-        public string? Location { get; set; } // Oturum Yeri (Örn: Salon A, Online Link)
-
-        // Hangi Konferansa ait?
+        public string? Location { get; set; }
         public Guid ConferenceId { get; set; }
         [ForeignKey("ConferenceId")]
         public Conference Conference { get; set; }
 
-        // Bu oturuma atanan özetlerin listesi
         public ICollection<Submission> Submissions { get; set; } = new List<Submission>();
     }
 }
