@@ -33,6 +33,7 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<RegistrationType> RegistrationTypes { get; set; }
         public DbSet<Registration> Registrations { get; set; }
         public DbSet<Payment> Payments { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

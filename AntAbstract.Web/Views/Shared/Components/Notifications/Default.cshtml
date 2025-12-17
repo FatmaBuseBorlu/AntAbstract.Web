@@ -1,0 +1,62 @@
+﻿@model List<AntAbstract.Domain.Entities.Notification>
+
+<div class="dropdown">
+    <a class="nav-link text-secondary position-relative me-2 d-flex align-items-center justify-content-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 40px; height: 40px; border-radius: 50%; transition: background 0.2s;">
+        <i class="fas fa-bell fs-5"></i>
+
+        @{
+            var unreadCount = Model.Count(n => !n.IsRead);
+        }
+
+        @if (unreadCount > 0)
+        {
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-white" style="font-size: 0.6rem; padding: 0.35em 0.5em;">
+                @unreadCount
+            </span>
+        }
+    </a>
+
+    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0 mt-2" style="width: 320px; max-height: 400px; overflow-y: auto; border-radius: 12px;">
+        <li class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center sticky-top">
+            <h6 class="mb-0 fw-bold text-dark">Bildirimler</h6>
+            @if (unreadCount > 0)
+            {
+                <span class="badge bg-primary-subtle text-primary rounded-pill">@unreadCount Yeni</span>
+            }
+        </li>
+
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var item in Model)
+            {
+                <li>
+                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 @(item.IsRead ? "bg-white" : "bg-light")" href="@item.Link" style="white-space: normal;">
+                        <div class="rounded-circle p-2 d-flex align-items-center justify-content-center flex-shrink-0 @(item.IsRead ? "bg-secondary bg-opacity-10 text-secondary" : "bg-primary bg-opacity-10 text-primary")" style="width: 40px; height: 40px;">
+                            <i class="fas @(item.IsRead ? "fa-envelope-open" : "fa-envelope")"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <p class="mb-1 fw-bold small text-dark">@item.Title</p>
+                            <p class="mb-1 text-muted small text-truncate" style="max-width: 200px;">@item.Message</p>
+                            <small class="text-muted d-block mt-1" style="font-size: 0.7rem;">
+                                <i class="far fa-clock me-1"></i> @item.CreatedAt.ToLocalTime().ToString("dd MMM HH:mm")
+                            </small>
+                        </div>
+                    </a>
+                </li>
+            }
+            <li>
+                <a class="dropdown-item text-center small p-2 text-primary fw-bold bg-light rounded-bottom" href="#">
+                    Tümünü Okundu İşaretle
+                </a>
+            </li>
+        }
+        else
+        {
+            <li class="p-5 text-center text-muted">
+                <i class="far fa-bell-slash fs-2 mb-3 opacity-25"></i>
+                <p class="mb-0 small fw-bold">Bildiriminiz yok</p>
+                <p class="text-muted small">Şu an için her şey sakin görünüyor.</p>
+            </li>
+        }
+    </ul>
+</div>

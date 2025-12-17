@@ -1,3 +1,3 @@
 ﻿UPDATE Submissions 
-SET Status = 2 
+SET Status = 3 
 WHERE SubmissionId = (SELECT TOP 1 SubmissionId FROM Submissions ORDER BY CreatedAt DESC);

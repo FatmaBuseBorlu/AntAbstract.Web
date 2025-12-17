@@ -153,7 +153,7 @@
 
             <li>
                 <a href="/Dashboard" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Dashboard" && ViewContext.RouteData.Values["Action"]?.ToString() == "Index" ? "active" : "")">
-                    <i class="fas fa-home"></i> Ana Panel
+                    <i class="fas fa-th-large me-2 text-primary"></i> Ana Panel
                 </a>
             </li>
 
@@ -170,7 +170,7 @@
             </li>
 
             <li>
-                <a href="#">
+                <a href="/Program/Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Program" ? "active" : "")">
                     <i class="fas fa-calendar-day me-2 text-danger"></i> Kongre Programı
                 </a>
             </li>
@@ -181,6 +181,17 @@
                 </a>
             </li>
 
+            <li>
+                <a href="#">
+                    <i class="fas fa-credit-card me-2 text-success"></i> Ödeme İşlemleri
+                </a>
+            </li>
+
+            <li>
+                <a href="#">
+                    <i class="fas fa-hotel me-2 text-warning"></i> Konaklama & Ulaşım
+                </a>
+            </li>
             <li>
                 <a href="/Dashboard/MyConferences">
                     <i class="fas fa-globe me-2 text-secondary"></i> Katıldığım Kongreler
@@ -199,7 +210,6 @@
 
         <header class="top-header">
             <div class="d-flex align-items-center">
-
                 <button class="btn btn-light shadow-sm me-3 border-0" id="sidebarToggle" style="width: 40px; height: 40px; border-radius: 50%;">
                     <i class="fas fa-bars text-primary"></i>
                 </button>
@@ -210,15 +220,16 @@
                 </div>
             </div>
 
-            <div class="d-flex align-items-center gap-3">
-                <a href="/" class="btn btn-sm btn-outline-primary fw-bold d-flex align-items-center gap-2 px-3 py-2 rounded-3" style="border-color: #e5e7eb; color: #6b7280;">
+            <div class="d-flex align-items-center gap-2">
+
+                @await Component.InvokeAsync("Notifications")
+                <a href="/" class="btn btn-sm btn-outline-primary fw-bold d-flex align-items-center gap-2 px-3 py-2 rounded-3 me-2" style="border-color: #e5e7eb; color: #6b7280; height: 40px;">
                     <i class="fas fa-external-link-alt"></i>
-                    <span>Siteye Dön</span>
+                    <span class="d-none d-md-inline">Siteye Dön</span>
                 </a>
 
                 <div class="dropdown">
                     <a href="#" class="d-flex align-items-center text-decoration-none" id="dashboardUserDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-
                         @if (!string.IsNullOrEmpty(profileImg))
                         {
                             <img src="@profileImg" alt="Profil" class="rounded-circle shadow-sm border border-2 border-white"
@@ -231,16 +242,12 @@
                                 @(displayName?.Substring(0, 1).ToUpper())
                             </div>
                         }
-
                     </a>
-
                     <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 rounded-3 p-2" aria-labelledby="dashboardUserDropdown" style="min-width: 220px;">
-
                         <li class="px-3 py-2 mb-2 border-bottom">
                             <div class="fw-bold text-dark text-truncate">@displayName</div>
                             <div class="small text-muted">@User.Identity.Name</div>
                         </li>
-
                         <li>
                             <a class="dropdown-item rounded-2 py-2 d-flex align-items-center gap-2" href="/Identity/Account/Manage/Index">
                                 <i class="fas fa-user-cog text-primary"></i>
@@ -248,17 +255,8 @@
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item rounded-2 py-2 d-flex align-items-center gap-2" href="/Submission/Index">
-                                <i class="fas fa-file-alt text-info"></i>
-                                <span>Bildirilerim</span>
-                            </a>
-                        </li>
-
-                        <li><hr class="dropdown-divider"></li>
-
-                        <li>
                             <form id="dashboardLogoutForm" class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post">
-                                <button type="submit" class="dropdown-item rounded-2 py-2 text-danger fw-bold d-flex align-items-center gap-2 w-100 text-start" onclick="document.getElementById('dashboardLogoutForm').submit();">
+                                <button type="submit" class="dropdown-item rounded-2 py-2 text-danger fw-bold d-flex align-items-center gap-2 w-100 text-start">
                                     <i class="fas fa-sign-out-alt"></i>
                                     <span>Çıkış Yap</span>
                                 </button>
