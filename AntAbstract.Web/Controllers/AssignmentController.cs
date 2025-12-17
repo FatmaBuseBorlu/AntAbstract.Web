@@ -79,52 +79,8 @@ namespace AntAbstract.Web.Controllers
             return View(viewModel);
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AssignReviewer(Guid submissionId, string reviewerId)
-        {
-            var alreadyExists = await _context.ReviewAssignments
-                .AnyAsync(ra => ra.SubmissionId == submissionId && ra.ReviewerId == reviewerId);
-
-            if (alreadyExists)
-            {
-                TempData["ErrorMessage"] = "Bu hakem bu özete zaten atanmış.";
-                return RedirectToAction("Assign", new { id = submissionId });
-            }
-
-            var newAssignment = new ReviewAssignment
-            {
-                ReviewAssignmentId = Guid.NewGuid(),
-                SubmissionId = submissionId,
-                ReviewerId = reviewerId,
-                AssignedDate = DateTime.UtcNow,
-                DueDate = DateTime.UtcNow.AddDays(14), 
-                Status = "Bekleniyor"
-            };
-
-            _context.ReviewAssignments.Add(newAssignment);
-            await _context.SaveChangesAsync();
-
-            try
-            {
-                var reviewer = await _userManager.FindByIdAsync(reviewerId);
-                var submission = await _context.Submissions.FindAsync(submissionId);
-                if (reviewer != null && submission != null)
-                {
-                    var subject = "Yeni Değerlendirme Görevi";
-                    var message = $"Merhaba {reviewer.DisplayName},<br><br>'{submission.Title}' başlıklı özeti değerlendirmeniz için görevlendirilmiş bulunmaktasınız. Sisteme giriş yaparak detayları görebilirsiniz.";
-                    await _emailService.SendEmailAsync(reviewer.Email, subject, message);
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"E-POSTA GÖNDERİM HATASI (HAKEM ATAMA): {ex.Message}");
-            }
-
-
-            TempData["SuccessMessage"] = $"Hakem başarıyla atandı.";
-            return RedirectToAction("Index");
-        }
+       
+     
 
     } 
 }

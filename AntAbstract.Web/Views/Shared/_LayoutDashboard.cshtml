@@ -14,11 +14,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Yönetim Paneli - AntAbstract</title>
-
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -26,7 +24,6 @@
             overflow-x: hidden;
         }
 
-        /* --- SIDEBAR --- */
         .sidebar {
             width: 260px;
             height: 100vh;
@@ -38,7 +35,6 @@
             display: flex;
             flex-direction: column;
             z-index: 1000;
-            /* Kayma efekti eklendi */
             transition: margin 0.25s ease-out;
         }
 
@@ -56,6 +52,7 @@
             padding: 20px 10px;
             list-style: none;
             margin: 0;
+            overflow-y: auto;
         }
 
             .sidebar-menu li {
@@ -83,12 +80,10 @@
                 font-size: 1.1rem;
             }
 
-        /* --- MAIN CONTENT --- */
         .main-content {
             margin-left: 260px;
             padding: 20px;
             min-height: 100vh;
-            /* Kayma efekti eklendi */
             transition: margin 0.25s ease-out;
         }
 
@@ -112,28 +107,24 @@
             height: 100%;
         }
 
-        /* --- TOGGLE STATE (MENÜ KAPALIYKEN) --- */
         body.sb-sidenav-toggled .sidebar {
-            margin-left: -260px; /* Menüyü sola gizle */
+            margin-left: -260px;
         }
 
         body.sb-sidenav-toggled .main-content {
-            margin-left: 0; /* İçeriği tam ekran yap */
+            margin-left: 0;
         }
-
-        /* MOBİL GÖRÜNÜM */
         media (max-width: 768px) {
             .sidebar
 
         {
             margin-left: -260px;
         }
-        /* Mobilde varsayılan gizli */
+
         .main-content {
             margin-left: 0;
         }
 
-        /* Mobilde butona basınca aç */
         body.sb-sidenav-toggled .sidebar {
             margin-left: 0;
         }
@@ -144,110 +135,70 @@
 <body>
 
     <div class="sidebar">
-        <a href="/" class="sidebar-brand">
-            ANT <span style="color: #00aeef;">ABSTRACT</span>
-        </a>
+        <a href="/" class="sidebar-brand">ANT <span style="color: #00aeef;">ABSTRACT</span></a>
 
         <ul class="sidebar-menu">
             <li class="text-muted small fw-bold px-3 mb-2 mt-2">GENEL</li>
 
             <li>
-                <a href="/Dashboard" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Dashboard" && ViewContext.RouteData.Values["Action"]?.ToString() == "Index" ? "active" : "")">
-                    <i class="fas fa-th-large me-2 text-primary"></i> Ana Panel
+                <a href="/Dashboard" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Dashboard" ? "active" : "")">
+                    <i class="fas fa-home me-2 text-primary"></i> Ana Panel
                 </a>
             </li>
 
-            <li>
-                <a href="/Submission/Create" class="@(ViewContext.RouteData.Values["Action"]?.ToString() == "Create" ? "active" : "")">
-                    <i class="fas fa-plus-circle me-2 text-success"></i> Yeni Bildiri Gönder
-                </a>
-            </li>
+            <li class="text-muted small fw-bold px-3 mb-2 mt-2">BİLDİRİ İŞLEMLERİ</li>
+            <li><a href="/Submission/Create"><i class="fas fa-plus-circle me-2 text-success"></i> Yeni Bildiri Gönder</a></li>
+            <li><a href="/Submission/Index"><i class="fas fa-file-contract me-2 text-info"></i> Bildirilerim</a></li>
 
-            <li>
-                <a href="/Submission/Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Submission" && ViewContext.RouteData.Values["Action"]?.ToString() == "Index" ? "active" : "")">
-                    <i class="fas fa-file-contract me-2 text-info"></i> Bildirilerim
-                </a>
-            </li>
+            <li class="text-muted small fw-bold px-3 mb-2 mt-2">KONGRE</li>
+            <li><a href="/Program/Index"><i class="fas fa-calendar-day me-2 text-danger"></i> Kongre Programı</a></li>
+            <li><a href="#"><i class="fas fa-book me-2" style="color: #6f42c1;"></i> Bildiri Kitabı</a></li>
+            <li><a href="#"><i class="fas fa-credit-card me-2 text-success"></i> Ödeme & Konaklama</a></li>
 
-            <li>
-                <a href="/Program/Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Program" ? "active" : "")">
-                    <i class="fas fa-calendar-day me-2 text-danger"></i> Kongre Programı
-                </a>
-            </li>
-
-            <li>
-                <a href="#">
-                    <i class="fas fa-book me-2" style="color: #6f42c1;"></i> Kongre Bildiri Kitabı
-                </a>
-            </li>
-
-            <li>
-                <a href="#">
-                    <i class="fas fa-credit-card me-2 text-success"></i> Ödeme İşlemleri
-                </a>
-            </li>
-
-            <li>
-                <a href="#">
-                    <i class="fas fa-hotel me-2 text-warning"></i> Konaklama & Ulaşım
-                </a>
-            </li>
-            <li>
-                <a href="/Dashboard/MyConferences">
-                    <i class="fas fa-globe me-2 text-secondary"></i> Katıldığım Kongreler
-                </a>
-            </li>
-
-            <li>
-                <a href="/Message/Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Message" ? "active" : "")">
-                    <i class="fas fa-envelope me-2 text-warning"></i> Mesajlarım
-                </a>
-            </li>
+            <li class="text-muted small fw-bold px-3 mb-2 mt-2">HESAP</li>
+            <li><a href="/Dashboard/MyConferences"><i class="fas fa-globe me-2 text-secondary"></i> Katıldığım Kongreler</a></li>
+            <li><a href="/Message/Index"><i class="fas fa-envelope me-2 text-warning"></i> Mesajlarım</a></li>
         </ul>
     </div>
 
     <div class="main-content">
-
         <header class="top-header">
             <div class="d-flex align-items-center">
-                <button class="btn btn-light shadow-sm me-3 border-0" id="sidebarToggle" style="width: 40px; height: 40px; border-radius: 50%;">
-                    <i class="fas fa-bars text-primary"></i>
-                </button>
-
-                <div>
-                    <h5 class="mb-0 fw-bold text-dark">Hoş Geldiniz, @displayName 👋</h5>
-                    <small class="text-muted">Yönetim paneline genel bakış.</small>
-                </div>
+                <button class="btn btn-light shadow-sm me-3 border-0" id="sidebarToggle" style="width: 40px; height: 40px; border-radius: 50%;"><i class="fas fa-bars text-primary"></i></button>
+                <div><h5 class="mb-0 fw-bold text-dark">Hoş Geldiniz, @displayName 👋</h5><small class="text-muted">Kongre Yönetim Sistemi</small></div>
             </div>
-
             <div class="d-flex align-items-center gap-2">
 
-                @await Component.InvokeAsync("Notifications")
-                <a href="/" class="btn btn-sm btn-outline-primary fw-bold d-flex align-items-center gap-2 px-3 py-2 rounded-3 me-2" style="border-color: #e5e7eb; color: #6b7280; height: 40px;">
-                    <i class="fas fa-external-link-alt"></i>
-                    <span class="d-none d-md-inline">Siteye Dön</span>
-                </a>
+                @try
+                {
+                    @await Component.InvokeAsync("Notifications")
+                }
+                catch
+                {
+
+                    <i class="fas fa-bell-slash text-muted p-2"></i>
+                }
+
+                <a href="/" class="btn btn-sm btn-outline-primary fw-bold d-flex align-items-center gap-2 px-3 py-2 rounded-3 me-2"><i class="fas fa-external-link-alt"></i> Siteye Dön</a>
 
                 <div class="dropdown">
-                    <a href="#" class="d-flex align-items-center text-decoration-none" id="dashboardUserDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <a href="#" class="d-flex align-items-center text-decoration-none" id="dashboardUserDropdown" data-bs-toggle="dropdown">
                         @if (!string.IsNullOrEmpty(profileImg))
                         {
-                            <img src="@profileImg" alt="Profil" class="rounded-circle shadow-sm border border-2 border-white"
-                                 style="width: 42px; height: 42px; object-fit: cover;">
+                            <img src="@profileImg" class="rounded-circle shadow-sm border border-2 border-white" style="width: 42px; height: 42px; object-fit: cover;">
                         }
                         else
                         {
-                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold shadow-sm border border-2 border-white"
-                                 style="width: 42px; height: 42px; font-size: 1.1rem;">
-                                @(displayName?.Substring(0, 1).ToUpper())
-                            </div>
+
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold shadow-sm border border-2 border-white" style="width: 42px; height: 42px;">@(displayName?.Substring(0, 1).ToUpper())</div>
                         }
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 rounded-3 p-2" aria-labelledby="dashboardUserDropdown" style="min-width: 220px;">
+                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 rounded-3 p-2">
                         <li class="px-3 py-2 mb-2 border-bottom">
-                            <div class="fw-bold text-dark text-truncate">@displayName</div>
+                            <div class="fw-bold">@displayName</div>
                             <div class="small text-muted">@User.Identity.Name</div>
                         </li>
+
                         <li>
                             <a class="dropdown-item rounded-2 py-2 d-flex align-items-center gap-2" href="/Identity/Account/Manage/Index">
                                 <i class="fas fa-user-cog text-primary"></i>
@@ -255,8 +206,8 @@
                             </a>
                         </li>
                         <li>
-                            <form id="dashboardLogoutForm" class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post">
-                                <button type="submit" class="dropdown-item rounded-2 py-2 text-danger fw-bold d-flex align-items-center gap-2 w-100 text-start">
+                            <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post">
+                                <button type="submit" class="dropdown-item text-danger fw-bold d-flex align-items-center gap-2 w-100 text-start">
                                     <i class="fas fa-sign-out-alt"></i>
                                     <span>Çıkış Yap</span>
                                 </button>
@@ -270,54 +221,32 @@
         <div class="mb-4">
             @if (TempData["SuccessMessage"] != null)
             {
-                <div class="alert alert-success alert-dismissible fade show shadow-sm border-0" role="alert">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-check-circle fs-4 me-3"></i>
-                        <div>@TempData["SuccessMessage"]</div>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Kapat"></button>
-                </div>
+                <div class="alert alert-success alert-dismissible fade show border-0"><i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
             }
             @if (TempData["ErrorMessage"] != null)
             {
-                <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0" role="alert">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-exclamation-triangle fs-4 me-3"></i>
-                        <div>@TempData["ErrorMessage"]</div>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Kapat"></button>
-                </div>
+                <div class="alert alert-danger alert-dismissible fade show border-0"><i class="fas fa-exclamation-triangle me-2"></i> @TempData["ErrorMessage"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
             }
         </div>
 
         @RenderBody()
-
     </div>
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const toggleBtn = document.getElementById("sidebarToggle");
             const body = document.body;
-
-            // Kayıtlı durumu yükle (Sayfa yenilenince menü kapalıysa kapalı kalsın)
-            if (localStorage.getItem("sidebar-toggle") === "true") {
-                body.classList.add("sb-sidenav-toggled");
-            }
-
+            if (localStorage.getItem("sidebar-toggle") === "true") body.classList.add("sb-sidenav-toggled");
             if (toggleBtn) {
                 toggleBtn.addEventListener("click", function(e) {
                     e.preventDefault();
                     body.classList.toggle("sb-sidenav-toggled");
-
-                    // Durumu kaydet
                     localStorage.setItem("sidebar-toggle", body.classList.contains("sb-sidenav-toggled"));
                 });
             }
         });
     </script>
-
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

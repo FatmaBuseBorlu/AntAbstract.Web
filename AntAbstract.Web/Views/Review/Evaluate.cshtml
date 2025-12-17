@@ -1,69 +1,88 @@
 ﻿@model AntAbstract.Domain.Entities.ReviewAssignment
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"];
+    ViewData["Title"] = "Bildiri Değerlendir";
+    Layout = "_LayoutDashboard";
 }
 
-<h1 class="display-5">@Localizer["PageTitle"]</h1>
-<p class="lead text-muted">@Localizer["PageLead"]</p>
-<hr />
+<div class="container-fluid">
 
-<div class="row">
-    <div class="col-md-8">
-        <h4>@Localizer["AbstractHeader"]</h4>
-        <dl class="row mt-3 bg-light p-3 rounded">
-            <dt class="col-sm-3">@Localizer["TitleLabel"]</dt>
-            <dd class="col-sm-9">@Model.Submission.Title</dd>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0 text-dark">Bildiri Değerlendirme</h4>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Listeye Dön
+        </a>
+    </div>
 
-            <dt class="col-sm-3">@Localizer["AbstractTextLabel"]</dt>
-            <dd class="col-sm-9" style="white-space: pre-wrap;">@Model.Submission.AbstractText</dd>
-        </dl>
+    <div class="row">
 
-        <hr />
+        <div class="col-md-7">
+            <div class="card border-0 shadow-sm mb-4 h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0 text-primary"><i class="fas fa-file-alt me-2"></i>Bildiri İçeriği</h6>
+                </div>
+                <div class="card-body">
+                    <h5 class="fw-bold text-dark mb-3">@Model.Submission.Title</h5>
 
-        <h4 class="mt-4">@Localizer["YourReviewHeader"]</h4>
-        <form asp-action="Evaluate" method="post">
-            <input type="hidden" name="assignmentId" value="@Model.ReviewAssignmentId" />
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div class="bg-light p-3 rounded border mb-4">
+                        <small class="text-muted fw-bold d-block mb-1">ÖZET METNİ:</small>
+                        <p class="mb-0 text-dark" style="line-height: 1.7;">@Model.Submission.AbstractText</p>
+                    </div>
 
-            <div class="form-group mb-3">
-                <label for="recommendation" class="control-label fw-bold">@Localizer["RecommendationLabel"]</label>
-                <select name="recommendation" class="form-select" required>
-                    <option value="">@Localizer["SelectRecommendation"]</option>
-                    <option value="Kabul Et">@Localizer["Accept"]</option>
-                    <option value="Reddet">@Localizer["Reject"]</option>
-                    <option value="Küçük Revizyon">@Localizer["MinorRevision"]</option>
-                    <option value="Büyük Revizyon">@Localizer["MajorRevision"]</option>
-                </select>
+                    <h6 class="fw-bold text-muted small mb-2">EKLİ DOSYALAR</h6>
+                    @if (Model.Submission.Files != null && Model.Submission.Files.Any())
+                    {
+                        @foreach (var file in Model.Submission.Files)
+                        {
+                            <a href="@file.FilePath" target="_blank" class="btn btn-sm btn-outline-dark me-2 mb-2">
+                                <i class="fas fa-download me-1"></i> @file.FileName İndir
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        <span class="text-muted small fst-italic">Dosya yüklenmemiş.</span>
+                    }
+                </div>
             </div>
+        </div>
 
-            <div class="form-group mb-3">
-                <label for="score" class="control-label fw-bold">@Localizer["ScoreLabel"]</label>
-                <select name="score" class="form-select" required>
-                    <option value="">@Localizer["SelectScore"]</option>
-                    <option value="1">@Localizer["Score1"]</option>
-                    <option value="2">@Localizer["Score2"]</option>
-                    <option value="3">@Localizer["Score3"]</option>
-                    <option value="4">@Localizer["Score4"]</option>
-                    <option value="5">@Localizer["Score5"]</option>
-                </select>
-            </div>
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm border-top border-4 border-primary h-100">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4 text-dark"><i class="fas fa-star me-2 text-warning"></i>Değerlendirme Formu</h5>
 
-            <div class="form-group mb-3">
-                <label for="commentsToAuthor" class="control-label fw-bold">@Localizer["AuthorCommentsLabel"]</label>
-                <textarea name="commentsToAuthor" class="form-control" rows="6"></textarea>
-            </div>
+                    <form asp-action="Evaluate" method="post">
+                        <input type="hidden" name="assignmentId" value="@Model.Id" />
 
-            <div class="form-group mb-3">
-                <label for="confidentialComments" class="control-label fw-bold">@Localizer["EditorCommentsLabel"]</label>
-                <textarea name="confidentialComments" class="form-control" rows="4"></textarea>
-            </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted">Puanınız (0-100)</label>
+                            <input type="number" name="score" class="form-control" min="0" max="100" placeholder="Örn: 85" required
+                                   value="@(Model.Review?.Score)">
+                        </div>
 
-            <div class="form-group mt-4">
-                <button type="submit" class="btn btn-primary">@Localizer["SubmitButton"]</button>
-                <a asp-action="Index" class="btn btn-outline-secondary">@Localizer["CancelButton"]</a>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted">Nihai Kararınız</label>
+                            <select name="recommendation" class="form-select" required>
+                                <option value="">Bir karar seçiniz...</option>
+                                <!option value="Accept" @(Model.Review?.Recommendation == "Accept" ? "selected" : "")>✅ Kabul (Accept)</!option>
+                                <!option value="Revision" @(Model.Review?.Recommendation == "Revision" ? "selected" : "")>⚠️ Düzeltme (Minor Revision)</!option>
+                                <!option value="Reject" @(Model.Review?.Recommendation == "Reject" ? "selected" : "")>❌ Red (Reject)</!option>
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-muted">Yazara Notlar & Eleştiriler</label>
+                            <textarea name="comments" class="form-control" rows="6" placeholder="Yazarın görmesi için görüşlerinizi buraya yazınız..." required>@(Model.Review?.CommentsToAuthor)</textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm">
+                            <i class="fas fa-save me-2"></i> Değerlendirmeyi Kaydet
+                        </button>
+                    </form>
+                </div>
             </div>
-        </form>
+        </div>
+
     </div>
 </div>

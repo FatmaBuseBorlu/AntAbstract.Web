@@ -20,16 +20,13 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<Tenant> Tenants => Set<Tenant>();
         public DbSet<Conference> Conferences => Set<Conference>();
         public DbSet<Submission> Submissions => Set<Submission>();
-        public DbSet<Reviewer> Reviewers { get; set; }
         public DbSet<ReviewAssignment> ReviewAssignments { get; set; }
         public DbSet<Review> Reviews { get; set; }
         public DbSet<Message> Messages { get; set; }
         public DbSet<ScientificField> ScientificFields { get; set; }
         public DbSet<CongressType> CongressTypes { get; set; }
         public DbSet<Session> Sessions { get; set; }
-        public DbSet<ReviewForm> ReviewForms { get; set; }
-        public DbSet<ReviewCriterion> ReviewCriteria { get; set; }
-        public DbSet<ReviewAnswer> ReviewAnswers { get; set; }
+
         public DbSet<RegistrationType> RegistrationTypes { get; set; }
         public DbSet<Registration> Registrations { get; set; }
         public DbSet<Payment> Payments { get; set; }
@@ -51,11 +48,6 @@ namespace AntAbstract.Infrastructure.Context
                 .HasForeignKey(s => s.AuthorId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Entity<ReviewAssignment>()
-                .HasOne(ra => ra.AppUser)
-                .WithMany()
-                .HasForeignKey(ra => ra.ReviewerId)
-                .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<Message>(entity =>
             {
@@ -74,18 +66,6 @@ namespace AntAbstract.Infrastructure.Context
                 .HasOne(s => s.Conference)
                 .WithMany()
                 .HasForeignKey(s => s.ConferenceId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            builder.Entity<Review>()
-                .HasMany(r => r.Answers)
-                .WithOne(a => a.Review)
-                .HasForeignKey(a => a.ReviewId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            builder.Entity<ReviewForm>()
-                .HasMany(f => f.Criteria)
-                .WithOne(c => c.Form)
-                .HasForeignKey(c => c.FormId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             builder.Entity<Conference>()

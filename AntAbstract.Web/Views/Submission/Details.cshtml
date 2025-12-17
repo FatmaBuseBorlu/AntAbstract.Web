@@ -18,6 +18,48 @@
         </a>
     </div>
 
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <h6 class="fw-bold text-muted text-uppercase small mb-4">Bildiri Süreci</h6>
+            
+            <div class="position-relative m-4">
+                <div class="progress" style="height: 2px;">
+                    @{
+                        int progressVal = 0;
+                        if (Model.Status == SubmissionStatus.New) { progressVal = 15; }
+                        else if (Model.Status == SubmissionStatus.UnderReview || Model.Status == SubmissionStatus.RevisionRequired) { progressVal = 50; }
+                        else if (Model.Status == SubmissionStatus.Accepted || Model.Status == SubmissionStatus.Rejected) { progressVal = 85; }
+                        else if (Model.Status == SubmissionStatus.Presented) { progressVal = 100; }
+                    }
+                    <div class="progress-bar bg-success" role="progressbar" style="width: @progressVal%;" aria-valuenow="@progressVal" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                
+                <button type="button" class="position-absolute top-0 start-0 translate-middle btn btn-sm @(Model.Status >= SubmissionStatus.New ? "btn-success" : "btn-secondary") rounded-pill" style="width: 2rem; height:2rem;">1</button>
+                <div class="position-absolute top-0 start-0 translate-middle mt-4 text-center" style="width: 100px;">
+                    <small class="fw-bold @(Model.Status >= SubmissionStatus.New ? "text-success" : "text-muted")">Gönderildi</small>
+                </div>
+
+                <button type="button" class="position-absolute top-0 start-50 translate-middle btn btn-sm @(Model.Status >= SubmissionStatus.UnderReview || Model.Status == SubmissionStatus.RevisionRequired || Model.Status == SubmissionStatus.Accepted || Model.Status == SubmissionStatus.Rejected || Model.Status == SubmissionStatus.Presented ? "btn-success" : "btn-secondary") rounded-pill" style="width: 2rem; height:2rem;">2</button>
+                <div class="position-absolute top-0 start-50 translate-middle mt-4 text-center" style="width: 120px;">
+                    <small class="fw-bold @(Model.Status >= SubmissionStatus.UnderReview ? "text-success" : "text-muted")">Değerlendirme</small>
+                </div>
+
+                <button type="button" class="position-absolute top-0 translate-middle btn btn-sm @(Model.Status == SubmissionStatus.Accepted || Model.Status == SubmissionStatus.Rejected || Model.Status == SubmissionStatus.Presented ? "btn-success" : "btn-secondary") rounded-pill" style="left: 85%; width: 2rem; height:2rem;">3</button>
+                <div class="position-absolute top-0 translate-middle mt-4 text-center" style="left: 85%; width: 100px;">
+                    <small class="fw-bold @(Model.Status == SubmissionStatus.Accepted || Model.Status == SubmissionStatus.Rejected ? "text-success" : "text-muted")">Karar</small>
+                </div>
+
+                @if(Model.Status == SubmissionStatus.Presented)
+                {
+                     <button type="button" class="position-absolute top-0 start-100 translate-middle btn btn-sm btn-primary rounded-pill" style="width: 2rem; height:2rem;"><i class="fas fa-check"></i></button>
+                     <div class="position-absolute top-0 start-100 translate-middle mt-4 text-center" style="width: 100px;">
+                        <small class="fw-bold text-primary">Tamamlandı</small>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
     <div class="row g-4 mb-4">
         
         <div class="col-md-4">
@@ -29,24 +71,33 @@
                         case SubmissionStatus.New:
                             <span class="badge bg-primary fs-6 px-3 py-2">Yeni Gönderildi</span>
                             break;
+
                         case SubmissionStatus.UnderReview:
-                            <span class="badge bg-warning text-dark fs-6 px-3 py-2">Hakem Değerlendiriyor</span>
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 rounded-2" style="font-size: 1rem;">
+                                <i class="fas fa-hourglass-half me-1"></i> İnceleniyor
+                            </span>
                             break;
+
                         case SubmissionStatus.RevisionRequired:
-                            <span class="badge bg-info text-dark fs-6 px-3 py-2">Revizyon İsteniyor</span>
+                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1 rounded-2">Revizyon İsteniyor</span>
                             break;
+
                         case SubmissionStatus.Accepted:
-                            <span class="badge bg-success fs-6 px-3 py-2">Kabul Edildi</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-2">Kabul Edildi</span>
                             break;
+
                         case SubmissionStatus.Rejected:
-                            <span class="badge bg-danger fs-6 px-3 py-2">Reddedildi</span>
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-2">Reddedildi</span>
                             break;
+
                         case SubmissionStatus.Presented:
-                            <span class="badge bg-primary fs-6 px-3 py-2">Sunuldu (Tamamlandı)</span>
+                            <span class="badge bg-primary border border-primary px-2 py-1 rounded-2">Sunuldu (Tamamlandı)</span>
                             break;
+
                         case SubmissionStatus.Withdrawn:
-                            <span class="badge bg-secondary fs-6 px-3 py-2">Geri Çekildi</span>
+                            <span class="badge bg-secondary border border-secondary px-2 py-1 rounded-2">Geri Çekildi</span>
                             break;
+
                         default:
                             <span class="badge bg-light text-dark border fs-6 px-3 py-2">@Model.Status</span>
                             break;
@@ -208,6 +259,39 @@
             </div>
         </div>
 
+    </div>
+
+    <div class="card border-0 shadow-sm mt-4 mb-5 border-start border-5 border-primary">
+        <div class="card-body p-4">
+            <h5 class="fw-bold text-primary mb-3"><i class="fas fa-user-shield me-2"></i> Yönetici / Hakem Paneli</h5>
+            <p class="text-muted small">Bu alanı sadece yetkili kullanıcılar görebilir. Bildiri statüsünü buradan değiştirebilirsiniz.</p>
+            
+            <form asp-action="ChangeStatus" method="post" class="row g-3 align-items-end">
+                <input type="hidden" name="id" value="@Model.SubmissionId" />
+                
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold text-muted">Durum Seçin</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="UnderReview" selected="@(Model.Status == SubmissionStatus.UnderReview)">İnceleniyor</option>
+                        <option value="RevisionRequired" selected="@(Model.Status == SubmissionStatus.RevisionRequired)">Revizyon İste</option>
+                        <option value="Accepted" selected="@(Model.Status == SubmissionStatus.Accepted)">Kabul Et (Onayla)</option>
+                        <option value="Rejected" selected="@(Model.Status == SubmissionStatus.Rejected)">Reddet</option>
+                        <option value="Presented" selected="@(Model.Status == SubmissionStatus.Presented)">Sunuldu (Tamamla)</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold text-muted">Yazara Not (Opsiyonel)</label>
+                    <input type="text" name="note" class="form-control form-control-sm" placeholder="Bildirim mesajına eklenecektir...">
+                </div>
+
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold">
+                        <i class="fas fa-save me-1"></i> Güncelle
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <div class="card dashboard-card border-0 shadow-sm">

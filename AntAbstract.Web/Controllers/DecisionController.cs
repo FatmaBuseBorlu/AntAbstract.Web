@@ -9,50 +9,54 @@ using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Authorization;
 using AntAbstract.Web.Models.ViewModels;
 using Microsoft.AspNetCore.Identity;
-using AntAbstract.Infrastructure.Services;
+// Eger EmailService yoksa bu satiri ve constructor'daki parametreyi silebilirsin
+// using AntAbstract.Infrastructure.Services; 
 
 namespace AntAbstract.Web.Controllers
 {
-    [Authorize(Roles = "Admin,Organizator")]
+    [Authorize(Roles = "Admin")] // Organizator rolünü kaldırdım, sadece Admin kalsın şimdilik
     public class DecisionController : Controller
     {
         private readonly AppDbContext _context;
-        private readonly TenantContext _tenantContext;
-        private readonly IEmailService _emailService;
+        // TenantContext yoksa silebilirsin, varsa kalsın
+        // private readonly TenantContext _tenantContext; 
         private readonly UserManager<AppUser> _userManager;
 
-        public DecisionController(AppDbContext context, TenantContext tenantContext, IEmailService emailService, UserManager<AppUser> userManager)
+        public DecisionController(AppDbContext context, UserManager<AppUser> userManager)
         {
             _context = context;
-            _tenantContext = tenantContext;
-            _emailService = emailService;
             _userManager = userManager;
         }
 
         public async Task<IActionResult> Index()
         {
-            var conference = await _context.Conferences
-                .FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
+            // Eğer Tenant (Çoklu Firma) yapısı kullanmıyorsan direkt ilk kongreyi alabilirsin
+            // Veya aktif kongreyi bulma mantığını buraya yazabilirsin.
+            var conference = await _context.Conferences.OrderByDescending(c => c.StartDate).FirstOrDefaultAsync();
 
             if (conference == null)
             {
-                ViewBag.ErrorMessage = "Konferans bulunamadı.";
-                return View(new DecisionIndexViewModel { AwaitingDecision = new List<Submission>(), AlreadyDecided = new List<Submission>() });
+                ViewBag.ErrorMessage = "Sistemde aktif bir kongre bulunamadı.";
+                return View(new DecisionIndexViewModel());
             }
 
             var allSubmissions = _context.Submissions
                 .Include(s => s.Author)
-                .Include(s => s.ReviewAssignments)
+                .Include(s => s.ReviewAssignments).ThenInclude(ra => ra.Review) // Review'i include etmeliyiz
                 .Where(s => s.ConferenceId == conference.Id);
 
+            // KARAR BEKLEYENLER:
+            // Statüsü "İnceleniyor" olan VE Hakem atanmış VE Tüm hakemler puan vermiş (Review != null)
             var awaitingDecision = await allSubmissions
-              
-                .Where(s => s.Status == SubmissionStatus.UnderReview && s.ReviewAssignments.Any() && s.ReviewAssignments.All(ra => ra.Status == "Completed"))
+                .Where(s => s.Status == SubmissionStatus.UnderReview
+                            && s.ReviewAssignments.Any()
+                            && s.ReviewAssignments.All(ra => ra.Review != null))
                 .ToListAsync();
 
+            // KARAR VERİLMİŞLER:
+            // Kabul veya Red durumunda olanlar
             var decided = await allSubmissions
-               
-                .Where(s => s.Status != SubmissionStatus.New && s.Status != SubmissionStatus.UnderReview)
+                .Where(s => s.Status == SubmissionStatus.Accepted || s.Status == SubmissionStatus.Rejected || s.Status == SubmissionStatus.RevisionRequired)
                 .ToListAsync();
 
             var viewModel = new DecisionIndexViewModel
@@ -64,71 +68,48 @@ namespace AntAbstract.Web.Controllers
             return View(viewModel);
         }
 
-        
-        public async Task<IActionResult> MakeDecision(Guid id)
-        {
-            var submission = await _context.Submissions
-                .Include(s => s.Author)
-                .Include(s => s.ReviewAssignments)
-                    .ThenInclude(ra => ra.AppUser) 
-                .Include(s => s.ReviewAssignments)
-                    .ThenInclude(ra => ra.Review)
-                        .ThenInclude(r => r.Answers)
-                            .ThenInclude(a => a.Criterion)
-                .FirstOrDefaultAsync(s => s.SubmissionId == id);
-
-            if (submission == null) return NotFound();
-
-            return View(submission);
-        }
-
+        // KARAR VERME İŞLEMİ (Kabul / Red)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MakeDecision(Guid submissionId, string finalDecision)
+        public async Task<IActionResult> MakeDecision(Guid submissionId, string decision, string note)
         {
-            if (submissionId == Guid.Empty || string.IsNullOrEmpty(finalDecision))
+            var submission = await _context.Submissions.FindAsync(submissionId);
+            if (submission == null) return NotFound();
+
+            if (decision == "Accept")
             {
-                TempData["ErrorMessage"] = "Geçersiz bir seçim yaptınız.";
-                return RedirectToAction(nameof(Index));
+                submission.Status = SubmissionStatus.Accepted;
+                // Opsiyonel: Yazara kabul maili gönder
+            }
+            else if (decision == "Reject")
+            {
+                submission.Status = SubmissionStatus.Rejected;
+                // Opsiyonel: Yazara red maili gönder
+            }
+            else if (decision == "Revision")
+            {
+                submission.Status = SubmissionStatus.RevisionRequired;
             }
 
-            var submissionToUpdate = await _context.Submissions.Include(s => s.Author).FirstOrDefaultAsync(s => s.SubmissionId == submissionId);
-            if (submissionToUpdate == null) return NotFound();
+            submission.DecisionDate = DateTime.UtcNow;
 
-            if (Enum.TryParse<SubmissionStatus>(finalDecision, true, out var statusEnum))
+            // Eğer yönetici notunu kaydetmek istersen Notification veya Submission tablosuna ekleyebilirsin
+
+            // Bildirim Oluştur
+            var notification = new Notification
             {
-                submissionToUpdate.Status = statusEnum;
-            }
-            else
-            {
-
-                submissionToUpdate.Status = SubmissionStatus.Accepted; 
-            }
-
-
-            submissionToUpdate.FinalDecision = finalDecision; 
-            submissionToUpdate.DecisionDate = DateTime.UtcNow;
-
+                UserId = submission.AuthorId,
+                Title = "Bildiri Sonucu Açıklandı",
+                Message = $"'{submission.Title}' başlıklı bildiriniz için karar: {decision}",
+                Link = $"/Submission/Details/{submission.SubmissionId}",
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Notifications.Add(notification);
 
             await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Karar başarıyla kaydedildi.";
 
-
-            try
-            {
-                var author = submissionToUpdate.Author ?? await _userManager.FindByIdAsync(submissionToUpdate.AuthorId);
-                if (author != null && !string.IsNullOrEmpty(author.Email))
-                {
-                    var subject = $"Özetiniz Hakkında Karar Verildi: {finalDecision}";
-                    var message = $"<h1>Merhaba {author.FirstName},</h1><p>'{submissionToUpdate.Title}' başlıklı özetiniz hakkında kongre komitesi tarafından bir karar verilmiştir.</p><p><strong>Nihai Karar: {finalDecision}</strong></p><p>Detayları görmek için sisteme giriş yapabilirsiniz.</p>";
-                    await _emailService.SendEmailAsync(author.Email, subject, message);
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"YAZARA KARAR E-POSTASI GÖNDERİM HATASI: {ex.Message}");
-            }
-
-            TempData["SuccessMessage"] = $"'{submissionToUpdate.Title}' başlıklı özet için karar başarıyla kaydedildi.";
             return RedirectToAction(nameof(Index));
         }
     }

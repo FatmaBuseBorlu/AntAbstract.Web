@@ -1,40 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AntAbstract.Domain.Entities
 {
     public class Review
     {
         [Key]
-        public Guid Id { get; set; }
+        public int Id { get; set; }
 
-        [Required]
-        public Guid AssignmentId { get; set; }
+        public string ReviewerName { get; set; } 
+        public string CommentsToAuthor { get; set; }
+        public string Recommendation { get; set; } 
+        public int Score { get; set; } 
 
-        [Range(1, 5)]
-        public int? Score { get; set; }
-
-        [StringLength(4000)]
-        public string? CommentsToAuthor { get; set; }
-
-        [StringLength(4000)]
-        public string? ConfidentialComments { get; set; }
-
-        [StringLength(50)]
-        public string? Recommendation { get; set; }
-
-        public DateTime? CompletedDate { get; set; }
-        public Guid ReviewAssignmentId { get; set; }
-        [ForeignKey("ReviewAssignmentId")]
-        public ReviewAssignment ReviewAssignment { get; set; }
-        public DateTime ReviewDate { get; set; }
-        public ICollection<ReviewAnswer> Answers { get; set; } = new List<ReviewAnswer>();
-
-
+        public DateTime ReviewedAt { get; set; } = DateTime.UtcNow;
     }
 }
