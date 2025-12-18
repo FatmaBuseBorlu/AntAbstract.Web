@@ -21,8 +21,6 @@ namespace AntAbstract.Domain.Entities
 
         [Required]
         public string ReviewerId { get; set; }
-
-        [ForeignKey(nameof(ReviewerId))]
         public AppUser AppUser { get; set; } // Tip "Reviewer"dan "AppUser"a değiştirildi ve ismi AppUser oldu.
 
         public Review Review { get; set; }
