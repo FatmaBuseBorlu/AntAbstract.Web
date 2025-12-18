@@ -8,20 +8,28 @@ namespace AntAbstract.Domain.Entities
 {
     public enum SubmissionStatus
     {
+        // --- ESKİ KODLARIN ARADIĞI ---
         New = 0,
-        UnderReview = 1,
-        Accepted = 2,
-        Rejected = 3,
-        RevisionRequired = 4,
-        Presented = 5,
-        Withdrawn = 6
+        Presented = 1,
+        Withdrawn = 2,
+
+        // --- YENİ SİSTEMİN ARADIĞI ---
+        Pending = 10,           // Karar Bekliyor
+        UnderReview = 11,       // Hakemde
+        Accepted = 12,          // Kabul
+        Rejected = 13,          // Red
+        RevisionRequired = 14   // Revizyon
     }
 
     public enum SubmissionFileType
     {
-        FullTextDoc = 0,
-        AbstractPdf = 1,
-        Presentation = 2,
-        Receipt = 3
+        // Yeni İsimler
+        FullText = 1,
+        Abstract = 2,
+        Presentation = 3,
+        Supplementary = 4,
+
+        // --- ESKİ KODLARIN ARADIĞI (Eşleştirme) ---
+        FullTextDoc = 1 // Eski kod "FullTextDoc" dediğinde "FullText" (1) anlasın.
     }
 }

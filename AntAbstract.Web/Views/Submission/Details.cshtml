@@ -3,7 +3,7 @@
 
 @{
     ViewData["Title"] = "Bildiri Detayı";
-    Layout = "_LayoutDashboard";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 }
 
 <div class="container-fluid">
@@ -26,7 +26,8 @@
                 <div class="progress" style="height: 2px;">
                     @{
                         int progressVal = 0;
-                        if (Model.Status == SubmissionStatus.New) { progressVal = 15; }
+                        // Enum değerlerine göre ilerleme yüzdesi
+                        if (Model.Status == SubmissionStatus.New || Model.Status == SubmissionStatus.Pending) { progressVal = 15; }
                         else if (Model.Status == SubmissionStatus.UnderReview || Model.Status == SubmissionStatus.RevisionRequired) { progressVal = 50; }
                         else if (Model.Status == SubmissionStatus.Accepted || Model.Status == SubmissionStatus.Rejected) { progressVal = 85; }
                         else if (Model.Status == SubmissionStatus.Presented) { progressVal = 100; }
@@ -34,19 +35,19 @@
                     <div class="progress-bar bg-success" role="progressbar" style="width: @progressVal%;" aria-valuenow="@progressVal" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
                 
-                <button type="button" class="position-absolute top-0 start-0 translate-middle btn btn-sm @(Model.Status >= SubmissionStatus.New ? "btn-success" : "btn-secondary") rounded-pill" style="width: 2rem; height:2rem;">1</button>
+                <button type="button" class="position-absolute top-0 start-0 translate-middle btn btn-sm @(progressVal >= 15 ? "btn-success" : "btn-secondary") rounded-pill" style="width: 2rem; height:2rem;">1</button>
                 <div class="position-absolute top-0 start-0 translate-middle mt-4 text-center" style="width: 100px;">
-                    <small class="fw-bold @(Model.Status >= SubmissionStatus.New ? "text-success" : "text-muted")">Gönderildi</small>
+                    <small class="fw-bold @(progressVal >= 15 ? "text-success" : "text-muted")">Gönderildi</small>
                 </div>
 
-                <button type="button" class="position-absolute top-0 start-50 translate-middle btn btn-sm @(Model.Status >= SubmissionStatus.UnderReview || Model.Status == SubmissionStatus.RevisionRequired || Model.Status == SubmissionStatus.Accepted || Model.Status == SubmissionStatus.Rejected || Model.Status == SubmissionStatus.Presented ? "btn-success" : "btn-secondary") rounded-pill" style="width: 2rem; height:2rem;">2</button>
+                <button type="button" class="position-absolute top-0 start-50 translate-middle btn btn-sm @(progressVal >= 50 ? "btn-success" : "btn-secondary") rounded-pill" style="width: 2rem; height:2rem;">2</button>
                 <div class="position-absolute top-0 start-50 translate-middle mt-4 text-center" style="width: 120px;">
-                    <small class="fw-bold @(Model.Status >= SubmissionStatus.UnderReview ? "text-success" : "text-muted")">Değerlendirme</small>
+                    <small class="fw-bold @(progressVal >= 50 ? "text-success" : "text-muted")">Değerlendirme</small>
                 </div>
 
-                <button type="button" class="position-absolute top-0 translate-middle btn btn-sm @(Model.Status == SubmissionStatus.Accepted || Model.Status == SubmissionStatus.Rejected || Model.Status == SubmissionStatus.Presented ? "btn-success" : "btn-secondary") rounded-pill" style="left: 85%; width: 2rem; height:2rem;">3</button>
+                <button type="button" class="position-absolute top-0 translate-middle btn btn-sm @(progressVal >= 85 ? "btn-success" : "btn-secondary") rounded-pill" style="left: 85%; width: 2rem; height:2rem;">3</button>
                 <div class="position-absolute top-0 translate-middle mt-4 text-center" style="left: 85%; width: 100px;">
-                    <small class="fw-bold @(Model.Status == SubmissionStatus.Accepted || Model.Status == SubmissionStatus.Rejected ? "text-success" : "text-muted")">Karar</small>
+                    <small class="fw-bold @(progressVal >= 85 ? "text-success" : "text-muted")">Karar</small>
                 </div>
 
                 @if(Model.Status == SubmissionStatus.Presented)
@@ -69,25 +70,26 @@
                     @switch (Model.Status)
                     {
                         case SubmissionStatus.New:
-                            <span class="badge bg-primary fs-6 px-3 py-2">Yeni Gönderildi</span>
+                        case SubmissionStatus.Pending:
+                            <span class="badge bg-primary fs-6 px-3 py-2">Yeni / Bekliyor</span>
                             break;
 
                         case SubmissionStatus.UnderReview:
-                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 rounded-2" style="font-size: 1rem;">
+                            <span class="badge bg-warning text-dark border border-warning px-2 py-1 rounded-2">
                                 <i class="fas fa-hourglass-half me-1"></i> İnceleniyor
                             </span>
                             break;
 
                         case SubmissionStatus.RevisionRequired:
-                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1 rounded-2">Revizyon İsteniyor</span>
+                            <span class="badge bg-info text-dark border border-info px-2 py-1 rounded-2">Revizyon İsteniyor</span>
                             break;
 
                         case SubmissionStatus.Accepted:
-                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-2">Kabul Edildi</span>
+                            <span class="badge bg-success border border-success px-2 py-1 rounded-2">Kabul Edildi</span>
                             break;
 
                         case SubmissionStatus.Rejected:
-                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-2">Reddedildi</span>
+                            <span class="badge bg-danger border border-danger px-2 py-1 rounded-2">Reddedildi</span>
                             break;
 
                         case SubmissionStatus.Presented:
@@ -135,21 +137,14 @@
                     else if (Model.Status == SubmissionStatus.Accepted)
                     {
                         <div class="mb-3">
-                            <a href="https://zoom.us/join" target="_blank" class="btn btn-danger w-100 fw-bold py-2 shadow-sm border border-danger">
+                            <a href="#" class="btn btn-danger w-100 fw-bold py-2 shadow-sm border border-danger">
                                 <i class="fas fa-video me-2"></i> KONGREYE KATIL (ZOOM)
-                                <span class="badge bg-white text-danger ms-2 animate__animated animate__flash animate__infinite">CANLI</span>
+                                <span class="badge bg-white text-danger ms-2">CANLI</span>
                             </a>
-                            <div class="text-muted text-center mt-1" style="font-size: 0.7rem;">
-                                <i class="fas fa-info-circle me-1"></i> Oturum başlamadan 15 dk önce bağlanınız.
-                            </div>
                         </div>
 
                         <div class="alert alert-success mb-2 small border-success p-2">
                             <i class="fas fa-check-circle me-1"></i> Bildiriniz kabul edildi.
-                        </div>
-
-                        <div class="alert alert-info p-2 small border-info mb-2">
-                            <i class="fas fa-info-circle me-1"></i> Katılım Belgesi, sunum yapıldıktan sonra aktif olacaktır.
                         </div>
                         
                         <button class="btn btn-sm btn-primary w-100 fw-bold shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#uploadPresentationCollapse">
@@ -191,12 +186,9 @@
                             <div class="alert alert-warning p-2 small border-warning mb-1">
                                 <i class="fas fa-lock me-1"></i> Belge için lütfen anketi doldurunuz.
                             </div>
-                            <a asp-controller="Survey" asp-action="Index" asp-route-submissionId="@Model.SubmissionId" class="btn btn-sm btn-warning w-100 text-dark fw-bold mb-2 shadow-sm">
+                            <a href="#" class="btn btn-sm btn-warning w-100 text-dark fw-bold mb-2 shadow-sm">
                                 <i class="fas fa-poll-h me-2"></i> Değerlendirme Anketi
                             </a>
-                            <button class="btn btn-sm btn-outline-secondary w-100 disabled mb-2" disabled>
-                                <i class="fas fa-certificate me-1"></i> Katılım Belgesi (Kilitli)
-                            </button>
                         }
                     }
                     else if (Model.Status == SubmissionStatus.Withdrawn)
@@ -258,41 +250,44 @@
                 </div>
             </div>
         </div>
-
     </div>
 
-    <div class="card border-0 shadow-sm mt-4 mb-5 border-start border-5 border-primary">
-        <div class="card-body p-4">
-            <h5 class="fw-bold text-primary mb-3"><i class="fas fa-user-shield me-2"></i> Yönetici / Hakem Paneli</h5>
-            <p class="text-muted small">Bu alanı sadece yetkili kullanıcılar görebilir. Bildiri statüsünü buradan değiştirebilirsiniz.</p>
-            
-            <form asp-action="ChangeStatus" method="post" class="row g-3 align-items-end">
-                <input type="hidden" name="id" value="@Model.SubmissionId" />
+    @if (User.IsInRole("Admin"))
+    {
+        <div class="card border-0 shadow-sm mt-4 mb-5 border-start border-5 border-primary">
+            <div class="card-body p-4">
+                <h5 class="fw-bold text-primary mb-3"><i class="fas fa-user-shield me-2"></i> Yönetici / Hakem Paneli</h5>
+                <p class="text-muted small">Bu alanı sadece yetkili kullanıcılar görebilir. Bildiri statüsünü buradan değiştirebilirsiniz.</p>
                 
-                <div class="col-md-4">
-                    <label class="form-label small fw-bold text-muted">Durum Seçin</label>
-                    <select name="status" class="form-select form-select-sm">
-                        <option value="UnderReview" selected="@(Model.Status == SubmissionStatus.UnderReview)">İnceleniyor</option>
-                        <option value="RevisionRequired" selected="@(Model.Status == SubmissionStatus.RevisionRequired)">Revizyon İste</option>
-                        <option value="Accepted" selected="@(Model.Status == SubmissionStatus.Accepted)">Kabul Et (Onayla)</option>
-                        <option value="Rejected" selected="@(Model.Status == SubmissionStatus.Rejected)">Reddet</option>
-                        <option value="Presented" selected="@(Model.Status == SubmissionStatus.Presented)">Sunuldu (Tamamla)</option>
-                    </select>
-                </div>
-                
-                <div class="col-md-6">
-                    <label class="form-label small fw-bold text-muted">Yazara Not (Opsiyonel)</label>
-                    <input type="text" name="note" class="form-control form-control-sm" placeholder="Bildirim mesajına eklenecektir...">
-                </div>
+                <form asp-action="ChangeStatus" method="post" class="row g-3 align-items-end">
+                    <input type="hidden" name="id" value="@Model.SubmissionId" />
+                    
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted">Durum Seçin</label>
+                        <select name="status" class="form-select form-select-sm">
+                            <option value="Pending" selected="@(Model.Status == SubmissionStatus.Pending)">Bekliyor</option>
+                            <option value="UnderReview" selected="@(Model.Status == SubmissionStatus.UnderReview)">İnceleniyor</option>
+                            <option value="RevisionRequired" selected="@(Model.Status == SubmissionStatus.RevisionRequired)">Revizyon İste</option>
+                            <option value="Accepted" selected="@(Model.Status == SubmissionStatus.Accepted)">Kabul Et (Onayla)</option>
+                            <option value="Rejected" selected="@(Model.Status == SubmissionStatus.Rejected)">Reddet</option>
+                            <option value="Presented" selected="@(Model.Status == SubmissionStatus.Presented)">Sunuldu (Tamamla)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Yazara Not (Opsiyonel)</label>
+                        <input type="text" name="note" class="form-control form-control-sm" placeholder="Bildirim mesajına eklenecektir...">
+                    </div>
 
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold">
-                        <i class="fas fa-save me-1"></i> Güncelle
-                    </button>
-                </div>
-            </form>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold">
+                            <i class="fas fa-save me-1"></i> Güncelle
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
+    }
 
     <div class="card dashboard-card border-0 shadow-sm">
         <div class="card-header bg-white border-bottom-0 pt-4 px-4">
@@ -381,12 +376,21 @@
                 <div class="tab-pane fade" id="reviews" role="tabpanel">
                     @if (Model.ReviewAssignments != null && Model.ReviewAssignments.Any(r => r.Review != null))
                     {
+                        <div class="alert alert-info border-0 d-flex align-items-center mb-4">
+                             <i class="fas fa-info-circle fs-4 me-3"></i>
+                             <div>
+                                 <strong>Bilgilendirme:</strong> Aşağıdaki yorumlar, hakemler tarafından yapılmıştır.
+                             </div>
+                        </div>
+
                         @foreach (var assignment in Model.ReviewAssignments.Where(r => r.Review != null))
                         {
                             <div class="card mb-3 border-warning">
                                 <div class="card-header bg-warning bg-opacity-10 border-warning">
                                     <strong class="text-dark">Hakem Değerlendirmesi</strong>
-                                    <span class="float-end badge bg-white text-dark border">@assignment.Review.Recommendation</span>
+                                    <span class="float-end badge bg-white text-dark border">
+                                        @assignment.Review.Recommendation
+                                    </span>
                                 </div>
                                 <div class="card-body">
                                     <h6 class="card-title text-muted small fw-bold">Yazara Notlar:</h6>
@@ -397,7 +401,10 @@
                     }
                     else
                     {
-                        <div class="alert alert-info"><i class="fas fa-info-circle me-2"></i> Henüz değerlendirme sonucu yok.</div>
+                        <div class="alert alert-light border text-center py-5">
+                            <i class="fas fa-comment-slash fa-2x text-muted mb-3"></i>
+                            <p class="text-muted mb-0">Henüz görüntülenecek bir hakem yorumu bulunmamaktadır.</p>
+                        </div>
                     }
                 </div>
 

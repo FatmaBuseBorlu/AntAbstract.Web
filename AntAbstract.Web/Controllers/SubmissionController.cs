@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Rotativa.AspNetCore;
 using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Rotativa.AspNetCore;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -36,7 +36,7 @@ namespace AntAbstract.Web.Controllers
                 .Include(s => s.SubmissionAuthors)
                 .Include(s => s.Files)
                 .Include(s => s.Conference)
-                .OrderByDescending(s => s.CreatedAt)
+                .OrderByDescending(s => s.CreatedDate) 
                 .ToListAsync();
 
             var viewModel = new SubmissionListViewModel { Submissions = userSubmissions };
@@ -49,13 +49,19 @@ namespace AntAbstract.Web.Controllers
             var userId = _userManager.GetUserId(User);
 
             var submission = await _context.Submissions
+                .Include(s => s.Author) 
                 .Include(s => s.SubmissionAuthors)
                 .Include(s => s.Files)
                 .Include(s => s.ReviewAssignments).ThenInclude(ra => ra.Review)
-                .Include(s => s.Conference).ThenInclude(c => c.Tenant)
-                .FirstOrDefaultAsync(s => s.SubmissionId == id);
+                .Include(s => s.Conference)
+                .FirstOrDefaultAsync(s => s.Id == id);
 
             if (submission == null) return NotFound();
+
+            if (!User.IsInRole("Admin") && submission.AuthorId != userId)
+            {
+                return Forbid();
+            }
 
             return View(submission);
         }
@@ -67,16 +73,16 @@ namespace AntAbstract.Web.Controllers
             if (submission == null) return NotFound();
 
             submission.Status = status;
-            submission.DecisionDate = DateTime.UtcNow; 
+            submission.DecisionDate = DateTime.UtcNow;
 
-            string title = "";
-            string message = "";
+            string title = "Bildiri Durum Güncellemesi";
+            string message = $"Bildirinizin durumu güncellendi: {status}";
 
             switch (status)
             {
                 case SubmissionStatus.Accepted:
                     title = "Tebrikler! Bildiriniz Kabul Edildi";
-                    message = $"'{submission.Title}' başlıklı çalışmanız kongre programına dahil edilmiştir.";
+                    message = $"'{submission.Title}' başlıklı çalışmanız kabul edilmiştir.";
                     break;
                 case SubmissionStatus.Rejected:
                     title = "Bildiri Değerlendirme Sonucu";
@@ -84,26 +90,19 @@ namespace AntAbstract.Web.Controllers
                     break;
                 case SubmissionStatus.RevisionRequired:
                     title = "Düzeltme Talebi";
-                    message = $"Çalışmanız için hakem düzeltme talep etmiştir. Lütfen detayları inceleyiniz.";
+                    message = "Çalışmanız için hakem düzeltme talep etmiştir.";
                     break;
                 case SubmissionStatus.UnderReview:
                     title = "Değerlendirme Başladı";
-                    message = $"Bildiriniz hakem değerlendirme sürecine alınmıştır.";
-                    break;
-                default:
-                    title = "Bildiri Durum Güncellemesi";
-                    message = $"Bildirinizin durumu güncellendi: {status}";
+                    message = "Bildiriniz hakem değerlendirme sürecine alınmıştır.";
                     break;
             }
 
-            if (!string.IsNullOrEmpty(note))
-            {
-                message += $" (Not: {note})";
-            }
+            if (!string.IsNullOrEmpty(note)) message += $" (Not: {note})";
 
             var notification = new Notification
             {
-                UserId = submission.AuthorId, 
+                UserId = submission.AuthorId,
                 Title = title,
                 Message = message,
                 Link = $"/Submission/Details/{id}",
@@ -114,7 +113,7 @@ namespace AntAbstract.Web.Controllers
             _context.Notifications.Add(notification);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Statü güncellendi ve yazara bildirim gönderildi.";
+            TempData["SuccessMessage"] = "Statü güncellendi ve bildirim gönderildi.";
             return RedirectToAction("Details", new { id = id });
         }
 
@@ -163,13 +162,17 @@ namespace AntAbstract.Web.Controllers
 
                 var submission = new Submission
                 {
+                    Id = Guid.NewGuid(),
                     Title = model.Title,
-                    AbstractText = model.AbstractText,
+                    Abstract = model.AbstractText,
                     Keywords = model.Keywords,
                     AuthorId = user.Id,
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedDate = DateTime.UtcNow,
                     Status = SubmissionStatus.New,
-                    ConferenceId = model.ConferenceId
+                    ConferenceId = model.ConferenceId,
+
+                    SubmissionAuthors = new List<SubmissionAuthor>(),
+                    Files = new List<SubmissionFile>()
                 };
 
                 if (model.Authors != null)
@@ -197,7 +200,7 @@ namespace AntAbstract.Web.Controllers
                         FileName = originalFileName,
                         StoredFileName = uniqueFileName,
                         FilePath = "/uploads/submissions/" + uniqueFileName,
-                        Type = SubmissionFileType.FullTextDoc,
+                        Type = SubmissionFileType.FullText, 
                         UploadedAt = DateTime.UtcNow,
                         Version = 1
                     });
@@ -219,15 +222,16 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> Edit(Guid id)
         {
             var user = await _userManager.GetUserAsync(User);
-            var submission = await _context.Submissions.Include(s => s.SubmissionAuthors)
-                .FirstOrDefaultAsync(s => s.SubmissionId == id && s.AuthorId == user.Id);
+            var submission = await _context.Submissions
+                .Include(s => s.SubmissionAuthors)
+                .FirstOrDefaultAsync(s => s.Id == id && s.AuthorId == user.Id);
 
             if (submission == null) return NotFound();
 
             var model = new SubmissionCreateViewModel
             {
                 Title = submission.Title,
-                AbstractText = submission.AbstractText,
+                AbstractText = submission.Abstract, 
                 Keywords = submission.Keywords,
                 ConferenceId = submission.ConferenceId,
                 Authors = submission.SubmissionAuthors.OrderBy(a => a.Order).Select(a => new SubmissionAuthorViewModel
@@ -254,13 +258,14 @@ namespace AntAbstract.Web.Controllers
             if (ModelState.IsValid)
             {
                 var user = await _userManager.GetUserAsync(User);
-                var submission = await _context.Submissions.Include(s => s.SubmissionAuthors).Include(s => s.Files)
-                    .FirstOrDefaultAsync(s => s.SubmissionId == id && s.AuthorId == user.Id);
+                var submission = await _context.Submissions
+                    .Include(s => s.SubmissionAuthors).Include(s => s.Files)
+                    .FirstOrDefaultAsync(s => s.Id == id && s.AuthorId == user.Id);
 
                 if (submission == null) return NotFound();
 
                 submission.Title = model.Title;
-                submission.AbstractText = model.AbstractText;
+                submission.Abstract = model.AbstractText; 
                 submission.Keywords = model.Keywords;
 
                 _context.RemoveRange(submission.SubmissionAuthors);
@@ -271,7 +276,7 @@ namespace AntAbstract.Web.Controllers
                     {
                         submission.SubmissionAuthors.Add(new SubmissionAuthor
                         {
-                            SubmissionId = submission.SubmissionId,
+                            SubmissionId = submission.Id,
                             FirstName = authorVm.FirstName,
                             LastName = authorVm.LastName,
                             Email = authorVm.Email,
@@ -300,7 +305,7 @@ namespace AntAbstract.Web.Controllers
                         FileName = model.SubmissionFile.FileName,
                         StoredFileName = uniqueFileName,
                         FilePath = "/uploads/submissions/" + uniqueFileName,
-                        Type = SubmissionFileType.FullTextDoc,
+                        Type = SubmissionFileType.FullText, 
                         UploadedAt = DateTime.UtcNow,
                         Version = submission.Files.Count + 1
                     });
@@ -317,7 +322,11 @@ namespace AntAbstract.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> UploadRevision(Guid id)
         {
-            var submission = await _context.Submissions.FirstOrDefaultAsync(s => s.SubmissionId == id && s.AuthorId == _userManager.GetUserId(User));
+            var user = await _userManager.GetUserAsync(User);
+
+            var submission = await _context.Submissions
+                .FirstOrDefaultAsync(s => s.Id == id && s.AuthorId == user.Id);
+
             if (submission == null || submission.Status != SubmissionStatus.RevisionRequired)
             {
                 TempData["ErrorMessage"] = "Bu bildirinin revizyon süresi kapalıdır.";
@@ -326,12 +335,16 @@ namespace AntAbstract.Web.Controllers
             return View(submission);
         }
 
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UploadRevision(Guid id, IFormFile revisionFile)
         {
             var userId = _userManager.GetUserId(User);
-            var submission = await _context.Submissions.Include(s => s.Files).FirstOrDefaultAsync(s => s.SubmissionId == id && s.AuthorId == userId);
+
+            var submission = await _context.Submissions
+                .Include(s => s.Files)
+                .FirstOrDefaultAsync(s => s.Id == id && s.AuthorId == userId);
 
             if (submission == null || submission.Status != SubmissionStatus.RevisionRequired)
                 return RedirectToAction(nameof(Index));
@@ -349,13 +362,15 @@ namespace AntAbstract.Web.Controllers
                     FileName = revisionFile.FileName,
                     StoredFileName = newFileName,
                     FilePath = "/uploads/submissions/" + newFileName,
-                    Type = SubmissionFileType.FullTextDoc,
+                    Type = SubmissionFileType.FullText,
                     UploadedAt = DateTime.UtcNow,
                     Version = submission.Files.Count + 1,
-                    SubmissionId = submission.SubmissionId
+                    SubmissionId = submission.Id
                 });
 
+
                 submission.Status = SubmissionStatus.UnderReview;
+
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Revizyon yüklendi.";
             }
@@ -365,7 +380,7 @@ namespace AntAbstract.Web.Controllers
         [HttpPost]
         public async Task<IActionResult> UploadPresentation(Guid id, IFormFile presentationFile)
         {
-            var submission = await _context.Submissions.Include(s => s.Files).FirstOrDefaultAsync(s => s.SubmissionId == id);
+            var submission = await _context.Submissions.Include(s => s.Files).FirstOrDefaultAsync(s => s.Id == id);
             if (submission != null && presentationFile != null)
             {
                 var ext = Path.GetExtension(presentationFile.FileName);
@@ -416,7 +431,7 @@ namespace AntAbstract.Web.Controllers
             var submission = await _context.Submissions
                 .Include(s => s.SubmissionAuthors)
                 .Include(s => s.Conference)
-                .FirstOrDefaultAsync(m => m.SubmissionId == id);
+                .FirstOrDefaultAsync(m => m.Id == id);
 
             if (submission == null) return NotFound();
 
@@ -427,17 +442,18 @@ namespace AntAbstract.Web.Controllers
 
             return new ViewAsPdf("RejectionLetter", submission)
             {
-                FileName = $"Rejection_Letter_{submission.SubmissionId.ToString().Substring(0, 8)}.pdf",
-                PageSize = Rotativa.AspNetCore.Options.Size.A4,
-                PageMargins = new Rotativa.AspNetCore.Options.Margins(20, 20, 20, 20)
+                FileName = $"Rejection_{submission.Id.ToString().Substring(0, 8)}.pdf",
+                PageSize = Rotativa.AspNetCore.Options.Size.A4
             };
         }
 
         [HttpGet]
         public async Task<IActionResult> DownloadAcceptanceLetter(Guid id)
         {
-            var submission = await _context.Submissions.Include(s => s.Conference).Include(s => s.Author)
-                .FirstOrDefaultAsync(s => s.SubmissionId == id && s.AuthorId == _userManager.GetUserId(User));
+            var submission = await _context.Submissions
+                .Include(s => s.Conference)
+                .Include(s => s.Author)
+                .FirstOrDefaultAsync(s => s.Id == id && s.AuthorId == _userManager.GetUserId(User));
 
             if (submission == null || (submission.Status != SubmissionStatus.Accepted && submission.Status != SubmissionStatus.Presented))
             {
@@ -448,22 +464,20 @@ namespace AntAbstract.Web.Controllers
             var viewModel = new AcceptanceLetterViewModel
             {
                 AuthorFullName = $"{submission.Author.FirstName} {submission.Author.LastName}",
-                AuthorInstitution = submission.Author.University ?? "Kurum Yok",
+                AuthorInstitution = submission.Author.Institution ?? "",
                 SubmissionTitle = submission.Title,
                 ConferenceName = submission.Conference.Title,
                 ConferenceStartDate = submission.Conference.StartDate,
                 AcceptanceDate = submission.DecisionDate ?? DateTime.Now,
-                DocumentNumber = "DOC-" + submission.SubmissionId.ToString().Substring(0, 8).ToUpper(),
+                DocumentNumber = "DOC-" + submission.Id.ToString().Substring(0, 8).ToUpper(),
                 ConferenceLogoPath = submission.Conference.LogoPath
             };
 
             return new ViewAsPdf("AcceptanceLetterPreview", viewModel)
             {
-                FileName = $"Certificate_{submission.SubmissionId.ToString().Substring(0, 5)}.pdf",
+                FileName = $"Certificate_{submission.Id.ToString().Substring(0, 5)}.pdf",
                 PageSize = Rotativa.AspNetCore.Options.Size.A4,
-                PageOrientation = Rotativa.AspNetCore.Options.Orientation.Landscape,
-                PageMargins = { Left = 0, Right = 0, Top = 0, Bottom = 0 },
-                CustomSwitches = "--disable-smart-shrinking --background --print-media-type --enable-local-file-access"
+                PageOrientation = Rotativa.AspNetCore.Options.Orientation.Landscape
             };
         }
 
@@ -473,20 +487,20 @@ namespace AntAbstract.Web.Controllers
             var submission = await _context.Submissions
                 .Include(s => s.Author)
                 .Include(s => s.Conference)
-                .FirstOrDefaultAsync(s => s.SubmissionId == id);
+                .FirstOrDefaultAsync(s => s.Id == id);
 
             if (submission == null) return NotFound();
 
             if (submission.Status == SubmissionStatus.Withdrawn || submission.Status == SubmissionStatus.Rejected)
             {
-                TempData["ErrorMessage"] = "Geri çekilen veya reddedilen bildiriler için yaka kartı oluşturulamaz.";
+                TempData["ErrorMessage"] = "Yaka kartı oluşturulamaz.";
                 return RedirectToAction(nameof(Details), new { id = id });
             }
 
             var model = new AcceptanceLetterViewModel
             {
                 AuthorFullName = $"{submission.Author.FirstName} {submission.Author.LastName}",
-                AuthorInstitution = submission.Author.University ?? "Kurum Bilgisi Yok",
+                AuthorInstitution = submission.Author.Institution ?? "",
                 ConferenceName = submission.Conference.Title,
                 ConferenceLogoPath = submission.Conference.LogoPath
             };
@@ -494,9 +508,7 @@ namespace AntAbstract.Web.Controllers
             return new ViewAsPdf("BadgePreview", model)
             {
                 PageSize = Rotativa.AspNetCore.Options.Size.A6,
-                PageOrientation = Rotativa.AspNetCore.Options.Orientation.Portrait,
-                PageMargins = { Left = 0, Right = 0, Top = 0, Bottom = 0 },
-                CustomSwitches = "--disable-smart-shrinking --background --print-media-type --enable-local-file-access"
+                PageOrientation = Rotativa.AspNetCore.Options.Orientation.Portrait
             };
         }
     }

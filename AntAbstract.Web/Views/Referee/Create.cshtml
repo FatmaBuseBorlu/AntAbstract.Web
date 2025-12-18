@@ -1,0 +1,56 @@
+﻿@model AntAbstract.Web.Models.ViewModels.RefereeCreateViewModel
+
+@{
+    ViewData["Title"] = "Yeni Hakem Ekle";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-0">Yeni Hakem Tanımla</h5>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="Create" method="post">
+                    <div class="text-danger small mb-3" asp-validation-summary="All"></div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Ad</label>
+                            <input asp-for="FirstName" class="form-control" placeholder="Örn: Ahmet" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Soyad</label>
+                            <input asp-for="LastName" class="form-control" placeholder="Örn: Yılmaz" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email Adresi</label>
+                        <input asp-for="Email" class="form-control" type="email" placeholder="hakem@ornek.com" />
+                        <div class="form-text">Giriş yaparken bu mail adresi kullanılacak.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Kurum / Üniversite</label>
+                        <input asp-for="Institution" class="form-control" placeholder="Örn: İstanbul Üniversitesi" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Şifre Belirle</label>
+                        <input asp-for="Password" class="form-control" type="password" />
+                        <div class="form-text">Hakem sisteme ilk girişinde bu şifreyi kullanacak.</div>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary fw-bold">
+                            <i class="fas fa-save me-2"></i> Hakemi Kaydet
+                        </button>
+                        <a href="/Referee/Index" class="btn btn-link text-muted mt-2">Vazgeç ve Listeye Dön</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

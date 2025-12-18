@@ -10,40 +10,52 @@ using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
-    [Authorize] 
+    [Authorize]
+    // KRİTİK EKLEME: URL'in başında kongre adı (slug) olmalı
+    [Route("{slug}/registration")]
     public class RegistrationController : Controller
     {
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
+        private readonly TenantContext _tenantContext; // Eklendi
 
-        public RegistrationController(AppDbContext context, UserManager<AppUser> userManager)
+        public RegistrationController(AppDbContext context,
+                                      UserManager<AppUser> userManager,
+                                      TenantContext tenantContext)
         {
             _context = context;
             _userManager = userManager;
+            _tenantContext = tenantContext;
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(Guid id)
+        public async Task<IActionResult> Index()
         {
-            if (id == Guid.Empty) return NotFound();
+            // 1. Kongre Kontrolü (URL'deki slug üzerinden)
+            if (_tenantContext.Current == null)
+            {
+                return NotFound("Kongre bulunamadı (URL hatası).");
+            }
 
             var user = await _userManager.GetUserAsync(User);
 
-
+            // 2. Konferansı TenantID (Slug) üzerinden buluyoruz. 
+            // ID'yi URL'den almaya gerek yok, Slug zaten tekil.
             var conference = await _context.Conferences
                 .Include(c => c.Tenant)
-                .FirstOrDefaultAsync(c => c.Id == id);
+                .FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
 
-            if (conference == null) return NotFound("Kongre bulunamadı.");
+            if (conference == null) return NotFound("Bu URL'e bağlı bir kongre kaydı bulunamadı.");
 
+            // 3. Zaten kayıtlı mı?
             var existingRegistration = await _context.Registrations
-                .FirstOrDefaultAsync(r => r.ConferenceId == id && r.AppUserId == user.Id);
+                .FirstOrDefaultAsync(r => r.ConferenceId == conference.Id && r.AppUserId == user.Id);
 
             if (existingRegistration != null)
             {
-                
                 TempData["InfoMessage"] = "Bu kongreye zaten kaydınız bulunmaktadır.";
-                return RedirectToAction("Index", "Payment", new { id = existingRegistration.Id });
+                // Yönlendirirken Slug'ı koruyoruz
+                return RedirectToAction("Index", "Payment", new { slug = _tenantContext.Current.Slug, id = existingRegistration.Id });
             }
 
             return View(conference);
@@ -51,16 +63,22 @@ namespace AntAbstract.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        // Create Action'ı için özel route: site.com/slug/registration/create
+        [Route("create")]
         public async Task<IActionResult> Create(Guid conferenceId)
         {
             var user = await _userManager.GetUserAsync(User);
+
+            // Slug kontrolü (Güvenlik için)
+            if (_tenantContext.Current == null) return NotFound();
 
             bool alreadyRegistered = await _context.Registrations
                 .AnyAsync(r => r.ConferenceId == conferenceId && r.AppUserId == user.Id);
 
             if (alreadyRegistered)
             {
-                return RedirectToAction("Index", "Payment");
+                // Slug ile yönlendirme
+                return RedirectToAction("Index", "Payment", new { slug = _tenantContext.Current.Slug });
             }
 
             var registration = new Registration
@@ -69,7 +87,6 @@ namespace AntAbstract.Web.Controllers
                 ConferenceId = conferenceId,
                 RegistrationDate = DateTime.UtcNow,
                 IsPaid = false,
-
             };
 
             _context.Registrations.Add(registration);
@@ -77,7 +94,8 @@ namespace AntAbstract.Web.Controllers
 
             TempData["SuccessMessage"] = "Kaydınız oluşturuldu. Lütfen ödeme adımına geçiniz.";
 
-            return RedirectToAction("Index", "Payment", new { id = registration.Id });
+            // Ödeme sayfasına yönlendirirken Slug ve ID gönderiyoruz
+            return RedirectToAction("Index", "Payment", new { slug = _tenantContext.Current.Slug, id = registration.Id });
         }
     }
 }

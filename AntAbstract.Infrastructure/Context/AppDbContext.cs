@@ -12,7 +12,6 @@ namespace AntAbstract.Infrastructure.Context
         }
 
         public DbSet<Tenant> Tenants { get; set; }
-
         public DbSet<ScientificField> ScientificFields { get; set; }
         public DbSet<CongressType> CongressTypes { get; set; }
 
@@ -63,6 +62,9 @@ namespace AntAbstract.Infrastructure.Context
                 .WithOne(r => r.Conference)
                 .HasForeignKey(r => r.ConferenceId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+          
         }
     }
+    
 }

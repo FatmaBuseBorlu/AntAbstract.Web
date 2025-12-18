@@ -4,6 +4,7 @@ using AntAbstract.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AntAbstract.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251218203828_UpdateSubmissionTable")]
+    partial class UpdateSubmissionTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -607,31 +610,6 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.ToTable("SubmissionFile");
                 });
 
-            modelBuilder.Entity("AntAbstract.Domain.Entities.SubmissionReviewer", b =>
-                {
-                    b.Property<Guid>("SubmissionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ReviewerId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("AssignedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("Deadline")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("SubmissionId", "ReviewerId");
-
-                    b.HasIndex("ReviewerId");
-
-                    b.ToTable("SubmissionReviewers");
-                });
-
             modelBuilder.Entity("AntAbstract.Domain.Entities.Tenant", b =>
                 {
                     b.Property<Guid>("Id")
@@ -964,25 +942,6 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Navigation("Submission");
                 });
 
-            modelBuilder.Entity("AntAbstract.Domain.Entities.SubmissionReviewer", b =>
-                {
-                    b.HasOne("AntAbstract.Domain.Entities.AppUser", "Reviewer")
-                        .WithMany()
-                        .HasForeignKey("ReviewerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("AntAbstract.Domain.Entities.Submission", "Submission")
-                        .WithMany("SubmissionReviewers")
-                        .HasForeignKey("SubmissionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Reviewer");
-
-                    b.Navigation("Submission");
-                });
-
             modelBuilder.Entity("AntAbstract.Domain.Entities.Tenant", b =>
                 {
                     b.HasOne("AntAbstract.Domain.Entities.CongressType", "CongressType")
@@ -1056,8 +1015,6 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Navigation("ReviewAssignments");
 
                     b.Navigation("SubmissionAuthors");
-
-                    b.Navigation("SubmissionReviewers");
                 });
 #pragma warning restore 612, 618
         }

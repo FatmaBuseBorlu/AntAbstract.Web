@@ -3,6 +3,8 @@
 
 @{
     ViewData["Title"] = Localizer["PageTitle"];
+
+    var currentSlug = ViewContext.RouteData.Values["slug"];
 }
 
 <h1 class="display-5">@Model.Submission.Title</h1>
@@ -36,7 +38,7 @@ else
                     <td>@reviewer.Email</td>
                     <td><span class="badge bg-light text-dark">@reviewer.ExpertiseAreas</span></td>
                     <td>
-                        <form asp-action="AssignReviewer" method="post">
+                        <form asp-action="Assign" asp-controller="Assignment" asp-route-slug="@currentSlug" method="post">
                             <input type="hidden" name="submissionId" value="@Model.Submission.SubmissionId" />
                             <input type="hidden" name="reviewerId" value="@reviewer.Id" />
                             <button type="submit" class="btn btn-sm btn-warning">@Localizer["AssignRecommendedBtn"]</button>
@@ -68,7 +70,7 @@ else
                 <td>@reviewer.Email</td>
                 <td><span class="badge bg-light text-dark">@reviewer.ExpertiseAreas</span></td>
                 <td>
-                    <form asp-action="AssignReviewer" method="post">
+                    <form asp-action="Assign" asp-controller="Assignment" asp-route-slug="@currentSlug" method="post">
                         <input type="hidden" name="submissionId" value="@Model.Submission.SubmissionId" />
                         <input type="hidden" name="reviewerId" value="@reviewer.Id" />
                         <button type="submit" class="btn btn-sm btn-outline-primary">@Localizer["AssignBtn"]</button>
