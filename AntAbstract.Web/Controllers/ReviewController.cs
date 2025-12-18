@@ -4,9 +4,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -22,6 +19,7 @@ namespace AntAbstract.Web.Controllers
             _userManager = userManager;
         }
 
+        // 1. GÖREV LİSTESİ
         public async Task<IActionResult> Index()
         {
             var userId = _userManager.GetUserId(User);
@@ -29,7 +27,7 @@ namespace AntAbstract.Web.Controllers
             var assignments = await _context.ReviewAssignments
                 .Include(ra => ra.Submission)
                 .ThenInclude(s => s.Conference)
-                .Include(ra => ra.Review) 
+                .Include(ra => ra.Review) // Review dolu mu boş mu kontrol edeceğiz
                 .Where(ra => ra.ReviewerId == userId)
                 .OrderByDescending(ra => ra.AssignedDate)
                 .ToListAsync();
@@ -37,15 +35,16 @@ namespace AntAbstract.Web.Controllers
             return View(assignments);
         }
 
+        // 2. DEĞERLENDİRME EKRANI (GET)
         [HttpGet]
         public async Task<IActionResult> Evaluate(int id)
         {
             var userId = _userManager.GetUserId(User);
 
             var assignment = await _context.ReviewAssignments
-                .Include(ra => ra.Submission).ThenInclude(s => s.Files) 
+                .Include(ra => ra.Submission).ThenInclude(s => s.Files)
                 .Include(ra => ra.Submission).ThenInclude(s => s.Conference)
-                .Include(ra => ra.Review) 
+                .Include(ra => ra.Review)
                 .FirstOrDefaultAsync(ra => ra.Id == id && ra.ReviewerId == userId);
 
             if (assignment == null)
@@ -57,6 +56,7 @@ namespace AntAbstract.Web.Controllers
             return View(assignment);
         }
 
+        // 3. DEĞERLENDİRME KAYDETME (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Evaluate(int assignmentId, string comments, string recommendation, int score)
@@ -70,29 +70,33 @@ namespace AntAbstract.Web.Controllers
 
             if (assignment == null) return NotFound();
 
+            // Yorum yoksa YENİ OLUŞTUR
             if (assignment.Review == null)
             {
                 var review = new Review
                 {
                     ReviewerName = User.Identity.Name ?? "Hakem",
                     CommentsToAuthor = comments,
-                    Recommendation = recommendation, 
+                    Recommendation = recommendation,
                     Score = score,
-                    ReviewedAt = DateTime.UtcNow
+                    ReviewedAt = DateTime.Now
                 };
-
                 assignment.Review = review;
-
             }
+            // Varsa GÜNCELLE
             else
             {
                 assignment.Review.CommentsToAuthor = comments;
                 assignment.Review.Recommendation = recommendation;
                 assignment.Review.Score = score;
-                assignment.Review.ReviewedAt = DateTime.UtcNow;
+                assignment.Review.ReviewedAt = DateTime.Now;
             }
 
+            // HATA VEREN SATIR SİLİNDİ (assignment.Status = 1)
+            // Review nesnesi eklendiği için artık işlem tamamlanmış sayılır.
+
             await _context.SaveChangesAsync();
+
             TempData["SuccessMessage"] = "Değerlendirmeniz başarıyla kaydedildi.";
 
             return RedirectToAction(nameof(Index));

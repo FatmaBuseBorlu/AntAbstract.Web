@@ -20,7 +20,7 @@ namespace AntAbstract.Infrastructure.Data
                 var roleExist = await roleManager.RoleExistsAsync(roleName);
                 if (!roleExist)
                 {
-                    await roleManager.CreateAsync(new IdentityRole(roleName));
+                    await roleManager.CreateAsync(new IdentityRole(roleName)); 
                 }
             }
 

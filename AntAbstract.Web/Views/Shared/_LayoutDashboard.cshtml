@@ -6,6 +6,9 @@
     var user = await UserManager.GetUserAsync(User);
     var profileImg = user?.ProfileImagePath;
     var displayName = user?.FirstName ?? User.Identity.Name;
+
+    // Aktif Controller'ı yakalamak için (Menüde aktif class'ı vermek için)
+    var currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
 }
 
 <!DOCTYPE html>
@@ -114,21 +117,19 @@
         body.sb-sidenav-toggled .main-content {
             margin-left: 0;
         }
-        media (max-width: 768px) {
-            .sidebar
 
-        {
-            margin-left: -260px;
-        }
+        @@media (max-width: 768px) {
+            .sidebar {
+                margin-left: -260px;
+            }
 
-        .main-content {
-            margin-left: 0;
-        }
+            .main-content {
+                margin-left: 0;
+            }
 
-        body.sb-sidenav-toggled .sidebar {
-            margin-left: 0;
-        }
-
+            body.sb-sidenav-toggled .sidebar {
+                margin-left: 0;
+            }
         }
     </style>
 </head>
@@ -137,28 +138,80 @@
     <div class="sidebar">
         <a href="/" class="sidebar-brand">ANT <span style="color: #00aeef;">ABSTRACT</span></a>
 
-        <ul class="sidebar-menu">
-            <li class="text-muted small fw-bold px-3 mb-2 mt-2">GENEL</li>
+<ul class="sidebar-menu">
+    @* --- 1. HERKESTE GÖRÜNEN ORTAK ALAN --- *@
+    <li class="text-muted small fw-bold px-3 mb-2 mt-2">GENEL</li>
+    <li>
+        <a href="/Dashboard" class="@(currentController == "Dashboard" ? "active" : "")">
+            <i class="fas fa-home me-2 text-primary"></i> Ana Panel
+        </a>
+    </li>
 
-            <li>
-                <a href="/Dashboard" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Dashboard" ? "active" : "")">
-                    <i class="fas fa-home me-2 text-primary"></i> Ana Panel
-                </a>
-            </li>
+    @* ============================================== *@
+    @* NORMAL KULLANICILAR (YAZAR/HAKEM) - AYNI KALDI *@
+    @* ============================================== *@
+    @if (!User.IsInRole("Admin"))
+    {
+        <li class="text-muted small fw-bold px-3 mb-2 mt-2">BİLDİRİ İŞLEMLERİ</li>
+        <li>
+            <a href="/Submission/Create" class="@(currentController == "Submission" && ViewContext.RouteData.Values["Action"]?.ToString() == "Create" ? "active" : "")">
+                <i class="fas fa-plus-circle me-2 text-success"></i> Yeni Bildiri Gönder
+            </a>
+        </li>
+        <li>
+            <a href="/Submission/Index" class="@(currentController == "Submission" && ViewContext.RouteData.Values["Action"]?.ToString() == "Index" ? "active" : "")">
+                <i class="fas fa-file-contract me-2 text-info"></i> Bildirilerim
+            </a>
+        </li>
 
-            <li class="text-muted small fw-bold px-3 mb-2 mt-2">BİLDİRİ İŞLEMLERİ</li>
-            <li><a href="/Submission/Create"><i class="fas fa-plus-circle me-2 text-success"></i> Yeni Bildiri Gönder</a></li>
-            <li><a href="/Submission/Index"><i class="fas fa-file-contract me-2 text-info"></i> Bildirilerim</a></li>
+        <li class="text-muted small fw-bold px-3 mb-2 mt-2">KONGRE</li>
+        <li><a href="/Program/Index"><i class="fas fa-calendar-day me-2 text-danger"></i> Kongre Programı</a></li>
+        <li><a href="#"><i class="fas fa-book me-2" style="color: #6f42c1;"></i> Bildiri Kitabı</a></li>
+        <li><a href="#"><i class="fas fa-credit-card me-2 text-success"></i> Ödeme & Konaklama</a></li>
 
-            <li class="text-muted small fw-bold px-3 mb-2 mt-2">KONGRE</li>
-            <li><a href="/Program/Index"><i class="fas fa-calendar-day me-2 text-danger"></i> Kongre Programı</a></li>
-            <li><a href="#"><i class="fas fa-book me-2" style="color: #6f42c1;"></i> Bildiri Kitabı</a></li>
-            <li><a href="#"><i class="fas fa-credit-card me-2 text-success"></i> Ödeme & Konaklama</a></li>
+        <li class="text-muted small fw-bold px-3 mb-2 mt-2">HESAP</li>
+        <li><a href="/Dashboard/MyConferences"><i class="fas fa-globe me-2 text-secondary"></i> Katıldığım Kongreler</a></li>
+    }
 
-            <li class="text-muted small fw-bold px-3 mb-2 mt-2">HESAP</li>
-            <li><a href="/Dashboard/MyConferences"><i class="fas fa-globe me-2 text-secondary"></i> Katıldığım Kongreler</a></li>
-            <li><a href="/Message/Index"><i class="fas fa-envelope me-2 text-warning"></i> Mesajlarım</a></li>
-        </ul>
+    @* ============================================== *@
+    @* SADECE ADMIN MENÜSÜ (GÖRSELİNDEKİ YAPI) *@
+    @* ============================================== *@
+    @if (User.IsInRole("Admin"))
+    {
+        @* --- GRUP 1: KONGRE AKIŞI & RAPORLAR --- *@
+        <li class="text-muted small fw-bold px-3 mb-2 mt-4 text-uppercase" style="letter-spacing:1px;">KONGRE AKIŞI</li>
+        
+        <li><a href="#"><i class="fas fa-stream me-2 text-primary"></i> Kongre Akışı</a></li>
+        <li><a href="#"><i class="fas fa-chart-pie me-2 text-warning"></i> Raporlar</a></li>
+        <li><a href="#"><i class="fas fa-tasks me-2 text-info"></i> Özet Atama</a></li>
+        <li><a href="#"><i class="fas fa-gavel me-2 text-danger"></i> Karar Ekranı</a></li>
+
+        @* --- GRUP 2: YÖNETİM --- *@
+        <li class="text-muted small fw-bold px-3 mb-2 mt-3 text-uppercase" style="letter-spacing:1px;">YÖNETİM</li>
+
+        <li><a href="#"><i class="fas fa-microphone-alt me-2 text-success"></i> Oturum Yönetimi</a></li>
+        <li><a href="#"><i class="fas fa-clipboard-list me-2 text-secondary"></i> Değerlendirme Formları</a></li>
+        <li><a href="#"><i class="fas fa-user-tie me-2 text-dark"></i> Hakem Yönetimi</a></li>
+        
+        @* BİZİM YAPTIĞIMIZ KULLANICI YÖNETİMİ *@
+        <li>
+            <a href="/Users/Index" class="@(currentController == "Users" ? "active" : "")">
+                <i class="fas fa-users-cog me-2 text-danger"></i> Kullanıcı Yönetimi
+            </a>
+        </li>
+
+        @* --- GRUP 3: SİSTEM AYARLARI --- *@
+        <li class="text-muted small fw-bold px-3 mb-2 mt-3 text-uppercase" style="letter-spacing:1px;">SİSTEM AYARLARI</li>
+
+        <li><a href="#"><i class="fas fa-sliders-h me-2 text-primary"></i> Kongre Tanımları</a></li>
+        <li><a href="#"><i class="fas fa-atom me-2 text-info"></i> Bilimsel Alanlar</a></li>
+        <li><a href="#"><i class="fas fa-tags me-2 text-warning"></i> Kongre Türleri</a></li>
+    }
+
+    @* --- ORTAK: İLETİŞİM --- *@
+    <li class="text-muted small fw-bold px-3 mb-2 mt-3">İLETİŞİM</li>
+    <li><a href="/Message/Index"><i class="fas fa-envelope me-2 text-warning"></i> Mesajlarım</a></li>
+</ul>
     </div>
 
     <div class="main-content">
@@ -175,7 +228,6 @@
                 }
                 catch
                 {
-
                     <i class="fas fa-bell-slash text-muted p-2"></i>
                 }
 
@@ -189,7 +241,6 @@
                         }
                         else
                         {
-
                             <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold shadow-sm border border-2 border-white" style="width: 42px; height: 42px;">@(displayName?.Substring(0, 1).ToUpper())</div>
                         }
                     </a>

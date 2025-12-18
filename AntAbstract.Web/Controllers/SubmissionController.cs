@@ -14,7 +14,7 @@ using Rotativa.AspNetCore;
 
 namespace AntAbstract.Web.Controllers
 {
-    [Authorize(Roles = "Author, Admin")]
+    [Authorize(Roles = "Admin, Author")]
     public class SubmissionController : Controller
     {
         private readonly AppDbContext _context;
