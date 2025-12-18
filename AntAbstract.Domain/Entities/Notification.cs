@@ -14,16 +14,17 @@ namespace AntAbstract.Domain.Entities
         public int Id { get; set; }
 
         [Required]
-        public string UserId { get; set; } 
+        public string UserId { get; set; }
 
         [ForeignKey("UserId")]
         public AppUser User { get; set; }
 
-        public string Title { get; set; }   
+        [Required]
+        public string Title { get; set; }  
         public string Message { get; set; } 
         public string Link { get; set; }    
 
-        public bool IsRead { get; set; } = false;
+        public bool IsRead { get; set; } = false; 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

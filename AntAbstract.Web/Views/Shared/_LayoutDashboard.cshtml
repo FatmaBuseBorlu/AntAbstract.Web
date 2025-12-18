@@ -111,11 +111,11 @@
         }
 
         body.sb-sidenav-toggled .sidebar {
-            margin-left: -260px;
+            margin-left: -260px; /* Menüyü sola gizle */
         }
 
         body.sb-sidenav-toggled .main-content {
-            margin-left: 0;
+            margin-left: 0; /* İçeriği tam ekran yap */
         }
 
         @@media (max-width: 768px) {
@@ -288,11 +288,18 @@
         document.addEventListener("DOMContentLoaded", function() {
             const toggleBtn = document.getElementById("sidebarToggle");
             const body = document.body;
-            if (localStorage.getItem("sidebar-toggle") === "true") body.classList.add("sb-sidenav-toggled");
+
+            // Kayıtlı durumu yükle (Sayfa yenilenince menü kapalıysa kapalı kalsın)
+            if (localStorage.getItem("sidebar-toggle") === "true") {
+                body.classList.add("sb-sidenav-toggled");
+            }
+
             if (toggleBtn) {
                 toggleBtn.addEventListener("click", function(e) {
                     e.preventDefault();
                     body.classList.toggle("sb-sidenav-toggled");
+
+                    // Durumu kaydet
                     localStorage.setItem("sidebar-toggle", body.classList.contains("sb-sidenav-toggled"));
                 });
             }
