@@ -26,7 +26,6 @@
                 <div class="progress" style="height: 2px;">
                     @{
                         int progressVal = 0;
-                        // Enum değerlerine göre ilerleme yüzdesi
                         if (Model.Status == SubmissionStatus.New || Model.Status == SubmissionStatus.Pending) { progressVal = 15; }
                         else if (Model.Status == SubmissionStatus.UnderReview || Model.Status == SubmissionStatus.RevisionRequired) { progressVal = 50; }
                         else if (Model.Status == SubmissionStatus.Accepted || Model.Status == SubmissionStatus.Rejected) { progressVal = 85; }

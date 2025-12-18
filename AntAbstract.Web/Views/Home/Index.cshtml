@@ -10,16 +10,13 @@
     ViewData["Title"] = Tc.Current != null ? Tc.Current.Name : "Ana Sayfa";
     Layout = "_Layout";
     
-    // Kullanıcının kayıt ve ödeme durumunu sözlükten (Dictionary) alıyoruz
-    // HomeController'dan ViewBag.RegistrationStatus olarak geliyor
     var registrationStatus = ViewBag.RegistrationStatus as Dictionary<Guid, bool> ?? new Dictionary<Guid, bool>();
 }
 
 <style>
-    /* Sayfa Yapısı */
+
     .page-content-wrapper { padding-top: 100px; }
 
-    /* Hero Görsel Ayarı */
     .hero-image-container img {
         max-height: 380px !important;
         width: auto !important;
@@ -30,7 +27,6 @@
         box-shadow: 0 20px 50px rgba(0,0,0,0.1);
     }
 
-    /* Animasyon */
     .floating-anim { animation: float 6s ease-in-out infinite; }
     @@keyframes float {
         0% { transform: translateY(0px); }
@@ -38,7 +34,6 @@
         100% { transform: translateY(0px); }
     }
 
-    /* Kart Efektleri */
     .congress-card { 
         transition: transform 0.3s ease, box-shadow 0.3s ease; 
         border: 1px solid #eee;
@@ -54,7 +49,6 @@
     }
     .card-body { flex: 1; }
 
-    /* İSTATİSTİK ŞERİDİ */
     .stats-section {
         background: linear-gradient(135deg, #00aeef 0%, #007bb5 100%);
         color: white;
@@ -74,7 +68,6 @@
         .hero-image-container img { margin-top: 40px; }
     }
     
-    /* Disabled Buton */
     .btn.disabled { opacity: 1 !important; cursor: default; }
 </style>
 
@@ -163,7 +156,7 @@
                                                 <i class="fas fa-check-circle me-1"></i> KAYITLI
                                             </div>
                                             
-                                            @if (registrationStatus[kongre.Id] == true) // Ödenmişse
+                                            @if (registrationStatus[kongre.Id] == true) 
                                             {
                                                 <div class="btn btn-sm btn-light text-success flex-fill fw-bold disabled" style="opacity: 1;">
                                                     <i class="fas fa-receipt me-1"></i> ÖDENDİ

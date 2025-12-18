@@ -23,12 +23,12 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> Index()
         {
             var allSubmissions = _context.Submissions
-                .Include(s => s.Author) // Düzeltildi: User -> Author
+                .Include(s => s.Author) 
                 .Include(s => s.ReviewAssignments).ThenInclude(ra => ra.Review)
                 .OrderByDescending(s => s.CreatedDate)
                 .AsQueryable();
 
-            // Enum Karşılaştırması: SubmissionStatus.Pending (0)
+
             var awaitingDecision = await allSubmissions
                 .Where(s => s.Status == SubmissionStatus.Pending || s.Status == SubmissionStatus.UnderReview)
                 .ToListAsync();
@@ -50,7 +50,7 @@ namespace AntAbstract.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> MakeDecision(Guid submissionId, string decision, string note)
         {
-            // ID düzeltmesi: submissionId ismini kullanıyoruz
+
             var submission = await _context.Submissions.FindAsync(submissionId);
             if (submission == null) return NotFound();
 
@@ -58,7 +58,7 @@ namespace AntAbstract.Web.Controllers
 
             if (decision == "Accept")
             {
-                submission.Status = SubmissionStatus.Accepted; // Enum kullanıyoruz
+                submission.Status = SubmissionStatus.Accepted; 
                 kararMetni = "Kabul Edildi";
             }
             else if (decision == "Reject")

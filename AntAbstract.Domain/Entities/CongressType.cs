@@ -13,6 +13,6 @@ namespace AntAbstract.Domain.Entities
 
         [Required]
         [StringLength(100)]
-        public string Name { get; set; } // Örn: Ulusal, Uluslararası, Sempozyum
+        public string Name { get; set; } 
     }
 }

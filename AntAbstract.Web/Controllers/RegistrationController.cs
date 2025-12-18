@@ -103,11 +103,9 @@ namespace AntAbstract.Web.Controllers
             _context.Registrations.Add(registration);
             await _context.SaveChangesAsync();
 
-            // YÖNLENDİRME DEĞİŞTİ: Önce başarı sayfasına gidiyoruz
             return RedirectToAction("Success", new { slug = conference.Tenant?.Slug, id = registration.Id });
         }
 
-        // YENİ EKLEME: Başarı Sayfası
         [HttpGet("success/{id}")]
         public IActionResult Success(Guid id)
         {

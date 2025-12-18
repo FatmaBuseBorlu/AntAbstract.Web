@@ -55,9 +55,8 @@
                 color: #00aeef !important;
             }
 
-            /* Admin Linki İçin Özel Stil */
             .nav-link.admin-link {
-                color: #dc3545 !important; /* Kırmızı */
+                color: #dc3545 !important; 
                 border: 1px solid #dc3545;
                 border-radius: 5px;
                 padding: 5px 15px !important;
@@ -91,7 +90,6 @@
 
                         @if (User.Identity.IsAuthenticated && (User.IsInRole("Admin") || User.IsInRole("Organizator")))
                         {
-                            // Eğer şu an bir kongre sayfasındaysak (URL'de slug varsa / Tenant yüklendiyse)
                             if (Tc.Current != null)
                             {
                                 <li class="nav-item">
@@ -106,7 +104,6 @@
                             }
                             else
                             {
-                                // Kongre seçili değilse genel yönetim paneline yönlendir
                                 <li class="nav-item">
                                     <a class="nav-link admin-link" asp-area="Admin" asp-controller="AdminHome" asp-action="MyCongresses">
                                         <i class="fas fa-user-shield me-1"></i> Yönetim Paneli

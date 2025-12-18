@@ -22,7 +22,6 @@ namespace AntAbstract.Web.ViewComponents
             var userId = _userManager.GetUserId(HttpContext.User);
             if (userId == null) return Content("");
 
-            // Okunmamış veya son 5 bildirimi çek
             var notifications = await _context.Notifications
                 .Where(n => n.UserId == userId)
                 .OrderByDescending(n => n.CreatedAt)

@@ -19,7 +19,6 @@ namespace AntAbstract.Web.Controllers
         [HttpGet("index/{id}")]
         public async Task<IActionResult> Index(Guid id)
         {
-            // Kayıt bilgilerini ve fiyatı çekiyoruz
             var registration = await _context.Registrations
                 .Include(r => r.Conference)
                 .Include(r => r.RegistrationType)
@@ -36,13 +35,11 @@ namespace AntAbstract.Web.Controllers
             var registration = await _context.Registrations.FindAsync(registrationId);
             if (registration == null) return NotFound();
 
-            // Ödeme başarılı simülasyonu
             registration.IsPaid = true;
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Ödemeniz başarıyla alındı. Kaydınız kesinleşmiştir.";
 
-            // Kullanıcıyı kongre ana sayfasına geri gönder
             return RedirectToAction("Index", "Home", new { slug = slug });
         }
     }

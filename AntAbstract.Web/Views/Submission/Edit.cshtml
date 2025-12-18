@@ -110,11 +110,9 @@
     <partial name="_ValidationScriptsPartial" />
     <script>
         $(document).ready(function () {
-            // Sayfa açıldığında mevcut yazar sayısını alıyoruz
             let authorIndex = @(Model.Authors?.Count ?? 0);
 
             function getAuthorRowTemplate(index) {
-                // Create.cshtml'deki template'in aynısı
                 return `
                     <div class="row g-3 mb-3 p-3 rounded-3 border author-row bg-white shadow-sm">
                         <input type="hidden" name="Authors.Index" value="${index}" />

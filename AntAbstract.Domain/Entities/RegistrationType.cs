@@ -14,18 +14,18 @@ namespace AntAbstract.Domain.Entities
 
         [Required]
         [StringLength(100)]
-        public string Name { get; set; } // Örn: "Öğrenci Kaydı", "Tam Katılım"
+        public string Name { get; set; } 
 
         [StringLength(500)]
-        public string Description { get; set; } // Örn: "Gala yemeği dahildir."
+        public string Description { get; set; } 
 
         [Required]
         [Column(TypeName = "decimal(18,2)")]
-        public decimal Price { get; set; } // Kayıt ücreti
+        public decimal Price { get; set; }
 
         [Required]
         [StringLength(10)]
-        public string Currency { get; set; } = "TRY"; // Para birimi (USD, EUR, TRY)
+        public string Currency { get; set; } = "TRY"; 
 
         public Guid ConferenceId { get; set; }
         [ForeignKey("ConferenceId")]

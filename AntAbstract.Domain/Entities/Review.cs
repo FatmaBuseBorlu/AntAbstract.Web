@@ -12,7 +12,6 @@ namespace AntAbstract.Domain.Entities
         public string CommentsToAuthor { get; set; }
         public string Recommendation { get; set; } 
         public int Score { get; set; } 
-
         public DateTime ReviewedAt { get; set; } = DateTime.UtcNow;
     }
 }
