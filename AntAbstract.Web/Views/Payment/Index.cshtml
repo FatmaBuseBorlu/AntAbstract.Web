@@ -1,0 +1,45 @@
+﻿@model AntAbstract.Domain.Entities.Registration
+@{
+    Layout = "_Layout";
+    var slug = ViewContext.RouteData.Values["slug"];
+}
+
+<div class="container mt-5 pt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-dark text-white p-4">
+                    <h4 class="mb-0"><i class="fas fa-credit-card me-2"></i> Ödeme Detayları</h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Kongre:</span>
+                        <strong>@Model.Conference.Title</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Kayıt Tipi:</span>
+                        <span class="badge bg-info text-dark">@Model.RegistrationType?.Name</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-4">
+                        <span class="fs-5">Ödenecek Tutar:</span>
+                        <span class="fs-4 fw-bold text-primary">@Model.RegistrationType?.Price @Model.RegistrationType?.Currency</span>
+                    </div>
+
+                    <form asp-action="ProcessPayment" asp-route-slug="@slug" method="post">
+                        <input type="hidden" name="registrationId" value="@Model.Id" />
+
+                        <div class="alert alert-light border small mb-4">
+                            <i class="fas fa-shield-alt me-2 text-success"></i>
+                            Şu an test modundasınız. Butona bastığınızda ödeme başarılı sayılacaktır.
+                        </div>
+
+                        <button type="submit" class="btn btn-success btn-lg w-100 py-3 fw-bold">
+                            ÖDEMEYİ TAMAMLA
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

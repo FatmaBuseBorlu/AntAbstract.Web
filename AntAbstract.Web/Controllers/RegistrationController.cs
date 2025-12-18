@@ -11,13 +11,13 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Controllers
 {
     [Authorize]
-    // KRİTİK EKLEME: URL'in başında kongre adı (slug) olmalı
     [Route("{slug}/registration")]
+    [Route("registration")]
     public class RegistrationController : Controller
     {
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
-        private readonly TenantContext _tenantContext; // Eklendi
+        private readonly TenantContext _tenantContext;
 
         public RegistrationController(AppDbContext context,
                                       UserManager<AppUser> userManager,
@@ -28,57 +28,67 @@ namespace AntAbstract.Web.Controllers
             _tenantContext = tenantContext;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Index()
+        [HttpGet("")]
+        [HttpGet("index/{id?}")]
+        public async Task<IActionResult> Index(Guid? id)
         {
-            // 1. Kongre Kontrolü (URL'deki slug üzerinden)
-            if (_tenantContext.Current == null)
+            var user = await _userManager.GetUserAsync(User);
+            Conference conference = null;
+
+            if (_tenantContext.Current != null)
             {
-                return NotFound("Kongre bulunamadı (URL hatası).");
+                conference = await _context.Conferences
+                    .Include(c => c.Tenant)
+                    .FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
+            }
+            else if (id.HasValue)
+            {
+                conference = await _context.Conferences
+                    .Include(c => c.Tenant)
+                    .FirstOrDefaultAsync(c => c.Id == id.Value);
             }
 
-            var user = await _userManager.GetUserAsync(User);
+            if (conference == null) return NotFound("Kongre bulunamadı.");
 
-            // 2. Konferansı TenantID (Slug) üzerinden buluyoruz. 
-            // ID'yi URL'den almaya gerek yok, Slug zaten tekil.
-            var conference = await _context.Conferences
-                .Include(c => c.Tenant)
-                .FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
-
-            if (conference == null) return NotFound("Bu URL'e bağlı bir kongre kaydı bulunamadı.");
-
-            // 3. Zaten kayıtlı mı?
             var existingRegistration = await _context.Registrations
                 .FirstOrDefaultAsync(r => r.ConferenceId == conference.Id && r.AppUserId == user.Id);
 
             if (existingRegistration != null)
             {
                 TempData["InfoMessage"] = "Bu kongreye zaten kaydınız bulunmaktadır.";
-                // Yönlendirirken Slug'ı koruyoruz
-                return RedirectToAction("Index", "Payment", new { slug = _tenantContext.Current.Slug, id = existingRegistration.Id });
+                return RedirectToAction("Index", "Payment", new { slug = conference.Tenant?.Slug, id = existingRegistration.Id });
             }
 
             return View(conference);
         }
 
-        [HttpPost]
+        [HttpPost("create")]
         [ValidateAntiForgeryToken]
-        // Create Action'ı için özel route: site.com/slug/registration/create
-        [Route("create")]
         public async Task<IActionResult> Create(Guid conferenceId)
         {
             var user = await _userManager.GetUserAsync(User);
+            var conference = await _context.Conferences
+                .Include(c => c.Tenant)
+                .FirstOrDefaultAsync(c => c.Id == conferenceId);
 
-            // Slug kontrolü (Güvenlik için)
-            if (_tenantContext.Current == null) return NotFound();
+            if (conference == null) return NotFound();
 
             bool alreadyRegistered = await _context.Registrations
                 .AnyAsync(r => r.ConferenceId == conferenceId && r.AppUserId == user.Id);
 
             if (alreadyRegistered)
             {
-                // Slug ile yönlendirme
-                return RedirectToAction("Index", "Payment", new { slug = _tenantContext.Current.Slug });
+                return RedirectToAction("Index", "Payment", new { slug = conference.Tenant?.Slug });
+            }
+
+            var defaultRegType = await _context.RegistrationTypes
+                .FirstOrDefaultAsync(rt => rt.ConferenceId == conferenceId)
+                ?? await _context.RegistrationTypes.FirstOrDefaultAsync();
+
+            if (defaultRegType == null)
+            {
+                TempData["ErrorMessage"] = "Sistemde tanımlı kayıt tipi bulunamadı.";
+                return RedirectToAction("Index");
             }
 
             var registration = new Registration
@@ -87,15 +97,22 @@ namespace AntAbstract.Web.Controllers
                 ConferenceId = conferenceId,
                 RegistrationDate = DateTime.UtcNow,
                 IsPaid = false,
+                RegistrationTypeId = defaultRegType.Id
             };
 
             _context.Registrations.Add(registration);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Kaydınız oluşturuldu. Lütfen ödeme adımına geçiniz.";
+            // YÖNLENDİRME DEĞİŞTİ: Önce başarı sayfasına gidiyoruz
+            return RedirectToAction("Success", new { slug = conference.Tenant?.Slug, id = registration.Id });
+        }
 
-            // Ödeme sayfasına yönlendirirken Slug ve ID gönderiyoruz
-            return RedirectToAction("Index", "Payment", new { slug = _tenantContext.Current.Slug, id = registration.Id });
+        // YENİ EKLEME: Başarı Sayfası
+        [HttpGet("success/{id}")]
+        public IActionResult Success(Guid id)
+        {
+            ViewBag.RegistrationId = id;
+            return View();
         }
     }
 }

@@ -144,13 +144,17 @@
             {
                 if (SignInManager.IsSignedIn(User))
                 {
-                    <a asp-controller="Registration" asp-action="Index" asp-route-id="@Model.Id" class="btn btn-hero-primary btn-lg">
+                    <a asp-controller="Registration"
+                       asp-action="Index"
+                       asp-route-slug="@Model.Tenant.Slug"
+                       class="btn btn-hero-primary btn-lg">
                         HEMEN KAYIT OL
                     </a>
                 }
                 else
                 {
-                    <a href="/Identity/Account/Register?returnUrl=/Registration/Index/@Model.Id" class="btn btn-hero-primary btn-lg">
+                    <a href="/Identity/Account/Register?returnUrl=/@Model.Tenant.Slug/registration"
+                       class="btn btn-hero-primary btn-lg">
                         HEMEN KAYIT OL
                     </a>
                 }

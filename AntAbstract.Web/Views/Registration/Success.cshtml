@@ -1,0 +1,25 @@
+﻿@{
+    Layout = "_Layout";
+    var slug = ViewContext.RouteData.Values["slug"];
+}
+
+<div class="container mt-5 pt-5 text-center">
+    <div class="card p-5 shadow-lg border-0 rounded-4 animate__animated animate__fadeIn">
+        <div class="mb-4">
+            <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
+        </div>
+        <h2 class="fw-bold text-dark">Kaydınız Başarıyla Alındı!</h2>
+        <p class="text-muted fs-5">Kongre katılım sürecinizi başlatmak için bir adımınız kaldı.</p>
+
+        <div class="alert alert-info d-inline-block px-4 py-3 mt-3 border-0 rounded-pill">
+            <i class="fas fa-info-circle me-2"></i> Katılımınızın kesinleşmesi için ödeme yapmanız gerekmektedir.
+        </div>
+
+        <div class="mt-5">
+            <a href="/@slug/payment/index/@ViewBag.RegistrationId"
+               class="btn btn-primary btn-lg px-5 py-3 fw-bold rounded-pill shadow">
+                ÖDEME ADIMINA GEÇ <i class="fas fa-arrow-right ms-2"></i>
+            </a>
+        </div>
+    </div>
+</div>
