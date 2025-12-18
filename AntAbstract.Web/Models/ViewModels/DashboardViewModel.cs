@@ -13,13 +13,13 @@ namespace AntAbstract.Web.Models.ViewModels
 
         public int AcceptedSubmissions { get; set; }
         public int AwaitingDecision { get; set; }
+        public int RejectedSubmissions { get; set; }
         public List<Submission> RecentSubmissions { get; set; }
         public string ConferenceName { get; set; }
         public List<Conference> ActiveConferences { get; set; }
         public List<Guid> RegisteredConferenceIds { get; set; }
 
         public List<Conference> MyConferences { get; set; } = new List<Conference>();
-        public int RejectedSubmissions { get; internal set; }
 
         public DashboardViewModel()
         {

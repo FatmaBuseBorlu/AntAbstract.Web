@@ -1,7 +1,14 @@
 ﻿@model AntAbstract.Web.Models.ViewModels.DashboardViewModel
+
 @{
     ViewData["Title"] = "Panel";
     Layout = "_LayoutDashboard";
+
+    // Controller'dan gelen verileri alıyoruz
+    bool isReferee = ViewBag.IsReferee ?? false;
+    bool isAuthor = ViewBag.IsAuthor ?? false;
+    int pendingReviews = ViewBag.PendingReviews ?? 0;
+    int completedReviews = ViewBag.CompletedReviews ?? 0;
 }
 
 <div class="card border-0 shadow-sm mb-4 bg-white">
@@ -21,68 +28,113 @@
     <div class="card-footer border-0 py-1 bg-primary"></div>
 </div>
 
-<div class="row g-3 mb-4">
+@if (isReferee)
+{
+    <h6 class="fw-bold text-muted text-uppercase small mb-3 ps-1"><i class="fas fa-gavel me-1 text-warning"></i> Hakem Görevleri</h6>
+    <div class="row g-3 mb-5">
 
-    <div class="col-xl-3 col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center justify-content-between">
-                <div>
-                    <h6 class="text-muted fw-normal mb-1">Toplam Bildiri</h6>
-                    <h2 class="fw-bold mb-0 text-dark">@Model.TotalSubmissions</h2>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-muted fw-normal mb-1">Değerlendirme Bekleyen</h6>
+                        <h2 class="fw-bold mb-0 text-dark">@pendingReviews</h2>
+                        <a href="/Review/Index" class="btn btn-sm btn-outline-warning mt-3 fw-bold">
+                            Listeye Git <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                    <div class="icon-shape bg-warning bg-opacity-10 text-warning rounded-circle p-3">
+                        <i class="fas fa-hourglass-half fa-2x"></i>
+                    </div>
                 </div>
-                <div class="icon-shape bg-primary bg-opacity-10 text-primary rounded-circle p-3">
-                    <i class="fas fa-file-contract fa-2x"></i>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-muted fw-normal mb-1">Tamamlanan Görev</h6>
+                        <h2 class="fw-bold mb-0 text-dark">@completedReviews</h2>
+                        <button class="btn btn-sm btn-light mt-3 text-muted disabled border">Arşiv</button>
+                    </div>
+                    <div class="icon-shape bg-success bg-opacity-10 text-success rounded-circle p-3">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+}
 
-    <div class="col-xl-3 col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center justify-content-between">
-                <div>
-                    <h6 class="text-muted fw-normal mb-1">Bekleyen Karar</h6>
-                    <h2 class="fw-bold mb-0 text-dark">@Model.AwaitingDecision</h2>
+@if (isAuthor || !isReferee)
+{
+    @if (isReferee)
+    {
+        <hr class="mb-4 text-muted">
+        <h6 class="fw-bold text-muted text-uppercase small mb-3 ps-1"><i class="fas fa-pen-nib me-1 text-primary"></i> Yazar İstatistikleri</h6>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-muted fw-normal mb-1">Toplam Bildiri</h6>
+                        <h2 class="fw-bold mb-0 text-dark">@Model.TotalSubmissions</h2>
+                    </div>
+                    <div class="icon-shape bg-primary bg-opacity-10 text-primary rounded-circle p-3">
+                        <i class="fas fa-file-contract fa-2x"></i>
+                    </div>
                 </div>
-                <div class="icon-shape bg-warning bg-opacity-10 text-warning rounded-circle p-3">
-                    <i class="fas fa-clock fa-2x"></i>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-muted fw-normal mb-1">Bekleyen Karar</h6>
+                        <h2 class="fw-bold mb-0 text-dark">@Model.AwaitingDecision</h2>
+                    </div>
+                    <div class="icon-shape bg-warning bg-opacity-10 text-warning rounded-circle p-3">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-muted fw-normal mb-1">Kabul Edilen</h6>
+                        <h2 class="fw-bold mb-0 text-success">@Model.AcceptedSubmissions</h2>
+                    </div>
+                    <div class="icon-shape bg-success bg-opacity-10 text-success rounded-circle p-3">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-muted fw-normal mb-1">Reddedilen</h6>
+                        <h2 class="fw-bold mb-0 text-danger">@Model.RejectedSubmissions</h2>
+                    </div>
+                    <div class="icon-shape bg-danger bg-opacity-10 text-danger rounded-circle p-3">
+                        <i class="fas fa-times-circle fa-2x"></i>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <div class="col-xl-3 col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center justify-content-between">
-                <div>
-                    <h6 class="text-muted fw-normal mb-1">Kabul Edilen</h6>
-                    <h2 class="fw-bold mb-0 text-success">@Model.AcceptedSubmissions</h2>
-                </div>
-                <div class="icon-shape bg-success bg-opacity-10 text-success rounded-circle p-3">
-                    <i class="fas fa-check-circle fa-2x"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center justify-content-between">
-                <div>
-                    <h6 class="text-muted fw-normal mb-1">Reddedilen</h6>
-                    <h2 class="fw-bold mb-0 text-danger">@Model.RejectedSubmissions</h2>
-                </div>
-                <div class="icon-shape bg-danger bg-opacity-10 text-danger rounded-circle p-3">
-                    <i class="fas fa-times-circle fa-2x"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-</div>
+}
 
 <div class="row">
-
     <div class="col-lg-8">
         <div class="card dashboard-card h-100 border-0 shadow-sm">
             <div class="card-body p-4">
@@ -91,7 +143,7 @@
                     <a href="/Submission/Index" class="small text-decoration-none">Tümünü Gör</a>
                 </div>
 
-                @if (Model.TotalSubmissions == 0)
+                @if (Model.TotalSubmissions == 0 && !isReferee)
                 {
                     <div class="text-center py-5">
                         <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="80" class="mb-3 opacity-50" alt="Empty">
@@ -113,7 +165,6 @@
     </div>
 
     <div class="col-lg-4">
-
         <div class="card dashboard-card border-0 shadow-sm mb-4">
             <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
                 <h6 class="fw-bold text-dark mb-0">Katıldığım Etkinlikler</h6>
@@ -130,20 +181,15 @@
                                         <span class="d-block fw-bold text-primary small">@conf.StartDate.ToString("MMM")</span>
                                         <span class="d-block fw-bold text-dark h6 mb-0">@conf.StartDate.Day</span>
                                     </div>
-
                                     <div class="flex-grow-1 overflow-hidden">
                                         <h6 class="text-truncate mb-1" title="@conf.Title">
-                                            <a href="/@conf.Slug" target="_blank" class="text-decoration-none text-dark fw-bold stretched-link">
+                                            <a href="#" class="text-decoration-none text-dark fw-bold stretched-link">
                                                 @conf.Title
                                             </a>
                                         </h6>
                                         <small class="text-muted">
                                             <i class="fas fa-map-marker-alt me-1"></i> @(conf.City ?? "Online")
                                         </small>
-                                    </div>
-
-                                    <div class="ms-2 text-muted">
-                                        <i class="fas fa-chevron-right small"></i>
                                     </div>
                                 </div>
                             </li>
@@ -163,8 +209,8 @@
         <div class="card dashboard-card bg-primary text-white h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #00aeef 0%, #0056b3 100%);">
             <div class="card-body p-4">
                 <h5 class="fw-bold mb-3">Yardım mı lazım?</h5>
-                <p class="small opacity-75 mb-4">Bildiri gönderimi, ödeme veya sistemle ilgili teknik sorunlarınızda destek ekibimiz yanınızda.</p>
-                <a href="/Home/Contact" class="btn btn-light text-primary fw-bold w-100 shadow-sm">Destek Talebi Oluştur</a>
+                <p class="small opacity-75 mb-4">Bildiri gönderimi veya sistemle ilgili teknik sorunlarınızda destek ekibimiz yanınızda.</p>
+                <a href="#" class="btn btn-light text-primary fw-bold w-100 shadow-sm">Destek Talebi Oluştur</a>
             </div>
         </div>
     </div>

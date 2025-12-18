@@ -30,44 +30,51 @@ namespace AntAbstract.Web.Controllers
         {
             var user = await _userManager.GetUserAsync(User);
 
-            // Kullanıcının tüm bildirilerini çekiyoruz
-            var submissions = _context.Submissions
-                .Where(s => s.AuthorId == user.Id);
+            var submissions = _context.Submissions.Where(s => s.AuthorId == user.Id);
 
-            // Mevcut Kongre Adını Belirle
             string currentConferenceName = "Genel Yönetim Paneli";
             if (_tenantContext.Current != null)
             {
                 currentConferenceName = _tenantContext.Current.Name;
             }
 
-            // Katıldığım (Kayıt olduğum) Kongreleri Listele
             var myConferences = await _context.Registrations
                 .Where(r => r.AppUserId == user.Id)
-                .Include(r => r.Conference)
-                .ThenInclude(c => c.Tenant)
+                .Include(r => r.Conference).ThenInclude(c => c.Tenant)
                 .Select(r => r.Conference)
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
-            // İstatistikleri Hesapla
+            var reviewAssignments = _context.ReviewAssignments
+                .Where(ra => ra.ReviewerId == user.Id);
+
+            int pendingReviews = await reviewAssignments.CountAsync(ra => ra.Review == null);
+            int completedReviews = await reviewAssignments.CountAsync(ra => ra.Review != null);
+
+            bool isReferee = (await _userManager.IsInRoleAsync(user, "Referee")) ||
+                             (await _userManager.IsInRoleAsync(user, "Admin")) ||
+                             (await reviewAssignments.AnyAsync());
+
+            ViewBag.IsReferee = isReferee;
+            ViewBag.PendingReviews = pendingReviews;
+            ViewBag.CompletedReviews = completedReviews;
+
+            ViewBag.IsAuthor = (await _userManager.IsInRoleAsync(user, "Author")) || (await submissions.AnyAsync());
+
+
             var viewModel = new DashboardViewModel
             {
-                // 1. Toplam Bildiri
                 TotalSubmissions = await submissions.CountAsync(),
 
-                // 2. Kabul Edilenler (Kabul + Sunuldu)
                 AcceptedSubmissions = await submissions.CountAsync(s =>
                     s.Status == SubmissionStatus.Accepted ||
                     s.Status == SubmissionStatus.Presented),
 
-                // 3. Bekleyen Kararlar (Yeni + İnceleniyor + Revizyon İsteniyor)
                 AwaitingDecision = await submissions.CountAsync(s =>
                     s.Status == SubmissionStatus.New ||
                     s.Status == SubmissionStatus.UnderReview ||
                     s.Status == SubmissionStatus.RevisionRequired),
 
-                // 4. Reddedilenler (YENİ EKLENDİ)
                 RejectedSubmissions = await submissions.CountAsync(s =>
                     s.Status == SubmissionStatus.Rejected),
 
@@ -84,8 +91,7 @@ namespace AntAbstract.Web.Controllers
 
             var myConferences = await _context.Registrations
                 .Where(r => r.AppUserId == user.Id)
-                .Include(r => r.Conference)
-                    .ThenInclude(c => c.Tenant)
+                .Include(r => r.Conference).ThenInclude(c => c.Tenant)
                 .OrderByDescending(r => r.RegistrationDate)
                 .Select(r => r.Conference)
                 .ToListAsync();
