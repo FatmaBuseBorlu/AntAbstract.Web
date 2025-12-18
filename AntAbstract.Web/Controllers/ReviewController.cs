@@ -1,5 +1,5 @@
 ﻿using AntAbstract.Domain.Entities;
-using AntAbstract.Infrastructure.Context; // Context ismin farklıysa (ör: Data) burayı düzelt
+using AntAbstract.Infrastructure.Context; 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +10,7 @@ namespace AntAbstract.Web.Controllers
     [Authorize(Roles = "Referee, Admin")]
     public class ReviewController : Controller
     {
-        // Senin projendeki Context ismi AppDbContext ise onu kullanıyoruz
+
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
 
@@ -20,15 +20,15 @@ namespace AntAbstract.Web.Controllers
             _userManager = userManager;
         }
 
-        // 1. GÖREV LİSTESİ
+
         public async Task<IActionResult> Index()
         {
             var userId = _userManager.GetUserId(User);
 
             var assignments = await _context.ReviewAssignments
                 .Include(ra => ra.Submission)
-                .ThenInclude(s => s.Conference) // Kongre adını görmek için
-                .Include(ra => ra.Review)       // Puan durumunu görmek için
+                .ThenInclude(s => s.Conference) 
+                .Include(ra => ra.Review)       
                 .Where(ra => ra.ReviewerId == userId)
                 .OrderByDescending(ra => ra.AssignedDate)
                 .ToListAsync();
@@ -36,19 +36,17 @@ namespace AntAbstract.Web.Controllers
             return View(assignments);
         }
 
-        // 2. DEĞERLENDİRME EKRANI (GET)
         [HttpGet]
         public async Task<IActionResult> Evaluate(int id)
         {
             var userId = _userManager.GetUserId(User);
 
-            // Admin ise UserID kontrolü yapmayalım ki her şeyi görebilsin (Opsiyonel)
-            // Ama şimdilik sadece kendi atamalarını görsün diyelim.
+
 
             var assignment = await _context.ReviewAssignments
-                .Include(ra => ra.Submission).ThenInclude(s => s.Files)      // Dosyaları getir
-                .Include(ra => ra.Submission).ThenInclude(s => s.Conference) // Kongre detayını getir
-                .Include(ra => ra.Review)                                    // Eski puan varsa getir
+                .Include(ra => ra.Submission).ThenInclude(s => s.Files)      
+                .Include(ra => ra.Submission).ThenInclude(s => s.Conference) 
+                .Include(ra => ra.Review)                                    
                 .FirstOrDefaultAsync(ra => ra.Id == id && ra.ReviewerId == userId);
 
             if (assignment == null)
@@ -60,7 +58,6 @@ namespace AntAbstract.Web.Controllers
             return View(assignment);
         }
 
-        // 3. DEĞERLENDİRME KAYDETME (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Evaluate(int assignmentId, string comments, string recommendation, int score)
@@ -74,7 +71,6 @@ namespace AntAbstract.Web.Controllers
 
             if (assignment == null) return NotFound();
 
-            // Eğer daha önce yorum yoksa YENİ OLUŞTUR
             if (assignment.Review == null)
             {
                 var review = new Review
@@ -88,7 +84,6 @@ namespace AntAbstract.Web.Controllers
 
                 assignment.Review = review;
             }
-            // Varsa GÜNCELLE
             else
             {
                 assignment.Review.CommentsToAuthor = comments;
@@ -96,10 +91,6 @@ namespace AntAbstract.Web.Controllers
                 assignment.Review.Score = score;
                 assignment.Review.ReviewedAt = DateTime.Now;
             }
-
-            // ÖNEMLİ: Görev durumunu "Tamamlandı" (1) yapıyoruz
-            // (Senin enum yapına göre 1 = Completed varsayıyorum)
-            assignment.Status = 1;
 
             await _context.SaveChangesAsync();
 

@@ -11,17 +11,15 @@ namespace AntAbstract.Domain.Entities
 
         public DateTime AssignedDate { get; set; } = DateTime.UtcNow;
 
-        public string ReviewerId { get; set; }
-
-        public AppUser Reviewer { get; set; }
-
         public Guid SubmissionId { get; set; }
 
+        [ForeignKey("SubmissionId")]
         public Submission Submission { get; set; }
 
-        [Required]
         public string ReviewerId { get; set; }
-        public AppUser AppUser { get; set; } // Tip "Reviewer"dan "AppUser"a değiştirildi ve ismi AppUser oldu.
+
+        [ForeignKey("ReviewerId")]
+        public AppUser Reviewer { get; set; } 
 
         public Review Review { get; set; }
     }
