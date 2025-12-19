@@ -162,7 +162,7 @@
                                     <i class="fas fa-check-circle me-1"></i> KAYITLI
                                 </div>
 
-                                @if (registrationStatus[kongre.Id] == true) 
+                                @if (registrationStatus[kongre.Id] == true)
                                 {
                                     <div class="btn btn-light text-success flex-fill fw-bold disabled" style="opacity: 1;">
                                         <i class="fas fa-receipt me-1"></i> ÖDENDİ
@@ -170,8 +170,13 @@
                                 }
                                 else
                                 {
-                                    <a asp-controller="Payment" asp-action="PayForConference" asp-route-conferenceId="@kongre.Id"
-                                       class="btn btn-outline-info flex-fill fw-bold">ÖDEME YAP</a>
+                                    <a asp-controller="Payment"
+                                       asp-action="PayForConference"
+                                       asp-route-slug="@kongre.Slug"
+                                       asp-route-conferenceId="@kongre.Id">
+                                        ÖDEME YAP
+                                    </a>
+
                                 }
                             }
                             else

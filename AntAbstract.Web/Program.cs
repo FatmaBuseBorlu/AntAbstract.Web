@@ -13,10 +13,8 @@ using Microsoft.AspNetCore.Authentication.OAuth;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
-
 
 builder.Services.AddIdentity<AppUser, IdentityRole>(opt =>
 {
@@ -37,9 +35,10 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddAuthentication()
     .AddOAuth("ORCID", options =>
     {
-        options.ClientId = builder.Configuration["ORCID:ClientId"] ?? throw new InvalidOperationException("ORCID ClientId bulunamadý.");
-        options.ClientSecret = builder.Configuration["ORCID:ClientSecret"] ?? throw new InvalidOperationException("ORCID ClientSecret bulunamadý.");
-
+        options.ClientId = builder.Configuration["ORCID:ClientId"]
+            ?? throw new InvalidOperationException("ORCID ClientId bulunamadý.");
+        options.ClientSecret = builder.Configuration["ORCID:ClientSecret"]
+            ?? throw new InvalidOperationException("ORCID ClientSecret bulunamadý.");
 
         options.AuthorizationEndpoint = "https://orcid.org/oauth/authorize";
         options.TokenEndpoint = "https://orcid.org/oauth/token";
@@ -51,7 +50,6 @@ builder.Services.AddAuthentication()
         options.CallbackPath = "/signin-orcid";
     });
 
-
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddTransient<IEmailSender, EmailService>();
@@ -60,7 +58,6 @@ builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();
 builder.Services.AddScoped<IReviewerRecommendationService, ReviewerRecommendationService>();
 
-
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 builder.Services.AddControllersWithViews()
     .AddViewLocalization(Microsoft.AspNetCore.Mvc.Razor.LanguageViewLocationExpanderFormat.Suffix)
@@ -68,9 +65,7 @@ builder.Services.AddControllersWithViews()
 
 builder.Services.AddRazorPages();
 
-
 var app = builder.Build();
-
 
 using (var scope = app.Services.CreateScope())
 {
@@ -91,7 +86,6 @@ using (var scope = app.Services.CreateScope())
 }
 
 StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
-
 
 if (!app.Environment.IsDevelopment())
 {
@@ -125,24 +119,25 @@ app.Use(async (ctx, next) =>
     await next();
 });
 
+// Attribute routing kullanan controllerlar için
+app.MapControllers();
+
+// Conventional routes
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.MapControllerRoute(
     name: "tenant",
-    pattern: "{tenant}/{controller=Home}/{action=Index}/{id?}");
+    pattern: "{slug}/{controller=Home}/{action=Index}/{id?}");
 
 app.MapRazorPages();
 
 app.UseRotativa();
 
-
 using (var scope = app.Services.CreateScope())
 {
     await AntAbstract.Infrastructure.Data.DbSeeder.SeedRolesAndUsers(scope.ServiceProvider);
 }
-
-app.Run();
 
 app.Run();

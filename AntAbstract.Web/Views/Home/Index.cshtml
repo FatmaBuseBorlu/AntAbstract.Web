@@ -164,8 +164,12 @@
                                             }
                                             else
                                             {
-                                                <a asp-controller="Payment" asp-action="PayForConference" asp-route-conferenceId="@kongre.Id"
-                                                   class="btn btn-sm btn-outline-info flex-fill fw-bold">ÖDEME YAP</a>
+<a asp-route="PayForConferenceRoute"
+   asp-route-slug="@kongre.Slug"
+   asp-route-conferenceId="@kongre.Id"
+   class="btn btn-sm btn-outline-info flex-fill fw-bold">ÖDEME YAP</a>
+
+
                                             }
                                         }
                                         else

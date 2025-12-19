@@ -133,10 +133,12 @@
                         <i class="fas fa-check-circle me-2"></i> KAYITLISINIZ
                     </div>
 
-                    <a asp-controller="Payment" asp-action="PayForConference" asp-route-conferenceId="@Model.Id"
-                       class="btn btn-outline-light btn-lg px-4 fw-bold">
-                        ÖDEME YAP
-                    </a>
+                    <a asp-route="PayForConferenceRoute"
+                       asp-route-slug="@Model.Slug"
+                       asp-route-conferenceId="@Model.Id"
+                       class="btn btn-outline-light btn-lg px-4 fw-bold">ÖDEME YAP</a>
+
+
                 </div>
             }
             else
