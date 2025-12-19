@@ -1,8 +1,11 @@
-﻿using AntAbstract.Infrastructure.Context;
+﻿using AntAbstract.Domain.Entities;
+using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
+using System;
+using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -11,70 +14,59 @@ namespace AntAbstract.Web.Controllers
     public class PaymentController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly UserManager<AppUser> _userManager;
 
-        public PaymentController(AppDbContext context)
+        public PaymentController(AppDbContext context, UserManager<AppUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
-        // 1) Konferanstan ödeme sayfasına geçiş
-        // URL: /{slug}/payment/payforconference?conferenceId={GUID}
-        [HttpGet("payforconference", Name = "PayForConferenceRoute")]
-        public async Task<IActionResult> PayForConference(Guid conferenceId)
-        {
-            var slug = RouteData.Values["slug"]?.ToString();
-            if (string.IsNullOrWhiteSpace(slug))
-                return NotFound("Slug bulunamadı.");
-
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(userId))
-                return Challenge();
-
-            var registration = await _context.Registrations
-                .AsNoTracking()
-                .FirstOrDefaultAsync(r => r.ConferenceId == conferenceId && r.AppUserId == userId);
-
-            if (registration == null)
-                return NotFound("Bu konferans için kayıt bulunamadı. Önce kayıt oluşturmalısın.");
-
-            return RedirectToAction("Index", new { slug = slug, id = registration.Id });
-        }
-
-        // 2) Ödeme sayfası
-        // URL: /{slug}/payment/index/{GUID}
         [HttpGet("index/{id}")]
         public async Task<IActionResult> Index(Guid id)
         {
+            var user = await _userManager.GetUserAsync(User);
+
             var registration = await _context.Registrations
                 .Include(r => r.Conference)
                 .Include(r => r.RegistrationType)
                 .FirstOrDefaultAsync(r => r.Id == id);
 
-            if (registration == null)
-                return NotFound("Ödeme kaydı bulunamadı.");
+            if (registration == null) return NotFound("Kayıt bulunamadı.");
 
-            return View(registration);
+            if (registration.IsPaid)
+            {
+                TempData["InfoMessage"] = "Bu kongrenin ödemesi zaten yapılmıştır.";
+                return RedirectToAction("Index", "Home", new { slug = RouteData.Values["slug"] });
+            }
+
+            var paymentModel = new Payment
+            {
+                ConferenceId = registration.ConferenceId,
+                Conference = registration.Conference,
+                RelatedSubmissionId = registration.Id, 
+                Amount = registration.RegistrationType != null ? registration.RegistrationType.Price : 0,
+                Currency = registration.RegistrationType != null ? registration.RegistrationType.Currency : "TL",
+                BillingName = $"{user.FirstName} {user.LastName}", 
+            };
+
+            return View(paymentModel);
         }
 
-        // 3) Ödemeyi tamamla
-        // POST: /{slug}/payment/process
         [HttpPost("process")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ProcessPayment(Guid registrationId)
+        public async Task<IActionResult> ProcessPayment(Payment model)
         {
             var registration = await _context.Registrations
-                .Include(r => r.Conference)
-                .FirstOrDefaultAsync(r => r.Id == registrationId);
+                .FindAsync(model.RelatedSubmissionId);
 
-            if (registration == null)
-                return NotFound();
+            if (registration == null) return NotFound("Ödeme yapılacak kayıt bulunamadı.");
 
             registration.IsPaid = true;
-            registration.PaymentDate = DateTime.UtcNow;
-
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Ödemeniz başarıyla alındı!";
+            TempData["SuccessMessage"] = "Ödemeniz başarıyla alındı. Kaydınız onaylanmıştır!";
+
             return RedirectToAction("Index", "Home", new { slug = RouteData.Values["slug"] });
         }
     }

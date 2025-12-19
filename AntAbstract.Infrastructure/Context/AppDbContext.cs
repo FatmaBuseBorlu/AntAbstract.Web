@@ -10,7 +10,6 @@ namespace AntAbstract.Infrastructure.Context
         public AppDbContext(DbContextOptions options) : base(options)
         {
         }
-
         public DbSet<Tenant> Tenants { get; set; }
         public DbSet<ScientificField> ScientificFields { get; set; }
         public DbSet<CongressType> CongressTypes { get; set; }
@@ -57,14 +56,12 @@ namespace AntAbstract.Infrastructure.Context
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            builder.Entity<Conference>()
-                .HasMany<Registration>()
-                .WithOne(r => r.Conference)
+            builder.Entity<Registration>()
+                .HasOne(r => r.Conference)
+                .WithMany(c => c.Registrations) 
                 .HasForeignKey(r => r.ConferenceId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-          
         }
     }
-    
 }

@@ -5,48 +5,34 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
-    [Authorize]
+    [Authorize] 
     [Route("{slug}/registration")]
-    [Route("registration")]
     public class RegistrationController : Controller
     {
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
         private readonly TenantContext _tenantContext;
 
-        public RegistrationController(AppDbContext context,
-                                      UserManager<AppUser> userManager,
-                                      TenantContext tenantContext)
+        public RegistrationController(AppDbContext context, UserManager<AppUser> userManager, TenantContext tenantContext)
         {
             _context = context;
             _userManager = userManager;
             _tenantContext = tenantContext;
         }
 
-        [HttpGet("")]
-        [HttpGet("index/{id?}")]
-        public async Task<IActionResult> Index(Guid? id)
+        [HttpGet("join")]
+        public async Task<IActionResult> Join()
         {
             var user = await _userManager.GetUserAsync(User);
-            Conference conference = null;
+            var slug = RouteData.Values["slug"]?.ToString();
 
-            if (_tenantContext.Current != null)
-            {
-                conference = await _context.Conferences
-                    .Include(c => c.Tenant)
-                    .FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
-            }
-            else if (id.HasValue)
-            {
-                conference = await _context.Conferences
-                    .Include(c => c.Tenant)
-                    .FirstOrDefaultAsync(c => c.Id == id.Value);
-            }
+            var conference = await _context.Conferences
+                .Include(c => c.Tenant)
+                .FirstOrDefaultAsync(c => c.Tenant.Slug == slug);
 
             if (conference == null) return NotFound("Kongre bulunamadı.");
 
@@ -55,62 +41,30 @@ namespace AntAbstract.Web.Controllers
 
             if (existingRegistration != null)
             {
-                TempData["InfoMessage"] = "Bu kongreye zaten kaydınız bulunmaktadır.";
-                return RedirectToAction("Index", "Payment", new { slug = conference.Tenant?.Slug, id = existingRegistration.Id });
-            }
-
-            return View(conference);
-        }
-
-        [HttpPost("create")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Guid conferenceId)
-        {
-            var user = await _userManager.GetUserAsync(User);
-            var conference = await _context.Conferences
-                .Include(c => c.Tenant)
-                .FirstOrDefaultAsync(c => c.Id == conferenceId);
-
-            if (conference == null) return NotFound();
-
-            bool alreadyRegistered = await _context.Registrations
-                .AnyAsync(r => r.ConferenceId == conferenceId && r.AppUserId == user.Id);
-
-            if (alreadyRegistered)
-            {
-                return RedirectToAction("Index", "Payment", new { slug = conference.Tenant?.Slug });
+                return RedirectToAction("Index", "Home", new { slug = slug });
             }
 
             var defaultRegType = await _context.RegistrationTypes
-                .FirstOrDefaultAsync(rt => rt.ConferenceId == conferenceId)
+                .FirstOrDefaultAsync(rt => rt.ConferenceId == conference.Id)
                 ?? await _context.RegistrationTypes.FirstOrDefaultAsync();
 
-            if (defaultRegType == null)
-            {
-                TempData["ErrorMessage"] = "Sistemde tanımlı kayıt tipi bulunamadı.";
-                return RedirectToAction("Index");
-            }
+            if (defaultRegType == null) return RedirectToAction("Index", "Home");
 
-            var registration = new Registration
+            var newRegistration = new Registration
             {
                 AppUserId = user.Id,
-                ConferenceId = conferenceId,
+                ConferenceId = conference.Id,
                 RegistrationDate = DateTime.UtcNow,
                 IsPaid = false,
                 RegistrationTypeId = defaultRegType.Id
             };
 
-            _context.Registrations.Add(registration);
+            _context.Registrations.Add(newRegistration);
             await _context.SaveChangesAsync();
 
-            return RedirectToAction("Success", new { slug = conference.Tenant?.Slug, id = registration.Id });
-        }
+            TempData["SuccessMessage"] = "Kaydınız başarıyla yapıldı! Şimdi ödeme yapabilirsiniz.";
 
-        [HttpGet("success/{id}")]
-        public IActionResult Success(Guid id)
-        {
-            ViewBag.RegistrationId = id;
-            return View();
+            return RedirectToAction("Index", "Home", new { slug = slug });
         }
     }
 }

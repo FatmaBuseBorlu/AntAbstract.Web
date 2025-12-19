@@ -31,21 +31,29 @@ namespace AntAbstract.Web.Controllers
         {
             var user = await _userManager.GetUserAsync(User);
 
-            var registrationStatus = new Dictionary<Guid, bool>();
+            var registeredIds = new List<Guid>();
+            var userRegistrationMap = new Dictionary<Guid, Guid>();
 
             if (user != null)
             {
-                registrationStatus = await _context.Registrations
-                    .Where(r => r.AppUserId == user.Id)
-                    .ToDictionaryAsync(r => r.ConferenceId, r => r.IsPaid);
+                var userRegistrations = await _context.Registrations
+                    .Where(r => r.AppUserId == user.Id) 
+                    .ToListAsync();
+
+                registeredIds = userRegistrations.Select(r => r.ConferenceId).ToList();
+
+                userRegistrationMap = userRegistrations
+                    .ToDictionary(r => r.ConferenceId, r => r.Id);
             }
 
-            ViewBag.RegistrationStatus = registrationStatus;
+            ViewBag.RegisteredConferenceIds = registeredIds;
+            ViewBag.UserRegistrationIds = userRegistrationMap; 
 
             if (_tenantContext.Current != null)
             {
                 var currentConference = await _context.Conferences
                     .Include(c => c.Tenant)
+                    .Include(c => c.Registrations)
                     .FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
 
                 if (currentConference == null) return NotFound("Kongre aktif deðil.");
@@ -55,6 +63,7 @@ namespace AntAbstract.Web.Controllers
 
             var activeConferences = await _context.Conferences
                 .Include(c => c.Tenant)
+                .Include(c => c.Registrations)
                 .OrderBy(c => c.StartDate)
                 .ToListAsync();
 
@@ -65,21 +74,30 @@ namespace AntAbstract.Web.Controllers
         {
             var allCongresses = await _context.Conferences
                .Include(c => c.Tenant)
+               .Include(c => c.Registrations)
                .OrderBy(c => c.StartDate)
                .ToListAsync();
 
-
             var user = await _userManager.GetUserAsync(User);
-            var registrationStatus = new Dictionary<Guid, bool>();
+
+            var registeredIds = new List<Guid>();
+            var userRegistrationMap = new Dictionary<Guid, Guid>();
 
             if (user != null)
             {
-                registrationStatus = await _context.Registrations
-                   .Where(r => r.AppUserId == user.Id)
-                   .ToDictionaryAsync(r => r.ConferenceId, r => r.IsPaid);
-            }
-            ViewBag.RegistrationStatus = registrationStatus;
+                var userRegistrations = await _context.Registrations
+                    .Where(r => r.AppUserId == user.Id)
+                    .ToListAsync();
 
+                registeredIds = userRegistrations.Select(r => r.ConferenceId).ToList();
+
+
+                userRegistrationMap = userRegistrations
+                    .ToDictionary(r => r.ConferenceId, r => r.Id);
+            }
+
+            ViewBag.RegisteredConferenceIds = registeredIds;
+            ViewBag.UserRegistrationIds = userRegistrationMap;
 
             return View(allCongresses);
         }

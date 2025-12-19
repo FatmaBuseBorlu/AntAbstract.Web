@@ -1,128 +1,74 @@
 ﻿@using AntAbstract.Domain.Entities
 @using Microsoft.AspNetCore.Identity
 @inject SignInManager<AppUser> SignInManager
-@inject AntAbstract.Infrastructure.Context.TenantContext Tc
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @model IEnumerable<Conference>
 
 @{
-    ViewData["Title"] = "Kongreler";
+    ViewData["Title"] = "Tüm Kongreler";
     Layout = "_Layout";
-
-    var registrationStatus = ViewBag.RegistrationStatus as Dictionary<Guid, bool> ?? new Dictionary<Guid, bool>();
+    
+    var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
+    var regMap = ViewBag.UserRegistrationIds as Dictionary<Guid, Guid>;
 }
 
 <style>
-    body {
-        background-color: #f8f9fa;
+    .page-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 60px 0;
+        margin-bottom: 50px;
     }
-
-    .search-input {
-        border-radius: 50px 0 0 50px;
-        border: 1px solid #e0e0e0;
-        padding-left: 25px;
-        height: 55px;
-    }
-
-        .search-input:focus {
-            box-shadow: none;
-            border-color: #00aeef;
-        }
-
-    .search-btn {
-        border-radius: 0 50px 50px 0;
-        padding-left: 30px;
-        padding-right: 30px;
-        background-color: #00aeef;
-        border: none;
-        color: white;
-        font-weight: bold;
-        transition: background-color 0.3s;
-    }
-
-        .search-btn:hover {
-            background-color: #008acb;
-        }
-
-    .congress-card {
-        border: none;
-        border-radius: 15px;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        overflow: hidden;
+    
+    .congress-card { 
+        transition: transform 0.3s ease, box-shadow 0.3s ease; 
+        border: 1px solid #eee;
+        background-color: #fff;
         height: 100%;
         display: flex;
         flex-direction: column;
-        background: #fff;
     }
-
-        .congress-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
-            border-color: #00aeef;
-        }
-
-    .card-img-wrapper {
-        height: 200px;
-        background: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        border-bottom: 1px solid #f1f1f1;
-    }
-
-        .card-img-wrapper img {
-            max-height: 100%;
-            max-width: 100%;
-            object-fit: contain;
-        }
-
-    .card-body {
-        flex: 1;
-    }
-
-    .btn.disabled {
-        opacity: 1 !important;
-        cursor: default;
+    .congress-card:hover { 
+        transform: translateY(-5px); 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important; 
+        border-color: #00aeef;
     }
 </style>
 
-<div class="container mt-5 pt-5 pb-5">
-
-    <div class="text-center mb-5 mt-4">
-        <h6 class="text-primary fw-bold text-uppercase ls-md mb-2">ETKİNLİK TAKVİMİ</h6>
-        <h1 class="display-4 fw-bold text-dark mb-3">Kongreler & Etkinlikler</h1>
-        <p class="text-muted lead mx-auto" style="max-width: 600px;">
-            Alanınızdaki en güncel bilimsel etkinlikleri keşfedin, kayıt olun ve yerinizi ayırtın.
-        </p>
-
-        <div class="row justify-content-center mt-4">
-            <div class="col-md-8 col-lg-6">
-                <div class="input-group shadow-sm rounded-pill bg-white">
-                    <input type="text" class="form-control search-input border-end-0" placeholder="Kongre adı, şehir veya konu ara...">
-                    <button class="btn search-btn" type="button">
+<div class="page-header text-center">
+    <div class="container">
+        <h1 class="display-5 fw-bold text-dark">Kongreler & Etkinlikler</h1>
+        <p class="lead text-muted mb-4">Alanınızdaki en güncel bilimsel etkinlikleri keşfedin, kayıt olun ve yerinizi ayırtın.</p>
+        
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="input-group input-group-lg shadow-sm">
+                    <input type="text" class="form-control border-0" placeholder="Kongre adı, şehir veya konu ara...">
+                    <button class="btn btn-primary px-4 fw-bold" style="background-color: #00aeef; border:none;">
                         <i class="fas fa-search me-2"></i> ARA
                     </button>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="row">
+<div class="container mb-5">
+    <div class="row"> 
         @if (Model != null && Model.Any())
         {
             @foreach (var kongre in Model)
             {
+                var slug = !string.IsNullOrEmpty(kongre.Tenant?.Slug) ? kongre.Tenant.Slug : kongre.Slug;
+
                 <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card h-100 shadow-sm congress-card">
+                    <div class="card h-100 shadow-sm border-0 congress-card">
 
-                        <a href="/@kongre.Slug" target="_blank" class="text-decoration-none text-dark h-100 d-flex flex-column">
-
-                            <div class="card-img-wrapper p-4">
+                        <a href="/@slug" target="_blank" class="text-decoration-none text-dark h-100 d-flex flex-column">
+                            <div class="card-img-top bg-white border-bottom d-flex align-items-center justify-content-center position-relative p-4" style="height: 180px;">
                                 @if (!string.IsNullOrEmpty(kongre.LogoPath))
                                 {
-                                    <img src="@kongre.LogoPath" alt="@kongre.Title">
+                                    <img src="@kongre.LogoPath" alt="@kongre.Title" style="max-height: 100%; max-width: 100%; object-fit: contain;">
                                 }
                                 else
                                 {
@@ -131,68 +77,26 @@
                                         <div class="small">Görsel Yok</div>
                                     </div>
                                 }
-
-                                <div class="position-absolute top-0 end-0 m-3 bg-white rounded-3 shadow-sm p-2 text-center border" style="min-width: 60px;">
-                                    <div class="fw-bold text-primary fs-4 lh-1">@kongre.StartDate.Day</div>
-                                    <div class="small text-uppercase text-muted fw-bold" style="font-size: 0.7rem;">@kongre.StartDate.ToString("MMM")</div>
+                                <div class="position-absolute top-0 end-0 m-3 bg-light rounded shadow-sm p-2 text-center lh-1 border">
+                                    <div class="fw-bold text-primary fs-5">@kongre.StartDate.Day</div>
+                                    <div class="small text-uppercase text-muted" style="font-size: 0.7rem;">@kongre.StartDate.ToString("MMM")</div>
                                 </div>
                             </div>
-
-                            <div class="card-body p-4 d-flex flex-column">
-                                <div class="mb-2">
-                                    <span class="badge bg-light text-primary border rounded-pill px-3">@kongre.Slug</span>
-                                </div>
-
-                                <h5 class="card-title fw-bold mb-3 text-dark" style="min-height: 3rem; line-height: 1.4;">
-                                    @kongre.Title
-                                </h5>
-
-                                <div class="d-flex align-items-center text-muted small mt-auto">
-                                    <i class="fas fa-map-marker-alt text-danger me-2"></i>
-                                    <span>@(kongre.City ?? "Online / Belirtilmemiş")</span>
-                                </div>
+                            <div class="card-body d-flex flex-column">
+                                <span class="badge bg-light text-dark border mb-2 align-self-start">@slug</span>
+                                <h5 class="card-title fw-bold mb-3 text-truncate" title="@kongre.Title">@kongre.Title</h5>
+                                <p class="card-text text-muted small mt-auto">
+                                    <i class="fa fa-map-marker-alt text-danger me-1"></i> @(kongre.City ?? "Online")
+                                </p>
                             </div>
                         </a>
 
-                        <div class="card-footer bg-white border-top-0 p-4 pt-0 d-flex justify-content-between gap-2">
-
-                            @if (registrationStatus.ContainsKey(kongre.Id))
-                            {
-                                <div class="btn btn-success flex-fill fw-bold disabled" style="opacity: 1;">
-                                    <i class="fas fa-check-circle me-1"></i> KAYITLI
-                                </div>
-
-                                @if (registrationStatus[kongre.Id] == true)
-                                {
-                                    <div class="btn btn-light text-success flex-fill fw-bold disabled" style="opacity: 1;">
-                                        <i class="fas fa-receipt me-1"></i> ÖDENDİ
-                                    </div>
-                                }
-                                else
-                                {
-                                    <a asp-controller="Payment"
-                                       asp-action="PayForConference"
-                                       asp-route-slug="@kongre.Slug"
-                                       asp-route-conferenceId="@kongre.Id">
-                                        ÖDEME YAP
-                                    </a>
-
-                                }
-                            }
-                            else
-                            {
-                                @if (SignInManager.IsSignedIn(User))
-                                {
-                                    <a asp-controller="Registration" asp-action="Index" asp-route-id="@kongre.Id"
-                                       class="btn btn-outline-primary fw-bold flex-fill rounded-3">KAYIT OL</a>
-                                }
-                                else
-                                {
-                                    <a href="/Identity/Account/Register?returnUrl=/Registration/Index/@kongre.Id"
-                                       class="btn btn-outline-primary fw-bold flex-fill rounded-3">KAYIT OL</a>
-                                }
-                            }
+                        <div class="card-footer bg-white border-0 pb-3 pt-0">
+                            <a href="/@slug" class="btn btn-outline-primary w-100 fw-bold rounded-pill">
+                                DETAYLARI GÖR <i class="fas fa-arrow-right ms-2"></i>
+                            </a>
                         </div>
+
                     </div>
                 </div>
             }
@@ -200,10 +104,9 @@
         else
         {
             <div class="col-12 text-center py-5">
-                <div class="alert alert-light border shadow-sm d-inline-block px-5 rounded-4">
-                    <i class="fas fa-search text-muted mb-3 opacity-50" style="font-size: 3rem;"></i>
-                    <h5 class="fw-bold text-muted">Sonuç Bulunamadı</h5>
-                    <p class="mb-0 text-muted small">Şu anda listelenecek aktif kongre bulunmamaktadır.</p>
+                <div class="alert alert-light border shadow-sm d-inline-block px-5">
+                    <i class="fas fa-info-circle text-primary mb-3 fs-2"></i>
+                    <p class="mb-0 text-muted">Şu anda listelenecek aktif kongre bulunamadı.</p>
                 </div>
             </div>
         }

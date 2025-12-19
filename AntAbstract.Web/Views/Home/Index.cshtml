@@ -10,11 +10,12 @@
     ViewData["Title"] = Tc.Current != null ? Tc.Current.Name : "Ana Sayfa";
     Layout = "_Layout";
     
-    var registrationStatus = ViewBag.RegistrationStatus as Dictionary<Guid, bool> ?? new Dictionary<Guid, bool>();
+    var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
+
+    var regMap = ViewBag.UserRegistrationIds as Dictionary<Guid, Guid>;
 }
 
 <style>
-
     .page-content-wrapper { padding-top: 100px; }
 
     .hero-image-container img {
@@ -67,8 +68,6 @@
         .stat-item:last-child { border-bottom: none; margin-bottom: 0; }
         .hero-image-container img { margin-top: 40px; }
     }
-    
-    .btn.disabled { opacity: 1 !important; cursor: default; }
 </style>
 
 <div class="page-content-wrapper">
@@ -119,10 +118,12 @@
                     {
                         @foreach (var kongre in Model)
                         {
+                            var slug = !string.IsNullOrEmpty(kongre.Tenant?.Slug) ? kongre.Tenant.Slug : kongre.Slug;
+
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card h-100 shadow-sm border-0 congress-card">
                                     
-                                    <a href="/@kongre.Slug" target="_blank" class="text-decoration-none text-dark h-100 d-flex flex-column">
+                                    <a href="/@slug" target="_blank" class="text-decoration-none text-dark h-100 d-flex flex-column">
                                         <div class="card-img-top bg-white border-bottom d-flex align-items-center justify-content-center position-relative p-4" style="height: 180px;">
                                             @if (!string.IsNullOrEmpty(kongre.LogoPath))
                                             {
@@ -141,7 +142,7 @@
                                             </div>
                                         </div>
                                         <div class="card-body d-flex flex-column">
-                                            <span class="badge bg-light text-dark border mb-2 align-self-start">@kongre.Slug</span>
+                                            <span class="badge bg-light text-dark border mb-2 align-self-start">@slug</span>
                                             <h5 class="card-title fw-bold mb-3 text-truncate" title="@kongre.Title">@kongre.Title</h5>
                                             <p class="card-text text-muted small mt-auto">
                                                 <i class="fa fa-map-marker-alt text-danger me-1"></i> @(kongre.City ?? "Online")
@@ -149,43 +150,47 @@
                                         </div>
                                     </a>
                                     
-                                    <div class="card-footer bg-white border-0 pb-3 pt-0 d-flex justify-content-between gap-2">
-                                        @if (registrationStatus.ContainsKey(kongre.Id))
+                                    <div class="card-footer bg-white border-0 pb-3 pt-0 d-flex gap-2">
+                                        
+                                        @if (registeredIds.Contains(kongre.Id))
                                         {
-                                            <div class="btn btn-sm btn-success flex-fill fw-bold disabled" style="opacity: 1;">
-                                                <i class="fas fa-check-circle me-1"></i> KAYITLI
-                                            </div>
-                                            
-                                            @if (registrationStatus[kongre.Id] == true) 
+
+                                            Guid myRegId = Guid.Empty;
+                                            if (regMap != null && regMap.ContainsKey(kongre.Id))
                                             {
-                                                <div class="btn btn-sm btn-light text-success flex-fill fw-bold disabled" style="opacity: 1;">
-                                                    <i class="fas fa-receipt me-1"></i> ÖDENDİ
-                                                </div>
+                                                myRegId = regMap[kongre.Id];
+                                            }
+
+                                            <button class="btn btn-sm btn-success flex-fill fw-bold" disabled style="opacity: 1; cursor: default;">
+                                                <i class="fas fa-check-circle me-1"></i> KAYITLISINIZ
+                                            </button>
+                                            
+                                            @if (myRegId != Guid.Empty)
+                                            {
+                                                <a href="/@slug/payment/index/@myRegId" 
+                                                   class="btn btn-sm btn-warning flex-fill fw-bold text-dark">
+                                                   <i class="fas fa-credit-card me-1"></i> ÖDEME YAP
+                                                </a>
                                             }
                                             else
                                             {
-<a asp-route="PayForConferenceRoute"
-   asp-route-slug="@kongre.Slug"
-   asp-route-conferenceId="@kongre.Id"
-   class="btn btn-sm btn-outline-info flex-fill fw-bold">ÖDEME YAP</a>
-
-
+                                                <button class="btn btn-sm btn-danger flex-fill" disabled>Hata: ID Yok</button>
                                             }
                                         }
                                         else
                                         {
-                                            if (SignInManager.IsSignedIn(User))
-                                            {
-                                                <a asp-controller="Registration" asp-action="Index" asp-route-id="@kongre.Id" 
-                                                   class="btn btn-sm btn-primary flex-fill fw-bold" style="background-color: #00aeef; border: none;">KAYIT OL</a>
-                                            }
-                                            else
-                                            {
-                                                <a href="/Identity/Account/Register?returnUrl=/Registration/Index/@kongre.Id" 
-                                                   class="btn btn-sm btn-primary flex-fill fw-bold" style="background-color: #00aeef; border: none;">KAYIT OL</a>
-                                            }
+                                            
+                                            <a href="/@slug/registration/join" 
+                                               class="btn btn-primary flex-fill fw-bold" style="background-color: #00aeef; border: none;">
+                                               KAYIT OL
+                                            </a>
+
+                                            <button class="btn btn-sm btn-secondary flex-fill fw-bold" disabled style="opacity: 0.6; cursor: not-allowed;">
+                                                <i class="fas fa-lock me-1"></i> ÖDEME YAP
+                                            </button>
                                         }
                                     </div>
+
                                 </div>
                             </div>
                         }
