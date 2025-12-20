@@ -1,15 +1,19 @@
 ﻿@using Microsoft.AspNetCore.Identity
 @using AntAbstract.Domain.Entities
 @inject UserManager<AppUser> UserManager
+@inject AntAbstract.Infrastructure.Context.TenantContext Tc
 
 @{
     var user = await UserManager.GetUserAsync(User);
     var profileImg = user?.ProfileImagePath;
     var displayName = user?.FirstName ?? User.Identity?.Name;
 
-    // Aktif menüyü belirlemek için Controller ve Action bilgisini alıyoruz
     var currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
     var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
+
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? Tc.Current?.Slug;
+    var paymentMyUrl = string.IsNullOrWhiteSpace(slug) ? "/Dashboard" : $"/{slug}/payment/my";
+    var accommodationUrl = string.IsNullOrWhiteSpace(slug) ? "/Accommodation/Index" : $"/{slug}/accommodation/index";
 }
 
 <!DOCTYPE html>
@@ -122,7 +126,7 @@
             margin-left: 0;
         }
 
-        media (max-width: 768px) {
+        @@media (max-width: 768px) {
             .sidebar {
                 margin-left: -260px;
             }
@@ -192,13 +196,13 @@
                 </li>
 
                 <li>
-                    <a href="/Payment/Index" class="@(currentController == "Payment" ? "active" : "")">
+                    <a href="@paymentMyUrl" class="@(currentController == "Payment" ? "active" : "")">
                         <i class="fas fa-file-invoice-dollar me-2 text-info"></i> Ödemelerim
                     </a>
                 </li>
 
                 <li>
-                    <a href="/Accommodation/Index" class="@(currentController == "Accommodation" ? "active" : "")">
+                    <a href="@accommodationUrl" class="@(currentController == "Accommodation" ? "active" : "")">
                         <i class="fas fa-hotel me-2 text-warning"></i> Konaklama
                     </a>
                 </li>

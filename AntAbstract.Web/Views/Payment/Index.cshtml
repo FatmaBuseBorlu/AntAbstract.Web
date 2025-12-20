@@ -4,6 +4,8 @@
 @{
     ViewData["Title"] = "Ödeme";
     Layout = "_LayoutDashboard";
+
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString();
 }
 
 <style>
@@ -85,11 +87,12 @@
         <div class="col-lg-8">
             <div class="card payment-card bg-white p-4 mb-4">
 
-                <form method="post" asp-action="ProcessPayment">
+                <form method="post"
+                      asp-action="ProcessPayment"
+                      asp-route-slug="@slug">
 
                     <input type="hidden" asp-for="ConferenceId" />
-                    <input type="hidden" asp-for="RelatedSubmissionId" /> <input type="hidden" asp-for="Amount" />
-                    <input type="hidden" asp-for="Currency" />
+                    <input type="hidden" asp-for="RelatedSubmissionId" />
 
                     <h5 class="section-title"><i class="fas fa-file-invoice"></i> Fatura Bilgileri</h5>
 

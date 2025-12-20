@@ -1,4 +1,7 @@
-﻿@using AntAbstract.Domain.Entities
+﻿@using System
+@using System.Linq
+@using System.Collections.Generic
+@using AntAbstract.Domain.Entities
 @using Microsoft.AspNetCore.Identity
 @inject SignInManager<AppUser> SignInManager
 @inject AntAbstract.Infrastructure.Context.TenantContext Tc
@@ -9,10 +12,12 @@
 @{
     ViewData["Title"] = Tc.Current != null ? Tc.Current.Name : "Ana Sayfa";
     Layout = "_Layout";
-    
-    var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
 
-    var regMap = ViewBag.UserRegistrationIds as Dictionary<Guid, Guid>;
+    var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
+    var regMap = ViewBag.UserRegistrationIds as Dictionary<Guid, Guid> ?? new Dictionary<Guid, Guid>();
+    var paidConferenceIds = ViewBag.PaidConferenceIds as List<Guid> ?? new List<Guid>();
+
+    var backUrl = Context.Request.Path + Context.Request.QueryString;
 }
 
 <style>
@@ -35,17 +40,17 @@
         100% { transform: translateY(0px); }
     }
 
-    .congress-card { 
-        transition: transform 0.3s ease, box-shadow 0.3s ease; 
+    .congress-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
         border: 1px solid #eee;
         background-color: #fff;
         display: flex;
         flex-direction: column;
         height: 100%;
     }
-    .congress-card:hover { 
-        transform: translateY(-5px); 
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important; 
+    .congress-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
         border-color: #00aeef;
     }
     .card-body { flex: 1; }
@@ -62,7 +67,7 @@
     .stat-icon { opacity: 0.8; margin-bottom: 15px; font-size: 2.5rem; }
     .stat-number { font-size: 2.5rem; font-weight: 800; line-height: 1; margin-bottom: 5px; }
     .stat-label { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; }
-    
+
     @@media (max-width: 768px) {
         .stat-item { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 30px; margin-bottom: 30px; }
         .stat-item:last-child { border-bottom: none; margin-bottom: 0; }
@@ -71,6 +76,25 @@
 </style>
 
 <div class="page-content-wrapper">
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="container mt-3">
+            <div class="alert alert-success border-0 shadow-sm">
+                @TempData["SuccessMessage"]
+            </div>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="container mt-3">
+            <div class="alert alert-danger border-0 shadow-sm">
+                @TempData["ErrorMessage"]
+            </div>
+        </div>
+    }
+
     @if (Tc.Current != null)
     {
         <div class="container text-center">
@@ -95,7 +119,7 @@
                             Kongre süreçlerinizi tek platformdan yönetin. Özet, hakem, kayıt ve konaklama işlemleri artık çok kolay.
                         </p>
                         <div class="d-flex justify-content-center justify-content-lg-start gap-3">
-                             <a href="#congress-list" class="btn btn-primary btn-lg px-5 shadow-sm" style="background-color: #00aeef; border: none;">Kongreleri İncele</a>
+                            <a href="#congress-list" class="btn btn-primary btn-lg px-5 shadow-sm" style="background-color: #00aeef; border: none;">Kongreleri İncele</a>
                         </div>
                     </div>
                     <div class="col-lg-6 hero-image-container position-relative text-center">
@@ -113,7 +137,7 @@
                     <div style="width: 50px; height: 3px; background: #00aeef; margin: 15px auto;"></div>
                 </div>
 
-                <div class="row"> 
+                <div class="row">
                     @if (Model != null && Model.Any())
                     {
                         @foreach (var kongre in Model)
@@ -122,7 +146,7 @@
 
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card h-100 shadow-sm border-0 congress-card">
-                                    
+
                                     <a href="/@slug" target="_blank" class="text-decoration-none text-dark h-100 d-flex flex-column">
                                         <div class="card-img-top bg-white border-bottom d-flex align-items-center justify-content-center position-relative p-4" style="height: 180px;">
                                             @if (!string.IsNullOrEmpty(kongre.LogoPath))
@@ -149,14 +173,12 @@
                                             </p>
                                         </div>
                                     </a>
-                                    
+
                                     <div class="card-footer bg-white border-0 pb-3 pt-0 d-flex gap-2">
-                                        
                                         @if (registeredIds.Contains(kongre.Id))
                                         {
-
                                             Guid myRegId = Guid.Empty;
-                                            if (regMap != null && regMap.ContainsKey(kongre.Id))
+                                            if (regMap.ContainsKey(kongre.Id))
                                             {
                                                 myRegId = regMap[kongre.Id];
                                             }
@@ -164,25 +186,33 @@
                                             <button class="btn btn-sm btn-success flex-fill fw-bold" disabled style="opacity: 1; cursor: default;">
                                                 <i class="fas fa-check-circle me-1"></i> KAYITLISINIZ
                                             </button>
-                                            
-                                            @if (myRegId != Guid.Empty)
+
+                                            @if (paidConferenceIds.Contains(kongre.Id))
                                             {
-                                                <a href="/@slug/payment/index/@myRegId" 
-                                                   class="btn btn-sm btn-warning flex-fill fw-bold text-dark">
-                                                   <i class="fas fa-credit-card me-1"></i> ÖDEME YAP
-                                                </a>
+                                                <button class="btn btn-sm btn-secondary flex-fill fw-bold" disabled style="opacity: 0.7; cursor: default;">
+                                                    <i class="fas fa-check me-1"></i> ÖDENDİ
+                                                </button>
                                             }
                                             else
                                             {
-                                                <button class="btn btn-sm btn-danger flex-fill" disabled>Hata: ID Yok</button>
+                                                @if (myRegId != Guid.Empty)
+                                                {
+                                                    <a href="/@slug/payment/index/@myRegId"
+                                                       class="btn btn-sm btn-warning flex-fill fw-bold text-dark">
+                                                        <i class="fas fa-credit-card me-1"></i> ÖDEME YAP
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-sm btn-danger flex-fill fw-bold" disabled>ID YOK</button>
+                                                }
                                             }
                                         }
                                         else
                                         {
-                                            
-                                            <a href="/@slug/registration/join" 
+                                            <a href="/@slug/registration/join?backUrl=@Uri.EscapeDataString(backUrl)"
                                                class="btn btn-primary flex-fill fw-bold" style="background-color: #00aeef; border: none;">
-                                               KAYIT OL
+                                                KAYIT OL
                                             </a>
 
                                             <button class="btn btn-sm btn-secondary flex-fill fw-bold" disabled style="opacity: 0.6; cursor: not-allowed;">

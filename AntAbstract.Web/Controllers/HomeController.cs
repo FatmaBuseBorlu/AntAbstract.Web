@@ -33,21 +33,34 @@ namespace AntAbstract.Web.Controllers
 
             var registeredIds = new List<Guid>();
             var userRegistrationMap = new Dictionary<Guid, Guid>();
+            var paidConferenceIds = new List<Guid>();
 
             if (user != null)
             {
                 var userRegistrations = await _context.Registrations
-                    .Where(r => r.AppUserId == user.Id) 
+                    .Where(r => r.AppUserId == user.Id)
+                    .Select(r => new { r.ConferenceId, r.Id, r.IsPaid })
                     .ToListAsync();
 
-                registeredIds = userRegistrations.Select(r => r.ConferenceId).ToList();
+                registeredIds = userRegistrations
+                    .Select(r => r.ConferenceId)
+                    .Distinct()
+                    .ToList();
 
                 userRegistrationMap = userRegistrations
-                    .ToDictionary(r => r.ConferenceId, r => r.Id);
+                    .GroupBy(r => r.ConferenceId)
+                    .ToDictionary(g => g.Key, g => g.First().Id);
+
+                paidConferenceIds = userRegistrations
+                    .Where(r => r.IsPaid)
+                    .Select(r => r.ConferenceId)
+                    .Distinct()
+                    .ToList();
             }
 
             ViewBag.RegisteredConferenceIds = registeredIds;
-            ViewBag.UserRegistrationIds = userRegistrationMap; 
+            ViewBag.UserRegistrationIds = userRegistrationMap;
+            ViewBag.PaidConferenceIds = paidConferenceIds;
 
             if (_tenantContext.Current != null)
             {
@@ -73,31 +86,43 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> Congresses()
         {
             var allCongresses = await _context.Conferences
-               .Include(c => c.Tenant)
-               .Include(c => c.Registrations)
-               .OrderBy(c => c.StartDate)
-               .ToListAsync();
+                .Include(c => c.Tenant)
+                .Include(c => c.Registrations)
+                .OrderBy(c => c.StartDate)
+                .ToListAsync();
 
             var user = await _userManager.GetUserAsync(User);
 
             var registeredIds = new List<Guid>();
             var userRegistrationMap = new Dictionary<Guid, Guid>();
+            var paidConferenceIds = new List<Guid>();
 
             if (user != null)
             {
                 var userRegistrations = await _context.Registrations
                     .Where(r => r.AppUserId == user.Id)
+                    .Select(r => new { r.ConferenceId, r.Id, r.IsPaid })
                     .ToListAsync();
 
-                registeredIds = userRegistrations.Select(r => r.ConferenceId).ToList();
-
+                registeredIds = userRegistrations
+                    .Select(r => r.ConferenceId)
+                    .Distinct()
+                    .ToList();
 
                 userRegistrationMap = userRegistrations
-                    .ToDictionary(r => r.ConferenceId, r => r.Id);
+                    .GroupBy(r => r.ConferenceId)
+                    .ToDictionary(g => g.Key, g => g.First().Id);
+
+                paidConferenceIds = userRegistrations
+                    .Where(r => r.IsPaid)
+                    .Select(r => r.ConferenceId)
+                    .Distinct()
+                    .ToList();
             }
 
             ViewBag.RegisteredConferenceIds = registeredIds;
             ViewBag.UserRegistrationIds = userRegistrationMap;
+            ViewBag.PaidConferenceIds = paidConferenceIds;
 
             return View(allCongresses);
         }
