@@ -1,27 +1,34 @@
 ﻿@{
     ViewData["Title"] = "Ödeme Başarılı";
-    Layout = "_Layout";
+    Layout = "_LayoutDashboard"; 
 }
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
 
-<div class="container mt-5 pt-5 text-center">
-    <div class="card shadow-sm border-0 d-inline-block p-5" style="max-width: 600px;">
-        <div class="mb-4">
-            <div class="rounded-circle bg-success d-inline-flex align-items-center justify-content-center text-white" style="width: 80px; height: 80px;">
-                <i class="fas fa-check fa-3x"></i>
+            <div class="card border-0 shadow-sm p-5 rounded-4">
+                <div class="mb-4">
+                    <div style="width: 80px; height: 80px; background-color: #d1e7dd; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                        <i class="fas fa-check fa-3x text-success"></i>
+                    </div>
+                </div>
+
+                <h2 class="fw-bold text-success mb-3">Ödeme Başarılı!</h2>
+                <p class="text-muted mb-4">
+                    Tebrikler, ödeme işleminiz başarıyla alındı ve kaydınız onaylandı.
+                    <br>Artık bildiri gönderebilir ve diğer işlemleri yapabilirsiniz.
+                </p>
+
+                <div class="d-grid gap-2">
+                    <a href="/Dashboard" class="btn btn-primary py-3 fw-bold" style="background-color: #00aeef; border:none;">
+                        <i class="fas fa-home me-2"></i> Panele Dön
+                    </a>
+                    <a href="#" class="btn btn-outline-secondary py-2 border-0">
+                        <i class="fas fa-file-invoice me-2"></i> Dekontu İndir
+                    </a>
+                </div>
             </div>
-        </div>
 
-        <h2 class="fw-bold text-success">Ödeme Başarılı!</h2>
-        <p class="lead text-muted mt-3">
-            Kongre kaydınız ve ödemeniz başarıyla alınmıştır. <br>
-            Katılımınız için teşekkür ederiz.
-        </p>
-
-        <hr class="my-4">
-
-        <div class="d-grid gap-2 col-8 mx-auto">
-            <a href="/Dashboard" class="btn btn-primary btn-lg">Ana Panele Dön</a>
-            <a href="/" class="btn btn-outline-secondary">Ana Sayfaya Dön</a>
         </div>
     </div>
 </div>

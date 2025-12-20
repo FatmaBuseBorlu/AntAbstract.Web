@@ -322,26 +322,53 @@ namespace AntAbstract.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Hotels",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Address = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PhotoPath = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ConferenceId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Hotels", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Hotels_Conferences_ConferenceId",
+                        column: x => x.ConferenceId,
+                        principalTable: "Conferences",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Payments",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    ConferenceId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Currency = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    TransactionId = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    PaymentType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Currency = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    PaymentMethod = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    TransactionId = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
+                    PaymentDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
-                    PaymentDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    BillingName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    BillingAddress = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    TaxOffice = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    TaxNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    AppUserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    ConferenceId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RelatedSubmissionId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Payments", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Payments_AspNetUsers_UserId",
-                        column: x => x.UserId,
+                        name: "FK_Payments_AspNetUsers_AppUserId",
+                        column: x => x.AppUserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -349,7 +376,8 @@ namespace AntAbstract.Infrastructure.Migrations
                         name: "FK_Payments_Conferences_ConferenceId",
                         column: x => x.ConferenceId,
                         principalTable: "Conferences",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -371,26 +399,84 @@ namespace AntAbstract.Infrastructure.Migrations
                         column: x => x.ConferenceId,
                         principalTable: "Conferences",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Sessions",
+                name: "Submissions",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    SessionDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Location = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    ConferenceId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    Abstract = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Keywords = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DecisionDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    IsFeedbackGiven = table.Column<bool>(type: "bit", nullable: false),
+                    ConferenceId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AuthorId = table.Column<string>(type: "nvarchar(450)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Sessions", x => x.Id);
+                    table.PrimaryKey("PK_Submissions", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Sessions_Conferences_ConferenceId",
+                        name: "FK_Submissions_AspNetUsers_AuthorId",
+                        column: x => x.AuthorId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Submissions_Conferences_ConferenceId",
                         column: x => x.ConferenceId,
                         principalTable: "Conferences",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TransferOptions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Currency = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ConferenceId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TransferOptions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TransferOptions_Conferences_ConferenceId",
+                        column: x => x.ConferenceId,
+                        principalTable: "Conferences",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RoomTypes",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Currency = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Capacity = table.Column<int>(type: "int", nullable: false),
+                    TotalQuota = table.Column<int>(type: "int", nullable: false),
+                    HotelId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RoomTypes", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_RoomTypes_Hotels_HotelId",
+                        column: x => x.HotelId,
+                        principalTable: "Hotels",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -432,55 +518,15 @@ namespace AntAbstract.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Submissions",
-                columns: table => new
-                {
-                    SubmissionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    AbstractText = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Keywords = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    FilePath = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    FinalDecision = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    DecisionDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    AuthorId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    SessionId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    ConferenceId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    IsFeedbackGiven = table.Column<bool>(type: "bit", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Submissions", x => x.SubmissionId);
-                    table.ForeignKey(
-                        name: "FK_Submissions_AspNetUsers_AuthorId",
-                        column: x => x.AuthorId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Submissions_Conferences_ConferenceId",
-                        column: x => x.ConferenceId,
-                        principalTable: "Conferences",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Submissions_Sessions_SessionId",
-                        column: x => x.SessionId,
-                        principalTable: "Sessions",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
                 name: "ReviewAssignments",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     AssignedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ReviewerId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     SubmissionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ReviewId = table.Column<int>(type: "int", nullable: true)
+                    ReviewerId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    ReviewId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -490,17 +536,18 @@ namespace AntAbstract.Infrastructure.Migrations
                         column: x => x.ReviewerId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_ReviewAssignments_Reviews_ReviewId",
                         column: x => x.ReviewId,
                         principalTable: "Reviews",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_ReviewAssignments_Submissions_SubmissionId",
                         column: x => x.SubmissionId,
                         principalTable: "Submissions",
-                        principalColumn: "SubmissionId",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -526,7 +573,7 @@ namespace AntAbstract.Infrastructure.Migrations
                         name: "FK_SubmissionAuthor_Submissions_SubmissionId",
                         column: x => x.SubmissionId,
                         principalTable: "Submissions",
-                        principalColumn: "SubmissionId",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -551,9 +598,73 @@ namespace AntAbstract.Infrastructure.Migrations
                         name: "FK_SubmissionFile_Submissions_SubmissionId",
                         column: x => x.SubmissionId,
                         principalTable: "Submissions",
-                        principalColumn: "SubmissionId",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateTable(
+                name: "AccommodationBookings",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AppUserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    ConferenceId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RoomTypeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TransferOptionId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CheckInDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CheckOutDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    RoommateName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    TotalAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    IsPaid = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AccommodationBookings", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AccommodationBookings_AspNetUsers_AppUserId",
+                        column: x => x.AppUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AccommodationBookings_Conferences_ConferenceId",
+                        column: x => x.ConferenceId,
+                        principalTable: "Conferences",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AccommodationBookings_RoomTypes_RoomTypeId",
+                        column: x => x.RoomTypeId,
+                        principalTable: "RoomTypes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_AccommodationBookings_TransferOptions_TransferOptionId",
+                        column: x => x.TransferOptionId,
+                        principalTable: "TransferOptions",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AccommodationBookings_AppUserId",
+                table: "AccommodationBookings",
+                column: "AppUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AccommodationBookings_ConferenceId",
+                table: "AccommodationBookings",
+                column: "ConferenceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AccommodationBookings_RoomTypeId",
+                table: "AccommodationBookings",
+                column: "RoomTypeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AccommodationBookings_TransferOptionId",
+                table: "AccommodationBookings",
+                column: "TransferOptionId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
@@ -600,6 +711,11 @@ namespace AntAbstract.Infrastructure.Migrations
                 column: "TenantId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Hotels_ConferenceId",
+                table: "Hotels",
+                column: "ConferenceId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Messages_ReceiverId",
                 table: "Messages",
                 column: "ReceiverId");
@@ -615,14 +731,14 @@ namespace AntAbstract.Infrastructure.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Payments_AppUserId",
+                table: "Payments",
+                column: "AppUserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Payments_ConferenceId",
                 table: "Payments",
                 column: "ConferenceId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Payments_UserId",
-                table: "Payments",
-                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Registrations_AppUserId",
@@ -660,9 +776,9 @@ namespace AntAbstract.Infrastructure.Migrations
                 column: "SubmissionId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Sessions_ConferenceId",
-                table: "Sessions",
-                column: "ConferenceId");
+                name: "IX_RoomTypes_HotelId",
+                table: "RoomTypes",
+                column: "HotelId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_SubmissionAuthor_SubmissionId",
@@ -685,11 +801,6 @@ namespace AntAbstract.Infrastructure.Migrations
                 column: "ConferenceId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Submissions_SessionId",
-                table: "Submissions",
-                column: "SessionId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Tenants_CongressTypeId",
                 table: "Tenants",
                 column: "CongressTypeId");
@@ -698,11 +809,19 @@ namespace AntAbstract.Infrastructure.Migrations
                 name: "IX_Tenants_ScientificFieldId",
                 table: "Tenants",
                 column: "ScientificFieldId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TransferOptions_ConferenceId",
+                table: "TransferOptions",
+                column: "ConferenceId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "AccommodationBookings");
+
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
 
@@ -740,6 +859,12 @@ namespace AntAbstract.Infrastructure.Migrations
                 name: "SubmissionFile");
 
             migrationBuilder.DropTable(
+                name: "RoomTypes");
+
+            migrationBuilder.DropTable(
+                name: "TransferOptions");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
@@ -752,10 +877,10 @@ namespace AntAbstract.Infrastructure.Migrations
                 name: "Submissions");
 
             migrationBuilder.DropTable(
-                name: "AspNetUsers");
+                name: "Hotels");
 
             migrationBuilder.DropTable(
-                name: "Sessions");
+                name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "Conferences");

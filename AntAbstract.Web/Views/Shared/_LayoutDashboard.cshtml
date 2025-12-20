@@ -5,8 +5,9 @@
 @{
     var user = await UserManager.GetUserAsync(User);
     var profileImg = user?.ProfileImagePath;
-    var displayName = user?.FirstName ?? User.Identity.Name;
+    var displayName = user?.FirstName ?? User.Identity?.Name;
 
+    // Aktif menüyü belirlemek için Controller ve Action bilgisini alıyoruz
     var currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
     var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
 }
@@ -17,9 +18,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Yönetim Paneli - AntAbstract</title>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -58,30 +61,31 @@
             overflow-y: auto;
         }
 
-            .sidebar-menu li {
-                margin-bottom: 5px;
-            }
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
 
-            .sidebar-menu a {
-                display: flex;
-                align-items: center;
-                padding: 12px 15px;
-                color: #4b5563;
-                text-decoration: none;
-                border-radius: 8px;
-                font-weight: 500;
-                transition: all 0.2s;
-            }
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: #4b5563;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
 
-                .sidebar-menu a:hover, .sidebar-menu a.active {
-                    background-color: #eff6ff;
-                    color: #00aeef;
-                }
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background-color: #eff6ff;
+            color: #00aeef;
+        }
 
-            .sidebar-menu i {
-                width: 25px;
-                font-size: 1.1rem;
-            }
+        .sidebar-menu i {
+            width: 25px;
+            font-size: 1.1rem;
+        }
 
         .main-content {
             margin-left: 260px;
@@ -118,7 +122,7 @@
             margin-left: 0;
         }
 
-        @@media (max-width: 768px) {
+        media (max-width: 768px) {
             .sidebar {
                 margin-left: -260px;
             }
@@ -133,40 +137,40 @@
         }
     </style>
 </head>
+
 <body>
 
     <div class="sidebar">
         <a href="/" class="sidebar-brand">ANT <span style="color: #00aeef;">ABSTRACT</span></a>
 
         <ul class="sidebar-menu">
-            @* --- 1. HERKESTE GÖRÜNEN ORTAK ALAN --- *@
             <li class="text-muted small fw-bold px-3 mb-2 mt-2">GENEL</li>
+
             <li>
-                <a href="/Dashboard" class="@(currentController == "Dashboard" ? "active" : "")">
+                <a href="/Dashboard" class="@(currentController == "Dashboard" && currentAction == "Index" ? "active" : "")">
                     <i class="fas fa-home me-2 text-primary"></i> Ana Panel
                 </a>
             </li>
 
-            @* ============================================== *@
-            @* NORMAL KULLANICILAR (YAZAR/HAKEM) *@
-            @* ============================================== *@
             @if (!User.IsInRole("Admin"))
             {
                 <li class="text-muted small fw-bold px-3 mb-2 mt-2">BİLDİRİ İŞLEMLERİ</li>
+
                 <li>
                     <a href="/Submission/Create" class="@(currentController == "Submission" && currentAction == "Create" ? "active" : "")">
                         <i class="fas fa-plus-circle me-2 text-success"></i> Yeni Bildiri Gönder
                     </a>
                 </li>
+
                 <li>
                     <a href="/Submission/Index" class="@(currentController == "Submission" && currentAction == "Index" ? "active" : "")">
                         <i class="fas fa-file-contract me-2 text-info"></i> Bildirilerim
                     </a>
                 </li>
-                
+
                 @if (User.IsInRole("Referee"))
                 {
-                     <li>
+                    <li>
                         <a href="/Review/Index" class="@(currentController == "Review" ? "active" : "")">
                             <i class="fas fa-gavel me-2 text-warning"></i> Hakem Görevlerim
                         </a>
@@ -174,81 +178,139 @@
                 }
 
                 <li class="text-muted small fw-bold px-3 mb-2 mt-2">KONGRE</li>
-                <li><a href="/Program/Index"><i class="fas fa-calendar-day me-2 text-danger"></i> Kongre Programı</a></li>
-                <li><a href="#"><i class="fas fa-book me-2" style="color: #6f42c1;"></i> Bildiri Kitabı</a></li>
-                <li><a href="#"><i class="fas fa-credit-card me-2 text-success"></i> Ödeme & Konaklama</a></li>
+
+                <li>
+                    <a href="/Program/Index" class="@(currentController == "Program" ? "active" : "")">
+                        <i class="fas fa-calendar-day me-2 text-danger"></i> Kongre Programı
+                    </a>
+                </li>
+
+                <li>
+                    <a href="/Proceedings/Index" class="@(currentController == "Proceedings" ? "active" : "")">
+                        <i class="fas fa-book me-2" style="color: #6f42c1;"></i> Bildiri Kitabı
+                    </a>
+                </li>
+
+                <li>
+                    <a href="/Payment/Index" class="@(currentController == "Payment" ? "active" : "")">
+                        <i class="fas fa-file-invoice-dollar me-2 text-info"></i> Ödemelerim
+                    </a>
+                </li>
+
+                <li>
+                    <a href="/Accommodation/Index" class="@(currentController == "Accommodation" ? "active" : "")">
+                        <i class="fas fa-hotel me-2 text-warning"></i> Konaklama
+                    </a>
+                </li>
 
                 <li class="text-muted small fw-bold px-3 mb-2 mt-2">HESAP</li>
-                <li><a href="/Dashboard/MyConferences"><i class="fas fa-globe me-2 text-secondary"></i> Katıldığım Kongreler</a></li>
+
+                <li>
+                    <a href="/Dashboard/MyConferences" class="@(currentController == "Dashboard" && currentAction == "MyConferences" ? "active" : "")">
+                        <i class="fas fa-globe me-2 text-secondary"></i> Katıldığım Kongreler
+                    </a>
+                </li>
             }
 
-            @* ============================================== *@
-            @* SADECE ADMIN MENÜSÜ *@
-            @* ============================================== *@
             @if (User.IsInRole("Admin"))
             {
-                @* --- GRUP 1: KONGRE AKIŞI & RAPORLAR --- *@
                 <li class="text-muted small fw-bold px-3 mb-2 mt-4 text-uppercase" style="letter-spacing:1px;">KONGRE AKIŞI</li>
-                
-                <li><a href="#"><i class="fas fa-stream me-2 text-primary"></i> Kongre Akışı</a></li>
-                <li><a href="#"><i class="fas fa-chart-pie me-2 text-warning"></i> Raporlar</a></li>
-                
-                @* ÖZET ATAMA *@
+
+                <li>
+                    <a href="/ConferenceFlow/Index" class="@(currentController == "ConferenceFlow" ? "active" : "")">
+                        <i class="fas fa-stream me-2 text-primary"></i> Kongre Akışı
+                    </a>
+                </li>
+
+                <li>
+                    <a href="/Reports/Index" class="@(currentController == "Reports" ? "active" : "")">
+                        <i class="fas fa-chart-pie me-2 text-warning"></i> Raporlar
+                    </a>
+                </li>
+
                 <li>
                     <a href="/Assignment/Index" class="@(currentController == "Assignment" ? "active" : "")">
                         <i class="fas fa-tasks me-2 text-info"></i> Özet Atama
                     </a>
                 </li>
-                
-                @* KARAR EKRANI *@
+
                 <li>
                     <a href="/Decision/Index" class="@(currentController == "Decision" ? "active" : "")">
                         <i class="fas fa-gavel me-2 text-danger"></i> Karar Ekranı
                     </a>
                 </li>
 
-                @* --- GRUP 2: YÖNETİM --- *@
                 <li class="text-muted small fw-bold px-3 mb-2 mt-3 text-uppercase" style="letter-spacing:1px;">YÖNETİM</li>
 
-                <li><a href="#"><i class="fas fa-microphone-alt me-2 text-success"></i> Oturum Yönetimi</a></li>
-                <li><a href="#"><i class="fas fa-clipboard-list me-2 text-secondary"></i> Değerlendirme Formları</a></li>
-                
-                @* HAKEM YÖNETİMİ *@
+                <li>
+                    <a href="/Session/Index" class="@(currentController == "Session" ? "active" : "")">
+                        <i class="fas fa-microphone-alt me-2 text-success"></i> Oturum Yönetimi
+                    </a>
+                </li>
+
+                <li>
+                    <a href="/ReviewForms/Index" class="@(currentController == "ReviewForms" ? "active" : "")">
+                        <i class="fas fa-clipboard-list me-2 text-secondary"></i> Değerlendirme Formları
+                    </a>
+                </li>
+
                 <li>
                     <a href="/Referee/Index" class="@(currentController == "Referee" ? "active" : "")">
                         <i class="fas fa-user-tie me-2 text-dark"></i> Hakem Yönetimi
                     </a>
                 </li>
-                
-                @* KULLANICI YÖNETİMİ *@
+
                 <li>
                     <a href="/Users/Index" class="@(currentController == "Users" ? "active" : "")">
                         <i class="fas fa-users-cog me-2 text-danger"></i> Kullanıcı Yönetimi
                     </a>
                 </li>
 
-                @* --- GRUP 3: SİSTEM AYARLARI --- *@
                 <li class="text-muted small fw-bold px-3 mb-2 mt-3 text-uppercase" style="letter-spacing:1px;">SİSTEM AYARLARI</li>
 
-                <li><a href="#"><i class="fas fa-sliders-h me-2 text-primary"></i> Kongre Tanımları</a></li>
-                <li><a href="#"><i class="fas fa-atom me-2 text-info"></i> Bilimsel Alanlar</a></li>
-                <li><a href="#"><i class="fas fa-tags me-2 text-warning"></i> Kongre Türleri</a></li>
+                <li>
+                    <a href="/ConferenceDefinitions/Index" class="@(currentController == "ConferenceDefinitions" ? "active" : "")">
+                        <i class="fas fa-sliders-h me-2 text-primary"></i> Kongre Tanımları
+                    </a>
+                </li>
+
+                <li>
+                    <a href="/ScientificFields/Index" class="@(currentController == "ScientificFields" ? "active" : "")">
+                        <i class="fas fa-atom me-2 text-info"></i> Bilimsel Alanlar
+                    </a>
+                </li>
+
+                <li>
+                    <a href="/ConferenceTypes/Index" class="@(currentController == "ConferenceTypes" ? "active" : "")">
+                        <i class="fas fa-tags me-2 text-warning"></i> Kongre Türleri
+                    </a>
+                </li>
             }
 
-            @* --- ORTAK: İLETİŞİM --- *@
             <li class="text-muted small fw-bold px-3 mb-2 mt-3">İLETİŞİM</li>
-            <li><a href="/Message/Index"><i class="fas fa-envelope me-2 text-warning"></i> Mesajlarım</a></li>
+
+            <li>
+                <a href="/Message/Index" class="@(currentController == "Message" ? "active" : "")">
+                    <i class="fas fa-envelope me-2 text-warning"></i> Mesajlarım
+                </a>
+            </li>
         </ul>
     </div>
 
     <div class="main-content">
         <header class="top-header">
             <div class="d-flex align-items-center">
-                <button class="btn btn-light shadow-sm me-3 border-0" id="sidebarToggle" style="width: 40px; height: 40px; border-radius: 50%;"><i class="fas fa-bars text-primary"></i></button>
-                <div><h5 class="mb-0 fw-bold text-dark">Hoş Geldiniz, @displayName 👋</h5><small class="text-muted">Kongre Yönetim Sistemi</small></div>
-            </div>
-            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-light shadow-sm me-3 border-0" id="sidebarToggle" style="width: 40px; height: 40px; border-radius: 50%;">
+                    <i class="fas fa-bars text-primary"></i>
+                </button>
 
+                <div>
+                    <h5 class="mb-0 fw-bold text-dark">Hoş Geldiniz, @displayName 👋</h5>
+                    <small class="text-muted">Kongre Yönetim Sistemi</small>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
                 @try
                 {
                     @await Component.InvokeAsync("Notifications")
@@ -258,7 +320,9 @@
                     <i class="fas fa-bell-slash text-muted p-2"></i>
                 }
 
-                <a href="/" class="btn btn-sm btn-outline-primary fw-bold d-flex align-items-center gap-2 px-3 py-2 rounded-3 me-2"><i class="fas fa-external-link-alt"></i> Siteye Dön</a>
+                <a href="/" class="btn btn-sm btn-outline-primary fw-bold d-flex align-items-center gap-2 px-3 py-2 rounded-3 me-2">
+                    <i class="fas fa-external-link-alt"></i> Siteye Dön
+                </a>
 
                 <div class="dropdown">
                     <a href="#" class="d-flex align-items-center text-decoration-none" id="dashboardUserDropdown" data-bs-toggle="dropdown">
@@ -268,13 +332,16 @@
                         }
                         else
                         {
-                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold shadow-sm border border-2 border-white" style="width: 42px; height: 42px;">@(displayName?.Substring(0, 1).ToUpper())</div>
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold shadow-sm border border-2 border-white" style="width: 42px; height: 42px;">
+                                @(displayName?.Substring(0, 1).ToUpper())
+                            </div>
                         }
                     </a>
+
                     <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 rounded-3 p-2">
                         <li class="px-3 py-2 mb-2 border-bottom">
                             <div class="fw-bold">@displayName</div>
-                            <div class="small text-muted">@User.Identity.Name</div>
+                            <div class="small text-muted">@User.Identity?.Name</div>
                         </li>
 
                         <li>
@@ -283,6 +350,7 @@
                                 <span>Profil Ayarları</span>
                             </a>
                         </li>
+
                         <li>
                             <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post">
                                 <button type="submit" class="dropdown-item text-danger fw-bold d-flex align-items-center gap-2 w-100 text-start">
@@ -299,11 +367,18 @@
         <div class="mb-4">
             @if (TempData["SuccessMessage"] != null)
             {
-                <div class="alert alert-success alert-dismissible fade show border-0"><i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+                <div class="alert alert-success alert-dismissible fade show border-0">
+                    <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
             }
+
             @if (TempData["ErrorMessage"] != null)
             {
-                <div class="alert alert-danger alert-dismissible fade show border-0"><i class="fas fa-exclamation-triangle me-2"></i> @TempData["ErrorMessage"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+                <div class="alert alert-danger alert-dismissible fade show border-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i> @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
             }
         </div>
 
@@ -311,8 +386,9 @@
     </div>
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function () {
             const toggleBtn = document.getElementById("sidebarToggle");
             const body = document.body;
 
@@ -321,7 +397,7 @@
             }
 
             if (toggleBtn) {
-                toggleBtn.addEventListener("click", function(e) {
+                toggleBtn.addEventListener("click", function (e) {
                     e.preventDefault();
                     body.classList.toggle("sb-sidenav-toggled");
                     localStorage.setItem("sidebar-toggle", body.classList.contains("sb-sidenav-toggled"));
@@ -329,6 +405,7 @@
             }
         });
     </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

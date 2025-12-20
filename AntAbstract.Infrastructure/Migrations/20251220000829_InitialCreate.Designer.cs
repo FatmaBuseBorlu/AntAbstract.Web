@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AntAbstract.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251218010339_InitialCreate")]
+    [Migration("20251220000829_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -24,6 +24,56 @@ namespace AntAbstract.Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.AccommodationBooking", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AppUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CheckInDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CheckOutDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ConferenceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsPaid")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("RoomTypeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RoommateName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("TransferOptionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppUserId");
+
+                    b.HasIndex("ConferenceId");
+
+                    b.HasIndex("RoomTypeId");
+
+                    b.HasIndex("TransferOptionId");
+
+                    b.ToTable("AccommodationBookings");
+                });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.AppUser", b =>
                 {
@@ -200,6 +250,38 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.ToTable("CongressTypes");
                 });
 
+            modelBuilder.Entity("AntAbstract.Domain.Entities.Hotel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Address")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ConferenceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhotoPath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConferenceId");
+
+                    b.ToTable("Hotels");
+                });
+
             modelBuilder.Entity("AntAbstract.Domain.Entities.Message", b =>
                 {
                     b.Property<Guid>("Id")
@@ -279,45 +361,64 @@ namespace AntAbstract.Infrastructure.Migrations
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.Payment", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18, 2)");
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<Guid?>("ConferenceId")
+                    b.Property<string>("AppUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("BillingAddress")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("BillingName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("ConferenceId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Currency")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<DateTime>("PaymentDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("PaymentType")
+                    b.Property<string>("PaymentMethod")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid?>("RelatedSubmissionId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.Property<string>("TransactionId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("TaxNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<string>("TaxOffice")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("TransactionId")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ConferenceId");
+                    b.HasIndex("AppUserId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("ConferenceId");
 
                     b.ToTable("Payments");
                 });
@@ -437,7 +538,7 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Property<DateTime>("AssignedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("ReviewId")
+                    b.Property<int>("ReviewId")
                         .HasColumnType("int");
 
                     b.Property<string>("ReviewerId")
@@ -458,6 +559,42 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.ToTable("ReviewAssignments");
                 });
 
+            modelBuilder.Entity("AntAbstract.Domain.Entities.RoomType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("HotelId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("TotalQuota")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HotelId");
+
+                    b.ToTable("RoomTypes");
+                });
+
             modelBuilder.Entity("AntAbstract.Domain.Entities.ScientificField", b =>
                 {
                     b.Property<int>("Id")
@@ -476,41 +613,14 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.ToTable("ScientificFields");
                 });
 
-            modelBuilder.Entity("AntAbstract.Domain.Entities.Session", b =>
+            modelBuilder.Entity("AntAbstract.Domain.Entities.Submission", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("ConferenceId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Location")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime>("SessionDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Title")
+                    b.Property<string>("Abstract")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ConferenceId");
-
-                    b.ToTable("Sessions");
-                });
-
-            modelBuilder.Entity("AntAbstract.Domain.Entities.Submission", b =>
-                {
-                    b.Property<Guid>("SubmissionId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("AbstractText")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("AuthorId")
@@ -520,41 +630,35 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Property<Guid>("ConferenceId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("DecisionDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("FilePath")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FinalDecision")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<bool>("IsFeedbackGiven")
                         .HasColumnType("bit");
 
                     b.Property<string>("Keywords")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("SessionId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
-                    b.HasKey("SubmissionId");
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("AuthorId");
 
                     b.HasIndex("ConferenceId");
-
-                    b.HasIndex("SessionId");
 
                     b.ToTable("Submissions");
                 });
@@ -676,6 +780,36 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.HasIndex("ScientificFieldId");
 
                     b.ToTable("Tenants");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.TransferOption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ConferenceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConferenceId");
+
+                    b.ToTable("TransferOptions");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -811,6 +945,39 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("AntAbstract.Domain.Entities.AccommodationBooking", b =>
+                {
+                    b.HasOne("AntAbstract.Domain.Entities.AppUser", "AppUser")
+                        .WithMany()
+                        .HasForeignKey("AppUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AntAbstract.Domain.Entities.Conference", "Conference")
+                        .WithMany()
+                        .HasForeignKey("ConferenceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AntAbstract.Domain.Entities.RoomType", "RoomType")
+                        .WithMany()
+                        .HasForeignKey("RoomTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AntAbstract.Domain.Entities.TransferOption", "TransferOption")
+                        .WithMany()
+                        .HasForeignKey("TransferOptionId");
+
+                    b.Navigation("AppUser");
+
+                    b.Navigation("Conference");
+
+                    b.Navigation("RoomType");
+
+                    b.Navigation("TransferOption");
+                });
+
             modelBuilder.Entity("AntAbstract.Domain.Entities.Conference", b =>
                 {
                     b.HasOne("AntAbstract.Domain.Entities.Tenant", "Tenant")
@@ -820,6 +987,17 @@ namespace AntAbstract.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.Hotel", b =>
+                {
+                    b.HasOne("AntAbstract.Domain.Entities.Conference", "Conference")
+                        .WithMany()
+                        .HasForeignKey("ConferenceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conference");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.Message", b =>
@@ -854,19 +1032,21 @@ namespace AntAbstract.Infrastructure.Migrations
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.Payment", b =>
                 {
-                    b.HasOne("AntAbstract.Domain.Entities.Conference", "Conference")
+                    b.HasOne("AntAbstract.Domain.Entities.AppUser", "AppUser")
                         .WithMany()
-                        .HasForeignKey("ConferenceId");
-
-                    b.HasOne("AntAbstract.Domain.Entities.AppUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("AppUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Conference");
+                    b.HasOne("AntAbstract.Domain.Entities.Conference", "Conference")
+                        .WithMany()
+                        .HasForeignKey("ConferenceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("AppUser");
+
+                    b.Navigation("Conference");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.Registration", b =>
@@ -878,7 +1058,7 @@ namespace AntAbstract.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("AntAbstract.Domain.Entities.Conference", "Conference")
-                        .WithMany()
+                        .WithMany("Registrations")
                         .HasForeignKey("ConferenceId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -901,7 +1081,7 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.HasOne("AntAbstract.Domain.Entities.Conference", "Conference")
                         .WithMany()
                         .HasForeignKey("ConferenceId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Conference");
@@ -911,12 +1091,14 @@ namespace AntAbstract.Infrastructure.Migrations
                 {
                     b.HasOne("AntAbstract.Domain.Entities.Review", "Review")
                         .WithMany()
-                        .HasForeignKey("ReviewId");
+                        .HasForeignKey("ReviewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("AntAbstract.Domain.Entities.AppUser", "Reviewer")
                         .WithMany()
                         .HasForeignKey("ReviewerId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("AntAbstract.Domain.Entities.Submission", "Submission")
@@ -932,15 +1114,15 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Navigation("Submission");
                 });
 
-            modelBuilder.Entity("AntAbstract.Domain.Entities.Session", b =>
+            modelBuilder.Entity("AntAbstract.Domain.Entities.RoomType", b =>
                 {
-                    b.HasOne("AntAbstract.Domain.Entities.Conference", "Conference")
-                        .WithMany()
-                        .HasForeignKey("ConferenceId")
+                    b.HasOne("AntAbstract.Domain.Entities.Hotel", "Hotel")
+                        .WithMany("RoomTypes")
+                        .HasForeignKey("HotelId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Conference");
+                    b.Navigation("Hotel");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.Submission", b =>
@@ -948,7 +1130,7 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.HasOne("AntAbstract.Domain.Entities.AppUser", "Author")
                         .WithMany()
                         .HasForeignKey("AuthorId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("AntAbstract.Domain.Entities.Conference", "Conference")
@@ -957,15 +1139,9 @@ namespace AntAbstract.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("AntAbstract.Domain.Entities.Session", "Session")
-                        .WithMany("Submissions")
-                        .HasForeignKey("SessionId");
-
                     b.Navigation("Author");
 
                     b.Navigation("Conference");
-
-                    b.Navigation("Session");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.SubmissionAuthor", b =>
@@ -1003,6 +1179,17 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Navigation("CongressType");
 
                     b.Navigation("ScientificField");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.TransferOption", b =>
+                {
+                    b.HasOne("AntAbstract.Domain.Entities.Conference", "Conference")
+                        .WithMany()
+                        .HasForeignKey("ConferenceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conference");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -1056,9 +1243,14 @@ namespace AntAbstract.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("AntAbstract.Domain.Entities.Session", b =>
+            modelBuilder.Entity("AntAbstract.Domain.Entities.Conference", b =>
                 {
-                    b.Navigation("Submissions");
+                    b.Navigation("Registrations");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.Hotel", b =>
+                {
+                    b.Navigation("RoomTypes");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.Submission", b =>

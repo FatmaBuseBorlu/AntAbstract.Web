@@ -26,6 +26,10 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<RegistrationType> RegistrationTypes { get; set; }
 
         public DbSet<Payment> Payments { get; set; }
+        public DbSet<Hotel> Hotels { get; set; }
+        public DbSet<RoomType> RoomTypes { get; set; }
+        public DbSet<TransferOption> TransferOptions { get; set; }
+        public DbSet<AccommodationBooking> AccommodationBookings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -61,6 +65,12 @@ namespace AntAbstract.Infrastructure.Context
                 .WithMany(c => c.Registrations) 
                 .HasForeignKey(r => r.ConferenceId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<AccommodationBooking>()
+                .HasOne(b => b.RoomType)
+                .WithMany()
+                .HasForeignKey(b => b.RoomTypeId)
+                .OnDelete(DeleteBehavior.Restrict); 
 
         }
     }

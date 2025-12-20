@@ -36,18 +36,17 @@ namespace AntAbstract.Web.Controllers
 
             if (registration.IsPaid)
             {
-                TempData["InfoMessage"] = "Bu kongrenin ödemesi zaten yapılmıştır.";
-                return RedirectToAction("Index", "Home", new { slug = RouteData.Values["slug"] });
+                return RedirectToAction("Success", new { slug = RouteData.Values["slug"] });
             }
 
             var paymentModel = new Payment
             {
                 ConferenceId = registration.ConferenceId,
                 Conference = registration.Conference,
-                RelatedSubmissionId = registration.Id, 
+                RelatedSubmissionId = registration.Id,
                 Amount = registration.RegistrationType != null ? registration.RegistrationType.Price : 0,
                 Currency = registration.RegistrationType != null ? registration.RegistrationType.Currency : "TL",
-                BillingName = $"{user.FirstName} {user.LastName}", 
+                BillingName = $"{user.FirstName} {user.LastName}"
             };
 
             return View(paymentModel);
@@ -58,16 +57,35 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> ProcessPayment(Payment model)
         {
             var registration = await _context.Registrations
-                .FindAsync(model.RelatedSubmissionId);
+                .Include(r => r.Conference)
+                .FirstOrDefaultAsync(r => r.Id == model.RelatedSubmissionId);
 
             if (registration == null) return NotFound("Ödeme yapılacak kayıt bulunamadı.");
 
+            var user = await _userManager.GetUserAsync(User);
+
+            model.Id = Guid.NewGuid();
+            model.PaymentDate = DateTime.UtcNow;
+            model.AppUserId = user.Id;
+
+            model.Status = PaymentStatus.Completed;
+
+            model.Conference = null;
+
+            _context.Payments.Add(model);
+
             registration.IsPaid = true;
+
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Ödemeniz başarıyla alındı. Kaydınız onaylanmıştır!";
+            var slug = RouteData.Values["slug"];
+            return RedirectToAction("Success", new { slug = slug });
+        }
 
-            return RedirectToAction("Index", "Home", new { slug = RouteData.Values["slug"] });
+        [HttpGet("success")]
+        public IActionResult Success()
+        {
+            return View();
         }
     }
 }

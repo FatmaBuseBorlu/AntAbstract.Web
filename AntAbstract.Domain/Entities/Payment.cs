@@ -9,7 +9,6 @@ namespace AntAbstract.Domain.Entities
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid();
 
-        // Ödeme Bilgileri
         [Column(TypeName = "decimal(18,2)")]
         public decimal Amount { get; set; }
 
@@ -17,20 +16,16 @@ namespace AntAbstract.Domain.Entities
         [StringLength(10)]
         public string Currency { get; set; } = "TRY";
 
-        // CreditCard, BankTransfer
         [Required]
         [StringLength(50)]
         public string PaymentMethod { get; set; } = "CreditCard";
 
-        // Bankadan dönen işlem no (şimdilik boş olabilir)
         [StringLength(150)]
         public string? TransactionId { get; set; }
 
         public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
 
         public PaymentStatus Status { get; set; } = PaymentStatus.Pending;
-
-        // Fatura Bilgileri
         [StringLength(200)]
         public string? BillingName { get; set; }
 
@@ -43,7 +38,6 @@ namespace AntAbstract.Domain.Entities
         [StringLength(50)]
         public string? TaxNumber { get; set; }
 
-        // İlişkiler
         [Required]
         public string AppUserId { get; set; } = default!;
 
@@ -56,7 +50,6 @@ namespace AntAbstract.Domain.Entities
         [ForeignKey(nameof(ConferenceId))]
         public Conference? Conference { get; set; }
 
-        // Hangi kayıt için
         public Guid? RelatedSubmissionId { get; set; }
     }
 
