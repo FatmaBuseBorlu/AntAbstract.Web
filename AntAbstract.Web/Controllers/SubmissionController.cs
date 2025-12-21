@@ -14,7 +14,8 @@ using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
-    [Authorize(Roles = "Admin, Author")]
+    [Authorize]
+
     public class SubmissionController : Controller
     {
         private readonly AppDbContext _context;

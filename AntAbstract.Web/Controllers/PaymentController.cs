@@ -22,6 +22,38 @@ namespace AntAbstract.Web.Controllers
             _userManager = userManager;
         }
 
+        // Dashboard (slug yokken) -> otomatik ödeme ekranına yönlendiren endpoint
+        [HttpGet("/payment/my")]
+        public async Task<IActionResult> MyFromDashboard()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var reg = await _context.Registrations
+                .Include(r => r.Conference)
+                    .ThenInclude(c => c.Tenant)
+                .OrderByDescending(r => r.RegistrationDate)
+                .FirstOrDefaultAsync(r => r.AppUserId == user.Id && !r.IsPaid);
+
+            if (reg == null)
+            {
+                TempData["ErrorMessage"] = "Ödeme bulunamadı. Önce bir kongreye kayıt olun.";
+                return Redirect("/Dashboard");
+            }
+
+            var conferenceSlug =
+                !string.IsNullOrEmpty(reg.Conference?.Tenant?.Slug) ? reg.Conference.Tenant.Slug :
+                reg.Conference?.Slug;
+
+            if (string.IsNullOrWhiteSpace(conferenceSlug))
+            {
+                TempData["ErrorMessage"] = "Kongre slug bulunamadı.";
+                return Redirect("/Dashboard");
+            }
+
+            return Redirect($"/{conferenceSlug}/payment/index/{reg.Id}");
+        }
+
         [HttpGet("my")]
         public async Task<IActionResult> My()
         {
