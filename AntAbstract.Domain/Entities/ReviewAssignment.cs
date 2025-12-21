@@ -13,13 +13,13 @@ namespace AntAbstract.Domain.Entities
 
         public Guid SubmissionId { get; set; }
 
-        [ForeignKey("SubmissionId")]
+        [ForeignKey(nameof(SubmissionId))]
         public Submission Submission { get; set; }
 
         public string ReviewerId { get; set; }
 
-        [ForeignKey("ReviewerId")]
-        public AppUser Reviewer { get; set; } 
+        [ForeignKey(nameof(ReviewerId))]
+        public AppUser Reviewer { get; set; }
 
         public Review Review { get; set; }
     }

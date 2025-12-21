@@ -25,6 +25,26 @@ namespace AntAbstract.Web.Controllers
             _userManager = userManager;
             _tenantContext = tenantContext;
         }
+        public async Task<IActionResult> WhoAmI()
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            var roles = new List<string>();
+            if (user != null)
+            {
+                roles = (await _userManager.GetRolesAsync(user)).ToList();
+            }
+
+            return Json(new
+            {
+                userId = user?.Id,
+                userName = user?.UserName,
+                isAuthenticated = User.Identity?.IsAuthenticated,
+                claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList(),
+                roles = roles
+            });
+        }
+
 
         public async Task<IActionResult> Index()
         {

@@ -14,8 +14,11 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Controllers
 {
     [Area("Admin")]
-    [Route("{slug}/admin/assignment")]
     [Authorize(Roles = "Admin,Organizator")]
+
+    // Hem slug’lı hem slug’sız giriş:
+    [Route("{slug}/admin/assignment")]
+    [Route("admin/assignment")]
     public class AssignmentController : Controller
     {
         private readonly AppDbContext _context;
@@ -24,11 +27,12 @@ namespace AntAbstract.Web.Controllers
         private readonly IReviewerRecommendationService _recommendationService;
         private readonly UserManager<AppUser> _userManager;
 
-        public AssignmentController(AppDbContext context,
-                                    TenantContext tenantContext,
-                                    IEmailService emailService,
-                                    UserManager<AppUser> userManager,
-                                    IReviewerRecommendationService recommendationService)
+        public AssignmentController(
+            AppDbContext context,
+            TenantContext tenantContext,
+            IEmailService emailService,
+            UserManager<AppUser> userManager,
+            IReviewerRecommendationService recommendationService)
         {
             _context = context;
             _tenantContext = tenantContext;
@@ -37,11 +41,15 @@ namespace AntAbstract.Web.Controllers
             _recommendationService = recommendationService;
         }
 
+        // /admin/assignment
+        // /{slug}/admin/assignment
+        [HttpGet("")]
+        [HttpGet("index")]
         public async Task<IActionResult> Index()
         {
             if (_tenantContext.Current == null)
             {
-                TempData["ErrorMessage"] = "Lütfen bir kongre URL'i üzerinden işlem yapın.";
+                TempData["ErrorMessage"] = "Lütfen bir kongre URL'i (slug) üzerinden işlem yapın.";
                 return RedirectToAction("Index", "Home");
             }
 
@@ -57,13 +65,15 @@ namespace AntAbstract.Web.Controllers
                 .Where(s => s.ConferenceId == conference.Id)
                 .Include(s => s.Author)
                 .Include(s => s.ReviewAssignments)
-                    .ThenInclude(ra => ra.Reviewer) 
+                    .ThenInclude(ra => ra.Reviewer)
                 .ToListAsync();
 
             return View(submissions);
         }
 
-        [HttpGet]
+        // /admin/assignment/assign/{id}
+        // /{slug}/admin/assignment/assign/{id}
+        [HttpGet("assign/{id:guid}")]
         public async Task<IActionResult> Assign(Guid id)
         {
             var submission = await _context.Submissions
@@ -74,9 +84,10 @@ namespace AntAbstract.Web.Controllers
 
             var recommendedReviewers = await _recommendationService.GetRecommendationsAsync(id);
 
-            var allReviewers = await _userManager.GetUsersInRoleAsync("Reviewer");
+            // Sende rol adı "Referee" idi:
+            var allReferees = await _userManager.GetUsersInRoleAsync("Referee");
 
-            var allOtherReviewers = allReviewers
+            var allOtherReferees = allReferees
                 .Where(x => !recommendedReviewers.Any(r => r.Id == x.Id))
                 .ToList();
 
@@ -84,13 +95,15 @@ namespace AntAbstract.Web.Controllers
             {
                 Submission = submission,
                 RecommendedReviewers = recommendedReviewers.ToList(),
-                AllOtherReviewers = allOtherReviewers
+                AllOtherReviewers = allOtherReferees
             };
 
             return View(viewModel);
         }
 
-        [HttpPost]
+        // POST: /admin/assignment/assign
+        // POST: /{slug}/admin/assignment/assign
+        [HttpPost("assign")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Assign(Guid submissionId, string reviewerId)
         {
@@ -101,9 +114,8 @@ namespace AntAbstract.Web.Controllers
             if (reviewer == null)
             {
                 TempData["ErrorMessage"] = "Seçilen hakem bulunamadı.";
-                return RedirectToAction("Assign", new { id = submissionId });
+                return RedirectToAction(nameof(Assign), new { id = submissionId });
             }
-
 
             bool alreadyAssigned = await _context.ReviewAssignments
                 .AnyAsync(ra => ra.SubmissionId == submissionId && ra.ReviewerId == reviewerId);
@@ -111,14 +123,14 @@ namespace AntAbstract.Web.Controllers
             if (alreadyAssigned)
             {
                 TempData["ErrorMessage"] = "Bu hakem zaten bu bildiriye atanmış.";
-                return RedirectToAction("Assign", new { id = submissionId });
+                return RedirectToAction(nameof(Assign), new { id = submissionId });
             }
 
             var assignment = new ReviewAssignment
             {
                 SubmissionId = submissionId,
                 ReviewerId = reviewerId,
-                AssignedDate = DateTime.UtcNow 
+                AssignedDate = DateTime.UtcNow
             };
 
             _context.ReviewAssignments.Add(assignment);
@@ -134,11 +146,11 @@ namespace AntAbstract.Web.Controllers
             }
             catch
             {
-
+                // Mail patlarsa atamayı geri alma; sadece sessiz geç.
             }
 
             TempData["SuccessMessage"] = "Hakem ataması başarıyla tamamlandı.";
-            return RedirectToAction("Index");
+            return RedirectToAction(nameof(Index));
         }
     }
 }

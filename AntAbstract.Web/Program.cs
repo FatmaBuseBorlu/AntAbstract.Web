@@ -119,10 +119,8 @@ app.Use(async (ctx, next) =>
     await next();
 });
 
-// Attribute routing kullanan controllerlar için
 app.MapControllers();
 
-// Conventional routes
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
@@ -138,6 +136,22 @@ app.UseRotativa();
 using (var scope = app.Services.CreateScope())
 {
     await AntAbstract.Infrastructure.Data.DbSeeder.SeedRolesAndUsers(scope.ServiceProvider);
+
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
+    if (!await roleManager.RoleExistsAsync("Author"))
+        await roleManager.CreateAsync(new IdentityRole("Author"));
+
+    if (!await roleManager.RoleExistsAsync("Referee"))
+        await roleManager.CreateAsync(new IdentityRole("Referee"));
+
+    if (!await roleManager.RoleExistsAsync("Admin"))
+        await roleManager.CreateAsync(new IdentityRole("Admin"));
+
+    var authorUser = await userManager.FindByEmailAsync("yazar@antabstract.com");
+    if (authorUser != null && !await userManager.IsInRoleAsync(authorUser, "Author"))
+        await userManager.AddToRoleAsync(authorUser, "Author");
 }
 
 app.Run();

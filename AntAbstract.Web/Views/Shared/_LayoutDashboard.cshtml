@@ -12,8 +12,45 @@
     var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
 
     var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? Tc.Current?.Slug;
-    var paymentMyUrl = string.IsNullOrWhiteSpace(slug) ? "/Dashboard" : $"/{slug}/payment/my";
+
+    var paymentMyUrl = string.IsNullOrWhiteSpace(slug) ? "/payment/my" : $"/{slug}/payment/my";
     var accommodationUrl = string.IsNullOrWhiteSpace(slug) ? "/Accommodation/Index" : $"/{slug}/accommodation/index";
+
+    var programUrl = string.IsNullOrWhiteSpace(slug) ? "/Program/Index" : $"/{slug}/Program/Index";
+    var proceedingsUrl = string.IsNullOrWhiteSpace(slug) ? "/Proceedings/Index" : $"/{slug}/Proceedings/Index";
+
+    var dashboardUrl = string.IsNullOrWhiteSpace(slug) ? "/Dashboard" : $"/{slug}/Dashboard";
+    var dashboardMyConferencesUrl = string.IsNullOrWhiteSpace(slug) ? "/Dashboard/MyConferences" : $"/{slug}/Dashboard/MyConferences";
+
+    var submissionCreateUrl = string.IsNullOrWhiteSpace(slug) ? "/Submission/Create" : $"/{slug}/Submission/Create";
+    var submissionIndexUrl = string.IsNullOrWhiteSpace(slug) ? "/Submission/Index" : $"/{slug}/Submission/Index";
+
+    var reviewIndexUrl = string.IsNullOrWhiteSpace(slug) ? "/Review/Index" : $"/{slug}/Review/Index";
+    var messageIndexUrl = string.IsNullOrWhiteSpace(slug) ? "/Message/Index" : $"/{slug}/Message/Index";
+
+    // Admin Area URL'leri
+    var conferenceFlowUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/conferenceflow" : $"/{slug}/admin/conferenceflow";
+    var reportsUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/reports" : $"/{slug}/admin/reports";
+
+    // KRİTİK: Assignment controller route'u {slug}/admin/assignment
+    var assignmentUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/assignment" : $"/{slug}/admin/assignment";
+
+    // Decision eğer senin projede Admin Area altında ise bunu da bu şekilde yap
+    // Değilse eski haline geri alırsın
+    var decisionUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/decision" : $"/{slug}/admin/decision";
+
+    var sessionUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/session" : $"/{slug}/admin/session";
+    var reviewFormsUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/reviewforms" : $"/{slug}/admin/reviewforms";
+    var refereeUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/referee" : $"/{slug}/admin/referee";
+    var usersUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/users" : $"/{slug}/admin/users";
+
+    var conferenceDefinitionsUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/conferencedefinitions" : $"/{slug}/admin/conferencedefinitions";
+    var scientificFieldsUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/scientificfields" : $"/{slug}/admin/scientificfields";
+    var conferenceTypesUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/conferencetypes" : $"/{slug}/admin/conferencetypes";
+
+    var isAdmin = User.IsInRole("Admin");
+    var isAuthor = User.IsInRole("Author");
+    var isReferee = User.IsInRole("Referee");
 }
 
 <!DOCTYPE html>
@@ -65,9 +102,7 @@
             overflow-y: auto;
         }
 
-        .sidebar-menu li {
-            margin-bottom: 5px;
-        }
+        .sidebar-menu li { margin-bottom: 5px; }
 
         .sidebar-menu a {
             display: flex;
@@ -109,41 +144,18 @@
             margin-bottom: 30px;
         }
 
-        .dashboard-card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-            border: 1px solid #e5e7eb;
-            height: 100%;
-        }
-
-        body.sb-sidenav-toggled .sidebar {
-            margin-left: -260px;
-        }
-
-        body.sb-sidenav-toggled .main-content {
-            margin-left: 0;
-        }
+        body.sb-sidenav-toggled .sidebar { margin-left: -260px; }
+        body.sb-sidenav-toggled .main-content { margin-left: 0; }
 
         @@media (max-width: 768px) {
-            .sidebar {
-                margin-left: -260px;
-            }
-
-            .main-content {
-                margin-left: 0;
-            }
-
-            body.sb-sidenav-toggled .sidebar {
-                margin-left: 0;
-            }
+            .sidebar { margin-left: -260px; }
+            .main-content { margin-left: 0; }
+            body.sb-sidenav-toggled .sidebar { margin-left: 0; }
         }
     </style>
 </head>
 
 <body>
-
     <div class="sidebar">
         <a href="/" class="sidebar-brand">ANT <span style="color: #00aeef;">ABSTRACT</span></a>
 
@@ -151,95 +163,99 @@
             <li class="text-muted small fw-bold px-3 mb-2 mt-2">GENEL</li>
 
             <li>
-                <a href="/Dashboard" class="@(currentController == "Dashboard" && currentAction == "Index" ? "active" : "")">
+                <a href="@dashboardUrl" class="@(currentController == "Dashboard" && currentAction == "Index" ? "active" : "")">
                     <i class="fas fa-home me-2 text-primary"></i> Ana Panel
                 </a>
             </li>
 
-            @if (!User.IsInRole("Admin"))
+            @if (!isAdmin)
             {
-                <li class="text-muted small fw-bold px-3 mb-2 mt-2">BİLDİRİ İŞLEMLERİ</li>
-
-                <li>
-                    <a href="/Submission/Create" class="@(currentController == "Submission" && currentAction == "Create" ? "active" : "")">
-                        <i class="fas fa-plus-circle me-2 text-success"></i> Yeni Bildiri Gönder
-                    </a>
-                </li>
-
-                <li>
-                    <a href="/Submission/Index" class="@(currentController == "Submission" && currentAction == "Index" ? "active" : "")">
-                        <i class="fas fa-file-contract me-2 text-info"></i> Bildirilerim
-                    </a>
-                </li>
-
-                @if (User.IsInRole("Referee"))
+                @if (isReferee)
                 {
+                    <li class="text-muted small fw-bold px-3 mb-2 mt-2">HAKEM</li>
                     <li>
-                        <a href="/Review/Index" class="@(currentController == "Review" ? "active" : "")">
+                        <a href="@reviewIndexUrl" class="@(currentController == "Review" ? "active" : "")">
                             <i class="fas fa-gavel me-2 text-warning"></i> Hakem Görevlerim
                         </a>
                     </li>
                 }
 
-                <li class="text-muted small fw-bold px-3 mb-2 mt-2">KONGRE</li>
+                @if (isAuthor)
+                {
+                    <li class="text-muted small fw-bold px-3 mb-2 mt-2">BİLDİRİ İŞLEMLERİ</li>
 
-                <li>
-                    <a href="/Program/Index" class="@(currentController == "Program" ? "active" : "")">
-                        <i class="fas fa-calendar-day me-2 text-danger"></i> Kongre Programı
-                    </a>
-                </li>
+                    <li>
+                        <a href="@submissionCreateUrl" class="@(currentController == "Submission" && currentAction == "Create" ? "active" : "")">
+                            <i class="fas fa-plus-circle me-2 text-success"></i> Yeni Bildiri Gönder
+                        </a>
+                    </li>
 
-                <li>
-                    <a href="/Proceedings/Index" class="@(currentController == "Proceedings" ? "active" : "")">
-                        <i class="fas fa-book me-2" style="color: #6f42c1;"></i> Bildiri Kitabı
-                    </a>
-                </li>
+                    <li>
+                        <a href="@submissionIndexUrl" class="@(currentController == "Submission" && currentAction == "Index" ? "active" : "")">
+                            <i class="fas fa-file-contract me-2 text-info"></i> Bildirilerim
+                        </a>
+                    </li>
 
-                <li>
-                    <a href="/payment/my" class="@(currentController == "Payment" ? "active" : "")">
-                        <i class="fas fa-file-invoice-dollar me-2 text-info"></i> Ödemelerim
-                    </a>
-                </li>
+                    <li class="text-muted small fw-bold px-3 mb-2 mt-2">KONGRE</li>
 
-                <li>
-                    <a href="@accommodationUrl" class="@(currentController == "Accommodation" ? "active" : "")">
-                        <i class="fas fa-hotel me-2 text-warning"></i> Konaklama
-                    </a>
-                </li>
+                    <li>
+                        <a href="@programUrl" class="@(currentController == "Program" ? "active" : "")">
+                            <i class="fas fa-calendar-day me-2 text-danger"></i> Kongre Programı
+                        </a>
+                    </li>
 
-                <li class="text-muted small fw-bold px-3 mb-2 mt-2">HESAP</li>
+                    <li>
+                        <a href="@proceedingsUrl" class="@(currentController == "Proceedings" ? "active" : "")">
+                            <i class="fas fa-book me-2" style="color: #6f42c1;"></i> Bildiri Kitabı
+                        </a>
+                    </li>
 
-                <li>
-                    <a href="/Dashboard/MyConferences" class="@(currentController == "Dashboard" && currentAction == "MyConferences" ? "active" : "")">
-                        <i class="fas fa-globe me-2 text-secondary"></i> Katıldığım Kongreler
-                    </a>
-                </li>
+                    <li>
+                        <a href="@paymentMyUrl" class="@(currentController == "Payment" ? "active" : "")">
+                            <i class="fas fa-file-invoice-dollar me-2 text-info"></i> Ödemelerim
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="@accommodationUrl" class="@(currentController == "Accommodation" ? "active" : "")">
+                            <i class="fas fa-hotel me-2 text-warning"></i> Konaklama
+                        </a>
+                    </li>
+
+                    <li class="text-muted small fw-bold px-3 mb-2 mt-2">HESAP</li>
+
+                    <li>
+                        <a href="@dashboardMyConferencesUrl" class="@(currentController == "Dashboard" && currentAction == "MyConferences" ? "active" : "")">
+                            <i class="fas fa-globe me-2 text-secondary"></i> Katıldığım Kongreler
+                        </a>
+                    </li>
+                }
             }
 
-            @if (User.IsInRole("Admin"))
+            @if (isAdmin)
             {
                 <li class="text-muted small fw-bold px-3 mb-2 mt-4 text-uppercase" style="letter-spacing:1px;">KONGRE AKIŞI</li>
 
                 <li>
-                    <a href="/ConferenceFlow/Index" class="@(currentController == "ConferenceFlow" ? "active" : "")">
+                    <a href="@conferenceFlowUrl" class="@(currentController == "ConferenceFlow" ? "active" : "")">
                         <i class="fas fa-stream me-2 text-primary"></i> Kongre Akışı
                     </a>
                 </li>
 
                 <li>
-                    <a href="/Reports/Index" class="@(currentController == "Reports" ? "active" : "")">
+                    <a href="@reportsUrl" class="@(currentController == "Reports" ? "active" : "")">
                         <i class="fas fa-chart-pie me-2 text-warning"></i> Raporlar
                     </a>
                 </li>
 
                 <li>
-                    <a href="/Assignment/Index" class="@(currentController == "Assignment" ? "active" : "")">
+                    <a href="@assignmentUrl" class="@(currentController == "Assignment" ? "active" : "")">
                         <i class="fas fa-tasks me-2 text-info"></i> Özet Atama
                     </a>
                 </li>
 
                 <li>
-                    <a href="/Decision/Index" class="@(currentController == "Decision" ? "active" : "")">
+                    <a href="@decisionUrl" class="@(currentController == "Decision" ? "active" : "")">
                         <i class="fas fa-gavel me-2 text-danger"></i> Karar Ekranı
                     </a>
                 </li>
@@ -247,25 +263,25 @@
                 <li class="text-muted small fw-bold px-3 mb-2 mt-3 text-uppercase" style="letter-spacing:1px;">YÖNETİM</li>
 
                 <li>
-                    <a href="/Session/Index" class="@(currentController == "Session" ? "active" : "")">
+                    <a href="@sessionUrl" class="@(currentController == "Session" ? "active" : "")">
                         <i class="fas fa-microphone-alt me-2 text-success"></i> Oturum Yönetimi
                     </a>
                 </li>
 
                 <li>
-                    <a href="/ReviewForms/Index" class="@(currentController == "ReviewForms" ? "active" : "")">
+                    <a href="@reviewFormsUrl" class="@(currentController == "ReviewForms" ? "active" : "")">
                         <i class="fas fa-clipboard-list me-2 text-secondary"></i> Değerlendirme Formları
                     </a>
                 </li>
 
                 <li>
-                    <a href="/Referee/Index" class="@(currentController == "Referee" ? "active" : "")">
+                    <a href="@refereeUrl" class="@(currentController == "Referee" ? "active" : "")">
                         <i class="fas fa-user-tie me-2 text-dark"></i> Hakem Yönetimi
                     </a>
                 </li>
 
                 <li>
-                    <a href="/Users/Index" class="@(currentController == "Users" ? "active" : "")">
+                    <a href="@usersUrl" class="@(currentController == "Users" ? "active" : "")">
                         <i class="fas fa-users-cog me-2 text-danger"></i> Kullanıcı Yönetimi
                     </a>
                 </li>
@@ -273,19 +289,19 @@
                 <li class="text-muted small fw-bold px-3 mb-2 mt-3 text-uppercase" style="letter-spacing:1px;">SİSTEM AYARLARI</li>
 
                 <li>
-                    <a href="/ConferenceDefinitions/Index" class="@(currentController == "ConferenceDefinitions" ? "active" : "")">
+                    <a href="@conferenceDefinitionsUrl" class="@(currentController == "ConferenceDefinitions" ? "active" : "")">
                         <i class="fas fa-sliders-h me-2 text-primary"></i> Kongre Tanımları
                     </a>
                 </li>
 
                 <li>
-                    <a href="/ScientificFields/Index" class="@(currentController == "ScientificFields" ? "active" : "")">
+                    <a href="@scientificFieldsUrl" class="@(currentController == "ScientificFields" ? "active" : "")">
                         <i class="fas fa-atom me-2 text-info"></i> Bilimsel Alanlar
                     </a>
                 </li>
 
                 <li>
-                    <a href="/ConferenceTypes/Index" class="@(currentController == "ConferenceTypes" ? "active" : "")">
+                    <a href="@conferenceTypesUrl" class="@(currentController == "ConferenceTypes" ? "active" : "")">
                         <i class="fas fa-tags me-2 text-warning"></i> Kongre Türleri
                     </a>
                 </li>
@@ -294,7 +310,7 @@
             <li class="text-muted small fw-bold px-3 mb-2 mt-3">İLETİŞİM</li>
 
             <li>
-                <a href="/Message/Index" class="@(currentController == "Message" ? "active" : "")">
+                <a href="@messageIndexUrl" class="@(currentController == "Message" ? "active" : "")">
                     <i class="fas fa-envelope me-2 text-warning"></i> Mesajlarım
                 </a>
             </li>
@@ -315,14 +331,8 @@
             </div>
 
             <div class="d-flex align-items-center gap-2">
-                @try
-                {
-                    @await Component.InvokeAsync("Notifications")
-                }
-                catch
-                {
-                    <i class="fas fa-bell-slash text-muted p-2"></i>
-                }
+                @try { @await Component.InvokeAsync("Notifications") }
+                catch { <i class="fas fa-bell-slash text-muted p-2"></i> }
 
                 <a href="/" class="btn btn-sm btn-outline-primary fw-bold d-flex align-items-center gap-2 px-3 py-2 rounded-3 me-2">
                     <i class="fas fa-external-link-alt"></i> Siteye Dön

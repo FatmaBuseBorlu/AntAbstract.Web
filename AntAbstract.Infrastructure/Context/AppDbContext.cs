@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Emit;
 
 namespace AntAbstract.Infrastructure.Context
 {
@@ -70,8 +71,13 @@ namespace AntAbstract.Infrastructure.Context
                 .HasOne(b => b.RoomType)
                 .WithMany()
                 .HasForeignKey(b => b.RoomTypeId)
-                .OnDelete(DeleteBehavior.Restrict); 
+                .OnDelete(DeleteBehavior.Restrict);
 
+            builder.Entity<ReviewAssignment>()
+                .HasOne(ra => ra.Review)
+                .WithOne(r => r.ReviewAssignment)
+                .HasForeignKey<Review>(r => r.ReviewAssignmentId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

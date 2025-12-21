@@ -31,7 +31,6 @@
     <div class="card-footer border-0 py-1 bg-primary"></div>
 </div>
 
-@* --- 1. SADECE ADMIN GÖRÜR (YÖNETİCİ KARTI) --- *@
 @if (isAdmin)
 {
     <div class="row mb-4">
@@ -51,7 +50,6 @@
     </div>
 }
 
-@* --- 2. HAKEM GÖREVLERİ (ADMİN DEĞİLSE GÖRÜNÜR) --- *@
 @if (isReferee && !isAdmin)
 {
     <h6 class="fw-bold text-muted text-uppercase small mb-3 ps-1"><i class="fas fa-gavel me-1 text-warning"></i> Hakem Görevleri</h6>
@@ -89,7 +87,6 @@
     </div>
 }
 
-@* --- 3. YAZAR BÖLÜMÜ (ADMİN DEĞİLSE GÖRÜNÜR) --- *@
 @if ((isAuthor || !isReferee) && !isAdmin)
 {
     @if (isReferee)
@@ -155,7 +152,6 @@
 }
 
 <div class="row">
-    @* --- SOL TARAF (ADMİN İSE FULL WIDTH OLUR) --- *@
     <div class="@mainColumnClass">
         <div class="card dashboard-card h-100 border-0 shadow-sm">
             <div class="card-body p-4">
@@ -163,7 +159,14 @@
                     <h5 class="fw-bold mb-0">Son Hareketler</h5>
                     @if (!isAdmin)
                     {
-                        <a href="/Submission/Index" class="small text-decoration-none">Tümünü Gör</a>
+                        if (isReferee)
+                        {
+                            <a href="/Review/Index" class="small text-decoration-none">Tümünü Gör</a>
+                        }
+                        else
+                        {
+                            <a href="/Submission/Index" class="small text-decoration-none">Tümünü Gör</a>
+                        }
                     }
                 </div>
 
@@ -178,7 +181,16 @@
                         </div>
                     </div>
                 }
-                else if (Model.TotalSubmissions == 0 && !isReferee)
+                else if (isReferee)
+                {
+                    <div class="text-center py-4">
+                        <p class="text-muted mb-3">Atanmış değerlendirmelerinizi görmek için listeye gidin.</p>
+                        <a href="/Review/Index" class="btn btn-outline-warning btn-sm fw-bold">
+                            <i class="fas fa-gavel me-1"></i> Hakem Görevlerime Git
+                        </a>
+                    </div>
+                }
+                else if (Model.TotalSubmissions == 0)
                 {
                     <div class="text-center py-5">
                         <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="80" class="mb-3 opacity-50" alt="Empty">
@@ -199,8 +211,6 @@
         </div>
     </div>
 
-    @* --- SAĞ TARAF (KONGRELER & YARDIM) --- *@
-    @* --- SADECE ADMIN DEĞİLSE GÖSTERİLİR --- *@
     @if (!isAdmin)
     {
         <div class="col-lg-4">

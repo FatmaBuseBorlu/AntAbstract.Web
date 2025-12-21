@@ -8,10 +8,13 @@ namespace AntAbstract.Domain.Entities
         [Key]
         public int Id { get; set; }
 
-        public string ReviewerName { get; set; } 
+        public int ReviewAssignmentId { get; set; }
+        public ReviewAssignment ReviewAssignment { get; set; }
+
+        public string ReviewerName { get; set; }
         public string CommentsToAuthor { get; set; }
-        public string Recommendation { get; set; } 
-        public int Score { get; set; } 
+        public string Recommendation { get; set; }
+        public int Score { get; set; }
         public DateTime ReviewedAt { get; set; } = DateTime.UtcNow;
     }
 }

@@ -4,6 +4,7 @@ using AntAbstract.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AntAbstract.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251221210050_AddReviewAssignmentRelation1")]
+    partial class AddReviewAssignmentRelation1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -509,7 +512,7 @@ namespace AntAbstract.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("ReviewAssignmentId")
+                    b.Property<int?>("ReviewAssignmentId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("ReviewedAt")
@@ -525,7 +528,8 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ReviewAssignmentId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[ReviewAssignmentId] IS NOT NULL");
 
                     b.ToTable("Reviews");
                 });
@@ -1090,8 +1094,7 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.HasOne("AntAbstract.Domain.Entities.ReviewAssignment", "ReviewAssignment")
                         .WithOne("Review")
                         .HasForeignKey("AntAbstract.Domain.Entities.Review", "ReviewAssignmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("ReviewAssignment");
                 });

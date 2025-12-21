@@ -19,7 +19,9 @@
         <div class="col-md-7">
             <div class="card border-0 shadow-sm mb-4 h-100">
                 <div class="card-header bg-white py-3 border-bottom">
-                    <h6 class="fw-bold mb-0 text-primary"><i class="fas fa-file-alt me-2"></i>Bildiri İçeriği</h6>
+                    <h6 class="fw-bold mb-0 text-primary">
+                        <i class="fas fa-file-alt me-2"></i>Bildiri İçeriği
+                    </h6>
                 </div>
                 <div class="card-body">
                     <h5 class="fw-bold text-dark mb-3">@Model.Submission.Title</h5>
@@ -50,32 +52,55 @@
         <div class="col-md-5">
             <div class="card border-0 shadow-sm border-top border-4 border-primary h-100">
                 <div class="card-body p-4">
-                    <h5 class="fw-bold mb-4 text-dark"><i class="fas fa-star me-2 text-warning"></i>Değerlendirme Formu</h5>
+                    <h5 class="fw-bold mb-4 text-dark">
+                        <i class="fas fa-star me-2 text-warning"></i>Değerlendirme Formu
+                    </h5>
 
                     <form asp-action="Evaluate" method="post">
+                        @Html.AntiForgeryToken()
                         <input type="hidden" name="assignmentId" value="@Model.Id" />
 
                         <div class="mb-3">
                             <label class="form-label fw-bold small text-muted">Puanınız (0-100)</label>
-                            <input type="number" name="score" class="form-control" min="0" max="100" placeholder="Örn: 85" required
-                                   value="@(Model.Review?.Score)">
+                            <input type="number"
+                                   name="score"
+                                   class="form-control"
+                                   min="0"
+                                   max="100"
+                                   placeholder="Örn: 85"
+                                   required
+                                   value="@(Model.Review?.Score ?? 0)" />
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label fw-bold small text-muted">Nihai Kararınız</label>
+
                             <select name="recommendation" class="form-select" required>
                                 <option value="">Bir karar seçiniz...</option>
-                                <!option value="Accept" @(Model.Review?.Recommendation == "Accept" ? "selected" : "")>✅ Kabul (Accept)</!option>
-                                <!option value="Revision" @(Model.Review?.Recommendation == "Revision" ? "selected" : "")>⚠️ Düzeltme (Minor Revision)</!option>
-                                <!option value="Reject" @(Model.Review?.Recommendation == "Reject" ? "selected" : "")>❌ Red (Reject)</!option>
+
+                                <option value="Accept" selected="@(Model.Review?.Recommendation == "Accept")">
+                                    ✅ Kabul (Accept)
+                                </option>
+
+                                <option value="Revision" selected="@(Model.Review?.Recommendation == "Revision")">
+                                    ⚠️ Düzeltme (Minor Revision)
+                                </option>
+
+                                <option value="Reject" selected="@(Model.Review?.Recommendation == "Reject")">
+                                    ❌ Red (Reject)
+                                </option>
                             </select>
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold small text-muted">Yazara Notlar & Eleştiriler</label>
-                            <textarea name="comments" class="form-control" rows="6" placeholder="Yazarın görmesi için görüşlerinizi buraya yazınız..." required>@(Model.Review?.CommentsToAuthor)</textarea>
+                            <label class="form-label fw-bold small text-muted">Yazara Notlar ve Eleştiriler</label>
+                            <textarea name="comments"
+                                      class="form-control"
+                                      rows="6"
+                                      placeholder="Yazarın görmesi için görüşlerinizi buraya yazınız..."
+                                      required>@(Model.Review?.CommentsToAuthor)</textarea>
                         </div>
-
+                         
                         <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm">
                             <i class="fas fa-save me-2"></i> Değerlendirmeyi Kaydet
                         </button>
