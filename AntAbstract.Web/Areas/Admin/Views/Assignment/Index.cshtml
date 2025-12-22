@@ -1,57 +1,90 @@
 ﻿@model IEnumerable<AntAbstract.Domain.Entities.Submission>
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"];
-}
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
-}
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
-}
-<h1 class="display-5">@Localizer["PageTitle"]</h1>
-<p class="lead text-muted">@Localizer["PageLead"]</p>
-<hr />
+    ViewData["Title"] = "Özet Atama";
+    Layout = "_LayoutDashboard";
 
-@if (ViewBag.ErrorMessage != null)
-{
-    <div class="alert alert-danger">@ViewBag.ErrorMessage</div>
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString();
+    var conferenceTitle = Model?.FirstOrDefault()?.Conference?.Title;
 }
-else if (!Model.Any())
-{
-    <div class="alert alert-info">
-        @Localizer["EmptyListMessage"]
-    </div>
-}
-else
-{
-    <table class="table table-hover">
-        <thead class="table-light">
-            <tr>
-                <th>@Localizer["TableHeaderTitle"]</th>
-                <th>@Localizer["TableHeaderAuthor"]</th>
-                <th>@Localizer["TableHeaderDate"]</th>
-                <th style="width: 15%;">@Localizer["TableHeaderActions"]</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
+
+<div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="fw-bold mb-1">Özet Atama</h4>
+
+            @if (!string.IsNullOrWhiteSpace(conferenceTitle))
             {
-                <tr>
-                    <td><strong>@item.Title</strong></td>
-                    <td>@item.Author.Email</td>
-                    <td>@item.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
-                    <td>
-                        <a asp-controller="Assignment"
-                           asp-action="Assign"
-                           asp-route-id="@item.SubmissionId"
-                           class="btn btn-primary btn-sm">@Localizer["AssignButton"]</a>
-                    </td>
-                </tr>
+                <small class="text-muted d-block">
+                    Seçili Kongre: <strong>@conferenceTitle</strong> (@slug)
+                </small>
             }
-        </tbody>
-    </table>
-}
+            else
+            {
+                <small class="text-muted d-block">
+                    Bu kongredeki bildirileri listeleyin ve hakem atayın.
+                </small>
+            }
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="/admin/assignment" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-exchange-alt me-1"></i> Kongre Değiştir
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0">@TempData["ErrorMessage"]</div>
+    }
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-info border-0">
+            Bu kongrede henüz bildiri yok.
+        </div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Başlık</th>
+                            <th>Yazar</th>
+                            <th>Tarih</th>
+                            <th style="width: 15%;">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td><strong>@item.Title</strong></td>
+                                <td>@item.Author?.Email</td>
+                                <td>@item.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
+                                <td>
+                                    <a asp-area="Admin"
+                                       asp-controller="Assignment"
+                                       asp-action="Assign"
+                                       asp-route-slug="@slug"
+                                       asp-route-id="@item.SubmissionId"
+                                       class="btn btn-primary btn-sm">
+                                        Hakem Ata
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

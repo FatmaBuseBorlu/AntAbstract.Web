@@ -9,8 +9,12 @@
     @if (SignInManager.IsSignedIn(User))
     {
         var user = await UserManager.GetUserAsync(User);
-        var displayName = user?.FirstName != null ? $"{user.FirstName} {user.LastName}" : User.Identity.Name;
-        var profileImg = user?.ProfileImagePath; 
+        var displayName = user?.FirstName != null ? $"{user.FirstName} {user.LastName}" : User.Identity?.Name;
+        var profileImg = user?.ProfileImagePath;
+
+        var isAdmin = User.IsInRole("Admin") || User.IsInRole("Organizator");
+        var panelUrl = isAdmin ? "/admin/assignment" : "/Dashboard";
+        var panelText = isAdmin ? "Yönetim Paneli" : "Panelim"; // istersen ikisini de "Yönetim Paneli" yapabilirsin
 
         <li class="nav-item dropdown ms-3">
             <a class="nav-link dropdown-toggle d-flex align-items-center p-0"
@@ -43,8 +47,8 @@
                 </li>
 
                 <li>
-                    <a class="dropdown-item py-2" href="/Dashboard">
-                        <i class="fas fa-tachometer-alt me-2 text-primary" style="width:20px;"></i> Yönetim Paneli
+                    <a class="dropdown-item py-2" href="@panelUrl">
+                        <i class="fas fa-tachometer-alt me-2 text-primary" style="width:20px;"></i> @panelText
                     </a>
                 </li>
 

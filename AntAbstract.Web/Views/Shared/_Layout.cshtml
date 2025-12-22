@@ -56,7 +56,7 @@
             }
 
             .nav-link.admin-link {
-                color: #dc3545 !important; 
+                color: #dc3545 !important;
                 border: 1px solid #dc3545;
                 border-radius: 5px;
                 padding: 5px 15px !important;
@@ -69,6 +69,18 @@
     </style>
 </head>
 <body>
+
+    @{
+        // Admin sayfalarında navbar’daki "Yönetim Paneli / Özet Atama" linklerini gizle
+        var area = ViewContext.RouteData.Values["area"]?.ToString();
+        var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+
+        var hideAdminNav =
+        string.Equals(area, "Admin", StringComparison.OrdinalIgnoreCase);
+
+        // İstersen dashboard’da da gizlemek için aç:
+        // hideAdminNav = hideAdminNav || string.Equals(controller, "Dashboard", StringComparison.OrdinalIgnoreCase);
+    }
 
     <header>
         <nav class="navbar navbar-expand-lg fixed-top navbar-light">
@@ -88,7 +100,8 @@
                         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Congresses">Kongreler</a></li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Contact">İletişim</a></li>
 
-                        @if (User.Identity.IsAuthenticated && (User.IsInRole("Admin") || User.IsInRole("Organizator")))
+                        @* ✅ SADECE admin/organizator ve Admin area'da değilken göster *@
+                        @if (!hideAdminNav && User.Identity.IsAuthenticated && (User.IsInRole("Admin") || User.IsInRole("Organizator")))
                         {
                             if (Tc.Current != null)
                             {
@@ -104,17 +117,12 @@
                             }
                             else
                             {
-                                <li class="nav-item">
-                                    <a class="nav-link admin-link" asp-area="Admin" asp-controller="AdminHome" asp-action="MyCongresses">
-                                        <i class="fas fa-user-shield me-1"></i> Yönetim Paneli
-                                    </a>
-                                </li>
+                          
                             }
                         }
                     </ul>
 
                     <partial name="_LoginPartial" />
-
                 </div>
             </div>
         </nav>

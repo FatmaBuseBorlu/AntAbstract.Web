@@ -4,8 +4,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -18,70 +16,78 @@ namespace AntAbstract.Web.Controllers
         public AdminController(UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             _userManager = userManager;
-            _roleManager = roleManager; 
+            _roleManager = roleManager;
         }
 
+        [HttpGet]
         public async Task<IActionResult> UserList()
         {
             var users = await _userManager.Users.ToListAsync();
-            return View(users);
+            return View(users); // Views/Admin/UserList.cshtml
         }
 
+        [HttpGet]
         public async Task<IActionResult> ManageRoles(string userId)
         {
+            if (string.IsNullOrWhiteSpace(userId))
+                return NotFound();
+
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
-            {
                 return NotFound();
-            }
 
-            var viewModel = new AntAbstract.Web.Models.ViewModels.ManageUserRolesViewModel
+            var model = new ManageUserRolesViewModel
             {
                 UserId = user.Id,
                 UserEmail = user.Email,
                 Roles = new List<AntAbstract.Web.Models.ViewModels.UserRoleViewModel>()
             };
 
-            
-            foreach (var role in _roleManager.Roles.ToList())
+            var roles = await _roleManager.Roles.OrderBy(r => r.Name).ToListAsync();
+
+            foreach (var role in roles)
             {
-                var userRoleViewModel = new AntAbstract.Web.Models.ViewModels.UserRoleViewModel
+                model.Roles.Add(new AntAbstract.Web.Models.ViewModels.UserRoleViewModel
                 {
-                    RoleName = role.Name,
-                    IsSelected = await _userManager.IsInRoleAsync(user, role.Name)
-                };
-                viewModel.Roles.Add(userRoleViewModel);
+                    RoleName = role.Name!,
+                    IsSelected = await _userManager.IsInRoleAsync(user, role.Name!)
+                });
             }
-            return View(viewModel);
+
+            return View(model); // Views/Admin/ManageRoles.cshtml
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ManageRoles(AntAbstract.Web.Models.ViewModels.ManageUserRolesViewModel model)
+        public async Task<IActionResult> ManageRoles(ManageUserRolesViewModel model)
         {
             var user = await _userManager.FindByIdAsync(model.UserId);
             if (user == null)
-            {
                 return NotFound();
-            }
 
-     
             var existingRoles = await _userManager.GetRolesAsync(user);
-            var result = await _userManager.RemoveFromRolesAsync(user, existingRoles);
+            var removeResult = await _userManager.RemoveFromRolesAsync(user, existingRoles);
 
-            if (!result.Succeeded)
+            if (!removeResult.Succeeded)
+            {
+                // tekrar sayfaya dön
+                return View(model);
+            }
+
+            var selectedRoles = model.Roles
+                .Where(r => r.IsSelected)
+                .Select(r => r.RoleName)
+                .ToList();
+
+            var addResult = await _userManager.AddToRolesAsync(user, selectedRoles);
+
+            if (!addResult.Succeeded)
             {
                 return View(model);
             }
 
-            result = await _userManager.AddToRolesAsync(user, model.Roles.Where(r => r.IsSelected).Select(r => r.RoleName));
-
-            if (!result.Succeeded)
-            {
-                return View(model);
-            }
-
-            return RedirectToAction("UserList");
+            TempData["SuccessMessage"] = "Roller güncellendi.";
+            return RedirectToAction(nameof(UserList));
         }
     }
 }

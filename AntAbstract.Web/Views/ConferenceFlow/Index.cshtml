@@ -1,0 +1,113 @@
+﻿@model AntAbstract.Web.Models.ViewModels.ConferenceFlowIndexViewModel
+
+@{
+    ViewData["Title"] = "Kongre Akışı";
+    Layout = "_LayoutDashboard";
+}
+
+<div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="fw-bold mb-1">Kongre Akışı</h4>
+            <small class="text-muted d-block">
+                Seçili Kongre: <strong>@Model.ConferenceTitle</strong> (@Model.Slug)
+            </small>
+        </div>
+
+        <a href="/admin/conferenceflow" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-exchange-alt me-1"></i> Kongre Değiştir
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="row g-3">
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small">Toplam Bildiri</div>
+                            <div class="fs-3 fw-bold">@Model.SubmissionCount</div>
+                        </div>
+                        <i class="fas fa-file-alt fs-2 text-primary opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small">Hakeme Atanan</div>
+                            <div class="fs-3 fw-bold">@Model.AssignedSubmissionCount</div>
+                        </div>
+                        <i class="fas fa-user-check fs-2 text-success opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small">Karar Verilen</div>
+                            <div class="fs-3 fw-bold">@Model.DecidedSubmissionCount</div>
+                        </div>
+                        <i class="fas fa-gavel fs-2 text-danger opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mt-3">
+        <div class="card-body">
+            <div class="fw-bold mb-2">Akış Özeti</div>
+
+            @{
+                var total = Model.SubmissionCount;
+                var assigned = Model.AssignedSubmissionCount;
+                var decided = Model.DecidedSubmissionCount;
+
+                var assignedPct = total == 0 ? 0 : (int)Math.Round(assigned * 100.0 / total);
+                var decidedPct = total == 0 ? 0 : (int)Math.Round(decided * 100.0 / total);
+            }
+
+            <div class="mb-2 small text-muted">Hakem atama ilerleme: % @assignedPct</div>
+            <div class="progress mb-3" style="height: 10px;">
+                <div class="progress-bar" role="progressbar" style="width: @assignedPct%"></div>
+            </div>
+
+            <div class="mb-2 small text-muted">Karar ilerleme: % @decidedPct</div>
+            <div class="progress" style="height: 10px;">
+                <div class="progress-bar" role="progressbar" style="width: @decidedPct%"></div>
+            </div>
+
+            <div class="mt-3 d-flex gap-2 flex-wrap">
+                <a class="btn btn-sm btn-outline-info"
+                   href="/@Model.Slug/admin/assignment?conferenceId=@Model.ConferenceId">
+                    <i class="fas fa-tasks me-1"></i> Özet Atama’ya Git
+                </a>
+
+                <a class="btn btn-sm btn-outline-danger"
+                   href="/@Model.Slug/admin/decision">
+                    <i class="fas fa-gavel me-1"></i> Karar Ekranı’na Git
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>

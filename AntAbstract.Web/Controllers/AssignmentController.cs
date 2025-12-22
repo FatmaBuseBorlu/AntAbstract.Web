@@ -6,19 +6,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
     [Area("Admin")]
     [Authorize(Roles = "Admin,Organizator")]
-
-    // Hem slug’lı hem slug’sız giriş:
-    [Route("{slug}/admin/assignment")]
-    [Route("admin/assignment")]
     public class AssignmentController : Controller
     {
         private readonly AppDbContext _context;
@@ -41,24 +33,62 @@ namespace AntAbstract.Web.Controllers
             _recommendationService = recommendationService;
         }
 
-        // /admin/assignment
-        // /{slug}/admin/assignment
-        [HttpGet("")]
-        [HttpGet("index")]
-        public async Task<IActionResult> Index()
+        // 1) Kongre seç ekranı (slug yok)
+        // URL: /admin/assignment
+        [HttpGet("/admin/assignment")]
+        public async Task<IActionResult> SelectConference()
+        {
+            var conferences = await _context.Conferences
+                .Include(c => c.Tenant)
+                .OrderByDescending(c => c.StartDate)
+                .ToListAsync();
+
+            return View("SelectConference", conferences);
+        }
+
+        // 2) Kongre seç POST -> slug + conferenceId ile Index'e git
+        // POST: /admin/assignment/select
+        [HttpPost("/admin/assignment/select")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SelectConferencePost(Guid conferenceId)
+        {
+            var conf = await _context.Conferences
+                .Include(c => c.Tenant)
+                .FirstOrDefaultAsync(c => c.Id == conferenceId);
+
+            if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
+            {
+                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                return RedirectToAction(nameof(SelectConference));
+            }
+
+            return Redirect($"/{conf.Tenant.Slug}/admin/assignment?conferenceId={conf.Id}");
+        }
+
+        // 3) Atama listesi (slug var)
+        // URL: /{slug}/admin/assignment?conferenceId=...
+        [HttpGet("/{slug}/admin/assignment")]
+        public async Task<IActionResult> Index(string slug, Guid? conferenceId)
         {
             if (_tenantContext.Current == null)
             {
-                TempData["ErrorMessage"] = "Lütfen bir kongre URL'i (slug) üzerinden işlem yapın.";
-                return RedirectToAction("Index", "Home");
+                TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
+                return RedirectToAction(nameof(SelectConference));
+            }
+
+            if (conferenceId == null)
+            {
+                TempData["ErrorMessage"] = "Lütfen bir kongre seçin.";
+                return RedirectToAction(nameof(SelectConference));
             }
 
             var conference = await _context.Conferences
-                .FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
+                .FirstOrDefaultAsync(c => c.Id == conferenceId && c.TenantId == _tenantContext.Current.Id);
 
             if (conference == null)
             {
-                return View(new List<Submission>());
+                TempData["ErrorMessage"] = "Seçilen kongre bu tenant'a ait değil veya bulunamadı.";
+                return RedirectToAction(nameof(SelectConference));
             }
 
             var submissions = await _context.Submissions
@@ -66,74 +96,89 @@ namespace AntAbstract.Web.Controllers
                 .Include(s => s.Author)
                 .Include(s => s.ReviewAssignments)
                     .ThenInclude(ra => ra.Reviewer)
+                .OrderByDescending(s => s.CreatedDate)
                 .ToListAsync();
 
-            return View(submissions);
+            ViewBag.ConferenceId = conference.Id;
+            ViewBag.ConferenceTitle = conference.Title;
+
+            return View(submissions); // Areas/Admin/Views/Assignment/Index.cshtml
         }
 
-        // /admin/assignment/assign/{id}
-        // /{slug}/admin/assignment/assign/{id}
-        [HttpGet("assign/{id:guid}")]
-        public async Task<IActionResult> Assign(Guid id)
+        // 4) Hakem ata ekranı
+        // URL: /{slug}/admin/assignment/assign/{id}
+        [HttpGet("/{slug}/admin/assignment/assign/{id:guid}")]
+        public async Task<IActionResult> Assign(string slug, Guid id)
         {
+            if (_tenantContext.Current == null)
+            {
+                TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
+                return RedirectToAction(nameof(SelectConference));
+            }
+
             var submission = await _context.Submissions
                 .Include(s => s.Author)
-                .FirstOrDefaultAsync(s => s.SubmissionId == id);
+                .FirstOrDefaultAsync(s => s.Id == id);
 
             if (submission == null) return NotFound();
 
-            var recommendedReviewers = await _recommendationService.GetRecommendationsAsync(id);
+            var recommended = await _recommendationService.GetRecommendationsAsync(id);
 
-            // Sende rol adı "Referee" idi:
+            // Rol adı: Referee
             var allReferees = await _userManager.GetUsersInRoleAsync("Referee");
 
-            var allOtherReferees = allReferees
-                .Where(x => !recommendedReviewers.Any(r => r.Id == x.Id))
+            var others = allReferees
+                .Where(x => !recommended.Any(r => r.Id == x.Id))
                 .ToList();
 
-            var viewModel = new AssignReviewerViewModel
+            var vm = new AssignReviewerViewModel
             {
                 Submission = submission,
-                RecommendedReviewers = recommendedReviewers.ToList(),
-                AllOtherReviewers = allOtherReferees
+                RecommendedReviewers = recommended.ToList(),
+                AllOtherReviewers = others
             };
 
-            return View(viewModel);
+            return View(vm); // Areas/Admin/Views/Assignment/Assign.cshtml
         }
 
-        // POST: /admin/assignment/assign
+        // 5) Kaydet
         // POST: /{slug}/admin/assignment/assign
-        [HttpPost("assign")]
+        [HttpPost("/{slug}/admin/assignment/assign")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Assign(Guid submissionId, string reviewerId)
+        public async Task<IActionResult> Assign(string slug, Guid submissionId, string reviewerId)
         {
-            var submission = await _context.Submissions.FindAsync(submissionId);
+            if (_tenantContext.Current == null)
+            {
+                TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
+                return RedirectToAction(nameof(SelectConference));
+            }
+
+            var submission = await _context.Submissions.FirstOrDefaultAsync(s => s.Id == submissionId);
             if (submission == null) return NotFound("Bildiri bulunamadı.");
 
             var reviewer = await _userManager.FindByIdAsync(reviewerId);
             if (reviewer == null)
             {
                 TempData["ErrorMessage"] = "Seçilen hakem bulunamadı.";
-                return RedirectToAction(nameof(Assign), new { id = submissionId });
+                return Redirect($"/{slug}/admin/assignment/assign/{submissionId}");
             }
 
-            bool alreadyAssigned = await _context.ReviewAssignments
+            var alreadyAssigned = await _context.ReviewAssignments
                 .AnyAsync(ra => ra.SubmissionId == submissionId && ra.ReviewerId == reviewerId);
 
             if (alreadyAssigned)
             {
                 TempData["ErrorMessage"] = "Bu hakem zaten bu bildiriye atanmış.";
-                return RedirectToAction(nameof(Assign), new { id = submissionId });
+                return Redirect($"/{slug}/admin/assignment/assign/{submissionId}");
             }
 
-            var assignment = new ReviewAssignment
+            _context.ReviewAssignments.Add(new ReviewAssignment
             {
                 SubmissionId = submissionId,
                 ReviewerId = reviewerId,
                 AssignedDate = DateTime.UtcNow
-            };
+            });
 
-            _context.ReviewAssignments.Add(assignment);
             await _context.SaveChangesAsync();
 
             try
@@ -144,13 +189,10 @@ namespace AntAbstract.Web.Controllers
                     $"Sayın {reviewer.UserName}, size değerlendirmeniz için yeni bir bildiri atandı."
                 );
             }
-            catch
-            {
-                // Mail patlarsa atamayı geri alma; sadece sessiz geç.
-            }
+            catch { }
 
             TempData["SuccessMessage"] = "Hakem ataması başarıyla tamamlandı.";
-            return RedirectToAction(nameof(Index));
+            return Redirect($"/{slug}/admin/assignment?conferenceId={submission.ConferenceId}");
         }
     }
 }
