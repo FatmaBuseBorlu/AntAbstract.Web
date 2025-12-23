@@ -1,0 +1,42 @@
+﻿@model AntAbstract.Web.Models.ViewModels.SelectConferenceViewModel
+
+@{
+    ViewData["Title"] = Model.Title;
+    Layout = "_LayoutDashboard";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="fw-bold mb-0">@Model.Title</h4>
+            @if (!string.IsNullOrWhiteSpace(Model.Lead))
+            {
+                <small class="text-muted">@Model.Lead</small>
+            }
+        </div>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form method="post" action="@Model.PostUrl">
+                @Html.AntiForgeryToken()
+
+                <label class="form-label fw-bold">Kongre</label>
+                <select name="conferenceId" class="form-select" required>
+                    <option value="">Seçiniz...</option>
+                    @foreach (var c in Model.Conferences)
+                    {
+                        <option value="@c.Id">@c.Title (@c.Tenant?.Slug)</option>
+                    }
+                </select>
+
+                <button type="submit" class="btn btn-primary mt-3">@Model.SubmitText</button>
+            </form>
+        </div>
+    </div>
+</div>

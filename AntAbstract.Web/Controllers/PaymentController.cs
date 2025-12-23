@@ -22,7 +22,6 @@ namespace AntAbstract.Web.Controllers
             _userManager = userManager;
         }
 
-        // Dashboard (slug yokken) -> otomatik ödeme ekranına yönlendiren endpoint
         [HttpGet("/payment/my")]
         public async Task<IActionResult> MyFromDashboard()
         {

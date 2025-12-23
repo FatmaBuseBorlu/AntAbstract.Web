@@ -23,7 +23,7 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> UserList()
         {
             var users = await _userManager.Users.ToListAsync();
-            return View(users); // Views/Admin/UserList.cshtml
+            return View(users); 
         }
 
         [HttpGet]
@@ -54,7 +54,7 @@ namespace AntAbstract.Web.Controllers
                 });
             }
 
-            return View(model); // Views/Admin/ManageRoles.cshtml
+            return View(model); 
         }
 
         [HttpPost]
@@ -70,7 +70,7 @@ namespace AntAbstract.Web.Controllers
 
             if (!removeResult.Succeeded)
             {
-                // tekrar sayfaya dön
+           
                 return View(model);
             }
 

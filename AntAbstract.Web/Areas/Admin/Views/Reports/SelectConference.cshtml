@@ -1,0 +1,35 @@
+﻿@model IEnumerable<AntAbstract.Domain.Entities.Conference>
+
+@{
+    ViewData["Title"] = "Raporlar";
+    Layout = "_LayoutDashboard";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="fw-bold mb-0">Raporlar</h4>
+            <small class="text-muted">Raporları görüntülemek için önce kongre seçin.</small>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form method="post" action="/admin/reports/select">
+                @Html.AntiForgeryToken()
+
+                <label class="form-label fw-bold">Kongre</label>
+
+                <select name="conferenceId" class="form-select" required>
+                    <option value="">Seçiniz...</option>
+                    @foreach (var c in Model)
+                    {
+                        <option value="@c.Id">@c.Title (@c.Tenant?.Slug)</option>
+                    }
+                </select>
+
+                <button type="submit" class="btn btn-primary mt-3">Devam Et</button>
+            </form>
+        </div>
+    </div>
+</div>

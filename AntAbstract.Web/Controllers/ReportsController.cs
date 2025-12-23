@@ -9,18 +9,18 @@ namespace AntAbstract.Web.Controllers
 {
     [Area("Admin")]
     [Authorize(Roles = "Admin,Organizator")]
-    public class ConferenceFlowController : Controller
+    public class ReportsController : Controller
     {
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
 
-        public ConferenceFlowController(AppDbContext context, TenantContext tenantContext)
+        public ReportsController(AppDbContext context, TenantContext tenantContext)
         {
             _context = context;
             _tenantContext = tenantContext;
         }
 
-        [HttpGet("/admin/conferenceflow")]
+        [HttpGet("/admin/reports")]
         public async Task<IActionResult> SelectConference()
         {
             var conferences = await _context.Conferences
@@ -31,7 +31,7 @@ namespace AntAbstract.Web.Controllers
             return View("SelectConference", conferences);
         }
 
-        [HttpPost("/admin/conferenceflow/select")]
+        [HttpPost("/admin/reports/select")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SelectConferencePost(Guid conferenceId)
         {
@@ -45,19 +45,13 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(SelectConference));
             }
 
-            return Redirect($"/{conf.Tenant.Slug}/admin/conferenceflow?conferenceId={conf.Id}");
+            return Redirect($"/{conf.Tenant.Slug}/admin/reports?conferenceId={conf.Id}");
         }
 
-        [HttpGet("/{slug}/admin/conferenceflow")]
+        [HttpGet("/{slug}/admin/reports")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId)
         {
-            if (_tenantContext.Current == null)
-            {
-                TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
-                return RedirectToAction(nameof(SelectConference));
-            }
-
-            if (conferenceId == null)
+            if (_tenantContext.Current == null || conferenceId == null)
             {
                 TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
                 return RedirectToAction(nameof(SelectConference));
@@ -72,14 +66,20 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(SelectConference));
             }
 
-            var submissionIds = await _context.Submissions
+            var submissions = await _context.Submissions
                 .Where(s => s.ConferenceId == conference.Id)
-                .Select(s => s.Id)
+                .Select(s => new { s.Id, s.Status, s.DecisionDate })
                 .ToListAsync();
 
-            var submissionCount = submissionIds.Count;
+            var submissionIds = submissions.Select(x => x.Id).ToList();
 
-            var assignedSubmissionCount = submissionCount == 0
+            var totalAssignments = submissionIds.Count == 0
+                ? 0
+                : await _context.ReviewAssignments
+                    .Where(ra => submissionIds.Contains(ra.SubmissionId))
+                    .CountAsync();
+
+            var assignedSubmissions = submissionIds.Count == 0
                 ? 0
                 : await _context.ReviewAssignments
                     .Where(ra => submissionIds.Contains(ra.SubmissionId))
@@ -87,18 +87,27 @@ namespace AntAbstract.Web.Controllers
                     .Distinct()
                     .CountAsync();
 
-            var decidedSubmissionCount = await _context.Submissions
-                .Where(s => s.ConferenceId == conference.Id && s.DecisionDate != null)
-                .CountAsync();
+            var decidedSubmissions = submissions.Count(x => x.DecisionDate != null);
 
-            var vm = new ConferenceFlowIndexViewModel
+            var vm = new ReportsIndexViewModel
             {
                 ConferenceId = conference.Id,
                 ConferenceTitle = conference.Title,
                 Slug = slug,
-                SubmissionCount = submissionCount,
-                AssignedSubmissionCount = assignedSubmissionCount,
-                DecidedSubmissionCount = decidedSubmissionCount
+
+                TotalSubmissions = submissions.Count,
+                AssignedSubmissions = assignedSubmissions,
+                DecidedSubmissions = decidedSubmissions,
+
+                NewCount = submissions.Count(x => x.Status == SubmissionStatus.New),
+                PendingCount = submissions.Count(x => x.Status == SubmissionStatus.Pending),
+                UnderReviewCount = submissions.Count(x => x.Status == SubmissionStatus.UnderReview),
+
+                AcceptedCount = submissions.Count(x => x.Status == SubmissionStatus.Accepted),
+                RejectedCount = submissions.Count(x => x.Status == SubmissionStatus.Rejected),
+                RevisionRequiredCount = submissions.Count(x => x.Status == SubmissionStatus.RevisionRequired),
+
+                TotalAssignments = totalAssignments
             };
 
             return View(vm);

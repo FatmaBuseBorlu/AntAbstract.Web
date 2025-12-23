@@ -33,8 +33,6 @@ namespace AntAbstract.Web.Controllers
             _recommendationService = recommendationService;
         }
 
-        // 1) Kongre seç ekranı (slug yok)
-        // URL: /admin/assignment
         [HttpGet("/admin/assignment")]
         public async Task<IActionResult> SelectConference()
         {
@@ -46,8 +44,7 @@ namespace AntAbstract.Web.Controllers
             return View("SelectConference", conferences);
         }
 
-        // 2) Kongre seç POST -> slug + conferenceId ile Index'e git
-        // POST: /admin/assignment/select
+
         [HttpPost("/admin/assignment/select")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SelectConferencePost(Guid conferenceId)
@@ -65,8 +62,6 @@ namespace AntAbstract.Web.Controllers
             return Redirect($"/{conf.Tenant.Slug}/admin/assignment?conferenceId={conf.Id}");
         }
 
-        // 3) Atama listesi (slug var)
-        // URL: /{slug}/admin/assignment?conferenceId=...
         [HttpGet("/{slug}/admin/assignment")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId)
         {
@@ -102,11 +97,9 @@ namespace AntAbstract.Web.Controllers
             ViewBag.ConferenceId = conference.Id;
             ViewBag.ConferenceTitle = conference.Title;
 
-            return View(submissions); // Areas/Admin/Views/Assignment/Index.cshtml
+            return View(submissions); 
         }
 
-        // 4) Hakem ata ekranı
-        // URL: /{slug}/admin/assignment/assign/{id}
         [HttpGet("/{slug}/admin/assignment/assign/{id:guid}")]
         public async Task<IActionResult> Assign(string slug, Guid id)
         {
@@ -124,7 +117,6 @@ namespace AntAbstract.Web.Controllers
 
             var recommended = await _recommendationService.GetRecommendationsAsync(id);
 
-            // Rol adı: Referee
             var allReferees = await _userManager.GetUsersInRoleAsync("Referee");
 
             var others = allReferees
@@ -138,11 +130,10 @@ namespace AntAbstract.Web.Controllers
                 AllOtherReviewers = others
             };
 
-            return View(vm); // Areas/Admin/Views/Assignment/Assign.cshtml
+            return View(vm); 
         }
 
-        // 5) Kaydet
-        // POST: /{slug}/admin/assignment/assign
+
         [HttpPost("/{slug}/admin/assignment/assign")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Assign(string slug, Guid submissionId, string reviewerId)

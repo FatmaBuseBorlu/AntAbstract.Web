@@ -11,7 +11,17 @@
             <h4 class="fw-bold mb-0">Kongre Seç</h4>
             <small class="text-muted">Özet ataması yapabilmek için önce kongre seçin.</small>
         </div>
+
+        <button type="button" class="btn btn-outline-secondary btn-sm"
+                onclick="if (history.length > 1) history.back(); else window.location.href='/'">
+            <i class="fas fa-arrow-left me-1"></i> Geri
+        </button>
     </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0">@TempData["ErrorMessage"]</div>
+    }
 
     <div class="card border-0 shadow-sm">
         <div class="card-body p-4">
