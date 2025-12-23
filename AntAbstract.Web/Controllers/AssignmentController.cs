@@ -41,7 +41,11 @@ namespace AntAbstract.Web.Controllers
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
-            return View("SelectConference", conferences);
+            ViewBag.PageTitle = "Kongre Seç";
+            ViewBag.LeadText = "Özet ataması yapabilmek için önce kongre seçin.";
+            ViewBag.PostUrl = "/admin/assignment/select";
+
+            return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", conferences);
         }
 
 

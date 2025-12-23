@@ -4,6 +4,8 @@
 @{
     ViewData["Title"] = "Karar Ekranı";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString();
 }
 
 <div class="row mb-4">
@@ -17,6 +19,13 @@
 {
     <div class="alert alert-success border-0 shadow-sm mb-4">
         <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger border-0 shadow-sm mb-4">
+        <i class="fas fa-exclamation-triangle me-2"></i> @TempData["ErrorMessage"]
     </div>
 }
 
@@ -71,6 +80,8 @@
 
                                     var avgScore = reviews.Any() ? reviews.Average(r => r.Score) : 0;
 
+                                    var canDecide = reviews.Any(); // istersen burada "tüm atamalar reviewed mi" kuralı da yazabiliriz
+
                                     <tr>
                                         <td class="ps-4">
                                             <div class="fw-bold text-dark text-truncate" style="max-width: 300px;" title="@item.Title">@item.Title</div>
@@ -99,15 +110,26 @@
                                             }
                                         </td>
                                         <td class="text-end pe-4">
-                                            <button type="button" class="btn btn-sm btn-primary fw-bold" data-bs-toggle="modal" data-bs-target="#modal-@item.Id">
+                                            <button type="button"
+                                                    class="btn btn-sm btn-primary fw-bold"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#modal-@item.Id"
+                                                    @(canDecide ? "" : "disabled")>
                                                 Karar Ver
                                             </button>
 
                                             <div class="modal fade text-start" id="modal-@item.Id" tabindex="-1">
                                                 <div class="modal-dialog">
                                                     <div class="modal-content">
-                                                        <form asp-action="MakeDecision" method="post">
+                                                        <form asp-area="Admin"
+                                                              asp-controller="Decision"
+                                                              asp-action="MakeDecision"
+                                                              asp-route-slug="@slug"
+                                                              method="post">
+                                                            @Html.AntiForgeryToken()
+
                                                             <input type="hidden" name="submissionId" value="@item.Id" />
+
                                                             <div class="modal-header">
                                                                 <h5 class="modal-title fw-bold">Karar Ver: @item.Title</h5>
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -163,33 +185,36 @@
                             {
                                 <tr><td colspan="4" class="text-center py-5 text-muted">Henüz sonuçlanmış bildiri yok.</td></tr>
                             }
-                            @foreach (var item in Model.AlreadyDecided)
+                            else
                             {
-                                <tr>
-                                    <td class="ps-4">
-                                        <div class="fw-bold text-dark">@item.Title</div>
-                                    </td>
-                                    <td>
-                                        @item.Author?.FirstName @item.Author?.LastName
-                                    </td>
-                                    <td>
-                                        @if (item.Status == SubmissionStatus.Accepted)
-                                        {
-                                            <span class="badge bg-success"><i class="fas fa-check me-1"></i> KABUL</span>
-                                        }
-                                        else if (item.Status == SubmissionStatus.Rejected)
-                                        {
-                                            <span class="badge bg-danger"><i class="fas fa-times me-1"></i> RED</span>
-                                        }
-                                        else if (item.Status == SubmissionStatus.RevisionRequired)
-                                        {
-                                            <span class="badge bg-warning text-dark"><i class="fas fa-edit me-1"></i> REVİZYON</span>
-                                        }
-                                    </td>
-                                    <td class="text-end pe-4">
-                                        @(item.UpdatedDate != null ? item.UpdatedDate.Value.ToString("dd.MM.yyyy") : DateTime.Now.ToString("dd.MM.yyyy"))
-                                    </td>
-                                </tr>
+                                @foreach (var item in Model.AlreadyDecided)
+                                {
+                                    <tr>
+                                        <td class="ps-4">
+                                            <div class="fw-bold text-dark">@item.Title</div>
+                                        </td>
+                                        <td>
+                                            @item.Author?.FirstName @item.Author?.LastName
+                                        </td>
+                                        <td>
+                                            @if (item.Status == SubmissionStatus.Accepted)
+                                            {
+                                                <span class="badge bg-success"><i class="fas fa-check me-1"></i> KABUL</span>
+                                            }
+                                            else if (item.Status == SubmissionStatus.Rejected)
+                                            {
+                                                <span class="badge bg-danger"><i class="fas fa-times me-1"></i> RED</span>
+                                            }
+                                            else if (item.Status == SubmissionStatus.RevisionRequired)
+                                            {
+                                                <span class="badge bg-warning text-dark"><i class="fas fa-edit me-1"></i> REVİZYON</span>
+                                            }
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            @(item.DecisionDate != null ? item.DecisionDate.Value.ToString("dd.MM.yyyy") : "-")
+                                        </td>
+                                    </tr>
+                                }
                             }
                         </tbody>
                     </table>
