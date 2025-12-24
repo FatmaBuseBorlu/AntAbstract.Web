@@ -1,11 +1,10 @@
-﻿using AntAbstract.Domain.Entities;
-using AntAbstract.Infrastructure.Context;
+﻿using AntAbstract.Infrastructure.Context;
 using AntAbstract.Web.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AntAbstract.Web.Controllers
+namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
     [Authorize(Roles = "Admin,Organizator")]
@@ -24,11 +23,21 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> SelectConference()
         {
             var conferences = await _context.Conferences
+                .AsNoTracking()
                 .Include(c => c.Tenant)
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
-            return View("SelectConference", conferences);
+            var vm = new SelectConferenceViewModel
+            {
+                Title = "Kongre Seç",
+                Lead = "Kongre akışını görüntülemek için önce kongre seçin.",
+                PostUrl = "/admin/conferenceflow/select",
+                SubmitText = "Devam Et",
+                Conferences = conferences
+            };
+
+            return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", vm);
         }
 
         [HttpPost("/admin/conferenceflow/select")]
@@ -36,6 +45,7 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> SelectConferencePost(Guid conferenceId)
         {
             var conf = await _context.Conferences
+                .AsNoTracking()
                 .Include(c => c.Tenant)
                 .FirstOrDefaultAsync(c => c.Id == conferenceId);
 
@@ -45,26 +55,27 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(SelectConference));
             }
 
-            return Redirect($"/{conf.Tenant.Slug}/admin/conferenceflow?conferenceId={conf.Id}");
+            return RedirectToAction(nameof(Index), new { slug = conf.Tenant.Slug, conferenceId = conf.Id });
         }
 
         [HttpGet("/{slug}/admin/conferenceflow")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId)
         {
-            if (_tenantContext.Current == null)
+            if (_tenantContext.Current == null || conferenceId == null)
             {
                 TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
                 return RedirectToAction(nameof(SelectConference));
             }
 
-            if (conferenceId == null)
+            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
+                TempData["ErrorMessage"] = "Tenant uyuşmuyor. Lütfen tekrar kongre seçin.";
                 return RedirectToAction(nameof(SelectConference));
             }
 
             var conference = await _context.Conferences
-                .FirstOrDefaultAsync(c => c.Id == conferenceId && c.TenantId == _tenantContext.Current.Id);
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == conferenceId.Value && c.TenantId == _tenantContext.Current.Id);
 
             if (conference == null)
             {
@@ -72,8 +83,11 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(SelectConference));
             }
 
-            var submissionIds = await _context.Submissions
-                .Where(s => s.ConferenceId == conference.Id)
+            var submissionQuery = _context.Submissions
+                .AsNoTracking()
+                .Where(s => s.ConferenceId == conference.Id);
+
+            var submissionIds = await submissionQuery
                 .Select(s => s.Id)
                 .ToListAsync();
 
@@ -82,14 +96,14 @@ namespace AntAbstract.Web.Controllers
             var assignedSubmissionCount = submissionCount == 0
                 ? 0
                 : await _context.ReviewAssignments
+                    .AsNoTracking()
                     .Where(ra => submissionIds.Contains(ra.SubmissionId))
                     .Select(ra => ra.SubmissionId)
                     .Distinct()
                     .CountAsync();
 
-            var decidedSubmissionCount = await _context.Submissions
-                .Where(s => s.ConferenceId == conference.Id && s.DecisionDate != null)
-                .CountAsync();
+            var decidedSubmissionCount = await submissionQuery
+                .CountAsync(s => s.DecisionDate != null);
 
             var vm = new ConferenceFlowIndexViewModel
             {
@@ -101,7 +115,7 @@ namespace AntAbstract.Web.Controllers
                 DecidedSubmissionCount = decidedSubmissionCount
             };
 
-            return View(vm);
+            return View("~/Areas/Admin/Views/ConferenceFlow/Index.cshtml", vm);
         }
     }
 }

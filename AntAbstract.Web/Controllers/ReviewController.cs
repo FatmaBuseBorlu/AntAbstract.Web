@@ -1,102 +1,92 @@
-﻿using AntAbstract.Domain.Entities;
-using AntAbstract.Infrastructure.Context; 
+﻿using AntAbstract.Application.DTOs.Review;
+using AntAbstract.Application.Interfaces;
+using AntAbstract.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
-    [Authorize(Roles = "Referee, Admin")]
+    [Authorize]
     public class ReviewController : Controller
     {
-
-        private readonly AppDbContext _context;
+        private readonly IReviewService _reviewService;
         private readonly UserManager<AppUser> _userManager;
 
-        public ReviewController(AppDbContext context, UserManager<AppUser> userManager)
+        public ReviewController(IReviewService reviewService, UserManager<AppUser> userManager)
         {
-            _context = context;
+            _reviewService = reviewService;
             _userManager = userManager;
         }
 
-
+        [Authorize(Roles = "Referee, Admin")]
         public async Task<IActionResult> Index()
         {
-            var userId = _userManager.GetUserId(User);
-
-            var assignments = await _context.ReviewAssignments
-                .Include(ra => ra.Submission)
-                .ThenInclude(s => s.Conference) 
-                .Include(ra => ra.Review)       
-                .Where(ra => ra.ReviewerId == userId)
-                .OrderByDescending(ra => ra.AssignedDate)
-                .ToListAsync();
-
+            var user = await _userManager.GetUserAsync(User);
+            var assignments = await _reviewService.GetMyAssignmentsAsync(user.Id);
             return View(assignments);
         }
 
         [HttpGet]
+        [Authorize(Roles = "Referee, Admin")]
         public async Task<IActionResult> Evaluate(int id)
         {
-            var userId = _userManager.GetUserId(User);
+            var user = await _userManager.GetUserAsync(User);
+            var assignmentDto = await _reviewService.GetAssignmentByIdAsync(id, user.Id);
 
-
-
-            var assignment = await _context.ReviewAssignments
-                .Include(ra => ra.Submission).ThenInclude(s => s.Files)      
-                .Include(ra => ra.Submission).ThenInclude(s => s.Conference) 
-                .Include(ra => ra.Review)                                    
-                .FirstOrDefaultAsync(ra => ra.Id == id && ra.ReviewerId == userId);
-
-            if (assignment == null)
+            if (assignmentDto == null)
             {
-                TempData["ErrorMessage"] = "Bu bildiriye erişim yetkiniz yok veya atama bulunamadı.";
+                TempData["ErrorMessage"] = "Atama bulunamadı veya yetkiniz yok.";
                 return RedirectToAction("Index");
             }
 
-            return View(assignment);
+            return View(assignmentDto);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Evaluate(int assignmentId, string comments, string recommendation, int score)
+        [Authorize(Roles = "Referee, Admin")]
+        public async Task<IActionResult> Evaluate(SubmitReviewDto model)
         {
-            var userId = _userManager.GetUserId(User);
-
-            var assignment = await _context.ReviewAssignments
-                .Include(ra => ra.Review)
-                .Include(ra => ra.Submission)
-                .FirstOrDefaultAsync(ra => ra.Id == assignmentId && ra.ReviewerId == userId);
-
-            if (assignment == null) return NotFound();
-
-            if (assignment.Review == null)
+            if (!ModelState.IsValid)
             {
-                var review = new Review
-                {
-                    ReviewerName = User.Identity.Name ?? "Hakem",
-                    CommentsToAuthor = comments,
-                    Recommendation = recommendation,
-                    Score = score,
-                    ReviewedAt = DateTime.Now
-                };
-
-                assignment.Review = review;
-            }
-            else
-            {
-                assignment.Review.CommentsToAuthor = comments;
-                assignment.Review.Recommendation = recommendation;
-                assignment.Review.Score = score;
-                assignment.Review.ReviewedAt = DateTime.Now;
+                TempData["ErrorMessage"] = "Lütfen tüm alanları doldurunuz.";
+                return RedirectToAction("Evaluate", new { id = model.ReviewAssignmentId });
             }
 
-            await _context.SaveChangesAsync();
+            try
+            {
+                var user = await _userManager.GetUserAsync(User);
+                string reviewerName = $"{user.FirstName} {user.LastName}";
 
-            TempData["SuccessMessage"] = "Değerlendirmeniz başarıyla kaydedildi.";
+                await _reviewService.SubmitReviewAsync(model, reviewerName);
 
-            return RedirectToAction(nameof(Index));
+                TempData["SuccessMessage"] = "Değerlendirmeniz başarıyla kaydedildi.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (System.Exception ex)
+            {
+                TempData["ErrorMessage"] = "Hata: " + ex.Message;
+                return RedirectToAction("Evaluate", new { id = model.ReviewAssignmentId });
+            }
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin, Editor")] 
+        public async Task<IActionResult> AssignReviewer(AssignReviewerDto model)
+        {
+            try
+            {
+                await _reviewService.AssignReviewerAsync(model);
+                TempData["SuccessMessage"] = "Hakem başarıyla atandı.";
+            }
+            catch (System.Exception ex)
+            {
+                TempData["ErrorMessage"] = "Hata: " + ex.Message;
+            }
+
+            return RedirectToAction("Details", "Submission", new { id = model.SubmissionId });
         }
     }
 }

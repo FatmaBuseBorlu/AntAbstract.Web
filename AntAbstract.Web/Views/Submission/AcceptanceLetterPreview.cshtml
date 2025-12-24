@@ -1,10 +1,22 @@
-﻿@model AntAbstract.Web.Models.ViewModels.AcceptanceLetterViewModel
-@using System.IO
+﻿@using AntAbstract.Application.DTOs.Submission
+@using System.Linq
 @using Microsoft.AspNetCore.Hosting
 @inject IWebHostEnvironment WebHostEnvironment
+@model SubmissionDto
 
 @{
     Layout = null;
+
+    // --- DTO'dan Veri Hazırlığı ---
+    // 1. Yazar Adı: Listeden ilk yazarı veya sorumlu yazarı alıyoruz
+    var firstAuthor = Model.Authors?.OrderBy(a => a.Order).FirstOrDefault();
+    var authorFullName = firstAuthor != null ? $"{firstAuthor.FirstName} {firstAuthor.LastName}" : Model.CorrespondingAuthorName;
+
+    // 2. Belge No: Bildiri ID'sinin ilk 8 karakteri
+    var documentNumber = Model.Id.ToString().Substring(0, 8).ToUpper();
+
+    // 3. Tarih: Karar tarihi yoksa bugünü baz al
+    var acceptanceDate = Model.DecisionDate ?? DateTime.Now;
 }
 
 @functions {
@@ -165,21 +177,6 @@
             border: none;
         }
 
-        .authors {
-            font-size: 22px;
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #003366;
-            text-decoration: none;
-        }
-
-        .institution {
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 30px;
-            font-style: italic;
-        }
-
         .date-info {
             font-size: 16px;
             margin-top: 10px;
@@ -264,20 +261,20 @@
             <h1>Certificate of Participation</h1>
 
             <div class="text-intro">
-                This is to certify that <strong>@Model.AuthorFullName</strong> has successfully participated and presented the manuscript:
+                This is to certify that <strong>@authorFullName</strong> has successfully participated and presented the manuscript:
             </div>
 
             <div class="paper-title">
-                "@Model.SubmissionTitle"
+                "@Model.Title"
             </div>
 
             <div class="text-intro">
-                (ID: <strong>@Model.DocumentNumber</strong>)
+                (ID: <strong>@documentNumber</strong>)
             </div>
 
             <div class="date-info">
-                at <strong>@Model.ConferenceName</strong> <br>
-                held on <strong>@Model.AcceptanceDate.ToString("dd MMMM yyyy")</strong>.
+                at <strong>@(Model.ConferenceTitle ?? "AntAbstract Conference")</strong> <br>
+                held on <strong>@acceptanceDate.ToString("dd MMMM yyyy")</strong>.
             </div>
         </div>
 

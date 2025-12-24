@@ -1,6 +1,12 @@
-﻿@model AntAbstract.Domain.Entities.Submission
+﻿@using AntAbstract.Application.DTOs.Submission
+@using System.Linq
+@model SubmissionDto
+
 @{
     Layout = null;
+    // DTO içindeki yazarlar listesinden ilk sıradakini buluyoruz
+    var firstAuthor = Model.Authors?.OrderBy(a => a.Order).FirstOrDefault();
+    var authorName = firstAuthor != null ? $"{firstAuthor.FirstName} {firstAuthor.LastName}" : Model.CorrespondingAuthorName;
 }
 
 <!DOCTYPE html>
@@ -26,6 +32,7 @@
             font-weight: bold;
             color: #d9534f;
         }
+
         .title {
             font-size: 18px;
             font-weight: bold;
@@ -63,11 +70,11 @@
         <strong>Tarih:</strong> @DateTime.Now.ToString("dd MMMM yyyy")
     </div>
 
-    <p><strong>Sayın @Model.SubmissionAuthors.OrderBy(a => a.Order).FirstOrDefault()?.FirstName @Model.SubmissionAuthors.OrderBy(a => a.Order).FirstOrDefault()?.LastName,</strong></p>
+    <p><strong>Sayın @authorName,</strong></p>
 
     <div class="content">
         <p>
-            Öncelikle <strong>"Ref: #@Model.SubmissionId.ToString().Substring(0, 8).ToUpper()"</strong> referans numaralı ve
+            Öncelikle <strong>"Ref: #@Model.Id.ToString().Substring(0, 8).ToUpper()"</strong> referans numaralı ve
             <strong>"@Model.Title"</strong> başlıklı çalışmanızı kongremize gönderdiğiniz için teşekkür ederiz.
         </p>
 

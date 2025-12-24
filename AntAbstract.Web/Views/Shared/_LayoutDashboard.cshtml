@@ -28,12 +28,11 @@
     var reviewIndexUrl = string.IsNullOrWhiteSpace(slug) ? "/Review/Index" : $"/{slug}/Review/Index";
     var messageIndexUrl = string.IsNullOrWhiteSpace(slug) ? "/Message/Index" : $"/{slug}/Message/Index";
 
-    var conferenceFlowUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/conferenceflow" : $"/{slug}/admin/conferenceflow";
-    var reportsUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/reports" : $"/{slug}/admin/reports";
-
-    var assignmentUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/assignment" : $"/{slug}/admin/assignment";
-
-var decisionUrl = string.IsNullOrWhiteSpace(slug) ? "/Decision/Index" : $"/{slug}/Decision/Index";
+    // Admin akışı için menü her zaman kongre seçimine gitmeli
+    var conferenceFlowUrl = "/admin/conferenceflow";
+    var reportsUrl = "/admin/reports";
+    var assignmentUrl = "/admin/assignment";
+    var decisionUrl = "/admin/decision";
 
     var sessionUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/session" : $"/{slug}/admin/session";
     var reviewFormsUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/reviewforms" : $"/{slug}/admin/reviewforms";

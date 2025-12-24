@@ -1,7 +1,18 @@
-﻿@model AntAbstract.Web.Models.ViewModels.AcceptanceLetterViewModel
+﻿@using AntAbstract.Application.DTOs.Submission
+@using System.Linq
+@model SubmissionDto
+
 @{
     Layout = null;
+
+    var author = Model.Authors?.OrderBy(a => a.Order).FirstOrDefault();
+    var authorName = author != null ? $"{author.FirstName} {author.LastName}" : Model.CorrespondingAuthorName;
+
+    var institution = author != null ? author.Institution : "Kurum Bilgisi Bulunamadı";
+
+    var conferenceName = Model.ConferenceTitle ?? "AntAbstract Conference";
 }
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -42,7 +53,7 @@
             border: 1px solid #000;
             padding-top: 14mm;
             padding-bottom: 14mm;
-            gap: 6mm; 
+            gap: 6mm;
         }
 
         .header {
@@ -51,7 +62,7 @@
             padding: 0 20px 6px 20px;
             text-align: center;
             border-bottom: 2px solid #00aeef;
-            margin-bottom: 4mm; 
+            margin-bottom: 4mm;
         }
 
         .conf-name {
@@ -70,14 +81,14 @@
             align-items: center;
             padding: 0 20px;
             text-align: center;
-            margin-bottom: 5mm; 
+            margin-bottom: 5mm;
         }
 
         .name {
             font-size: 34px;
             font-weight: 900;
             color: #000;
-            margin-bottom: 6px; 
+            margin-bottom: 6px;
             line-height: 1.1;
         }
 
@@ -97,7 +108,7 @@
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 3px;
-            margin-top: 2mm; 
+            margin-top: 2mm;
         }
 
         @@media print {
@@ -116,12 +127,12 @@
 
     <div class="badge-card">
         <div class="header">
-            <div class="conf-name">@Model.ConferenceName</div>
+            <div class="conf-name">@conferenceName</div>
         </div>
 
         <div class="body">
-            <div class="name">@Model.AuthorFullName</div>
-            <div class="institution">@Model.AuthorInstitution</div>
+            <div class="name">@authorName</div>
+            <div class="institution">@institution</div>
         </div>
 
         <div class="footer">

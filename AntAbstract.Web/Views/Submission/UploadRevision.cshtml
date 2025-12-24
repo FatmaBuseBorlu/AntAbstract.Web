@@ -1,40 +1,70 @@
-﻿@model AntAbstract.Domain.Entities.Submission
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+﻿@using AntAbstract.Application.DTOs.Submission
+@model SubmissionDto
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"];
+    ViewData["Title"] = "Revizyon Yükle";
+    Layout = "_LayoutDashboard";
 }
 
-<h1 class="display-5">@Localizer["PageTitle"]</h1>
-<h4 class="text-muted fw-light">"@Model.Title"</h4>
-<p class="lead">@Localizer["PageLead"]</p>
-<hr />
-<div class="row">
-    <div class="col-md-8">
-        <form asp-action="UploadRevision" enctype="multipart/form-data" method="post">
-            <input type="hidden" asp-for="SubmissionId" />
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0 text-dark">Revizyon Yükle</h4>
+        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Detaya Dön
+        </a>
+    </div>
 
-            <div class="mb-3">
-                <label asp-for="Title" class="form-label fw-bold">@Localizer["TitleLabel"]</label>
-                <input asp-for="Title" class="form-control" readonly />
-            </div>
+    <div class="row">
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h6 class="fw-bold text-primary">Hakem Düzeltme İstiyor</h6>
+                    <p class="text-muted small">Çalışmanız incelendi ve bazı düzeltmeler talep edildi. Lütfen hakem yorumlarını dikkate alarak çalışmanızı güncelleyiniz.</p>
 
-            <div class="mb-3">
-                <label asp-for="AbstractText" class="form-label fw-bold">@Localizer["AbstractTextLabel"]</label>
-                <textarea asp-for="AbstractText" class="form-control" rows="8"></textarea>
-            </div>
+                    <div class="alert alert-warning small border-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Lütfen düzeltilmiş dosyanızı (Word/PDF) sağ taraftaki alandan yükleyiniz.
+                    </div>
 
-            <div class="mb-3">
-                <label for="revisionFile" class="form-label fw-bold">@Localizer["FileLabel"]</label>
-                <p class="text-muted">@Localizer["CurrentFile"] <a href="@Model.FilePath" target="_blank">@Model.FilePath</a></p>
-                <input type="file" name="revisionFile" class="form-control" required />
+                    <h6 class="fw-bold small mt-4">Mevcut Dosya:</h6>
+                    @if (Model.Files != null && Model.Files.Any())
+                    {
+                        var lastFile = Model.Files.OrderByDescending(f => f.UploadedAt).FirstOrDefault();
+                        <div class="d-flex align-items-center bg-light p-2 rounded border">
+                            <i class="fas fa-file-alt text-secondary me-3 fa-2x"></i>
+                            <div>
+                                <span class="d-block fw-bold text-dark small">@lastFile.FileName</span>
+                                <span class="d-block text-muted x-small">V.@lastFile.Version - @lastFile.UploadedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                            </div>
+                        </div>
+                    }
+                </div>
             </div>
+        </div>
 
-            <div class="form-group mt-4">
-                <button type="submit" class="btn btn-primary">@Localizer["SubmitButton"]</button>
-                <a asp-action="Index" class="btn btn-outline-secondary">@Localizer["CancelButton"]</a>
+        <div class="col-md-7">
+            <div class="card border-0 shadow-sm border-top border-4 border-warning">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">Yeni Dosya Yükle</h5>
+
+                    <form asp-action="UploadRevision" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-muted">Düzeltilmiş Tam Metin Dosyası</label>
+                            <input type="file" name="revisionFile" class="form-control" accept=".doc,.docx,.pdf" required />
+                            <div class="form-text">Lütfen değişiklikleri içeren son sürümü yükleyiniz (.doc, .docx, .pdf).</div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-warning fw-bold text-dark shadow-sm py-2">
+                                <i class="fas fa-cloud-upload-alt me-2"></i> Revizyonu Gönder
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </form>
+        </div>
     </div>
 </div>

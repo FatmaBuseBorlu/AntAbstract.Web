@@ -18,19 +18,22 @@ namespace AntAbstract.Web.Controllers
         private readonly IEmailService _emailService;
         private readonly IReviewerRecommendationService _recommendationService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly ISelectedConferenceService _selectedConferenceService;
 
         public AssignmentController(
             AppDbContext context,
             TenantContext tenantContext,
             IEmailService emailService,
             UserManager<AppUser> userManager,
-            IReviewerRecommendationService recommendationService)
+            IReviewerRecommendationService recommendationService,
+            ISelectedConferenceService selectedConferenceService)
         {
             _context = context;
             _tenantContext = tenantContext;
             _emailService = emailService;
             _userManager = userManager;
             _recommendationService = recommendationService;
+            _selectedConferenceService = selectedConferenceService;
         }
 
         [HttpGet("/admin/assignment")]
@@ -41,13 +44,17 @@ namespace AntAbstract.Web.Controllers
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
-            ViewBag.PageTitle = "Kongre Seç";
-            ViewBag.LeadText = "Özet ataması yapabilmek için önce kongre seçin.";
-            ViewBag.PostUrl = "/admin/assignment/select";
+            var vm = new SelectConferenceViewModel
+            {
+                Title = "Kongre Seç",
+                Lead = "Özet ataması yapabilmek için önce kongre seçin.",
+                PostUrl = "/admin/assignment/select",
+                SubmitText = "Devam Et",
+                Conferences = conferences
+            };
 
-            return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", conferences);
+            return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", vm);
         }
-
 
         [HttpPost("/admin/assignment/select")]
         [ValidateAntiForgeryToken]
@@ -63,6 +70,8 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(SelectConference));
             }
 
+            _selectedConferenceService.SetSelectedConferenceId(conf.Id);
+
             return Redirect($"/{conf.Tenant.Slug}/admin/assignment?conferenceId={conf.Id}");
         }
 
@@ -74,6 +83,8 @@ namespace AntAbstract.Web.Controllers
                 TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
                 return RedirectToAction(nameof(SelectConference));
             }
+
+            conferenceId ??= _selectedConferenceService.GetSelectedConferenceId();
 
             if (conferenceId == null)
             {
@@ -93,15 +104,15 @@ namespace AntAbstract.Web.Controllers
             var submissions = await _context.Submissions
                 .Where(s => s.ConferenceId == conference.Id)
                 .Include(s => s.Author)
-                .Include(s => s.ReviewAssignments)
-                    .ThenInclude(ra => ra.Reviewer)
+                .Include(s => s.Conference)
+                .Include(s => s.ReviewAssignments).ThenInclude(ra => ra.Reviewer)
                 .OrderByDescending(s => s.CreatedDate)
                 .ToListAsync();
 
             ViewBag.ConferenceId = conference.Id;
             ViewBag.ConferenceTitle = conference.Title;
 
-            return View(submissions); 
+            return View(submissions);
         }
 
         [HttpGet("/{slug}/admin/assignment/assign/{id:guid}")]
@@ -113,11 +124,29 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(SelectConference));
             }
 
-            var submission = await _context.Submissions
-                .Include(s => s.Author)
-                .FirstOrDefaultAsync(s => s.Id == id);
+            var selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
 
-            if (submission == null) return NotFound();
+            var submissionQuery = _context.Submissions
+                .Include(s => s.Author)
+                .Include(s => s.Conference)
+                .Where(s => s.Id == id);
+
+            if (selectedConferenceId != null)
+                submissionQuery = submissionQuery.Where(s => s.ConferenceId == selectedConferenceId);
+
+            var submission = await submissionQuery.FirstOrDefaultAsync();
+
+            if (submission == null)
+            {
+                TempData["ErrorMessage"] = "Bildiri bulunamadı veya seçili kongreye ait değil.";
+                return Redirect($"/{slug}/admin/assignment");
+            }
+
+            if (submission.Conference == null || submission.Conference.TenantId != _tenantContext.Current.Id)
+            {
+                TempData["ErrorMessage"] = "Bu bildiriye erişim yetkiniz yok.";
+                return Redirect($"/{slug}/admin/assignment");
+            }
 
             var recommended = await _recommendationService.GetRecommendationsAsync(id);
 
@@ -134,9 +163,8 @@ namespace AntAbstract.Web.Controllers
                 AllOtherReviewers = others
             };
 
-            return View(vm); 
+            return View(vm);
         }
-
 
         [HttpPost("/{slug}/admin/assignment/assign")]
         [ValidateAntiForgeryToken]
@@ -148,8 +176,17 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(SelectConference));
             }
 
-            var submission = await _context.Submissions.FirstOrDefaultAsync(s => s.Id == submissionId);
+            var submission = await _context.Submissions
+                .Include(s => s.Conference)
+                .FirstOrDefaultAsync(s => s.Id == submissionId);
+
             if (submission == null) return NotFound("Bildiri bulunamadı.");
+
+            if (submission.Conference == null || submission.Conference.TenantId != _tenantContext.Current.Id)
+            {
+                TempData["ErrorMessage"] = "Bu bildiriye erişim yetkiniz yok.";
+                return Redirect($"/{slug}/admin/assignment");
+            }
 
             var reviewer = await _userManager.FindByIdAsync(reviewerId);
             if (reviewer == null)

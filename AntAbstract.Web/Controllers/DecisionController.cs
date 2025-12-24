@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AntAbstract.Web.Controllers
+namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
     [Authorize(Roles = "Admin")]
@@ -20,27 +20,33 @@ namespace AntAbstract.Web.Controllers
             _tenantContext = tenantContext;
         }
 
-        // 1) Kongre seç (slug yok)
         [HttpGet("/admin/decision")]
         public async Task<IActionResult> SelectConference()
         {
             var conferences = await _context.Conferences
+                .AsNoTracking()
                 .Include(c => c.Tenant)
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
-            ViewBag.PageTitle = "Kongre Seç";
-            ViewBag.LeadText = "Karar ekranına geçmek için önce kongre seçin.";
-            ViewBag.PostUrl = "/admin/decision/select";
-            return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", conferences);
+            var vm = new SelectConferenceViewModel
+            {
+                Title = "Kongre Seç",
+                Lead = "Karar ekranına geçmek için önce kongre seçin.",
+                PostUrl = "/admin/decision/select",
+                SubmitText = "Devam Et",
+                Conferences = conferences
+            };
+
+            return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", vm);
         }
 
-        // 2) Seç -> slug ile decision ekranına git
         [HttpPost("/admin/decision/select")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SelectConferencePost(Guid conferenceId)
         {
             var conf = await _context.Conferences
+                .AsNoTracking()
                 .Include(c => c.Tenant)
                 .FirstOrDefaultAsync(c => c.Id == conferenceId);
 
@@ -50,27 +56,27 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(SelectConference));
             }
 
-            return Redirect($"/{conf.Tenant.Slug}/admin/decision?conferenceId={conf.Id}");
+            return RedirectToAction(nameof(Index), new { slug = conf.Tenant.Slug, conferenceId = conf.Id });
         }
 
-        // 3) Karar ekranı (slug var)
         [HttpGet("/{slug}/admin/decision")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId)
         {
-            if (_tenantContext.Current == null)
+            if (_tenantContext.Current == null || conferenceId == null)
             {
                 TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
                 return RedirectToAction(nameof(SelectConference));
             }
 
-            if (conferenceId == null)
+            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
+                TempData["ErrorMessage"] = "Tenant uyuşmuyor. Lütfen tekrar kongre seçin.";
                 return RedirectToAction(nameof(SelectConference));
             }
 
             var conference = await _context.Conferences
-                .FirstOrDefaultAsync(c => c.Id == conferenceId && c.TenantId == _tenantContext.Current.Id);
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == conferenceId.Value && c.TenantId == _tenantContext.Current.Id);
 
             if (conference == null)
             {
@@ -79,6 +85,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             var allSubmissions = _context.Submissions
+                .AsNoTracking()
                 .Where(s => s.ConferenceId == conference.Id)
                 .Include(s => s.Author)
                 .Include(s => s.ReviewAssignments).ThenInclude(ra => ra.Review)
@@ -105,18 +112,51 @@ namespace AntAbstract.Web.Controllers
                 AlreadyDecided = decided
             };
 
-            return View("Index", viewModel);
+            return View("~/Areas/Admin/Views/Decision/Index.cshtml", viewModel);
         }
 
-        // 4) Karar kaydet
+        [HttpGet("/Decision/Index")]
+        public IActionResult LegacyRoot()
+        {
+            return Redirect("/admin/decision");
+        }
+
+        [HttpGet("/{slug}/Decision/Index")]
+        public IActionResult LegacyTenant(string slug)
+        {
+            return Redirect($"/{slug}/admin/decision");
+        }
+
         [HttpPost("/{slug}/admin/decision/makedecision")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> MakeDecision(string slug, Guid submissionId, string decision, string note)
         {
+            if (_tenantContext.Current == null)
+            {
+                TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
+                return RedirectToAction(nameof(SelectConference));
+            }
+
+            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["ErrorMessage"] = "Tenant uyuşmuyor.";
+                return RedirectToAction(nameof(SelectConference));
+            }
+
             var submission = await _context.Submissions
                 .FirstOrDefaultAsync(s => s.Id == submissionId);
 
             if (submission == null) return NotFound();
+
+            var conference = await _context.Conferences
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == submission.ConferenceId && c.TenantId == _tenantContext.Current.Id);
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = "Bildiri bu tenant’a ait bir kongreye bağlı değil.";
+                return RedirectToAction(nameof(SelectConference));
+            }
 
             string kararMetni;
 
@@ -137,11 +177,10 @@ namespace AntAbstract.Web.Controllers
             }
 
             submission.DecisionDate = DateTime.UtcNow;
-
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = $"Bildiri başarıyla {kararMetni}.";
-            return Redirect($"/{slug}/admin/decision?conferenceId={submission.ConferenceId}");
+            return RedirectToAction(nameof(Index), new { slug, conferenceId = submission.ConferenceId });
         }
     }
 }

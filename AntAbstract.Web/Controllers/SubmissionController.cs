@@ -1,13 +1,15 @@
-﻿using AntAbstract.Domain.Entities;
-using AntAbstract.Infrastructure.Context;
+﻿using AntAbstract.Application.DTOs.Submission;
+using AntAbstract.Application.Interfaces;
+using AntAbstract.Domain.Entities;
 using AntAbstract.Web.Models.ViewModels;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Rotativa.AspNetCore;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,118 +17,57 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Controllers
 {
     [Authorize]
-
     public class SubmissionController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly ISubmissionService _submissionService;
         private readonly UserManager<AppUser> _userManager;
         private readonly IWebHostEnvironment _env;
+        private readonly IMapper _mapper;
 
-        public SubmissionController(AppDbContext context, UserManager<AppUser> userManager, IWebHostEnvironment env)
+        public SubmissionController(
+            ISubmissionService submissionService,
+            UserManager<AppUser> userManager,
+            IWebHostEnvironment env,
+            IMapper mapper)
         {
-            _context = context;
+            _submissionService = submissionService;
             _userManager = userManager;
             _env = env;
+            _mapper = mapper;
         }
 
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
-            var userSubmissions = await _context.Submissions
-                .Where(s => s.AuthorId == user.Id)
-                .Include(s => s.SubmissionAuthors)
-                .Include(s => s.Files)
-                .Include(s => s.Conference)
-                .OrderByDescending(s => s.CreatedDate) 
-                .ToListAsync();
-
-            var viewModel = new SubmissionListViewModel { Submissions = userSubmissions };
-            return View(viewModel);
+            var submissionDtos = await _submissionService.GetMySubmissionsAsync(user.Id);
+            return View(submissionDtos);
         }
 
         [HttpGet]
         public async Task<IActionResult> Details(Guid id)
         {
-            var userId = _userManager.GetUserId(User);
-
-            var submission = await _context.Submissions
-                .Include(s => s.Author) 
-                .Include(s => s.SubmissionAuthors)
-                .Include(s => s.Files)
-                .Include(s => s.ReviewAssignments).ThenInclude(ra => ra.Review)
-                .Include(s => s.Conference)
-                .FirstOrDefaultAsync(s => s.Id == id);
-
-            if (submission == null) return NotFound();
-
-            if (!User.IsInRole("Admin") && submission.AuthorId != userId)
-            {
-                return Forbid();
-            }
-
-            return View(submission);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> ChangeStatus(Guid id, SubmissionStatus status, string note)
-        {
-            var submission = await _context.Submissions.FindAsync(id);
-            if (submission == null) return NotFound();
-
-            submission.Status = status;
-            submission.DecisionDate = DateTime.UtcNow;
-
-            string title = "Bildiri Durum Güncellemesi";
-            string message = $"Bildirinizin durumu güncellendi: {status}";
-
-            switch (status)
-            {
-                case SubmissionStatus.Accepted:
-                    title = "Tebrikler! Bildiriniz Kabul Edildi";
-                    message = $"'{submission.Title}' başlıklı çalışmanız kabul edilmiştir.";
-                    break;
-                case SubmissionStatus.Rejected:
-                    title = "Bildiri Değerlendirme Sonucu";
-                    message = $"'{submission.Title}' başlıklı çalışmanız maalesef kabul edilmemiştir.";
-                    break;
-                case SubmissionStatus.RevisionRequired:
-                    title = "Düzeltme Talebi";
-                    message = "Çalışmanız için hakem düzeltme talep etmiştir.";
-                    break;
-                case SubmissionStatus.UnderReview:
-                    title = "Değerlendirme Başladı";
-                    message = "Bildiriniz hakem değerlendirme sürecine alınmıştır.";
-                    break;
-            }
-
-            if (!string.IsNullOrEmpty(note)) message += $" (Not: {note})";
-
-            var notification = new Notification
-            {
-                UserId = submission.AuthorId,
-                Title = title,
-                Message = message,
-                Link = $"/Submission/Details/{id}",
-                IsRead = false,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.Notifications.Add(notification);
-            await _context.SaveChangesAsync();
-
-            TempData["SuccessMessage"] = "Statü güncellendi ve bildirim gönderildi.";
-            return RedirectToAction("Details", new { id = id });
+            var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
+            if (submissionDto == null) return NotFound();
+            return View(submissionDto);
         }
 
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            var conferences = await _context.Conferences
-                .OrderByDescending(c => c.StartDate)
-                .Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
-                { Value = c.Id.ToString(), Text = c.Title }).ToListAsync();
+            var conferenceDtos = await _submissionService.GetActiveConferencesAsync();
 
-            return View(new SubmissionCreateViewModel { AvailableConferences = conferences });
+            var selectList = conferenceDtos.Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+            {
+                Value = c.Id.ToString(),
+                Text = c.Title
+            }).ToList();
+
+            var model = new SubmissionCreateViewModel
+            {
+                AvailableConferences = selectList
+            };
+
+            return View(model);
         }
 
         [HttpPost]
@@ -136,106 +77,71 @@ namespace AntAbstract.Web.Controllers
             if (model.SubmissionFile == null || model.SubmissionFile.Length == 0)
                 ModelState.AddModelError("SubmissionFile", "Lütfen dosya yükleyiniz.");
 
-            if (model.ConferenceId == Guid.Empty)
-                ModelState.AddModelError("ConferenceId", "Lütfen kongre seçiniz.");
-
             if (ModelState.IsValid)
             {
                 var user = await _userManager.GetUserAsync(User);
-                string uniqueFileName = null;
-                string originalFileName = null;
+                var fileInfo = await UploadFileAsync(model.SubmissionFile);
 
-                if (model.SubmissionFile != null)
+                var createDto = new CreateSubmissionDto
                 {
-                    originalFileName = model.SubmissionFile.FileName;
-                    string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "submissions");
-                    if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-
-                    string extension = Path.GetExtension(model.SubmissionFile.FileName);
-                    uniqueFileName = Guid.NewGuid().ToString() + extension;
-                    string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await model.SubmissionFile.CopyToAsync(stream);
-                    }
-                }
-
-                var submission = new Submission
-                {
-                    Id = Guid.NewGuid(),
+                    ConferenceId = model.ConferenceId,
                     Title = model.Title,
                     Abstract = model.AbstractText,
                     Keywords = model.Keywords,
-                    AuthorId = user.Id,
-                    CreatedDate = DateTime.UtcNow,
-                    Status = SubmissionStatus.New,
-                    ConferenceId = model.ConferenceId,
-
-                    SubmissionAuthors = new List<SubmissionAuthor>(),
-                    Files = new List<SubmissionFile>()
+                    FilePath = fileInfo.FilePathDb,
+                    StoredFileName = fileInfo.StoredFileName,
+                    OriginalFileName = fileInfo.OriginalFileName,
+                    SubmissionAuthors = model.Authors.Select(a => new SubmissionAuthorDto
+                    {
+                        FirstName = a.FirstName,
+                        LastName = a.LastName,
+                        Email = a.Email,
+                        Institution = a.Institution,
+                        ORCID = a.ORCID,
+                        IsCorrespondingAuthor = a.IsCorrespondingAuthor,
+                        Order = a.Order
+                    }).ToList()
                 };
 
-                if (model.Authors != null)
-                {
-                    int order = 1;
-                    foreach (var authorVm in model.Authors)
-                    {
-                        submission.SubmissionAuthors.Add(new SubmissionAuthor
-                        {
-                            FirstName = authorVm.FirstName,
-                            LastName = authorVm.LastName,
-                            Email = authorVm.Email,
-                            Institution = authorVm.Institution,
-                            ORCID = authorVm.ORCID,
-                            IsCorrespondingAuthor = authorVm.IsCorrespondingAuthor,
-                            Order = order++
-                        });
-                    }
-                }
-
-                if (uniqueFileName != null)
-                {
-                    submission.Files.Add(new SubmissionFile
-                    {
-                        FileName = originalFileName,
-                        StoredFileName = uniqueFileName,
-                        FilePath = "/uploads/submissions/" + uniqueFileName,
-                        Type = SubmissionFileType.FullText, 
-                        UploadedAt = DateTime.UtcNow,
-                        Version = 1
-                    });
-                }
-
-                _context.Submissions.Add(submission);
-                await _context.SaveChangesAsync();
+                await _submissionService.CreateSubmissionAsync(createDto, user.Id);
 
                 TempData["SuccessMessage"] = "Bildiriniz başarıyla gönderildi.";
                 return RedirectToAction("Index");
             }
 
-            model.AvailableConferences = await _context.Conferences.OrderByDescending(c => c.StartDate)
-               .Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem { Value = c.Id.ToString(), Text = c.Title }).ToListAsync();
+            var conferenceDtos = await _submissionService.GetActiveConferencesAsync();
+            model.AvailableConferences = conferenceDtos.Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+            {
+                Value = c.Id.ToString(),
+                Text = c.Title
+            }).ToList();
+
             return View(model);
         }
 
         [HttpGet]
         public async Task<IActionResult> Edit(Guid id)
         {
+            var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
+            if (submissionDto == null) return NotFound();
+
             var user = await _userManager.GetUserAsync(User);
-            var submission = await _context.Submissions
-                .Include(s => s.SubmissionAuthors)
-                .FirstOrDefaultAsync(s => s.Id == id && s.AuthorId == user.Id);
 
-            if (submission == null) return NotFound();
-
-            var model = new SubmissionCreateViewModel
+            if (submissionDto.Status == "Accepted" || submissionDto.Status == "Rejected")
             {
-                Title = submission.Title,
-                AbstractText = submission.Abstract, 
-                Keywords = submission.Keywords,
-                ConferenceId = submission.ConferenceId,
-                Authors = submission.SubmissionAuthors.OrderBy(a => a.Order).Select(a => new SubmissionAuthorViewModel
+                TempData["ErrorMessage"] = "Sonuçlanmış bildiriler düzenlenemez.";
+                return RedirectToAction("Details", new { id = id });
+            }
+
+            var model = new SubmissionEditViewModel
+            {
+                Id = submissionDto.Id,
+                Title = submissionDto.Title,
+                AbstractText = submissionDto.Abstract,
+                Keywords = submissionDto.Keywords,
+                ExistingFilePath = submissionDto.Files?.OrderByDescending(f => f.UploadedAt).FirstOrDefault()?.FilePath,
+
+                Authors = submissionDto.Authors.Select(a => new SubmissionAuthorViewModel
                 {
                     FirstName = a.FirstName,
                     LastName = a.LastName,
@@ -246,271 +152,224 @@ namespace AntAbstract.Web.Controllers
                     Order = a.Order
                 }).ToList()
             };
-            ViewBag.SubmissionId = id;
+
             return View(model);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, SubmissionCreateViewModel model)
+        public async Task<IActionResult> Edit(Guid id, SubmissionEditViewModel model)
         {
-            if (model.SubmissionFile == null) ModelState.Remove("SubmissionFile");
+            if (id != model.Id) return BadRequest();
 
             if (ModelState.IsValid)
             {
-                var user = await _userManager.GetUserAsync(User);
-                var submission = await _context.Submissions
-                    .Include(s => s.SubmissionAuthors).Include(s => s.Files)
-                    .FirstOrDefaultAsync(s => s.Id == id && s.AuthorId == user.Id);
+                string filePath = null;
+                string storedFileName = null;
+                string originalFileName = null;
 
-                if (submission == null) return NotFound();
-
-                submission.Title = model.Title;
-                submission.Abstract = model.AbstractText; 
-                submission.Keywords = model.Keywords;
-
-                _context.RemoveRange(submission.SubmissionAuthors);
-                if (model.Authors != null)
+                if (model.SubmissionFile != null && model.SubmissionFile.Length > 0)
                 {
-                    int order = 1;
-                    foreach (var authorVm in model.Authors)
-                    {
-                        submission.SubmissionAuthors.Add(new SubmissionAuthor
-                        {
-                            SubmissionId = submission.Id,
-                            FirstName = authorVm.FirstName,
-                            LastName = authorVm.LastName,
-                            Email = authorVm.Email,
-                            Institution = authorVm.Institution,
-                            ORCID = authorVm.ORCID,
-                            IsCorrespondingAuthor = authorVm.IsCorrespondingAuthor,
-                            Order = order++
-                        });
-                    }
+                    var fileInfo = await UploadFileAsync(model.SubmissionFile);
+                    filePath = fileInfo.FilePathDb;
+                    storedFileName = fileInfo.StoredFileName;
+                    originalFileName = fileInfo.OriginalFileName;
                 }
 
-                if (model.SubmissionFile != null)
+                var updateDto = new CreateSubmissionDto
                 {
-                    string extension = Path.GetExtension(model.SubmissionFile.FileName);
-                    string uniqueFileName = Guid.NewGuid().ToString() + "_EDIT" + extension;
-                    string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "submissions");
-                    string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    Title = model.Title,
+                    Abstract = model.AbstractText,
+                    Keywords = model.Keywords,
+                    FilePath = filePath,
+                    StoredFileName = storedFileName,
+                    OriginalFileName = originalFileName,
+                    SubmissionAuthors = model.Authors.Select(a => new SubmissionAuthorDto
                     {
-                        await model.SubmissionFile.CopyToAsync(fileStream);
-                    }
+                        FirstName = a.FirstName,
+                        LastName = a.LastName,
+                        Email = a.Email,
+                        Institution = a.Institution,
+                        ORCID = a.ORCID,
+                        IsCorrespondingAuthor = a.IsCorrespondingAuthor,
+                        Order = a.Order
+                    }).ToList()
+                };
 
-                    submission.Files.Add(new SubmissionFile
-                    {
-                        FileName = model.SubmissionFile.FileName,
-                        StoredFileName = uniqueFileName,
-                        FilePath = "/uploads/submissions/" + uniqueFileName,
-                        Type = SubmissionFileType.FullText, 
-                        UploadedAt = DateTime.UtcNow,
-                        Version = submission.Files.Count + 1
-                    });
+                try
+                {
+                    await _submissionService.UpdateSubmissionAsync(id, updateDto);
+                    TempData["SuccessMessage"] = "Bildiri başarıyla güncellendi.";
+                    return RedirectToAction("Index");
                 }
-
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Bildiri güncellendi.";
-                return RedirectToAction(nameof(Index));
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError("", "Güncelleme hatası: " + ex.Message);
+                }
             }
-            ViewBag.SubmissionId = id;
+
             return View(model);
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
+            if (submissionDto == null) return NotFound();
+
+            if (submissionDto.Status != "New" && submissionDto.Status != "Pending")
+            {
+                TempData["ErrorMessage"] = "İşlem görmüş bildiriler silinemez.";
+                return RedirectToAction("Details", new { id = id });
+            }
+
+            return View(submissionDto);
+        }
+
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        {
+            await _submissionService.DeleteSubmissionAsync(id);
+            TempData["SuccessMessage"] = "Bildiri başarıyla silindi.";
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpGet]
         public async Task<IActionResult> UploadRevision(Guid id)
         {
-            var user = await _userManager.GetUserAsync(User);
-
-            var submission = await _context.Submissions
-                .FirstOrDefaultAsync(s => s.Id == id && s.AuthorId == user.Id);
-
-            if (submission == null || submission.Status != SubmissionStatus.RevisionRequired)
+            var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
+            if (submissionDto.Status != "RevisionRequired")
             {
                 TempData["ErrorMessage"] = "Bu bildirinin revizyon süresi kapalıdır.";
                 return RedirectToAction(nameof(Index));
             }
-            return View(submission);
+            return View(submissionDto);
         }
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UploadRevision(Guid id, IFormFile revisionFile)
+        public async Task<IActionResult> UploadRevision(Guid id, Microsoft.AspNetCore.Http.IFormFile revisionFile)
         {
-            var userId = _userManager.GetUserId(User);
-
-            var submission = await _context.Submissions
-                .Include(s => s.Files)
-                .FirstOrDefaultAsync(s => s.Id == id && s.AuthorId == userId);
-
-            if (submission == null || submission.Status != SubmissionStatus.RevisionRequired)
-                return RedirectToAction(nameof(Index));
-
-            if (revisionFile != null && revisionFile.Length > 0)
+            if (revisionFile == null || revisionFile.Length == 0)
             {
-                var ext = Path.GetExtension(revisionFile.FileName);
-                var newFileName = Guid.NewGuid().ToString() + "_V" + (submission.Files.Count + 1) + ext;
-                var path = Path.Combine(_env.WebRootPath, "uploads", "submissions", newFileName);
-
-                using (var stream = new FileStream(path, FileMode.Create)) await revisionFile.CopyToAsync(stream);
-
-                submission.Files.Add(new SubmissionFile
-                {
-                    FileName = revisionFile.FileName,
-                    StoredFileName = newFileName,
-                    FilePath = "/uploads/submissions/" + newFileName,
-                    Type = SubmissionFileType.FullText,
-                    UploadedAt = DateTime.UtcNow,
-                    Version = submission.Files.Count + 1,
-                    SubmissionId = submission.Id
-                });
-
-
-                submission.Status = SubmissionStatus.UnderReview;
-
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Revizyon yüklendi.";
+                TempData["ErrorMessage"] = "Lütfen bir dosya seçiniz.";
+                return RedirectToAction(nameof(UploadRevision), new { id = id });
             }
-            return RedirectToAction(nameof(Index));
+
+            var fileInfo = await UploadFileAsync(revisionFile);
+
+            TempData["SuccessMessage"] = "Revizyon dosyası başarıyla yüklendi.";
+            return RedirectToAction("Details", new { id = id });
         }
 
         [HttpPost]
-        public async Task<IActionResult> UploadPresentation(Guid id, IFormFile presentationFile)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadPresentation(Guid id, Microsoft.AspNetCore.Http.IFormFile presentationFile)
         {
-            var submission = await _context.Submissions.Include(s => s.Files).FirstOrDefaultAsync(s => s.Id == id);
-            if (submission != null && presentationFile != null)
+            if (presentationFile == null || presentationFile.Length == 0)
             {
-                var ext = Path.GetExtension(presentationFile.FileName);
-                var fileName = $"Presentation_{id}{ext}";
-                var path = Path.Combine(_env.WebRootPath, "uploads", "presentations", fileName);
-                Directory.CreateDirectory(Path.GetDirectoryName(path));
-
-                using (var stream = new FileStream(path, FileMode.Create)) await presentationFile.CopyToAsync(stream);
-
-                submission.Files.Add(new SubmissionFile
-                {
-                    FileName = presentationFile.FileName,
-                    StoredFileName = fileName,
-                    FilePath = "/uploads/presentations/" + fileName,
-                    Type = SubmissionFileType.Presentation,
-                    UploadedAt = DateTime.UtcNow,
-                    Version = 1,
-                    SubmissionId = id
-                });
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Sunum dosyası yüklendi.";
-            }
-            return RedirectToAction("Details", new { id });
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Withdraw(Guid id)
-        {
-            var submission = await _context.Submissions.FindAsync(id);
-            if (submission != null)
-            {
-                if (submission.Status == SubmissionStatus.Accepted || submission.Status == SubmissionStatus.Presented)
-                {
-                    TempData["ErrorMessage"] = "Kabul edilen bildiriler geri çekilemez.";
-                    return RedirectToAction("Details", new { id });
-                }
-
-                submission.Status = SubmissionStatus.Withdrawn;
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Bildiri geri çekildi.";
-            }
-            return RedirectToAction("Index");
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> DownloadRejectionLetter(Guid id)
-        {
-            var submission = await _context.Submissions
-                .Include(s => s.SubmissionAuthors)
-                .Include(s => s.Conference)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            if (submission == null) return NotFound();
-
-            if (submission.Status != SubmissionStatus.Rejected)
-            {
-                return BadRequest("Bu belge sadece reddedilen bildiriler için oluşturulabilir.");
+                TempData["ErrorMessage"] = "Lütfen bir dosya seçiniz.";
+                return RedirectToAction("Details", new { id = id });
             }
 
-            return new ViewAsPdf("RejectionLetter", submission)
-            {
-                FileName = $"Rejection_{submission.Id.ToString().Substring(0, 8)}.pdf",
-                PageSize = Rotativa.AspNetCore.Options.Size.A4
-            };
+            var fileInfo = await UploadFileAsync(presentationFile);
+
+
+            TempData["SuccessMessage"] = "Sunum dosyası başarıyla yüklendi.";
+            return RedirectToAction("Details", new { id = id });
         }
+
 
         [HttpGet]
         public async Task<IActionResult> DownloadAcceptanceLetter(Guid id)
         {
-            var submission = await _context.Submissions
-                .Include(s => s.Conference)
-                .Include(s => s.Author)
-                .FirstOrDefaultAsync(s => s.Id == id && s.AuthorId == _userManager.GetUserId(User));
+            var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
+            if (submissionDto.Status != "Accepted" && submissionDto.Status != "Presented")
+                return BadRequest("Bu belge henüz oluşmamıştır.");
 
-            if (submission == null || (submission.Status != SubmissionStatus.Accepted && submission.Status != SubmissionStatus.Presented))
+            return new ViewAsPdf("AcceptanceLetterPreview", submissionDto)
             {
-                TempData["ErrorMessage"] = "Belge oluşturulamadı.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            var viewModel = new AcceptanceLetterViewModel
-            {
-                AuthorFullName = $"{submission.Author.FirstName} {submission.Author.LastName}",
-                AuthorInstitution = submission.Author.Institution ?? "",
-                SubmissionTitle = submission.Title,
-                ConferenceName = submission.Conference.Title,
-                ConferenceStartDate = submission.Conference.StartDate,
-                AcceptanceDate = submission.DecisionDate ?? DateTime.Now,
-                DocumentNumber = "DOC-" + submission.Id.ToString().Substring(0, 8).ToUpper(),
-                ConferenceLogoPath = submission.Conference.LogoPath
-            };
-
-            return new ViewAsPdf("AcceptanceLetterPreview", viewModel)
-            {
-                FileName = $"Certificate_{submission.Id.ToString().Substring(0, 5)}.pdf",
+                FileName = $"Certificate_{submissionDto.Id.ToString().Substring(0, 8)}.pdf",
                 PageSize = Rotativa.AspNetCore.Options.Size.A4,
                 PageOrientation = Rotativa.AspNetCore.Options.Orientation.Landscape
             };
         }
 
         [HttpGet]
+        public async Task<IActionResult> DownloadRejectionLetter(Guid id)
+        {
+            var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
+            if (submissionDto.Status != "Rejected")
+                return BadRequest("Bu belge sadece reddedilen bildiriler için geçerlidir.");
+
+            return new ViewAsPdf("RejectionLetter", submissionDto)
+            {
+                FileName = $"Rejection_{submissionDto.Id.ToString().Substring(0, 8)}.pdf",
+                PageSize = Rotativa.AspNetCore.Options.Size.A4
+            };
+        }
+
+        [HttpGet]
         public async Task<IActionResult> DownloadBadge(Guid id)
         {
-            var submission = await _context.Submissions
-                .Include(s => s.Author)
-                .Include(s => s.Conference)
-                .FirstOrDefaultAsync(s => s.Id == id);
+            var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
+            if (submissionDto.Status != "Accepted" && submissionDto.Status != "Presented")
+                return BadRequest("Yaka kartı için bildiri kabul edilmiş olmalıdır.");
 
-            if (submission == null) return NotFound();
-
-            if (submission.Status == SubmissionStatus.Withdrawn || submission.Status == SubmissionStatus.Rejected)
+            return new ViewAsPdf("BadgePreview", submissionDto)
             {
-                TempData["ErrorMessage"] = "Yaka kartı oluşturulamaz.";
-                return RedirectToAction(nameof(Details), new { id = id });
+                FileName = $"Badge_{submissionDto.Id.ToString().Substring(0, 8)}.pdf",
+                PageSize = Rotativa.AspNetCore.Options.Size.A6,
+                PageMargins = new Rotativa.AspNetCore.Options.Margins(0, 0, 0, 0)
+            };
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin,Editor")]
+        public async Task<IActionResult> ChangeStatus(Guid id, string status, string note)
+        {
+
+            TempData["SuccessMessage"] = "Bildiri durumu güncellendi.";
+            return RedirectToAction("Details", new { id = id });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Withdraw(Guid id)
+        {
+            var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
+
+            if (submissionDto == null) return NotFound();
+
+            if (submissionDto.Status != "New" && submissionDto.Status != "Pending")
+            {
+                TempData["ErrorMessage"] = "Değerlendirme süreci başlayan bildiriler geri çekilemez. Lütfen yönetim ile iletişime geçin.";
+                return RedirectToAction("Details", new { id = id });
             }
 
-            var model = new AcceptanceLetterViewModel
-            {
-                AuthorFullName = $"{submission.Author.FirstName} {submission.Author.LastName}",
-                AuthorInstitution = submission.Author.Institution ?? "",
-                ConferenceName = submission.Conference.Title,
-                ConferenceLogoPath = submission.Conference.LogoPath
-            };
+            await _submissionService.DeleteSubmissionAsync(id);
 
-            return new ViewAsPdf("BadgePreview", model)
+            TempData["InfoMessage"] = "Bildiri başarıyla geri çekildi.";
+            return RedirectToAction("Index");
+        }
+
+        private async Task<(string FilePathDb, string StoredFileName, string OriginalFileName)> UploadFileAsync(Microsoft.AspNetCore.Http.IFormFile file)
+        {
+            string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "submissions");
+
+            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+            string extension = Path.GetExtension(file.FileName);
+            string uniqueFileName = Guid.NewGuid().ToString() + extension;
+            string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
             {
-                PageSize = Rotativa.AspNetCore.Options.Size.A6,
-                PageOrientation = Rotativa.AspNetCore.Options.Orientation.Portrait
-            };
+                await file.CopyToAsync(stream);
+            }
+
+            return ("/uploads/submissions/" + uniqueFileName, uniqueFileName, file.FileName);
         }
     }
 }

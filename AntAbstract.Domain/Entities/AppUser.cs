@@ -40,5 +40,11 @@ namespace AntAbstract.Domain.Entities
         public string? DisplayName { get; set; } 
         public string? ProfileImagePath { get; set; }
 
+        [StringLength(50)]
+        public string? OrcidId { get; set; }
+        [StringLength(100)]
+        public string? ResearcherId { get; set; }
+        [StringLength(200)]
+        public string? GoogleScholarLink { get; set; }
     }
 }

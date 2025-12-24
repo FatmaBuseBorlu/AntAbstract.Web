@@ -44,6 +44,9 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsPaid")
                         .HasColumnType("bit");
 
@@ -58,6 +61,9 @@ namespace AntAbstract.Infrastructure.Migrations
 
                     b.Property<Guid?>("TransferOptionId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
@@ -111,6 +117,10 @@ namespace AntAbstract.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("GoogleScholarLink")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<string>("IdentityNumber")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
@@ -137,6 +147,10 @@ namespace AntAbstract.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<string>("OrcidId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<string>("PasswordHash")
                         .HasColumnType("nvarchar(max)");
 
@@ -151,6 +165,10 @@ namespace AntAbstract.Infrastructure.Migrations
 
                     b.Property<string>("ProfileImagePath")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ResearcherId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
@@ -265,12 +283,18 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PhotoPath")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
@@ -576,6 +600,9 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Property<Guid>("HotelId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -585,6 +612,9 @@ namespace AntAbstract.Infrastructure.Migrations
 
                     b.Property<int>("TotalQuota")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
@@ -643,6 +673,9 @@ namespace AntAbstract.Infrastructure.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -703,7 +736,7 @@ namespace AntAbstract.Infrastructure.Migrations
 
                     b.HasIndex("SubmissionId");
 
-                    b.ToTable("SubmissionAuthor");
+                    b.ToTable("SubmissionAuthors");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.SubmissionFile", b =>
@@ -742,7 +775,7 @@ namespace AntAbstract.Infrastructure.Migrations
 
                     b.HasIndex("SubmissionId");
 
-                    b.ToTable("SubmissionFile");
+                    b.ToTable("SubmissionFiles");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.Tenant", b =>
@@ -796,12 +829,18 @@ namespace AntAbstract.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 

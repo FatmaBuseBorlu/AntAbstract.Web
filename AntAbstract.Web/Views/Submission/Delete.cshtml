@@ -1,18 +1,46 @@
-﻿@model AntAbstract.Domain.Entities.Submission
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+﻿@using AntAbstract.Application.DTOs.Submission
+@model SubmissionDto
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"];
+    ViewData["Title"] = "Bildiriyi Sil";
+    Layout = "_LayoutDashboard";
 }
 
-<h1 class="text-danger">@Localizer["PageTitle"]</h1>
-<h3>@Localizer["ConfirmationMessage", Model.Title]</h3>
-<hr />
+<div class="container-fluid">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6">
+            <div class="card border-danger shadow-lg">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0 fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Bildiri Silme Onayı</h5>
+                </div>
+                <div class="card-body p-4 text-center">
 
-<div>
-    <form asp-action="Delete">
-        <input type="hidden" asp-for="SubmissionId" />
-        <button type="submit" class="btn btn-danger">@Localizer["DeleteButton"]</button>
-        <a asp-action="Index" class="btn btn-secondary">@Localizer["CancelButton"]</a>
-    </form>
+                    <div class="mb-4">
+                        <i class="fas fa-trash-alt fa-4x text-danger opacity-50"></i>
+                    </div>
+
+                    <h4 class="card-title fw-bold text-dark mb-3">Bu bildiriyi silmek istediğinize emin misiniz?</h4>
+
+                    <p class="card-text text-muted mb-4 fs-5">
+                        "<strong>@Model.Title</strong>" başlıklı çalışmanız silinecektir.<br />
+                        <span class="text-danger small fw-bold">Bu işlem geri alınamaz!</span>
+                    </p>
+
+                    <form asp-action="Delete">
+                        <input type="hidden" asp-for="Id" />
+
+                        <div class="d-flex justify-content-center gap-3">
+                            <a asp-action="Index" class="btn btn-secondary px-4 py-2">
+                                <i class="fas fa-arrow-left me-1"></i> Vazgeç
+                            </a>
+                            <button type="submit" class="btn btn-danger px-4 py-2 fw-bold">
+                                <i class="fas fa-trash me-1"></i> Evet, Sil
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

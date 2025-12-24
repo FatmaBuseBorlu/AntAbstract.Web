@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AntAbstract.Web.Controllers
+namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
     [Authorize(Roles = "Admin,Organizator")]
@@ -24,14 +24,21 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> SelectConference()
         {
             var conferences = await _context.Conferences
+                .AsNoTracking()
                 .Include(c => c.Tenant)
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
-            ViewBag.PageTitle = "Kongre Seç";
-            ViewBag.LeadText = "Raporları görüntülemek için önce kongre seçin.";
-            ViewBag.PostUrl = "/admin/reports/select";
-            return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", conferences);
 
+            var vm = new SelectConferenceViewModel
+            {
+                Title = "Kongre Seç",
+                Lead = "Raporları görüntülemek için önce kongre seçin.",
+                PostUrl = "/admin/reports/select",
+                SubmitText = "Devam Et",
+                Conferences = conferences
+            };
+
+            return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", vm);
         }
 
         [HttpPost("/admin/reports/select")]
@@ -39,6 +46,7 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> SelectConferencePost(Guid conferenceId)
         {
             var conf = await _context.Conferences
+                .AsNoTracking()
                 .Include(c => c.Tenant)
                 .FirstOrDefaultAsync(c => c.Id == conferenceId);
 
@@ -48,7 +56,7 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(SelectConference));
             }
 
-            return Redirect($"/{conf.Tenant.Slug}/admin/reports?conferenceId={conf.Id}");
+            return RedirectToAction(nameof(Index), new { slug = conf.Tenant.Slug, conferenceId = conf.Id });
         }
 
         [HttpGet("/{slug}/admin/reports")]
@@ -60,8 +68,15 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(SelectConference));
             }
 
+            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["ErrorMessage"] = "Tenant uyuşmuyor. Lütfen tekrar kongre seçin.";
+                return RedirectToAction(nameof(SelectConference));
+            }
+
             var conference = await _context.Conferences
-                .FirstOrDefaultAsync(c => c.Id == conferenceId && c.TenantId == _tenantContext.Current.Id);
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == conferenceId.Value && c.TenantId == _tenantContext.Current.Id);
 
             if (conference == null)
             {
@@ -70,6 +85,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             var submissions = await _context.Submissions
+                .AsNoTracking()
                 .Where(s => s.ConferenceId == conference.Id)
                 .Select(s => new { s.Id, s.Status, s.DecisionDate })
                 .ToListAsync();
@@ -79,12 +95,14 @@ namespace AntAbstract.Web.Controllers
             var totalAssignments = submissionIds.Count == 0
                 ? 0
                 : await _context.ReviewAssignments
+                    .AsNoTracking()
                     .Where(ra => submissionIds.Contains(ra.SubmissionId))
                     .CountAsync();
 
             var assignedSubmissions = submissionIds.Count == 0
                 ? 0
                 : await _context.ReviewAssignments
+                    .AsNoTracking()
                     .Where(ra => submissionIds.Contains(ra.SubmissionId))
                     .Select(ra => ra.SubmissionId)
                     .Distinct()
@@ -113,7 +131,19 @@ namespace AntAbstract.Web.Controllers
                 TotalAssignments = totalAssignments
             };
 
-            return View(vm);
+            return View("~/Areas/Admin/Views/Reports/Index.cshtml", vm);
+        }
+
+        [HttpGet("/Reports/Index")]
+        public IActionResult LegacyRoot()
+        {
+            return Redirect("/admin/reports");
+        }
+
+        [HttpGet("/{slug}/Reports/Index")]
+        public IActionResult LegacyTenant(string slug)
+        {
+            return Redirect($"/{slug}/admin/reports");
         }
     }
 }

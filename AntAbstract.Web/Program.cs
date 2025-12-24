@@ -9,12 +9,16 @@ using Microsoft.EntityFrameworkCore;
 using Stripe;
 using System.Security.Claims;
 using Rotativa.AspNetCore;
-using Microsoft.AspNetCore.Authentication.OAuth;
+using AntAbstract.Application.Interfaces;
+using AntAbstract.Application.Services;
+using AntAbstract.Application.Mappings;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+
+builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetService<AppDbContext>());
 
 builder.Services.AddIdentity<AppUser, IdentityRole>(opt =>
 {
@@ -56,7 +60,12 @@ builder.Services.AddTransient<IEmailSender, EmailService>();
 
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();
+
 builder.Services.AddScoped<IReviewerRecommendationService, ReviewerRecommendationService>();
+builder.Services.AddAutoMapper(typeof(GeneralMappingProfile));
+builder.Services.AddScoped<ISubmissionService, SubmissionManager>();
+builder.Services.AddScoped<IReviewService, ReviewManager>();
+builder.Services.AddScoped<ISelectedConferenceService, SelectedConferenceService>();
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 builder.Services.AddControllersWithViews()
@@ -64,6 +73,14 @@ builder.Services.AddControllersWithViews()
     .AddDataAnnotationsLocalization();
 
 builder.Services.AddRazorPages();
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromHours(8);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
 var app = builder.Build();
 
@@ -101,10 +118,10 @@ var localizationOptions = new RequestLocalizationOptions()
     .SetDefaultCulture(supportedCultures[0])
     .AddSupportedCultures(supportedCultures)
     .AddSupportedUICultures(supportedCultures);
-
 app.UseRequestLocalization(localizationOptions);
 
 app.UseRouting();
+app.UseSession(); 
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -113,45 +130,53 @@ app.Use(async (ctx, next) =>
 {
     var resolver = ctx.RequestServices.GetRequiredService<ITenantResolver>();
     var tc = ctx.RequestServices.GetRequiredService<TenantContext>();
-
     tc.Current = await resolver.ResolveAsync(ctx);
-
     await next();
 });
 
-app.MapControllers();
+
+app.UseRotativa();
+
+
+app.MapControllerRoute(
+    name: "areas",
+    pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
 
 app.MapControllerRoute(
     name: "tenant",
     pattern: "{slug}/{controller=Home}/{action=Index}/{id?}");
 
 app.MapRazorPages();
-
-app.UseRotativa();
+app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
 {
+ 
     await AntAbstract.Infrastructure.Data.DbSeeder.SeedRolesAndUsers(scope.ServiceProvider);
 
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
 
-    if (!await roleManager.RoleExistsAsync("Author"))
-        await roleManager.CreateAsync(new IdentityRole("Author"));
+    string[] roleNames = { "Author", "Referee", "Admin", "Editor" };
+    foreach (var roleName in roleNames)
+    {
+        if (!await roleManager.RoleExistsAsync(roleName))
+        {
+            await roleManager.CreateAsync(new IdentityRole(roleName));
+        }
+    }
 
-    if (!await roleManager.RoleExistsAsync("Referee"))
-        await roleManager.CreateAsync(new IdentityRole("Referee"));
-
-    if (!await roleManager.RoleExistsAsync("Admin"))
-        await roleManager.CreateAsync(new IdentityRole("Admin"));
-
+    
     var authorUser = await userManager.FindByEmailAsync("yazar@antabstract.com");
     if (authorUser != null && !await userManager.IsInRoleAsync(authorUser, "Author"))
+    {
         await userManager.AddToRoleAsync(authorUser, "Author");
+    }
 }
 
 app.Run();
