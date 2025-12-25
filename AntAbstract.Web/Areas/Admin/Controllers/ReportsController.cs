@@ -1,5 +1,6 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
+using AntAbstract.Infrastructure.Services;
 using AntAbstract.Web.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,11 +14,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
     {
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
+        private readonly ISelectedConferenceService _selectedConferenceService;
 
-        public ReportsController(AppDbContext context, TenantContext tenantContext)
+        public ReportsController(AppDbContext context, TenantContext tenantContext, ISelectedConferenceService selectedConferenceService)
         {
             _context = context;
             _tenantContext = tenantContext;
+            _selectedConferenceService = selectedConferenceService;
         }
 
         [HttpGet("/admin/reports")]
@@ -41,23 +44,29 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", vm);
         }
 
-      [HttpPost("/admin/reports/select")]
-public async Task<IActionResult> SelectConferencePost(Guid conferenceId)
-{
-    var conf = await _context.Conferences.Include(c => c.Tenant)
-        .FirstOrDefaultAsync(c => c.Id == conferenceId);
-    
-    if (conf == null) return NotFound();
+        [HttpPost("/admin/reports/select")]
+        public async Task<IActionResult> SelectConferencePost(Guid conferenceId)
+        {
+            var conf = await _context.Conferences.Include(c => c.Tenant)
+                .FirstOrDefaultAsync(c => c.Id == conferenceId);
 
+            if (conf == null) return NotFound();
 
-    return RedirectToAction("Index", new { slug = conf.Tenant.Slug, conferenceId = conf.Id });
-}
+            _selectedConferenceService.SetSelectedConferenceId(conf.Id);
+
+            return RedirectToAction("Index", new { slug = conf.Tenant.Slug, conferenceId = conf.Id });
+        }
 
         [HttpGet("/{slug}/admin/reports")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId)
         {
 
-            if (_tenantContext.Current == null || conferenceId == null)
+            if (_tenantContext.Current == null)
+                return RedirectToAction(nameof(SelectConference));
+
+            conferenceId ??= _selectedConferenceService.GetSelectedConferenceId();
+
+            if (conferenceId == null)
                 return RedirectToAction(nameof(SelectConference));
 
             if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))

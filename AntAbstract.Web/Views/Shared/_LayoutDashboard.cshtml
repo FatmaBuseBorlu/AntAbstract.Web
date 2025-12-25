@@ -11,37 +11,26 @@
     var currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
     var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
 
-    var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? Tc.Current?.Slug;
+    // Mevcut slug değerini al
+var slug = ViewContext.RouteData.Values["slug"]?.ToString() 
+           ?? Tc.Current?.Slug 
+           ?? Context.Session.GetString("SelectedConferenceSlug");
 
-    var paymentMyUrl = string.IsNullOrWhiteSpace(slug) ? "/payment/my" : $"/{slug}/payment/my";
-    var accommodationUrl = string.IsNullOrWhiteSpace(slug) ? "/Accommodation/Index" : $"/{slug}/accommodation/index";
-
-    var programUrl = string.IsNullOrWhiteSpace(slug) ? "/Program/Index" : $"/{slug}/Program/Index";
-    var proceedingsUrl = string.IsNullOrWhiteSpace(slug) ? "/Proceedings/Index" : $"/{slug}/Proceedings/Index";
-
+    // --- Dinamik URL Yapılandırmaları ---
     var dashboardUrl = string.IsNullOrWhiteSpace(slug) ? "/Dashboard" : $"/{slug}/Dashboard";
-    var dashboardMyConferencesUrl = string.IsNullOrWhiteSpace(slug) ? "/Dashboard/MyConferences" : $"/{slug}/Dashboard/MyConferences";
-
-    var submissionCreateUrl = string.IsNullOrWhiteSpace(slug) ? "/Submission/Create" : $"/{slug}/Submission/Create";
     var submissionIndexUrl = string.IsNullOrWhiteSpace(slug) ? "/Submission/Index" : $"/{slug}/Submission/Index";
-
+    var submissionCreateUrl = string.IsNullOrWhiteSpace(slug) ? "/Submission/Create" : $"/{slug}/Submission/Create";
     var reviewIndexUrl = string.IsNullOrWhiteSpace(slug) ? "/Review/Index" : $"/{slug}/Review/Index";
-    var messageIndexUrl = string.IsNullOrWhiteSpace(slug) ? "/Message/Index" : $"/{slug}/Message/Index";
 
-    // Admin akışı için menü her zaman kongre seçimine gitmeli
-    var conferenceFlowUrl = "/admin/conferenceflow";
-    var reportsUrl = "/admin/reports";
-    var assignmentUrl = "/admin/assignment";
-    var decisionUrl = "/admin/decision";
-
-    var sessionUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/session" : $"/{slug}/admin/session";
-    var reviewFormsUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/reviewforms" : $"/{slug}/admin/reviewforms";
-    var refereeUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/referee" : $"/{slug}/admin/referee";
-    var usersUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/users" : $"/{slug}/admin/users";
-
-    var conferenceDefinitionsUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/conferencedefinitions" : $"/{slug}/admin/conferencedefinitions";
-    var scientificFieldsUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/scientificfields" : $"/{slug}/admin/scientificfields";
-    var conferenceTypesUrl = string.IsNullOrWhiteSpace(slug) ? "/admin/conferencetypes" : $"/{slug}/admin/conferencetypes";
+    // --- Admin Modülleri (Büyük Harf ve Seçim Akışı Uyumu) ---
+    var reportsUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Reports" : $"/{slug}/Admin/Reports";
+    var assignmentUrl = "/Admin/Assignment";
+    var decisionUrl = "/Admin/Decision";
+    var conferenceDefinitionsUrl = "/Admin/ConferenceDefinitions";
+    
+    // Slug varsa slug ile, yoksa genel admin yoluyla (Session, User vb.)
+    var sessionUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Session" : $"/{slug}/Admin/Session";
+    var usersUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Users" : $"/{slug}/Admin/Users";
 
     var isAdmin = User.IsInRole("Admin");
     var isAuthor = User.IsInRole("Author");
@@ -60,255 +49,96 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-            overflow-x: hidden;
-        }
-
-        .sidebar {
-            width: 260px;
-            height: 100vh;
-            background: #fff;
-            position: fixed;
-            top: 0;
-            left: 0;
-            border-right: 1px solid #e5e7eb;
-            display: flex;
-            flex-direction: column;
-            z-index: 1000;
-            transition: margin 0.25s ease-out;
-        }
-
-        .sidebar-brand {
-            padding: 20px;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #1a202c;
-            border-bottom: 1px solid #f3f4f6;
-            text-decoration: none;
-            display: block;
-        }
-
-        .sidebar-menu {
-            padding: 20px 10px;
-            list-style: none;
-            margin: 0;
-            overflow-y: auto;
-        }
-
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; overflow-x: hidden; }
+        .sidebar { width: 260px; height: 100vh; background: #fff; position: fixed; top: 0; left: 0; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; z-index: 1000; transition: margin 0.25s ease-out; }
+        .sidebar-brand { padding: 20px; font-size: 1.5rem; font-weight: bold; color: #1a202c; border-bottom: 1px solid #f3f4f6; text-decoration: none; display: block; }
+        .sidebar-menu { padding: 20px 10px; list-style: none; margin: 0; overflow-y: auto; }
         .sidebar-menu li { margin-bottom: 5px; }
-
-        .sidebar-menu a {
-            display: flex;
-            align-items: center;
-            padding: 12px 15px;
-            color: #4b5563;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .sidebar-menu a:hover,
-        .sidebar-menu a.active {
-            background-color: #eff6ff;
-            color: #00aeef;
-        }
-
-        .sidebar-menu i {
-            width: 25px;
-            font-size: 1.1rem;
-        }
-
-        .main-content {
-            margin-left: 260px;
-            padding: 20px;
-            min-height: 100vh;
-            transition: margin 0.25s ease-out;
-        }
-
-        .top-header {
-            background: #fff;
-            padding: 15px 30px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
+        .sidebar-menu a { display: flex; align-items: center; padding: 12px 15px; color: #4b5563; text-decoration: none; border-radius: 8px; font-weight: 500; transition: all 0.2s; }
+        .sidebar-menu a:hover, .sidebar-menu a.active { background-color: #eff6ff; color: #00aeef; }
+        .sidebar-menu i { width: 25px; font-size: 1.1rem; }
+        .main-content { margin-left: 260px; padding: 20px; min-height: 100vh; transition: margin 0.25s ease-out; }
+        .top-header { background: #fff; padding: 15px 30px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         body.sb-sidenav-toggled .sidebar { margin-left: -260px; }
         body.sb-sidenav-toggled .main-content { margin-left: 0; }
-
-        @@media (max-width: 768px) {
-            .sidebar { margin-left: -260px; }
-            .main-content { margin-left: 0; }
-            body.sb-sidenav-toggled .sidebar { margin-left: 0; }
-        }
+        @@media (max-width: 768px) { .sidebar { margin-left: -260px; } .main-content { margin-left: 0; } body.sb-sidenav-toggled .sidebar { margin-left: 0; } }
     </style>
 </head>
-
 <body>
     <div class="sidebar">
         <a href="/" class="sidebar-brand">ANT <span style="color: #00aeef;">ABSTRACT</span></a>
 
         <ul class="sidebar-menu">
-            <li class="text-muted small fw-bold px-3 mb-2 mt-2">GENEL</li>
-
+            <li class="text-muted small fw-bold px-3 mb-2 mt-2 text-uppercase">Genel</li>
             <li>
-                <a href="@dashboardUrl" class="@(currentController == "Dashboard" && currentAction == "Index" ? "active" : "")">
+                <a href="@dashboardUrl" class="@(currentController == "Dashboard" ? "active" : "")">
                     <i class="fas fa-home me-2 text-primary"></i> Ana Panel
                 </a>
             </li>
 
-            @if (!isAdmin)
-            {
-                @if (isReferee)
-                {
-                    <li class="text-muted small fw-bold px-3 mb-2 mt-2">HAKEM</li>
-                    <li>
-                        <a href="@reviewIndexUrl" class="@(currentController == "Review" ? "active" : "")">
-                            <i class="fas fa-gavel me-2 text-warning"></i> Hakem Görevlerim
-                        </a>
-                    </li>
-                }
-
-                @if (isAuthor)
-                {
-                    <li class="text-muted small fw-bold px-3 mb-2 mt-2">BİLDİRİ İŞLEMLERİ</li>
-
-                    <li>
-                        <a href="@submissionCreateUrl" class="@(currentController == "Submission" && currentAction == "Create" ? "active" : "")">
-                            <i class="fas fa-plus-circle me-2 text-success"></i> Yeni Bildiri Gönder
-                        </a>
-                    </li>
-
-                    <li>
-                        <a href="@submissionIndexUrl" class="@(currentController == "Submission" && currentAction == "Index" ? "active" : "")">
-                            <i class="fas fa-file-contract me-2 text-info"></i> Bildirilerim
-                        </a>
-                    </li>
-
-                    <li class="text-muted small fw-bold px-3 mb-2 mt-2">KONGRE</li>
-
-                    <li>
-                        <a href="@programUrl" class="@(currentController == "Program" ? "active" : "")">
-                            <i class="fas fa-calendar-day me-2 text-danger"></i> Kongre Programı
-                        </a>
-                    </li>
-
-                    <li>
-                        <a href="@proceedingsUrl" class="@(currentController == "Proceedings" ? "active" : "")">
-                            <i class="fas fa-book me-2" style="color: #6f42c1;"></i> Bildiri Kitabı
-                        </a>
-                    </li>
-
-                    <li>
-                        <a href="@paymentMyUrl" class="@(currentController == "Payment" ? "active" : "")">
-                            <i class="fas fa-file-invoice-dollar me-2 text-info"></i> Ödemelerim
-                        </a>
-                    </li>
-
-                    <li>
-                        <a href="@accommodationUrl" class="@(currentController == "Accommodation" ? "active" : "")">
-                            <i class="fas fa-hotel me-2 text-warning"></i> Konaklama
-                        </a>
-                    </li>
-
-                    <li class="text-muted small fw-bold px-3 mb-2 mt-2">HESAP</li>
-
-                    <li>
-                        <a href="@dashboardMyConferencesUrl" class="@(currentController == "Dashboard" && currentAction == "MyConferences" ? "active" : "")">
-                            <i class="fas fa-globe me-2 text-secondary"></i> Katıldığım Kongreler
-                        </a>
-                    </li>
-                }
-            }
-
             @if (isAdmin)
             {
-                <li class="text-muted small fw-bold px-3 mb-2 mt-4 text-uppercase" style="letter-spacing:1px;">KONGRE AKIŞI</li>
-
-                <li>
-                    <a href="@conferenceFlowUrl" class="@(currentController == "ConferenceFlow" ? "active" : "")">
-                        <i class="fas fa-stream me-2 text-primary"></i> Kongre Akışı
-                    </a>
-                </li>
-
+                <li class="text-muted small fw-bold px-3 mb-2 mt-4 text-uppercase">Kongre Akışı</li>
                 <li>
                     <a href="@reportsUrl" class="@(currentController == "Reports" ? "active" : "")">
                         <i class="fas fa-chart-pie me-2 text-warning"></i> Raporlar
                     </a>
                 </li>
-
                 <li>
                     <a href="@assignmentUrl" class="@(currentController == "Assignment" ? "active" : "")">
                         <i class="fas fa-tasks me-2 text-info"></i> Özet Atama
                     </a>
                 </li>
-
                 <li>
                     <a href="@decisionUrl" class="@(currentController == "Decision" ? "active" : "")">
                         <i class="fas fa-gavel me-2 text-danger"></i> Karar Ekranı
                     </a>
                 </li>
 
-                <li class="text-muted small fw-bold px-3 mb-2 mt-3 text-uppercase" style="letter-spacing:1px;">YÖNETİM</li>
-
+                <li class="text-muted small fw-bold px-3 mb-2 mt-3 text-uppercase">Yönetim</li>
                 <li>
                     <a href="@sessionUrl" class="@(currentController == "Session" ? "active" : "")">
                         <i class="fas fa-microphone-alt me-2 text-success"></i> Oturum Yönetimi
                     </a>
                 </li>
-
-                <li>
-                    <a href="@reviewFormsUrl" class="@(currentController == "ReviewForms" ? "active" : "")">
-                        <i class="fas fa-clipboard-list me-2 text-secondary"></i> Değerlendirme Formları
-                    </a>
-                </li>
-
-                <li>
-                    <a href="@refereeUrl" class="@(currentController == "Referee" ? "active" : "")">
-                        <i class="fas fa-user-tie me-2 text-dark"></i> Hakem Yönetimi
-                    </a>
-                </li>
-
                 <li>
                     <a href="@usersUrl" class="@(currentController == "Users" ? "active" : "")">
                         <i class="fas fa-users-cog me-2 text-danger"></i> Kullanıcı Yönetimi
                     </a>
                 </li>
 
-                <li class="text-muted small fw-bold px-3 mb-2 mt-3 text-uppercase" style="letter-spacing:1px;">SİSTEM AYARLARI</li>
-
+                <li class="text-muted small fw-bold px-3 mb-2 mt-3 text-uppercase">Sistem Ayarları</li>
                 <li>
                     <a href="@conferenceDefinitionsUrl" class="@(currentController == "ConferenceDefinitions" ? "active" : "")">
                         <i class="fas fa-sliders-h me-2 text-primary"></i> Kongre Tanımları
                     </a>
                 </li>
+            }
 
+            @if (isReferee && !isAdmin)
+            {
+                <li class="text-muted small fw-bold px-3 mb-2 mt-2 text-uppercase">Hakem</li>
                 <li>
-                    <a href="@scientificFieldsUrl" class="@(currentController == "ScientificFields" ? "active" : "")">
-                        <i class="fas fa-atom me-2 text-info"></i> Bilimsel Alanlar
-                    </a>
-                </li>
-
-                <li>
-                    <a href="@conferenceTypesUrl" class="@(currentController == "ConferenceTypes" ? "active" : "")">
-                        <i class="fas fa-tags me-2 text-warning"></i> Kongre Türleri
+                    <a href="@reviewIndexUrl" class="@(currentController == "Review" ? "active" : "")">
+                        <i class="fas fa-gavel me-2 text-warning"></i> Hakem Görevlerim
                     </a>
                 </li>
             }
 
-            <li class="text-muted small fw-bold px-3 mb-2 mt-3">İLETİŞİM</li>
-
-            <li>
-                <a href="@messageIndexUrl" class="@(currentController == "Message" ? "active" : "")">
-                    <i class="fas fa-envelope me-2 text-warning"></i> Mesajlarım
-                </a>
-            </li>
+            @if (isAuthor && !isAdmin)
+            {
+                <li class="text-muted small fw-bold px-3 mb-2 mt-2 text-uppercase">Yazar</li>
+                <li>
+                    <a href="@submissionCreateUrl" class="@(currentController == "Submission" && currentAction == "Create" ? "active" : "")">
+                        <i class="fas fa-plus-circle me-2 text-success"></i> Yeni Bildiri
+                    </a>
+                </li>
+                <li>
+                    <a href="@submissionIndexUrl" class="@(currentController == "Submission" && currentAction == "Index" ? "active" : "")">
+                        <i class="fas fa-file-contract me-2 text-info"></i> Bildirilerim
+                    </a>
+                </li>
+            }
         </ul>
     </div>
 
@@ -318,19 +148,18 @@
                 <button class="btn btn-light shadow-sm me-3 border-0" id="sidebarToggle" style="width: 40px; height: 40px; border-radius: 50%;">
                     <i class="fas fa-bars text-primary"></i>
                 </button>
-
                 <div>
                     <h5 class="mb-0 fw-bold text-dark">Hoş Geldiniz, @displayName 👋</h5>
-                    <small class="text-muted">Kongre Yönetim Sistemi</small>
+                    @if (Tc.Current != null)
+                    {
+                       <span class="badge bg-light text-primary border">@Tc.Current.Name</span>
+                    }
                 </div>
             </div>
 
             <div class="d-flex align-items-center gap-2">
-                @try { @await Component.InvokeAsync("Notifications") }
-                catch { <i class="fas fa-bell-slash text-muted p-2"></i> }
-
-                <a href="/" class="btn btn-sm btn-outline-primary fw-bold d-flex align-items-center gap-2 px-3 py-2 rounded-3 me-2">
-                    <i class="fas fa-external-link-alt"></i> Siteye Dön
+                <a href="/" class="btn btn-sm btn-outline-secondary px-3 rounded-3 me-2">
+                    <i class="fas fa-external-link-alt me-1"></i> Siteye Dön
                 </a>
 
                 <div class="dropdown">
@@ -341,31 +170,17 @@
                         }
                         else
                         {
-                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold shadow-sm border border-2 border-white" style="width: 42px; height: 42px;">
-                                @(displayName?.Substring(0, 1).ToUpper())
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 42px; height: 42px;">
+                                @(displayName?.Length > 0 ? displayName[0].ToString().ToUpper() : "U")
                             </div>
                         }
                     </a>
-
                     <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 rounded-3 p-2">
-                        <li class="px-3 py-2 mb-2 border-bottom">
-                            <div class="fw-bold">@displayName</div>
-                            <div class="small text-muted">@User.Identity?.Name</div>
-                        </li>
-
-                        <li>
-                            <a class="dropdown-item rounded-2 py-2 d-flex align-items-center gap-2" href="/Identity/Account/Manage/Index">
-                                <i class="fas fa-user-cog text-primary"></i>
-                                <span>Profil Ayarları</span>
-                            </a>
-                        </li>
-
+                        <li><a class="dropdown-item rounded-2 py-2" href="/Identity/Account/Manage/Index"><i class="fas fa-user-cog me-2"></i>Profil Ayarları</a></li>
+                        <li><hr class="dropdown-divider"></li>
                         <li>
                             <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post">
-                                <button type="submit" class="dropdown-item text-danger fw-bold d-flex align-items-center gap-2 w-100 text-start">
-                                    <i class="fas fa-sign-out-alt"></i>
-                                    <span>Çıkış Yap</span>
-                                </button>
+                                <button type="submit" class="dropdown-item text-danger fw-bold"><i class="fas fa-sign-out-alt me-2"></i>Çıkış Yap</button>
                             </form>
                         </li>
                     </ul>
@@ -373,38 +188,24 @@
             </div>
         </header>
 
-        <div class="mb-4">
+        <main>
             @if (TempData["SuccessMessage"] != null)
             {
-                <div class="alert alert-success alert-dismissible fade show border-0">
+                <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4">
                     <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             }
-
-            @if (TempData["ErrorMessage"] != null)
-            {
-                <div class="alert alert-danger alert-dismissible fade show border-0">
-                    <i class="fas fa-exclamation-triangle me-2"></i> @TempData["ErrorMessage"]
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            }
-        </div>
-
-        @RenderBody()
+            @RenderBody()
+        </main>
     </div>
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const toggleBtn = document.getElementById("sidebarToggle");
             const body = document.body;
-
-            if (localStorage.getItem("sidebar-toggle") === "true") {
-                body.classList.add("sb-sidenav-toggled");
-            }
-
+            if (localStorage.getItem("sidebar-toggle") === "true") body.classList.add("sb-sidenav-toggled");
             if (toggleBtn) {
                 toggleBtn.addEventListener("click", function (e) {
                     e.preventDefault();
@@ -414,7 +215,6 @@
             }
         });
     </script>
-
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
