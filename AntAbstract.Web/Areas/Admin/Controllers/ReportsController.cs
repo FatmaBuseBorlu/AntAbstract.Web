@@ -23,9 +23,25 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _selectedConferenceService = selectedConferenceService;
         }
 
-        [HttpGet("/admin/reports")]
+        [HttpGet("/Admin/Reports")]
         public async Task<IActionResult> SelectConference()
         {
+            var selectedId = _selectedConferenceService.GetSelectedConferenceId();
+            if (selectedId != null)
+            {
+                var conf = await _context.Conferences
+                    .AsNoTracking()
+                    .Include(x => x.Tenant)
+                    .FirstOrDefaultAsync(x => x.Id == selectedId.Value);
+
+                if (conf?.Tenant?.Slug != null)
+                {
+                    HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
+                    return Redirect($"/{conf.Tenant.Slug}/Admin/Reports?conferenceId={conf.Id}");
+                }
+            }
+
+            // mevcut kodun devamı
             var conferences = await _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
@@ -44,7 +60,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", vm);
         }
 
-        [HttpPost("/admin/reports/select")]
+
+        [HttpPost("/Admin/Reports/Select")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> SelectConferencePost(Guid conferenceId)
         {
             var conf = await _context.Conferences.Include(c => c.Tenant)
@@ -54,10 +72,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             _selectedConferenceService.SetSelectedConferenceId(conf.Id);
 
-            return RedirectToAction("Index", new { slug = conf.Tenant.Slug, conferenceId = conf.Id });
+            HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
+
+            return Redirect($"/{conf.Tenant.Slug}/Admin/Reports?conferenceId={conf.Id}");
         }
 
-        [HttpGet("/{slug}/admin/reports")]
+        [HttpGet("/{slug}/Admin/Reports")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId)
         {
 
@@ -133,9 +153,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         [HttpGet("/Reports/Index")]
-        public IActionResult LegacyRoot() => Redirect("/admin/reports");
+        public IActionResult LegacyRoot() => Redirect("/Admin/Reports");
 
         [HttpGet("/{slug}/Reports/Index")]
-        public IActionResult LegacyTenant(string slug) => Redirect($"/{slug}/admin/reports");
+        public IActionResult LegacyTenant(string slug) => Redirect($"/{slug}/Admin/Reports");
     }
 }

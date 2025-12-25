@@ -22,15 +22,14 @@ var slug = ViewContext.RouteData.Values["slug"]?.ToString()
     var submissionCreateUrl = string.IsNullOrWhiteSpace(slug) ? "/Submission/Create" : $"/{slug}/Submission/Create";
     var reviewIndexUrl = string.IsNullOrWhiteSpace(slug) ? "/Review/Index" : $"/{slug}/Review/Index";
 
-    // --- Admin Modülleri (Büyük Harf ve Seçim Akışı Uyumu) ---
     var reportsUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Reports" : $"/{slug}/Admin/Reports";
-    var assignmentUrl = "/Admin/Assignment";
-    var decisionUrl = "/Admin/Decision";
-    var conferenceDefinitionsUrl = "/Admin/ConferenceDefinitions";
-    
-    // Slug varsa slug ile, yoksa genel admin yoluyla (Session, User vb.)
+    var assignmentUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Assignment" : $"/{slug}/Admin/Assignment";
+    var decisionUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Decision" : $"/{slug}/Admin/Decision";
+    var conferenceDefinitionsUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/ConferenceDefinitions" : $"/{slug}/Admin/ConferenceDefinitions";
+
     var sessionUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Session" : $"/{slug}/Admin/Session";
     var usersUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Users" : $"/{slug}/Admin/Users";
+
 
     var isAdmin = User.IsInRole("Admin");
     var isAuthor = User.IsInRole("Author");

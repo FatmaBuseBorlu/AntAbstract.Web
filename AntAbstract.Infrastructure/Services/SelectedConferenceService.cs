@@ -25,18 +25,44 @@ namespace AntAbstract.Infrastructure.Services
 
         public Guid? GetSelectedConferenceId()
         {
-            var str = _http.HttpContext?.Session.GetString(Key);
-            return Guid.TryParse(str, out var id) ? id : null;
+            var session = _http.HttpContext?.Session;
+            if (session == null)
+            {
+                return null;
+            }
+
+            var str = session.GetString(Key);
+            if (Guid.TryParse(str, out var id))
+            {
+                return id;
+            }
+
+            var fallback = session.GetString("SelectedConferenceId");
+            return Guid.TryParse(fallback, out var fallbackId) ? fallbackId : null;
         }
 
         public void SetSelectedConferenceId(Guid conferenceId)
         {
             _http.HttpContext?.Session.SetString(Key, conferenceId.ToString());
+            var session = _http.HttpContext?.Session;
+            if (session == null)
+            {
+                return;
+            }
+
+            session.SetString(Key, conferenceId.ToString());
+            session.SetString("SelectedConferenceId", conferenceId.ToString());
         }
 
         public void Clear()
         {
-            _http.HttpContext?.Session.Remove(Key);
+            var session = _http.HttpContext?.Session;
+            if (session == null) return;
+
+            session.Remove(Key);
+            session.Remove("SelectedConferenceId");
+            session.Remove("SelectedConferenceSlug");
         }
+
     }
 }

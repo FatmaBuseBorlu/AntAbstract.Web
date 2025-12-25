@@ -36,10 +36,25 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _selectedConferenceService = selectedConferenceService;
         }
 
-        // URL: /Admin/Assignment
         [HttpGet("/Admin/Assignment")]
         public async Task<IActionResult> SelectConference()
         {
+            var selectedId = _selectedConferenceService.GetSelectedConferenceId();
+            if (selectedId != null)
+            {
+                var conf = await _context.Conferences
+                    .AsNoTracking()
+                    .Include(x => x.Tenant)
+                    .FirstOrDefaultAsync(x => x.Id == selectedId.Value);
+
+                if (conf?.Tenant?.Slug != null)
+                {
+                    HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
+                    return Redirect($"/{conf.Tenant.Slug}/Admin/Assignment?conferenceId={conf.Id}");
+                }
+            }
+
+            // mevcut kodun devamı
             var conferences = await _context.Conferences
                 .Include(c => c.Tenant)
                 .OrderByDescending(c => c.StartDate)
@@ -57,6 +72,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", vm);
         }
 
+
         // URL: /Admin/Assignment/Select
         [HttpPost("/Admin/Assignment/Select")]
         [ValidateAntiForgeryToken]
@@ -73,9 +89,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             _selectedConferenceService.SetSelectedConferenceId(conf.Id);
-
-            // Yönlendirme: /{slug}/Admin/Assignment
+            HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
             return Redirect($"/{conf.Tenant.Slug}/Admin/Assignment?conferenceId={conf.Id}");
+
         }
 
         // URL: /{slug}/Admin/Assignment
