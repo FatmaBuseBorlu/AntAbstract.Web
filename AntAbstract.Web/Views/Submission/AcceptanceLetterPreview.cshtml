@@ -7,15 +7,11 @@
 @{
     Layout = null;
 
-    // --- DTO'dan Veri Hazırlığı ---
-    // 1. Yazar Adı: Listeden ilk yazarı veya sorumlu yazarı alıyoruz
     var firstAuthor = Model.Authors?.OrderBy(a => a.Order).FirstOrDefault();
     var authorFullName = firstAuthor != null ? $"{firstAuthor.FirstName} {firstAuthor.LastName}" : Model.CorrespondingAuthorName;
 
-    // 2. Belge No: Bildiri ID'sinin ilk 8 karakteri
     var documentNumber = Model.Id.ToString().Substring(0, 8).ToUpper();
 
-    // 3. Tarih: Karar tarihi yoksa bugünü baz al
     var acceptanceDate = Model.DecisionDate ?? DateTime.Now;
 }
 

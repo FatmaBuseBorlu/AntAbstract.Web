@@ -3,56 +3,153 @@
 
 @{
     ViewData["Title"] = Localizer["PageTitle"];
+    Layout = "_Layout";
 }
 
-<h1 class="display-5">@Localizer["PageTitle"]</h1>
-<p class="lead text-muted">@Localizer["PageLead"]</p>
-<hr />
+<style>
+    /* STEPPER STİLLERİ */
+    .step-indicator { display: flex; justify-content: center; margin-bottom: 30px; }
+    .step {
+        width: 40px; height: 40px; border-radius: 50%;
+        background: #e9ecef; color: #6c757d;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: bold; margin: 0 10px; position: relative;
+        z-index: 1;
+    }
+    .step.completed {
+        background: #198754; color: white; /* Yeşil - Tamamlandı */
+    }
+    .step.active {
+        background: #00aeef; color: white; /* Mavi - Aktif */
+        box-shadow: 0 0 10px rgba(0, 174, 239, 0.4);
+    }
+    .step-line {
+        height: 2px; background: #e9ecef; flex: 1;
+        margin-top: 20px; max-width: 100px;
+    }
+    .step-line.completed { background: #198754; }
 
-<div class="row">
-    <div class="col-md-8">
-        <dl class="row">
-            <dt class="col-sm-4">@Localizer["UserLabel"]</dt>
-            <dd class="col-sm-8">@Model.AppUser.DisplayName (@Model.AppUser.Email)</dd>
+    /* KART VE FİYAT STİLLERİ */
+    .payment-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+    .user-profile-mini {
+        display: flex; align-items: center; gap: 15px; padding: 15px;
+        background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;
+    }
+    .price-tag {
+        background-color: #f1f8ff;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        border: 2px dashed #00aeef;
+        margin: 20px 0;
+    }
+    .payment-icons i { font-size: 26px; margin: 0 8px; color: #6c757d; opacity: 0.7; }
+</style>
 
-            <dt class="col-sm-4">@Localizer["TypeLabel"]</dt>
-            <dd class="col-sm-8">@Model.RegistrationType.Name</dd>
+<div class="container mt-5 pt-5 mb-5">
 
-            <dt class="col-sm-4">@Localizer["PriceLabel"]</dt>
-            <dd class="col-sm-8"><strong>@Model.RegistrationType.Price.ToString("C", new System.Globalization.CultureInfo("tr-TR"))</strong></dd>
-
-            <dt class="col-sm-4">@Localizer["DateLabel"]</dt>
-            <dd class="col-sm-8">@Model.RegistrationDate.ToLocalTime().ToString("dd MMMM yyyy")</dd>
-
-            <dt class="col-sm-4">@Localizer["StatusLabel"]</dt>
-            <dd class="col-sm-8">
-                @if (Model.IsPaid)
-                {
-                    <span class="badge bg-success fs-6">@Localizer["StatusPaid"]</span>
-                }
-                else
-                {
-                    <span class="badge bg-warning text-dark fs-6">@Localizer["StatusUnpaid"]</span>
-                }
-            </dd>
-        </dl>
-
-        <div class="mt-4">
-            @if (!Model.IsPaid)
-            {
-                <form asp-controller="Payment" asp-action="CreateCheckoutSession" method="post">
-                    <input type="hidden" name="registrationId" value="@Model.Id" />
-                    <button type="submit" class="btn btn-lg btn-success">
-                        <i class="bi bi-credit-card-fill me-2"></i> @Localizer["PayNowButton"]
-                    </button>
-                </form>
-            }
-            else
-            {
-                <div class="alert alert-success">
-                    @Localizer["PaidMessage"]
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="d-flex align-items-center justify-content-center mb-4">
+                <div class="text-center">
+                    <div class="step completed"><i class="fas fa-check"></i></div>
+                    <small class="fw-bold mt-1 d-block text-success">Kayıt</small>
                 </div>
-            }
+                <div class="step-line completed"></div>
+                <div class="text-center">
+                    <div class="step active">2</div>
+                    <small class="fw-bold mt-1 d-block text-primary">Ödeme</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="card payment-card">
+                <div class="card-header bg-white p-4 text-center border-bottom">
+                    <h4 class="fw-bold text-dark mb-1">@Localizer["PageTitle"]</h4>
+                    <p class="text-muted small mb-0">@Localizer["PageLead"]</p>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    
+                    <div class="user-profile-mini mb-4">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width:45px; height:45px; font-size:18px; min-width: 45px;">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="lh-1 overflow-hidden">
+                            <h6 class="mb-1 fw-bold text-truncate">@Model.AppUser.DisplayName</h6>
+                            <small class="text-muted">@Model.AppUser.Email</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">@Localizer["TypeLabel"]</span>
+                        <span class="fw-bold text-dark">@Model.RegistrationType.Name</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">@Localizer["DateLabel"]</span>
+                        <span class="fw-bold text-dark">@Model.RegistrationDate.ToLocalTime().ToString("dd MMM yyyy")</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Durum</span>
+                        <span>
+                             @if (Model.IsPaid)
+                            {
+                                <span class="badge bg-success">@Localizer["StatusPaid"]</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">@Localizer["StatusUnpaid"]</span>
+                            }
+                        </span>
+                    </div>
+
+                    <div class="price-tag">
+                        <small class="text-uppercase text-muted fw-bold" style="font-size: 0.75rem;">@Localizer["PriceLabel"]</small>
+                        <div class="display-4 fw-bold text-primary mt-1">
+                            @Model.RegistrationType.Price.ToString("C", new System.Globalization.CultureInfo("tr-TR"))
+                        </div>
+                    </div>
+
+                    @if (Model.IsPaid)
+                    {
+                        <div class="alert alert-success text-center py-3 border-0 bg-success bg-opacity-10 text-success">
+                            <i class="fas fa-check-circle fs-4 mb-2"></i><br>
+                            <strong>@Localizer["PaidMessage"]</strong>
+                        </div>
+                        <a href="/" class="btn btn-outline-secondary w-100 fw-bold">Ana Sayfaya Dön</a>
+                    }
+                    else
+                    {
+                        <form asp-controller="Payment" asp-action="CreateCheckoutSession" method="post">
+                            <input type="hidden" name="registrationId" value="@Model.Id" />
+                            
+                            <button type="submit" class="btn btn-lg btn-success w-100 py-3 fw-bold shadow-sm" style="transition: transform 0.2s;">
+                                <i class="fas fa-lock me-2"></i> @Localizer["PayNowButton"]
+                            </button>
+                        </form>
+                        
+                        <div class="text-center mt-4">
+                            <div class="payment-icons mb-2">
+                                <i class="fab fa-cc-visa" title="Visa"></i>
+                                <i class="fab fa-cc-mastercard" title="Mastercard"></i>
+                                <i class="fab fa-cc-amex" title="American Express"></i>
+                            </div>
+                            <small class="text-muted" style="font-size: 11px;">
+                                <i class="fas fa-shield-alt text-success me-1"></i> 256-bit SSL ile güvenli ödeme
+                            </small>
+                        </div>
+                    }
+
+                </div>
+            </div>
         </div>
     </div>
 </div>

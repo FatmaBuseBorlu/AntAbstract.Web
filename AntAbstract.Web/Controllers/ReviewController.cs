@@ -73,7 +73,7 @@ namespace AntAbstract.Web.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin, Editor")] 
+        [Authorize(Roles = "Admin, Editor")]
         public async Task<IActionResult> AssignReviewer(AssignReviewerDto model)
         {
             try
@@ -86,7 +86,7 @@ namespace AntAbstract.Web.Controllers
                 TempData["ErrorMessage"] = "Hata: " + ex.Message;
             }
 
-            return RedirectToAction("Details", "Submission", new { id = model.SubmissionId });
+            return RedirectToAction("Details", "Submission", new { area = "Admin", id = model.SubmissionId });
         }
     }
 }

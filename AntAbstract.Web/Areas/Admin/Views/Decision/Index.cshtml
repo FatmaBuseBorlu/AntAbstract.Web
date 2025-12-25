@@ -4,223 +4,231 @@
 @{
     ViewData["Title"] = "Karar Ekranı";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
-
-    var slug = ViewContext.RouteData.Values["slug"]?.ToString();
+    var slug = Context.GetRouteValue("slug");
 }
 
-<div class="row mb-4">
-    <div class="col-12">
-        <h4 class="fw-bold"><i class="fas fa-gavel text-danger me-2"></i> Başvuru Karar Merkezi</h4>
-        <p class="text-muted small">Hakem değerlendirmeleri tamamlanan bildiriler için nihai kararı buradan verebilirsiniz.</p>
+<div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1">Bildiri Karar Ekranı</h4>
+            <p class="text-muted small mb-0">Kongre: <strong>@ViewBag.ConferenceTitle</strong></p>
+        </div>
+        <a href="/admin/decision" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-exchange-alt me-1"></i> Kongre Değiştir
+        </a>
     </div>
-</div>
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success border-0 shadow-sm mb-4">
-        <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
-    </div>
-}
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm">
+            <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+        </div>
+    }
 
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger border-0 shadow-sm mb-4">
-        <i class="fas fa-exclamation-triangle me-2"></i> @TempData["ErrorMessage"]
-    </div>
-}
+    <ul class="nav nav-tabs mb-4" id="decisionTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">
+                <i class="fas fa-hourglass-half me-2 text-warning"></i> Bekleyen Kararlar
+                <span class="badge bg-warning text-dark ms-2">@Model.AwaitingDecision.Count</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold text-muted" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab">
+                <i class="fas fa-check-circle me-2 text-success"></i> Sonuçlananlar
+                <span class="badge bg-light text-dark border ms-2">@Model.AlreadyDecided.Count</span>
+            </button>
+        </li>
+    </ul>
 
-<ul class="nav nav-tabs mb-4" id="decisionTab" role="tablist">
-    <li class="nav-item">
-        <button class="nav-link active fw-bold" id="awaiting-tab" data-bs-toggle="tab" data-bs-target="#awaiting" type="button">
-            <i class="fas fa-clock text-warning me-2"></i> Bekleyenler
-            <span class="badge bg-danger ms-2">@Model.AwaitingDecision.Count</span>
-        </button>
-    </li>
-    <li class="nav-item">
-        <button class="nav-link fw-bold text-success" id="decided-tab" data-bs-toggle="tab" data-bs-target="#decided" type="button">
-            <i class="fas fa-check-circle me-2"></i> Sonuçlananlar
-            <span class="badge bg-light text-dark border ms-2">@Model.AlreadyDecided.Count</span>
-        </button>
-    </li>
-</ul>
+    <div class="tab-content" id="decisionTabsContent">
 
-<div class="tab-content" id="decisionTabContent">
-
-    <div class="tab-pane fade show active" id="awaiting" role="tabpanel">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body p-0">
+        <div class="tab-pane fade show active" id="pending" role="tabpanel">
+            <div class="card border-0 shadow-sm">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light text-muted small text-uppercase">
+                        <thead class="bg-light">
                             <tr>
-                                <th class="ps-4">Başlık</th>
-                                <th>Yazar</th>
+                                <th class="ps-4">Bildiri</th>
                                 <th>Hakem Puanları</th>
-                                <th class="text-end pe-4">İşlem</th>
+                                <th>Ortalama</th>
+                                <th class="text-end pe-4">Aksiyon</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @if (!Model.AwaitingDecision.Any())
+                            @if (Model.AwaitingDecision.Any())
                             {
-                                <tr>
-                                    <td colspan="4" class="text-center py-5 text-muted">
-                                        <i class="fas fa-check-double fa-2x mb-3 opacity-25"></i>
-                                        <p class="mb-0">Harika! Karar bekleyen bildiri yok.</p>
-                                    </td>
-                                </tr>
-                            }
-                            else
-                            {
-                                @foreach (var item in Model.AwaitingDecision)
+                                foreach (var item in Model.AwaitingDecision)
                                 {
-                                    var reviews = item.ReviewAssignments
-                                    .Where(r => r.Review != null)
-                                    .Select(r => r.Review)
-                                    .ToList();
-
-                                    var avgScore = reviews.Any() ? reviews.Average(r => r.Score) : 0;
-
-                                    var canDecide = reviews.Any(); 
+                                    // Puan Hesaplaması
+                                    var reviews = item.ReviewAssignments.Where(ra => ra.Review != null).Select(ra => ra.Review).ToList();
+                                    double avgScore = reviews.Any() ? reviews.Average(r => r.Score) : 0;
+                                    string scoreColor = avgScore >= 70 ? "text-success" : (avgScore >= 50 ? "text-warning" : "text-danger");
 
                                     <tr>
                                         <td class="ps-4">
-                                            <div class="fw-bold text-dark text-truncate" style="max-width: 300px;" title="@item.Title">@item.Title</div>
-                                            <div class="small text-muted">@item.CreatedDate.ToString("dd.MM.yyyy")</div>
+                                            <div class="fw-bold text-truncate" style="max-width: 350px;">@item.Title</div>
+                                            <small class="text-muted">@item.Author?.FirstName @item.Author?.LastName</small>
+                                            <span class="badge bg-light text-dark border ms-2">@item.Status</span>
                                         </td>
                                         <td>
-                                            <div class="fw-bold text-dark">@item.Author?.FirstName @item.Author?.LastName</div>
-                                            <div class="small text-muted" style="font-size:11px;">@item.Author?.Email</div>
-                                        </td>
-                                        <td>
-                                            @if (reviews.Any())
+                                            @if (item.ReviewAssignments.Any())
                                             {
-                                                <span class="badge bg-info text-white fs-6 mb-1">Ort: @avgScore.ToString("0.0")</span>
-                                                <div class="d-flex flex-wrap gap-1">
-                                                    @foreach (var rev in reviews)
+                                                <div class="d-flex gap-1">
+                                                    @foreach (var assign in item.ReviewAssignments)
                                                     {
-                                                        <span class="badge bg-light text-dark border" title="@rev.ReviewerName: @rev.CommentsToAuthor">
-                                                            @rev.Score (@(rev.Recommendation == "Accept" ? "Kabul" : rev.Recommendation == "Reject" ? "Red" : rev.Recommendation))
-                                                        </span>
+                                                        if (assign.Review != null)
+                                                        {
+                                                            <span class="badge bg-light text-dark border" title="@assign.Reviewer.FirstName: @assign.Review.Score">
+                                                                @assign.Review.Score
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-secondary opacity-25" title="@assign.Reviewer.FirstName (Bekliyor)">-</span>
+                                                        }
                                                     }
                                                 </div>
                                             }
                                             else
                                             {
-                                                <span class="badge bg-warning text-dark">Puan Bekleniyor</span>
+                                                <span class="text-muted small fst-italic">Hakem yok</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (reviews.Any())
+                                            {
+                                                <span class="fw-bold fs-5 @scoreColor">@avgScore.ToString("0.0")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
                                             }
                                         </td>
                                         <td class="text-end pe-4">
-                                            <button type="button"
-                                                    class="btn btn-sm btn-primary fw-bold"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#modal-@item.Id"
-                                                    @(canDecide ? "" : "disabled")>
+                                            <button class="btn btn-sm btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#decisionModal-@item.Id">
                                                 Karar Ver
                                             </button>
 
-                                            <div class="modal fade text-start" id="modal-@item.Id" tabindex="-1">
+                                            <div class="modal fade" id="decisionModal-@item.Id" tabindex="-1">
                                                 <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <form asp-area="Admin"
-                                                              asp-controller="Decision"
-                                                              asp-action="MakeDecision"
-                                                              asp-route-slug="@slug"
-                                                              method="post">
-                                                            @Html.AntiForgeryToken()
-
-                                                            <input type="hidden" name="submissionId" value="@item.Id" />
-
-                                                            <div class="modal-header">
-                                                                <h5 class="modal-title fw-bold">Karar Ver: @item.Title</h5>
-                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                            </div>
+                                                    <div class="modal-content text-start">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title fw-bold">Karar Ver: @item.SubmissionIdCode</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <form method="post" action="/@slug/admin/decision/makedecision">
                                                             <div class="modal-body">
+                                                                <input type="hidden" name="submissionId" value="@item.Id" />
+
                                                                 <div class="mb-3">
-                                                                    <label class="form-label fw-bold">Kararınız</label>
-                                                                    <select name="decision" class="form-select" required>
-                                                                        <option value="Accept">✅ Kabul Et</option>
-                                                                        <option value="Reject">❌ Reddet</option>
-                                                                        <option value="Revision">⚠️ Revizyon İste</option>
-                                                                    </select>
+                                                                    <label class="form-label fw-bold small text-muted">Yönetici Notu (Opsiyonel)</label>
+                                                                    <textarea name="note" class="form-control" rows="3" placeholder="Örn: İmla hatalarını düzelterek kabul ediyoruz..."></textarea>
                                                                 </div>
-                                                                <div class="mb-3">
-                                                                    <label class="form-label">Yazara Not (Opsiyonel)</label>
-                                                                    <textarea name="note" class="form-control" rows="3" placeholder="Örn: Tebrikler, kabul edildi..."></textarea>
+
+                                                                <div class="d-grid gap-2">
+                                                                    <button type="submit" name="decision" value="Accept" class="btn btn-success fw-bold">
+                                                                        <i class="fas fa-check me-2"></i> KABUL ET
+                                                                    </button>
+                                                                    <button type="submit" name="decision" value="Revision" class="btn btn-warning fw-bold text-dark">
+                                                                        <i class="fas fa-edit me-2"></i> REVİZYON İSTE
+                                                                    </button>
+                                                                    <button type="submit" name="decision" value="Reject" class="btn btn-danger fw-bold">
+                                                                        <i class="fas fa-times me-2"></i> REDDET
+                                                                    </button>
                                                                 </div>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
-                                                                <button type="submit" class="btn btn-primary">Kaydet</button>
                                                             </div>
                                                         </form>
                                                     </div>
                                                 </div>
                                             </div>
+
                                         </td>
                                     </tr>
                                 }
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="tab-pane fade" id="decided" role="tabpanel">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light text-muted small text-uppercase">
-                            <tr>
-                                <th class="ps-4">Başlık</th>
-                                <th>Yazar</th>
-                                <th>Durum</th>
-                                <th class="text-end pe-4">Tarih</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (!Model.AlreadyDecided.Any())
-                            {
-                                <tr><td colspan="4" class="text-center py-5 text-muted">Henüz sonuçlanmış bildiri yok.</td></tr>
                             }
                             else
                             {
-                                @foreach (var item in Model.AlreadyDecided)
-                                {
-                                    <tr>
-                                        <td class="ps-4">
-                                            <div class="fw-bold text-dark">@item.Title</div>
-                                        </td>
-                                        <td>
-                                            @item.Author?.FirstName @item.Author?.LastName
-                                        </td>
-                                        <td>
-                                            @if (item.Status == SubmissionStatus.Accepted)
-                                            {
-                                                <span class="badge bg-success"><i class="fas fa-check me-1"></i> KABUL</span>
-                                            }
-                                            else if (item.Status == SubmissionStatus.Rejected)
-                                            {
-                                                <span class="badge bg-danger"><i class="fas fa-times me-1"></i> RED</span>
-                                            }
-                                            else if (item.Status == SubmissionStatus.RevisionRequired)
-                                            {
-                                                <span class="badge bg-warning text-dark"><i class="fas fa-edit me-1"></i> REVİZYON</span>
-                                            }
-                                        </td>
-                                        <td class="text-end pe-4">
-                                            @(item.DecisionDate != null ? item.DecisionDate.Value.ToString("dd.MM.yyyy") : "-")
-                                        </td>
-                                    </tr>
-                                }
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted">
+                                        <i class="fas fa-clipboard-check fa-3x mb-3 opacity-25"></i>
+                                        <p>Şu an karar bekleyen bildiri yok.</p>
+                                    </td>
+                                </tr>
                             }
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
-    </div>
 
+        <div class="tab-pane fade" id="completed" role="tabpanel">
+            <div class="card border-0 shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Bildiri</th>
+                                <th>Karar Tarihi</th>
+                                <th>Sonuç</th>
+                                <th class="text-end pe-4">İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.AlreadyDecided.Any())
+                            {
+                                foreach (var item in Model.AlreadyDecided)
+                                {
+                                    <tr>
+                                        <td class="ps-4">
+                                            <div class="fw-bold text-truncate" style="max-width: 350px;">@item.Title</div>
+                                            <small class="text-muted">@item.Author?.FirstName @item.Author?.LastName</small>
+                                        </td>
+                                        <td>
+                                            @if (item.DecisionDate.HasValue)
+                                            {
+                                                <span>@item.DecisionDate.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</span>
+                                            }
+                                            else
+                                            {
+                                                <span>-</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (item.Status == AntAbstract.Domain.Entities.SubmissionStatus.Accepted)
+                                            {
+                                                <span class="badge bg-success">KABUL</span>
+                                            }
+                                            else if (item.Status == AntAbstract.Domain.Entities.SubmissionStatus.Rejected)
+                                            {
+
+                                                <span class="badge bg-danger">RED</span>
+                                            }
+                                            else if (item.Status == AntAbstract.Domain.Entities.SubmissionStatus.RevisionRequired)
+                                            {
+
+                                                <span class="badge bg-warning text-dark">REVİZYON</span>
+                                            }
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            <button class="btn btn-sm btn-outline-secondary" disabled>Karar Verildi</button>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted">
+                                        <p>Henüz sonuçlanmış bir bildiri yok.</p>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
 </div>

@@ -20,6 +20,7 @@ namespace AntAbstract.Infrastructure.Context
 
         public DbSet<Tenant> Tenants { get; set; }
         public DbSet<ScientificField> ScientificFields { get; set; }
+        public DbSet<Session> Sessions { get; set; }
         public DbSet<CongressType> CongressTypes { get; set; }
         public DbSet<Conference> Conferences { get; set; }
         public DbSet<Submission> Submissions { get; set; }

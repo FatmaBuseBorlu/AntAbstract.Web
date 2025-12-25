@@ -15,10 +15,16 @@ namespace AntAbstract.Domain.Entities
             ReviewAssignments = new HashSet<ReviewAssignment>();
             CreatedDate = DateTime.UtcNow;
             Status = SubmissionStatus.New;
+
+            SubmissionIdCode = Guid.NewGuid().ToString().Substring(0, 8).ToUpper();
         }
 
         [Key]
         public Guid Id { get; set; }
+
+        [StringLength(20)]
+        public string SubmissionIdCode { get; set; }
+
         [NotMapped] public Guid SubmissionId => Id;
 
         [NotMapped]
@@ -39,7 +45,7 @@ namespace AntAbstract.Domain.Entities
         [NotMapped] public string UserId => AuthorId;
 
         [NotMapped]
-        public string FilePath { get; set; } = ""; 
+        public string FilePath { get; set; } = "";
 
         [Required]
         [MaxLength(200)]
@@ -64,10 +70,16 @@ namespace AntAbstract.Domain.Entities
         public string AuthorId { get; set; }
         [ForeignKey("AuthorId")]
         public virtual AppUser Author { get; set; }
+
         public Guid TenantId { get; set; }
+
+        // Oturum İlişkisi (Session)
+        public Guid? SessionId { get; set; }
+        [ForeignKey("SessionId")]
+        public virtual Session Session { get; set; }
+
         public virtual ICollection<SubmissionAuthor> SubmissionAuthors { get; set; }
         public virtual ICollection<SubmissionFile> Files { get; set; }
-
         public virtual ICollection<ReviewAssignment> ReviewAssignments { get; set; }
     }
 }

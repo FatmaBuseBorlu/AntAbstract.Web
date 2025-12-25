@@ -210,8 +210,19 @@
                                         }
                                         else
                                         {
-                                            <a href="/@slug/registration/join?backUrl=@Uri.EscapeDataString(backUrl)"
-                                               class="btn btn-primary flex-fill fw-bold" style="background-color: #00aeef; border: none;">
+                                            @* --- GÜNCELLENEN AKILLI KAYIT ALANI --- *@
+                                            
+                                            var isUserLoggedIn = SignInManager.IsSignedIn(User).ToString().ToLower(); 
+                                            var backUrlEncoded = System.Net.WebUtility.UrlEncode(backUrl);
+                                            var currentPathEncoded = System.Net.WebUtility.UrlEncode(Context.Request.Path + Context.Request.QueryString);
+                                            var registerUrl = $"/{slug}/registration/join?backUrl={backUrlEncoded}";
+                                            var loginUrl = $"/Identity/Account/Login?ReturnUrl={currentPathEncoded}";
+                                            
+
+                                            <a href="javascript:void(0);"
+                                               onclick="akilliKayitYonlendirme(@isUserLoggedIn, '@Html.Raw(loginUrl)', '@Html.Raw(registerUrl)')"
+                                               class="btn btn-primary flex-fill fw-bold" 
+                                               style="background-color: #00aeef; border: none;">
                                                 KAYIT OL
                                             </a>
 
@@ -261,3 +272,29 @@
         </section>
     }
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    function akilliKayitYonlendirme(girisYapmisMi, loginUrl, registerUrl) {
+        if (girisYapmisMi === true) {
+            window.location.href = registerUrl;
+        } else {
+            Swal.fire({
+                title: 'Giriş Yapmalısınız',
+                text: "Kongreye kayıt olabilmek için sisteme giriş yapmanız gerekmektedir.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#00aeef', 
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Giriş Yap',
+                cancelButtonText: 'Vazgeç',
+                reverseButtons: true 
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = loginUrl;
+                }
+            });
+        }
+    }
+</script>

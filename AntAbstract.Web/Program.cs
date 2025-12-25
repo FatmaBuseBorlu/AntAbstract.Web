@@ -36,18 +36,20 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
 });
 
+builder.Services.Configure<RouteOptions>(options =>
+{
+    options.LowercaseUrls = false;
+    options.AppendTrailingSlash = false;
+});
+
 builder.Services.AddAuthentication()
     .AddOAuth("ORCID", options =>
     {
-        options.ClientId = builder.Configuration["ORCID:ClientId"]
-            ?? throw new InvalidOperationException("ORCID ClientId bulunamadý.");
-        options.ClientSecret = builder.Configuration["ORCID:ClientSecret"]
-            ?? throw new InvalidOperationException("ORCID ClientSecret bulunamadý.");
-
+        options.ClientId = builder.Configuration["ORCID:ClientId"] ?? throw new InvalidOperationException("ORCID ClientId bulunamadý.");
+        options.ClientSecret = builder.Configuration["ORCID:ClientSecret"] ?? throw new InvalidOperationException("ORCID ClientSecret bulunamadý.");
         options.AuthorizationEndpoint = "https://orcid.org/oauth/authorize";
         options.TokenEndpoint = "https://orcid.org/oauth/token";
         options.UserInformationEndpoint = "https://pub.orcid.org/v3.0/oauth/userinfo";
-
         options.Scope.Add("/authenticate");
         options.ClaimActions.MapJsonKey(ClaimTypes.NameIdentifier, "orcid");
         options.SaveTokens = true;
@@ -60,12 +62,12 @@ builder.Services.AddTransient<IEmailSender, EmailService>();
 
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();
-
 builder.Services.AddScoped<IReviewerRecommendationService, ReviewerRecommendationService>();
-builder.Services.AddAutoMapper(typeof(GeneralMappingProfile));
 builder.Services.AddScoped<ISubmissionService, SubmissionManager>();
 builder.Services.AddScoped<IReviewService, ReviewManager>();
 builder.Services.AddScoped<ISelectedConferenceService, SelectedConferenceService>();
+
+builder.Services.AddAutoMapper(typeof(GeneralMappingProfile));
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 builder.Services.AddControllersWithViews()
@@ -73,8 +75,8 @@ builder.Services.AddControllersWithViews()
     .AddDataAnnotationsLocalization();
 
 builder.Services.AddRazorPages();
-
 builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromHours(8);
@@ -94,11 +96,12 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<AppDbContext>();
 
         await AntAbstract.Infrastructure.Data.DbInitializer.Initialize(userManager, roleManager, context);
+        await AntAbstract.Infrastructure.Data.DbSeeder.SeedRolesAndUsers(services);
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Veritabaný oluþturulurken bir hata oluþtu (Seeding).");
+        logger.LogError(ex, "Seeding sýrasýnda bir hata oluþtu.");
     }
 }
 
@@ -121,10 +124,12 @@ var localizationOptions = new RequestLocalizationOptions()
 app.UseRequestLocalization(localizationOptions);
 
 app.UseRouting();
-app.UseSession(); 
+
+app.UseSession();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
 
 app.Use(async (ctx, next) =>
 {
@@ -134,7 +139,6 @@ app.Use(async (ctx, next) =>
     await next();
 });
 
-
 app.UseRotativa();
 
 
@@ -143,40 +147,14 @@ app.MapControllerRoute(
     pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
 app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
-
-
-app.MapControllerRoute(
     name: "tenant",
     pattern: "{slug}/{controller=Home}/{action=Index}/{id?}");
 
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
+
 app.MapRazorPages();
 app.MapControllers();
-
-using (var scope = app.Services.CreateScope())
-{
- 
-    await AntAbstract.Infrastructure.Data.DbSeeder.SeedRolesAndUsers(scope.ServiceProvider);
-
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
-
-    string[] roleNames = { "Author", "Referee", "Admin", "Editor" };
-    foreach (var roleName in roleNames)
-    {
-        if (!await roleManager.RoleExistsAsync(roleName))
-        {
-            await roleManager.CreateAsync(new IdentityRole(roleName));
-        }
-    }
-
-    
-    var authorUser = await userManager.FindByEmailAsync("yazar@antabstract.com");
-    if (authorUser != null && !await userManager.IsInRoleAsync(authorUser, "Author"))
-    {
-        await userManager.AddToRoleAsync(authorUser, "Author");
-    }
-}
 
 app.Run();

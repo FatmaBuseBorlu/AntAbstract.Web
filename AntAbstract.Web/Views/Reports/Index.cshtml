@@ -1,0 +1,82 @@
+﻿@model AntAbstract.Web.Models.ViewModels.ReportsIndexViewModel
+
+@{
+    ViewData["Title"] = "Kongre Raporları";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+}
+
+<div class="container-fluid">
+    <h3 class="fw-bold mb-4">@Model.ConferenceName - Genel Rapor</h3>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card bg-success text-white border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-uppercase opacity-75">Toplam Gelir</h6>
+                    <h2 class="fw-bold">@Model.TotalRevenue.ToString("C")</h2>
+                    <small>@Model.TotalRegistrations Kayıtlı Katılımcı</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-primary text-white border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-uppercase opacity-75">Toplam Bildiri</h6>
+                    <h2 class="fw-bold">@Model.TotalSubmissions</h2>
+                    <small>Sisteme yüklenen tüm özetler</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-info text-white border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-uppercase opacity-75">Kabul Edilen</h6>
+                    <h2 class="fw-bold">@Model.AcceptedSubmissions</h2>
+                    <small>Programa dahil edilebilir</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-uppercase opacity-75">İncelemede</h6>
+                    <h2 class="fw-bold">@Model.PendingSubmissions</h2>
+                    <small>Hakem veya karar bekleyenler</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-bold">Bildiri Durum Dağılımı</div>
+                <div class="card-body">
+                    <canvas id="submissionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var ctx = document.getElementById('submissionChart').getContext('2d');
+        var myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Kabul', 'Red', 'Bekleyen'],
+                datasets: [{
+                    data: [@Model.AcceptedSubmissions, @Model.RejectedSubmissions, @Model.PendingSubmissions],
+                    backgroundColor: ['#198754', '#dc3545', '#ffc107'],
+                    borderWidth: 1
+                }]
+            },
+            options: { responsive: true }
+        });
+    });
+</script>

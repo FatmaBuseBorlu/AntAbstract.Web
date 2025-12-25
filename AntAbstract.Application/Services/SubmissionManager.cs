@@ -1,5 +1,5 @@
-﻿using AntAbstract.Application.DTOs.Submission;
-using AntAbstract.Application.DTOs.Conference;
+﻿using AntAbstract.Application.DTOs.Conference;
+using AntAbstract.Application.DTOs.Submission;
 using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AutoMapper;
@@ -49,7 +49,6 @@ namespace AntAbstract.Application.Services
             if (input.SubmissionAuthors != null && input.SubmissionAuthors.Any())
             {
                 submission.SubmissionAuthors = new List<SubmissionAuthor>();
-
                 foreach (var authorDto in input.SubmissionAuthors)
                 {
                     submission.SubmissionAuthors.Add(new SubmissionAuthor
@@ -58,9 +57,9 @@ namespace AntAbstract.Application.Services
                         LastName = authorDto.LastName,
                         Email = authorDto.Email,
                         Institution = authorDto.Institution,
-                        ORCID = authorDto.ORCID,
                         Order = authorDto.Order,
-                        IsCorrespondingAuthor = authorDto.IsCorrespondingAuthor
+                        IsCorrespondingAuthor = authorDto.IsCorrespondingAuthor, 
+                        ORCID = authorDto.ORCID
                     });
                 }
             }
@@ -135,7 +134,7 @@ namespace AntAbstract.Application.Services
             submission.Title = input.Title;
             submission.Abstract = input.Abstract;
             submission.Keywords = input.Keywords;
-            submission.UpdatedDate = DateTime.UtcNow;
+            submission.UpdatedDate = DateTime.UtcNow; 
 
             if (!string.IsNullOrEmpty(input.FilePath))
             {
@@ -157,15 +156,21 @@ namespace AntAbstract.Application.Services
                 submission.Files.Add(newFile);
             }
 
-            _context.SubmissionAuthors.RemoveRange(submission.SubmissionAuthors);
+            if (submission.SubmissionAuthors != null)
+            {
+                submission.SubmissionAuthors.Clear();
+            }
+            else
+            {
+                submission.SubmissionAuthors = new List<SubmissionAuthor>();
+            }
 
             if (input.SubmissionAuthors != null)
             {
                 foreach (var authorDto in input.SubmissionAuthors)
                 {
-                    var newAuthor = new SubmissionAuthor
+                    submission.SubmissionAuthors.Add(new SubmissionAuthor
                     {
-                        SubmissionId = submission.Id,
                         FirstName = authorDto.FirstName,
                         LastName = authorDto.LastName,
                         Email = authorDto.Email,
@@ -173,9 +178,7 @@ namespace AntAbstract.Application.Services
                         ORCID = authorDto.ORCID,
                         IsCorrespondingAuthor = authorDto.IsCorrespondingAuthor,
                         Order = authorDto.Order
-                    };
-
-                    submission.SubmissionAuthors.Add(newAuthor);
+                    });
                 }
             }
 

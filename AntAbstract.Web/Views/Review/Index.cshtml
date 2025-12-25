@@ -1,57 +1,91 @@
 ﻿@model List<AntAbstract.Application.DTOs.Review.ReviewAssignmentDto>
 
 @{
-    ViewData["Title"] = "Hakem Değerlendirmeleri";
+    ViewData["Title"] = "Hakem Paneli";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 }
 
-<div class="container-fluid">
-    <h1 class="h3 mb-4 text-gray-800">Atanan Değerlendirmeler</h1>
-
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Bildiri Listesi</h6>
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+        <div>
+            <h3 class="fw-bold text-primary"><i class="fas fa-gavel me-2"></i>Hakem Değerlendirme Paneli</h3>
+            <p class="text-muted mb-0">Tarafınıza değerlendirilmek üzere atanan bildiriler aşağıdadır.</p>
         </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered" width="100%" cellspacing="0">
-                    <thead>
-                        <tr>
-                            <th>Kongre</th>
-                            <th>Bildiri Başlığı</th>
-                            <th>Atanma Tarihi</th>
-                            <th>Durum</th>
-                            <th>Puan</th>
-                            <th>İşlem</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model)
-                        {
+            @if (Model != null && Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
                             <tr>
-                                <td>@(item.ConferenceName ?? "Belirtilmemiş")</td>
-                                <td>@item.SubmissionTitle</td>
-                                <td>@item.AssignedDate.ToString("dd.MM.yyyy")</td>
-                                <td>
-                                    @if (item.IsReviewed)
-                                    {
-                                        <span class="badge badge-success">Tamamlandı</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge badge-warning">Bekliyor</span>
-                                    }
-                                </td>
-                                <td>@(item.Score.HasValue? item.Score.ToString() : "-")</td>
-                                <td>
-                                    <a asp-action="Evaluate" asp-route-id="@item.Id" class="btn btn-primary btn-sm">
-                                        <i class="fas fa-edit"></i> Değerlendir
-                                    </a>
-                                </td>
+                                <th>Atanma Tarihi</th>
+                                <th>Bildiri Başlığı</th>
+                                <th>Kongre</th>
+                                <th>Durum</th>
+                                <th>Puan</th>
+                                <th class="text-end">İşlem</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>@item.AssignedDate.ToLocalTime().ToString("dd.MM.yyyy")</td>
+                                    <td>
+                                        <span class="fw-bold text-dark">@item.SubmissionTitle</span>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border">@item.ConferenceName</span></td>
+                                    <td>
+                                        @if (item.IsReviewed)
+                                        {
+                                            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Tamamlandı</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Bekliyor</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.IsReviewed)
+                                        {
+                                            <span class="fw-bold">@item.Score / 100</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        @if (item.IsReviewed)
+                                        {
+                                            <button class="btn btn-sm btn-outline-secondary disabled" disabled>Değerlendirildi</button>
+                                        }
+                                        else
+                                        {
+                                            <a asp-action="Evaluate" asp-route-id="@item.Id" class="btn btn-sm btn-primary fw-bold shadow-sm">
+                                                <i class="fas fa-edit me-1"></i> Değerlendir
+                                            </a>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <div class="mb-3">
+                        <i class="fas fa-folder-open fa-3x text-muted opacity-50"></i>
+                    </div>
+                    <h5 class="text-muted">Henüz atanmış bir bildiri yok.</h5>
+                    <p class="text-muted small">Yöneticiler tarafından bildiri atandığında burada listelenecektir.</p>
+                </div>
+            }
         </div>
     </div>
 </div>

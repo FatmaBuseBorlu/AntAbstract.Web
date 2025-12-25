@@ -1,37 +1,128 @@
 ﻿@model AntAbstract.Web.Models.ViewModels.SelectConferenceViewModel
-
 @{
     ViewData["Title"] = Model.Title;
-    Layout = "_LayoutDashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h4 class="fw-bold mb-0">@Model.Title</h4>
-            <small class="text-muted">@Model.Lead</small>
-        </div>
-    </div>
+<style>
+    body {
+        background-color: #f4f7f9; /* Hafif mavi-gri kurumsal arka plan */
+    }
 
+    .selection-wrapper {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+    }
 
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-4">
-            <form method="post" action="@Model.PostUrl">
-                @Html.AntiForgeryToken()
+    .glass-card {
+        background: rgba(255, 255, 255, 1);
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
 
-                <label class="form-label fw-bold">Kongre</label>
-                <select name="conferenceId" class="form-select" required>
-                    <option value="">Seçiniz...</option>
-                    @foreach (var c in Model.Conferences)
-                    {
-                        <option value="@c.Id">@c.Title (@c.Tenant?.Slug)</option>
-                    }
-                </select>
+    .selection-side-info {
+        background: linear-gradient(135deg, #00aeef 0%, #007bb5 100%);
+        color: white;
+        padding: 40px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
 
-                <button type="submit" class="btn btn-primary mt-3">
-                    @Model.SubmitText
-                </button>
-            </form>
+    .form-side {
+        padding: 60px;
+    }
+
+    .select-lg-custom {
+        height: 55px;
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        font-size: 1rem;
+        transition: all 0.3s;
+    }
+
+        .select-lg-custom:focus {
+            border-color: #00aeef;
+            box-shadow: 0 0 0 0.25 margin-bottom rgba(0, 174, 239, 0.1);
+        }
+
+    .btn-submit-custom {
+        height: 55px;
+        border-radius: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s;
+    }
+
+        .btn-submit-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 174, 239, 0.3);
+        }
+</style>
+
+<div class="selection-wrapper">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card glass-card animate__animated animate__fadeInUp">
+                    <div class="row g-0">
+                        <div class="col-md-5 d-none d-md-flex selection-side-info">
+                            <div class="mb-4">
+                                <i class="fas fa-university fa-4x mb-3"></i>
+                                <h2 class="fw-bold">Yönetim Paneli</h2>
+                            </div>
+                            <p class="lead opacity-75">AntAbstract bilimsel etkinlik yönetim sistemine hoş geldiniz.</p>
+                            <hr class="my-4 opacity-25">
+                            <ul class="list-unstyled small">
+                                <li class="mb-2"><i class="fas fa-check-circle me-2"></i> Bildiri ve özet yönetimi</li>
+                                <li class="mb-2"><i class="fas fa-check-circle me-2"></i> Hakem atama süreçleri</li>
+                                <li class="mb-2"><i class="fas fa-check-circle me-2"></i> Detaylı raporlama</li>
+                            </ul>
+                        </div>
+
+                        <div class="col-md-7 form-side bg-white">
+                            <div class="mb-5 text-center text-md-start">
+                                <h4 class="fw-bold text-dark">Lütfen Devam Edin</h4>
+                                <p class="text-muted">İşlem yapmak istediğiniz kongreyi seçiniz.</p>
+                            </div>
+
+                            <form action="@Model.PostUrl" method="post">
+                                @Html.AntiForgeryToken()
+
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold text-secondary small text-uppercase">Kongre Listesi</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-2 border-end-0" style="border-radius: 10px 0 0 10px;">
+                                            <i class="fas fa-list-ul text-primary"></i>
+                                        </span>
+                                        <select name="conferenceId" class="form-select select-lg-custom border-2 border-start-0" required>
+                                            <option value="" disabled selected>Bir kongre seçin...</option>
+                                            @foreach (var conf in Model.Conferences)
+                                            {
+                                                <option value="@conf.Id">@conf.Title</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary btn-submit-custom shadow-sm">
+                                        @Model.SubmitText <i class="fas fa-chevron-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </form>
+
+                            <div class="mt-5 pt-4 border-top text-center text-md-start">
+                                <span class="text-muted small">Sorun mu yaşıyorsunuz? <a href="#" class="text-decoration-none">Destek ekibiyle iletişime geçin.</a></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

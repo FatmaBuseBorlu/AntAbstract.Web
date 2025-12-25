@@ -1,25 +1,149 @@
 ﻿@{
+    ViewData["Title"] = "Kayıt Başarılı";
     Layout = "_Layout";
     var slug = ViewContext.RouteData.Values["slug"];
+
+
+    var regId = ViewBag.RegistrationId;
 }
 
-<div class="container mt-5 pt-5 text-center">
-    <div class="card p-5 shadow-lg border-0 rounded-4 animate__animated animate__fadeIn">
-        <div class="mb-4">
-            <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
-        </div>
-        <h2 class="fw-bold text-dark">Kaydınız Başarıyla Alındı!</h2>
-        <p class="text-muted fs-5">Kongre katılım sürecinizi başlatmak için bir adımınız kaldı.</p>
+<style>
+    .step-indicator {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 30px;
+    }
 
-        <div class="alert alert-info d-inline-block px-4 py-3 mt-3 border-0 rounded-pill">
-            <i class="fas fa-info-circle me-2"></i> Katılımınızın kesinleşmesi için ödeme yapmanız gerekmektedir.
-        </div>
+    .step {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #e9ecef;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin: 0 10px;
+        position: relative;
+        z-index: 1;
+    }
 
-        <div class="mt-5">
-            <a href="/@slug/payment/index/@ViewBag.RegistrationId"
-               class="btn btn-primary btn-lg px-5 py-3 fw-bold rounded-pill shadow">
-                ÖDEME ADIMINA GEÇ <i class="fas fa-arrow-right ms-2"></i>
-            </a>
+        .step.completed {
+            background: #198754;
+            color: white; 
+        }
+
+        .step.active {
+            background: #00aeef;
+            color: white;
+            box-shadow: 0 0 10px rgba(0, 174, 239, 0.4);
+        }
+
+    .step-line {
+        height: 2px;
+        background: #e9ecef;
+        flex: 1;
+        margin-top: 20px;
+        max-width: 100px;
+    }
+
+        .step-line.completed {
+            background: #198754;
+        }
+
+
+    keyframes fadeInUp {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    .success-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        overflow: hidden;
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+</style>
+
+<div class="container mt-5 pt-5 mb-5">
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="d-flex align-items-center justify-content-center mb-4">
+                <div class="text-center">
+                    <div class="step completed"><i class="fas fa-check"></i></div>
+                    <small class="fw-bold mt-1 d-block text-success">Kayıt Onayı</small>
+                </div>
+                <div class="step-line completed"></div>
+                <div class="text-center">
+                    <div class="step active">2</div>
+                    <small class="fw-bold mt-1 d-block text-primary">Ödeme</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+
+            <div class="card success-card p-5 text-center">
+
+                <div class="mb-4">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 rounded-circle" style="width: 100px; height: 100px;">
+                        <i class="fas fa-check text-success" style="font-size: 3.5rem;"></i>
+                    </div>
+                </div>
+
+                <h2 class="fw-bold text-dark mb-2">Kaydınız Başarıyla Alındı!</h2>
+                <p class="text-muted fs-5 mb-4">Kongreye katılımınızın kesinleşmesi için son bir adım kaldı.</p>
+
+                <div class="alert alert-light border border-info rounded-3 text-start d-inline-block w-100 p-3 mb-4">
+                    <div class="d-flex">
+                        <i class="fas fa-info-circle text-info fs-4 me-3 mt-1"></i>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-1">Ödeme Bekleniyor</h6>
+                            <p class="mb-0 small text-muted">Kayıt işleminiz sistemimize işlendi. Aşağıdaki butona tıklayarak güvenli ödeme ekranına geçiş yapabilirsiniz.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    @if (regId != null)
+                    {
+                        <a href="/@slug/payment/index/@regId"
+                           class="btn btn-primary btn-lg py-3 fw-bold shadow rounded-pill"
+                           style="background-color: #00aeef; border: none;">
+                            ÖDEME ADIMINA GEÇ <i class="fas fa-arrow-right ms-2"></i>
+                        </a>
+                    }
+                    else
+                    {
+                        <div class="alert alert-danger">
+                            Kayıt ID bulunamadı. Lütfen "Kongrelerim" sayfasından ödeme yapınız.
+                        </div>
+                    }
+
+                    <a href="/" class="btn btn-link text-muted text-decoration-none mt-2">Ana Sayfaya Dön</a>
+                </div>
+
+            </div>
+
+            <div class="text-center mt-4 text-muted small">
+                <i class="fas fa-lock me-1"></i> Tüm işlemleriniz 256-bit SSL ile korunmaktadır.
+            </div>
+
         </div>
     </div>
 </div>

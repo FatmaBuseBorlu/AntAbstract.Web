@@ -1,0 +1,35 @@
+﻿@model AntAbstract.Domain.Entities.Session
+@{
+    ViewData["Title"] = "Yeni Oturum";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    var slug = Context.GetRouteValue("slug");
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h4 class="fw-bold mb-4">Yeni Oturum Oluştur</h4>
+                    <form asp-action="Create" asp-route-slug="@slug" method="post">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold">Oturum Başlığı</label>
+                            <input asp-for="Title" class="form-control" placeholder="Örn: Yapay Zeka Oturumu - 1" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold">Tarih ve Saat</label>
+                            <input asp-for="SessionDate" class="form-control" type="datetime-local" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold">Salon / Konum</label>
+                            <input asp-for="Location" class="form-control" placeholder="Örn: Salon A" />
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary fw-bold">Oluştur</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

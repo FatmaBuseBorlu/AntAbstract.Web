@@ -2,6 +2,7 @@
 using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -9,14 +10,21 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Editor,Moderator")] 
+    [Authorize(Roles = "Admin,Editor")]
     public class SubmissionController : Controller
     {
         private readonly ISubmissionService _submissionService;
+        private readonly UserManager<AppUser> _userManager;
+        private readonly IReviewService _reviewService;
 
-        public SubmissionController(ISubmissionService submissionService)
+        public SubmissionController(
+            ISubmissionService submissionService,
+            UserManager<AppUser> userManager,
+            IReviewService reviewService)
         {
             _submissionService = submissionService;
+            _userManager = userManager;
+            _reviewService = reviewService;
         }
 
         public async Task<IActionResult> Index()
@@ -29,6 +37,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             var submission = await _submissionService.GetSubmissionByIdAsync(id);
             if (submission == null) return NotFound();
+
+            ViewBag.Referees = await _userManager.GetUsersInRoleAsync("Referee");
+
+            ViewBag.Reviews = await _reviewService.GetReviewsBySubmissionIdAsync(id);
 
             return View(submission);
         }
@@ -46,7 +58,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 TempData["ErrorMessage"] = "Geçersiz durum bilgisi.";
             }
-
             return RedirectToAction("Index");
         }
 
@@ -54,9 +65,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Delete(Guid id)
         {
             await _submissionService.DeleteSubmissionAsync(id);
-            TempData["SuccessMessage"] = "Bildiri sistemden tamamen silindi.";
+            TempData["SuccessMessage"] = "Bildiri silindi.";
             return RedirectToAction("Index");
         }
-        
     }
 }

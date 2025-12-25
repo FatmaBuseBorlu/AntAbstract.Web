@@ -25,17 +25,12 @@ namespace AntAbstract.Web.Controllers
         }
 
         [HttpGet("join")]
-        public async Task<IActionResult> Join(string backUrl)
+        public async Task<IActionResult> Index(string backUrl)
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Challenge();
 
             var slug = RouteData.Values["slug"]?.ToString();
-            if (string.IsNullOrWhiteSpace(slug))
-            {
-                TempData["ErrorMessage"] = "Slug bulunamadı.";
-                return RedirectToAction("Index", "Home");
-            }
 
             var conference = await _context.Conferences
                 .Include(c => c.Tenant)
@@ -46,7 +41,6 @@ namespace AntAbstract.Web.Controllers
             if (conference == null)
             {
                 TempData["ErrorMessage"] = "Kongre bulunamadı.";
-                if (!string.IsNullOrWhiteSpace(backUrl) && Url.IsLocalUrl(backUrl)) return Redirect(backUrl);
                 return RedirectToAction("Index", "Home");
             }
 
@@ -55,26 +49,57 @@ namespace AntAbstract.Web.Controllers
 
             if (existingRegistration != null)
             {
-                TempData["SuccessMessage"] = "Zaten kayıtlısınız. Ödeme yapabilirsiniz.";
-                if (!string.IsNullOrWhiteSpace(backUrl) && Url.IsLocalUrl(backUrl)) return Redirect(backUrl);
-                return RedirectToAction("Index", "Home");
+                TempData["InfoMessage"] = "Zaten kaydınız mevcut. Ödeme ekranına yönlendirildiniz.";
+                return RedirectToAction("Index", "Payment", new { slug = slug, id = existingRegistration.Id });
             }
 
             var defaultRegType = await _context.RegistrationTypes
                 .FirstOrDefaultAsync(rt => rt.ConferenceId == conference.Id);
+
+            ViewBag.Price = defaultRegType?.Price ?? 0;
+            ViewBag.Currency = defaultRegType?.Currency ?? "TL";
+            ViewBag.BackUrl = backUrl;
+
+            return View(conference);
+        }
+
+        [HttpPost("create")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(Guid conferenceId)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var slug = RouteData.Values["slug"]?.ToString();
+
+            var conference = await _context.Conferences.FindAsync(conferenceId);
+            if (conference == null) return NotFound();
+
+            var exists = await _context.Registrations.AnyAsync(r => r.ConferenceId == conferenceId && r.AppUserId == user.Id);
+            if (exists)
+            {
+                var existingId = await _context.Registrations
+                    .Where(r => r.ConferenceId == conferenceId && r.AppUserId == user.Id)
+                    .Select(r => r.Id)
+                    .FirstOrDefaultAsync();
+
+                return RedirectToAction("Index", "Payment", new { slug = slug, id = existingId });
+            }
+
+            var defaultRegType = await _context.RegistrationTypes
+                .FirstOrDefaultAsync(rt => rt.ConferenceId == conferenceId);
 
             if (defaultRegType == null)
             {
                 defaultRegType = new RegistrationType
                 {
                     Id = Guid.NewGuid(),
-                    ConferenceId = conference.Id,
-                    Name = "Standart Kayıt",
+                    ConferenceId = conferenceId,
+                    Name = "Standart Katılım",
                     Description = "Otomatik oluşturulan kayıt tipi",
                     Price = 0,
                     Currency = "TL"
                 };
-
                 _context.RegistrationTypes.Add(defaultRegType);
                 await _context.SaveChangesAsync();
             }
@@ -83,19 +108,19 @@ namespace AntAbstract.Web.Controllers
             {
                 Id = Guid.NewGuid(),
                 AppUserId = user.Id,
-                ConferenceId = conference.Id,
+                ConferenceId = conferenceId,
                 RegistrationDate = DateTime.UtcNow,
                 IsPaid = false,
+
                 RegistrationTypeId = defaultRegType.Id
             };
 
             _context.Registrations.Add(newRegistration);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Kaydınız başarıyla yapıldı. Artık ödeme yapabilirsiniz.";
+            TempData["SuccessMessage"] = "Kaydınız başarıyla oluşturuldu. Lütfen ödemenizi tamamlayınız.";
 
-            if (!string.IsNullOrWhiteSpace(backUrl) && Url.IsLocalUrl(backUrl)) return Redirect(backUrl);
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Index", "Payment", new { slug = slug, id = newRegistration.Id });
         }
     }
 }

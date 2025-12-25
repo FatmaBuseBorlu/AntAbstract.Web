@@ -31,58 +31,43 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var vm = new SelectConferenceViewModel
             {
-                Title = "Kongre Seç",
-                Lead = "Raporları görüntülemek için önce kongre seçin.",
+                Title = "Raporlama Merkezi",
+                Lead = "Verilerini incelemek istediğiniz kongreyi seçerek devam edin.",
                 PostUrl = "/admin/reports/select",
-                SubmitText = "Devam Et",
+                SubmitText = "Raporları Görüntüle",
                 Conferences = conferences
             };
 
             return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", vm);
         }
 
-        [HttpPost("/admin/reports/select")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SelectConferencePost(Guid conferenceId)
-        {
-            var conf = await _context.Conferences
-                .AsNoTracking()
-                .Include(c => c.Tenant)
-                .FirstOrDefaultAsync(c => c.Id == conferenceId);
+      [HttpPost("/admin/reports/select")]
+public async Task<IActionResult> SelectConferencePost(Guid conferenceId)
+{
+    var conf = await _context.Conferences.Include(c => c.Tenant)
+        .FirstOrDefaultAsync(c => c.Id == conferenceId);
+    
+    if (conf == null) return NotFound();
 
-            if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
-            {
-                TempData["ErrorMessage"] = "Kongre bulunamadı.";
-                return RedirectToAction(nameof(SelectConference));
-            }
 
-            return RedirectToAction(nameof(Index), new { slug = conf.Tenant.Slug, conferenceId = conf.Id });
-        }
+    return RedirectToAction("Index", new { slug = conf.Tenant.Slug, conferenceId = conf.Id });
+}
 
         [HttpGet("/{slug}/admin/reports")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId)
         {
+
             if (_tenantContext.Current == null || conferenceId == null)
-            {
-                TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
                 return RedirectToAction(nameof(SelectConference));
-            }
 
             if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
-            {
-                TempData["ErrorMessage"] = "Tenant uyuşmuyor. Lütfen tekrar kongre seçin.";
                 return RedirectToAction(nameof(SelectConference));
-            }
 
             var conference = await _context.Conferences
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == conferenceId.Value && c.TenantId == _tenantContext.Current.Id);
 
-            if (conference == null)
-            {
-                TempData["ErrorMessage"] = "Seçilen kongre bulunamadı veya bu tenant'a ait değil.";
-                return RedirectToAction(nameof(SelectConference));
-            }
+            if (conference == null) return RedirectToAction(nameof(SelectConference));
 
             var submissions = await _context.Submissions
                 .AsNoTracking()
@@ -92,58 +77,56 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var submissionIds = submissions.Select(x => x.Id).ToList();
 
-            var totalAssignments = submissionIds.Count == 0
-                ? 0
-                : await _context.ReviewAssignments
+            var totalAssignments = submissionIds.Count == 0 ? 0 :
+                await _context.ReviewAssignments
                     .AsNoTracking()
                     .Where(ra => submissionIds.Contains(ra.SubmissionId))
                     .CountAsync();
 
-            var assignedSubmissions = submissionIds.Count == 0
-                ? 0
-                : await _context.ReviewAssignments
+            var assignedSubmissions = submissionIds.Count == 0 ? 0 :
+                await _context.ReviewAssignments
                     .AsNoTracking()
                     .Where(ra => submissionIds.Contains(ra.SubmissionId))
                     .Select(ra => ra.SubmissionId)
                     .Distinct()
                     .CountAsync();
 
-            var decidedSubmissions = submissions.Count(x => x.DecisionDate != null);
+            var registrations = await _context.Registrations
+                .AsNoTracking()
+                .Where(r => r.ConferenceId == conference.Id)
+                .Select(r => new { r.Amount, r.IsPaid })
+                .ToListAsync();
 
             var vm = new ReportsIndexViewModel
             {
                 ConferenceId = conference.Id,
                 ConferenceTitle = conference.Title,
+                ConferenceName = conference.Title,
                 Slug = slug,
 
                 TotalSubmissions = submissions.Count,
                 AssignedSubmissions = assignedSubmissions,
-                DecidedSubmissions = decidedSubmissions,
+                DecidedSubmissions = submissions.Count(x => x.DecisionDate != null),
+                TotalAssignments = totalAssignments,
+
+                TotalRegistrations = registrations.Count,
+                TotalRevenue = registrations.Where(x => x.IsPaid).Sum(x => x.Amount),
 
                 NewCount = submissions.Count(x => x.Status == SubmissionStatus.New),
                 PendingCount = submissions.Count(x => x.Status == SubmissionStatus.Pending),
                 UnderReviewCount = submissions.Count(x => x.Status == SubmissionStatus.UnderReview),
-
                 AcceptedCount = submissions.Count(x => x.Status == SubmissionStatus.Accepted),
                 RejectedCount = submissions.Count(x => x.Status == SubmissionStatus.Rejected),
-                RevisionRequiredCount = submissions.Count(x => x.Status == SubmissionStatus.RevisionRequired),
-
-                TotalAssignments = totalAssignments
+                RevisionRequiredCount = submissions.Count(x => x.Status == SubmissionStatus.RevisionRequired)
             };
 
             return View("~/Areas/Admin/Views/Reports/Index.cshtml", vm);
         }
 
         [HttpGet("/Reports/Index")]
-        public IActionResult LegacyRoot()
-        {
-            return Redirect("/admin/reports");
-        }
+        public IActionResult LegacyRoot() => Redirect("/admin/reports");
 
         [HttpGet("/{slug}/Reports/Index")]
-        public IActionResult LegacyTenant(string slug)
-        {
-            return Redirect($"/{slug}/admin/reports");
-        }
+        public IActionResult LegacyTenant(string slug) => Redirect($"/{slug}/admin/reports");
     }
 }

@@ -24,5 +24,6 @@ namespace AntAbstract.Domain.Entities
         public bool IsPaid { get; set; } = false;
         public DateTime? PaymentDate { get; set; }
         public string? PaymentTransactionId { get; set; }
+        public decimal Amount { get; set; }
     }
 }

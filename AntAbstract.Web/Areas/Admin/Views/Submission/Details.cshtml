@@ -1,5 +1,6 @@
 ﻿@using AntAbstract.Application.DTOs.Submission
 @using AntAbstract.Domain.Entities
+@using AntAbstract.Application.DTOs.Review
 @model SubmissionDto
 
 @{
@@ -7,8 +8,15 @@
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 }
 
-<div class="container-fluid px-4">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    var successMsg = '@Html.Raw(TempData["SuccessMessage"])';
+    var errorMsg = '@Html.Raw(TempData["ErrorMessage"])';
+    if (successMsg) { Swal.fire('Başarılı!', successMsg, 'success'); }
+    if (errorMsg) { Swal.fire('Hata!', errorMsg, 'error'); }
+</script>
 
+<div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
         <div>
             <h4 class="fw-bold text-primary mb-0"><i class="fas fa-search me-2"></i>Bildiri İnceleme</h4>
@@ -24,41 +32,23 @@
             <div class="card shadow-sm border-0 mb-4">
                 <div class="card-header bg-white py-3">
                     <ul class="nav nav-tabs card-header-tabs" id="adminTabs" role="tablist">
-                        <li class="nav-item">
-                            <button class="nav-link active fw-bold" id="ozet-tab" data-bs-toggle="tab" data-bs-target="#ozet" type="button">Özet & İçerik</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link fw-bold" id="yazar-tab" data-bs-toggle="tab" data-bs-target="#yazar" type="button">Yazarlar</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link fw-bold" id="dosya-tab" data-bs-toggle="tab" data-bs-target="#dosya" type="button">Dosyalar</button>
-                        </li>
+                        <li class="nav-item"><button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#ozet">Özet & İçerik</button></li>
+                        <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#yazar">Yazarlar</button></li>
+                        <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#dosya">Dosyalar</button></li>
                     </ul>
                 </div>
                 <div class="card-body">
-                    <div class="tab-content" id="adminTabsContent">
-
-                        <div class="tab-pane fade show active" id="ozet" role="tabpanel">
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="ozet">
                             <h5 class="fw-bold text-dark">@Model.Title</h5>
                             <div class="p-3 bg-light rounded border mt-3">
-                                <p class="mb-0" style="white-space: pre-wrap; line-height: 1.6;">@Model.Abstract</p>
+                                <p class="mb-0" style="white-space: pre-wrap;">@Model.Abstract</p>
                             </div>
-                            <div class="mt-3">
-                                <span class="badge bg-secondary">Anahtar Kelimeler:</span> <span class="text-muted">@Model.Keywords</span>
-                            </div>
+                            <div class="mt-3"><span class="badge bg-secondary">Anahtar Kelimeler:</span> <span class="text-muted">@Model.Keywords</span></div>
                         </div>
-
-                        <div class="tab-pane fade" id="yazar" role="tabpanel">
+                        <div class="tab-pane fade" id="yazar">
                             <table class="table table-hover align-middle">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Sıra</th>
-                                        <th>Ad Soyad</th>
-                                        <th>Kurum</th>
-                                        <th>E-Posta</th>
-                                        <th>Durum</th>
-                                    </tr>
-                                </thead>
+                                <thead class="table-light"><tr><th>Sıra</th><th>Ad Soyad</th><th>Kurum</th><th>Email</th></tr></thead>
                                 <tbody>
                                     @if (Model.Authors != null)
                                     {
@@ -68,68 +58,52 @@
                                                 <td>@author.Order</td>
                                                 <td class="fw-bold">@author.FirstName @author.LastName</td>
                                                 <td>@author.Institution</td>
-                                                <td>@author.Email</td>
-                                                <td>
-                                                    @if (author.IsCorrespondingAuthor)
-                                                    {
-                                                        <span class="badge bg-info text-dark">Sorumlu</span>
-                                                    }
-                                                </td>
-                                            </tr>
-                                        }
+                                                <td>@author.Email @if(author.IsCorrespondingAuthor){
+                                                <span class="badge bg-info text-dark">Sorumlu</span>
+                                            }
+    </td>
+                                        </tr>
                                     }
+                                                                        }
                                 </tbody>
                             </table>
                         </div>
-
-                        <div class="tab-pane fade" id="dosya" role="tabpanel">
+                        <div class="tab-pane fade" id="dosya">
                             <table class="table table-bordered align-middle">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Ver.</th>
-                                        <th>Dosya Adı</th>
-                                        <th>Tarih</th>
-                                        <th>İşlem</th>
-                                    </tr>
-                                </thead>
+                                <thead class="table-light"><tr><th>Dosya Adı</th><th>Tarih</th><th>İşlem</th></tr></thead>
                                 <tbody>
                                     @if (Model.Files != null && Model.Files.Any())
                                     {
-                                        foreach (var file in Model.Files.OrderByDescending(f => f.UploadedAt))
+                                        foreach (var file in Model.Files)
                                         {
                                             <tr>
-                                                <td><span class="badge bg-secondary">V.@file.Version</span></td>
                                                 <td>@file.FileName</td>
                                                 <td>@file.UploadedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
-                                                <td>
-                                                    <a href="@file.FilePath" target="_blank" class="btn btn-sm btn-primary">
-                                                        <i class="fas fa-download me-1"></i> İndir
-                                                    </a>
-                                                </td>
+                                                <td><a href="@file.FilePath" target="_blank" class="btn btn-sm btn-primary">İndir</a></td>
                                             </tr>
                                         }
                                     }
                                     else
                                     {
-                                        <tr><td colspan="4" class="text-center text-muted">Dosya yok.</td></tr>
+                                        <tr><td colspan="3" class="text-center text-muted">Dosya yok.</td></tr>
                                     }
                                 </tbody>
                             </table>
                         </div>
-
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-4">
-
             <div class="card shadow-sm border-0 mb-4 border-start border-5 border-primary">
                 <div class="card-body">
                     <h6 class="fw-bold text-uppercase text-muted mb-3">Durum Yönetimi</h6>
-
                     <div class="mb-3 text-center">
-                        <span class="display-6 fw-bold text-primary">
+                        <h2 class="fw-bold
+                            @(Model.Status == "Accepted" ? "text-success" :
+                                                          Model.Status == "Rejected" ? "text-danger" :
+                                                          Model.Status == "UnderReview" ? "text-warning" : "text-primary")">
                             @if (Model.Status == "New")
                             {
                                 <span>Yeni</span>
@@ -142,33 +116,30 @@
                             else if (Model.Status == "Accepted")
                             {
 
-                                <span class="text-success">Kabul</span>
+                                <span>Kabul</span>
                             }
                             else if (Model.Status == "Rejected")
                             {
 
-                                <span class="text-danger">Ret</span>
+                                <span>Ret</span>
                             }
                             else
                             {
 
                                 <span>@Model.Status</span>
                             }
-                        </span>
+                        </h2>
                         <div class="text-muted small">Mevcut Durum</div>
                     </div>
 
-                    <form asp-action="ChangeStatus" method="post" class="d-grid gap-2">
+                    <form asp-action="ChangeStatus" method="post">
                         <input type="hidden" name="id" value="@Model.Id" />
-
-                        <div class="btn-group" role="group">
+                        <div class="d-grid">
                             <button type="button" class="btn btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown">
                                 Durumu Değiştir
                             </button>
                             <ul class="dropdown-menu w-100">
                                 <li><button class="dropdown-item" type="submit" name="status" value="UnderReview">🟡 İncelemeye Al</button></li>
-                                <li><button class="dropdown-item" type="submit" name="status" value="RevisionRequired">🟠 Revizyon İste</button></li>
-                                <li><hr class="dropdown-divider"></li>
                                 <li><button class="dropdown-item text-success fw-bold" type="submit" name="status" value="Accepted">🟢 Kabul Et</button></li>
                                 <li><button class="dropdown-item text-danger fw-bold" type="submit" name="status" value="Rejected">🔴 Reddet</button></li>
                             </ul>
@@ -179,44 +150,114 @@
 
             <div class="card shadow-sm border-0 mb-4">
                 <div class="card-body">
-                    <h6 class="fw-bold text-uppercase text-muted mb-3">Hakem Yönetimi</h6>
-                    <div class="alert alert-light border text-center small">
-                        Henüz hakem atanmamış.
-                    </div>
-                    <button class="btn btn-outline-primary w-100 btn-sm">
-                        <i class="fas fa-user-plus me-1"></i> Hakem Ata (Yakında)
+                    <h6 class="fw-bold text-uppercase text-muted mb-3">Hakem Değerlendirmeleri</h6>
+
+                    @if (ViewBag.Reviews != null)
+                    {
+                        var reviews = (List<ReviewAssignmentDto>)ViewBag.Reviews;
+
+                        if (reviews.Any())
+                        {
+                            <div class="table-responsive mb-3">
+                                <table class="table table-sm table-bordered" style="font-size: 0.85rem;">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Hakem</th>
+                                            <th>Durum</th>
+                                            <th>Puan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var rev in reviews)
+                                        {
+                                            <tr>
+                                                <td>@rev.ReviewerName</td>
+                                                <td>
+                                                    @if (rev.IsReviewed)
+                                                    {
+                                                        <span class="badge bg-success">Tamam</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-warning text-dark">Bekliyor</span>
+                                                    }
+                                                </td>
+                                                <td class="fw-bold text-center">
+                                                    @(rev.Score.HasValue? rev.Score.ToString() : "-")
+                                                </td>
+                                            </tr>
+                                            @if (rev.IsReviewed && (!string.IsNullOrEmpty(rev.Recommendation) || !string.IsNullOrEmpty(rev.CommentsToAuthor)))
+                                            {
+                                                <tr>
+                                                    <td colspan="3" class="bg-light text-muted fst-italic p-2">
+                                                        @if (!string.IsNullOrEmpty(rev.Recommendation))
+                                                        {
+                                                            <div class="mb-1"><strong class="text-dark">Karar:</strong> @rev.Recommendation</div>
+                                                        }
+                                                        @if (!string.IsNullOrEmpty(rev.CommentsToAuthor))
+                                                        {
+                                                            <div><strong class="text-dark">Not:</strong> @(rev.CommentsToAuthor.Length > 60 ? rev.CommentsToAuthor.Substring(0, 60) + "..." : rev.CommentsToAuthor)</div>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-light border text-center small mb-3">
+                                Henüz atama yapılmamış.
+                            </div>
+                        }
+                    }
+
+                    <button type="button" class="btn btn-outline-primary w-100 btn-sm" data-bs-toggle="modal" data-bs-target="#assignReviewerModal">
+                        <i class="fas fa-plus me-1"></i> Yeni Hakem Ata
                     </button>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<div class="modal fade" id="assignReviewerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-controller="Review" asp-action="AssignReviewer" method="post">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold">Hakem Atama</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="SubmissionId" value="@Model.Id" />
 
-<script>
-
-    var successMsg = '@TempData["SuccessMessage"]';
-    var errorMsg = '@TempData["ErrorMessage"]';
-
-    if (successMsg) {
-        Swal.fire({
-            icon: 'success',           
-            title: 'İşlem Başarılı!',  
-            text: successMsg,          
-            confirmButtonColor: '#3085d6',
-            confirmButtonText: 'Tamam'
-        });
-    }
-
-    if (errorMsg) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Hata!',
-            text: errorMsg,
-            confirmButtonColor: '#d33',
-            confirmButtonText: 'Tamam'
-        });
-    }
-</script>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Listeden Hakem Seçiniz</label>
+                        <select name="ReviewerId" class="form-select" required>
+                            <option value="">-- Seçim Yapınız --</option>
+                            @if (ViewBag.Referees != null)
+                            {
+                                foreach (var referee in (IList<AntAbstract.Domain.Entities.AppUser>)ViewBag.Referees)
+                                {
+                                    <option value="@referee.Id">
+                                        @referee.FirstName @referee.LastName (@referee.Email)
+                                    </option>
+                                }
+                            }
+                        </select>
+                        <div class="form-text small mt-1">
+                            Listede sadece <strong>"Referee"</strong> rolüne sahip kullanıcılar görünür.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Atamayı Tamamla</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

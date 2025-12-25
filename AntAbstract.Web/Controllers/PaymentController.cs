@@ -132,6 +132,18 @@ namespace AntAbstract.Web.Controllers
             return View(paymentModel);
         }
 
+        [HttpGet("success")]
+        public IActionResult Success()
+        {
+            return View();
+        }
+
+        [HttpGet("cancel")]
+        public IActionResult Cancel()
+        {
+            return View();
+        }
+
         [HttpPost("process")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ProcessPayment(Payment model)
@@ -179,10 +191,5 @@ namespace AntAbstract.Web.Controllers
             return RedirectToAction("Success", new { slug = slug });
         }
 
-        [HttpGet("success")]
-        public IActionResult Success()
-        {
-            return View();
-        }
     }
 }

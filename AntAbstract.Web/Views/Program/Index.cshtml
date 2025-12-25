@@ -1,0 +1,114 @@
+﻿@model IEnumerable<AntAbstract.Domain.Entities.Session>
+@{
+    ViewData["Title"] = "Bilimsel Program";
+    Layout = "_Layout"; 
+    
+    var groups = Model.GroupBy(x => x.SessionDate.Date).OrderBy(x => x.Key).ToList();
+}
+
+<div class="container py-5 mt-4">
+    <div class="text-center mb-5">
+        <h6 class="text-primary fw-bold text-uppercase ls-2">TAKVİM</h6>
+        <h2 class="fw-bold">Bilimsel Program</h2>
+        <p class="text-muted">@ViewBag.ConferenceName</p>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-light text-center border py-5">
+            <i class="far fa-calendar-times fa-3x text-muted mb-3 opacity-50"></i>
+            <p class="text-muted">Henüz program açıklanmamıştır. Lütfen daha sonra tekrar kontrol ediniz.</p>
+        </div>
+    }
+    else
+    {
+        <ul class="nav nav-pills justify-content-center mb-5" id="program-tabs" role="tablist">
+            @for (int i = 0; i < groups.Count; i++)
+            {
+                var group = groups[i];
+                <li class="nav-item mx-1" role="presentation">
+                    <button class="nav-link px-4 py-2 fw-bold @(i == 0 ? "active" : "") shadow-sm" 
+                            id="tab-@i" 
+                            data-bs-toggle="pill" 
+                            data-bs-target="#content-@i" 
+                            type="button" 
+                            role="tab">
+                        @group.Key.ToString("dd MMMM dddd")
+                    </button>
+                </li>
+            }
+        </ul>
+
+        <div class="tab-content" id="program-tabs-content">
+            @for (int i = 0; i < groups.Count; i++)
+            {
+                var group = groups[i];
+                <div class="tab-pane fade @(i == 0 ? "show active" : "")" id="content-@i" role="tabpanel">
+                    
+                    <div class="row g-4">
+                        @foreach (var session in group.OrderBy(s => s.SessionDate))
+                        {
+                            <div class="col-lg-6">
+                                <div class="card h-100 border-0 shadow-sm hover-shadow transition-all">
+                                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <span class="badge bg-primary bg-opacity-10 text-primary mb-2">
+                                                    <i class="far fa-clock me-1"></i> @session.SessionDate.ToString("HH:mm")
+                                                </span>
+                                                <span class="badge bg-secondary bg-opacity-10 text-secondary mb-2 ms-1">
+                                                    <i class="fas fa-map-marker-alt me-1"></i> @(session.Location ?? "Salon Belirtilmedi")
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <h5 class="card-title fw-bold text-dark mt-2 mb-1">@session.Title</h5>
+                                    </div>
+                                    
+                                    <div class="card-body px-4">
+                                        <hr class="text-muted opacity-10 my-3">
+                                        
+                                        @if (session.Submissions != null && session.Submissions.Any())
+                                        {
+                                            <ul class="list-unstyled mb-0">
+                                                @foreach (var sub in session.Submissions)
+                                                {
+                                                    <li class="mb-3 pb-3 border-bottom border-light last-no-border">
+                                                        <div class="fw-bold text-dark small mb-1">@sub.Title</div>
+                                                        <div class="text-muted small fst-italic">
+                                                            <i class="fas fa-user-circle me-1 text-primary opacity-50"></i>
+                                                            @sub.Author?.FirstName @sub.Author?.LastName
+                                                        </div>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        }
+                                        else
+                                        {
+                                            <p class="text-muted small fst-italic mb-0">Detaylar yakında eklenecektir.</p>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .hover-shadow:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    }
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+    .last-no-border:last-child {
+        border-bottom: none !important;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+    }
+</style>

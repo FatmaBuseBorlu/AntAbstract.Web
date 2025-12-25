@@ -1,96 +1,147 @@
-﻿@model AntAbstract.Web.Models.ViewModels.ReportsIndexViewModel
-
+﻿@using AntAbstract.Web.Models.ViewModels
+@model ReportsIndexViewModel
 @{
     ViewData["Title"] = "Raporlar";
-    Layout = "_LayoutDashboard";
+  
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var slug = Context.GetRouteValue("slug");
 }
 
-<div class="container-fluid">
+<div class="container py-5 mt-5">
 
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h4 class="fw-bold mb-1">Raporlar</h4>
-            <small class="text-muted d-block">
-                Seçili Kongre: <strong>@Model.ConferenceTitle</strong> (@Model.Slug)
-            </small>
+            <h3 class="fw-bold mb-1 text-dark">Raporlar & İstatistikler</h3>
+            <p class="text-muted mb-0">Kongre: <span class="badge bg-light text-dark border">@Model.ConferenceTitle</span></p>
         </div>
-
-        <a href="/admin/reports" class="btn btn-outline-primary btn-sm">
-            <i class="fas fa-exchange-alt me-1"></i> Kongre Değiştir
-        </a>
-    </div>
-
-    <div class="row g-3">
-        <div class="col-12 col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Toplam Bildiri</div>
-                    <div class="fs-3 fw-bold">@Model.TotalSubmissions</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12 col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Atanan Bildiri</div>
-                    <div class="fs-3 fw-bold">@Model.AssignedSubmissions</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12 col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Toplam Atama</div>
-                    <div class="fs-3 fw-bold">@Model.TotalAssignments</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12 col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Karar Verilen</div>
-                    <div class="fs-3 fw-bold">@Model.DecidedSubmissions</div>
-                </div>
-            </div>
+        <div class="btn-group shadow-sm">
+            <a href="/admin/reports" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-exchange-alt me-1"></i> Kongre Değiştir
+            </a>
+            @* İleride yapacağımız Excel butonu buraya gelecek *@
+            <button class="btn btn-success btn-sm disabled">
+                <i class="fas fa-file-excel me-1"></i> Excel İndir
+            </button>
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm mt-3">
-        <div class="card-body">
-            <div class="fw-bold mb-2">Durum Dağılımı</div>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm animate__animated animate__fadeIn">
+            <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+        </div>
+    }
 
-            <div class="table-responsive">
-                <table class="table table-sm align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Durum</th>
-                            <th style="width: 120px;">Adet</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td>Yeni</td><td class="fw-bold">@Model.NewCount</td></tr>
-                        <tr><td>Beklemede</td><td class="fw-bold">@Model.PendingCount</td></tr>
-                        <tr><td>Değerlendirmede</td><td class="fw-bold">@Model.UnderReviewCount</td></tr>
-                        <tr><td>Kabul</td><td class="fw-bold">@Model.AcceptedCount</td></tr>
-                        <tr><td>Red</td><td class="fw-bold">@Model.RejectedCount</td></tr>
-                        <tr><td>Revizyon</td><td class="fw-bold">@Model.RevisionRequiredCount</td></tr>
-                    </tbody>
-                </table>
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 bg-primary text-white">
+                <div class="card-body p-4 text-center">
+                    <div class="small text-uppercase opacity-75 mb-2">Toplam Başvuru</div>
+                    <div class="display-5 fw-bold">@Model.TotalSubmissions</div>
+                </div>
             </div>
+        </div>
 
-            <div class="mt-3 d-flex gap-2 flex-wrap">
-                <a class="btn btn-sm btn-outline-info" href="/@Model.Slug/admin/assignment?conferenceId=@Model.ConferenceId">
-                    <i class="fas fa-tasks me-1"></i> Özet Atama
-                </a>
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 bg-info text-white">
+                <div class="card-body p-4 text-center">
+                    <div class="small text-uppercase opacity-75 mb-2">Hakem Atanan</div>
+                    <div class="display-5 fw-bold">@Model.AssignedSubmissions</div>
+                </div>
+            </div>
+        </div>
 
-                <a class="btn btn-sm btn-outline-danger" href="/@Model.Slug/admin/decision">
-                    <i class="fas fa-gavel me-1"></i> Karar Ekranı
-                </a>
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 bg-success text-white">
+                <div class="card-body p-4 text-center">
+                    <div class="small text-uppercase opacity-75 mb-2">Karar Verilen</div>
+                    <div class="display-5 fw-bold">@Model.DecidedSubmissions</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 bg-warning text-dark">
+                <div class="card-body p-4 text-center">
+                    <div class="small text-uppercase opacity-75 mb-2">Toplam Atama</div>
+                    <div class="display-5 fw-bold">@Model.TotalAssignments</div>
+                </div>
             </div>
         </div>
     </div>
 
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom-0">
+                    <h6 class="fw-bold m-0"><i class="fas fa-chart-pie me-2 text-primary"></i> Başvuru Durum Dağılımı</h6>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center pb-5">
+                    <canvas id="statusChart" style="max-height: 280px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom-0">
+                    <h6 class="fw-bold m-0"><i class="fas fa-list me-2 text-primary"></i> Detaylı Durumlar</h6>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
+                            <span><i class="fas fa-circle text-primary me-2 small"></i> Yeni Başvuru (New)</span>
+                            <span class="badge bg-primary rounded-pill">@Model.NewCount</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
+                            <span><i class="fas fa-circle text-warning me-2 small"></i> Değerlendirmede (Under Review)</span>
+                            <span class="badge bg-warning text-dark rounded-pill">@Model.UnderReviewCount</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
+                            <span><i class="fas fa-circle text-success me-2 small"></i> Kabul Edilen (Accepted)</span>
+                            <span class="badge bg-success rounded-pill">@Model.AcceptedCount</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
+                            <span><i class="fas fa-circle text-danger me-2 small"></i> Reddedilen (Rejected)</span>
+                            <span class="badge bg-danger rounded-pill">@Model.RejectedCount</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4 border-bottom-0">
+                            <span><i class="fas fa-circle text-secondary me-2 small"></i> Revizyon Bekleyen (Revision)</span>
+                            <span class="badge bg-secondary rounded-pill">@Model.RevisionRequiredCount</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var ctx = document.getElementById('statusChart').getContext('2d');
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Yeni', 'İnceleniyor', 'Kabul', 'Red', 'Revizyon'],
+                    datasets: [{
+                        data: [@Model.NewCount, @Model.UnderReviewCount, @Model.AcceptedCount, @Model.RejectedCount, @Model.RevisionRequiredCount],
+                        backgroundColor: ['#0d6efd', '#ffc107', '#198754', '#dc3545', '#6c757d'],
+                        borderWidth: 0,
+                        hoverOffset: 15
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true } }
+                    }
+                }
+            });
+        });
+    </script>
+}

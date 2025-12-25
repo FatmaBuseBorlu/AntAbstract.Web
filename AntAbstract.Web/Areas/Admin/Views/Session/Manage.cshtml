@@ -1,0 +1,93 @@
+﻿@model AntAbstract.Domain.Entities.Session
+@{
+    ViewData["Title"] = "Oturum Planlama";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    var slug = Context.GetRouteValue("slug");
+    var unassigned = ViewBag.UnassignedSubmissions as List<AntAbstract.Domain.Entities.Submission>;
+}
+
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="/@slug/admin/session" class="btn btn-light border me-3"><i class="fas fa-arrow-left"></i></a>
+        <div>
+            <h4 class="fw-bold mb-0">Oturum Planlama: @Model.Title</h4>
+            <small class="text-muted">@Model.SessionDate.ToString("dd MMMM yyyy HH:mm") - @Model.Location</small>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-success text-white py-3">
+                    <h6 class="mb-0 fw-bold"><i class="fas fa-check-circle me-2"></i> Bu Oturuma Atananlar</h6>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        @if (Model.Submissions.Any())
+                        {
+                            foreach (var sub in Model.Submissions)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                    <div>
+                                        <div class="fw-bold">@sub.Title</div>
+                                        <small class="text-muted">@sub.Author?.FirstName @sub.Author?.LastName</small>
+                                    </div>
+                                    <form method="post" action="/@slug/admin/session/removesubmission">
+                                        <input type="hidden" name="sessionId" value="@Model.Id" />
+                                        <input type="hidden" name="submissionId" value="@sub.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Oturumdan Çıkar">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                    </form>
+                                </li>
+                            }
+                        }
+                        else
+                        {
+                            <li class="list-group-item text-center text-muted py-5">
+                                Bu oturumda henüz bildiri yok. Sağ taraftan ekleyin.
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-secondary text-white py-3">
+                    <h6 class="mb-0 fw-bold"><i class="fas fa-inbox me-2"></i> Bekleyen Kabul Edilmiş Bildiriler</h6>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        @if (unassigned != null && unassigned.Any())
+                        {
+                            foreach (var sub in unassigned)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                    <div>
+                                        <div class="fw-bold">@sub.Title</div>
+                                        <small class="text-muted">@sub.Author?.FirstName @sub.Author?.LastName</small>
+                                    </div>
+                                    <form method="post" action="/@slug/admin/session/addsubmission">
+                                        <input type="hidden" name="sessionId" value="@Model.Id" />
+                                        <input type="hidden" name="submissionId" value="@sub.Id" />
+                                        <button type="submit" class="btn btn-sm btn-success fw-bold">
+                                            Ekle <i class="fas fa-arrow-left ms-1"></i>
+                                        </button>
+                                    </form>
+                                </li>
+                            }
+                        }
+                        else
+                        {
+                            <li class="list-group-item text-center text-muted py-5">
+                                Atanacak boşta bildiri kalmadı.
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
