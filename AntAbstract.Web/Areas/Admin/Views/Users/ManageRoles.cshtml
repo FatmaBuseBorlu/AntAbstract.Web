@@ -1,8 +1,9 @@
-﻿@model AntAbstract.Web.Models.ViewModels.ManageUserRolesViewModel
+﻿@using AntAbstract.Web.Models.ViewModels
+@model UserWithRolesViewModel
 
 @{
-    ViewData["Title"] = "Kullanıcı Rol Yönetimi";
-    Layout = "_LayoutDashboard";
+    ViewData["Title"] = "Rol Yönetimi";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 }
 
 <div class="container-fluid">
@@ -13,21 +14,17 @@
             <small class="text-muted">Kullanıcı: <strong>@Model.UserEmail</strong></small>
         </div>
 
-        <a asp-controller="Admin" asp-action="UserList" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-1"></i> Listeye Dön
+        <a asp-area="Admin" asp-controller="Users" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            Listeye Dön
         </a>
     </div>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success border-0">@TempData["SuccessMessage"]</div>
-    }
     @if (TempData["ErrorMessage"] != null)
     {
         <div class="alert alert-danger border-0">@TempData["ErrorMessage"]</div>
     }
 
-    <form asp-action="ManageRoles" asp-controller="Admin" method="post">
+    <form asp-area="Admin" asp-controller="Users" asp-action="ManageRoles" method="post">
         @Html.AntiForgeryToken()
         <input asp-for="UserId" type="hidden" />
 
@@ -53,9 +50,9 @@
 
             <div class="card-footer bg-white border-0 d-flex gap-2 justify-content-end p-3">
                 <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save me-1"></i> Kaydet
+                    Kaydet
                 </button>
-                <a asp-action="UserList" asp-controller="Admin" class="btn btn-light">
+                <a asp-area="Admin" asp-controller="Users" asp-action="Index" class="btn btn-light">
                     İptal
                 </a>
             </div>
@@ -63,3 +60,7 @@
     </form>
 
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

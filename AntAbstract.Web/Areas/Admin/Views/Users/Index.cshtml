@@ -1,0 +1,162 @@
+﻿@using AntAbstract.Web.Models.ViewModels
+@model List<UserListItemViewModel>
+
+@{
+    ViewData["Title"] = "Kullanıcı Yönetimi";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+}
+
+<div class="card border-0 shadow-sm mb-4 bg-white">
+    <div class="card-body p-4 d-flex align-items-center justify-content-between">
+        <div>
+            <h6 class="text-muted text-uppercase fw-bold small mb-1" style="font-size: 0.75rem; letter-spacing: 1px;">YÖNETİM</h6>
+            <h4 class="fw-bold text-dark mb-0">Kullanıcı Rol Yönetimi</h4>
+        </div>
+        <div class="d-none d-md-block text-end">
+            <div class="icon-shape bg-danger bg-opacity-10 text-danger rounded-circle p-3">
+                <i class="fas fa-users-cog fa-2x"></i>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer border-0 py-1 bg-danger"></div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success border-0 shadow-sm">
+        <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger border-0 shadow-sm">
+        <i class="fas fa-times-circle me-2"></i> @TempData["ErrorMessage"]
+    </div>
+}
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="ps-4 py-3 border-0">Kullanıcı</th>
+                        <th class="py-3 border-0">Email</th>
+                        <th class="py-3 border-0">Mevcut Roller</th>
+                        <th class="py-3 border-0 text-end pe-4">İşlemler</th>
+                    </tr>
+                </thead>
+
+                <tbody class="border-top-0">
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var user in Model)
+                        {
+                            <tr>
+                                <td class="ps-4 py-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center me-3 fw-bold" style="width: 40px; height: 40px; font-size:14px;">
+                                            @(string.IsNullOrWhiteSpace(user.Name) ? "?" : user.Name.Substring(0, 1).ToUpper())
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 fw-bold text-dark">@user.Name</h6>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td class="text-muted small">@user.Email</td>
+
+                                <td>
+                                    @if (user.Roles != null && user.Roles.Any())
+                                    {
+                                        foreach (var role in user.Roles)
+                                        {
+                                            <span class="badge bg-light text-dark border me-1 position-relative">
+                                                @role
+
+                                                <form asp-area="Admin" asp-controller="Users" asp-action="RemoveRole" method="post" style="display:inline;">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="userId" value="@user.UserId" />
+                                                    <input type="hidden" name="roleName" value="@role" />
+                                                    <button type="submit" class="btn btn-link text-danger p-0 ms-2 text-decoration-none" style="font-size: 10px; vertical-align: text-top;">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </form>
+                                            </span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+
+                                <td class="text-end pe-4">
+                                    <a asp-area="Admin"
+                                       asp-controller="Users"
+                                       asp-action="ManageRoles"
+                                       asp-route-userId="@user.UserId"
+                                       class="btn btn-sm btn-outline-secondary me-2">
+                                        Rolleri Düzenle
+                                    </a>
+
+                                    <div class="dropdown d-inline-block">
+                                        <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            Yetki Ver
+                                        </button>
+
+                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                            <li>
+                                                <form asp-area="Admin" asp-controller="Users" asp-action="AssignRole" method="post">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="userId" value="@user.UserId" />
+                                                    <input type="hidden" name="roleName" value="Referee" />
+                                                    <button type="submit" class="dropdown-item small">
+                                                        <i class="fas fa-gavel text-warning me-2"></i> Hakem Yap
+                                                    </button>
+                                                </form>
+                                            </li>
+
+                                            <li>
+                                                <form asp-area="Admin" asp-controller="Users" asp-action="AssignRole" method="post">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="userId" value="@user.UserId" />
+                                                    <input type="hidden" name="roleName" value="Author" />
+                                                    <button type="submit" class="dropdown-item small">
+                                                        <i class="fas fa-pen-nib text-primary me-2"></i> Yazar Yap
+                                                    </button>
+                                                </form>
+                                            </li>
+
+                                            <li><hr class="dropdown-divider"></li>
+
+                                            <li>
+                                                <form asp-area="Admin" asp-controller="Users" asp-action="AssignRole" method="post">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="userId" value="@user.UserId" />
+                                                    <input type="hidden" name="roleName" value="Admin" />
+                                                    <button type="submit" class="dropdown-item small text-danger fw-bold">
+                                                        <i class="fas fa-shield-alt me-2"></i> Admin Yap
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                <p class="mb-0">Kayıtlı kullanıcı yok.</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,9 +1,11 @@
-﻿namespace AntAbstract.Infrastructure.Services
+﻿using System.Security.Cryptography;
+
+namespace AntAbstract.Infrastructure.Services
 {
     public interface ISelectedConferenceService
     {
         Guid? GetSelectedConferenceId();
         void SetSelectedConferenceId(Guid conferenceId);
-        void Clear();
+        void ClearSelectedConferenceId();
     }
 }

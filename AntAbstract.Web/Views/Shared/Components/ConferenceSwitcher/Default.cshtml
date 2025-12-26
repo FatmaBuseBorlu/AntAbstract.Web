@@ -1,0 +1,67 @@
+﻿@* AntAbstract.Web/Views/Shared/Components/ConferenceSwitcher/Default.cshtml *@
+@using AntAbstract.Web.Models.ViewModels
+@model ConferenceSwitcherModel
+
+@{
+    var currentSlug = ViewContext.RouteData.Values["slug"]?.ToString() ?? "";
+    var myConferencesUrl = string.IsNullOrWhiteSpace(currentSlug)
+        ? "/Dashboard/MyConferences"
+        : $"/{currentSlug}/Dashboard/MyConferences";
+}
+
+@if (Model != null && Model.Conferences != null && Model.Conferences.Count > 0)
+{
+    if (!Model.SelectedConferenceId.HasValue)
+    {
+        <a href="@myConferencesUrl" class="btn btn-sm btn-danger px-3 rounded-3 me-2">
+            <i class="fas fa-hand-pointer me-1"></i> Kongre Seç
+        </a>
+    }
+    else
+    {
+        <div class="dropdown me-2">
+            <button class="btn btn-sm btn-outline-primary dropdown-toggle px-3 rounded-3" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-university me-1"></i> @(Model.CurrentConferenceName ?? "Kongre Seçildi")
+            </button>
+
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                <li>
+                    <a class="dropdown-item" href="@myConferencesUrl">
+                        <i class="fas fa-exchange-alt me-2"></i> Kongre Değiştir
+                    </a>
+                </li>
+
+                <li><hr class="dropdown-divider" /></li>
+
+                @foreach (var c in Model.Conferences)
+                {
+                    var isActive = Model.SelectedConferenceId.HasValue && Model.SelectedConferenceId.Value == c.Id;
+
+                    <li>
+                        <form asp-controller="Dashboard"
+                              asp-action="SelectConferencePost"
+                              asp-route-slug="@currentSlug"
+                              method="post"
+                              class="m-0">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="conferenceId" value="@c.Id" />
+                            <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+
+                            <button type="submit" class="dropdown-item @(isActive ? "active fw-bold" : "")">
+                                @if (isActive)
+                                {
+                                    <i class="fas fa-check me-2"></i>
+                                }
+                                else
+                                {
+                                    <i class="far fa-circle me-2"></i>
+                                }
+                                @c.Title
+                            </button>
+                        </form>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+}

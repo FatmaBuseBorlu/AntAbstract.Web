@@ -4,14 +4,19 @@
     ViewData["Title"] = "Kongre Akışı";
     Layout = "_LayoutDashboard";
 
-    var changeUrl = string.IsNullOrWhiteSpace(Model.Slug) ? "/admin/conferenceflow" : $"/{Model.Slug}/admin/conferenceflow";
-    var assignmentUrl = string.IsNullOrWhiteSpace(Model.Slug)
-        ? $"/admin/assignment?conferenceId={Model.ConferenceId}"
-        : $"/{Model.Slug}/admin/assignment?conferenceId={Model.ConferenceId}";
+    var slug = Model.Slug ?? "";
 
-    var decisionUrl = string.IsNullOrWhiteSpace(Model.Slug)
-        ? $"/admin/decision"
-        : $"/{Model.Slug}/admin/decision?conferenceId={Model.ConferenceId}";
+    var changeUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Admin/ConferenceFlow"
+        : $"/{slug}/Admin/ConferenceFlow";
+
+    var assignmentUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Admin/Assignment"
+        : $"/{slug}/Admin/Assignment?conferenceId={Model.ConferenceId}";
+
+    var decisionUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Admin/Decision"
+        : $"/{slug}/Admin/Decision?conferenceId={Model.ConferenceId}";
 }
 
 <div class="container-fluid">

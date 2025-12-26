@@ -1,17 +1,52 @@
 ﻿@model IEnumerable<AntAbstract.Domain.Entities.Conference>
+
 @{
-    ViewData["Title"] = "Katıldığım Kongreler";
+    ViewData["Title"] = "Kongre Seç";
     Layout = "_LayoutDashboard";
+
+    var returnUrl = Context.Request.Query["returnUrl"].ToString();
+
+    var selectedIdStr = Context.Session.GetString("SelectedConferenceId");
+    Guid? selectedConferenceId = Guid.TryParse(selectedIdStr, out var sid) ? sid : null;
 }
 
 <div class="container-fluid">
-    <h3 class="fw-bold mb-4 text-dark">Katıldığım Etkinlikler</h3>
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h3 class="fw-bold mb-1 text-dark">Kongre Seç</h3>
+            <div class="text-muted">
+                Devam etmek istediğiniz kongreyi seçin. Seçimden sonra kongreye bağlı modüller menüde açılacaktır.
+            </div>
+        </div>
+    </div>
 
-    <div class="row g-4">
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="row g-4 mt-2">
         @if (Model != null && Model.Any())
         {
-            @foreach (var kongre in Model)
+            foreach (var kongre in Model)
             {
+                var tenantSlug = kongre.Tenant?.Slug ?? kongre.Slug ?? "";
+                var fallbackReturnUrl = string.IsNullOrWhiteSpace(tenantSlug) ? "/Dashboard" : $"/{tenantSlug}/Dashboard";
+
+                var effectiveReturnUrl = fallbackReturnUrl;
+                if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                {
+                    var sameTenant = !string.IsNullOrWhiteSpace(tenantSlug) &&
+                    returnUrl.StartsWith($"/{tenantSlug}/", StringComparison.OrdinalIgnoreCase);
+
+                    var rootDash = returnUrl.StartsWith("/Dashboard", StringComparison.OrdinalIgnoreCase);
+
+                    if (sameTenant || rootDash)
+                        effectiveReturnUrl = returnUrl;
+                }
+
+                var isSelected = selectedConferenceId.HasValue && selectedConferenceId.Value == kongre.Id;
+
                 <div class="col-md-6 col-xl-4">
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-body p-4">
@@ -19,27 +54,55 @@
                                 <div class="me-3">
                                     @if (!string.IsNullOrEmpty(kongre.LogoPath))
                                     {
-                                        <img src="@kongre.LogoPath" style="width: 60px; height: 60px; object-fit: contain;" class="rounded-circle border p-1">
+                                        <img src="@kongre.LogoPath"
+                                             style="width: 60px; height: 60px; object-fit: contain;"
+                                             class="rounded-circle border p-1">
                                     }
                                     else
                                     {
-                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-primary" style="width: 60px; height: 60px;">
+                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-primary"
+                                             style="width: 60px; height: 60px;">
                                             <i class="fas fa-university fs-3"></i>
                                         </div>
                                     }
                                 </div>
-                                <div>
-                                    <span class="badge bg-light text-primary border mb-1">@kongre.Slug</span>
-                                    <h6 class="fw-bold text-dark mb-0 line-clamp-2">@kongre.Title</h6>
+
+                                <div class="overflow-hidden flex-grow-1">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="badge bg-light text-primary border">@tenantSlug</span>
+                                        @if (isSelected)
+                                        {
+                                            <span class="badge bg-success">Seçili</span>
+                                        }
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-0 text-truncate" title="@kongre.Title">@kongre.Title</h6>
                                 </div>
                             </div>
 
                             <div class="text-muted small mb-3">
-                                <p class="mb-1"><i class="far fa-calendar-alt me-2"></i> @kongre.StartDate.ToString("dd MMMM yyyy")</p>
-                                <p class="mb-0"><i class="fas fa-map-marker-alt me-2"></i> @(kongre.City ?? "Online")</p>
+                                <div class="mb-1">
+                                    <i class="far fa-calendar-alt me-2"></i>@kongre.StartDate.ToString("dd MMMM yyyy")
+                                </div>
+                                <div>
+                                    <i class="fas fa-map-marker-alt me-2"></i>@(kongre.City ?? "Online")
+                                </div>
                             </div>
 
-                            <a href="/@kongre.Slug" target="_blank" class="btn btn-outline-primary w-100 btn-sm fw-bold">
+                            <form asp-controller="Dashboard"
+                                  asp-action="SelectConferencePost"
+                                  asp-route-slug="@tenantSlug"
+                                  method="post"
+                                  class="mb-2">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="conferenceId" value="@kongre.Id" />
+                                <input type="hidden" name="returnUrl" value="@effectiveReturnUrl" />
+
+                                <button type="submit" class="btn btn-primary w-100 btn-sm fw-bold" @(isSelected ? "disabled" : "")>
+                                    @(isSelected ? "Seçili Kongre" : "Bu Kongre ile Devam Et")
+                                </button>
+                            </form>
+
+                            <a href="/@tenantSlug" target="_blank" class="btn btn-outline-primary w-100 btn-sm fw-bold">
                                 Kongre Sayfasına Git
                             </a>
                         </div>

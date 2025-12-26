@@ -1,15 +1,23 @@
 ﻿@model AntAbstract.Domain.Entities.Session
 
 @{
-    ViewData["Title"] = "Yeni Oturum";
+    ViewData["Title"] = "Oturum Düzenle";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
     var slug = Context.GetRouteValue("slug")?.ToString() ?? "";
     var conferenceId = Context.Request.Query["conferenceId"].ToString();
 
-    var backUrl = string.IsNullOrWhiteSpace(conferenceId)
-        ? $"/{slug}/Admin/Session"
-        : $"/{slug}/Admin/Session?conferenceId={conferenceId}";
+    var backUrl = string.IsNullOrWhiteSpace(slug)
+        ? (string.IsNullOrWhiteSpace(conferenceId)
+            ? "/Admin/Session"
+            : $"/Admin/Session?conferenceId={conferenceId}")
+        : (string.IsNullOrWhiteSpace(conferenceId)
+            ? $"/{slug}/Admin/Session"
+            : $"/{slug}/Admin/Session?conferenceId={conferenceId}");
+
+    var sessionDateValue = Model.SessionDate == default
+        ? ""
+        : Model.SessionDate.ToString("yyyy-MM-ddTHH:mm");
 }
 
 <div class="container py-4">
@@ -18,7 +26,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center justify-content-between mb-4">
-                        <h4 class="fw-bold mb-0">Yeni Oturum Oluştur</h4>
+                        <h4 class="fw-bold mb-0">Oturum Düzenle</h4>
                         <a href="@backUrl" class="btn btn-light border">
                             <i class="fas fa-arrow-left"></i>
                         </a>
@@ -26,38 +34,37 @@
 
                     <form asp-area="Admin"
                           asp-controller="Session"
-                          asp-action="Create"
+                          asp-action="Edit"
                           asp-route-slug="@slug"
+                          asp-route-id="@Model.Id"
                           asp-route-conferenceId="@conferenceId"
                           method="post">
                         @Html.AntiForgeryToken()
 
                         <div class="mb-3">
                             <label class="form-label text-muted small fw-bold">Oturum Başlığı</label>
-                            <input asp-for="Title" class="form-control" placeholder="Örn: Yapay Zeka Oturumu - 1" required />
+                            <input asp-for="Title" class="form-control" required />
                             <span asp-validation-for="Title" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label text-muted small fw-bold">Tarih ve Saat</label>
-
-                            <input class="form-control"
+                            <input name="SessionDate"
                                    type="datetime-local"
-                                   name="SessionDate"
-                                   value="@(Model.SessionDate == default ? "" : Model.SessionDate.ToString("yyyy-MM-ddTHH:mm"))"
+                                   class="form-control"
+                                   value="@sessionDateValue"
                                    required />
-
                             <span asp-validation-for="SessionDate" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label text-muted small fw-bold">Salon / Konum</label>
-                            <input asp-for="Location" class="form-control" placeholder="Örn: Salon A" />
+                            <input asp-for="Location" class="form-control" />
                             <span asp-validation-for="Location" class="text-danger small"></span>
                         </div>
 
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary fw-bold">Oluştur</button>
+                            <button type="submit" class="btn btn-primary fw-bold">Kaydet</button>
                             <a href="@backUrl" class="btn btn-outline-secondary">İptal</a>
                         </div>
                     </form>

@@ -1,12 +1,13 @@
 ﻿@model AntAbstract.Web.Models.ViewModels.SelectConferenceViewModel
+
 @{
     ViewData["Title"] = Model.Title;
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 }
 
 <style>
     body {
-        background-color: #f4f7f9; /* Hafif mavi-gri kurumsal arka plan */
+        background-color: #f4f7f9;
     }
 
     .selection-wrapper {
@@ -46,7 +47,7 @@
 
         .select-lg-custom:focus {
             border-color: #00aeef;
-            box-shadow: 0 0 0 0.25 margin-bottom rgba(0, 174, 239, 0.1);
+            box-shadow: 0 0 0 0.25rem rgba(0, 174, 239, 0.15);
         }
 
     .btn-submit-custom {
@@ -68,7 +69,7 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-10">
-                <div class="card glass-card animate__animated animate__fadeInUp">
+                <div class="card glass-card">
                     <div class="row g-0">
                         <div class="col-md-5 d-none d-md-flex selection-side-info">
                             <div class="mb-4">
@@ -85,10 +86,17 @@
                         </div>
 
                         <div class="col-md-7 form-side bg-white">
-                            <div class="mb-5 text-center text-md-start">
-                                <h4 class="fw-bold text-dark">Lütfen Devam Edin</h4>
-                                <p class="text-muted">İşlem yapmak istediğiniz kongreyi seçiniz.</p>
+                            <div class="mb-4 text-center text-md-start">
+                                <h4 class="fw-bold text-dark">@Model.Title</h4>
+                                <p class="text-muted mb-0">@Model.Lead</p>
                             </div>
+
+                            @if (TempData["ErrorMessage"] != null)
+                            {
+                                <div class="alert alert-danger border-0 shadow-sm">
+                                    <i class="fas fa-times-circle me-2"></i> @TempData["ErrorMessage"]
+                                </div>
+                            }
 
                             <form action="@Model.PostUrl" method="post">
                                 @Html.AntiForgeryToken()
@@ -117,7 +125,10 @@
                             </form>
 
                             <div class="mt-5 pt-4 border-top text-center text-md-start">
-                                <span class="text-muted small">Sorun mu yaşıyorsunuz? <a href="#" class="text-decoration-none">Destek ekibiyle iletişime geçin.</a></span>
+                                <span class="text-muted small">
+                                    Sorun mu yaşıyorsunuz?
+                                    <a href="#" class="text-decoration-none">Destek ekibiyle iletişime geçin.</a>
+                                </span>
                             </div>
                         </div>
                     </div>

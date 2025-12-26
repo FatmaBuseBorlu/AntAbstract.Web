@@ -1,7 +1,9 @@
 ﻿using AntAbstract.Infrastructure.Context;
+using AntAbstract.Infrastructure.Services;
 using Microsoft.AspNetCore.Http;
+using System;
 
-namespace AntAbstract.Infrastructure.Services
+namespace AntAbstract.Web.Models.ViewModels
 {
     public class SelectedConferenceService : ISelectedConferenceService
     {
@@ -14,55 +16,53 @@ namespace AntAbstract.Infrastructure.Services
             _tenantContext = tenantContext;
         }
 
-        private string Key
-        {
-            get
-            {
-                if (_tenantContext.Current == null) return "SelectedConferenceId";
-                return $"SelectedConferenceId:{_tenantContext.Current.Id}";
-            }
-        }
-
         public Guid? GetSelectedConferenceId()
         {
             var session = _http.HttpContext?.Session;
             if (session == null)
-            {
                 return null;
-            }
 
-            var str = session.GetString(Key);
-            if (Guid.TryParse(str, out var id))
+            string? confIdStr = null;
+
+            if (_tenantContext.Current != null)
             {
-                return id;
+                var tenantKey = $"SelectedConferenceId:{_tenantContext.Current.Id}";
+                confIdStr = session.GetString(tenantKey);
             }
 
-            var fallback = session.GetString("SelectedConferenceId");
-            return Guid.TryParse(fallback, out var fallbackId) ? fallbackId : null;
+            confIdStr ??= session.GetString("SelectedConferenceId");
+
+            return Guid.TryParse(confIdStr, out var id) ? id : null;
         }
 
         public void SetSelectedConferenceId(Guid conferenceId)
         {
-            _http.HttpContext?.Session.SetString(Key, conferenceId.ToString());
             var session = _http.HttpContext?.Session;
             if (session == null)
-            {
                 return;
-            }
 
-            session.SetString(Key, conferenceId.ToString());
             session.SetString("SelectedConferenceId", conferenceId.ToString());
+
+            if (_tenantContext.Current != null)
+            {
+                var tenantKey = $"SelectedConferenceId:{_tenantContext.Current.Id}";
+                session.SetString(tenantKey, conferenceId.ToString());
+            }
         }
 
-        public void Clear()
+        public void ClearSelectedConferenceId()
         {
             var session = _http.HttpContext?.Session;
-            if (session == null) return;
+            if (session == null)
+                return;
 
-            session.Remove(Key);
             session.Remove("SelectedConferenceId");
-            session.Remove("SelectedConferenceSlug");
-        }
 
+            if (_tenantContext.Current != null)
+            {
+                var tenantKey = $"SelectedConferenceId:{_tenantContext.Current.Id}";
+                session.Remove(tenantKey);
+            }
+        }
     }
 }

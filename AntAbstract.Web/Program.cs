@@ -4,10 +4,12 @@ using AntAbstract.Application.Services;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services;
+using AntAbstract.Web.Models.ViewModels;
 using AntAbstract.Web.StartupServices;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Rotativa.AspNetCore;
 using Stripe;
@@ -156,13 +158,18 @@ app.MapControllerRoute(
     pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
 app.MapControllerRoute(
-    name: "tenant",
-    pattern: "{slug}/{controller=Home}/{action=Index}/{id?}");
-
-app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
+app.MapControllerRoute(
+    name: "tenant_areas",
+    pattern: "{slug}/{area:exists}/{controller=Home}/{action=Index}/{id?}");
+
+app.MapControllerRoute(
+    name: "tenant",
+    pattern: "{slug}/{controller=Home}/{action=Index}/{id?}");
+
 app.MapControllers();
+
 
 app.Run();

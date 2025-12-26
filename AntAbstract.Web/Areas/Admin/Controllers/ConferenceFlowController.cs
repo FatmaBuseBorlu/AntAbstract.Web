@@ -1,4 +1,5 @@
 ﻿using AntAbstract.Infrastructure.Context;
+using AntAbstract.Infrastructure.Services;
 using AntAbstract.Web.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,16 +13,36 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
     {
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
+        private readonly ISelectedConferenceService _selectedConferenceService;
 
-        public ConferenceFlowController(AppDbContext context, TenantContext tenantContext)
+        public ConferenceFlowController(
+            AppDbContext context,
+            TenantContext tenantContext,
+            ISelectedConferenceService selectedConferenceService)
         {
             _context = context;
             _tenantContext = tenantContext;
+            _selectedConferenceService = selectedConferenceService;
         }
 
-        [HttpGet("/admin/conferenceflow")]
+        [HttpGet("/Admin/ConferenceFlow")]
         public async Task<IActionResult> SelectConference()
         {
+            var selectedId = _selectedConferenceService.GetSelectedConferenceId();
+            if (selectedId != null)
+            {
+                var selectedConf = await _context.Conferences
+                    .AsNoTracking()
+                    .Include(x => x.Tenant)
+                    .FirstOrDefaultAsync(x => x.Id == selectedId.Value);
+
+                if (selectedConf?.Tenant?.Slug != null)
+                {
+                    HttpContext.Session.SetString("SelectedConferenceSlug", selectedConf.Tenant.Slug);
+                    return Redirect($"/{selectedConf.Tenant.Slug}/Admin/ConferenceFlow?conferenceId={selectedConf.Id}");
+                }
+            }
+
             var conferences = await _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
@@ -30,9 +51,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var vm = new SelectConferenceViewModel
             {
-                Title = "Kongre Seç",
+                Title = "Kongre Akışı",
                 Lead = "Kongre akışını görüntülemek için önce kongre seçin.",
-                PostUrl = "/admin/conferenceflow/select",
+                PostUrl = "/Admin/ConferenceFlow/Select",
                 SubmitText = "Devam Et",
                 Conferences = conferences
             };
@@ -40,7 +61,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", vm);
         }
 
-        [HttpPost("/admin/conferenceflow/select")]
+        [HttpPost("/Admin/ConferenceFlow/Select")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SelectConferencePost(Guid conferenceId)
         {
@@ -52,25 +73,36 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
             {
                 TempData["ErrorMessage"] = "Kongre bulunamadı.";
-                return RedirectToAction(nameof(SelectConference));
+                return Redirect("/Admin/ConferenceFlow");
             }
 
-            return RedirectToAction(nameof(Index), new { slug = conf.Tenant.Slug, conferenceId = conf.Id });
+            _selectedConferenceService.SetSelectedConferenceId(conf.Id);
+            HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
+
+            return Redirect($"/{conf.Tenant.Slug}/Admin/ConferenceFlow?conferenceId={conf.Id}");
         }
 
-        [HttpGet("/{slug}/admin/conferenceflow")]
+        [HttpGet("/{slug}/Admin/ConferenceFlow")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId)
         {
-            if (_tenantContext.Current == null || conferenceId == null)
+            if (_tenantContext.Current == null)
             {
                 TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
-                return RedirectToAction(nameof(SelectConference));
+                return Redirect("/Admin/ConferenceFlow");
             }
 
             if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
                 TempData["ErrorMessage"] = "Tenant uyuşmuyor. Lütfen tekrar kongre seçin.";
-                return RedirectToAction(nameof(SelectConference));
+                return Redirect("/Admin/ConferenceFlow");
+            }
+
+            conferenceId ??= _selectedConferenceService.GetSelectedConferenceId();
+
+            if (conferenceId == null)
+            {
+                TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
+                return Redirect("/Admin/ConferenceFlow");
             }
 
             var conference = await _context.Conferences
@@ -80,14 +112,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (conference == null)
             {
                 TempData["ErrorMessage"] = "Seçilen kongre bulunamadı veya bu tenant'a ait değil.";
-                return RedirectToAction(nameof(SelectConference));
+                return Redirect("/Admin/ConferenceFlow");
             }
 
-            var submissionQuery = _context.Submissions
+            var submissionIds = await _context.Submissions
                 .AsNoTracking()
-                .Where(s => s.ConferenceId == conference.Id);
-
-            var submissionIds = await submissionQuery
+                .Where(s => s.ConferenceId == conference.Id)
                 .Select(s => s.Id)
                 .ToListAsync();
 
@@ -102,7 +132,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     .Distinct()
                     .CountAsync();
 
-            var decidedSubmissionCount = await submissionQuery
+            var decidedSubmissionCount = await _context.Submissions
+                .AsNoTracking()
+                .Where(s => s.ConferenceId == conference.Id)
                 .CountAsync(s => s.DecisionDate != null);
 
             var vm = new ConferenceFlowIndexViewModel
@@ -117,5 +149,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             return View("~/Areas/Admin/Views/ConferenceFlow/Index.cshtml", vm);
         }
+
+        [HttpGet("/admin/conferenceflow")]
+        public IActionResult LegacyRoot() => Redirect("/Admin/ConferenceFlow");
+
+        [HttpGet("/{slug}/admin/conferenceflow")]
+        public IActionResult LegacyTenant(string slug) => Redirect($"/{slug}/Admin/ConferenceFlow");
     }
 }

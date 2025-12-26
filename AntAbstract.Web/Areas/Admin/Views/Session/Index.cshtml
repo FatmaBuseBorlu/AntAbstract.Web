@@ -1,14 +1,26 @@
 ﻿@model IEnumerable<AntAbstract.Domain.Entities.Session>
+
 @{
     ViewData["Title"] = "Oturum Yönetimi";
-    Layout = "~/Views/Shared/_LayoutDashboard.cshtml"; 
-    var slug = Context.GetRouteValue("slug");
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+
+    var slug = Context.GetRouteValue("slug")?.ToString() ?? "";
+    var conferenceId = Context.Request.Query["conferenceId"].ToString();
+
+    var createUrl = string.IsNullOrWhiteSpace(slug)
+        ? (string.IsNullOrWhiteSpace(conferenceId)
+            ? "/Admin/Session/Create"
+            : $"/Admin/Session/Create?conferenceId={conferenceId}")
+        : (string.IsNullOrWhiteSpace(conferenceId)
+            ? $"/{slug}/Admin/Session/Create"
+            : $"/{slug}/Admin/Session/Create?conferenceId={conferenceId}");
 }
 
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h4 class="fw-bold"><i class="fas fa-calendar-alt me-2"></i> Oturum Yönetimi</h4>
-        <a href="/@slug/admin/session/create" class="btn btn-primary fw-bold">
+
+        <a href="@createUrl" class="btn btn-primary fw-bold">
             <i class="fas fa-plus me-1"></i> Yeni Oturum Ekle
         </a>
     </div>
@@ -30,31 +42,77 @@
                         <th class="text-end pe-4">İşlemler</th>
                     </tr>
                 </thead>
+
                 <tbody>
-                    @foreach (var item in Model)
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            var manageUrl = string.IsNullOrWhiteSpace(slug)
+                            ? (string.IsNullOrWhiteSpace(conferenceId)
+                            ? $"/Admin/Session/Manage/{item.Id}"
+                            : $"/Admin/Session/Manage/{item.Id}?conferenceId={conferenceId}")
+                            : (string.IsNullOrWhiteSpace(conferenceId)
+                            ? $"/{slug}/Admin/Session/Manage/{item.Id}"
+                            : $"/{slug}/Admin/Session/Manage/{item.Id}?conferenceId={conferenceId}");
+
+                            var editUrl = string.IsNullOrWhiteSpace(slug)
+                            ? (string.IsNullOrWhiteSpace(conferenceId)
+                            ? $"/Admin/Session/Edit/{item.Id}"
+                            : $"/Admin/Session/Edit/{item.Id}?conferenceId={conferenceId}")
+                            : (string.IsNullOrWhiteSpace(conferenceId)
+                            ? $"/{slug}/Admin/Session/Edit/{item.Id}"
+                            : $"/{slug}/Admin/Session/Edit/{item.Id}?conferenceId={conferenceId}");
+
+                            <tr>
+                                <td class="ps-4 fw-bold">@item.Title</td>
+                                <td>@item.SessionDate.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td>@(string.IsNullOrWhiteSpace(item.Location) ? "Belirtilmemiş" : item.Location)</td>
+                                <td>
+                                    <span class="badge bg-info text-dark">
+                                        @(item.Submissions?.Count ?? 0) Bildiri
+                                    </span>
+                                </td>
+
+                                <td class="text-end pe-4">
+                                    <a href="@manageUrl" class="btn btn-sm btn-outline-success fw-bold me-1">
+                                        <i class="fas fa-tasks me-1"></i> Programla
+                                    </a>
+
+                                    <a href="@editUrl" class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+
+                                    <form asp-area="Admin"
+                                          asp-controller="Session"
+                                          asp-action="Delete"
+                                          asp-route-slug="@slug"
+                                          asp-route-conferenceId="@conferenceId"
+                                          method="post"
+                                          style="display:inline;"
+                                          onsubmit="return confirm('Bu oturumu silmek istediğinize emin misiniz?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@item.Id" />
+
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
                     {
                         <tr>
-                            <td class="ps-4 fw-bold">@item.Title</td>
-                            <td>@item.SessionDate.ToString("dd.MM.yyyy HH:mm")</td>
-                            <td>@(item.Location ?? "Belirtilmemiş")</td>
-                            <td>
-                                <span class="badge bg-info text-dark">@item.Submissions.Count Bildiri</span>
-                            </td>
-                            <td class="text-end pe-4">
-                                <a href="/@slug/admin/session/manage/@item.Id" class="btn btn-sm btn-outline-success fw-bold me-1">
-                                    <i class="fas fa-tasks me-1"></i> Programla
-                                </a>
-                                <a href="/@slug/admin/session/edit/@item.Id" class="btn btn-sm btn-outline-primary me-1">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <form method="post" action="/@slug/admin/session/delete" style="display:inline;" onsubmit="return confirm('Bu oturumu silmek istediğinize emin misiniz?');">
-                                    <input type="hidden" name="id" value="@item.Id" />
-                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
-                                </form>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="fas fa-folder-open fa-3x mb-3 opacity-25"></i>
+                                <p class="mb-0">Henüz kayıtlı bir oturum yok.</p>
                             </td>
                         </tr>
                     }
                 </tbody>
+
             </table>
         </div>
     </div>

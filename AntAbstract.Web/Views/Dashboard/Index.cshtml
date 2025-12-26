@@ -1,4 +1,5 @@
 ﻿@model AntAbstract.Web.Models.ViewModels.DashboardViewModel
+@inject AntAbstract.Infrastructure.Context.TenantContext Tc
 
 @{
     ViewData["Title"] = "Panel";
@@ -8,10 +9,18 @@
     bool isAuthor = ViewBag.IsAuthor ?? false;
     int pendingReviews = ViewBag.PendingReviews ?? 0;
     int completedReviews = ViewBag.CompletedReviews ?? 0;
-
     bool isAdmin = User.IsInRole("Admin");
 
     string mainColumnClass = isAdmin ? "col-12" : "col-lg-8";
+
+    var slug = Context.GetRouteValue("slug")?.ToString() ?? Tc.Current?.Slug ?? "";
+    var baseUrl = string.IsNullOrWhiteSpace(slug) ? "" : $"/{slug}";
+
+    var reviewIndexUrl = $"{baseUrl}/Review/Index";
+    var submissionCreateUrl = $"{baseUrl}/Submission/Create";
+    var submissionIndexUrl = $"{baseUrl}/Submission/Index";
+    var dashboardUrl = $"{baseUrl}/Dashboard";
+    var adminUsersUrl = $"{baseUrl}/Admin/Users";
 }
 
 <div class="card border-0 shadow-sm mb-4 bg-white">
@@ -39,7 +48,7 @@
                 <div class="card-body p-4 d-flex align-items-center justify-content-between">
                     <div>
                         <h4 class="fw-bold mb-2"><i class="fas fa-user-shield me-2"></i> Sistem Yönetici Modu</h4>
-                        <p class="mb-0 opacity-75">Tüm kullanıcıları, kongre ayarlarını ve başvuruları sol menüdeki <b>YÖNETİM</b> başlığı altından yönetebilirsiniz.</p>
+                        <p class="mb-0 opacity-75">Tüm işlemleri sol menüden yönetebilirsiniz.</p>
                     </div>
                     <div class="d-none d-md-block opacity-50">
                         <i class="fas fa-cogs fa-4x"></i>
@@ -60,7 +69,7 @@
                     <div>
                         <h6 class="text-muted fw-normal mb-1">Değerlendirme Bekleyen</h6>
                         <h2 class="fw-bold mb-0 text-dark">@pendingReviews</h2>
-                        <a href="/Review/Index" class="btn btn-sm btn-outline-warning mt-3 fw-bold">
+                        <a href="@reviewIndexUrl" class="btn btn-sm btn-outline-warning mt-3 fw-bold">
                             Listeye Git <i class="fas fa-arrow-right ms-1"></i>
                         </a>
                     </div>
@@ -89,12 +98,6 @@
 
 @if ((isAuthor || !isReferee) && !isAdmin)
 {
-    @if (isReferee)
-    {
-        <hr class="mb-4 text-muted">
-        <h6 class="fw-bold text-muted text-uppercase small mb-3 ps-1"><i class="fas fa-pen-nib me-1 text-primary"></i> Yazar İstatistikleri</h6>
-    }
-
     <div class="row g-3 mb-4">
         <div class="col-xl-3 col-md-6">
             <div class="card border-0 shadow-sm h-100">
@@ -161,11 +164,11 @@
                     {
                         if (isReferee)
                         {
-                            <a href="/Review/Index" class="small text-decoration-none">Tümünü Gör</a>
+                            <a href="@reviewIndexUrl" class="small text-decoration-none">Tümünü Gör</a>
                         }
                         else
                         {
-                            <a href="/Submission/Index" class="small text-decoration-none">Tümünü Gör</a>
+                            <a href="@submissionIndexUrl" class="small text-decoration-none">Tümünü Gör</a>
                         }
                     }
                 </div>
@@ -173,11 +176,11 @@
                 @if (isAdmin)
                 {
                     <div class="text-center py-5">
-                        <img src="https://cdn-icons-png.flaticon.com/512/906/906343.png" width="80" class="mb-3 opacity-50" alt="Admin">
-                        <p class="text-muted">Sistem yöneticisi olarak tüm hareketleri <b>"Tüm Başvurular"</b> menüsünden izleyebilirsiniz.</p>
+                        <p class="text-muted">Yönetici olarak kullanıcıları ve kongreleri sol menüden yönetebilirsiniz.</p>
                         <div class="mt-3">
-                            <a href="/Users/Index" class="btn btn-outline-primary btn-sm me-2"><i class="fas fa-users-cog me-1"></i> Kullanıcıları Yönet</a>
-                            <a href="#" class="btn btn-outline-dark btn-sm"><i class="fas fa-cogs me-1"></i> Ayarlar</a>
+                            <a href="@adminUsersUrl" class="btn btn-outline-primary btn-sm me-2">
+                                <i class="fas fa-users-cog me-1"></i> Kullanıcıları Yönet
+                            </a>
                         </div>
                     </div>
                 }
@@ -185,7 +188,7 @@
                 {
                     <div class="text-center py-4">
                         <p class="text-muted mb-3">Atanmış değerlendirmelerinizi görmek için listeye gidin.</p>
-                        <a href="/Review/Index" class="btn btn-outline-warning btn-sm fw-bold">
+                        <a href="@reviewIndexUrl" class="btn btn-outline-warning btn-sm fw-bold">
                             <i class="fas fa-gavel me-1"></i> Hakem Görevlerime Git
                         </a>
                     </div>
@@ -193,16 +196,15 @@
                 else if (Model.TotalSubmissions == 0)
                 {
                     <div class="text-center py-5">
-                        <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="80" class="mb-3 opacity-50" alt="Empty">
                         <p class="text-muted">Henüz bir işlem yapmadınız.</p>
-                        <a href="/Submission/Create" class="btn btn-primary btn-sm">İlk Bildirini Gönder</a>
+                        <a href="@submissionCreateUrl" class="btn btn-primary btn-sm">İlk Bildirini Gönder</a>
                     </div>
                 }
                 else
                 {
                     <div class="text-center py-4">
-                        <p class="text-muted mb-3">Mevcut başvurularınızın durumunu incelemek için listeye gidin.</p>
-                        <a href="/Submission/Index" class="btn btn-outline-primary btn-sm">
+                        <p class="text-muted mb-3">Başvurularınızın durumunu görmek için listeye gidin.</p>
+                        <a href="@submissionIndexUrl" class="btn btn-outline-primary btn-sm">
                             <i class="fas fa-list me-1"></i> Bildirilerime Git
                         </a>
                     </div>
@@ -225,21 +227,33 @@
                             @foreach (var conf in Model.MyConferences)
                             {
                                 <li class="list-group-item px-0 py-3 border-bottom">
-                                    <div class="d-flex align-items-center">
-                                        <div class="me-3 text-center bg-light rounded p-2 border" style="min-width: 50px;">
-                                            <span class="d-block fw-bold text-primary small">@conf.StartDate.ToString("MMM")</span>
-                                            <span class="d-block fw-bold text-dark h6 mb-0">@conf.StartDate.Day</span>
-                                        </div>
-                                        <div class="flex-grow-1 overflow-hidden">
-                                            <h6 class="text-truncate mb-1" title="@conf.Title">
-                                                <a href="#" class="text-decoration-none text-dark fw-bold stretched-link">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-3 text-center bg-light rounded p-2 border" style="min-width: 50px;">
+                                                <span class="d-block fw-bold text-primary small">@conf.StartDate.ToString("MMM")</span>
+                                                <span class="d-block fw-bold text-dark h6 mb-0">@conf.StartDate.Day</span>
+                                            </div>
+                                            <div class="flex-grow-1 overflow-hidden">
+                                                <h6 class="text-truncate mb-1" title="@conf.Title">
                                                     @conf.Title
-                                                </a>
-                                            </h6>
-                                            <small class="text-muted">
-                                                <i class="fas fa-map-marker-alt me-1"></i> @(conf.City ?? "Online")
-                                            </small>
+                                                </h6>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-map-marker-alt me-1"></i> @(conf.City ?? "Online")
+                                                </small>
+                                            </div>
                                         </div>
+
+                                        <form asp-action="SelectConference"
+                                              asp-controller="Dashboard"
+                                              asp-route-slug="@slug"
+                                              method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="conferenceId" value="@conf.Id" />
+                                            <input type="hidden" name="returnUrl" value="@dashboardUrl" />
+                                            <button type="submit" class="btn btn-sm btn-outline-primary fw-bold">
+                                                Seç
+                                            </button>
+                                        </form>
                                     </div>
                                 </li>
                             }
@@ -257,8 +271,8 @@
 
             <div class="card dashboard-card bg-primary text-white h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #00aeef 0%, #0056b3 100%);">
                 <div class="card-body p-4">
-                    <h5 class="fw-bold mb-3">Yardım mı lazım?</h5>
-                    <p class="small opacity-75 mb-4">Bildiri gönderimi veya sistemle ilgili teknik sorunlarınızda destek ekibimiz yanınızda.</p>
+                    <h5 class="fw-bold mb-3">Yardım mı lazım</h5>
+                    <p class="small opacity-75 mb-4">Teknik sorunlarınızda destek ekibimiz yanınızda.</p>
                     <a href="#" class="btn btn-light text-primary fw-bold w-100 shadow-sm">Destek Talebi Oluştur</a>
                 </div>
             </div>

@@ -4,7 +4,7 @@
 @{
     ViewData["Title"] = "Karar Ekranı";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
-    var slug = Context.GetRouteValue("slug");
+    var slug = (ViewBag.Slug as string) ?? Context.GetRouteValue("slug")?.ToString() ?? "";
 }
 
 <div class="container-fluid">
@@ -14,17 +14,24 @@
             <h4 class="fw-bold mb-1">Bildiri Karar Ekranı</h4>
             <p class="text-muted small mb-0">Kongre: <strong>@ViewBag.ConferenceTitle</strong></p>
         </div>
-        <a href="/admin/decision" class="btn btn-outline-secondary btn-sm">
+        <a href="/Admin/Decision" class="btn btn-outline-secondary btn-sm">
             <i class="fas fa-exchange-alt me-1"></i> Kongre Değiştir
         </a>
     </div>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
+@if (TempData["SuccessMessage"] != null)
+{
         <div class="alert alert-success border-0 shadow-sm">
             <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
         </div>
-    }
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+        <div class="alert alert-danger border-0 shadow-sm">
+            <i class="fas fa-times-circle me-2"></i> @TempData["ErrorMessage"]
+        </div>
+}
 
     <ul class="nav nav-tabs mb-4" id="decisionTabs" role="tablist">
         <li class="nav-item" role="presentation">
@@ -60,8 +67,11 @@
                             {
                                 foreach (var item in Model.AwaitingDecision)
                                 {
-                                    // Puan Hesaplaması
-                                    var reviews = item.ReviewAssignments.Where(ra => ra.Review != null).Select(ra => ra.Review).ToList();
+                                    var reviews = item.ReviewAssignments
+                                    .Where(ra => ra.Review != null)
+                                    .Select(ra => ra.Review)
+                                    .ToList();
+
                                     double avgScore = reviews.Any() ? reviews.Average(r => r.Score) : 0;
                                     string scoreColor = avgScore >= 70 ? "text-success" : (avgScore >= 50 ? "text-warning" : "text-danger");
 
@@ -71,21 +81,24 @@
                                             <small class="text-muted">@item.Author?.FirstName @item.Author?.LastName</small>
                                             <span class="badge bg-light text-dark border ms-2">@item.Status</span>
                                         </td>
+
                                         <td>
                                             @if (item.ReviewAssignments.Any())
                                             {
                                                 <div class="d-flex gap-1">
                                                     @foreach (var assign in item.ReviewAssignments)
                                                     {
+                                                        var reviewerName = assign.Reviewer?.FirstName ?? "Hakem";
+
                                                         if (assign.Review != null)
                                                         {
-                                                            <span class="badge bg-light text-dark border" title="@assign.Reviewer.FirstName: @assign.Review.Score">
+                                                            <span class="badge bg-light text-dark border" title="@reviewerName: @assign.Review.Score">
                                                                 @assign.Review.Score
                                                             </span>
                                                         }
                                                         else
                                                         {
-                                                            <span class="badge bg-secondary opacity-25" title="@assign.Reviewer.FirstName (Bekliyor)">-</span>
+                                                            <span class="badge bg-secondary opacity-25" title="@reviewerName (Bekliyor)">-</span>
                                                         }
                                                     }
                                                 </div>
@@ -95,6 +108,7 @@
                                                 <span class="text-muted small fst-italic">Hakem yok</span>
                                             }
                                         </td>
+
                                         <td>
                                             @if (reviews.Any())
                                             {
@@ -105,6 +119,7 @@
                                                 <span class="text-muted">-</span>
                                             }
                                         </td>
+
                                         <td class="text-end pe-4">
                                             <button class="btn btn-sm btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#decisionModal-@item.Id">
                                                 Karar Ver
@@ -117,7 +132,14 @@
                                                             <h5 class="modal-title fw-bold">Karar Ver: @item.SubmissionIdCode</h5>
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                         </div>
-                                                        <form method="post" action="/@slug/admin/decision/makedecision">
+
+                                                        <form asp-area="Admin"
+                                                              asp-controller="Decision"
+                                                              asp-action="MakeDecision"
+                                                              asp-route-slug="@slug"
+                                                              method="post">
+                                                            @Html.AntiForgeryToken()
+
                                                             <div class="modal-body">
                                                                 <input type="hidden" name="submissionId" value="@item.Id" />
 
@@ -139,10 +161,10 @@
                                                                 </div>
                                                             </div>
                                                         </form>
+
                                                     </div>
                                                 </div>
                                             </div>
-
                                         </td>
                                     </tr>
                                 }
@@ -169,66 +191,3 @@
                         <thead class="bg-light">
                             <tr>
                                 <th class="ps-4">Bildiri</th>
-                                <th>Karar Tarihi</th>
-                                <th>Sonuç</th>
-                                <th class="text-end pe-4">İşlem</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (Model.AlreadyDecided.Any())
-                            {
-                                foreach (var item in Model.AlreadyDecided)
-                                {
-                                    <tr>
-                                        <td class="ps-4">
-                                            <div class="fw-bold text-truncate" style="max-width: 350px;">@item.Title</div>
-                                            <small class="text-muted">@item.Author?.FirstName @item.Author?.LastName</small>
-                                        </td>
-                                        <td>
-                                            @if (item.DecisionDate.HasValue)
-                                            {
-                                                <span>@item.DecisionDate.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</span>
-                                            }
-                                            else
-                                            {
-                                                <span>-</span>
-                                            }
-                                        </td>
-                                        <td>
-                                            @if (item.Status == AntAbstract.Domain.Entities.SubmissionStatus.Accepted)
-                                            {
-                                                <span class="badge bg-success">KABUL</span>
-                                            }
-                                            else if (item.Status == AntAbstract.Domain.Entities.SubmissionStatus.Rejected)
-                                            {
-
-                                                <span class="badge bg-danger">RED</span>
-                                            }
-                                            else if (item.Status == AntAbstract.Domain.Entities.SubmissionStatus.RevisionRequired)
-                                            {
-
-                                                <span class="badge bg-warning text-dark">REVİZYON</span>
-                                            }
-                                        </td>
-                                        <td class="text-end pe-4">
-                                            <button class="btn btn-sm btn-outline-secondary" disabled>Karar Verildi</button>
-                                        </td>
-                                    </tr>
-                                }
-                            }
-                            else
-                            {
-                                <tr>
-                                    <td colspan="4" class="text-center py-5 text-muted">
-                                        <p>Henüz sonuçlanmış bir bildiri yok.</p>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-    </div>
-</div>
