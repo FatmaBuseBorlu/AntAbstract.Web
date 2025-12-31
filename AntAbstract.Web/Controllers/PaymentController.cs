@@ -209,7 +209,7 @@ namespace AntAbstract.Web.Controllers
             if (registration.IsPaid)
                 return RedirectToAction(nameof(Success), new { slug });
 
-            var payment = new Payment
+            var payment = new Payment                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
             {
                 Id = Guid.NewGuid(),
                 AppUserId = user.Id,
