@@ -32,7 +32,7 @@ namespace AntAbstract.Web.Controllers
                    ?? HttpContext.Session.GetString("SelectedConferenceSlug")
                    ?? "";
         }
-
+        
         private Guid? GetSelectedConferenceId()
         {
             string? confIdStr = null;
