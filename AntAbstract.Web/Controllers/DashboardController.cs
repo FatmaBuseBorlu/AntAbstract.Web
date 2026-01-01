@@ -75,13 +75,10 @@ namespace AntAbstract.Web.Controllers
             return Guid.TryParse(confIdStr, out var parsedId) ? parsedId : null;
         }
 
-        private void SaveSelectedConference(Guid conferenceId, string selectedSlug)
+        private void SaveSelectedConference(Guid tenantId, Guid conferenceId, string selectedSlug)
         {
-            if (_tenantContext.Current != null)
-            {
-                var tenantKey = $"SelectedConferenceId:{_tenantContext.Current.Id}";
-                HttpContext.Session.SetString(tenantKey, conferenceId.ToString());
-            }
+            var tenantKey = $"SelectedConferenceId:{tenantId}";
+            HttpContext.Session.SetString(tenantKey, conferenceId.ToString());
 
             HttpContext.Session.SetString("SelectedConferenceId", conferenceId.ToString());
             HttpContext.Session.SetString("SelectedConferenceSlug", selectedSlug ?? "");
@@ -131,17 +128,47 @@ namespace AntAbstract.Web.Controllers
                 .ToListAsync();
         }
 
-        private static string UpsertConferenceId(string returnUrl, Guid conferenceId)
+        private static bool IsAdminReturnUrl(string returnUrl)
         {
             var parts = returnUrl.Split('?', 2);
             var path = parts[0];
-            var qs = parts.Length > 1 ? "?" + parts[1] : "";
 
-            var parsed = QueryHelpers.ParseQuery(qs);
+            var segs = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (segs.Length == 0) return false;
+
+            if (string.Equals(segs[0], "Admin", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (segs.Length > 1 && string.Equals(segs[1], "Admin", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return path.Contains("/Admin/", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string BuildAdminReturnUrl(string returnUrl, string newSlug, Guid conferenceId)
+        {
+            var parts = returnUrl.Split('?', 2);
+            var path = parts[0];
+            var qs = parts.Length > 1 ? parts[1] : "";
+
+            var segs = path.Split('/', StringSplitOptions.RemoveEmptyEntries).ToList();
+
+            if (segs.Count > 0 && string.Equals(segs[0], "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                segs.Insert(0, newSlug);
+            }
+            else if (segs.Count > 1 && string.Equals(segs[1], "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                segs[0] = newSlug;
+            }
+
+            var newPath = "/" + string.Join("/", segs);
+
+            var parsed = QueryHelpers.ParseQuery(string.IsNullOrWhiteSpace(qs) ? "" : "?" + qs);
             var dict = parsed.ToDictionary(x => x.Key, x => x.Value.ToString());
             dict["conferenceId"] = conferenceId.ToString();
 
-            return QueryHelpers.AddQueryString(path, dict);
+            return QueryHelpers.AddQueryString(newPath, dict);
         }
 
         [HttpGet]
@@ -209,15 +236,12 @@ namespace AntAbstract.Web.Controllers
 
             var selectedSlug = conf.Tenant?.Slug ?? conf.Slug ?? GetSlug();
 
-            // Kritik: kongre farklı tenant'a aitse session tenantKey doğru yere yazılsın
-            HttpContext.Session.SetString($"SelectedConferenceId:{conf.TenantId}", conf.Id.ToString());
-
-            SaveSelectedConference(conferenceId, selectedSlug);
+            SaveSelectedConference(conf.TenantId, conf.Id, selectedSlug);
 
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
-                if (returnUrl.Contains("/Admin/", StringComparison.OrdinalIgnoreCase))
-                    return Redirect(UpsertConferenceId(returnUrl, conferenceId));
+                if (IsAdminReturnUrl(returnUrl))
+                    return Redirect(BuildAdminReturnUrl(returnUrl, selectedSlug, conferenceId));
 
                 return Redirect(returnUrl);
             }
@@ -310,7 +334,6 @@ namespace AntAbstract.Web.Controllers
 
             if (isAdminLike)
             {
-                // Kritik: Admin/Organizator tüm kongreleri görebilsin
                 var allConfs = await _context.Conferences
                     .AsNoTracking()
                     .Include(c => c.Tenant)

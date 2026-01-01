@@ -2,33 +2,43 @@
 @model ReportsIndexViewModel
 @{
     ViewData["Title"] = "Raporlar";
-  
-    Layout = "~/Views/Shared/_Layout.cshtml";
-    var slug = Context.GetRouteValue("slug");
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    var slug = Context.GetRouteValue("slug")?.ToString();
 }
 
-<div class="container py-5 mt-5">
+<div class="container-fluid py-4">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h3 class="fw-bold mb-1 text-dark">Raporlar & İstatistikler</h3>
-            <p class="text-muted mb-0">Kongre: <span class="badge bg-light text-dark border">@Model.ConferenceTitle</span></p>
+            <p class="text-muted mb-0">
+                Kongre:
+                <span class="badge bg-light text-dark border">@Model.ConferenceTitle</span>
+            </p>
         </div>
+
         <div class="btn-group shadow-sm">
-            <a href="/admin/reports" class="btn btn-outline-secondary btn-sm">
+            <a href="/Admin/Reports?returnUrl=/@slug/Admin/Reports" class="btn btn-outline-secondary btn-sm">
                 <i class="fas fa-exchange-alt me-1"></i> Kongre Değiştir
             </a>
-            @* İleride yapacağımız Excel butonu buraya gelecek *@
-            <button class="btn btn-success btn-sm disabled">
+
+            <a href="/@slug/Admin/Reports/Excel" class="btn btn-success btn-sm">
                 <i class="fas fa-file-excel me-1"></i> Excel İndir
-            </button>
+            </a>
         </div>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success border-0 shadow-sm animate__animated animate__fadeIn">
+        <div class="alert alert-success border-0 shadow-sm">
             <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm">
+            <i class="fas fa-times-circle me-2"></i> @TempData["ErrorMessage"]
         </div>
     }
 
@@ -70,13 +80,35 @@
         </div>
     </div>
 
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4 text-center">
+                    <div class="small text-uppercase text-muted mb-2">Toplam Kayıt</div>
+                    <div class="display-6 fw-bold">@Model.TotalRegistrations</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4 text-center">
+                    <div class="small text-uppercase text-muted mb-2">Toplam Gelir</div>
+                    <div class="display-6 fw-bold">@Model.TotalRevenue.ToString("N2") ₺</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-4">
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white py-3 border-bottom-0">
-                    <h6 class="fw-bold m-0"><i class="fas fa-chart-pie me-2 text-primary"></i> Başvuru Durum Dağılımı</h6>
+                    <h6 class="fw-bold m-0">
+                        <i class="fas fa-chart-pie me-2 text-primary"></i> Başvuru Durum Dağılımı
+                    </h6>
                 </div>
-                <div class="card-body d-flex align-items-center justify-content-center pb-5">
+                <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 360px;">
                     <canvas id="statusChart" style="max-height: 280px;"></canvas>
                 </div>
             </div>
@@ -85,7 +117,9 @@
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white py-3 border-bottom-0">
-                    <h6 class="fw-bold m-0"><i class="fas fa-list me-2 text-primary"></i> Detaylı Durumlar</h6>
+                    <h6 class="fw-bold m-0">
+                        <i class="fas fa-list me-2 text-primary"></i> Detaylı Durumlar
+                    </h6>
                 </div>
                 <div class="card-body p-0">
                     <ul class="list-group list-group-flush">
@@ -128,7 +162,6 @@
                     labels: ['Yeni', 'İnceleniyor', 'Kabul', 'Red', 'Revizyon'],
                     datasets: [{
                         data: [@Model.NewCount, @Model.UnderReviewCount, @Model.AcceptedCount, @Model.RejectedCount, @Model.RevisionRequiredCount],
-                        backgroundColor: ['#0d6efd', '#ffc107', '#198754', '#dc3545', '#6c757d'],
                         borderWidth: 0,
                         hoverOffset: 15
                     }]

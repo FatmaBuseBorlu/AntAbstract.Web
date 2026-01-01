@@ -5,6 +5,7 @@ using AntAbstract.Web.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ClosedXML.Excel;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -77,80 +78,116 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return Redirect($"/{conf.Tenant.Slug}/Admin/Reports?conferenceId={conf.Id}");
         }
 
-        [HttpGet("/{slug}/Admin/Reports")]
-        public async Task<IActionResult> Index(string slug, Guid? conferenceId)
+        [HttpGet("/{slug}/Admin/Reports/Excel")]
+        public async Task<IActionResult> ExportExcel(string slug)
         {
-
             if (_tenantContext.Current == null)
-                return RedirectToAction(nameof(SelectConference));
-
-            conferenceId ??= _selectedConferenceService.GetSelectedConferenceId();
-
-            if (conferenceId == null)
-                return RedirectToAction(nameof(SelectConference));
+                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports" });
 
             if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
-                return RedirectToAction(nameof(SelectConference));
+                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports" });
+
+            var selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
+            if (selectedConferenceId == null)
+                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports" });
 
             var conference = await _context.Conferences
                 .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.Id == conferenceId.Value && c.TenantId == _tenantContext.Current.Id);
+                .FirstOrDefaultAsync(c =>
+                    c.Id == selectedConferenceId.Value &&
+                    c.TenantId == _tenantContext.Current.Id);
 
-            if (conference == null) return RedirectToAction(nameof(SelectConference));
+            if (conference == null)
+                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports" });
+
+            var confId = conference.Id;
 
             var submissions = await _context.Submissions
                 .AsNoTracking()
-                .Where(s => s.ConferenceId == conference.Id)
-                .Select(s => new { s.Id, s.Status, s.DecisionDate })
+                .Where(s => s.ConferenceId == confId)
+                .Select(s => new
+                {
+                    s.Id,
+                    s.Title,
+                    AuthorEmail = s.Author != null ? s.Author.Email : null,
+                    Status = s.Status.ToString(),
+                    s.CreatedAt,
+                    s.DecisionDate
+                })
                 .ToListAsync();
-
-            var submissionIds = submissions.Select(x => x.Id).ToList();
-
-            var totalAssignments = submissionIds.Count == 0 ? 0 :
-                await _context.ReviewAssignments
-                    .AsNoTracking()
-                    .Where(ra => submissionIds.Contains(ra.SubmissionId))
-                    .CountAsync();
-
-            var assignedSubmissions = submissionIds.Count == 0 ? 0 :
-                await _context.ReviewAssignments
-                    .AsNoTracking()
-                    .Where(ra => submissionIds.Contains(ra.SubmissionId))
-                    .Select(ra => ra.SubmissionId)
-                    .Distinct()
-                    .CountAsync();
 
             var registrations = await _context.Registrations
                 .AsNoTracking()
-                .Where(r => r.ConferenceId == conference.Id)
-                .Select(r => new { r.Amount, r.IsPaid })
+                .Where(r => r.ConferenceId == confId)
+                .Select(r => new
+                {
+                    r.Id,
+                    r.Amount,
+                    r.IsPaid,
+                    r.RegistrationDate,
+                    r.PaymentDate,
+                    r.PaymentTransactionId
+                })
                 .ToListAsync();
 
-            var vm = new ReportsIndexViewModel
+            using var wb = new ClosedXML.Excel.XLWorkbook();
+
+            var ws1 = wb.Worksheets.Add("Submissions");
+            ws1.Cell(1, 1).Value = "Id";
+            ws1.Cell(1, 2).Value = "Title";
+            ws1.Cell(1, 3).Value = "AuthorEmail";
+            ws1.Cell(1, 4).Value = "Status";
+            ws1.Cell(1, 5).Value = "CreatedAt";
+            ws1.Cell(1, 6).Value = "DecisionDate";
+
+            for (int i = 0; i < submissions.Count; i++)
             {
-                ConferenceId = conference.Id,
-                ConferenceTitle = conference.Title,
-                ConferenceName = conference.Title,
-                Slug = slug,
+                var r = i + 2;
+                ws1.Cell(r, 1).Value = submissions[i].Id.ToString();
+                ws1.Cell(r, 2).Value = submissions[i].Title;
+                ws1.Cell(r, 3).Value = submissions[i].AuthorEmail;
+                ws1.Cell(r, 4).Value = submissions[i].Status;
+                ws1.Cell(r, 5).Value = submissions[i].CreatedAt;
+                ws1.Cell(r, 6).Value = submissions[i].DecisionDate;
+            }
+            ws1.Columns().AdjustToContents();
 
-                TotalSubmissions = submissions.Count,
-                AssignedSubmissions = assignedSubmissions,
-                DecidedSubmissions = submissions.Count(x => x.DecisionDate != null),
-                TotalAssignments = totalAssignments,
+            var ws2 = wb.Worksheets.Add("Registrations");
+            ws2.Cell(1, 1).Value = "Id";
+            ws2.Cell(1, 2).Value = "Amount";
+            ws2.Cell(1, 3).Value = "IsPaid";
+            ws2.Cell(1, 4).Value = "RegistrationDate";
+            ws2.Cell(1, 5).Value = "PaymentDate";
+            ws2.Cell(1, 6).Value = "PaymentTransactionId";
 
-                TotalRegistrations = registrations.Count,
-                TotalRevenue = registrations.Where(x => x.IsPaid).Sum(x => x.Amount),
+            for (int i = 0; i < registrations.Count; i++)
+            {
+                var r = i + 2;
+                ws2.Cell(r, 1).Value = registrations[i].Id.ToString();
+                ws2.Cell(r, 2).Value = registrations[i].Amount;
+                ws2.Cell(r, 3).Value = registrations[i].IsPaid ? "Paid" : "Unpaid";
+                ws2.Cell(r, 4).Value = registrations[i].RegistrationDate;
+                ws2.Cell(r, 5).Value = registrations[i].PaymentDate;
+                ws2.Cell(r, 6).Value = registrations[i].PaymentTransactionId;
+            }
+            ws2.Columns().AdjustToContents();
 
-                NewCount = submissions.Count(x => x.Status == SubmissionStatus.New),
-                PendingCount = submissions.Count(x => x.Status == SubmissionStatus.Pending),
-                UnderReviewCount = submissions.Count(x => x.Status == SubmissionStatus.UnderReview),
-                AcceptedCount = submissions.Count(x => x.Status == SubmissionStatus.Accepted),
-                RejectedCount = submissions.Count(x => x.Status == SubmissionStatus.Rejected),
-                RevisionRequiredCount = submissions.Count(x => x.Status == SubmissionStatus.RevisionRequired)
-            };
+            using var ms = new MemoryStream();
+            wb.SaveAs(ms);
 
-            return View("~/Areas/Admin/Views/Reports/Index.cshtml", vm);
+            var safeTitle = string.Join("_",
+                (conference.Title ?? "conference")
+                    .Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+
+            var fileName = $"reports_{safeTitle}_{DateTime.UtcNow:yyyyMMdd_HHmm}.xlsx";
+
+            return File(
+                ms.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName
+            );
         }
+
 
         [HttpGet("/Reports/Index")]
         public IActionResult LegacyRoot() => Redirect("/Admin/Reports");

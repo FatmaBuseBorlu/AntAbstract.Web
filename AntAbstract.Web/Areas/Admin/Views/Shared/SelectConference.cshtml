@@ -101,6 +101,12 @@
                             <form action="@Model.PostUrl" method="post">
                                 @Html.AntiForgeryToken()
 
+                                @* ortak kullanım bozulmasın: ReturnUrl varsa post et *@
+                                @if (!string.IsNullOrWhiteSpace(Model.ReturnUrl))
+                                {
+                                    <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+                                }
+
                                 <div class="mb-4">
                                     <label class="form-label fw-bold text-secondary small text-uppercase">Kongre Listesi</label>
                                     <div class="input-group">

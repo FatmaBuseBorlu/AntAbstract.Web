@@ -30,12 +30,17 @@
     Guid? selectedConferenceId = Guid.TryParse(confIdStr, out var parsedId) ? parsedId : null;
     var hasSelectedConference = selectedConferenceId.HasValue;
 
-    var conferenceQuery = selectedConferenceId.HasValue ? $"?conferenceId={selectedConferenceId.Value}" : "";
+    string? selectedConferenceTitle = null;
+    if (Tc.Current != null)
+    {
+        selectedConferenceTitle = Context.Session.GetString($"SelectedConferenceTitle:{Tc.Current.Id}");
+    }
+    selectedConferenceTitle ??= Context.Session.GetString("SelectedConferenceTitle");
 
     var dashboardUrl = string.IsNullOrWhiteSpace(slug) ? "/Dashboard" : $"/{slug}/Dashboard";
     var dashboardMyConferencesUrl = string.IsNullOrWhiteSpace(slug) ? "/Dashboard/MyConferences" : $"/{slug}/Dashboard/MyConferences";
 
-    var submissionsAdminUrl = string.IsNullOrWhiteSpace(slug) ? $"/Admin/Submissions{conferenceQuery}" : $"/{slug}/Admin/Submissions{conferenceQuery}";
+    var submissionsAdminUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Submissions" : $"/{slug}/Admin/Submissions";
 
     var submissionIndexUrl = string.IsNullOrWhiteSpace(slug) ? "/Submission/Index" : $"/{slug}/Submission/Index";
     var submissionCreateUrl = string.IsNullOrWhiteSpace(slug) ? "/Submission/Create" : $"/{slug}/Submission/Create";
@@ -48,11 +53,11 @@
     var programUrl = string.IsNullOrWhiteSpace(slug) ? "/Program/Index" : $"/{slug}/Program/Index";
     var proceedingsUrl = string.IsNullOrWhiteSpace(slug) ? "/Proceedings/Index" : $"/{slug}/Proceedings/Index";
 
-    var conferenceFlowUrl = string.IsNullOrWhiteSpace(slug) ? $"/Admin/ConferenceFlow{conferenceQuery}" : $"/{slug}/Admin/ConferenceFlow{conferenceQuery}";
-    var reportsUrl = string.IsNullOrWhiteSpace(slug) ? $"/Admin/Reports{conferenceQuery}" : $"/{slug}/Admin/Reports{conferenceQuery}";
-    var assignmentUrl = string.IsNullOrWhiteSpace(slug) ? $"/Admin/Assignment{conferenceQuery}" : $"/{slug}/Admin/Assignment{conferenceQuery}";
-    var decisionUrl = string.IsNullOrWhiteSpace(slug) ? $"/Admin/Decision{conferenceQuery}" : $"/{slug}/Admin/Decision{conferenceQuery}";
-    var sessionUrl = string.IsNullOrWhiteSpace(slug) ? $"/Admin/Session{conferenceQuery}" : $"/{slug}/Admin/Session{conferenceQuery}";
+    var conferenceFlowUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/ConferenceFlow" : $"/{slug}/Admin/ConferenceFlow";
+    var reportsUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Reports" : $"/{slug}/Admin/Reports";
+    var assignmentUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Assignment" : $"/{slug}/Admin/Assignment";
+    var decisionUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Decision" : $"/{slug}/Admin/Decision";
+    var sessionUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Session" : $"/{slug}/Admin/Session";
     var usersUrl = "/Admin/Users";
     var conferencesUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Conferences" : $"/{slug}/Admin/Conferences";
 
@@ -258,15 +263,20 @@
 
                 <div>
                     <h5 class="mb-0 fw-bold text-dark">Hoş Geldiniz, @displayName</h5>
+
                     @if (!string.IsNullOrWhiteSpace(headerBadgeText))
                     {
                         <span class="badge bg-light text-primary border">@headerBadgeText</span>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(selectedConferenceTitle))
+                    {
+                        <span class="badge bg-light text-success border ms-2">@selectedConferenceTitle</span>
                     }
                 </div>
             </div>
 
             <div class="d-flex align-items-center gap-2">
-
                 @await Component.InvokeAsync("ConferenceSwitcher")
 
                 <a href="/" class="btn btn-sm btn-outline-secondary px-3 rounded-3">
