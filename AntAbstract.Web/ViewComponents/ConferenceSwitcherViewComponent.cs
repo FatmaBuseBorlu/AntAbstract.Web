@@ -13,74 +13,32 @@ namespace AntAbstract.Web.ViewComponents
 {
     public class ConferenceSwitcherViewComponent : ViewComponent
     {
-        private readonly UserManager<AppUser> _userManager;
         private readonly AppDbContext _context;
+        private readonly UserManager<AppUser> _userManager;
         private readonly TenantContext _tenantContext;
 
-        public ConferenceSwitcherViewComponent(
-            UserManager<AppUser> userManager,
-            AppDbContext context,
-            TenantContext tenantContext)
+        public ConferenceSwitcherViewComponent(AppDbContext context, UserManager<AppUser> userManager, TenantContext tenantContext)
         {
-            _userManager = userManager;
             _context = context;
+            _userManager = userManager;
             _tenantContext = tenantContext;
         }
 
-        public async Task<IViewComponentResult> InvokeAsync(string? returnUrl = null)
+        private async Task<bool> IsAdminLikeAsync(AppUser user)
         {
-            var user = await _userManager.GetUserAsync(HttpContext.User);
-            if (user == null)
-                return Content(string.Empty);
-
-            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-            if (isAdmin)
-                return Content(string.Empty);
-
-            var selectedConferenceId = GetSelectedConferenceIdFromSession();
-
-            var conferences = await _context.Registrations
-                .AsNoTracking()
-                .Where(r => r.AppUserId == user.Id)
-                .Include(r => r.Conference)
-                .ThenInclude(c => c.Tenant)
-                .Select(r => r.Conference)
-                .OrderByDescending(c => c.StartDate)
-                .ToListAsync();
-
-            if (conferences == null || conferences.Count == 0)
-                return Content(string.Empty);
-
-            string? currentConferenceName = null;
-
-            if (selectedConferenceId.HasValue)
-            {
-                currentConferenceName = await _context.Conferences
-                    .AsNoTracking()
-                    .Where(x => x.Id == selectedConferenceId.Value)
-                    .Select(x => x.Title)
-                    .FirstOrDefaultAsync();
-            }
-
-            var effectiveReturnUrl = !string.IsNullOrWhiteSpace(returnUrl)
-                ? returnUrl
-                : $"{HttpContext.Request.Path}{HttpContext.Request.QueryString}";
-
-            var model = new ConferenceSwitcherModel(
-                selectedConferenceId,
-                currentConferenceName,
-                string.IsNullOrWhiteSpace(effectiveReturnUrl) ? "/Dashboard" : effectiveReturnUrl,
-                conferences.Select(c => new ConferenceSwitcherItemModel(
-                    c.Id,
-                    c.Title ?? "",
-                    c.Tenant?.Slug ?? c.Slug ?? ""
-                )).ToList()
-            );
-
-            return View(model);
+            return await _userManager.IsInRoleAsync(user, "Admin")
+                || await _userManager.IsInRoleAsync(user, "Organizator");
         }
 
-        private Guid? GetSelectedConferenceIdFromSession()
+        private string GetSlug()
+        {
+            return RouteData.Values["slug"]?.ToString()
+                   ?? _tenantContext.Current?.Slug
+                   ?? HttpContext.Session.GetString("SelectedConferenceSlug")
+                   ?? "";
+        }
+
+        private Guid? GetSelectedConferenceId()
         {
             string? confIdStr = null;
 
@@ -94,5 +52,115 @@ namespace AntAbstract.Web.ViewComponents
 
             return Guid.TryParse(confIdStr, out var parsedId) ? parsedId : null;
         }
+
+        private IQueryable<Guid> GetUserConferenceIds(string userId)
+        {
+            var regIds = _context.Registrations
+                .AsNoTracking()
+                .Where(r => r.AppUserId == userId)
+                .Select(r => r.ConferenceId);
+
+            var submissionIds = _context.Submissions
+                .AsNoTracking()
+                .Where(s => s.AuthorId == userId)
+                .Select(s => s.ConferenceId);
+
+            var reviewIds = _context.ReviewAssignments
+                .AsNoTracking()
+                .Where(ra => ra.ReviewerId == userId)
+                .Select(ra => ra.Submission.ConferenceId);
+
+            return regIds.Union(submissionIds).Union(reviewIds);
+        }
+
+        private Task<System.Collections.Generic.List<Conference>> GetUserConferencesAsync(string userId)
+        {
+            var ids = GetUserConferenceIds(userId);
+
+            return _context.Conferences
+                .AsNoTracking()
+                .Where(c => ids.Contains(c.Id))
+                .Include(c => c.Tenant)
+                .OrderByDescending(c => c.StartDate)
+                .ToListAsync();
+        }
+
+        public async Task<IViewComponentResult> InvokeAsync()
+        {
+            var user = await _userManager.GetUserAsync((System.Security.Claims.ClaimsPrincipal)User);
+            if (user == null)
+                return View("Default", new ConferenceSwitcherModel());
+
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+            var isOrganizator = await _userManager.IsInRoleAsync(user, "Organizator");
+
+            var slug = GetSlug();
+            var selectedConferenceId = GetSelectedConferenceId();
+
+            List<Conference> conferences;
+
+            if (isAdmin)
+            {
+                conferences = await _context.Conferences
+                    .AsNoTracking()
+                    .Include(c => c.Tenant)
+                    .OrderByDescending(c => c.StartDate)
+                    .ToListAsync();
+            }
+            else if (isOrganizator)
+            {
+                var q = _context.Conferences
+                    .AsNoTracking()
+                    .Include(c => c.Tenant)
+                    .OrderByDescending(c => c.StartDate)
+                    .AsQueryable();
+
+                if (_tenantContext.Current != null)
+                    q = q.Where(c => c.TenantId == _tenantContext.Current.Id);
+                else if (!string.IsNullOrWhiteSpace(slug))
+                    q = q.Where(c => c.Tenant != null && c.Tenant.Slug == slug);
+
+                conferences = await q.ToListAsync();
+            }
+            else
+            {
+                conferences = await GetUserConferencesAsync(user.Id);
+            }
+
+            string? currentConferenceName = null;
+
+            if (selectedConferenceId.HasValue)
+            {
+                currentConferenceName = conferences
+                    .Where(x => x.Id == selectedConferenceId.Value)
+                    .Select(x => x.Title)
+                    .FirstOrDefault();
+
+                if (string.IsNullOrWhiteSpace(currentConferenceName))
+                {
+                    currentConferenceName = await _context.Conferences
+                        .AsNoTracking()
+                        .Where(x => x.Id == selectedConferenceId.Value)
+                        .Select(x => x.Title)
+                        .FirstOrDefaultAsync();
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(currentConferenceName) && _tenantContext.Current != null)
+                currentConferenceName = _tenantContext.Current.Name;
+
+            var returnUrl = $"{Request.Path}{Request.QueryString}";
+
+            var model = new ConferenceSwitcherModel
+            {
+                Conferences = conferences ?? new List<Conference>(),
+                SelectedConferenceId = selectedConferenceId,
+                CurrentConferenceName = currentConferenceName,
+                ReturnUrl = string.IsNullOrWhiteSpace(returnUrl) ? "/Dashboard" : returnUrl
+            };
+
+            return View("Default", model);
+        }
+
     }
 }

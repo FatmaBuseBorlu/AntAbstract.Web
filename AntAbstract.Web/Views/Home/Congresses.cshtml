@@ -1,4 +1,7 @@
-﻿@using AntAbstract.Domain.Entities
+﻿@using System
+@using System.Linq
+@using System.Collections.Generic
+@using AntAbstract.Domain.Entities
 @using Microsoft.AspNetCore.Identity
 @inject SignInManager<AppUser> SignInManager
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
@@ -8,9 +11,15 @@
 @{
     ViewData["Title"] = "Tüm Kongreler";
     Layout = "_Layout";
-    
+
     var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
-    var regMap = ViewBag.UserRegistrationIds as Dictionary<Guid, Guid>;
+    var regMap = ViewBag.UserRegistrationIds as Dictionary<Guid, Guid> ?? new Dictionary<Guid, Guid>();
+
+    var isAdminLike = User.Identity != null
+        && User.Identity.IsAuthenticated
+        && (User.IsInRole("Admin") || User.IsInRole("Organizator"));
+
+    var backUrl = Context.Request.Path + Context.Request.QueryString;
 }
 
 <style>
@@ -19,27 +28,28 @@
         padding: 60px 0;
         margin-bottom: 50px;
     }
-    
-    .congress-card { 
-        transition: transform 0.3s ease, box-shadow 0.3s ease; 
+
+    .congress-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
         border: 1px solid #eee;
         background-color: #fff;
         height: 100%;
         display: flex;
         flex-direction: column;
     }
-    .congress-card:hover { 
-        transform: translateY(-5px); 
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important; 
-        border-color: #00aeef;
-    }
+
+        .congress-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+            border-color: #00aeef;
+        }
 </style>
 
 <div class="page-header text-center">
     <div class="container">
         <h1 class="display-5 fw-bold text-dark">Kongreler & Etkinlikler</h1>
         <p class="lead text-muted mb-4">Alanınızdaki en güncel bilimsel etkinlikleri keşfedin, kayıt olun ve yerinizi ayırtın.</p>
-        
+
         <div class="row justify-content-center">
             <div class="col-md-6">
                 <div class="input-group input-group-lg shadow-sm">
@@ -54,7 +64,7 @@
 </div>
 
 <div class="container mb-5">
-    <div class="row"> 
+    <div class="row">
         @if (Model != null && Model.Any())
         {
             @foreach (var kongre in Model)
@@ -92,9 +102,18 @@
                         </a>
 
                         <div class="card-footer bg-white border-0 pb-3 pt-0">
-                            <a href="/@slug" class="btn btn-outline-primary w-100 fw-bold rounded-pill">
-                                DETAYLARI GÖR <i class="fas fa-arrow-right ms-2"></i>
-                            </a>
+                            @if (isAdminLike)
+                            {
+                                <a href="/@slug/Dashboard" class="btn btn-outline-primary w-100 fw-bold rounded-pill">
+                                    YÖNETİM PANELİ <i class="fas fa-cog ms-2"></i>
+                                </a>
+                            }
+                            else
+                            {
+                                <a href="/@slug" class="btn btn-outline-primary w-100 fw-bold rounded-pill">
+                                    DETAYLARI GÖR <i class="fas fa-arrow-right ms-2"></i>
+                                </a>
+                            }
                         </div>
 
                     </div>

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -43,6 +44,12 @@ namespace AntAbstract.Web.Controllers
                 claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList(),
                 roles
             });
+        }
+
+        private async Task<bool> IsAdminLikeAsync(AppUser user)
+        {
+            return await _userManager.IsInRoleAsync(user, "Admin")
+                || await _userManager.IsInRoleAsync(user, "Organizator");
         }
 
         private string GetSlug()
@@ -80,6 +87,18 @@ namespace AntAbstract.Web.Controllers
             HttpContext.Session.SetString("SelectedConferenceSlug", selectedSlug ?? "");
         }
 
+        private void ClearSelectedConference()
+        {
+            if (_tenantContext.Current != null)
+            {
+                var tenantKey = $"SelectedConferenceId:{_tenantContext.Current.Id}";
+                HttpContext.Session.Remove(tenantKey);
+            }
+
+            HttpContext.Session.Remove("SelectedConferenceId");
+            HttpContext.Session.Remove("SelectedConferenceSlug");
+        }
+
         private IQueryable<Guid> GetUserConferenceIds(string userId)
         {
             var regIds = _context.Registrations
@@ -112,6 +131,32 @@ namespace AntAbstract.Web.Controllers
                 .ToListAsync();
         }
 
+        private static string UpsertConferenceId(string returnUrl, Guid conferenceId)
+        {
+            var parts = returnUrl.Split('?', 2);
+            var path = parts[0];
+            var qs = parts.Length > 1 ? "?" + parts[1] : "";
+
+            var parsed = QueryHelpers.ParseQuery(qs);
+            var dict = parsed.ToDictionary(x => x.Key, x => x.Value.ToString());
+            dict["conferenceId"] = conferenceId.ToString();
+
+            return QueryHelpers.AddQueryString(path, dict);
+        }
+
+        [HttpGet]
+        public IActionResult ChangeConference()
+        {
+            ClearSelectedConference();
+
+            var slug = GetSlug();
+
+            if (string.IsNullOrWhiteSpace(slug))
+                return RedirectToAction(nameof(MyConferences));
+
+            return Redirect($"/{slug}/Dashboard/MyConferences");
+        }
+
         [HttpGet]
         public IActionResult SelectConference(Guid conferenceId, string? returnUrl = null)
         {
@@ -139,9 +184,9 @@ namespace AntAbstract.Web.Controllers
             if (user == null)
                 return Challenge();
 
-            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+            var isAdminLike = await IsAdminLikeAsync(user);
 
-            if (!isAdmin)
+            if (!isAdminLike)
             {
                 var allowed = await GetUserConferenceIds(user.Id).AnyAsync(x => x == conferenceId);
                 if (!allowed)
@@ -163,10 +208,19 @@ namespace AntAbstract.Web.Controllers
             }
 
             var selectedSlug = conf.Tenant?.Slug ?? conf.Slug ?? GetSlug();
+
+            // Kritik: kongre farklı tenant'a aitse session tenantKey doğru yere yazılsın
+            HttpContext.Session.SetString($"SelectedConferenceId:{conf.TenantId}", conf.Id.ToString());
+
             SaveSelectedConference(conferenceId, selectedSlug);
 
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                if (returnUrl.Contains("/Admin/", StringComparison.OrdinalIgnoreCase))
+                    return Redirect(UpsertConferenceId(returnUrl, conferenceId));
+
                 return Redirect(returnUrl);
+            }
 
             if (!string.IsNullOrWhiteSpace(selectedSlug))
                 return Redirect($"/{selectedSlug}/Dashboard");
@@ -180,11 +234,11 @@ namespace AntAbstract.Web.Controllers
             if (user == null)
                 return Challenge();
 
-            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+            var isAdminLike = await IsAdminLikeAsync(user);
             var selectedConferenceId = GetSelectedConferenceId();
             var slug = GetSlug();
 
-            if (!isAdmin && !selectedConferenceId.HasValue)
+            if (!isAdminLike && !selectedConferenceId.HasValue)
                 return RedirectToAction(nameof(MyConferences), new { slug });
 
             var submissionsQuery = _context.Submissions.AsQueryable()
@@ -251,6 +305,20 @@ namespace AntAbstract.Web.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
                 return Challenge();
+
+            var isAdminLike = await IsAdminLikeAsync(user);
+
+            if (isAdminLike)
+            {
+                // Kritik: Admin/Organizator tüm kongreleri görebilsin
+                var allConfs = await _context.Conferences
+                    .AsNoTracking()
+                    .Include(c => c.Tenant)
+                    .OrderByDescending(c => c.StartDate)
+                    .ToListAsync();
+
+                return View(allConfs);
+            }
 
             var conferences = await GetUserConferencesAsync(user.Id);
             return View(conferences);

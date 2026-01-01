@@ -2,9 +2,12 @@
 @using Microsoft.AspNetCore.Localization
 @using AntAbstract.Domain.Entities
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Http
+@using AntAbstract.Infrastructure.Services
 @inject SignInManager<AppUser> SignInManager
 @inject UserManager<AppUser> UserManager
 @inject AntAbstract.Infrastructure.Context.TenantContext Tc
+@inject ISelectedConferenceService SelectedConferenceService
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
@@ -24,9 +27,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
+        body { font-family: 'Inter', sans-serif; }
 
         .navbar {
             padding: 15px 0;
@@ -51,118 +52,154 @@
             transition: color 0.3s;
         }
 
-            .nav-link:hover {
-                color: #00aeef !important;
-            }
+        .nav-link:hover { color: #00aeef !important; }
 
-            .nav-link.admin-link {
-                color: #dc3545 !important;
-                border: 1px solid #dc3545;
-                border-radius: 5px;
-                padding: 5px 15px !important;
-            }
+        .nav-link.admin-link {
+            color: #dc3545 !important;
+            border: 1px solid #dc3545;
+            border-radius: 5px;
+            padding: 5px 15px !important;
+        }
 
-                .nav-link.admin-link:hover {
-                    background-color: #dc3545;
-                    color: white !important;
-                }
+        .nav-link.admin-link:hover {
+            background-color: #dc3545;
+            color: white !important;
+        }
     </style>
 </head>
 <body>
 
-    @{
-        // Admin sayfalarında navbar’daki "Yönetim Paneli / Özet Atama" linklerini gizle
-        var area = ViewContext.RouteData.Values["area"]?.ToString();
-        var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+@{
+    var area = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
 
-        var hideAdminNav =
-        string.Equals(area, "Admin", StringComparison.OrdinalIgnoreCase);
+    var isAdminLike = User.Identity != null
+        && User.Identity.IsAuthenticated
+        && (User.IsInRole("Admin") || User.IsInRole("Organizator"));
 
-        // İstersen dashboard’da da gizlemek için aç:
-        // hideAdminNav = hideAdminNav || string.Equals(controller, "Dashboard", StringComparison.OrdinalIgnoreCase);
-    }
+    var isAdminArea = string.Equals(area, "Admin", StringComparison.OrdinalIgnoreCase);
 
-    <header>
-        <nav class="navbar navbar-expand-lg fixed-top navbar-light">
-            <div class="container">
-                <a class="navbar-brand" asp-controller="Home" asp-action="Index">
-                    ANT <span style="color: #00aeef;">ABSTRACT</span>
-                </a>
+    var path = Context.Request.Path.Value ?? "";
+    var isAdminAssignmentPath =
+        path.StartsWith("/Admin/Assignment", StringComparison.OrdinalIgnoreCase)
+        || path.Contains("/Admin/Assignment", StringComparison.OrdinalIgnoreCase);
 
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
+    var isHomeIndexPage =
+        string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase)
+        && string.Equals(action, "Index", StringComparison.OrdinalIgnoreCase);
 
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav mx-auto align-items-center">
-                        <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index">Ana Sayfa</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="About">Hakkımızda</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Congresses">Kongreler</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Contact">İletişim</a></li>
+    var isHomeAboutPage =
+        string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase)
+        && string.Equals(action, "About", StringComparison.OrdinalIgnoreCase);
 
-                        @* ✅ SADECE admin/organizator ve Admin area'da değilken göster *@
-                        @if (!hideAdminNav && User.Identity.IsAuthenticated && (User.IsInRole("Admin") || User.IsInRole("Organizator")))
-                        {
-                            if (Tc.Current != null)
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link admin-link"
-                                       asp-area="Admin"
-                                       asp-controller="Assignment"
-                                       asp-action="Index"
-                                       asp-route-slug="@Tc.Current.Slug">
-                                        <i class="fas fa-tasks me-1"></i> Özet Atama
-                                    </a>
-                                </li>
-                            }
-                            else
-                            {
-                          
-                            }
-                        }
-                    </ul>
+    var isHomeContactPage =
+        string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase)
+        && string.Equals(action, "Contact", StringComparison.OrdinalIgnoreCase);
 
-                    <partial name="_LoginPartial" />
-                </div>
-            </div>
-        </nav>
-    </header>
+    var isHomeCongressesPage =
+        string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase)
+        && string.Equals(action, "Congresses", StringComparison.OrdinalIgnoreCase);
 
-    <main role="main">
-        @RenderBody()
-    </main>
+    var hideAdminNav =
+        isAdminArea
+        || isAdminAssignmentPath
+        || isHomeIndexPage
+        || isHomeAboutPage
+        || isHomeContactPage
+        || isHomeCongressesPage;
 
-    <footer class="bg-dark text-white py-5 mt-auto" style="position: relative; z-index: 10;">
+    var slug =
+        ViewContext.RouteData.Values["slug"]?.ToString()
+        ?? Tc.Current?.Slug
+        ?? Context.Session.GetString("SelectedConferenceSlug")
+        ?? "";
+
+    var selectedConferenceId = SelectedConferenceService.GetSelectedConferenceId();
+    var hasSelectedConference = selectedConferenceId.HasValue;
+
+    var assignmentUrl = (hasSelectedConference && !string.IsNullOrWhiteSpace(slug))
+        ? $"/{slug}/Admin/Assignment?conferenceId={selectedConferenceId.Value}"
+        : "/Admin/Assignment";
+}
+
+<header>
+    <nav class="navbar navbar-expand-lg fixed-top navbar-light">
         <div class="container">
-            <div class="row">
-                <div class="col-md-4 mb-4">
-                    <h5 class="fw-bold mb-3">ANT ABSTRACT</h5>
-                    <p class="text-muted small">Bilimsel kongre süreçlerinizi A'dan Z'ye yöneten yeni nesil platform.</p>
-                </div>
-                <div class="col-md-4 mb-4">
-                    <h5 class="fw-bold mb-3">Hızlı Linkler</h5>
-                    <ul class="list-unstyled text-muted small">
-                        <li><a href="/Home/About" class="text-white text-decoration-none">Hakkımızda</a></li>
-                        <li><a href="/Home/Congresses" class="text-white text-decoration-none">Kongreler</a></li>
-                        <li><a href="/Home/Contact" class="text-white text-decoration-none">İletişim</a></li>
-                    </ul>
-                </div>
-                <div class="col-md-4 mb-4">
-                    <h5 class="fw-bold mb-3">İletişim</h5>
-                    <p class="text-muted small mb-1"><i class="fas fa-envelope me-2"></i> destek@antabstract.com</p>
-                    <p class="text-muted small"><i class="fas fa-phone me-2"></i> +90 555 000 00 00</p>
-                </div>
-            </div>
-            <hr class="border-secondary">
-            <div class="text-center text-muted small">
-                &copy; @DateTime.Now.Year AntAbstract. Tüm hakları saklıdır.
+            <a class="navbar-brand" asp-controller="Home" asp-action="Index">
+                ANT <span style="color: #00aeef;">ABSTRACT</span>
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mx-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index">Ana Sayfa</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="About">Hakkımızda</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Congresses">Kongreler</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Contact">İletişim</a></li>
+
+                    @* Admin barı sadece slug'lı kongre sayfasında (Tc.Current var veya route slug var) gösterilsin *@
+                    @if (!hideAdminNav && isAdminLike && (Tc.Current != null || !string.IsNullOrWhiteSpace(slug)))
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link admin-link" href="@assignmentUrl">
+                                @if (hasSelectedConference)
+                                {
+                                    <i class="fas fa-tasks me-1"></i> @:Özet Atama
+                                }
+                                else
+                                {
+                                    <i class="fas fa-hand-pointer me-1"></i> @:Kongre Seç
+                                }
+                            </a>
+                        </li>
+                    }
+                </ul>
+
+                <partial name="_LoginPartial" />
             </div>
         </div>
-    </footer>
+    </nav>
+</header>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+<main role="main">
+    @RenderBody()
+</main>
+
+<footer class="bg-dark text-white py-5 mt-auto" style="position: relative; z-index: 10;">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <h5 class="fw-bold mb-3">ANT ABSTRACT</h5>
+                <p class="text-muted small">Bilimsel kongre süreçlerinizi A'dan Z'ye yöneten yeni nesil platform.</p>
+            </div>
+            <div class="col-md-4 mb-4">
+                <h5 class="fw-bold mb-3">Hızlı Linkler</h5>
+                <ul class="list-unstyled text-muted small">
+                    <li><a href="/Home/About" class="text-white text-decoration-none">Hakkımızda</a></li>
+                    <li><a href="/Home/Congresses" class="text-white text-decoration-none">Kongreler</a></li>
+                    <li><a href="/Home/Contact" class="text-white text-decoration-none">İletişim</a></li>
+                </ul>
+            </div>
+            <div class="col-md-4 mb-4">
+                <h5 class="fw-bold mb-3">İletişim</h5>
+                <p class="text-muted small mb-1"><i class="fas fa-envelope me-2"></i> destek@antabstract.com</p>
+                <p class="text-muted small"><i class="fas fa-phone me-2"></i> +90 555 000 00 00</p>
+            </div>
+        </div>
+        <hr class="border-secondary">
+        <div class="text-center text-muted small">
+            &copy; @DateTime.Now.Year AntAbstract. Tüm hakları saklıdır.
+        </div>
+    </div>
+</footer>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
