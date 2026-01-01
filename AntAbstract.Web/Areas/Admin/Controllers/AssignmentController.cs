@@ -1,7 +1,8 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services;
-using AntAbstract.Web.Models.ViewModels;
+using AntAbstract.Web.Models.ViewModels.Admin.Assignment;
+using AntAbstract.Web.Models.ViewModels.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -73,7 +74,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
 
-        // URL: /Admin/Assignment/Select
         [HttpPost("/Admin/Assignment/Select")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SelectConferencePost(Guid conferenceId)
@@ -94,7 +94,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         }
 
-        // URL: /{slug}/Admin/Assignment
         [HttpGet("/{slug}/Admin/Assignment")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId)
         {
@@ -134,8 +133,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return View(submissions);
         }
 
-        // URL: /{slug}/Admin/Assignment/Assign/{id}
-        // Buradaki id:guid kısıtlaması önemli.
         [HttpGet("/{slug}/Admin/Assignment/Assign/{id:guid}")]
         public async Task<IActionResult> Assign(string slug, Guid id)
         {
@@ -173,8 +170,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return View(vm);
         }
 
-        // 405 HATASINI ÇÖZEN KRİTİK METOT
-        // URL: /{slug}/Admin/Assignment/Assign (POST İsteği buraya gelecek)
         [HttpPost("/{slug}/Admin/Assignment/Assign")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AssignPost(string slug, Guid submissionId, string reviewerId)
@@ -208,7 +203,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             await _context.SaveChangesAsync();
 
-            // Opsiyonel: Mail gönderimi
             var reviewer = await _userManager.FindByIdAsync(reviewerId);
             if (reviewer != null)
             {

@@ -61,6 +61,9 @@
     var usersUrl = "/Admin/Users";
     var conferencesUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Conferences" : $"/{slug}/Admin/Conferences";
 
+    var registrationsUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Registrations" : $"/{slug}/Admin/Registrations";
+    var registrationTypesUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/RegistrationTypes" : $"/{slug}/Admin/RegistrationTypes";
+
     var isAdmin = User.IsInRole("Admin") || User.IsInRole("Organizator");
     var isAuthor = User.IsInRole("Author");
     var isReferee = User.IsInRole("Referee");
@@ -77,7 +80,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Yönetim Paneli AntAbstract</title>
+    <title>@ViewData["Title"] - AntAbstract</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -240,6 +243,18 @@
                 <li>
                     <a href="@conferencesUrl" class="@(currentController == "Conferences" ? "active" : "")">
                         <i class="fas fa-sliders-h me-2 text-primary"></i> Kongre Tanımları
+                    </a>
+                </li>
+
+                <li>
+                    <a href="@registrationsUrl" class="@(currentController == "Registrations" ? "active" : "")">
+                        <i class="fas fa-credit-card me-2 text-info"></i> Kayıtlar ve Ödemeler
+                    </a>
+                </li>
+
+                <li>
+                    <a href="@registrationTypesUrl" class="@(currentController == "RegistrationTypes" ? "active" : "")">
+                        <i class="fas fa-tags me-2 text-primary"></i> Kayıt Tipleri
                     </a>
                 </li>
             }

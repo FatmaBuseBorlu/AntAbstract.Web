@@ -1,0 +1,138 @@
+﻿@using AntAbstract.Web.Models.ViewModels
+@using AntAbstract.Web.Models.ViewModels.Admin.Registrations
+@model AdminRegistrationsIndexModel
+
+@{
+    ViewData["Title"] = "Kayıtlar ve Ödemeler";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    var slug = Model.Slug ?? "";
+    var currentUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="fw-bold mb-1 text-dark">Kayıtlar ve Ödemeler</h3>
+            <div class="text-muted">
+                Kongre: <span class="badge bg-light text-dark border">@Model.ConferenceTitle</span>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <form method="get" action="/@slug/Admin/Registrations">
+                <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label small text-muted mb-1">Arama</label>
+                        <input class="form-control" name="search" value="@Model.Search" placeholder="Ad, soyad, e-posta, transaction" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">Ödeme</label>
+                        <select class="form-select" name="paid">
+                            <option value="" selected="@(string.IsNullOrWhiteSpace(Model.Paid))">Hepsi</option>
+                            <option value="paid" selected="@(Model.Paid == "paid")">Paid</option>
+                            <option value="unpaid" selected="@(Model.Paid == "unpaid")">Unpaid</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">Kayıt Tipi</label>
+                        <select class="form-select" name="registrationTypeId">
+                            <option value="">Hepsi</option>
+                            @foreach (var t in Model.RegistrationTypes)
+                            {
+                                <option value="@t.Id" selected="@(Model.RegistrationTypeId == t.Id)">@t.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-1 d-grid">
+                        <button class="btn btn-primary" type="submit">Filtre</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:140px;">Tarih</th>
+                        <th>Kullanıcı</th>
+                        <th style="width:220px;">Kayıt Tipi</th>
+                        <th style="width:120px;">Tutar</th>
+                        <th style="width:120px;">Ödeme</th>
+                        <th style="width:220px;">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Items == null || !Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="6">
+                                <div class="alert alert-info border-0 m-3">Bu kongrede kayıt yok.</div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td>@item.RegistrationDate.ToLocalTime().ToString("dd.MM.yyyy")</td>
+                                <td>
+                                    <div class="fw-semibold">@item.UserFullName</div>
+                                    <div class="text-muted small">@item.UserEmail</div>
+                                </td>
+                                <td>@item.RegistrationTypeName</td>
+                                <td>@item.Amount.ToString("N2")</td>
+                                <td>
+                                    @if (item.IsPaid)
+                                    {
+                                        <span class="badge bg-success">Paid</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Unpaid</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-2">
+                                        <a class="btn btn-sm btn-outline-primary"
+                                           href="/@slug/Admin/Registrations/Details/@item.Id?returnUrl=@Uri.EscapeDataString(currentUrl)">
+                                            Detay
+                                        </a>
+
+                                        <form method="post" action="/@slug/Admin/Registrations/SetPayment">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <input type="hidden" name="isPaid" value="@(item.IsPaid ? "false" : "true")" />
+                                            <input type="hidden" name="returnUrl" value="@currentUrl" />
+                                            <button class="btn btn-sm @(item.IsPaid ? "btn-outline-danger" : "btn-outline-success")" type="submit">
+                                                @(item.IsPaid ? "Unpaid Yap" : "Paid Yap")
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

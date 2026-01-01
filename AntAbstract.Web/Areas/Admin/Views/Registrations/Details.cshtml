@@ -1,0 +1,100 @@
+﻿@using AntAbstract.Web.Models.ViewModels
+@using AntAbstract.Web.Models.ViewModels.Admin.Registrations
+@model AdminRegistrationDetailsModel
+
+@{
+    ViewData["Title"] = "Kayıt Detayı";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    var slug = Model.Slug ?? "";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="fw-bold mb-1 text-dark">Kayıt Detayı</h3>
+            <div class="text-muted">
+                Kongre: <span class="badge bg-light text-dark border">@Model.ConferenceTitle</span>
+            </div>
+        </div>
+
+        <a class="btn btn-outline-secondary btn-sm" href="@Model.ReturnUrl">Geri Dön</a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="text-muted small">Kullanıcı</div>
+                    <div class="fw-semibold">@Model.UserFullName</div>
+                    <div class="text-muted">@Model.UserEmail</div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Kayıt Tipi</div>
+                    <div class="fw-semibold">@Model.RegistrationTypeName</div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Tutar</div>
+                    <div class="fw-semibold">@Model.Amount.ToString("N2")</div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Kayıt Tarihi</div>
+                    <div class="fw-semibold">@Model.RegistrationDate.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Ödeme</div>
+                    <div class="fw-semibold">
+                        @if (Model.IsPaid)
+                        {
+                            <span class="badge bg-success">Paid</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Unpaid</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Payment Date</div>
+                    <div class="fw-semibold">
+                        @(Model.PaymentDate.HasValue? Model.PaymentDate.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm") : "-")
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="text-muted small">Transaction Id</div>
+                    <div class="fw-semibold">@(string.IsNullOrWhiteSpace(Model.PaymentTransactionId) ? "-" : Model.PaymentTransactionId)</div>
+                </div>
+            </div>
+
+            <hr />
+
+            <form method="post" action="/@slug/Admin/Registrations/SetPayment" class="row g-2 align-items-end">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+
+                <div class="col-md-3">
+                    <label class="form-label small text-muted mb-1">Ödeme Durumu</label>
+                    <select class="form-select" name="isPaid">
+                        <option value="false" selected="@(!Model.IsPaid)">Unpaid</option>
+                        <option value="true" selected="@(Model.IsPaid)">Paid</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label small text-muted mb-1">Transaction Id (opsiyonel)</label>
+                    <input class="form-control" name="transactionId" value="@Model.PaymentTransactionId" />
+                </div>
+
+                <div class="col-md-3 d-grid">
+                    <button class="btn btn-primary" type="submit">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

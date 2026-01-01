@@ -1,4 +1,4 @@
-﻿namespace AntAbstract.Web.Models.ViewModels
+﻿namespace AntAbstract.Web.Models.ViewModels.Admin.Users
 {
     public class UserListItemViewModel
     {

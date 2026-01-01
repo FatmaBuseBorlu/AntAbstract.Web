@@ -1,10 +1,9 @@
-﻿using AntAbstract.Web.Models.ViewModels; 
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
-namespace AntAbstract.Web.Models.ViewModels
+namespace AntAbstract.Web.Models.ViewModels.Admin.Submissions
 {
     public class SubmissionCreateViewModel
     {

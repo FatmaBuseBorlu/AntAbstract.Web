@@ -3,14 +3,9 @@ using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Localization;
-using Microsoft.AspNetCore.Http;
-using AntAbstract.Web.Models;
+using AntAbstract.Web.Models.ViewModels.Shared;
 
 namespace AntAbstract.Web.Controllers
 {

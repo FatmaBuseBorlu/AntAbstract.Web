@@ -1,0 +1,94 @@
+﻿@using AntAbstract.Web.Models.ViewModels
+@using AntAbstract.Web.Models.ViewModels.Admin.RegistrationTypes
+@model AdminRegistrationTypesIndexModel
+
+@{
+    ViewData["Title"] = "Kayıt Tipleri";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    var slug = Model.Slug ?? "";
+    var currentUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="fw-bold mb-1 text-dark">Kayıt Tipleri</h3>
+            <div class="text-muted">
+                Kongre: <span class="badge bg-light text-dark border">@Model.ConferenceTitle</span>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a class="btn btn-primary btn-sm"
+               href="/@slug/Admin/RegistrationTypes/Create?returnUrl=@Uri.EscapeDataString(currentUrl)">
+                Yeni Kayıt Tipi
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Ad</th>
+                        <th>Açıklama</th>
+                        <th style="width:140px;">Ücret</th>
+                        <th style="width:120px;">Para</th>
+                        <th style="width:120px;">Kullanım</th>
+                        <th style="width:220px;">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Items == null || !Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="6">
+                                <div class="alert alert-info border-0 m-3">Bu kongrede kayıt tipi yok.</div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@item.Name</td>
+                                <td class="text-muted">@((item.Description ?? "").Length > 120 ? (item.Description!.Substring(0, 120) + "...") : (item.Description ?? ""))</td>
+                                <td>@item.Price.ToString("N2")</td>
+                                <td>@item.Currency</td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">@item.UsageCount</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-2">
+                                        <a class="btn btn-sm btn-outline-primary"
+                                           href="/@slug/Admin/RegistrationTypes/Edit/@item.Id?returnUrl=@Uri.EscapeDataString(currentUrl)">
+                                            Düzenle
+                                        </a>
+
+                                        <form method="post" action="/@slug/Admin/RegistrationTypes/Delete" onsubmit="return confirm('Silmek istediğinize emin misiniz?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <input type="hidden" name="returnUrl" value="@currentUrl" />
+                                            <button class="btn btn-sm btn-outline-danger" type="submit">Sil</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

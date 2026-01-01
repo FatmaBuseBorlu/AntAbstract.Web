@@ -1,15 +1,15 @@
 ﻿using System.Collections.Generic;
 
-namespace AntAbstract.Web.Models.ViewModels
+namespace AntAbstract.Web.Models.ViewModels.Admin.Users
 {
-    public class UserWithRolesViewModel
+    public class ManageUserRolesViewModel
     {
         public string UserId { get; set; } = default!;
         public string? UserEmail { get; set; }
-        public List<UserWithRoleViewModel> Roles { get; set; } = new();
+        public List<UserRoleViewModel> Roles { get; set; } = new();
     }
 
-    public class UserWithRoleViewModel
+    public class UserRoleViewModel
     {
         public string RoleName { get; set; } = default!;
         public bool IsSelected { get; set; }

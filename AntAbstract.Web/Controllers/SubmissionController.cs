@@ -1,7 +1,6 @@
 ﻿using AntAbstract.Application.DTOs.Submission;
 using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
-using AntAbstract.Web.Models.ViewModels;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
@@ -13,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using AntAbstract.Infrastructure.Services;
+using AntAbstract.Web.Models.ViewModels.Admin.Submissions;
 
 namespace AntAbstract.Web.Controllers
 {

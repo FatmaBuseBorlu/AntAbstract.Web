@@ -1,10 +1,6 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using AntAbstract.Domain.Entities;
+﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
-using AntAbstract.Web.Models.ViewModels;
-using Microsoft.AspNetCore.Http;
+using AntAbstract.Web.Models.ViewModels.Components;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

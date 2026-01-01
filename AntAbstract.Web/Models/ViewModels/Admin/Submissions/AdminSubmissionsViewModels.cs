@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace AntAbstract.Web.Models.ViewModels
+namespace AntAbstract.Web.Models.ViewModels.Admin.Submissions
 {
     public class AdminSubmissionsIndexModel
     {

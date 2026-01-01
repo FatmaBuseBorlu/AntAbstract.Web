@@ -77,6 +77,8 @@ namespace AntAbstract.Infrastructure.Context
             builder.Entity<Registration>()
                 .HasOne(r => r.Conference).WithMany(c => c.Registrations).HasForeignKey(r => r.ConferenceId).OnDelete(DeleteBehavior.Restrict);
 
+            builder.Entity<RegistrationType>().Property(x => x.Description).HasDefaultValue("");
+
             builder.Entity<AccommodationBooking>()
                 .HasOne(b => b.RoomType).WithMany().HasForeignKey(b => b.RoomTypeId).OnDelete(DeleteBehavior.Restrict);
 

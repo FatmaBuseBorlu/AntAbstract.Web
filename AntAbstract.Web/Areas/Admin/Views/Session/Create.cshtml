@@ -1,15 +1,17 @@
-﻿@model AntAbstract.Domain.Entities.Session
+﻿@model AntAbstract.Web.Models.ViewModels.Admin.Sessions.SessionCreateViewModel
+
 
 @{
     ViewData["Title"] = "Yeni Oturum";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
-    var slug = Context.GetRouteValue("slug")?.ToString() ?? "";
-    var conferenceId = Context.Request.Query["conferenceId"].ToString();
+    var baseUrl = string.IsNullOrWhiteSpace(Model.Slug)
+        ? "/Admin/Session"
+        : $"/{Model.Slug}/Admin/Session";
 
-    var backUrl = string.IsNullOrWhiteSpace(conferenceId)
-        ? $"/{slug}/Admin/Session"
-        : $"/{slug}/Admin/Session?conferenceId={conferenceId}";
+    var backUrl = Model.ConferenceId == Guid.Empty
+        ? baseUrl
+        : $"{baseUrl}?conferenceId={Model.ConferenceId}";
 }
 
 <div class="container py-4">
@@ -24,28 +26,36 @@
                         </a>
                     </div>
 
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="text-danger small mb-2">
+                            @Html.ValidationSummary(false)
+                        </div>
+                    }
+
                     <form asp-area="Admin"
                           asp-controller="Session"
                           asp-action="Create"
-                          asp-route-slug="@slug"
-                          asp-route-conferenceId="@conferenceId"
+                          asp-route-slug="@Model.Slug"
                           method="post">
                         @Html.AntiForgeryToken()
 
+                        <input type="hidden" asp-for="ConferenceId" />
+                        <input type="hidden" asp-for="ReturnUrl" />
+
                         <div class="mb-3">
                             <label class="form-label text-muted small fw-bold">Oturum Başlığı</label>
-                            <input asp-for="Title" class="form-control" placeholder="Örn: Yapay Zeka Oturumu - 1" required />
+                            <input asp-for="Title" class="form-control" placeholder="Örn: Yapay Zeka Oturumu - 1" />
                             <span asp-validation-for="Title" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label text-muted small fw-bold">Tarih ve Saat</label>
 
-                            <input class="form-control"
+                            <input asp-for="SessionDate"
+                                   class="form-control"
                                    type="datetime-local"
-                                   name="SessionDate"
-                                   value="@(Model.SessionDate == default ? "" : Model.SessionDate.ToString("yyyy-MM-ddTHH:mm"))"
-                                   required />
+                                   value="@(Model.SessionDate == default ? "" : Model.SessionDate.ToString("yyyy-MM-ddTHH:mm"))" />
 
                             <span asp-validation-for="SessionDate" class="text-danger small"></span>
                         </div>

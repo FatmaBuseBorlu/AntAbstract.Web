@@ -1,4 +1,4 @@
-namespace AntAbstract.Web.Models
+namespace AntAbstract.Web.Models.ViewModels.Shared
 {
     public class ErrorViewModel
     {

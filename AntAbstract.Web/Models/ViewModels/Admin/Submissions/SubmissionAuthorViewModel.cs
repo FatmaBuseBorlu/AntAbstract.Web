@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace AntAbstract.Web.Models.ViewModels
+namespace AntAbstract.Web.Models.ViewModels.Admin.Submissions
 {
  
     public class SubmissionAuthorViewModel

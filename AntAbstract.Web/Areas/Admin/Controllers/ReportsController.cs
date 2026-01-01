@@ -1,15 +1,12 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services;
-using AntAbstract.Web.Models.ViewModels;
+using AntAbstract.Web.Models.ViewModels.Admin.Reports;
+using AntAbstract.Web.Models.ViewModels.Shared;
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {

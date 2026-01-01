@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace AntAbstract.Web.Models.ViewModels
+namespace AntAbstract.Web.Models.ViewModels.Admin.Reports
 {
     public class ReportsIndexViewModel
     {

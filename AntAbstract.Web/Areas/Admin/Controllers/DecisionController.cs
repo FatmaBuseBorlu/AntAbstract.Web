@@ -1,7 +1,8 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services;
-using AntAbstract.Web.Models.ViewModels;
+using AntAbstract.Web.Models.ViewModels.Admin.Decision;
+using AntAbstract.Web.Models.ViewModels.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

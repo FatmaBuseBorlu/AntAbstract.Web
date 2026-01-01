@@ -1,7 +1,7 @@
 ﻿using AntAbstract.Domain.Entities;
 using System.Collections.Generic;
 
-namespace AntAbstract.Web.Models.ViewModels
+namespace AntAbstract.Web.Models.ViewModels.Admin.Assignment
 {
     public class AssignReviewerViewModel
     {

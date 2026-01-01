@@ -1,7 +1,8 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services;
-using AntAbstract.Web.Models.ViewModels;
+using AntAbstract.Web.Models.ViewModels.Admin.Sessions;
+using AntAbstract.Web.Models.ViewModels.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -118,39 +119,67 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         [HttpGet("/{slug}/Admin/Session/Create")]
-        public async Task<IActionResult> Create(string slug, Guid? conferenceId)
+        public async Task<IActionResult> Create(string slug, Guid? conferenceId, string? returnUrl = null)
         {
             var conference = await GetConferenceOrNull(slug, conferenceId);
             if (conference == null) return Redirect("/Admin/Session");
+
+            var fallback = $"/{slug}/Admin/Session?conferenceId={conference.Id}";
+            var effectiveReturnUrl = (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)) ? returnUrl : fallback;
+
+            var vm = new SessionCreateViewModel
+            {
+                Slug = slug,
+                ConferenceId = conference.Id,
+                ConferenceTitle = conference.Title,
+                SessionDate = DateTime.Now,
+                ReturnUrl = effectiveReturnUrl
+            };
 
             ViewBag.ConferenceId = conference.Id;
             ViewBag.ConferenceName = conference.Title;
 
-            return View();
+            return View(vm);
         }
 
         [HttpPost("/{slug}/Admin/Session/Create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(string slug, Session session, Guid? conferenceId)
+        public async Task<IActionResult> Create(string slug, SessionCreateViewModel model, Guid? conferenceId)
         {
-            var conference = await GetConferenceOrNull(slug, conferenceId);
+            var effectiveConferenceId = model.ConferenceId != Guid.Empty ? model.ConferenceId : conferenceId;
+
+            var conference = await GetConferenceOrNull(slug, effectiveConferenceId);
             if (conference == null) return Redirect("/Admin/Session");
 
             if (!ModelState.IsValid)
             {
+                model.Slug = slug;
+                model.ConferenceId = conference.Id;
+                model.ConferenceTitle = conference.Title;
+
                 ViewBag.ConferenceId = conference.Id;
                 ViewBag.ConferenceName = conference.Title;
-                return View(session);
+
+                return View(model);
             }
 
-            session.Id = Guid.NewGuid();
-            session.ConferenceId = conference.Id;
+            var entity = new Session
+            {
+                Id = Guid.NewGuid(),
+                ConferenceId = conference.Id,
+                Title = (model.Title ?? "").Trim(),
+                SessionDate = model.SessionDate,
+                Location = string.IsNullOrWhiteSpace(model.Location) ? null : model.Location.Trim()
+            };
 
-            _context.Sessions.Add(session);
+            _context.Sessions.Add(entity);
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Oturum başarıyla oluşturuldu.";
-            return Redirect($"/{slug}/Admin/Session?conferenceId={conference.Id}");
+
+            var fallback = $"/{slug}/Admin/Session?conferenceId={conference.Id}";
+            var go = (!string.IsNullOrWhiteSpace(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl)) ? model.ReturnUrl : fallback;
+            return Redirect(go);
         }
 
         [HttpGet("/{slug}/Admin/Session/Edit/{id:guid}")]
@@ -297,6 +326,5 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             return Redirect($"/{slug}/Admin/Session?conferenceId={conference.Id}");
         }
-
     }
 }

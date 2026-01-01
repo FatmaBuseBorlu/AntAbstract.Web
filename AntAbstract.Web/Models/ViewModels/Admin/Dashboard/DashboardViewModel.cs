@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic; 
+﻿using System.Collections.Generic;
 using AntAbstract.Domain.Entities;
 
-namespace AntAbstract.Web.Models.ViewModels
+namespace AntAbstract.Web.Models.ViewModels.Admin.Dashboard
 {
     public class DashboardViewModel
     {

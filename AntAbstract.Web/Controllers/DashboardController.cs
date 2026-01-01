@@ -1,16 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using AntAbstract.Domain.Entities;
+﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
-using AntAbstract.Web.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.WebUtilities;
+using AntAbstract.Web.Models.ViewModels.Admin.Dashboard;
 
 namespace AntAbstract.Web.Controllers
 {
