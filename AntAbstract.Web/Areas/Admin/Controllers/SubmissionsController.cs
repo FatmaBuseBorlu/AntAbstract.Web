@@ -4,8 +4,10 @@ using System.Threading.Tasks;
 using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
+using AntAbstract.Infrastructure.Services;
 using AntAbstract.Web.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -20,32 +22,123 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly ISubmissionService _submissionService;
         private readonly IReviewService _reviewService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly TenantContext _tenantContext;
+        private readonly ISelectedConferenceService _selectedConferenceService;
 
         public SubmissionsController(
             AppDbContext context,
             ISubmissionService submissionService,
             IReviewService reviewService,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            TenantContext tenantContext,
+            ISelectedConferenceService selectedConferenceService)
         {
             _context = context;
             _submissionService = submissionService;
             _reviewService = reviewService;
             _userManager = userManager;
+            _tenantContext = tenantContext;
+            _selectedConferenceService = selectedConferenceService;
         }
 
-        [HttpGet]
-        [Route("Admin/Submissions")]
-        [Route("{slug}/Admin/Submissions")]
-        public async Task<IActionResult> Index(Guid? conferenceId = null, string? search = null, string? status = null)
+        [HttpGet("/Admin/Submissions")]
+        public async Task<IActionResult> SelectConference(Guid? conferenceId = null, string? returnUrl = null)
         {
+            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
+                _selectedConferenceService.SetSelectedConferenceId(conferenceId.Value);
+
+            var selectedId = _selectedConferenceService.GetSelectedConferenceId();
+            if (selectedId != null)
+            {
+                var conf = await _context.Conferences
+                    .AsNoTracking()
+                    .Include(x => x.Tenant)
+                    .FirstOrDefaultAsync(x => x.Id == selectedId.Value);
+
+                if (conf?.Tenant?.Slug != null)
+                {
+                    HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
+
+                    if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                        return LocalRedirect(returnUrl);
+
+                    return RedirectToAction(nameof(Index), new { slug = conf.Tenant.Slug, conferenceId = conf.Id });
+                }
+            }
+
+            var conferences = await _context.Conferences
+                .AsNoTracking()
+                .Include(c => c.Tenant)
+                .OrderByDescending(c => c.StartDate)
+                .ToListAsync();
+
+            var vm = new SelectConferenceViewModel
+            {
+                Title = "Tüm Başvurular",
+                Lead = "Başvuruları görüntülemek için önce kongre seçin.",
+                PostUrl = "/Admin/Submissions/Select",
+                SubmitText = "Başvuruları Görüntüle",
+                Conferences = conferences,
+                ReturnUrl = returnUrl
+            };
+
+            return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", vm);
+        }
+
+        [HttpPost("/Admin/Submissions/Select")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SelectConferencePost(Guid conferenceId, string? returnUrl = null)
+        {
+            var conf = await _context.Conferences
+                .Include(c => c.Tenant)
+                .FirstOrDefaultAsync(c => c.Id == conferenceId);
+
+            if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
+            {
+                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                return RedirectToAction(nameof(SelectConference));
+            }
+
+            _selectedConferenceService.SetSelectedConferenceId(conf.Id);
+            HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
+
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return LocalRedirect(returnUrl);
+
+            return RedirectToAction(nameof(Index), new { slug = conf.Tenant.Slug, conferenceId = conf.Id });
+        }
+
+        [HttpGet("/{slug}/Admin/Submissions")]
+        public async Task<IActionResult> Index(string slug, Guid? conferenceId = null, string? search = null, string? status = null)
+        {
+            if (_tenantContext.Current == null)
+                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Submissions" });
+
+            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Submissions" });
+
+            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
+                _selectedConferenceService.SetSelectedConferenceId(conferenceId.Value);
+
+            var selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
+            if (selectedConferenceId == null)
+                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Submissions" });
+
+            var conference = await _context.Conferences
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == selectedConferenceId.Value && c.TenantId == _tenantContext.Current.Id);
+
+            if (conference == null)
+                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Submissions" });
+
+            var confId = conference.Id;
+
             var query = _context.Submissions
                 .AsNoTracking()
                 .Include(s => s.Conference)
                 .Include(s => s.Author)
+                .Where(x => x.ConferenceId == confId)
                 .AsQueryable();
-
-            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
-                query = query.Where(x => x.ConferenceId == conferenceId.Value);
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -56,56 +149,42 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         (x.Author.FirstName != null && x.Author.FirstName.Contains(s)) ||
                         (x.Author.LastName != null && x.Author.LastName.Contains(s)) ||
                         (x.Author.Email != null && x.Author.Email.Contains(s))
-                    )) ||
-                    (x.Conference != null && x.Conference.Title != null && x.Conference.Title.Contains(s))
+                    ))
                 );
             }
 
-            if (!string.IsNullOrWhiteSpace(status))
-            {
-                if (Enum.TryParse<SubmissionStatus>(status, out var parsed))
-                    query = query.Where(x => x.Status == parsed);
-            }
+            if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<SubmissionStatus>(status, out var parsed))
+                query = query.Where(x => x.Status == parsed);
 
             var items = await query
-                .OrderByDescending(x => x.CreatedAt)
+                .OrderByDescending(x => x.CreatedDate)
                 .Select(x => new AdminSubmissionRowModel
                 {
                     Id = x.Id,
                     Title = x.Title ?? "",
                     AuthorName = x.Author == null ? "" : ((x.Author.FirstName ?? "") + " " + (x.Author.LastName ?? "")).Trim(),
                     ConferenceTitle = x.Conference == null ? "" : (x.Conference.Title ?? ""),
-                    CreatedAt = x.CreatedAt,
+                    CreatedAt = x.CreatedDate,
                     Status = x.Status.ToString()
                 })
                 .ToListAsync();
 
-            string? confTitle = null;
-            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
-            {
-                confTitle = await _context.Conferences
-                    .AsNoTracking()
-                    .Where(c => c.Id == conferenceId.Value)
-                    .Select(c => c.Title)
-                    .FirstOrDefaultAsync();
-            }
-
             var model = new AdminSubmissionsIndexModel
             {
-                ConferenceId = conferenceId,
-                ConferenceTitle = confTitle,
+                Slug = slug,
+                ConferenceId = confId,
+                ConferenceTitle = conference.Title,
                 Search = search,
                 Status = status,
                 Items = items
             };
 
-            return View(model);
+            return View("~/Areas/Admin/Views/Submissions/Index.cshtml", model);
         }
 
-        [HttpGet]
-        [Route("Admin/Submissions/Details/{id}")]
-        [Route("{slug}/Admin/Submissions/Details/{id}")]
-        public async Task<IActionResult> Details(Guid id, string? returnUrl = null)
+        [HttpGet("/Admin/Submissions/Details/{id}")]
+        [HttpGet("/{slug}/Admin/Submissions/Details/{id}")]
+        public async Task<IActionResult> Details(Guid id, string? slug = null, string? returnUrl = null)
         {
             var submission = await _submissionService.GetSubmissionByIdAsync(id);
             if (submission == null)
@@ -118,16 +197,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 ? returnUrl
                 : $"{Request.PathBase}{Request.Path}{Request.QueryString}";
 
-            ViewBag.ReturnUrl = string.IsNullOrWhiteSpace(effectiveReturnUrl) ? "/Admin/Submissions" : effectiveReturnUrl;
+            if (string.IsNullOrWhiteSpace(effectiveReturnUrl))
+                effectiveReturnUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Submissions" : $"/{slug}/Admin/Submissions";
 
-            return View(submission);
+            ViewBag.ReturnUrl = effectiveReturnUrl;
+
+            return View("~/Areas/Admin/Views/Submissions/Details.cshtml", submission);
         }
 
-        [HttpPost]
+        [HttpPost("/Admin/Submissions/ChangeStatus")]
+        [HttpPost("/{slug}/Admin/Submissions/ChangeStatus")]
         [ValidateAntiForgeryToken]
-        [Route("Admin/Submissions/ChangeStatus")]
-        [Route("{slug}/Admin/Submissions/ChangeStatus")]
-        public async Task<IActionResult> ChangeStatus(Guid id, string status, string? returnUrl = null)
+        public async Task<IActionResult> ChangeStatus(Guid id, string status, string? slug = null, string? returnUrl = null)
         {
             if (Enum.TryParse<SubmissionStatus>(status, out var newStatus))
             {
@@ -142,14 +223,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
                 return Redirect(returnUrl);
 
-            return RedirectToAction(nameof(Index));
+            if (!string.IsNullOrWhiteSpace(slug))
+                return RedirectToAction(nameof(Index), new { slug });
+
+            return RedirectToAction(nameof(SelectConference));
         }
 
-        [HttpPost]
+        [HttpPost("/Admin/Submissions/Delete")]
+        [HttpPost("/{slug}/Admin/Submissions/Delete")]
         [ValidateAntiForgeryToken]
-        [Route("Admin/Submissions/Delete")]
-        [Route("{slug}/Admin/Submissions/Delete")]
-        public async Task<IActionResult> Delete(Guid id, string? returnUrl = null)
+        public async Task<IActionResult> Delete(Guid id, string? slug = null, string? returnUrl = null)
         {
             await _submissionService.DeleteSubmissionAsync(id);
             TempData["SuccessMessage"] = "Bildiri silindi.";
@@ -157,7 +240,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
                 return Redirect(returnUrl);
 
-            return RedirectToAction(nameof(Index));
+            if (!string.IsNullOrWhiteSpace(slug))
+                return RedirectToAction(nameof(Index), new { slug });
+
+            return RedirectToAction(nameof(SelectConference));
         }
     }
 }

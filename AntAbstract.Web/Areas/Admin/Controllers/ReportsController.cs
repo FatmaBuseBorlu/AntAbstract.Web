@@ -2,10 +2,14 @@
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services;
 using AntAbstract.Web.Models.ViewModels;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ClosedXML.Excel;
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -17,7 +21,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
 
-        public ReportsController(AppDbContext context, TenantContext tenantContext, ISelectedConferenceService selectedConferenceService)
+        public ReportsController(
+            AppDbContext context,
+            TenantContext tenantContext,
+            ISelectedConferenceService selectedConferenceService)
         {
             _context = context;
             _tenantContext = tenantContext;
@@ -25,7 +32,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         [HttpGet("/Admin/Reports")]
-        public async Task<IActionResult> SelectConference()
+        public async Task<IActionResult> SelectConference(string? returnUrl = null)
         {
             var selectedId = _selectedConferenceService.GetSelectedConferenceId();
             if (selectedId != null)
@@ -38,11 +45,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 if (conf?.Tenant?.Slug != null)
                 {
                     HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
-                    return Redirect($"/{conf.Tenant.Slug}/Admin/Reports?conferenceId={conf.Id}");
+
+                    if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                        return LocalRedirect(returnUrl);
+
+                    return RedirectToAction(nameof(Index), new { slug = conf.Tenant.Slug, conferenceId = conf.Id });
                 }
             }
 
-            // mevcut kodun devamı
             var conferences = await _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
@@ -53,39 +63,141 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 Title = "Raporlama Merkezi",
                 Lead = "Verilerini incelemek istediğiniz kongreyi seçerek devam edin.",
-                PostUrl = "/admin/reports/select",
+                PostUrl = "/Admin/Reports/Select",
                 SubmitText = "Raporları Görüntüle",
-                Conferences = conferences
+                Conferences = conferences,
+                ReturnUrl = returnUrl
             };
 
             return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", vm);
         }
 
-
         [HttpPost("/Admin/Reports/Select")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SelectConferencePost(Guid conferenceId)
+        public async Task<IActionResult> SelectConferencePost(Guid conferenceId, string? returnUrl = null)
         {
-            var conf = await _context.Conferences.Include(c => c.Tenant)
+            var conf = await _context.Conferences
+                .Include(c => c.Tenant)
                 .FirstOrDefaultAsync(c => c.Id == conferenceId);
 
-            if (conf == null) return NotFound();
+            if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
+            {
+                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                return RedirectToAction(nameof(SelectConference));
+            }
 
             _selectedConferenceService.SetSelectedConferenceId(conf.Id);
-
             HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
 
-            return Redirect($"/{conf.Tenant.Slug}/Admin/Reports?conferenceId={conf.Id}");
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return LocalRedirect(returnUrl);
+
+            return RedirectToAction(nameof(Index), new { slug = conf.Tenant.Slug, conferenceId = conf.Id });
         }
 
-        [HttpGet("/{slug}/Admin/Reports/Excel")]
-        public async Task<IActionResult> ExportExcel(string slug)
+        [HttpGet("/{slug}/Admin/Reports")]
+        public async Task<IActionResult> Index(string slug, Guid? conferenceId = null)
         {
             if (_tenantContext.Current == null)
                 return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports" });
 
             if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
                 return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports" });
+
+            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
+                _selectedConferenceService.SetSelectedConferenceId(conferenceId.Value);
+
+            var selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
+            if (selectedConferenceId == null)
+                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports" });
+
+            var conference = await _context.Conferences
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c =>
+                    c.Id == selectedConferenceId.Value &&
+                    c.TenantId == _tenantContext.Current.Id);
+
+            if (conference == null)
+                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports" });
+
+            var confId = conference.Id;
+
+            var totalSubmissions = await _context.Submissions
+                .AsNoTracking()
+                .Where(s => s.ConferenceId == confId)
+                .CountAsync();
+
+            var decidedSubmissions = await _context.Submissions
+                .AsNoTracking()
+                .Where(s => s.ConferenceId == confId && s.DecisionDate != null)
+                .CountAsync();
+
+            var totalAssignments = await (
+                from ra in _context.ReviewAssignments.AsNoTracking()
+                join s in _context.Submissions.AsNoTracking() on ra.SubmissionId equals s.Id
+                where s.ConferenceId == confId
+                select ra
+            ).CountAsync();
+
+            var assignedSubmissions = await (
+                from ra in _context.ReviewAssignments.AsNoTracking()
+                join s in _context.Submissions.AsNoTracking() on ra.SubmissionId equals s.Id
+                where s.ConferenceId == confId
+                select ra.SubmissionId
+            ).Distinct().CountAsync();
+
+            var registrations = await _context.Registrations
+                .AsNoTracking()
+                .Where(r => r.ConferenceId == confId)
+                .Select(r => new { r.Amount, r.IsPaid })
+                .ToListAsync();
+
+            var statusCounts = await _context.Submissions
+                .AsNoTracking()
+                .Where(s => s.ConferenceId == confId)
+                .GroupBy(s => s.Status)
+                .Select(g => new { Status = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            int CountOf(SubmissionStatus st) => statusCounts.FirstOrDefault(x => x.Status == st)?.Count ?? 0;
+
+            var vm = new ReportsIndexViewModel
+            {
+                ConferenceId = conference.Id,
+                ConferenceTitle = conference.Title,
+                ConferenceName = conference.Title,
+                Slug = slug,
+
+                TotalSubmissions = totalSubmissions,
+                AssignedSubmissions = assignedSubmissions,
+                DecidedSubmissions = decidedSubmissions,
+                TotalAssignments = totalAssignments,
+
+                TotalRegistrations = registrations.Count,
+                TotalRevenue = registrations.Where(x => x.IsPaid).Sum(x => x.Amount),
+
+                NewCount = CountOf(SubmissionStatus.New),
+                PendingCount = CountOf(SubmissionStatus.Pending),
+                UnderReviewCount = CountOf(SubmissionStatus.UnderReview),
+                AcceptedCount = CountOf(SubmissionStatus.Accepted),
+                RejectedCount = CountOf(SubmissionStatus.Rejected),
+                RevisionRequiredCount = CountOf(SubmissionStatus.RevisionRequired)
+            };
+
+            return View("~/Areas/Admin/Views/Reports/Index.cshtml", vm);
+        }
+
+        [HttpGet("/{slug}/Admin/Reports/Excel")]
+        public async Task<IActionResult> ExportExcel(string slug, Guid? conferenceId = null)
+        {
+            if (_tenantContext.Current == null)
+                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports" });
+
+            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports" });
+
+            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
+                _selectedConferenceService.SetSelectedConferenceId(conferenceId.Value);
 
             var selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
             if (selectedConferenceId == null)
@@ -104,6 +216,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var submissions = await _context.Submissions
                 .AsNoTracking()
+                .Include(s => s.Author)
                 .Where(s => s.ConferenceId == confId)
                 .Select(s => new
                 {
@@ -111,7 +224,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     s.Title,
                     AuthorEmail = s.Author != null ? s.Author.Email : null,
                     Status = s.Status.ToString(),
-                    s.CreatedAt,
+                    CreatedAt = s.CreatedDate,
                     s.DecisionDate
                 })
                 .ToListAsync();
@@ -130,7 +243,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 })
                 .ToListAsync();
 
-            using var wb = new ClosedXML.Excel.XLWorkbook();
+            using var wb = new XLWorkbook();
 
             var ws1 = wb.Worksheets.Add("Submissions");
             ws1.Cell(1, 1).Value = "Id";
@@ -187,7 +300,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 fileName
             );
         }
-
 
         [HttpGet("/Reports/Index")]
         public IActionResult LegacyRoot() => Redirect("/Admin/Reports");

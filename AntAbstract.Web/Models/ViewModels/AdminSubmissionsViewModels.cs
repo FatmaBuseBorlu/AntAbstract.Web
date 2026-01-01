@@ -5,6 +5,7 @@ namespace AntAbstract.Web.Models.ViewModels
 {
     public class AdminSubmissionsIndexModel
     {
+        public string Slug { get; set; } = "";
         public Guid? ConferenceId { get; set; }
         public string? ConferenceTitle { get; set; }
         public string? Search { get; set; }

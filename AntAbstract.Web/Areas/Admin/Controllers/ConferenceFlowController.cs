@@ -150,10 +150,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return View("~/Areas/Admin/Views/ConferenceFlow/Index.cshtml", vm);
         }
 
-        [HttpGet("/admin/conferenceflow")]
+        // Legacy yolları: yeni Admin yoluyla çakışmayacak şekilde değiştirildi
+        [HttpGet("/ConferenceFlow/Index")]
         public IActionResult LegacyRoot() => Redirect("/Admin/ConferenceFlow");
 
-        [HttpGet("/{slug}/admin/conferenceflow")]
+        [HttpGet("/{slug}/ConferenceFlow/Index")]
         public IActionResult LegacyTenant(string slug) => Redirect($"/{slug}/Admin/ConferenceFlow");
     }
 }
