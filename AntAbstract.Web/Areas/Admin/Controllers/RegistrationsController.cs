@@ -1,10 +1,16 @@
-﻿using AntAbstract.Infrastructure.Context;
+﻿using AntAbstract.Domain.Entities;
+using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services;
+using AntAbstract.Web.Models.ViewModels;
 using AntAbstract.Web.Models.ViewModels.Admin.Registrations;
 using AntAbstract.Web.Models.ViewModels.Shared;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -26,6 +32,22 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _selectedConferenceService = selectedConferenceService;
         }
 
+        private async Task<Conference?> GetConferenceOrNull(string? slug, Guid? conferenceId)
+        {
+            if (_tenantContext.Current == null) return null;
+            if (string.IsNullOrWhiteSpace(slug)) return null;
+
+            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            conferenceId ??= _selectedConferenceService.GetSelectedConferenceId();
+            if (conferenceId == null) return null;
+
+            return await _context.Conferences
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == conferenceId.Value && c.TenantId == _tenantContext.Current.Id);
+        }
+
         [HttpGet("/Admin/Registrations")]
         public async Task<IActionResult> SelectConference(string? returnUrl = null)
         {
@@ -40,6 +62,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 if (conf?.Tenant?.Slug != null)
                 {
                     HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
+                    HttpContext.Session.SetString("SelectedConferenceTitle", conf.Title ?? "");
 
                     if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
                         return LocalRedirect(returnUrl);
@@ -57,7 +80,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var vm = new SelectConferenceViewModel
             {
                 Title = "Kayıtlar ve Ödemeler",
-                Lead = "Kayıt ve ödeme bilgilerini görmek için önce kongre seçin.",
+                Lead = "Kayıtları ve ödemeleri yönetmek için önce kongre seçin.",
                 PostUrl = "/Admin/Registrations/Select",
                 SubmitText = "Devam Et",
                 Conferences = conferences,
@@ -72,7 +95,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> SelectConferencePost(Guid conferenceId, string? returnUrl = null)
         {
             var conf = await _context.Conferences
-                .AsNoTracking()
                 .Include(c => c.Tenant)
                 .FirstOrDefaultAsync(c => c.Id == conferenceId);
 
@@ -113,134 +135,139 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (selectedConferenceId == null)
                 return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Registrations" });
 
-            var conference = await _context.Conferences
+            var conf = await _context.Conferences
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == selectedConferenceId.Value && c.TenantId == _tenantContext.Current.Id);
 
-            if (conference == null)
+            if (conf == null)
                 return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Registrations" });
 
-            var regTypes = await _context.RegistrationTypes
+            var registrationTypes = await _context.RegistrationTypes
                 .AsNoTracking()
-                .Where(rt => rt.ConferenceId == conference.Id)
-                .OrderBy(rt => rt.Name)
-                .Select(rt => new RegistrationTypeLookupItem
+                .Where(t => t.ConferenceId == conf.Id)
+                .OrderBy(t => t.Name)
+                .Select(t => new RegistrationTypeLookupItem
                 {
-                    Id = rt.Id,
-                    Name = rt.Name
+                    Id = t.Id,
+                    Name = t.Name
                 })
                 .ToListAsync();
 
-            var query = _context.Registrations
+            var q = _context.Registrations
                 .AsNoTracking()
+                .Where(r => r.ConferenceId == conf.Id)
                 .Include(r => r.AppUser)
                 .Include(r => r.RegistrationType)
-                .Where(r => r.ConferenceId == conference.Id)
                 .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                var s = search.Trim();
-                query = query.Where(r =>
-                    (r.AppUser != null && (
-                        (r.AppUser.FirstName != null && r.AppUser.FirstName.Contains(s)) ||
-                        (r.AppUser.LastName != null && r.AppUser.LastName.Contains(s)) ||
-                        (r.AppUser.Email != null && r.AppUser.Email.Contains(s))
-                    )) ||
-                    (r.RegistrationType != null && r.RegistrationType.Name != null && r.RegistrationType.Name.Contains(s))
-                );
-            }
 
             if (!string.IsNullOrWhiteSpace(paid))
             {
-                if (paid.Equals("Paid", StringComparison.OrdinalIgnoreCase))
-                    query = query.Where(r => r.IsPaid);
-
-                if (paid.Equals("Unpaid", StringComparison.OrdinalIgnoreCase))
-                    query = query.Where(r => !r.IsPaid);
+                if (paid == "Paid") q = q.Where(r => r.IsPaid);
+                else if (paid == "Unpaid") q = q.Where(r => !r.IsPaid);
             }
 
             if (registrationTypeId.HasValue && registrationTypeId.Value != Guid.Empty)
+                q = q.Where(r => r.RegistrationTypeId == registrationTypeId.Value);
+
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(r => r.RegistrationTypeId == registrationTypeId.Value);
+                var s = search.Trim().ToLower();
+
+                q = q.Where(r =>
+                    (r.AppUser != null && (
+                        (((r.AppUser.FirstName ?? "") + " " + (r.AppUser.LastName ?? "")).ToLower().Contains(s)) ||
+                        ((r.AppUser.Email ?? "").ToLower().Contains(s))
+                    ))
+                    || (r.RegistrationType != null && ((r.RegistrationType.Name ?? "").ToLower().Contains(s)))
+                );
             }
 
-            var items = await query
+            var items = await q
                 .OrderByDescending(r => r.RegistrationDate)
                 .Select(r => new AdminRegistrationRowModel
                 {
                     Id = r.Id,
                     UserFullName = r.AppUser == null ? "" : ((r.AppUser.FirstName ?? "") + " " + (r.AppUser.LastName ?? "")).Trim(),
-                    UserEmail = r.AppUser != null ? (r.AppUser.Email ?? "") : "",
-                    RegistrationTypeName = r.RegistrationType != null ? (r.RegistrationType.Name ?? "") : "",
+                    UserEmail = r.AppUser == null ? "" : (r.AppUser.Email ?? ""),
+                    RegistrationTypeName = r.RegistrationType == null ? "" : (r.RegistrationType.Name ?? ""),
                     Amount = r.Amount,
-                    Currency = r.RegistrationType != null ? (r.RegistrationType.Currency ?? "TRY") : "TRY",
+                    Currency = (r.RegistrationType != null && !string.IsNullOrWhiteSpace(r.RegistrationType.Currency))
+                        ? r.RegistrationType.Currency
+                        : "TRY",
                     IsPaid = r.IsPaid,
                     RegistrationDate = r.RegistrationDate,
                     PaymentDate = r.PaymentDate
                 })
                 .ToListAsync();
 
-            var vm = new AdminRegistrationsIndexModel
+            var model = new AdminRegistrationsIndexModel
             {
                 Slug = slug,
-                ConferenceId = conference.Id,
-                ConferenceTitle = conference.Title,
+                ConferenceId = conf.Id,
+                ConferenceTitle = conf.Title ?? "",
                 Search = search,
                 Paid = paid,
-                Items = items,
                 RegistrationTypeId = registrationTypeId,
-                RegistrationTypes = regTypes
+                RegistrationTypes = registrationTypes,
+                Items = items
             };
 
-            return View("~/Areas/Admin/Views/Registrations/Index.cshtml", vm);
+            return View("~/Areas/Admin/Views/Registrations/Index.cshtml", model);
         }
 
-        [HttpGet("/{slug}/Admin/Registrations/Details/{id}")]
-        public async Task<IActionResult> Details(string slug, Guid id, string? returnUrl = null)
+        [HttpPost("/{slug}/Admin/Registrations/MarkPaid")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarkPaid(string slug, Guid id, string? returnUrl = null)
         {
-            if (_tenantContext.Current == null)
-                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Registrations" });
-
-            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            var conf = await GetConferenceOrNull(slug, null);
+            if (conf == null)
                 return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Registrations" });
 
             var reg = await _context.Registrations
-                .AsNoTracking()
-                .Include(r => r.AppUser)
-                .Include(r => r.RegistrationType)
-                .Include(r => r.Conference)
-                .FirstOrDefaultAsync(r => r.Id == id && r.Conference.TenantId == _tenantContext.Current.Id);
+                .FirstOrDefaultAsync(x => x.Id == id && x.ConferenceId == conf.Id);
 
-            if (reg == null)
-                return NotFound();
+            if (reg == null) return NotFound();
 
-            var effectiveReturnUrl = !string.IsNullOrWhiteSpace(returnUrl) ? returnUrl : $"/{slug}/Admin/Registrations";
+            reg.IsPaid = true;
+            reg.PaymentDate = reg.PaymentDate ?? DateTime.UtcNow;
 
-            var vm = new AdminRegistrationDetailsModel
-            {
-                Id = reg.Id,
-                Slug = slug,
-                ConferenceId = reg.ConferenceId,
-                ConferenceTitle = reg.Conference?.Title,
+            await _context.SaveChangesAsync();
 
-                UserFullName = reg.AppUser == null ? "" : ((reg.AppUser.FirstName ?? "") + " " + (reg.AppUser.LastName ?? "")).Trim(),
-                UserEmail = reg.AppUser?.Email ?? "",
+            TempData["SuccessMessage"] = "Ödeme durumu güncellendi.";
 
-                RegistrationTypeName = reg.RegistrationType?.Name ?? "",
-                RegistrationTypeDescription = reg.RegistrationType?.Description,
-                Amount = reg.Amount,
-                Currency = reg.RegistrationType?.Currency ?? "TRY",
+            var back = (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                ? returnUrl
+                : $"/{slug}/Admin/Registrations?conferenceId={conf.Id}";
 
-                IsPaid = reg.IsPaid,
-                RegistrationDate = reg.RegistrationDate,
-                PaymentDate = reg.PaymentDate,
-                PaymentTransactionId = reg.PaymentTransactionId,
+            return Redirect(back);
+        }
 
-                ReturnUrl = effectiveReturnUrl
-            };
+        [HttpPost("/{slug}/Admin/Registrations/MarkUnpaid")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarkUnpaid(string slug, Guid id, string? returnUrl = null)
+        {
+            var conf = await GetConferenceOrNull(slug, null);
+            if (conf == null)
+                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Registrations" });
 
-            return View("~/Areas/Admin/Views/Registrations/Details.cshtml", vm);
+            var reg = await _context.Registrations
+                .FirstOrDefaultAsync(x => x.Id == id && x.ConferenceId == conf.Id);
+
+            if (reg == null) return NotFound();
+
+            reg.IsPaid = false;
+            reg.PaymentDate = null;
+            reg.PaymentTransactionId = null;
+
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Ödeme durumu güncellendi.";
+
+            var back = (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                ? returnUrl
+                : $"/{slug}/Admin/Registrations?conferenceId={conf.Id}";
+
+            return Redirect(back);
         }
     }
 }
