@@ -1,4 +1,7 @@
-﻿using AntAbstract.Web.Models.ViewModels.Admin.Assignment;
+﻿using AntAbstract.Infrastructure.Context;
+using AntAbstract.Infrastructure.Services;
+using AntAbstract.Web.Models.ViewModels.Admin.Assignment;
+using AntAbstract.Web.Models.ViewModels.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -7,58 +10,119 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
     [Authorize(Roles = "Admin,Organizator")]
-    public class ConferenceFlowController : AdminConferenceContextControllerBase
+    public class ConferenceFlowController : Controller
     {
+        private readonly AppDbContext _context;
+        private readonly TenantContext _tenantContext;
+        private readonly ISelectedConferenceService _selectedConferenceService;
+
         public ConferenceFlowController(
-            AntAbstract.Infrastructure.Context.AppDbContext context,
-            AntAbstract.Infrastructure.Context.TenantContext tenantContext,
-            AntAbstract.Infrastructure.Services.ISelectedConferenceService selectedConferenceService)
-            : base(context, tenantContext, selectedConferenceService)
+            AppDbContext context,
+            TenantContext tenantContext,
+            ISelectedConferenceService selectedConferenceService)
         {
+            _context = context;
+            _tenantContext = tenantContext;
+            _selectedConferenceService = selectedConferenceService;
         }
 
         [HttpGet("/Admin/ConferenceFlow")]
-        public async Task<IActionResult> Root()
+        public async Task<IActionResult> SelectConference()
         {
-            return await GoSelectAsync(
-                "/Admin/ConferenceFlow",
-                "Kongre Akışı",
-                "Kongre akışını görüntülemek için önce kongre seçin."
-            );
+            var selectedId = _selectedConferenceService.GetSelectedConferenceId();
+            if (selectedId != null)
+            {
+                var selectedConf = await _context.Conferences
+                    .AsNoTracking()
+                    .Include(x => x.Tenant)
+                    .FirstOrDefaultAsync(x => x.Id == selectedId.Value);
+
+                if (selectedConf?.Tenant?.Slug != null)
+                {
+                    HttpContext.Session.SetString("SelectedConferenceSlug", selectedConf.Tenant.Slug);
+                    return Redirect($"/{selectedConf.Tenant.Slug}/Admin/ConferenceFlow?conferenceId={selectedConf.Id}");
+                }
+            }
+
+            var conferences = await _context.Conferences
+                .AsNoTracking()
+                .Include(c => c.Tenant)
+                .OrderByDescending(c => c.StartDate)
+                .ToListAsync();
+
+            var vm = new SelectConferenceViewModel
+            {
+                Title = "Kongre Akışı",
+                Lead = "Kongre akışını görüntülemek için lütfen bir kongre seçiniz.",
+                PostUrl = "/Admin/ConferenceFlow/Select",
+                SubmitText = "Devam Et",
+                Conferences = conferences
+            };
+
+            return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", vm);
+        }
+
+        [HttpPost("/Admin/ConferenceFlow/Select")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SelectConferencePost(Guid conferenceId)
+        {
+            var conf = await _context.Conferences
+                .AsNoTracking()
+                .Include(c => c.Tenant)
+                .FirstOrDefaultAsync(c => c.Id == conferenceId);
+
+            if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
+            {
+                TempData["ErrorMessage"] = "Seçilen kongre bulunamadı.";
+                return Redirect("/Admin/ConferenceFlow");
+            }
+
+            _selectedConferenceService.SetSelectedConferenceId(conf.Id);
+            HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
+
+            return Redirect($"/{conf.Tenant.Slug}/Admin/ConferenceFlow?conferenceId={conf.Id}");
         }
 
         [HttpGet("/{slug}/Admin/ConferenceFlow")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId)
         {
-            var conference = await GetConferenceOrNull(slug, conferenceId);
-            if (conference == null)
-                return await GoSelectAsync(
-                    "/Admin/ConferenceFlow",
-                    "Kongre Akışı",
-                    "Kongre akışını görüntülemek için önce kongre seçin."
-                );
+            if (_tenantContext.Current == null || !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["ErrorMessage"] = "Geçersiz organizasyon (tenant). Lütfen tekrar seçim yapın.";
+                return Redirect("/Admin/ConferenceFlow");
+            }
 
-            var submissionIds = await _context.Submissions
+            conferenceId ??= _selectedConferenceService.GetSelectedConferenceId();
+            if (conferenceId == null)
+            {
+                return Redirect("/Admin/ConferenceFlow");
+            }
+
+            var conference = await _context.Conferences
                 .AsNoTracking()
-                .Where(s => s.ConferenceId == conference.Id)
-                .Select(s => s.Id)
-                .ToListAsync();
+                .FirstOrDefaultAsync(c => c.Id == conferenceId.Value && c.TenantId == _tenantContext.Current.Id);
 
-            var submissionCount = submissionIds.Count;
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = "Seçilen kongre bu organizasyona ait değil.";
+                return Redirect("/Admin/ConferenceFlow");
+            }
 
-            var assignedSubmissionCount = submissionCount == 0
-                ? 0
-                : await _context.ReviewAssignments
-                    .AsNoTracking()
-                    .Where(ra => submissionIds.Contains(ra.SubmissionId))
-                    .Select(ra => ra.SubmissionId)
-                    .Distinct()
-                    .CountAsync();
+
+            var submissionCount = await _context.Submissions
+                .AsNoTracking()
+                .CountAsync(s => s.ConferenceId == conference.Id);
+
+            var assignedSubmissionCount = await _context.ReviewAssignments
+                .AsNoTracking()
+                .Where(ra => ra.Submission.ConferenceId == conference.Id)
+                .Select(ra => ra.SubmissionId)
+                .Distinct()
+                .CountAsync();
 
             var decidedSubmissionCount = await _context.Submissions
                 .AsNoTracking()
-                .Where(s => s.ConferenceId == conference.Id)
-                .CountAsync(s => s.DecisionDate != null);
+                .CountAsync(s => s.ConferenceId == conference.Id && s.DecisionDate != null);
 
             var vm = new ConferenceFlowIndexViewModel
             {
