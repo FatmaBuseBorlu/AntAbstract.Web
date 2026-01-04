@@ -8,7 +8,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AntAbstract.Domain.Entities
 {
-    public class Notification
+    public class Notification : BaseEntity
     {
         [Key]
         public int Id { get; set; }
@@ -20,11 +20,13 @@ namespace AntAbstract.Domain.Entities
         public AppUser User { get; set; }
 
         [Required]
-        public string Title { get; set; }  
-        public string Message { get; set; } 
-        public string Link { get; set; }    
+        public string Title { get; set; }
+        public string Message { get; set; }
+        public string Link { get; set; }
 
-        public bool IsRead { get; set; } = false; 
+        public bool IsRead { get; set; } = false;
+        public string Icon { get; set; } = "fas fa-info-circle";
+        public string Color { get; set; } = "primary";
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
