@@ -1,0 +1,236 @@
+﻿@using AntAbstract.Domain.Entities
+@model IEnumerable<AntAbstract.Domain.Entities.Payment>
+
+@{
+    ViewData["Title"] = "Ödemelerim";
+    Layout = "_LayoutDashboard";
+
+    var totalPaid = Model != null ? Model.Where(x => x.Status == PaymentStatus.Completed).Sum(x => x.Amount) : 0;
+    var totalPending = Model != null ? Model.Where(x => x.Status == PaymentStatus.Pending).Sum(x => x.Amount) : 0;
+    var lastPaymentDate = Model != null && Model.Any() ? Model.Max(x => x.PaymentDate).ToString("dd MMM yyyy") : "-";
+}
+
+<style>
+    .pay-stat-card {
+        background: #fff;
+        border: 1px solid #eef2f6;
+        border-radius: 16px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        transition: transform 0.2s;
+    }
+
+        .pay-stat-card:hover {
+            transform: translateY(-3px);
+        }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .table-custom thead th {
+        background-color: #f8fafc;
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #e2e8f0;
+        padding: 1rem;
+    }
+
+    .table-custom tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+        color: #334155;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.9rem;
+    }
+
+    .table-custom tr:hover td {
+        background-color: #f8fafc;
+    }
+
+    .badge-status {
+        padding: 6px 12px;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .status-completed {
+        background-color: #dcfce7;
+        color: #166534;
+    }
+    .status-pending {
+        background-color: #fef9c3;
+        color: #854d0e;
+    }
+    .status-failed {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+    .status-refunded {
+        background-color: #e2e8f0;
+        color: #475569;
+    }
+</style>
+
+<div class="container-fluid px-0">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold text-dark mb-1">Ödeme Geçmişi</h3>
+            <p class="text-muted mb-0">Tüm kongre ve hizmet ödemelerinizi buradan takip edebilirsiniz.</p>
+        </div>
+        <a href="@Url.Action("New", "Payment")" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm">
+            <i class="fas fa-plus-circle me-2"></i> Yeni Ödeme
+        </a>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="pay-stat-card">
+                <div>
+                    <p class="text-muted small fw-bold mb-1 text-uppercase">TOPLAM ÖDENEN</p>
+                    <h3 class="fw-bold text-dark mb-0">₺ @totalPaid.ToString("N2")</h3>
+                </div>
+                <div class="stat-icon bg-success bg-opacity-10 text-success"><i class="fas fa-wallet"></i></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="pay-stat-card">
+                <div>
+                    <p class="text-muted small fw-bold mb-1 text-uppercase">BEKLEYEN İŞLEM</p>
+                    <h3 class="fw-bold text-warning mb-0">₺ @totalPending.ToString("N2")</h3>
+                </div>
+                <div class="stat-icon bg-warning bg-opacity-10 text-warning"><i class="fas fa-hourglass-half"></i></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="pay-stat-card">
+                <div>
+                    <p class="text-muted small fw-bold mb-1 text-uppercase">SON İŞLEM TARİHİ</p>
+                    <h5 class="fw-bold text-dark mb-0">@lastPaymentDate</h5>
+                </div>
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary"><i class="fas fa-calendar-check"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-custom mb-0 w-100">
+                <thead>
+                    <tr>
+                        <th>İşlem ID</th>
+                        <th>Hizmet / Kongre</th>
+                        <th>Fatura Bilgisi</th>
+                        <th>Tarih</th>
+                        <th>Tutar</th>
+                        <th>Yöntem</th>
+                        <th>Durum</th>
+                        <th class="text-end">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="text-muted small">#@item.Id.ToString().Substring(0, 8)...</td>
+
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-light p-2 rounded-3 me-3 text-primary">
+                                            <i class="fas fa-ticket-alt"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">@(item.Conference?.Title ?? "Genel Ödeme")</div>
+                                            @if (item.RelatedSubmissionId.HasValue)
+                                            {
+                                                <small class="text-muted">Bildiri ID: @item.RelatedSubmissionId.Value.ToString().Substring(0, 6)...</small>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <span class="fw-bold d-block text-dark">@(item.BillingName ?? item.AppUser?.FirstName + " " + item.AppUser?.LastName)</span>
+                                    @if (!string.IsNullOrEmpty(item.TaxNumber))
+                                    {
+                                        <small class="text-muted" style="font-size:0.7rem;">VN: @item.TaxNumber</small>
+                                    }
+                                </td>
+
+                                <td>@item.PaymentDate.ToString("dd MMM yyyy") <br> <small class="text-muted">@item.PaymentDate.ToString("HH:mm")</small></td>
+
+                                <td class="fw-bold text-dark">@item.Amount.ToString("N2") @item.Currency</td>
+
+                                <td><span class="badge bg-light text-dark border">@item.PaymentMethod</span></td>
+
+                                <td>
+                                    @switch (item.Status)
+                                    {
+                                        case PaymentStatus.Completed:
+                                            <span class="badge-status status-completed"><i class="fas fa-check-circle"></i> Başarılı</span>
+                                            break;
+                                        case PaymentStatus.Pending:
+                                            <span class="badge-status status-pending"><i class="fas fa-clock"></i> Bekliyor</span>
+                                            break;
+                                        case PaymentStatus.Failed:
+                                            <span class="badge-status status-failed"><i class="fas fa-times-circle"></i> Hata</span>
+                                            break;
+                                        case PaymentStatus.Refunded:
+                                            <span class="badge-status status-refunded"><i class="fas fa-undo"></i> İade</span>
+                                            break;
+                                    }
+                                </td>
+
+                                <td class="text-end">
+                                    @if (item.Status == PaymentStatus.Completed)
+                                    {
+                                        <button class="btn btn-light btn-sm text-muted" title="Makbuz Görüntüle">
+                                            <i class="fas fa-file-invoice"></i>
+                                        </button>
+                                    }
+                                    else if (item.Status == PaymentStatus.Failed || item.Status == PaymentStatus.Pending)
+                                    {
+                                        <button class="btn btn-outline-primary btn-sm" title="Tekrar Dene">
+                                            <i class="fas fa-redo"></i>
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="mb-3 text-muted opacity-25">
+                                    <i class="fas fa-receipt fa-3x"></i>
+                                </div>
+                                <h5 class="fw-bold text-dark">Henüz Ödeme Kaydı Yok</h5>
+                                <p class="text-muted small">Yaptığınız ödemeler burada listelenecektir.</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

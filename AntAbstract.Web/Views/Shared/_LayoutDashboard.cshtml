@@ -5,14 +5,12 @@
 @inject AntAbstract.Infrastructure.Context.TenantContext Tc
 
 @{
-    // --- SENİN MEVCUT BACKEND MANTIĞIN (AYNEN KORUNDU) ---
     var user = await UserManager.GetUserAsync(User);
     var profileImg = !string.IsNullOrEmpty(user?.ProfileImagePath) 
         ? user.ProfileImagePath 
         : $"https://ui-avatars.com/api/?name={user?.FirstName}+{user?.LastName}&background=00aeef&color=fff&size=128&bold=true";
     var displayName = user != null ? $"{user.FirstName} {user.LastName}" : User.Identity?.Name;
 
-    // Kullanıcı Rolünü Bulma (Gösterim için)
     string userRole = "Kullanıcı";
     if (User.IsInRole("Admin")) { userRole = "Sistem Yöneticisi"; }
     else if (User.IsInRole("Organizator")) { userRole = "Organizatör"; }
@@ -45,7 +43,6 @@
     }
     selectedConferenceTitle ??= Context.Session.GetString("SelectedConferenceTitle");
 
-    // URL Tanımları (Aynen Korundu)
     var dashboardUrl = string.IsNullOrWhiteSpace(slug) ? "/Dashboard" : $"/{slug}/Dashboard";
     var dashboardMyConferencesUrl = string.IsNullOrWhiteSpace(slug) ? "/Dashboard/MyConferences" : $"/{slug}/Dashboard/MyConferences";
     var submissionsAdminUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Submissions" : $"/{slug}/Admin/Submissions";
@@ -109,7 +106,6 @@
             overflow-x: hidden;
         }
 
-        /* --- SIDEBAR (Sol Menü) --- */
         .sidebar {
             width: var(--sidebar-width);
             height: 100vh;
@@ -155,7 +151,6 @@
         .nav-link.active { background-color: var(--menu-active-bg); color: var(--menu-active-text); }
         .nav-link i { width: 24px; font-size: 1rem; margin-right: 0.8rem; text-align: center; }
 
-        /* --- MAIN CONTENT --- */
         .main-content {
             margin-left: var(--sidebar-width);
             min-height: 100vh;
@@ -164,7 +159,6 @@
         }
         body.sidebar-closed .main-content { margin-left: 0; }
 
-        /* --- HEADER (Üst Bar) --- */
         .top-header {
             height: var(--header-height);
             background-color: rgba(255, 255, 255, 0.95);
@@ -175,7 +169,6 @@
             display: flex; align-items: center; justify-content: space-between;
         }
 
-        /* Header Butonları ve İkonları */
         .header-icon-btn {
             width: 40px; height: 40px;
             display: flex; align-items: center; justify-content: center;
@@ -189,7 +182,6 @@
             background-color: #ef4444; border-radius: 50%; border: 2px solid #fff;
         }
 
-        /* Premium User Dropdown */
         .user-menu-btn {
             display: flex; align-items: center; cursor: pointer;
             padding: 6px 12px 6px 6px;
@@ -214,7 +206,6 @@
             padding: 2px 8px; border-radius: 10px; display: inline-block;
         }
 
-        /* Dropdown Menü Tasarımı */
         .premium-dropdown {
             border: none;
             box-shadow: 0 10px 30px -10px rgba(0,0,0,0.15);
@@ -236,7 +227,6 @@
 
         .content-wrapper { padding: 2rem; flex-grow: 1; }
 
-        /* MOBİL UYUMLULUK */
         .sidebar-overlay {
             display: none;
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -373,12 +363,7 @@
         <a href="/" class="text-decoration-none text-muted fw-bold small d-none d-md-block" data-bs-toggle="tooltip" title="Siteye Dön">
             <i class="fas fa-external-link-alt me-1"></i> Site
         </a>
-
-        <div class="position-relative cursor-pointer text-muted">
-            <i class="far fa-bell fa-lg"></i>
-            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
-        </div>
-
+        @await Component.InvokeAsync("Notification")
         <div class="dropdown">
             <div class="user-menu-btn ps-2" data-bs-toggle="dropdown">
                 <img src="@profileImg" class="user-avatar">
@@ -422,13 +407,11 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            // Tooltipleri aktifleştir
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
             var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl)
             });
             
-            // Sidebar durumu
             const isClosed = localStorage.getItem("sidebar-closed") === "true";
             if (isClosed) document.body.classList.add("sidebar-closed");
         });

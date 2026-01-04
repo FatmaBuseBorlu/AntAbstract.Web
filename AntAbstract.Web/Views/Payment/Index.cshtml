@@ -1,201 +1,200 @@
-﻿@using AntAbstract.Domain.Entities
-@model AntAbstract.Domain.Entities.Payment
+﻿@model AntAbstract.Domain.Entities.Payment
 
 @{
-    ViewData["Title"] = "Ödeme";
+    ViewData["Title"] = "Güvenli Ödeme";
     Layout = "_LayoutDashboard";
-
-    var slug = ViewContext.RouteData.Values["slug"]?.ToString();
 }
 
 <style>
-    .payment-card {
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    /* Kredi Kartı Görünümü */
+    .credit-card-box {
+        background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+        border-radius: 16px;
+        color: #fff;
+        padding: 25px;
+        position: relative;
+        overflow: hidden;
+        height: 220px;
+        box-shadow: 0 20px 50px -12px rgba(15, 23, 42, 0.5);
     }
 
-    .section-title {
-        color: #00aeef;
-        font-weight: 700;
-        border-bottom: 2px solid #f0f0f0;
-        padding-bottom: 10px;
+    .card-chip {
+        width: 50px;
+        height: 35px;
+        background: #fbbf24;
+        border-radius: 6px;
         margin-bottom: 20px;
-        display: flex;
-        align-items: center;
+        position: relative;
+        overflow: hidden;
     }
 
-        .section-title i {
-            background-color: rgba(0, 174, 239, 0.1);
-            padding: 8px;
-            border-radius: 50%;
-            margin-right: 10px;
+        .card-chip::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: rgba(0,0,0,0.2);
         }
 
-    .form-control, .form-select {
-        border-radius: 8px;
-        padding: 10px 15px;
-        border: 1px solid #e0e0e0;
-    }
-
-        .form-control:focus {
-            border-color: #00aeef;
-            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
-        }
-
-    .summary-card {
-        background-color: #f8f9fa;
+    /* Form Alanları */
+    .form-floating > .form-control {
         border-radius: 12px;
-        padding: 20px;
+        border: 1px solid #e2e8f0;
     }
 
-    .total-price {
-        color: #00aeef;
-        font-size: 1.5rem;
-        font-weight: 800;
+        .form-floating > .form-control:focus {
+            border-color: #00aeef;
+            box-shadow: 0 0 0 4px rgba(0,174,239,0.1);
+        }
+
+    /* Özet Kartı */
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        font-size: 0.95rem;
+    }
+
+    .total-row {
+        border-top: 2px dashed #e2e8f0;
+        padding-top: 15px;
+        margin-top: 15px;
     }
 </style>
 
-<div class="container-fluid">
+<div class="container-fluid px-0">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h4 class="fw-bold mb-1">Ödeme Ekranı</h4>
-            <p class="text-muted small mb-0">Lütfen fatura bilgilerinizi giriniz ve ödeme yöntemini seçiniz.</p>
-        </div>
-        <a href="/Dashboard" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-times me-1"></i> İptal
-        </a>
+    <div class="mb-4">
+        <h3 class="fw-bold text-dark mb-1">Ödeme İşlemi</h3>
+        <p class="text-muted">Lütfen ödeme bilgilerinizi güvenli bir şekilde giriniz.</p>
     </div>
 
-    <div class="alert alert-primary border-0 shadow-sm d-flex align-items-center mb-4" role="alert" style="background-color: #eef9fe; color: #0056b3;">
-        <i class="fas fa-info-circle fs-4 me-3"></i>
-        <div>
-            <strong>Ödeme Yapılacak Etkinlik:</strong> <br>
-            @if (Model.Conference != null)
-            {
-                <span>@Model.Conference.Title</span>
-            }
-            else
-            {
-                <span>Kongre Kaydı</span>
-            }
-        </div>
-    </div>
+    <div class="row g-4">
 
-    <div class="row">
         <div class="col-lg-8">
-            <div class="card payment-card bg-white p-4 mb-4">
-
-                <form method="post"
-                      asp-action="ProcessPayment"
-                      asp-route-slug="@slug">
-
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <form asp-action="ProcessPayment" method="post" id="paymentForm">
+                    @Html.AntiForgeryToken()
                     <input type="hidden" asp-for="ConferenceId" />
                     <input type="hidden" asp-for="RelatedSubmissionId" />
 
-                    <h5 class="section-title"><i class="fas fa-file-invoice"></i> Fatura Bilgileri</h5>
-
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-12">
-                            <label class="form-label small fw-bold text-muted">Ad Soyad / Unvan</label>
-                            <input asp-for="BillingName" class="form-control" placeholder="Fatura kime kesilecek?" required />
-                            <span asp-validation-for="BillingName" class="text-danger small"></span>
-                        </div>
-
-                        <div class="col-md-12">
-                            <label class="form-label small fw-bold text-muted">Fatura Adresi</label>
-                            <textarea asp-for="BillingAddress" class="form-control" rows="2" placeholder="Tam adres..." required></textarea>
-                        </div>
-
+                    <h5 class="fw-bold text-dark mb-4"><i class="far fa-address-card me-2 text-primary"></i> Fatura Bilgileri</h5>
+                    <div class="row g-3 mb-5">
                         <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted">Vergi Dairesi (Opsiyonel)</label>
-                            <input asp-for="TaxOffice" class="form-control" placeholder="Kurumsal ise giriniz" />
+                            <div class="form-floating">
+                                <input asp-for="BillingName" class="form-control" placeholder="Ad Soyad" required />
+                                <label>Ad Soyad / Firma Ünvanı</label>
+                            </div>
                         </div>
-
                         <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted">Vergi Numarası (Opsiyonel)</label>
-                            <input asp-for="TaxNumber" class="form-control" placeholder="Kurumsal ise giriniz" />
+                            <div class="form-floating">
+                                <input asp-for="TaxNumber" class="form-control" placeholder="Vergi No" />
+                                <label>TCKN / Vergi No (Opsiyonel)</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-floating">
+                                <textarea asp-for="BillingAddress" class="form-control" placeholder="Adres" style="height: 80px" required></textarea>
+                                <label>Fatura Adresi</label>
+                            </div>
                         </div>
                     </div>
 
-                    <h5 class="section-title"><i class="far fa-credit-card"></i> Kart Bilgileri</h5>
+                    <h5 class="fw-bold text-dark mb-4"><i class="far fa-credit-card me-2 text-primary"></i> Kart Bilgileri</h5>
 
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-12">
-                            <label class="form-label small fw-bold text-muted">Kart Sahibi</label>
-                            <input type="text" class="form-control" placeholder="Kartın üzerindeki isim" required />
-                        </div>
-
-                        <div class="col-md-12">
-                            <label class="form-label small fw-bold text-muted">Kart Numarası</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white border-end-0"><i class="fas fa-credit-card text-muted"></i></span>
-                                <input type="text" class="form-control border-start-0" placeholder="0000 0000 0000 0000" required />
+                    <div class="row g-4">
+                        <div class="col-md-5 d-none d-md-block">
+                            <div class="credit-card-box d-flex flex-column justify-content-between">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="card-chip"></div>
+                                    <i class="fab fa-cc-visa fa-2x opacity-50"></i>
+                                </div>
+                                <div>
+                                    <div class="fs-5" style="letter-spacing: 2px; font-family: monospace;">**** **** **** ****</div>
+                                </div>
+                                <div class="d-flex justify-content-between small opacity-75">
+                                    <span>KART SAHİBİ</span>
+                                    <span>AA/YY</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted">Son Kullanma (AA/YY)</label>
-                            <input type="text" class="form-control" placeholder="MM/YY" required />
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted">CVV / CVC</label>
-                            <input type="text" class="form-control" placeholder="123" required />
+                        <div class="col-md-7">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="cc-name" placeholder="Kart Üzerindeki İsim" required />
+                                <label>Kart Üzerindeki İsim</label>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="cc-number" placeholder="Kart Numarası" maxlength="19" required />
+                                <label>Kart Numarası</label>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="cc-expiry" placeholder="MM/YY" maxlength="5" required />
+                                        <label>Son Kul. (AA/YY)</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="cc-cvc" placeholder="CVC" maxlength="3" required />
+                                        <label>CVC / CVV</label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm" style="background-color: #00aeef; border:none; font-size: 1.1rem;">
-                        <i class="fas fa-lock me-2"></i> @Model.Amount.ToString("N2") @Model.Currency GÜVENLİ ÖDE
-                    </button>
-
+                    <div class="mt-5">
+                        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-sm" style="font-size: 1.1rem;">
+                            <i class="fas fa-lock me-2"></i> @Model.Amount.ToString("N2") @Model.Currency Öde
+                        </button>
+                        <p class="text-center text-muted small mt-3">
+                            <i class="fas fa-shield-alt text-success me-1"></i> Ödemeniz 256-bit SSL ile şifrelenmektedir.
+                        </p>
+                    </div>
                 </form>
-            </div>
-
-            <div class="card payment-card bg-white p-4">
-                <h6 class="fw-bold text-dark mb-3"><i class="fas fa-university me-2"></i> Alternatif: Banka Havalesi</h6>
-                <p class="small text-muted mb-2">Kredi kartı kullanmak istemiyorsanız, aşağıdaki IBAN numarasına havale yapabilirsiniz.</p>
-                <div class="alert alert-light border small mb-0">
-                    <strong>Alıcı:</strong> AntAbstract Kongre Hizmetleri <br>
-                    <strong>IBAN:</strong> TR00 0000 0000 0000 0000 0000 00 <br>
-                    <strong>Açıklama:</strong> Lütfen açıklama kısmına <u>Adınızı Soyadınızı</u> ve <u>Kongre Adını</u> yazınız.
-                </div>
             </div>
         </div>
 
         <div class="col-lg-4">
-            <div class="card payment-card summary-card border-0 sticky-top" style="top: 100px; z-index: 1;">
-                <h5 class="fw-bold mb-3 text-dark">Sipariş Özeti</h5>
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-light">
+                <h6 class="fw-bold text-dark mb-3">Sipariş Özeti</h6>
 
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted">Kayıt Ücreti</span>
-                    <span class="fw-bold">@Model.Amount.ToString("N2") @Model.Currency</span>
-                </div>
-
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="text-muted">Hizmet Bedeli</span>
-                    <span class="fw-bold">0.00 @Model.Currency</span>
-                </div>
-
-                <hr class="my-3">
-
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="fs-5 fw-bold text-dark">TOPLAM</span>
-                    <span class="total-price">@Model.Amount.ToString("N2") @Model.Currency</span>
-                </div>
-
-                <div class="mt-4 text-center">
-                    <small class="text-muted d-block mb-2">
-                        <i class="fas fa-shield-alt me-1"></i> 256-bit SSL ile korunmaktadır.
-                    </small>
-                    <div class="opacity-50">
-                        <i class="fab fa-cc-visa fa-2x mx-1"></i>
-                        <i class="fab fa-cc-mastercard fa-2x mx-1"></i>
-                        <i class="fab fa-cc-amex fa-2x mx-1"></i>
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-white p-2 rounded border me-3">
+                        <i class="fas fa-ticket-alt text-primary fa-lg"></i>
                     </div>
+                    <div>
+                        <div class="fw-bold text-dark text-truncate" style="max-width: 200px;">@Model.Conference?.Title</div>
+                        <small class="text-muted">Kongre Kaydı</small>
+                    </div>
+                </div>
+
+                <div class="summary-item">
+                    <span class="text-muted">Hizmet Bedeli</span>
+                    <span class="fw-bold text-dark">@Model.Amount.ToString("N2") @Model.Currency</span>
+                </div>
+                <div class="summary-item">
+                    <span class="text-muted">KDV (%20)</span>
+                    <span class="fw-bold text-dark">Dahil</span>
+                </div>
+                <div class="summary-item total-row align-items-center">
+                    <span class="fw-bold text-dark fs-5">TOPLAM</span>
+                    <span class="fw-bold text-primary fs-4">@Model.Amount.ToString("N2") @Model.Currency</span>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 p-4 mt-3">
+                <h6 class="fw-bold text-dark mb-2"><i class="fas fa-university me-2"></i>Havale ile Ödeme</h6>
+                <p class="small text-muted mb-2">Kart kullanmak istemiyorsanız havale yapabilirsiniz.</p>
+                <div class="bg-white p-2 rounded border small font-monospace text-muted">
+                    TR12 0006 1000 0000 0012 3456 78
                 </div>
             </div>
         </div>
+
     </div>
 </div>

@@ -1,33 +1,30 @@
-﻿using AntAbstract.Domain.Entities;
-using AntAbstract.Infrastructure.Context;
-using Microsoft.AspNetCore.Identity;
+﻿using AntAbstract.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace AntAbstract.Web.ViewComponents
 {
-    public class NotificationsViewComponent : ViewComponent
+    public class NotificationViewComponent : ViewComponent
     {
-        private readonly AppDbContext _context;
-        private readonly UserManager<AppUser> _userManager;
+        private readonly INotificationService _notificationService;
 
-        public NotificationsViewComponent(AppDbContext context, UserManager<AppUser> userManager)
+        public NotificationViewComponent(INotificationService notificationService)
         {
-            _context = context;
-            _userManager = userManager;
+            _notificationService = notificationService;
         }
 
         public async Task<IViewComponentResult> InvokeAsync()
         {
-            var userId = _userManager.GetUserId(HttpContext.User);
-            if (userId == null) return Content("");
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            var notifications = await _context.Notifications
-                .Where(n => n.UserId == userId)
-                .OrderByDescending(n => n.CreatedAt)
-                .Take(5)
-                .ToListAsync();
+            if (string.IsNullOrEmpty(userId))
+                return Content(""); 
 
+            var notifications = await _notificationService.GetUserNotificationsAsync(userId, 8); 
+            var unreadCount = await _notificationService.GetUnreadCountAsync(userId);
+
+            ViewBag.UnreadCount = unreadCount;
             return View(notifications);
         }
     }
