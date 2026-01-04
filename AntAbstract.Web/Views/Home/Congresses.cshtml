@@ -12,110 +12,240 @@
     ViewData["Title"] = "Tüm Kongreler";
     Layout = "_Layout";
 
-    var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
-    var regMap = ViewBag.UserRegistrationIds as Dictionary<Guid, Guid> ?? new Dictionary<Guid, Guid>();
-
     var isAdminLike = User.Identity != null
         && User.Identity.IsAuthenticated
         && (User.IsInRole("Admin") || User.IsInRole("Organizator"));
-
-    var backUrl = Context.Request.Path + Context.Request.QueryString;
 }
 
 <style>
-    .page-header {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        padding: 60px 0;
+    .search-section {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        padding: 80px 0;
+        border-radius: 0 0 50px 50px;
         margin-bottom: 50px;
     }
 
+    .search-input-group {
+        background: #fff;
+        padding: 10px;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+        display: flex;
+        gap: 10px;
+    }
+
+        .search-input-group input {
+            border: none;
+            padding: 12px 25px;
+            flex-grow: 1;
+            font-size: 1.1rem;
+            outline: none;
+            border-radius: 15px;
+        }
+
     .congress-card {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        border: 1px solid #eee;
-        background-color: #fff;
+        border: none;
+        border-radius: 24px;
+        background: #fff;
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        position: relative;
         height: 100%;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
+
+        .congress-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border-color: #00aeef;
+        }
+
+    .image-wrapper {
+        position: relative;
+        height: 200px;
+        overflow: hidden;
+        background-color: #f8fafc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .congress-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: 20px;
+        transition: transform 0.6s ease;
+    }
+
+    .congress-card:hover .congress-img {
+        transform: scale(1.05);
+    }
+
+    .date-badge-floating {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(5px);
+        padding: 8px 15px;
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        z-index: 2;
+        border: 1px solid #eee;
+        line-height: 1;
+    }
+
+    .date-day {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #00aeef;
+        display: block;
+    }
+
+    .date-month {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+    }
+
+    .card-body-custom {
+        padding: 25px;
+        flex-grow: 1;
         display: flex;
         flex-direction: column;
     }
 
-        .congress-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
-            border-color: #00aeef;
-        }
+    .congress-slug-tag {
+        display: inline-block;
+        padding: 4px 12px;
+        background: #f1f5f9;
+        color: #475569;
+        border-radius: 8px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        align-self: flex-start;
+    }
+
+    .congress-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #1e293b;
+        line-height: 1.4;
+        margin-bottom: 15px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-decoration: none;
+    }
+
+    .meta-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        color: #64748b;
+        font-size: 0.85rem;
+        margin-top: auto;
+    }
+
+    .btn-detail {
+        width: 100%;
+        padding: 12px;
+        border-radius: 14px;
+        background: #f8fafc;
+        color: #00aeef;
+        font-weight: 700;
+        border: 2px solid #e2e8f0;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        text-decoration: none;
+        margin-top: 20px;
+    }
+
+    .congress-card:hover .btn-detail {
+        background: #00aeef;
+        color: #fff;
+        border-color: #00aeef;
+    }
 </style>
 
-<div class="page-header text-center">
+<div class="search-section text-center">
     <div class="container">
-        <h1 class="display-5 fw-bold text-dark">Kongreler & Etkinlikler</h1>
-        <p class="lead text-muted mb-4">Alanınızdaki en güncel bilimsel etkinlikleri keşfedin, kayıt olun ve yerinizi ayırtın.</p>
+        <h1 class="display-5 fw-bold text-dark mb-3">Kongreler & Etkinlikler</h1>
+        <p class="lead text-muted mb-5">Alanınızdaki en güncel bilimsel gelişmeleri keşfedin, kaydınızı oluşturun.</p>
 
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="input-group input-group-lg shadow-sm">
-                    <input type="text" class="form-control border-0" placeholder="Kongre adı, şehir veya konu ara...">
-                    <button class="btn btn-primary px-4 fw-bold" style="background-color: #00aeef; border:none;">
-                        <i class="fas fa-search me-2"></i> ARA
-                    </button>
-                </div>
+        <div class="search-container">
+            <div class="search-input-group shadow-sm">
+                <input type="text" id="congressSearch" placeholder="Kongre adı, şehir veya konu ara..." aria-label="Search">
+                <button type="button" class="btn btn-primary px-5 rounded-pill fw-bold" style="background-color: #00aeef; border:none;">
+                    <i class="fas fa-search me-2"></i> ARA
+                </button>
             </div>
         </div>
     </div>
 </div>
 
 <div class="container mb-5">
-    <div class="row">
+    <div class="row g-4">
         @if (Model != null && Model.Any())
         {
             @foreach (var kongre in Model)
             {
                 var slug = !string.IsNullOrEmpty(kongre.Tenant?.Slug) ? kongre.Tenant.Slug : kongre.Slug;
 
-                <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card h-100 shadow-sm border-0 congress-card">
+                <div class="col-md-6 col-lg-4">
+                    <div class="congress-card">
+                        <div class="image-wrapper">
+                            <div class="date-badge-floating">
+                                <span class="date-day">@kongre.StartDate.Day</span>
+                                <span class="date-month">@kongre.StartDate.ToString("MMM")</span>
+                            </div>
 
-                        <a href="/@slug" target="_blank" class="text-decoration-none text-dark h-100 d-flex flex-column">
-                            <div class="card-img-top bg-white border-bottom d-flex align-items-center justify-content-center position-relative p-4" style="height: 180px;">
-                                @if (!string.IsNullOrEmpty(kongre.LogoPath))
-                                {
-                                    <img src="@kongre.LogoPath" alt="@kongre.Title" style="max-height: 100%; max-width: 100%; object-fit: contain;">
-                                }
-                                else
-                                {
-                                    <div class="text-muted text-center opacity-50">
-                                        <i class="fa fa-university fa-3x mb-2"></i>
-                                        <div class="small">Görsel Yok</div>
-                                    </div>
-                                }
-                                <div class="position-absolute top-0 end-0 m-3 bg-light rounded shadow-sm p-2 text-center lh-1 border">
-                                    <div class="fw-bold text-primary fs-5">@kongre.StartDate.Day</div>
-                                    <div class="small text-uppercase text-muted" style="font-size: 0.7rem;">@kongre.StartDate.ToString("MMM")</div>
+                            @if (!string.IsNullOrEmpty(kongre.LogoPath))
+                            {
+                                <img src="@kongre.LogoPath" class="congress-img" alt="@kongre.Title">
+                            }
+                            else
+                            {
+                                <div class="text-muted text-center opacity-25">
+                                    <i class="fa fa-university fa-4x mb-2"></i>
+                                    <div class="small fw-bold">Görsel Yok</div>
                                 </div>
-                            </div>
-                            <div class="card-body d-flex flex-column">
-                                <span class="badge bg-light text-dark border mb-2 align-self-start">@slug</span>
-                                <h5 class="card-title fw-bold mb-3 text-truncate" title="@kongre.Title">@kongre.Title</h5>
-                                <p class="card-text text-muted small mt-auto">
-                                    <i class="fa fa-map-marker-alt text-danger me-1"></i> @(kongre.City ?? "Online")
-                                </p>
-                            </div>
-                        </a>
+                            }
+                        </div>
 
-                        <div class="card-footer bg-white border-0 pb-3 pt-0">
+                        <div class="card-body-custom">
+                            <span class="congress-slug-tag">#@slug</span>
+                            <a href="/@slug" class="congress-title" title="@kongre.Title">@kongre.Title</a>
+
+                            <div class="meta-info">
+                                <span><i class="fas fa-map-marker-alt text-danger me-1"></i> @(kongre.City ?? "Online")</span>
+                                <span><i class="fas fa-calendar-check text-primary me-1"></i> @kongre.StartDate.Year</span>
+                            </div>
+
                             @if (isAdminLike)
                             {
-                                <a href="/@slug/Dashboard" class="btn btn-outline-primary w-100 fw-bold rounded-pill">
-                                    YÖNETİM PANELİ <i class="fas fa-cog ms-2"></i>
+                                <a href="/@slug/Dashboard" class="btn-detail">
+                                    YÖNETİM PANELİ <i class="fas fa-cog"></i>
                                 </a>
                             }
                             else
                             {
-                                <a href="/@slug" class="btn btn-outline-primary w-100 fw-bold rounded-pill">
-                                    DETAYLARI GÖR <i class="fas fa-arrow-right ms-2"></i>
+                                <a href="/@slug" class="btn-detail">
+                                    DETAYLARI GÖR <i class="fas fa-arrow-right"></i>
                                 </a>
                             }
                         </div>
-
                     </div>
                 </div>
             }
@@ -123,9 +253,10 @@
         else
         {
             <div class="col-12 text-center py-5">
-                <div class="alert alert-light border shadow-sm d-inline-block px-5">
-                    <i class="fas fa-info-circle text-primary mb-3 fs-2"></i>
-                    <p class="mb-0 text-muted">Şu anda listelenecek aktif kongre bulunamadı.</p>
+                <div class="alert alert-light border shadow-sm d-inline-block px-5 py-4 rounded-4">
+                    <i class="fas fa-search text-muted mb-3 fs-1 opacity-50"></i>
+                    <h5 class="text-dark fw-bold">Kongre Bulunamadı</h5>
+                    <p class="mb-0 text-muted">Şu anda listelenecek aktif bir etkinlik bulunmuyor.</p>
                 </div>
             </div>
         }
