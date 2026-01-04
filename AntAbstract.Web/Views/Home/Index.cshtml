@@ -1,81 +1,170 @@
-﻿@using System
-@using System.Linq
-@using System.Collections.Generic
+﻿@using AntAbstract.Web.Models.ViewModels
 @using AntAbstract.Domain.Entities
 @using Microsoft.AspNetCore.Identity
 @inject SignInManager<AppUser> SignInManager
-@inject AntAbstract.Infrastructure.Context.TenantContext Tc
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
-@model IEnumerable<Conference>
+@model LandingPageViewModel
 
 @{
-    ViewData["Title"] = Tc.Current != null ? Tc.Current.Name : "Ana Sayfa";
+    ViewData["Title"] = "Ana Sayfa";
     Layout = "_Layout";
 
-    var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
-    var regMap = ViewBag.UserRegistrationIds as Dictionary<Guid, Guid> ?? new Dictionary<Guid, Guid>();
-    var paidConferenceIds = ViewBag.PaidConferenceIds as List<Guid> ?? new List<Guid>();
-
-    var backUrl = Context.Request.Path + Context.Request.QueryString;
-
-    var isAdminLike = User.Identity != null
-        && User.Identity.IsAuthenticated
-        && (User.IsInRole("Admin") || User.IsInRole("Organizator"));
+    var isUserLoggedIn = SignInManager.IsSignedIn(User).ToString().ToLower();
 }
 
 <style>
-    .page-content-wrapper { padding-top: 100px; }
-
-    .hero-image-container img {
-        max-height: 380px !important;
-        width: auto !important;
-        max-width: 100%;
-        object-fit: contain;
-        display: block;
-        margin: 0 auto;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+    .page-content-wrapper {
+        padding-top: 0;
     }
 
-    .floating-anim { animation: float 6s ease-in-out infinite; }
-    @@keyframes float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-15px); }
-        100% { transform: translateY(0px); }
+    /* --- HERO ALANI --- */
+    .hero-section {
+        padding-top: 140px;
+        padding-bottom: 80px;
+        background: radial-gradient(circle at top right, #f8f9fa 0%, #e9ecef 100%);
+        overflow: hidden;
     }
 
-    .congress-card {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        border: 1px solid #eee;
-        background-color: #fff;
-        display: flex;
-        flex-direction: column;
+    .dashboard-preview-card {
+        transform: perspective(1000px) rotateY(-10deg) rotateX(5deg);
+        transition: transform 0.5s ease;
+        box-shadow: -20px 20px 60px rgba(0,0,0,0.15);
+        border: 8px solid #fff;
+        border-radius: 12px;
+    }
+
+        .dashboard-preview-card:hover {
+            transform: perspective(1000px) rotateY(-5deg) rotateX(2deg) translateY(-10px);
+            box-shadow: -10px 10px 40px rgba(0,0,0,0.2);
+        }
+
+    /* --- ORTAK KART STİLLERİ --- */
+    .feature-card, .pricing-card {
+        background: #fff;
+        transition: all 0.3s ease;
         height: 100%;
+        border: 1px solid rgba(0,0,0,0.05);
     }
-    .congress-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
-        border-color: #00aeef;
+
+    .feature-card {
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
     }
-    .card-body { flex: 1; }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border-color: var(--primary-color);
+        }
+
+    .feature-icon {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .pricing-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .pricing-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border-color: var(--primary-color);
+        }
+
+        .pricing-card.popular {
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 10px 30px rgba(0, 174, 239, 0.1);
+        }
+
+    .popular-badge {
+        background: var(--primary-color);
+        color: #fff;
+        padding: 5px 30px;
+        position: absolute;
+        top: 20px;
+        right: -30px;
+        transform: rotate(45deg);
+        font-size: 0.8rem;
+        font-weight: bold;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    /* --- KONGRE KARTLARI --- */
+    .congress-card {
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+
+        .congress-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px rgba(0,174,239, 0.15) !important;
+            border-color: var(--primary-color);
+        }
+
+    .card-img-wrapper {
+        height: 200px;
+        background-color: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .submission-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .submission-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+            background: #fff !important;
+        }
+
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .hover-color {
+        transition: all 0.3s ease;
+    }
+
+        .hover-color:hover {
+            color: var(--primary-color) !important;
+            transform: scale(1.1);
+        }
 
     .stats-section {
         background: linear-gradient(135deg, #00aeef 0%, #007bb5 100%);
         color: white;
-        padding: 60px 0;
-        margin-top: 80px;
-        position: relative;
     }
-    .stat-item { padding: 20px; border-right: 1px solid rgba(255,255,255,0.2); }
-    .stat-item:last-child { border-right: none; }
-    .stat-icon { opacity: 0.8; margin-bottom: 15px; font-size: 2.5rem; }
-    .stat-number { font-size: 2.5rem; font-weight: 800; line-height: 1; margin-bottom: 5px; }
-    .stat-label { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; }
 
-    @@media (max-width: 768px) {
-        .stat-item { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 30px; margin-bottom: 30px; }
-        .stat-item:last-child { border-bottom: none; margin-bottom: 0; }
-        .hero-image-container img { margin-top: 40px; }
+    .stat-number {
+        font-size: 3rem;
+        font-weight: 800;
+        letter-spacing: -1px;
     }
 </style>
 
@@ -83,209 +172,448 @@
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="container mt-3">
-            <div class="alert alert-success border-0 shadow-sm">
-                @TempData["SuccessMessage"]
+        <div class="container mt-5 pt-5">
+            <div class="alert alert-success border-0 shadow-sm rounded-3">
+                <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
             </div>
         </div>
     }
 
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="container mt-3">
-            <div class="alert alert-danger border-0 shadow-sm">
-                @TempData["ErrorMessage"]
-            </div>
-        </div>
-    }
-
-    @if (Tc.Current != null)
-    {
-        <div class="container text-center">
-            <h1 class="display-4">@Localizer["WelcomeMessage", Tc.Current.Name]</h1>
-            <p class="lead text-muted">@Localizer["PageLead"]</p>
-        </div>
-    }
-    else
-    {
-        <section class="hero-modern mb-5">
-            <div class="container">
-                <div class="row align-items-center">
-                    <div class="col-lg-6 text-center text-lg-start mb-5 mb-lg-0">
-                        <div class="d-inline-block bg-light text-primary border border-primary rounded-pill px-3 py-1 mb-3 fw-bold small">
-                            🚀 Yeni Nesil Kongre Sistemi
-                        </div>
-                        <h1 class="display-4 fw-bold lh-sm mb-3">
-                            Bilimsel Etkinlikleri <br>
-                            <span style="color: #00aeef;">Zirveye Taşıyın</span>
-                        </h1>
-                        <p class="lead text-muted mb-4 pe-lg-5">
-                            Kongre süreçlerinizi tek platformdan yönetin. Özet, hakem, kayıt ve konaklama işlemleri artık çok kolay.
-                        </p>
-                        <div class="d-flex justify-content-center justify-content-lg-start gap-3">
-                            <a href="#congress-list" class="btn btn-primary btn-lg px-5 shadow-sm" style="background-color: #00aeef; border: none;">Kongreleri İncele</a>
-                        </div>
+    <section class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-5 mb-lg-0 pe-lg-5">
+                    <div class="d-inline-flex align-items-center bg-white shadow-sm rounded-pill px-3 py-2 mb-4 border">
+                        <span class="badge bg-primary rounded-pill me-2">YENİ</span>
+                        <span class="text-muted small fw-bold">N-Katmanlı Mimari ile Güçlendirildi</span>
                     </div>
-                    <div class="col-lg-6 hero-image-container position-relative text-center">
-                        <img src="https://placehold.co/600x350/0056b3/ffffff?text=Dashboard+Onizleme" class="img-fluid rounded-3 floating-anim border border-4 border-white">
+
+                    <h1 class="display-4 fw-bold lh-sm mb-4 text-dark">
+                        Bilimsel Etkinlikleri <br>
+                        <span style="color: var(--primary-color);">Zirveye Taşıyın</span>
+                    </h1>
+
+                    <p class="lead text-muted mb-5">
+                        Kongre süreçlerinizi tek platformdan yönetin. Özet toplama, hakem atama, online ödeme ve dinamik program oluşturma işlemleri artık çok kolay.
+                    </p>
+
+                    <div class="d-flex gap-3">
+                        <a href="#congress-list" class="btn btn-primary btn-lg px-5 shadow-sm rounded-pill fw-bold border-0">
+                            Kongreleri Keşfet
+                        </a>
+                        <a href="#pricing" class="btn btn-outline-dark btn-lg px-4 rounded-pill">
+                            <i class="fas fa-tags me-2"></i>Paketler
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-lg-6 text-center">
+                    <div class="position-relative" style="z-index: 10;">
+                        <img src="https://ui-avatars.com/api/?name=Admin+Panel&background=00aeef&color=fff&size=800&font-size=0.1"
+                             class="img-fluid dashboard-preview-card"
+                             alt="AntAbstract Yönetim Paneli">
+
+                        <div class="position-absolute bg-white p-3 rounded-3 shadow-lg text-start animate__animated animate__fadeInUp"
+                             style="bottom: 30px; left: -20px; z-index: 20; max-width: 200px;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-success bg-opacity-10 p-2 rounded-circle text-success">
+                                    <i class="fas fa-check-circle fa-2x"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0 fw-bold">100%</h5>
+                                    <small class="text-muted">Dijital Dönüşüm</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <div id="congress-list" class="bg-light py-5 mt-5">
-            <div class="container">
-                <div class="text-center mb-5">
-                    <h3 class="fw-bold" style="color: #00aeef;">AÇIK KONGRELER</h3>
-                    <p class="text-muted">Katılım sağlayabileceğiniz aktif etkinlikler</p>
-                    <div style="width: 50px; height: 3px; background: #00aeef; margin: 15px auto;"></div>
-                </div>
+    <section id="congress-list" class="py-5 bg-white">
+        <div class="container py-5">
+            <div class="text-center mb-5">
+                <h6 class="text-uppercase text-primary letter-spacing-2 fw-bold">YAKLAŞAN ETKİNLİKLER</h6>
+                <h2 class="fw-bold mb-3 display-6" style="color: #333;">Güncel Kongre Takvimi</h2>
+                <p class="text-muted mw-600 mx-auto">Başvurusu devam eden ve katılım sağlayabileceğiniz aktif organizasyonlar.</p>
+                <div style="width: 60px; height: 4px; background: var(--primary-color); margin: 20px auto 0; border-radius: 2px;"></div>
+            </div>
 
-                <div class="row">
-                    @if (Model != null && Model.Any())
+            <div class="row g-4">
+                @if (Model.ActiveCongresses != null && Model.ActiveCongresses.Any())
+                {
+                    @foreach (var item in Model.ActiveCongresses)
                     {
-                        @foreach (var kongre in Model)
-                        {
-                            var slug = !string.IsNullOrEmpty(kongre.Tenant?.Slug) ? kongre.Tenant.Slug : kongre.Slug;
+                        var detailUrl = $"/Conference/Details/{item.Slug}";
+                        var registerUrl = $"/{item.Slug}/registration/join";
+                        var loginUrl = $"/Identity/Account/Login?ReturnUrl={System.Net.WebUtility.UrlEncode(Context.Request.Path)}";
 
-                            <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card h-100 shadow-sm border-0 congress-card">
-
-                                    <a href="/@slug" target="_blank" class="text-decoration-none text-dark h-100 d-flex flex-column">
-                                        <div class="card-img-top bg-white border-bottom d-flex align-items-center justify-content-center position-relative p-4" style="height: 180px;">
-                                            @if (!string.IsNullOrEmpty(kongre.LogoPath))
-                                            {
-                                                <img src="@kongre.LogoPath" alt="@kongre.Title" style="max-height: 100%; max-width: 100%; object-fit: contain;">
-                                            }
-                                            else
-                                            {
-                                                <div class="text-muted text-center opacity-50">
-                                                    <i class="fa fa-university fa-3x mb-2"></i>
-                                                    <div class="small">Görsel Yok</div>
-                                                </div>
-                                            }
-                                            <div class="position-absolute top-0 end-0 m-3 bg-light rounded shadow-sm p-2 text-center lh-1 border">
-                                                <div class="fw-bold text-primary fs-5">@kongre.StartDate.Day</div>
-                                                <div class="small text-uppercase text-muted" style="font-size: 0.7rem;">@kongre.StartDate.ToString("MMM")</div>
-                                            </div>
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 shadow-sm border-0 congress-card rounded-4 overflow-hidden">
+                                <div class="card-img-wrapper position-relative">
+                                    @if (item.ImageUrl != null && !item.ImageUrl.Contains("resimyok"))
+                                    {
+                                        <img src="@item.ImageUrl" alt="@item.Title" class="w-100 h-100 object-fit-cover">
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center text-muted opacity-50">
+                                            <i class="fas fa-university fa-3x mb-2"></i>
+                                            <div>Görsel Eklenmemiş</div>
                                         </div>
-                                        <div class="card-body d-flex flex-column">
-                                            <span class="badge bg-light text-dark border mb-2 align-self-start">@slug</span>
-                                            <h5 class="card-title fw-bold mb-3 text-truncate" title="@kongre.Title">@kongre.Title</h5>
-                                            <p class="card-text text-muted small mt-auto">
-                                                <i class="fa fa-map-marker-alt text-danger me-1"></i> @(kongre.City ?? "Online")
-                                            </p>
-                                        </div>
-                                    </a>
+                                    }
+                                    <div class="position-absolute top-0 end-0 m-3 bg-white rounded-3 shadow-sm p-2 text-center lh-1">
+                                        <span class="d-block fw-bold text-primary fs-4">@item.StartDate.Day</span>
+                                        <small class="text-uppercase text-muted fw-bold" style="font-size: 10px;">@item.StartDate.ToString("MMM")</small>
+                                    </div>
+                                </div>
 
-                                    <div class="card-footer bg-white border-0 pb-3 pt-0 d-flex gap-2">
-                                        @if (isAdminLike)
+                                <div class="card-body d-flex flex-column p-4">
+                                    <div class="mb-2">
+                                        <span class="badge bg-light text-secondary border">
+                                            <i class="fas fa-map-marker-alt text-danger me-1"></i> @item.Location
+                                        </span>
+                                    </div>
+
+                                    <h5 class="card-title fw-bold mb-3 text-dark">
+                                        <a href="@detailUrl" class="text-decoration-none text-dark stretched-link">@item.Title</a>
+                                    </h5>
+
+                                    <p class="card-text text-muted small mb-4 flex-grow-1">
+                                        @(item.Description.Length > 90 ? item.Description.Substring(0, 87) + "..." : item.Description)
+                                    </p>
+
+                                    <div class="d-grid gap-2 position-relative" style="z-index: 2;">
+                                        @if (item.IsRegistered)
                                         {
-                                            <a href="/@slug/Dashboard"
-                                               class="btn btn-sm btn-outline-primary flex-fill fw-bold">
-                                                <i class="fas fa-cog me-1"></i> Yönetim Paneli
-                                            </a>
+                                            <button class="btn btn-success fw-bold disabled border-0" style="opacity: 0.9;">
+                                                <i class="fas fa-check-circle me-2"></i> Kayıtlısınız
+                                            </button>
                                         }
                                         else
                                         {
-                                            @if (registeredIds.Contains(kongre.Id))
-                                            {
-                                                Guid myRegId = Guid.Empty;
-                                                if (regMap.ContainsKey(kongre.Id))
-                                                {
-                                                    myRegId = regMap[kongre.Id];
-                                                }
-
-                                                <button class="btn btn-sm btn-success flex-fill fw-bold" disabled style="opacity: 1; cursor: default;">
-                                                    <i class="fas fa-check-circle me-1"></i> KAYITLISINIZ
-                                                </button>
-
-                                                @if (paidConferenceIds.Contains(kongre.Id))
-                                                {
-                                                    <button class="btn btn-sm btn-secondary flex-fill fw-bold" disabled style="opacity: 0.7; cursor: default;">
-                                                        <i class="fas fa-check me-1"></i> ÖDENDİ
-                                                    </button>
-                                                }
-                                                else
-                                                {
-                                                    @if (myRegId != Guid.Empty)
-                                                    {
-                                                        <a href="/@slug/payment/index/@myRegId"
-                                                           class="btn btn-sm btn-warning flex-fill fw-bold text-dark">
-                                                            <i class="fas fa-credit-card me-1"></i> ÖDEME YAP
-                                                        </a>
-                                                    }
-                                                    else
-                                                    {
-                                                        <button class="btn btn-sm btn-danger flex-fill fw-bold" disabled>ID YOK</button>
-                                                    }
-                                                }
-                                            }
-                                            else
-                                            {
-                                                var isUserLoggedIn = SignInManager.IsSignedIn(User).ToString().ToLower();
-                                                var backUrlEncoded = System.Net.WebUtility.UrlEncode(backUrl);
-                                                var currentPathEncoded = System.Net.WebUtility.UrlEncode(Context.Request.Path + Context.Request.QueryString);
-                                                var registerUrl = $"/{slug}/registration/join?backUrl={backUrlEncoded}";
-                                                var loginUrl = $"/Identity/Account/Login?ReturnUrl={currentPathEncoded}";
-
-                                                <a href="javascript:void(0);"
-                                                   onclick="akilliKayitYonlendirme(@isUserLoggedIn, '@Html.Raw(loginUrl)', '@Html.Raw(registerUrl)')"
-                                                   class="btn btn-primary flex-fill fw-bold"
-                                                   style="background-color: #00aeef; border: none;">
-                                                    KAYIT OL
-                                                </a>
-
-                                                <button class="btn btn-sm btn-secondary flex-fill fw-bold" disabled style="opacity: 0.6; cursor: not-allowed;">
-                                                    <i class="fas fa-lock me-1"></i> ÖDEME YAP
-                                                </button>
-                                            }
+                                            <button onclick="akilliKayitYonlendirme(@isUserLoggedIn, '@loginUrl', '@registerUrl')"
+                                                    class="btn btn-primary fw-bold text-white"
+                                                    style="border: none;">
+                                                Hemen Kayıt Ol
+                                            </button>
                                         }
                                     </div>
-
                                 </div>
-                            </div>
-                        }
-                    }
-                    else
-                    {
-                        <div class="col-12 text-center">
-                            <div class="alert alert-white shadow-sm d-inline-block px-5 border">
-                                <i class="fas fa-info-circle text-primary mb-3 fs-2"></i>
-                                <p class="mb-0 text-muted">Şu anda aktif bir kongre bulunmamaktadır.</p>
                             </div>
                         </div>
                     }
+                }
+                else
+                {
+                    <div class="col-12 text-center py-5">
+                        <div class="alert alert-light border shadow-sm d-inline-block px-5">
+                            <i class="fas fa-info-circle text-primary mb-3 fs-1"></i>
+                            <h5 class="text-muted">Şu anda aktif bir kongre bulunmamaktadır.</h5>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5 bg-light">
+        <div class="container py-5">
+            <div class="text-center mb-5">
+                <h6 class="text-uppercase text-primary letter-spacing-2 fw-bold">SÜREÇLERİMİZ</h6>
+                <h2 class="fw-bold display-6">Uçtan Uca Kongre Yönetimi</h2>
+                <p class="text-muted mw-600 mx-auto">Etkinliklerinizin A'dan Z'ye tüm aşamalarını tek bir noktadan profesyonelce yönetin.</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon bg-primary bg-opacity-10 text-primary">
+                            <i class="fas fa-laptop-code"></i>
+                        </div>
+                        <h4 class="fw-bold mb-3">Yönetim Sistemi</h4>
+                        <p class="text-muted">Online ve yüz yüze kongrelerinizde kayıt işleminden program yapmaya kadar her türlü iş ve işlemi dijital ortamda yürüten güçlü altyapı.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon bg-success bg-opacity-10 text-success">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <h4 class="fw-bold mb-3">Hızlı Kayıt İşlemi</h4>
+                        <p class="text-muted">Katılımcılar için çok hızlı ve basit kayıt süreci. Kayıt sonrası tüm yazışmalar ve belgeler dijital olarak anında görüntülenebilir.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon bg-warning bg-opacity-10 text-warning">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <h4 class="fw-bold mb-3">Yayıncılık Hizmeti</h4>
+                        <p class="text-muted">Bildiri kitapları (özet ve tam metin) sisteme online yüklenir. Yayın hizmetleri konferans yönetimiyle tam entegredir.</p>
+                    </div>
                 </div>
             </div>
         </div>
+    </section>
 
-        <section class="stats-section">
-            <div class="container">
-                <div class="row text-center">
-                    <div class="col-md-4 stat-item">
-                        <i class="fas fa-users stat-icon"></i>
-                        <div class="stat-number">10,843</div>
-                        <div class="stat-label">Aktif Kullanıcı</div>
+    <section class="py-5 bg-white overflow-hidden">
+        <div class="container py-5">
+            <div class="row align-items-center gy-5">
+                <div class="col-lg-6 order-2 order-lg-1">
+                    <span class="badge bg-primary bg-opacity-10 text-primary mb-3 px-3 py-2 rounded-pill">15 YILLIK DENEYİM</span>
+                    <h2 class="display-5 fw-bold mb-4">Ant Abstract Nedir?</h2>
+                    <p class="lead text-dark opacity-75 mb-4">
+                        Ulusal veya uluslararası kongre, sempozyum ve konferansların A’dan Z’ye tüm süreçlerini online organize edebileceğiniz işlevsel bir yazılım sistemidir.
+                    </p>
+                    <p class="text-muted mb-5">
+                        Kongrelerinizi, web sayfası yaptırmadan, özet yönetim sistemi satın almadan; kabul mektubu, katılım belgesi, özet kitabı ve kongre programı işleri ile uğraşmadan bu sistemimiz üzerinden sorunsuz yönetebilirsiniz.
+                    </p>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <span class="fw-bold">500+ Kongre Tecrübesi</span>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <span class="fw-bold">7/24 Teknik Destek</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-4 stat-item">
-                        <i class="fas fa-globe-americas stat-icon"></i>
-                        <div class="stat-number">124</div>
-                        <div class="stat-label">Düzenlenen Kongre</div>
-                    </div>
-                    <div class="col-md-4 stat-item">
-                        <i class="fas fa-file-alt stat-icon"></i>
-                        <div class="stat-number">4,238</div>
-                        <div class="stat-label">Toplam Bildiri</div>
+                    <a href="/Home/About" class="btn btn-primary rounded-pill px-4 py-2 fw-bold">Daha Fazla Bilgi</a>
+                </div>
+                <div class="col-lg-6 order-1 order-lg-2">
+                    <div class="position-relative ms-lg-5">
+                        <img src="https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                             alt="Kongre Toplantısı"
+                             class="img-fluid rounded-4 shadow-lg"
+                             style="transform: rotate(2deg);">
+                        <div class="position-absolute bg-primary opacity-10 rounded-4"
+                             style="width: 100%; height: 100%; top: -20px; left: -20px; z-index: -1; transform: rotate(-2deg);"></div>
                     </div>
                 </div>
             </div>
-        </section>
-    }
+        </div>
+    </section>
+
+    <section class="py-4 border-bottom border-top bg-light">
+        <div class="container">
+            <p class="text-center text-muted small fw-bold letter-spacing-2 mb-4">GÜÇLÜ İŞBİRLİKLERİ VE ÇÖZÜM ORTAKLARIMIZ</p>
+            <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-4 justify-content-center align-items-center opacity-75">
+                <div class="col text-center"><i class="fas fa-university fa-2x text-secondary hover-color"></i><div class="small mt-2 text-muted">Ankara Üni.</div></div>
+                <div class="col text-center"><i class="fas fa-graduation-cap fa-2x text-secondary hover-color"></i><div class="small mt-2 text-muted">Hacettepe</div></div>
+                <div class="col text-center"><i class="fas fa-microscope fa-2x text-secondary hover-color"></i><div class="small mt-2 text-muted">TÜBİTAK</div></div>
+                <div class="col text-center"><i class="fas fa-globe-europe fa-2x text-secondary hover-color"></i><div class="small mt-2 text-muted">Erasmus+</div></div>
+                <div class="col text-center"><i class="fas fa-atom fa-2x text-secondary hover-color"></i><div class="small mt-2 text-muted">ASELSAN</div></div>
+                <div class="col text-center"><i class="fas fa-landmark fa-2x text-secondary hover-color"></i><div class="small mt-2 text-muted">Kültür Bak.</div></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="pricing" class="py-5 bg-white">
+        <div class="container py-5">
+            <div class="text-center mb-5">
+                <h6 class="text-uppercase text-primary letter-spacing-2 fw-bold">PAKETLER</h6>
+                <h2 class="fw-bold mb-3 display-6">Sizin İçin En Uygun Planı Seçin</h2>
+                <p class="text-muted mw-600 mx-auto">İhtiyaçlarınıza özel ölçeklenebilir çözümler.</p>
+            </div>
+
+            <div class="row align-items-center g-4">
+                <div class="col-lg-4">
+                    <div class="pricing-card p-4">
+                        <h5 class="fw-bold text-dark">Temel Paket</h5>
+                        <p class="text-muted small">Küçük ölçekli etkinlikler için</p>
+                        <div class="my-4">
+                            <span class="display-6 fw-bold text-dark">10.000 ₺</span>
+                            <span class="text-muted">/ Tek Sefer</span>
+                        </div>
+                        <ul class="list-unstyled mb-4 text-muted small">
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> 50 Bildiriye Kadar</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Kongre Web Sitesi</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Kayıt & Özet Sistemi</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> 1 Yıl Arşiv</li>
+                        </ul>
+                        <div class="d-grid">
+                            <a href="/Home/Contact" class="btn btn-outline-dark fw-bold rounded-pill">Satın Al</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="pricing-card popular p-5 shadow-lg">
+                        <div class="popular-badge">POPÜLER</div>
+                        <h5 class="fw-bold text-primary">Standart Paket</h5>
+                        <p class="text-muted small">Orta ölçekli kongreler için</p>
+                        <div class="my-4">
+                            <span class="display-5 fw-bold text-dark">20.000 ₺</span>
+                            <span class="text-muted">/ 1 Yıl</span>
+                        </div>
+                        <ul class="list-unstyled mb-4 text-secondary">
+                            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> <strong>500 Bildiriye Kadar</strong></li>
+                            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> Tüm Temel Özellikler</li>
+                            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> Tam Metin Toplama</li>
+                            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> Dijital Program Modülü</li>
+                        </ul>
+                        <div class="d-grid">
+                            <a href="/Home/Contact" class="btn btn-primary fw-bold rounded-pill py-3">Hemen Başla</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="pricing-card p-4">
+                        <h5 class="fw-bold text-dark">Gelişmiş Paket</h5>
+                        <p class="text-muted small">Büyük kurumlar için</p>
+                        <div class="my-4">
+                            <span class="display-6 fw-bold text-dark">40.000 ₺</span>
+                            <span class="text-muted">/ 1 Yıl</span>
+                        </div>
+                        <ul class="list-unstyled mb-4 text-muted small">
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>5 Farklı Kongre</strong></li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Sınırsız Arşiv</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Özel Teknik Destek</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Sanal POS Entegrasyonu</li>
+                        </ul>
+                        <div class="d-grid">
+                            <a href="/Home/Contact" class="btn btn-outline-dark fw-bold rounded-pill">İletişime Geç</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5 bg-white border-top">
+        <div class="container py-4">
+            <div class="d-flex justify-content-between align-items-end mb-5">
+                <div>
+                    <h6 class="text-uppercase text-primary letter-spacing-2 fw-bold">AKADEMİK AKIŞ</h6>
+                    <h2 class="fw-bold mb-0 display-6">Sisteme Yüklenen Son Bildiriler</h2>
+                </div>
+                <a href="#" class="btn btn-outline-light text-muted border-0 d-none d-md-block">
+                    Tümünü Gör <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+            </div>
+
+            <div class="row g-4">
+                @if (Model.LastSubmissions != null && Model.LastSubmissions.Any())
+                {
+                    @foreach (var sub in Model.LastSubmissions)
+                    {
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card h-100 border-0 shadow-sm submission-card bg-light">
+                                <div class="card-body p-4">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <img src="@sub.AuthorImageUrl" alt="@sub.AuthorName" class="rounded-circle me-3 shadow-sm" width="45" height="45">
+                                        <div class="overflow-hidden">
+                                            <h6 class="fw-bold mb-0 text-truncate" style="font-size: 0.95rem;">@sub.AuthorName</h6>
+                                            <small class="text-muted text-truncate d-block" style="font-size: 0.75rem;">@sub.University</small>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-white text-primary border mb-3">
+                                        <i class="fas fa-hashtag me-1"></i>@sub.ConferenceName
+                                    </span>
+                                    <h6 class="fw-bold text-dark mb-2 line-clamp-2" style="min-height: 40px;">
+                                        @sub.Title
+                                    </h6>
+                                    <p class="text-muted small line-clamp-3 mb-0">
+                                        @sub.AbstractSnippet
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="col-12 text-center py-4 text-muted">Henüz yayınlanmış bildiri bulunmuyor.</div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5 bg-light">
+        <div class="container py-5">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="text-center mb-5">
+                        <h6 class="text-uppercase text-primary fw-bold">MERAK EDİLENLER</h6>
+                        <h2 class="fw-bold mb-3">Sıkça Sorulan Sorular</h2>
+                        <p class="text-muted">Süreçler hakkında aklınıza takılan soruların cevapları.</p>
+                    </div>
+
+                    <div class="accordion shadow-sm rounded-3 overflow-hidden" id="faqAccordion">
+                        <div class="accordion-item border-0 border-bottom">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button fw-bold collapsed bg-white py-4" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                    Kongre sistemini kurmak ne kadar sürer?
+                                </button>
+                            </h2>
+                            <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body text-muted pb-4">
+                                    Başvurunuzdan sonra <strong>24 saat içinde</strong> kongre web siteniz ve bildiri toplama sisteminiz yayına alınır.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item border-0 border-bottom">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button fw-bold collapsed bg-white py-4" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                    Kredi kartı ile ödeme alabilir miyim?
+                                </button>
+                            </h2>
+                            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body text-muted pb-4">
+                                    Evet, sistemimiz iyzico ve PayTR altyapılarıyla tam entegredir. Katılımcılarınızdan güvenle online ödeme alabilirsiniz.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item border-0 border-bottom">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button fw-bold collapsed bg-white py-4" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                    Hakem atama süreci nasıl işliyor?
+                                </button>
+                            </h2>
+                            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body text-muted pb-4">
+                                    Otomatik veya manuel atama yapabilirsiniz. Sistem, bildirinin anahtar kelimelerine göre en uygun hakemleri önerir.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="stats-section py-5">
+        <div class="container py-4">
+            <div class="row text-center">
+                <div class="col-md-4 stat-item">
+                    <i class="fas fa-users mb-3 display-4 text-white-50"></i>
+                    <div class="stat-number">@Model.TotalUsers.ToString("N0")</div>
+                    <div class="text-uppercase letter-spacing-1 opacity-75">Aktif Kullanıcı</div>
+                </div>
+                <div class="col-md-4 stat-item">
+                    <i class="fas fa-globe-americas mb-3 display-4 text-white-50"></i>
+                    <div class="stat-number">@Model.ActiveCongressesCount</div>
+                    <div class="text-uppercase letter-spacing-1 opacity-75">Aktif Kongre</div>
+                </div>
+                <div class="col-md-4 stat-item">
+                    <i class="fas fa-file-alt mb-3 display-4 text-white-50"></i>
+                    <div class="stat-number">500+</div>
+                    <div class="text-uppercase letter-spacing-1 opacity-75">Tamamlanan Organizasyon</div>
+                </div>
+            </div>
+        </div>
+    </section>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <script>
     function akilliKayitYonlendirme(girisYapmisMi, loginUrl, registerUrl) {
         if (girisYapmisMi === true) {
@@ -293,13 +621,13 @@
         } else {
             Swal.fire({
                 title: 'Giriş Yapmalısınız',
-                text: "Kongreye kayıt olabilmek için sisteme giriş yapmanız gerekmektedir.",
-                icon: 'warning',
+                text: "Kongreye kayıt olabilmek için sisteme giriş yapmanız veya üye olmanız gerekmektedir.",
+                icon: 'info',
                 showCancelButton: true,
                 confirmButtonColor: '#00aeef',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Giriş Yap',
-                cancelButtonText: 'Vazgeç',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Giriş Yap / Üye Ol',
+                cancelButtonText: 'İptal',
                 reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {

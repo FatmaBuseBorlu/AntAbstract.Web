@@ -1,0 +1,279 @@
+﻿@model AntAbstract.Domain.Entities.Conference
+@using Microsoft.AspNetCore.Identity
+@using AntAbstract.Domain.Entities
+@inject SignInManager<AppUser> SignInManager
+
+@{
+    ViewData["Title"] = Model.Title;
+    Layout = "_Layout";
+
+    // Banner yoksa varsayılan
+    var bannerUrl = string.IsNullOrEmpty(Model.BannerPath) ? "https://placehold.co/1920x600/0f172a/FFF?text=Kongre+Gorseli" : Model.BannerPath;
+}
+
+<style>
+    /* Hero Alanı İyileştirmesi */
+    .conf-hero {
+        position: relative;
+        background-color: #0f172a;
+        background-size: cover;
+        background-position: center;
+        padding: 140px 0 80px 0;
+        margin-bottom: 40px;
+    }
+
+    .hero-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to bottom, rgba(15,23,42,0.7) 0%, rgba(15,23,42,0.95) 100%);
+    }
+
+    /* Sticky Sidebar (Sağdaki Yapışkan Alan) */
+    .sticky-sidebar {
+        position: -webkit-sticky;
+        position: sticky;
+        top: 100px; /* Header yüksekliğine göre ayarla */
+        z-index: 10;
+    }
+
+    /* Modern Tab Menü */
+    .nav-pills-custom .nav-link {
+        color: #64748b;
+        background: #f1f5f9;
+        font-weight: 600;
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-right: 10px;
+        margin-bottom: 10px;
+        transition: all 0.3s;
+    }
+
+        .nav-pills-custom .nav-link.active {
+            background-color: #00aeef;
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(0, 174, 239, 0.3);
+        }
+
+        .nav-pills-custom .nav-link:hover:not(.active) {
+            background-color: #e2e8f0;
+            color: #334155;
+        }
+
+    /* Geri Sayım Kutuları */
+    .countdown-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+        flex: 1;
+    }
+
+    .countdown-number {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #00aeef;
+        line-height: 1;
+    }
+
+    .countdown-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-top: 4px;
+    }
+</style>
+
+<div class="conf-hero" style="background-image: url('@bannerUrl');">
+    <div class="hero-overlay"></div>
+    <div class="container position-relative z-2">
+        <div class="row align-items-end">
+            <div class="col-lg-8 text-white">
+                <span class="badge bg-white bg-opacity-25 border border-white border-opacity-50 text-white mb-3 px-3">
+                    <i class="fas fa-tag me-1"></i> @Model.Tenant.Slug.ToUpper()
+                </span>
+                <h1 class="display-5 fw-bold mb-3">@Model.Title</h1>
+                <div class="d-flex flex-wrap gap-4 fs-6 text-white-50">
+                    <span><i class="far fa-calendar-alt me-2 text-info"></i> @Model.StartDate.ToString("d MMMM yyyy")</span>
+                    <span><i class="fas fa-map-marker-alt me-2 text-danger"></i> @(Model.City ?? "Online"), @Model.Country</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <div class="row">
+
+        <div class="col-lg-8">
+
+            <ul class="nav nav-pills nav-pills-custom mb-4" id="conferenceTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" id="about-tab" data-bs-toggle="pill" data-bs-target="#about" type="button">
+                        <i class="fas fa-info-circle me-1"></i> Hakkında
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="committees-tab" data-bs-toggle="pill" data-bs-target="#committees" type="button">
+                        <i class="fas fa-users me-1"></i> Kurullar
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="speakers-tab" data-bs-toggle="pill" data-bs-target="#speakers" type="button">
+                        <i class="fas fa-microphone me-1"></i> Konuşmacılar
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="venue-tab" data-bs-toggle="pill" data-bs-target="#venue" type="button">
+                        <i class="fas fa-hotel me-1"></i> Konaklama
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content bg-white p-4 rounded-3 border shadow-sm" id="conferenceTabsContent">
+
+                <div class="tab-pane fade show active" id="about">
+                    <h4 class="fw-bold mb-3">Kongre Hakkında</h4>
+                    <div class="text-muted" style="line-height: 1.8;">
+                        @if (!string.IsNullOrEmpty(Model.Description))
+                        {
+                            @Html.Raw(Model.Description)
+                        }
+                        else
+                        {
+                            <p>Detaylı açıklama yakında eklenecektir.</p>
+                        }
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="committees">
+                    <h4 class="fw-bold mb-4">Organizasyon Komitesi</h4>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center p-3 border rounded">
+                                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-3" style="width:50px; height:50px;">
+                                    <i class="fas fa-user-tie text-primary"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">Prof. Dr. Mehmet Yılmaz</h6>
+                                    <small class="text-muted">Kongre Başkanı</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="speakers">
+                    <div class="alert alert-info border-0">
+                        <i class="fas fa-bullhorn me-2"></i> Davetli konuşmacı listesi yakında ilan edilecektir.
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="venue">
+                    <h4 class="fw-bold mb-3">Konaklama ve Ulaşım</h4>
+                    <p class="text-muted">Kongremiz <strong>@(Model.Venue ?? "Belirlenen Otel")</strong>'de gerçekleşecektir.</p>
+                    <div class="ratio ratio-21x9 bg-light rounded overflow-hidden">
+                        <div class="d-flex align-items-center justify-content-center text-muted">
+                            <span><i class="fas fa-map-marked-alt fa-2x mb-2"></i><br>Harita Yükleniyor...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="sticky-sidebar">
+
+                <div class="card border-0 shadow-lg rounded-3 mb-4 overflow-hidden">
+                    <div class="card-header bg-primary text-white text-center py-3">
+                        <h5 class="mb-0 fw-bold">Kayıtlar Başladı!</h5>
+                        <small class="opacity-75">Erken kayıt fırsatını kaçırmayın</small>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="d-flex gap-2 mb-4" id="countdown-timer">
+                            <div class="countdown-box">
+                                <div class="countdown-number" id="days">00</div>
+                                <div class="countdown-label">GÜN</div>
+                            </div>
+                            <div class="countdown-box">
+                                <div class="countdown-number" id="hours">00</div>
+                                <div class="countdown-label">SAAT</div>
+                            </div>
+                            <div class="countdown-box">
+                                <div class="countdown-number" id="minutes">00</div>
+                                <div class="countdown-label">DK</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
+                                <span class="text-muted">Akademisyen</span>
+                                <span class="fw-bold text-dark">2.500 ₺</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
+                                <span class="text-muted">Öğrenci</span>
+                                <span class="fw-bold text-dark">1.500 ₺</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted">Dinleyici</span>
+                                <span class="fw-bold text-dark">750 ₺</span>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            @if (SignInManager.IsSignedIn(User))
+                            {
+                                <a asp-controller="Registration" asp-action="Index" asp-route-id="@Model.Id"
+                                   class="btn btn-primary btn-lg fw-bold shadow-sm" style="background-color: #00aeef; border:none;">
+                                    <i class="fas fa-edit me-2"></i> HEMEN KAYIT OL
+                                </a>
+                            }
+                            else
+                            {
+                                <a href="/Identity/Account/Login?returnUrl=/Conference/Details/@Model.Slug"
+                                   class="btn btn-primary btn-lg fw-bold shadow-sm" style="background-color: #00aeef; border:none;">
+                                    <i class="fas fa-sign-in-alt me-2"></i> GİRİŞ YAP & KAYIT OL
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-3 bg-light">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3">İletişim</h6>
+                        <p class="small text-muted mb-2">Sorularınız için bizimle iletişime geçebilirsiniz.</p>
+                        <a href="mailto:info@antabstract.com" class="fw-bold text-dark text-decoration-none">
+                            <i class="far fa-envelope me-2"></i> info@antabstract.com
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    var countDownDate = new Date("@Model.StartDate.ToString("yyyy-MM-ddTHH:mm:ss")").getTime();
+
+    var x = setInterval(function() {
+        var now = new Date().getTime();
+        var distance = countDownDate - now;
+
+        var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+
+   
+        if (distance < 0) {
+            clearInterval(x);
+            days = 0; hours = 0; minutes = 0;
+        }
+
+        document.getElementById("days").innerHTML = days < 10 ? "0" + days : days;
+        document.getElementById("hours").innerHTML = hours < 10 ? "0" + hours : hours;
+        document.getElementById("minutes").innerHTML = minutes < 10 ? "0" + minutes : minutes;
+    }, 1000);
+</script>

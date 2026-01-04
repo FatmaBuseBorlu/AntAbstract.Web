@@ -1,119 +1,298 @@
-﻿@model IEnumerable<AntAbstract.Domain.Entities.Conference>
+﻿@using Microsoft.AspNetCore.Identity
+@using AntAbstract.Domain.Entities
+@inject UserManager<AppUser> UserManager
+@model IEnumerable<AntAbstract.Domain.Entities.Conference>
 
 @{
-    ViewData["Title"] = "Kongre Seç";
-    Layout = "_LayoutDashboard";
+    ViewData["Title"] = "Kongre Seçimi";
+    Layout = null; /* Sidebar'lı Layout'u iptal ediyoruz */
+
+    var user = await UserManager.GetUserAsync(User);
+    var fullName = user != null ? $"{user.FirstName} {user.LastName}" : "Kullanıcı";
+    var profileImg = !string.IsNullOrEmpty(user?.ProfileImagePath)
+        ? user.ProfileImagePath
+        : $"https://ui-avatars.com/api/?name={fullName}&background=00aeef&color=fff&size=128&bold=true";
 
     var returnUrl = Context.Request.Query["returnUrl"].ToString();
-
     var selectedIdStr = Context.Session.GetString("SelectedConferenceId");
     Guid? selectedConferenceId = Guid.TryParse(selectedIdStr, out var sid) ? sid : null;
 }
 
-<div class="container-fluid">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <div>
-            <h3 class="fw-bold mb-1 text-dark">Kongre Seç</h3>
-            <div class="text-muted">
-                Devam etmek istediğiniz kongreyi seçin. Seçimden sonra kongreye bağlı modüller menüde açılacaktır.
-            </div>
-        </div>
-    </div>
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kongre Seçimi - AntAbstract</title>
 
-    <div class="row g-4 mt-2">
-        @if (Model != null && Model.Any())
-        {
-            foreach (var kongre in Model)
-            {
-                var tenantSlug = kongre.Tenant?.Slug ?? kongre.Slug ?? "";
-                var fallbackReturnUrl = string.IsNullOrWhiteSpace(tenantSlug) ? "/Dashboard" : $"/{tenantSlug}/Dashboard";
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-                var effectiveReturnUrl = fallbackReturnUrl;
-                if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
-                {
-                    var sameTenant = !string.IsNullOrWhiteSpace(tenantSlug) &&
-                    returnUrl.StartsWith($"/{tenantSlug}/", StringComparison.OrdinalIgnoreCase);
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-                    var rootDash = returnUrl.StartsWith("/Dashboard", StringComparison.OrdinalIgnoreCase);
+    <style>
+        :root {
+            --primary-color: #00aeef;
+            --bg-color: #f8fafc;
+            --card-border: #e2e8f0;
+        }
 
-                    if (sameTenant || rootDash)
-                        effectiveReturnUrl = returnUrl;
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Navbar */
+        .navbar-custom {
+            background-color: #fff;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1rem 2rem;
+            height: 80px;
+        }
+
+        .brand-logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1e293b;
+            text-decoration: none;
+        }
+
+        /* User Profile */
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 5px 5px 15px;
+            background: #f1f5f9;
+            border-radius: 50px;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: #334155;
+        }
+
+            .user-chip:hover {
+                background: #e2e8f0;
+            }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+        }
+
+        /* Main Area */
+        .selection-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+            flex-grow: 1;
+        }
+
+        /* Cards */
+        .conf-card {
+            background: #fff;
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+            .conf-card:hover {
+                transform: translateY(-8px);
+                box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+                border-color: var(--primary-color);
+            }
+
+            /* Selected State */
+            .conf-card.active {
+                border: 2px solid #10b981;
+                background-color: #f0fdf4;
+            }
+
+                .conf-card.active::before {
+                    content: 'AKTİF';
+                    position: absolute;
+                    top: 15px;
+                    right: 15px;
+                    background: #10b981;
+                    color: #fff;
+                    font-size: 0.7rem;
+                    font-weight: 800;
+                    padding: 4px 10px;
+                    border-radius: 20px;
                 }
 
-                var isSelected = selectedConferenceId.HasValue && selectedConferenceId.Value == kongre.Id;
+        .logo-wrapper {
+            width: 70px;
+            height: 70px;
+            border-radius: 18px;
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
 
-                <div class="col-md-6 col-xl-4">
-                    <div class="card border-0 shadow-sm h-100">
-                        <div class="card-body p-4">
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="me-3">
-                                    @if (!string.IsNullOrEmpty(kongre.LogoPath))
+            .logo-wrapper img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                padding: 8px;
+            }
+
+        .logo-placeholder {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary-color);
+        }
+
+        .card-meta {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer-actions {
+            margin-top: auto;
+            padding-top: 1.5rem;
+            display: grid;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar-custom d-flex justify-content-between align-items-center">
+        <a href="/" class="brand-logo">
+            ANT<span style="color: var(--primary-color);">ABSTRACT</span>
+        </a>
+
+        <div class="dropdown">
+            <a href="#" class="user-chip" data-bs-toggle="dropdown">
+                <span class="fw-bold small">@fullName</span>
+                <img src="@profileImg" class="user-avatar">
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 rounded-4 p-2">
+                <li><a class="dropdown-item rounded-2" href="/Identity/Account/Manage">Profil Ayarları</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post">
+                        <button type="submit" class="dropdown-item rounded-2 text-danger fw-bold">Çıkış Yap</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="selection-container">
+
+        <div class="text-center mb-5">
+            <h2 class="fw-bold text-dark mb-2">Hoş Geldiniz 👋</h2>
+            <p class="text-muted" style="font-size: 1.1rem;">Lütfen işlem yapmak istediğiniz çalışma alanını (kongreyi) seçiniz.</p>
+        </div>
+
+        <div class="row g-4 justify-content-center">
+            @if (Model != null && Model.Any())
+            {
+                foreach (var kongre in Model)
+                {
+                    var tenantSlug = kongre.Tenant?.Slug ?? kongre.Slug ?? "";
+
+                    // ReturnUrl Mantığı
+                    var fallbackReturnUrl = string.IsNullOrWhiteSpace(tenantSlug) ? "/Dashboard" : $"/{tenantSlug}/Dashboard";
+                    var effectiveReturnUrl = fallbackReturnUrl;
+
+                    if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    {
+                        // Eğer zaten dashboard'a gitmeye çalışıyorsa oraya yönlendir
+                        if (returnUrl.Contains("/Dashboard"))
+                        {
+                            effectiveReturnUrl = returnUrl;
+                        }
+                    }
+
+                    var isSelected = selectedConferenceId.HasValue && selectedConferenceId.Value == kongre.Id;
+                    var hasLogo = !string.IsNullOrEmpty(kongre.LogoPath);
+
+                    <div class="col-md-6 col-lg-4">
+                        <div class="conf-card p-4 @(isSelected ? "active" : "")">
+
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="logo-wrapper">
+                                    @if (hasLogo)
                                     {
-                                        <img src="@kongre.LogoPath"
-                                             style="width: 60px; height: 60px; object-fit: contain;"
-                                             class="rounded-circle border p-1">
+                                        <img src="@kongre.LogoPath" alt="@kongre.Title">
                                     }
                                     else
                                     {
-                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-primary"
-                                             style="width: 60px; height: 60px;">
-                                            <i class="fas fa-university fs-3"></i>
-                                        </div>
+                                        <span class="logo-placeholder">@kongre.Title?.Substring(0, 1).ToUpper()</span>
                                     }
                                 </div>
-
-                                <div class="overflow-hidden flex-grow-1">
-                                    <div class="d-flex align-items-center gap-2 mb-1">
-                                        <span class="badge bg-light text-primary border">@tenantSlug</span>
-                                        @if (isSelected)
-                                        {
-                                            <span class="badge bg-success">Seçili</span>
-                                        }
-                                    </div>
-                                    <h6 class="fw-bold text-dark mb-0 text-truncate" title="@kongre.Title">@kongre.Title</h6>
-                                </div>
+                                @if (!string.IsNullOrWhiteSpace(tenantSlug))
+                                {
+                                    <span class="badge bg-light text-secondary border">@tenantSlug</span>
+                                }
                             </div>
 
-                            <div class="text-muted small mb-3">
-                                <div class="mb-1">
-                                    <i class="far fa-calendar-alt me-2"></i>@kongre.StartDate.ToString("dd MMMM yyyy")
-                                </div>
-                                <div>
-                                    <i class="fas fa-map-marker-alt me-2"></i>@(kongre.City ?? "Online")
-                                </div>
+                            <h5 class="fw-bold text-dark mb-3" style="min-height: 3.5rem; line-height: 1.4;">
+                                @kongre.Title
+                            </h5>
+
+                            <div class="card-meta">
+                                <i class="far fa-calendar-alt text-primary" style="width:20px; text-align:center;"></i>
+                                <span class="fw-bold text-dark">@kongre.StartDate.ToString("dd MMMM yyyy")</span>
+                            </div>
+                            <div class="card-meta">
+                                <i class="fas fa-map-marker-alt text-danger" style="width:20px; text-align:center;"></i>
+                                <span>@(kongre.City ?? "Online / Sanal")</span>
                             </div>
 
-                            <form asp-controller="Dashboard"
-                                  asp-action="SelectConferencePost"
-                                  asp-route-slug="@tenantSlug"
-                                  method="post"
-                                  class="mb-2">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="conferenceId" value="@kongre.Id" />
-                                <input type="hidden" name="returnUrl" value="@effectiveReturnUrl" />
+                            <div class="footer-actions">
+                                <form asp-controller="Dashboard" asp-action="SelectConferencePost" asp-route-slug="@tenantSlug" method="post" class="d-grid">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="conferenceId" value="@kongre.Id" />
+                                    <input type="hidden" name="returnUrl" value="@effectiveReturnUrl" />
 
-                                <button type="submit" class="btn btn-primary w-100 btn-sm fw-bold" @(isSelected ? "disabled" : "")>
-                                    @(isSelected ? "Seçili Kongre" : "Bu Kongre ile Devam Et")
-                                </button>
-                            </form>
+                                    <button type="submit" class="btn @(isSelected ? "btn-success" : "btn-primary") py-2 rounded-3 fw-bold shadow-sm border-0">
+                                        @(isSelected ? "Seçili - Panele Git" : "Seç ve Devam Et") <i class="fas fa-arrow-right ms-2"></i>
+                                    </button>
+                                </form>
 
-                            <a href="/@tenantSlug" target="_blank" class="btn btn-outline-primary w-100 btn-sm fw-bold">
-                                Kongre Sayfasına Git
-                            </a>
+                                <a href="/@tenantSlug" target="_blank" class="btn btn-light text-muted fw-bold py-2 rounded-3">
+                                    <i class="fas fa-external-link-alt me-2"></i> Web Sitesi
+                                </a>
+                            </div>
+
                         </div>
                     </div>
+                }
+            }
+            else
+            {
+                <div class="col-12 text-center py-5">
+                    <div class="bg-white d-inline-block p-5 rounded-circle shadow-sm mb-4">
+                        <i class="far fa-folder-open fa-4x text-muted opacity-50"></i>
+                    </div>
+                    <h3 class="fw-bold text-dark">Henüz Bir Kaydınız Yok</h3>
+                    <p class="text-muted mb-4">Kongre sistemini kullanmak için önce bir etkinliğe kayıt olmalısınız.</p>
+                    <a href="/Home/Index#congress-list" class="btn btn-primary btn-lg rounded-pill px-5">Etkinlikleri Keşfet</a>
                 </div>
             }
-        }
-        else
-        {
-            <div class="col-12">
-                <div class="alert alert-light border text-center py-5">
-                    <i class="far fa-calendar-times fa-3x text-muted mb-3"></i>
-                    <p class="text-muted">Henüz kayıt olduğunuz bir kongre bulunmamaktadır.</p>
-                    <a href="/" class="btn btn-primary btn-sm">Kongreleri İncele</a>
-                </div>
-            </div>
-        }
+        </div>
     </div>
-</div>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

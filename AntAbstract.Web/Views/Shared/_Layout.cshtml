@@ -16,60 +16,132 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AntAbstract - Bilimsel Etkinlik Yönetimi</title>
+    <title>@ViewData["Title"] - AntAbstract</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        :root {
+            --primary-color: #00aeef;
+            --dark-bg: #0f172a;
+            --text-main: #334155;
+        }
 
+        body { 
+            font-family: 'Inter', sans-serif; 
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, h4, h5, h6, .navbar-brand {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        /* --- MODERN NAVBAR --- */
         .navbar {
-            padding: 15px 0;
-            transition: all 0.3s ease-in-out;
-            background-color: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            padding: 16px 0;
+            background-color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px); /* Buzlu cam efekti */
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
         }
 
         .navbar-brand {
             font-weight: 800;
-            font-size: 1.5rem;
-            color: #333;
+            font-size: 1.6rem;
+            color: #1e293b;
             letter-spacing: -0.5px;
         }
 
         .nav-link {
-            font-weight: 600;
-            color: #555 !important;
-            margin: 0 10px;
+            font-weight: 500;
+            color: #64748b !important;
+            margin: 0 8px;
             font-size: 0.95rem;
-            transition: color 0.3s;
+            transition: all 0.2s;
+            position: relative;
         }
 
-        .nav-link:hover { color: #00aeef !important; }
+        .nav-link:hover { 
+            color: var(--primary-color) !important; 
+        }
 
+        /* Admin Link Özel Tasarımı */
         .nav-link.admin-link {
             color: #dc3545 !important;
-            border: 1px solid #dc3545;
-            border-radius: 5px;
-            padding: 5px 15px !important;
+            background-color: rgba(220, 53, 69, 0.1);
+            border-radius: 6px;
+            padding: 6px 16px !important;
+            font-weight: 600;
         }
 
         .nav-link.admin-link:hover {
             background-color: #dc3545;
             color: white !important;
+            transform: translateY(-2px);
+        }
+
+        /* --- MODERN FOOTER --- */
+        .footer-modern {
+            background-color: var(--dark-bg);
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-top: auto; /* Sayfanın altına iter */
+        }
+
+        .footer-title {
+            color: #fff;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+        }
+
+        .footer-link {
+            color: #94a3b8;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 0.8rem;
+            transition: color 0.2s;
+        }
+
+        .footer-link:hover {
+            color: var(--primary-color);
+            padding-left: 5px; /* Hover'da hafif sağa kayma */
+        }
+
+        .social-btn {
+            width: 36px;
+            height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-radius: 50%;
+            margin-right: 8px;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .social-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-3px);
         }
     </style>
 </head>
 <body>
 
 @{
+    // --- MEVCUT MANTIKSAL KODLAR (AYNEN KORUNDU) ---
     var area = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
     var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
@@ -79,42 +151,17 @@
         && (User.IsInRole("Admin") || User.IsInRole("Organizator"));
 
     var isAdminArea = string.Equals(area, "Admin", StringComparison.OrdinalIgnoreCase);
-
     var path = Context.Request.Path.Value ?? "";
-    var isAdminAssignmentPath =
-        path.StartsWith("/Admin/Assignment", StringComparison.OrdinalIgnoreCase)
-        || path.Contains("/Admin/Assignment", StringComparison.OrdinalIgnoreCase);
+    var isAdminAssignmentPath = path.StartsWith("/Admin/Assignment", StringComparison.OrdinalIgnoreCase) || path.Contains("/Admin/Assignment", StringComparison.OrdinalIgnoreCase);
 
-    var isHomeIndexPage =
-        string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase)
-        && string.Equals(action, "Index", StringComparison.OrdinalIgnoreCase);
+    var isHomeIndexPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Index", StringComparison.OrdinalIgnoreCase);
+    var isHomeAboutPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "About", StringComparison.OrdinalIgnoreCase);
+    var isHomeContactPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Contact", StringComparison.OrdinalIgnoreCase);
+    var isHomeCongressesPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Congresses", StringComparison.OrdinalIgnoreCase);
 
-    var isHomeAboutPage =
-        string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase)
-        && string.Equals(action, "About", StringComparison.OrdinalIgnoreCase);
+    var hideAdminNav = isAdminArea || isAdminAssignmentPath || isHomeIndexPage || isHomeAboutPage || isHomeContactPage || isHomeCongressesPage;
 
-    var isHomeContactPage =
-        string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase)
-        && string.Equals(action, "Contact", StringComparison.OrdinalIgnoreCase);
-
-    var isHomeCongressesPage =
-        string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase)
-        && string.Equals(action, "Congresses", StringComparison.OrdinalIgnoreCase);
-
-    var hideAdminNav =
-        isAdminArea
-        || isAdminAssignmentPath
-        || isHomeIndexPage
-        || isHomeAboutPage
-        || isHomeContactPage
-        || isHomeCongressesPage;
-
-    var slug =
-        ViewContext.RouteData.Values["slug"]?.ToString()
-        ?? Tc.Current?.Slug
-        ?? Context.Session.GetString("SelectedConferenceSlug")
-        ?? "";
-
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? Tc.Current?.Slug ?? Context.Session.GetString("SelectedConferenceSlug") ?? "";
     var selectedConferenceId = SelectedConferenceService.GetSelectedConferenceId();
     var hasSelectedConference = selectedConferenceId.HasValue;
 
@@ -124,13 +171,13 @@
 }
 
 <header>
-    <nav class="navbar navbar-expand-lg fixed-top navbar-light">
+    <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
             <a class="navbar-brand" asp-controller="Home" asp-action="Index">
-                ANT <span style="color: #00aeef;">ABSTRACT</span>
+                ANT<span style="color: var(--primary-color);">ABSTRACT</span>
             </a>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
@@ -141,14 +188,13 @@
                     <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Congresses">Kongreler</a></li>
                     <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Contact">İletişim</a></li>
 
-                    @* Admin barı sadece slug'lı kongre sayfasında (Tc.Current var veya route slug var) gösterilsin *@
                     @if (!hideAdminNav && isAdminLike && (Tc.Current != null || !string.IsNullOrWhiteSpace(slug)))
                     {
-                        <li class="nav-item">
-                            <a class="nav-link admin-link" href="@assignmentUrl">
+                        <li class="nav-item ms-lg-3">
+                            <a class="nav-link admin-link shadow-sm" href="@assignmentUrl">
                                 @if (hasSelectedConference)
                                 {
-                                    <i class="fas fa-tasks me-1"></i> @:Özet Atama
+                                    <i class="fas fa-tasks me-1"></i> @:Yönetim Paneli
                                 }
                                 else
                                 {
@@ -159,40 +205,79 @@
                     }
                 </ul>
 
-                <partial name="_LoginPartial" />
+                <div class="d-flex align-items-center gap-2">
+                    <partial name="_LoginPartial" />
+                </div>
             </div>
         </div>
     </nav>
 </header>
 
-<main role="main">
+<main role="main" class="flex-grow-1">
     @RenderBody()
 </main>
 
-<footer class="bg-dark text-white py-5 mt-auto" style="position: relative; z-index: 10;">
+<footer class="footer-modern pt-5 pb-4">
     <div class="container">
-        <div class="row">
-            <div class="col-md-4 mb-4">
-                <h5 class="fw-bold mb-3">ANT ABSTRACT</h5>
-                <p class="text-muted small">Bilimsel kongre süreçlerinizi A'dan Z'ye yöneten yeni nesil platform.</p>
+        <div class="row g-4">
+            
+            <div class="col-lg-4 col-md-6">
+                <h5 class="text-white fw-bold mb-3">
+                    <i class="fas fa-layer-group me-2 text-primary"></i>ANT ABSTRACT
+                </h5>
+                <p class="mb-4" style="line-height: 1.8;">
+                    Akademik süreçlerinizi dijitalleştirin. Özet toplama, hakem değerlendirme ve katılımcı kayıt süreçlerinde güvenilir çözüm ortağınız.
+                </p>
+                <div class="d-flex">
+                    <a href="#" class="social-btn"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="social-btn"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#" class="social-btn"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-btn"><i class="fab fa-youtube"></i></a>
+                </div>
             </div>
-            <div class="col-md-4 mb-4">
-                <h5 class="fw-bold mb-3">Hızlı Linkler</h5>
-                <ul class="list-unstyled text-muted small">
-                    <li><a href="/Home/About" class="text-white text-decoration-none">Hakkımızda</a></li>
-                    <li><a href="/Home/Congresses" class="text-white text-decoration-none">Kongreler</a></li>
-                    <li><a href="/Home/Contact" class="text-white text-decoration-none">İletişim</a></li>
-                </ul>
+
+            <div class="col-lg-2 col-md-6">
+                <h6 class="footer-title">Platform</h6>
+                <a href="/Home/Index" class="footer-link">Ana Sayfa</a>
+                <a href="/Home/Congresses" class="footer-link">Kongreler</a>
+                <a href="/Home/About" class="footer-link">Hakkımızda</a>
+                <a href="/Identity/Account/Login" class="footer-link">Giriş Yap</a>
             </div>
-            <div class="col-md-4 mb-4">
-                <h5 class="fw-bold mb-3">İletişim</h5>
-                <p class="text-muted small mb-1"><i class="fas fa-envelope me-2"></i> destek@antabstract.com</p>
-                <p class="text-muted small"><i class="fas fa-phone me-2"></i> +90 555 000 00 00</p>
+
+            <div class="col-lg-3 col-md-6">
+                <h6 class="footer-title">Destek & Yasal</h6>
+                <a href="#" class="footer-link">Sıkça Sorulan Sorular</a>
+                <a href="#" class="footer-link">Gizlilik Politikası</a>
+                <a href="#" class="footer-link">Kullanım Koşulları</a>
+                <a href="/Home/Contact" class="footer-link">İletişim</a>
+            </div>
+
+            <div class="col-lg-3 col-md-6">
+                <h6 class="footer-title">Bize Ulaşın</h6>
+                <div class="d-flex mb-3">
+                    <i class="fas fa-map-marker-alt text-primary mt-1 me-3"></i>
+                    <span>Teknokent Binası, Ar-Ge Blokları No:12, Antalya / Türkiye</span>
+                </div>
+                <div class="d-flex mb-3">
+                    <i class="fas fa-phone text-primary mt-1 me-3"></i>
+                    <span>+90 850 123 45 67</span>
+                </div>
+                <div class="d-flex">
+                    <i class="fas fa-envelope text-primary mt-1 me-3"></i>
+                    <span>destek@antabstract.com</span>
+                </div>
             </div>
         </div>
-        <hr class="border-secondary">
-        <div class="text-center text-muted small">
-            &copy; @DateTime.Now.Year AntAbstract. Tüm hakları saklıdır.
+
+        <hr class="my-4 border-secondary opacity-25">
+
+        <div class="row align-items-center">
+            <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+                &copy; @DateTime.Now.Year <strong>AntAbstract</strong>. Tüm hakları saklıdır.
+            </div>
+            <div class="col-md-6 text-center text-md-end">
+                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">v2.1.0 Stable</span>
+            </div>
         </div>
     </div>
 </footer>

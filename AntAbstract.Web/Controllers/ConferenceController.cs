@@ -7,8 +7,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AntAbstract.Web.Controllers
-{
+namespace AntAbstract.Web.Controllers 
+{ 
+
     [Authorize]
     public class ConferenceController : Controller
     {
@@ -25,6 +26,41 @@ namespace AntAbstract.Web.Controllers
             _userManager = userManager;
             _selectedConferenceService = selectedConferenceService;
         }
+
+
+        [AllowAnonymous] 
+        [HttpGet("Conference/Details/{slug}")]
+        public async Task<IActionResult> Details(string slug)
+        {
+            if (string.IsNullOrEmpty(slug))
+            {
+                return NotFound("Kongre belirtilmedi.");
+            }
+
+            var conference = await _context.Conferences
+                .Include(c => c.Tenant)       
+                .Include(c => c.Registrations)
+                .AsNoTracking()               
+                .FirstOrDefaultAsync(c => c.Slug == slug);
+
+         
+            if (conference == null && Guid.TryParse(slug, out Guid guidId))
+            {
+                conference = await _context.Conferences
+                    .Include(c => c.Tenant)
+                    .Include(c => c.Registrations)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.Id == guidId);
+            }
+
+            if (conference == null)
+            {
+                return NotFound("Aradığınız kongre bulunamadı.");
+            }
+
+            return View(conference);
+        }
+
 
         [HttpGet("/Conference/Select")]
         public async Task<IActionResult> Select()

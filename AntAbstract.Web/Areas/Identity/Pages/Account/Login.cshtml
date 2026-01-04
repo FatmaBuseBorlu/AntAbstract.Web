@@ -1,149 +1,282 @@
 ﻿@page
 @model LoginModel
-
 @{
     ViewData["Title"] = "Giriş Yap";
-    Layout = "_Layout";
+    Layout = null; /* Standart Layout'u iptal ediyoruz, tam ekran tasarım */
 }
 
-<style>
-    body {
-        background-color: #f8f9fa;
-    }
-
-    .login-card {
-        border: none;
-        border-radius: 15px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-    }
-
-    .form-control {
-        border-radius: 8px;
-        padding: 12px 15px;
-        border: 1px solid #e0e0e0;
-    }
-
-    .form-control:focus {
-        box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
-        border-color: #00aeef;
-    }
-
-    .input-group-text {
-        background-color: #f8f9fa;
-        border: 1px solid #e0e0e0;
-        border-right: none;
-        border-radius: 8px 0 0 8px;
-        color: #6c757d;
-    }
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - AntAbstract</title>
     
-    .input-group .form-control {
-        border-left: none;
-        border-radius: 0 8px 8px 0;
-    }
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/brands.min.css"> <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 
-    .btn-orcid {
-        background-color: #F8F8F8;
-        border-color: #D3D3D3;
-        color: #000;
-    }
+    <style>
+        :root {
+            --primary-color: #00aeef;
+            --primary-hover: #0095cd;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+        }
 
-    .btn-orcid:hover {
-        background-color: #EAEAEA;
-    }
-</style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #fff;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
+        .login-wrapper {
+            height: 100vh;
+            display: flex;
+            width: 100%;
+        }
 
-            <div class="card login-card bg-white p-4 p-md-5">
+        /* --- SOL TARAF (Görsel Alanı) --- */
+        .login-sidebar {
+            width: 50%;
+            background: url('https://images.unsplash.com/photo-1544531586-fde5298cdd40?q=80&w=2070&auto=format&fit=crop') no-repeat center center;
+            background-size: cover;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 4rem;
+            color: white;
+        }
 
-                <div class="text-center mb-4">
-                    <h2 class="fw-bold text-dark">Tekrar Hoş Geldiniz</h2>
-                    <p class="text-muted small">Hesabınıza erişmek için bilgilerinizi giriniz.</p>
-                    <div style="width: 50px; height: 3px; background-color: #00aeef; margin: 0 auto; border-radius: 2px;"></div>
+        .login-sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(to bottom, rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.95));
+        }
+
+        .sidebar-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* --- SAĞ TARAF (Form Alanı) --- */
+        .login-form-container {
+            width: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background-color: #fff;
+            position: relative;
+            overflow-y: auto; /* Küçük ekranlarda içerik taşarsa scroll olsun */
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .form-control {
+            padding: 0.8rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            background-color: #f8fafc;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            background-color: #fff;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 0.8rem;
+            font-weight: 700;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 174, 239, 0.2);
+        }
+
+        .brand-logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-bottom: 2rem;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        /* ORCID Buton Stili */
+        .btn-orcid {
+            background-color: #f8f9fa;
+            border: 1px solid #e2e8f0;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+        .btn-orcid:hover {
+            background-color: #e2e8f0;
+            transform: translateY(-1px);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 1.5rem 0;
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .divider:not(:empty)::before { margin-right: .5em; }
+        .divider:not(:empty)::after { margin-left: .5em; }
+
+        /* MOBİL UYUMLULUK */
+        @@media (max-width: 991px) {
+            .login-sidebar { display: none; }
+            .login-form-container { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-wrapper">
+        
+        <div class="login-sidebar animate__animated animate__fadeIn">
+            <div class="sidebar-content">
+                <div class="mb-4">
+                    <span class="badge bg-white text-primary px-3 py-2 rounded-pill fw-bold mb-3">
+                        <i class="fas fa-rocket me-2"></i>Bilimsel Süreçler
+                    </span>
+                    <h1 class="display-4 fw-bold mb-3">Geleceği Birlikte <br> Tasarlıyoruz.</h1>
+                    <p class="lead opacity-75">
+                        AntAbstract ile kongre süreçlerinizi dijitalleştirin. Bildiri gönderimi, hakem değerlendirmesi ve kayıt işlemleri tek platformda.
+                    </p>
+                </div>
+                <div class="d-flex gap-2 opacity-50 small">
+                    <span>&copy; @DateTime.Now.Year AntAbstract</span>
+                    <span>&bull;</span>
+                    <a href="#" class="text-white text-decoration-none">Gizlilik Politikası</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="login-form-container">
+            <a href="/" class="position-absolute top-0 end-0 m-4 text-muted text-decoration-none small fw-bold">
+                <i class="fas fa-times me-1"></i> KAPAT
+            </a>
+
+            <div class="login-card animate__animated animate__fadeInRight">
+                
+                <a href="/" class="brand-logo">
+                    ANT<span style="color: var(--primary-color);">ABSTRACT</span>
+                </a>
+
+                <div class="mb-4">
+                    <h2 class="fw-bold text-dark mb-2">Tekrar Hoş Geldiniz! 👋</h2>
+                    <p class="text-muted">Devam etmek için lütfen hesabınıza giriş yapın.</p>
                 </div>
 
                 <form id="account" method="post">
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm mb-3"></div>
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0 rounded-3 small mb-4" role="alert"></div>
 
                     <div class="mb-3">
-                        <label asp-for="Input.Email" class="form-label fw-bold small text-muted">E-Posta Adresi</label>
+                        <label asp-for="Input.Email" class="form-label text-muted small fw-bold text-uppercase">E-Posta Adresi</label>
                         <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                            <input asp-for="Input.Email" class="form-control" placeholder="ornek@email.com" autocomplete="username" />
+                            <span class="input-group-text bg-light border-end-0 text-muted border border-secondary border-opacity-10 rounded-start-2">
+                                <i class="fas fa-envelope"></i>
+                            </span>
+                            <input asp-for="Input.Email" class="form-control border-start-0 ps-0" placeholder="ornek@email.com" autocomplete="username" />
                         </div>
-                        <span asp-validation-for="Input.Email" class="text-danger small"></span>
+                        <span asp-validation-for="Input.Email" class="text-danger small mt-1 d-block"></span>
                     </div>
 
                     <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <label asp-for="Input.Password" class="form-label fw-bold small text-muted">Şifre</label>
-                            <a asp-page="./ForgotPassword" class="small text-decoration-none" style="color: #00aeef;">Şifremi Unuttum?</a>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label asp-for="Input.Password" class="form-label text-muted small fw-bold text-uppercase mb-0">Şifre</label>
+                            <a id="forgot-password" asp-page="./ForgotPassword" class="text-primary text-decoration-none small fw-bold">Unuttum?</a>
                         </div>
                         <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                            <input asp-for="Input.Password" class="form-control" placeholder="******" autocomplete="current-password" />
+                            <span class="input-group-text bg-light border-end-0 text-muted border border-secondary border-opacity-10 rounded-start-2">
+                                <i class="fas fa-lock"></i>
+                            </span>
+                            <input asp-for="Input.Password" class="form-control border-start-0 ps-0" placeholder="••••••••" autocomplete="current-password" />
                         </div>
-                        <span asp-validation-for="Input.Password" class="text-danger small"></span>
+                        <span asp-validation-for="Input.Password" class="text-danger small mt-1 d-block"></span>
                     </div>
 
-                    <div class="mb-4">
-                        <div class="form-check">
-                            <input asp-for="Input.RememberMe" class="form-check-input" />
-                            <label asp-for="Input.RememberMe" class="form-check-label small text-muted">
-                                @Html.DisplayNameFor(m => m.Input.RememberMe)
-                            </label>
-                        </div>
+                    <div class="mb-4 form-check">
+                        <input class="form-check-input" asp-for="Input.RememberMe" />
+                        <label class="form-check-label text-muted small" asp-for="Input.RememberMe">
+                            @Html.DisplayNameFor(m => m.Input.RememberMe)
+                        </label>
                     </div>
 
-                    <div class="d-grid mb-4">
-                        <button id="login-submit" type="submit" class="btn btn-primary py-3 fw-bold shadow-sm" style="background-color: #00aeef; border: none;">
-                            GİRİŞ YAP
+                    <div class="d-grid mb-3">
+                        <button id="login-submit" type="submit" class="btn btn-primary btn-lg shadow-sm">
+                            Giriş Yap
                         </button>
                     </div>
 
-                    <div class="text-center small">
-                        <p class="text-muted mb-1">Hesabınız yok mu? <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="fw-bold text-decoration-none" style="color: #0056b3;">Kayıt Ol</a></p>
-                        <a asp-page="./ResendEmailConfirmation" class="text-muted text-decoration-none" style="font-size: 0.8rem;">Onay mailini tekrar gönder</a>
+                    <div class="text-center mb-4">
+                        <p class="text-muted small mb-1">
+                            Henüz hesabınız yok mu? 
+                            <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="text-primary fw-bold text-decoration-none">
+                                Hemen Kayıt Olun
+                            </a>
+                        </p>
+                         <a asp-page="./ResendEmailConfirmation" class="text-muted text-decoration-none" style="font-size: 0.75rem;">Onay mailini tekrar gönder</a>
                     </div>
                 </form>
 
                 @if ((Model.ExternalLogins?.Count ?? 0) > 0)
                 {
-                    <div class="text-center mt-4">
-                        <div class="divider mb-3 small text-muted">Veya şu hesapla devam et</div>
-
-                        <form asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post">
-                            <div class="d-grid gap-2 col-9 mx-auto">
-                                @foreach (var provider in Model.ExternalLogins!)
-                                {
-                                    <button type="submit"
-                                            class="btn btn-outline-dark btn-orcid fw-bold w-100 py-2 rounded-pill shadow-sm"
-                                            name="provider"
-                                            value="@provider.Name"
-                                            title="@provider.DisplayName ile giriş yapın">
-                                        
-                                        @if (provider.Name == "ORCID")
-                                        {
-                                            <i class="fab fa-orcid me-2" style="color: #A6CE39;"></i> <span>ORCID ile Giriş Yap</span>
-                                        }
-                                        else
-                                        {
-                                            @provider.DisplayName
-                                        }
-                                    </button>
-                                }
-                            </div>
-                        </form>
-                    </div>
+                    <div class="divider">veya şununla devam et</div>
+                    
+                    <form asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                        <div class="d-grid gap-2">
+                            @foreach (var provider in Model.ExternalLogins!)
+                            {
+                                <button type="submit" class="btn btn-orcid fw-bold py-2 rounded-3 shadow-sm d-flex align-items-center justify-content-center" 
+                                        name="provider" value="@provider.Name" title="@provider.DisplayName ile giriş yapın">
+                                    
+                                    @if (provider.Name == "ORCID")
+                                    {
+                                        <i class="fab fa-orcid fa-lg me-2" style="color: #A6CE39;"></i> 
+                                        <span>ORCID ile Giriş Yap</span>
+                                    }
+                                    else
+                                    {
+                                        @provider.DisplayName
+                                    }
+                                </button>
+                            }
+                        </div>
+                    </form>
                 }
-            </div>
 
+            </div>
         </div>
     </div>
-</div>
 
-@section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <partial name="_ValidationScriptsPartial" />
-}
+</body>
+</html>
