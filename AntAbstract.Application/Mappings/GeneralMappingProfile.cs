@@ -19,7 +19,7 @@ namespace AntAbstract.Application.Mappings
                 .ForMember(dest => dest.Authors, opt => opt.MapFrom(src => src.SubmissionAuthors))
 
                 .ForMember(dest => dest.Files, opt => opt.MapFrom(src => src.Files));
-
+            CreateMap<Submission, SubmissionDto>();
             CreateMap<SubmissionAuthor, SubmissionAuthorDto>();
 
             CreateMap<SubmissionFile, SubmissionFileDto>()

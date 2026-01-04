@@ -6,9 +6,7 @@
 @{
     Layout = "_Layout";
     var slug = ViewContext.RouteData.Values["slug"];
-
     var user = await UserManager.GetUserAsync(User);
-
     var backUrl = ViewBag.BackUrl as string;
     if (string.IsNullOrEmpty(backUrl))
     {
@@ -35,6 +33,7 @@
         font-weight: bold;
         margin: 0 10px;
         position: relative;
+        z-index: 1;
     }
 
         .step.active {
@@ -79,6 +78,18 @@
         font-size: 20px;
         font-weight: bold;
     }
+
+    .terms-link {
+        color: #00aeef;
+        text-decoration: none;
+        border-bottom: 1px dashed #00aeef;
+        transition: all 0.2s;
+    }
+
+        .terms-link:hover {
+            color: #0077a3;
+            border-bottom-style: solid;
+        }
 </style>
 
 <div class="container mt-5 pt-5 mb-5">
@@ -146,9 +157,11 @@
                         <input type="hidden" name="conferenceId" value="@Model.Id" />
 
                         <div class="form-check bg-light p-3 rounded border mb-4">
-                            <input class="form-check-input mt-1" type="checkbox" id="terms" required style="cursor: pointer;">
-                            <label class="form-check-label small text-muted lh-sm ms-2" for="terms" style="cursor: pointer;">
-                                <span class="fw-bold text-dark">Katılım ve İptal Koşulları</span>'nı okudum, kişisel verilerimin işlenmesini kabul ediyorum ve kaydımı onaylıyorum.
+                            <input class="form-check-input mt-1" type="checkbox" id="termsCheck" required style="cursor: pointer;">
+                            <label class="form-check-label small text-muted lh-sm ms-2" for="termsCheck" style="cursor: pointer;">
+                                <a href="#" class="terms-link fw-bold" data-bs-toggle="modal" data-bs-target="#termsModal">
+                                    Katılım ve İptal Koşulları
+                                </a>'nı okudum, kişisel verilerimin işlenmesini kabul ediyorum ve kaydımı onaylıyorum.
                             </label>
                         </div>
 
@@ -170,3 +183,67 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+
+            <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                <h5 class="modal-title fw-bold text-dark" id="termsModalLabel">
+                    <i class="fas fa-file-contract me-2 text-primary"></i>Katılım ve İptal Koşulları
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+
+            <div class="modal-body p-4 text-secondary" style="font-size: 0.9rem; line-height: 1.7;">
+                <h6 class="fw-bold text-dark mt-2">1. Taraflar</h6>
+                <p>İşbu sözleşme, <strong>AntAbstract</strong> (Hizmet Sağlayıcı) ile Kongre Katılımcısı (Kullanıcı) arasında akdedilmiştir.</p>
+
+                <h6 class="fw-bold text-dark mt-3">2. Hizmetin Kapsamı</h6>
+                <p>Kullanıcı, işbu form ile seçmiş olduğu kongreye kayıt olmayı, belirlenen katılım ücretini ödemeyi ve kongre kurallarına uymayı taahhüt eder.</p>
+
+                <h6 class="fw-bold text-dark mt-3">3. İptal ve İade Koşulları</h6>
+                <div class="bg-light p-3 rounded-3 border mb-2">
+                    <ul class="mb-0 ps-3">
+                        <li>Kongre tarihine <strong>30 gün kala</strong> yapılan iptallerde ücretin %100'ü iade edilir.</li>
+                        <li>Kongre tarihine <strong>15 gün kala</strong> yapılan iptallerde ücretin %50'si iade edilir.</li>
+                        <li>Son 15 gün içerisinde yapılan iptallerde <strong>iade yapılmamaktadır.</strong></li>
+                    </ul>
+                </div>
+
+                <h6 class="fw-bold text-dark mt-3">4. KVKK Aydınlatma Metni</h6>
+                <p>
+                    6698 sayılı Kişisel Verilerin Korunması Kanunu uyarınca, kimlik, iletişim ve ödeme bilgileriniz;
+                    kongre kaydının oluşturulması, fatura kesilmesi ve iletişim faaliyetlerinin yürütülmesi amacıyla işlenmektedir.
+                    Verileriniz yasal zorunluluklar haricinde üçüncü kişilerle paylaşılmamaktadır.
+                </p>
+
+                <p class="small text-muted fst-italic mt-4 border-top pt-2">
+                    * Bu metin bilgilendirme amaçlıdır. Onaylayarak tüm koşulları kabul etmiş sayılırsınız.
+                </p>
+            </div>
+
+            <div class="modal-footer border-top-0 px-4 pb-4">
+                <button type="button" class="btn btn-light fw-bold rounded-pill px-4" data-bs-dismiss="modal">Kapat</button>
+                <button type="button" class="btn btn-primary fw-bold rounded-pill px-4" onclick="acceptTerms()">
+                    <i class="fas fa-check-circle me-2"></i> Okudum, Kabul Ediyorum
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    function acceptTerms() {
+        var checkbox = document.getElementById('termsCheck');
+        if(checkbox) {
+            checkbox.checked = true;
+            checkbox.focus(); 
+        }
+
+        var modalEl = document.getElementById('termsModal');
+        var modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+    }
+</script>

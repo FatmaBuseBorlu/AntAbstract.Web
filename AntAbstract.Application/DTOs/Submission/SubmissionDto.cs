@@ -15,6 +15,7 @@ namespace AntAbstract.Application.DTOs.Submission
 
         public string Status { get; set; }
 
+        public Guid ConferenceId { get; set; }
         public string ConferenceTitle { get; set; }
         public string CorrespondingAuthorName { get; set; }
         public List<SubmissionAuthorDto> Authors { get; set; }

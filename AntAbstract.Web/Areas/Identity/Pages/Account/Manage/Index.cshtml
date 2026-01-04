@@ -3,107 +3,196 @@
 @{
     ViewData["Title"] = "Profil";
     ViewData["ActivePage"] = ManageNavPages.Index;
-    Layout = "_Layout";
+    Layout = "_LayoutDashboard";
 }
 
-<div class="row justify-content-center mt-2">
-    <div class="col-md-8">
+<style>
+    .avatar-upload {
+        position: relative;
+        max-width: 120px;
+    }
 
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h4 class="fw-bold mb-1 text-dark">Profil Bilgileri</h4>
-                <p class="text-muted small mb-0">Kişisel bilgilerinizi buradan güncelleyebilirsiniz.</p>
+    .avatar-preview {
+        width: 120px;
+        height: 120px;
+        position: relative;
+        border-radius: 50%;
+        border: 4px solid #fff;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+        .avatar-preview img, .avatar-preview .avatar-placeholder {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            color: #cbd5e1;
+            font-size: 3rem;
+        }
+
+    .avatar-edit {
+        position: absolute;
+        right: 0;
+        bottom: 5px;
+        z-index: 1;
+    }
+
+        .avatar-edit label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            margin-bottom: 0;
+            border-radius: 50%;
+            background: #00aeef;
+            border: 3px solid #fff;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+
+            .avatar-edit label:hover {
+                background: #008cc1;
+                transform: scale(1.1);
+            }
+
+    .profile-card {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+        background: #fff;
+    }
+
+    .form-control-modern {
+        border-radius: 12px;
+        padding: 12px 15px;
+        border: 1px solid #e2e8f0;
+        background-color: #fcfcfc;
+        transition: all 0.3s;
+    }
+
+        .form-control-modern:focus {
+            border-color: #00aeef;
+            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
+            background-color: #fff;
+        }
+
+    .form-label-custom {
+        font-weight: 600;
+        color: #475569;
+        font-size: 0.85rem;
+        margin-bottom: 5px;
+        margin-left: 5px;
+    }
+</style>
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Hesap Ayarları</h3>
+                    <p class="text-muted mb-0">Profil bilgilerinizi buradan güncelleyebilir ve yönetebilirsiniz.</p>
+                </div>
+                <a href="/Dashboard" class="btn btn-light border fw-bold text-muted rounded-pill px-4 shadow-sm">
+                    <i class="fas fa-arrow-left me-2"></i> Panele Dön
+                </a>
             </div>
-            <a href="/Dashboard" class="btn btn-outline-secondary btn-sm fw-bold">
-                <i class="fas fa-arrow-left me-1"></i> Panele Dön
-            </a>
-        </div>
 
-        <partial name="_StatusMessage" model="Model.StatusMessage" />
+            <partial name="_StatusMessage" model="Model.StatusMessage" />
 
-        <div class="card border-0 shadow-sm rounded-3">
-            <div class="card-body p-4">
-
+            <div class="profile-card p-4 p-md-5">
                 <form id="profile-form" method="post" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3" role="alert"></div>
 
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm mb-3" role="alert"></div>
-
-                    <div class="d-flex align-items-center mb-4 p-3 bg-light rounded-3 border">
-                        <div class="me-4">
-                            @if (ViewData["CurrentProfileImage"] != null)
-                            {
-                                <img src="@ViewData["CurrentProfileImage"]" class="rounded-circle shadow-sm border border-2 border-white" style="width: 80px; height: 80px; object-fit: cover;" />
-                            }
-                            else
-                            {
-                                <div class="rounded-circle bg-white border d-flex align-items-center justify-content-center text-secondary" style="width: 80px; height: 80px; font-size: 2rem;">
-                                    <i class="fas fa-user"></i>
+                    <div class="row align-items-center mb-5 border-bottom pb-5">
+                        <div class="col-md-auto text-center mb-3 mb-md-0">
+                            <div class="avatar-upload mx-auto">
+                                <div class="avatar-edit">
+                                    <input asp-for="Input.ProfileImage" type="file" id="imageUpload" accept=".png, .jpg, .jpeg" class="d-none" onchange="previewProfileImage(this)" />
+                                    <label for="imageUpload"><i class="fas fa-camera"></i></label>
                                 </div>
-                            }
-                        </div>
-                        <div class="flex-grow-1">
-                            <label asp-for="Input.ProfileImage" class="form-label small fw-bold text-dark">Profil Fotoğrafını Değiştir</label>
-                            <input asp-for="Input.ProfileImage" type="file" class="form-control form-control-sm" accept="image/*" />
-                        </div>
-                    </div>
-
-                    <div class="form-floating mb-3">
-                        <input asp-for="Username" class="form-control bg-white" disabled />
-                        <label asp-for="Username">Kullanıcı Adı (Email)</label>
-                    </div>
-
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-6">
-                            <div class="form-floating">
-                                <input asp-for="Input.FirstName" class="form-control" placeholder="Ad" />
-                                <label asp-for="Input.FirstName">Ad</label>
+                                <div class="avatar-preview shadow-sm">
+                                    @if (ViewData["CurrentProfileImage"] != null)
+                                    {
+                                        <img id="imagePreview" src="@ViewData["CurrentProfileImage"]" />
+                                    }
+                                    else
+                                    {
+                                        <div id="imagePreview" class="avatar-placeholder">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    }
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-floating">
-                                <input asp-for="Input.LastName" class="form-control" placeholder="Soyad" />
-                                <label asp-for="Input.LastName">Soyad</label>
-                            </div>
+                        <div class="col-md">
+                            <h5 class="fw-bold text-dark mb-1">Profil Fotoğrafı</h5>
+                            <p class="text-muted small mb-0">Önerilen: 400x400px kare resim. JPG veya PNG formatında.</p>
                         </div>
                     </div>
 
-                    <div class="row g-2 mb-3">
+                    <div class="row g-4 mb-4">
+                        <div class="col-12">
+                            <label class="form-label-custom">Kullanıcı Adı / E-Posta</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted rounded-start-3"><i class="fas fa-envelope"></i></span>
+                                <input asp-for="Username" class="form-control form-control-modern border-start-0 ps-0 bg-light" disabled />
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Input.FirstName" class="form-label-custom">Adınız</label>
+                            <input asp-for="Input.FirstName" class="form-control form-control-modern" placeholder="Ad" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Input.LastName" class="form-label-custom">Soyadınız</label>
+                            <input asp-for="Input.LastName" class="form-control form-control-modern" placeholder="Soyad" />
+                        </div>
+
                         <div class="col-md-4">
-                            <div class="form-floating">
-                                <input asp-for="Input.Title" class="form-control" placeholder="Ünvan" />
-                                <label asp-for="Input.Title">Ünvan (Prof. Dr.)</label>
-                            </div>
+                            <label asp-for="Input.Title" class="form-label-custom">Ünvan</label>
+                            <input asp-for="Input.Title" class="form-control form-control-modern" placeholder="Örn: Prof. Dr." />
                         </div>
                         <div class="col-md-8">
-                            <div class="form-floating">
-                                <input asp-for="Input.University" class="form-control" placeholder="Kurum" />
-                                <label asp-for="Input.University">Üniversite / Kurum</label>
+                            <label asp-for="Input.University" class="form-label-custom">Üniversite / Kurum</label>
+                            <input asp-for="Input.University" class="form-control form-control-modern" placeholder="Kurum Adı" />
+                        </div>
+
+                        <div class="col-12">
+                            <label asp-for="Input.PhoneNumber" class="form-label-custom">Telefon Numarası</label>
+                            <input asp-for="Input.PhoneNumber" class="form-control form-control-modern" placeholder="05xx xxx xx xx" />
+                            <span asp-validation-for="Input.PhoneNumber" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <label asp-for="Input.ExpertiseAreas" class="form-label-custom">Uzmanlık Alanları</label>
+                            <textarea asp-for="Input.ExpertiseAreas" class="form-control form-control-modern" style="height: 100px" placeholder="Lütfen uzmanlık alanlarınızı aralarına virgül koyarak yazınız..."></textarea>
+                            <div class="form-text small text-muted">
+                                <i class="fas fa-info-circle me-1"></i> Bu alanlar, hakem atamalarında doğru eşleştirme yapılması için kullanılır.
                             </div>
                         </div>
                     </div>
 
-                    <div class="form-floating mb-3">
-                        <input asp-for="Input.PhoneNumber" class="form-control" placeholder="Telefon" />
-                        <label asp-for="Input.PhoneNumber">Telefon Numarası</label>
-                        <span asp-validation-for="Input.PhoneNumber" class="text-danger small"></span>
+                    <div class="pt-4 border-top mt-5">
+                        <button id="update-profile-button" type="submit" class="btn btn-primary px-5 py-3 fw-bold rounded-pill shadow-lg transition-all" style="background-color: #00aeef; border: none;">
+                            <i class="fas fa-save me-2"></i> DEĞİŞİKLİKLERİ KAYDET
+                        </button>
                     </div>
 
-                    <div class="form-floating mb-4">
-                        <textarea asp-for="Input.ExpertiseAreas" class="form-control" style="height: 100px" placeholder="Uzmanlık"></textarea>
-                        <label asp-for="Input.ExpertiseAreas">Uzmanlık Alanları</label>
-                        <div class="form-text small text-muted">
-                            <i class="fas fa-info-circle me-1"></i> Bu alanlar, hakem atamalarında doğru eşleştirme yapılması için kullanılır.
+                    <div class="alert alert-primary bg-opacity-10 border-0 rounded-4 p-4 mt-5 d-flex align-items-start">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center p-2 me-3" style="width: 40px; height: 40px; flex-shrink: 0;">
+                            <i class="fas fa-lightbulb"></i>
                         </div>
-                    </div>
-
-                    <button id="update-profile-button" type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm" style="background-color: #00aeef; border: none;">
-                        DEĞİŞİKLİKLERİ KAYDET
-                    </button>
-
-                    <div class="alert alert-info mt-4 mb-0 small border-0 bg-primary bg-opacity-10 text-primary d-flex align-items-start">
-                        <i class="fas fa-lightbulb fs-5 me-2 mt-1"></i>
-                        <div>
-                            <strong>Bilgi:</strong> Ad, Soyad ve Kurum bilgileriniz, kongre katılım belgelerinizde (Sertifika, Yaka Kartı) otomatik olarak kullanılacaktır. Lütfen eksiksiz doldurunuz.
+                        <div class="small text-primary">
+                            <h6 class="fw-bold mb-1">Önemli Hatırlatma</h6>
+                            Ad, Soyad ve Kurum bilgileriniz, kongre katılım belgelerinizde (Sertifika, Yaka Kartı, Bildiri Kitabı) otomatik olarak kullanılacaktır. Bu nedenle bu bilgilerin doğruluğundan emin olunuz.
                         </div>
                     </div>
 
@@ -115,4 +204,23 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        function previewProfileImage(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var preview = document.getElementById('imagePreview');
+                    if (preview.tagName === 'DIV') {
+                        var img = document.createElement('img');
+                        img.id = 'imagePreview';
+                        img.src = e.target.result;
+                        preview.parentNode.replaceChild(img, preview);
+                    } else {
+                        preview.src = e.target.result;
+                    }
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
 }
