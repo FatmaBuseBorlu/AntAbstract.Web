@@ -1,201 +1,319 @@
-﻿@using AntAbstract.Web.Models.ViewModels
-@using AntAbstract.Web.Models.ViewModels.Admin.Submissions
+﻿@using AntAbstract.Web.Models.ViewModels.Admin.Submissions
 @model SubmissionCreateViewModel
 
 @{
-    ViewData["Title"] = "Yeni Bildiri Gönder";
+    ViewData["Title"] = "Yeni Bildiri";
     Layout = "_LayoutDashboard";
 }
 
-<div class="container-fluid">
+<style>
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h4 class="fw-bold mb-1">Yeni Bildiri Gönder</h4>
-            <p class="text-muted small mb-0">Bilimsel çalışmanızı sisteme yükleyin.</p>
+    .modern-card {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        background: #fff;
+        overflow: hidden;
+    }
+
+    .section-header {
+        background: linear-gradient(to right, #f8f9fa, #fff);
+        padding: 20px 30px;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+    }
+
+    .section-number {
+        background: #00aeef;
+        color: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 15px;
+        box-shadow: 0 4px 10px rgba(0, 174, 239, 0.3);
+    }
+
+    .section-title {
+        font-weight: 700;
+        color: #2d3748;
+        font-size: 1.1rem;
+        margin: 0;
+    }
+
+    .form-control-lg, .form-select-lg {
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        padding: 15px 20px;
+        font-size: 0.95rem;
+        transition: all 0.3s;
+        background-color: #fcfcfc;
+    }
+
+        .form-control-lg:focus, .form-select-lg:focus {
+            background-color: #fff;
+            border-color: #00aeef;
+            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
+        }
+
+    .form-label {
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+    }
+
+    .upload-zone {
+        border: 2px dashed #cbd5e0;
+        border-radius: 20px;
+        background: #f8fafc;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+
+        .upload-zone:hover {
+            border-color: #00aeef;
+            background: #f0f9ff;
+        }
+
+    .btn-action {
+        border-radius: 12px;
+        padding: 12px 30px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        transition: all 0.3s;
+    }
+
+    .btn-primary-glow {
+        background: linear-gradient(135deg, #00aeef 0%, #0077b6 100%);
+        border: none;
+        box-shadow: 0 4px 15px rgba(0, 174, 239, 0.4);
+    }
+
+        .btn-primary-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 174, 239, 0.5);
+        }
+
+    .author-card {
+        border: 1px solid #edf2f7;
+        border-radius: 15px;
+        background: #fff;
+        transition: all 0.2s;
+    }
+
+        .author-card:hover {
+            border-color: #cbd5e0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+</style>
+
+<div class="container py-5">
+
+    <div class="row justify-content-center mb-5">
+        <div class="col-lg-9 text-center">
+            <h2 class="fw-bold text-dark mb-2">Bilimsel Çalışmanızı Gönderin</h2>
+            <p class="text-muted">Aşağıdaki adımları takiperek bildirinizin detaylarını giriniz.</p>
         </div>
-        <a href="/Dashboard" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-1"></i> Geri Dön
-        </a>
     </div>
 
     <div class="row justify-content-center">
-        <div class="col-lg-12">
-            <div class="card dashboard-card border-0 shadow-sm">
-                <div class="card-body p-4">
+        <div class="col-lg-9">
 
-                    <form asp-action="Create" enctype="multipart/form-data" method="post">
+            <form asp-action="Create" enctype="multipart/form-data" method="post">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-4 mb-4 border-0 shadow-sm"></div>
 
-                        <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm mb-4" role="alert"></div>
+                <div class="modern-card mb-5">
+                    <div class="section-header">
+                        <div class="section-number">1</div>
+                        <h5 class="section-title">Çalışma Detayları</h5>
+                    </div>
+                    <div class="p-4 p-md-5">
 
-                        <h5 class="fw-bold text-dark mb-3"><i class="fas fa-file-signature me-2 text-primary"></i> 1. Çalışma Bilgileri</h5>
-
-                        <div class="card bg-light border-primary mb-4">
-                            <div class="card-body">
-                                <label asp-for="ConferenceId" class="form-label fw-bold text-primary">
-                                    <i class="fas fa-globe me-1"></i> Başvuru Yapılacak Kongre <span class="text-danger">*</span>
-                                </label>
-                                <select asp-for="ConferenceId" asp-items="Model.AvailableConferences" class="form-select form-select-lg border-primary">
-                                    <option value="">-- Lütfen Kongre Seçiniz --</option>
+                        <div class="mb-4">
+                            <label asp-for="ConferenceId" class="form-label">Başvuru Yapılacak Kongre <span class="text-danger">*</span></label>
+                            <div class="position-relative">
+                                <select asp-for="ConferenceId" asp-items="Model.AvailableConferences" class="form-select form-select-lg">
+                                    <option value="">-- Kongre Seçiniz --</option>
                                 </select>
-                                <span asp-validation-for="ConferenceId" class="text-danger small"></span>
                             </div>
+                            <span asp-validation-for="ConferenceId" class="text-danger small mt-1 d-block"></span>
                         </div>
 
                         <div class="mb-4">
-                            <label asp-for="Title" class="form-label fw-bold text-dark">Bildiri Başlığı <span class="text-danger">*</span></label>
-                            <input asp-for="Title" class="form-control form-control-lg bg-light border-0" placeholder="Çalışmanızın başlığını giriniz..." />
-                            <span asp-validation-for="Title" class="text-danger small"></span>
+                            <label asp-for="Title" class="form-label">Bildiri Başlığı <span class="text-danger">*</span></label>
+                            <input asp-for="Title" class="form-control form-control-lg" placeholder="Örn: Sürdürülebilir Tarımda Yapay Zeka Kullanımı..." />
+                            <span asp-validation-for="Title" class="text-danger small mt-1 d-block"></span>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6 mb-4">
-                                <label class="form-label fw-bold text-dark">Sunum Türü</label>
-                                <select asp-for="PresentationTypeId" class="form-select bg-light border-0">
-                                    <option value="0">Sözlü Sunum</option>
-                                    <option value="1">Poster Sunum</option>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Sunum Türü</label>
+                                <select asp-for="PresentationTypeId" class="form-select form-select-lg">
+                                    <option value="0">🎙️ Sözlü Sunum (Oral)</option>
+                                    <option value="1">🖼️ Poster Sunum</option>
                                 </select>
                             </div>
-
-                            <div class="col-md-6 mb-4">
-                                <label asp-for="Keywords" class="form-label fw-bold text-dark">Anahtar Kelimeler</label>
-                                <input asp-for="Keywords" class="form-control bg-light border-0" placeholder="Örn: Yapay Zeka, Veri Madenciliği..." />
-                                <span asp-validation-for="Keywords" class="text-danger small"></span>
+                            <div class="col-md-6">
+                                <label asp-for="Keywords" class="form-label">Anahtar Kelimeler</label>
+                                <input asp-for="Keywords" class="form-control form-control-lg" placeholder="Örn: AI, Tarım, Verimlilik..." />
+                                <span asp-validation-for="Keywords" class="text-danger small mt-1 d-block"></span>
                             </div>
                         </div>
 
-                        <div class="mb-4">
-                            <label asp-for="AbstractText" class="form-label fw-bold text-dark">Özet Metni <span class="text-danger">*</span></label>
-                            <textarea asp-for="AbstractText" id="AbstractText" class="form-control bg-light border-0" rows="8" placeholder="Özetinizi buraya yapıştırın veya yazın..."></textarea>
-                            <span asp-validation-for="AbstractText" class="text-danger small"></span>
-                            <div class="form-text text-end" id="wordCount">0 kelime</div>
+                        <div class="mt-4 position-relative">
+                            <label asp-for="AbstractText" class="form-label">Özet Metni <span class="text-danger">*</span></label>
+                            <textarea asp-for="AbstractText" id="AbstractText" class="form-control form-control-lg" rows="8" placeholder="Özetinizi buraya yapıştırın veya yazın..."></textarea>
+                            <span asp-validation-for="AbstractText" class="text-danger small mt-1 d-block"></span>
+
+                            <div class="d-flex justify-content-end mt-2">
+                                <span id="wordCountBadge" class="badge bg-light text-secondary border">0 Kelime</span>
+                            </div>
                         </div>
+                    </div>
+                </div>
 
-                        <hr class="my-5">
-
-                        <h5 class="fw-bold text-dark mb-3"><i class="fas fa-users me-2 text-primary"></i> 2. Ortak Yazarlar (Co-Authors)</h5>
-                        <div class="alert alert-info small">
-                            <i class="fas fa-info-circle me-1"></i> Bildiriyi sisteme yükleyen yazar (siz) otomatik olarak 1. yazar kabul edilir. Lütfen diğer yazarları ekleyin.
+                <div class="modern-card mb-5">
+                    <div class="section-header">
+                        <div class="section-number">2</div>
+                        <h5 class="section-title">Yazar Bilgileri</h5>
+                    </div>
+                    <div class="p-4 p-md-5">
+                        <div class="alert alert-primary bg-opacity-10 border-0 rounded-3 text-primary d-flex align-items-center mb-4">
+                            <i class="fas fa-info-circle fa-lg me-3"></i>
+                            <div>
+                                <small class="fw-bold">Otomatik Atama:</small>
+                                <small>Siz (oturum açan kullanıcı) otomatik olarak <strong>1. Yazar ve Sorumlu Yazar</strong> olarak ekleneceksiniz.</small>
+                            </div>
                         </div>
 
                         <div id="author-list"></div>
 
-                        <div class="mb-4 text-start">
-                            <button type="button" class="btn btn-outline-primary fw-bold" id="add-author-btn">
-                                <i class="fas fa-plus me-1"></i> Yeni Yazar Ekle
-                            </button>
-                            <span asp-validation-for="Authors" class="text-danger small d-block"></span>
-                        </div>
-
-                        <hr class="my-5">
-
-                        <h5 class="fw-bold text-dark mb-3"><i class="fas fa-cloud-upload-alt me-2 text-primary"></i> 3. Dosya Yükleme</h5>
-                        <div class="mb-4">
-                            <label asp-for="SubmissionFile" class="form-label fw-bold text-dark">
-                                Tam Metin Dosyası <span class="text-muted fw-normal">(Opsiyonel)</span>
-                            </label>
-
-                            <div class="p-4 bg-light border border-2 border-dashed rounded-3 text-center">
-                                <i class="fas fa-file-upload fa-3x text-muted mb-3"></i>
-                                <p class="mb-2">Dosyanızı sürükleyin veya seçmek için tıklayın</p>
-                                <input asp-for="SubmissionFile" type="file" class="form-control" accept=".pdf, .docx" />
-                                <small class="text-muted">Varsa PDF veya Word dosyası yükleyebilirsiniz.</small>
-                            </div>
-                            <span asp-validation-for="SubmissionFile" class="text-danger small"></span>
-                        </div>
-
-                        <hr class="my-4">
-
-                        <div class="text-end">
-                            <button type="submit" class="btn btn-primary btn-lg px-5" style="background-color: #00aeef; border: none;">
-                                <i class="fas fa-paper-plane me-2"></i> BİLDİRİYİ GÖNDER
-                            </button>
-                        </div>
-
-                    </form>
+                        <button type="button" class="btn btn-outline-primary btn-action w-100 border-dashed" id="add-author-btn" style="border-style: dashed; border-width: 2px;">
+                            <i class="fas fa-plus-circle me-2"></i> Ortak Yazar Ekle
+                        </button>
+                    </div>
                 </div>
-            </div>
+
+                <div class="modern-card mb-5">
+                    <div class="section-header">
+                        <div class="section-number">3</div>
+                        <h5 class="section-title">Dosya Yükleme</h5>
+                    </div>
+                    <div class="p-4 p-md-5 text-center">
+                        <label class="form-label d-block text-start mb-3">Tam Metin Dosyası <span class="text-danger">*</span></label>
+
+                        <div class="upload-zone p-5 position-relative">
+                            <div id="upload-placeholder">
+                                <div class="mb-3">
+                                    <div class="bg-white rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                        <i class="fas fa-cloud-upload-alt fa-2x text-primary"></i>
+                                    </div>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1">Dosyayı Buraya Sürükleyin</h6>
+                                <p class="text-muted small mb-0">veya seçmek için tıklayın (PDF, DOCX)</p>
+                            </div>
+
+                            <div id="file-preview" class="d-none align-items-center justify-content-center flex-column">
+                                <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
+                                <h6 class="fw-bold text-dark mb-1" id="fileNameText">dosya_adi.pdf</h6>
+                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">Yüklenmeye Hazır</span>
+                            </div>
+
+                            <input asp-for="SubmissionFile" type="file" class="position-absolute top-0 start-0 w-100 h-100 opacity-0" accept=".pdf, .docx, .doc" onchange="fileSelected(this)" style="cursor: pointer;" />
+                        </div>
+                        <span asp-validation-for="SubmissionFile" class="text-danger small mt-2 d-block text-start"></span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-5">
+                    <a href="/Dashboard" class="text-decoration-none text-muted fw-bold">
+                        <i class="fas fa-arrow-left me-2"></i> İptal
+                    </a>
+                    <button type="button" class="btn btn-primary btn-action btn-primary-glow text-white px-5 py-3" onclick="this.form.submit();">
+                        Bildiriyi Gönder <i class="fas fa-paper-plane ms-2"></i>
+                    </button>
+                </div>
+
+            </form>
         </div>
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script>
-        $(document).ready(function () {
+        document.getElementById('AbstractText').addEventListener('input', function() {
+            var text = this.value.trim();
+            var wordCount = text ? text.split(/\s+/).filter(str => str !== "").length : 0;
+            var badge = document.getElementById('wordCountBadge');
+            badge.innerText = wordCount + " Kelime";
+            badge.className = wordCount > 500 ? "badge bg-danger text-white border" : "badge bg-light text-secondary border";
+        });
 
-            function updateWordCount() {
-                var text = $('#AbstractText').val();
-                var cleanText = text.replace(/(^\s*)|(\s*$)/gi, "").replace(/[ ]{2,}/gi, " ").replace(/\n /, "\n");
-                var wordCount = cleanText.split(' ').filter(function(str) { return str !== ""; }).length;
-                var maxWords = 500;
-
-                var countElement = $('#wordCount');
-                countElement.text(wordCount + ' kelime');
-
-                if (wordCount > maxWords) {
-                    countElement.removeClass('text-muted').addClass('text-danger');
-                    countElement.html('<span class="fw-bold">' + wordCount + '</span> kelime (Limit: ' + maxWords + ')');
-                } else {
-                    countElement.removeClass('text-danger').addClass('text-muted');
-                }
+        function fileSelected(input) {
+            if (input.files && input.files[0]) {
+                document.getElementById('fileNameText').innerText = input.files[0].name;
+                document.getElementById('upload-placeholder').classList.add('d-none');
+                document.getElementById('file-preview').classList.remove('d-none');
+                document.getElementById('file-preview').classList.add('d-flex');
             }
-            $('#AbstractText').on('input', updateWordCount);
+        }
 
+        $(document).ready(function () {
             let authorIndex = 0;
 
             function getAuthorRowTemplate(index) {
                 return `
-                    <div class="row g-3 mb-3 p-3 rounded-3 border author-row bg-white shadow-sm">
+                    <div class="author-card p-4 mb-3 position-relative author-row">
+                        <button type="button" class="btn-close position-absolute top-0 end-0 m-3 remove-author-btn" aria-label="Kaldır"></button>
+
+                        <h6 class="fw-bold text-primary mb-3">Ortak Yazar #${index + 1}</h6>
                         <input type="hidden" name="Authors.Index" value="${index}" />
 
-                        <div class="col-md-3">
-                            <label class="small text-muted mb-1">Adı*</label>
-                            <input name="Authors[${index}].FirstName" class="form-control form-control-sm" placeholder="Adı" required />
-                        </div>
-                        <div class="col-md-3">
-                            <label class="small text-muted mb-1">Soyadı*</label>
-                            <input name="Authors[${index}].LastName" class="form-control form-control-sm" placeholder="Soyadı" required />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="small text-muted mb-1">Kurum*</label>
-                            <input name="Authors[${index}].Institution" class="form-control form-control-sm" placeholder="Üniversite/Kurum Adı" required />
-                        </div>
-
-                        <div class="col-md-2 d-flex align-items-end">
-                            <button type="button" class="btn btn-danger btn-sm w-100 remove-author-btn">
-                                <i class="fas fa-trash-alt me-1"></i> Kaldır
-                            </button>
-                            <input type="hidden" name="Authors[${index}].Order" value="${index + 1}" />
-                            <input type="hidden" name="Authors[${index}].IsCorrespondingAuthor" value="false" />
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="small text-muted mb-1">E-Posta</label>
-                            <input name="Authors[${index}].Email" class="form-control form-control-sm" type="email" placeholder="E-Posta Adresi" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="small text-muted mb-1">ORCID</label>
-                            <input name="Authors[${index}].ORCID" class="form-control form-control-sm" placeholder="ORCID No (Opsiyonel)" />
-                        </div>
-                        <div class="col-md-4 d-flex align-items-center justify-content-end">
-                            <div class="form-check mt-3">
-                                <input class="form-check-input" type="checkbox" name="Authors[${index}].IsCorrespondingAuthor" value="true">
-                                <label class="form-check-label small">Sorumlu Yazar?</label>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small">Adı</label>
+                                <input name="Authors[${index}].FirstName" class="form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small">Soyadı</label>
+                                <input name="Authors[${index}].LastName" class="form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small">E-Posta</label>
+                                <input name="Authors[${index}].Email" class="form-control" type="email" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small">Kurum</label>
+                                <input name="Authors[${index}].Institution" class="form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small">ORCID (Opsiyonel)</label>
+                                <input name="Authors[${index}].ORCID" class="form-control" placeholder="0000-0000..." />
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="Authors[${index}].IsCorrespondingAuthor" value="true">
+                                    <label class="form-check-label small text-muted">Sorumlu Yazar</label>
+                                </div>
+                                <input type="hidden" name="Authors[${index}].Order" value="${index + 2}" />
                             </div>
                         </div>
                     </div>
                 `;
             }
 
-            function addAuthorRow() {
+            $('#add-author-btn').click(function() {
                 $('#author-list').append(getAuthorRowTemplate(authorIndex));
                 authorIndex++;
-            }
-
-            $('#add-author-btn').click(addAuthorRow);
+            });
 
             $(document).on('click', '.remove-author-btn', function () {
                 $(this).closest('.author-row').remove();
