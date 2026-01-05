@@ -27,7 +27,6 @@
 }
 
 <style>
-
     .hero-card {
         background: linear-gradient(135deg, #00aeef 0%, #0077b6 100%);
         border-radius: 20px;
@@ -237,7 +236,7 @@
 
             @if (isReferee && !isAdmin)
             {
-
+  
                 <h6 class="text-muted fw-bold small text-uppercase mb-3 ps-1">Hakem Durumu</h6>
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
@@ -256,7 +255,7 @@
             }
             else if (!isAdmin)
             {
-   
+
                 <h6 class="text-muted fw-bold small text-uppercase mb-3 ps-1">Bildiri Durumu</h6>
                 <div class="row g-3 mb-5">
                     <div class="col-6 col-md-3">
@@ -314,7 +313,9 @@
                     else
                     {
                         <div class="row justify-content-center g-3">
-                            @if (isReferee)
+
+                            @* A. Hakem Butonu: Hakem VEYA Admin ise göster *@
+                            @if (isReferee || isAdmin)
                             {
                                 <div class="col-md-4">
                                     <a href="@reviewIndexUrl" class="quick-btn" style="border-left: 4px solid #f59e0b;">
@@ -324,7 +325,9 @@
                                     </a>
                                 </div>
                             }
-                            else
+
+                            @* B. Yazar Butonları: Yazar VEYA Admin ise göster *@
+                            @if (isAuthor || isAdmin)
                             {
                                 <div class="col-md-4">
                                     <a href="@submissionCreateUrl" class="quick-btn">
@@ -340,6 +343,7 @@
                                 </div>
                             }
 
+                            @* C. Mesajlar: Herkese Göster *@
                             <div class="col-md-4">
                                 <a href="/Message/Index" class="quick-btn">
                                     <i class="fas fa-envelope text-secondary"></i>
@@ -351,7 +355,7 @@
                 </div>
             </div>
 
-            @if (isReferee && !isAdmin)
+            @if ((isReferee || isAdmin) && !isAdmin) 
             {
                 <div class="row g-4 mt-1">
                     <div class="col-12">

@@ -1,9 +1,12 @@
 ﻿using AntAbstract.Application.DTOs.Review;
 using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
+using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
@@ -13,11 +16,19 @@ namespace AntAbstract.Web.Controllers
     {
         private readonly IReviewService _reviewService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly AppDbContext _context;
+        private readonly ICertificateService _certificateService;
 
-        public ReviewController(IReviewService reviewService, UserManager<AppUser> userManager)
+        public ReviewController(
+            IReviewService reviewService,
+            UserManager<AppUser> userManager,
+            AppDbContext context,
+            ICertificateService certificateService)
         {
             _reviewService = reviewService;
             _userManager = userManager;
+            _context = context;
+            _certificateService = certificateService;
         }
 
         [Authorize(Roles = "Referee, Admin")]
@@ -30,7 +41,7 @@ namespace AntAbstract.Web.Controllers
 
         [HttpGet]
         [Authorize(Roles = "Referee, Admin")]
-        public async Task<IActionResult> Evaluate(int id) 
+        public async Task<IActionResult> Evaluate(int id)
         {
             var user = await _userManager.GetUserAsync(User);
             var assignmentDto = await _reviewService.GetAssignmentByIdAsync(id, user.Id);
@@ -38,7 +49,7 @@ namespace AntAbstract.Web.Controllers
             if (assignmentDto == null)
             {
                 TempData["ErrorMessage"] = "Atama bulunamadı veya yetkiniz yok.";
-                return RedirectToAction("Index");
+                return RedirectToAction(nameof(Index));
             }
 
             return View(assignmentDto);
@@ -52,30 +63,48 @@ namespace AntAbstract.Web.Controllers
             if (!ModelState.IsValid)
             {
                 TempData["ErrorMessage"] = "Lütfen tüm alanları doldurunuz.";
-                return RedirectToAction("Evaluate", new { id = model.ReviewAssignmentId });
+                return RedirectToAction(nameof(Evaluate), new { id = model.ReviewAssignmentId });
             }
 
             try
             {
                 var user = await _userManager.GetUserAsync(User);
-                string reviewerName = $"{user.FirstName} {user.LastName}";
+                if (user == null)
+                    return Challenge();
 
+                var reviewerName = $"{user.FirstName} {user.LastName}".Trim();
                 await _reviewService.SubmitReviewAsync(model, reviewerName);
+
+                var conferenceId = await _context.ReviewAssignments
+                    .AsNoTracking()
+                    .Where(ra => ra.Id == model.ReviewAssignmentId && ra.ReviewerId == user.Id)
+                    .Select(ra => ra.Submission.ConferenceId)
+                    .FirstOrDefaultAsync();
+
+                if (conferenceId != Guid.Empty)
+                {
+                    await _certificateService.EnsureReviewerCertificateAsync(
+                        conferenceId: conferenceId,
+                        reviewerUserId: user.Id,
+                        reviewerFullName: reviewerName,
+                        email: user.Email ?? ""
+                    );
+                }
 
                 TempData["SuccessMessage"] = "Değerlendirmeniz başarıyla kaydedildi.";
                 return RedirectToAction(nameof(Index));
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 TempData["ErrorMessage"] = "Hata: " + ex.Message;
-                return RedirectToAction("Evaluate", new { id = model.ReviewAssignmentId });
+                return RedirectToAction(nameof(Evaluate), new { id = model.ReviewAssignmentId });
             }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Referee, Admin")]
-        public async Task<IActionResult> DeclineAssignment(int id, string Reason, string Note) 
+        public async Task<IActionResult> DeclineAssignment(int id, string Reason, string Note)
         {
             try
             {
@@ -83,7 +112,7 @@ namespace AntAbstract.Web.Controllers
                 await _reviewService.DeclineAssignmentAsync(id, user.Id, Reason, Note);
                 TempData["SuccessMessage"] = "Görev iade edildi.";
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 TempData["ErrorMessage"] = "İşlem başarısız: " + ex.Message;
             }
@@ -107,34 +136,18 @@ namespace AntAbstract.Web.Controllers
         }
 
         [HttpGet]
-        public IActionResult Interests()
-        {
-            return View();
-        }
+        public IActionResult Interests() => View();
 
         [HttpGet]
-        public IActionResult Availability()
-        {
-            return View();
-        }
+        public IActionResult Availability() => View();
 
         [HttpGet]
-        public IActionResult Conflicts()
-        {
-            return View();
-        }
+        public IActionResult Conflicts() => View();
 
         [HttpGet]
-        public IActionResult Guidelines()
-        {
-            return View();
-        }
+        public IActionResult Guidelines() => View();
 
         [HttpGet]
-        public IActionResult MyCertificates()
-        {
-  
-            return View();
-        }
+        public IActionResult MyCertificates() => View();
     }
 }

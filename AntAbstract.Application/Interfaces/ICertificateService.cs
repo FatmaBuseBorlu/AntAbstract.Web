@@ -1,14 +1,13 @@
-﻿using AntAbstract.Application.DTOs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using AntAbstract.Domain.Entities;
 
 namespace AntAbstract.Application.Interfaces
 {
     public interface ICertificateService
     {
-        byte[] GenerateAcceptanceCertificate(CertificateDataDto data);
+        Task EnsureAuthorCertificateAsync(Guid conferenceId, string userId);
+        Task EnsureReviewerCertificateAsync(Guid conferenceId, string userId);
+
+        Task<byte[]?> GetCertificateFileAsync(Guid certificateId, string userId);
+        Task<List<Certificate>> GetMyCertificatesAsync(string userId, Guid? conferenceId = null);
     }
 }
