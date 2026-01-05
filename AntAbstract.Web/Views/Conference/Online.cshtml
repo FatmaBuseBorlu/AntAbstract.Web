@@ -1,0 +1,53 @@
+﻿@{
+    ViewData["Title"] = "Online Katılım";
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? "";
+    var conferenceId = (Guid)ViewBag.ConferenceId;
+    var onlineUrl = ViewBag.OnlineUrl as string ?? "";
+}
+
+<form id="afForm" method="post">
+    @Html.AntiForgeryToken()
+</form>
+
+<div class="container py-4">
+    <h4>Online Katılım Başlatıldı</h4>
+    <p>Toplantıyı açmak için butona tıkla. Bu sayfa açık kalmalı, 10 dakika tamamlanınca sertifikan otomatik oluşacak.</p>
+
+    <a class="btn btn-primary" href="@onlineUrl" target="_blank">Toplantıyı yeni sekmede aç</a>
+
+    <div class="mt-3">
+        <span id="statusText">Süre ölçülüyor</span>
+    </div>
+</div>
+
+<script>
+    const slug = "@slug";
+    const conferenceId = "@conferenceId";
+    const token = document.querySelector('#afForm input[name="__RequestVerificationToken"]').value;
+
+    async function post(url) {
+        const res = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "RequestVerificationToken": token
+            },
+            body: "conferenceId=" + encodeURIComponent(conferenceId)
+        });
+        return await res.json();
+    }
+
+    (async function () {
+        await post(`/${slug}/Attendance/Join`);
+
+        setInterval(async () => {
+            const data = await post(`/${slug}/Attendance/Ping`);
+            const remain = Math.max(0, (data.requiredSeconds - data.totalSeconds));
+            if (data.completed) {
+                document.getElementById("statusText").innerText = "Katılım tamamlandı, sertifika oluşturuldu ve mail gönderildi.";
+            } else {
+                document.getElementById("statusText").innerText = "Kalan süre: " + remain + " saniye";
+            }
+        }, 30000);
+    })();
+</script>

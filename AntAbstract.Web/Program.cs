@@ -83,6 +83,8 @@ builder.Services.AddScoped<ISubmissionService, SubmissionManager>();
 builder.Services.AddScoped<IReviewService, ReviewManager>();
 builder.Services.AddScoped<ISelectedConferenceService, SelectedConferenceService>();
 
+builder.Services.AddScoped<ICertificateService, CertificateService>();
+
 builder.Services.AddAutoMapper(typeof(GeneralMappingProfile));
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
