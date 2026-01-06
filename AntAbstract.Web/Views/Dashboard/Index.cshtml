@@ -12,278 +12,389 @@
     int completedReviews = ViewBag.CompletedReviews ?? 0;
     bool isAdmin = User.IsInRole("Admin");
 
-    string mainColumnClass = isAdmin ? "col-12" : "col-xl-8 col-lg-7";
-    string sideColumnClass = isAdmin ? "d-none" : "col-xl-4 col-lg-5";
+    string mainColumnClass = isAdmin ? "col-12" : "col-xl-8 col-lg-8";
+    string sideColumnClass = isAdmin ? "d-none" : "col-xl-4 col-lg-4";
 
     var slug = Context.GetRouteValue("slug")?.ToString() ?? Tc.Current?.Slug ?? "";
     var baseUrl = string.IsNullOrWhiteSpace(slug) ? "" : $"/{slug}";
-
-    // Linkler
-    var reviewIndexUrl = $"{baseUrl}/Review/Index";
-    var submissionCreateUrl = $"{baseUrl}/Submission/Create";
-    var submissionIndexUrl = $"{baseUrl}/Submission/Index";
     var dashboardUrl = $"{baseUrl}/Dashboard";
     var dashboardMyConferencesUrl = $"{baseUrl}/Dashboard/MyConferences";
-    var adminUsersUrl = $"{baseUrl}/Admin/Users";
+    var submissionCreateUrl = $"{baseUrl}/Submission/Create";
+    var submissionIndexUrl = $"{baseUrl}/Submission/Index";
 }
 
 <style>
-    /* Liste Elemanı: Tıklanabilir Yapı */
-    .conf-switch-btn {
+
+    .hero-card {
+        background: linear-gradient(135deg, #00aeef 0%, #0077b6 100%);
+        border-radius: 20px;
+        color: white;
+        padding: 30px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 174, 239, 0.25);
+        margin-bottom: 30px;
+    }
+
+        .hero-card::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+        }
+
+    .hero-btn {
+        background: rgba(255,255,255,0.2);
+        border: 1px solid rgba(255,255,255,0.3);
+        color: white;
+        backdrop-filter: blur(5px);
+        transition: all 0.3s;
+    }
+
+        .hero-btn:hover {
+            background: white;
+            color: #0077b6;
+        }
+
+    .stat-card {
+        border: none;
+        border-radius: 16px;
+        background: #fff;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        transition: transform 0.2s;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+    .icon-box {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    .theme-blue {
+        background: #e0f2fe;
+        color: #00aeef;
+    }
+
+    .theme-orange {
+        background: #fff7ed;
+        color: #f97316;
+    }
+
+    .theme-green {
+        background: #dcfce7;
+        color: #22c55e;
+    }
+
+    .theme-red {
+        background: #fee2e2;
+        color: #ef4444;
+    }
+
+    .conf-list-card {
+        border: none;
+        border-radius: 20px;
+        background: #fff;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        overflow: hidden;
+    }
+
+    .conf-item-btn {
+        width: 100%;
+        text-align: left;
         background: none;
         border: none;
         padding: 0;
-        width: 100%;
-        text-align: left;
     }
 
-    .conf-list-item {
+    .conf-item {
+        padding: 15px 20px;
+        border-bottom: 1px solid #f1f5f9;
         transition: all 0.2s;
-        border-left: 3px solid transparent;
-        cursor: pointer;
+        display: flex;
+        align-items: center;
     }
 
-        .conf-list-item:hover {
+        .conf-item:hover {
             background-color: #f8fafc;
-            border-left-color: var(--primary-color);
-            transform: translateX(5px);
         }
 
-        .conf-list-item.active-conf {
+        .conf-item.active {
             background-color: #f0f9ff;
-            border-left-color: var(--primary-color);
+            border-left: 4px solid #00aeef;
         }
 
-    /* Tarih Rozeti */
-    .date-badge-sm {
-        background-color: #fff;
+    .date-box {
+        background: #fff;
         border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        padding: 4px 8px;
+        border-radius: 8px;
+        width: 50px;
         text-align: center;
-        min-width: 50px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        margin-right: 15px;
+        flex-shrink: 0;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.02);
     }
 
     .date-month {
-        font-size: 0.65rem;
+        font-size: 0.6rem;
         text-transform: uppercase;
-        font-weight: 700;
-        color: #64748b;
-        display: block;
-        line-height: 1;
-        margin-bottom: 2px;
+        color: #fff;
+        background: #94a3b8;
+        padding: 2px 0;
+        border-radius: 7px 7px 0 0;
+        font-weight: bold;
     }
 
     .date-day {
-        font-size: 1rem;
+        font-size: 1.1rem;
         font-weight: 800;
-        display: block;
-        line-height: 1;
         color: #334155;
+        padding: 2px 0;
+    }
+
+    .active .date-month {
+        background: #00aeef;
     }
 </style>
 
-<div class="card border-0 shadow-sm mb-4 bg-white overflow-hidden">
-    <div class="card-body p-4 position-relative">
-        <div class="row align-items-center">
-            <div class="col-md-8">
+<div class="container-fluid py-2">
+
+    <div class="hero-card">
+        <div class="row align-items-center position-relative z-1">
+            <div class="col-lg-8">
                 <div class="d-flex align-items-center mb-2">
-                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-10 rounded-pill me-2">
-                        <i class="fas fa-check-circle me-1"></i> AKTİF
+                    <span class="badge bg-white text-primary bg-opacity-25 border border-white border-opacity-25 rounded-pill me-2 px-3">
+                        <i class="fas fa-satellite-dish me-1"></i> Çalışma Alanı
                     </span>
-                    <small class="text-muted text-uppercase fw-bold" style="letter-spacing: 0.5px; font-size: 0.7rem;">Çalışma Alanı</small>
                 </div>
-                <h3 class="fw-bold text-dark mb-1">
+                <h2 class="fw-bold mb-1">
                     @(string.IsNullOrEmpty(Model.ConferenceName) ? "Genel Yönetim Paneli" : Model.ConferenceName)
-                </h3>
-                <p class="text-muted mb-0 small">
-                    <i class="far fa-calendar-alt me-1"></i> @DateTime.Now.ToString("dd MMMM yyyy")
+                </h2>
+                <p class="mb-0 opacity-75">
+                    <i class="far fa-calendar-alt me-1"></i> @DateTime.Now.ToString("dd MMMM yyyy, dddd")
                 </p>
             </div>
-
-            <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                <a href="@dashboardMyConferencesUrl" class="btn btn-outline-primary rounded-pill fw-bold shadow-sm px-4">
+            <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
+                <a href="@dashboardMyConferencesUrl" class="btn hero-btn rounded-pill px-4 py-2 fw-bold shadow-sm">
                     <i class="fas fa-exchange-alt me-2"></i> Kongre Değiştir
                 </a>
             </div>
         </div>
     </div>
-    <div class="progress" style="height: 3px;">
-        <div class="progress-bar bg-primary" role="progressbar" style="width: 100%"></div>
-    </div>
-</div>
 
-@if (isAdmin)
-{
-    <div class="alert alert-primary border-0 shadow-sm d-flex align-items-center mb-4 rounded-3">
-        <div class="bg-primary text-white rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-            <i class="fas fa-user-shield"></i>
-        </div>
-        <div>
-            <h6 class="fw-bold mb-0">Yönetici Modu</h6>
-            <small>Tüm yetkilere sahipsiniz.</small>
-        </div>
-    </div>
-}
-
-<div class="row g-4">
-    <div class="@mainColumnClass">
-
-        @if ((isAuthor || !isReferee) && !isAdmin)
-        {
-            <h6 class="text-muted fw-bold small text-uppercase mb-3 ps-1">BİLDİRİ ÖZETİ</h6>
-            <div class="row g-3 mb-4 row-cols-2 row-cols-xl-4">
-                <div class="col">
-                    <div class="card border-0 shadow-sm h-100 p-3 text-center">
-                        <h6 class="text-muted small fw-bold mb-2">TOPLAM</h6>
-                        <h2 class="fw-bold text-dark mb-0">@Model.TotalSubmissions</h2>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="card border-0 shadow-sm h-100 p-3 text-center border-bottom border-4 border-warning">
-                        <h6 class="text-muted small fw-bold mb-2">BEKLEYEN</h6>
-                        <h2 class="fw-bold text-warning mb-0">@Model.AwaitingDecision</h2>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="card border-0 shadow-sm h-100 p-3 text-center border-bottom border-4 border-success">
-                        <h6 class="text-muted small fw-bold mb-2">KABUL</h6>
-                        <h2 class="fw-bold text-success mb-0">@Model.AcceptedSubmissions</h2>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="card border-0 shadow-sm h-100 p-3 text-center border-bottom border-4 border-danger">
-                        <h6 class="text-muted small fw-bold mb-2">RED</h6>
-                        <h2 class="fw-bold text-danger mb-0">@Model.RejectedSubmissions</h2>
-                    </div>
-                </div>
+    @if (isAdmin)
+    {
+        <div class="alert alert-primary bg-primary bg-opacity-10 border-primary border-opacity-25 text-primary d-flex align-items-center mb-4 rounded-4 shadow-sm">
+            <i class="fas fa-user-shield fs-3 me-3"></i>
+            <div>
+                <h6 class="fw-bold mb-0">Yönetici Görünümü</h6>
+                <small>Şu anda tam yetkili yönetici modundasınız.</small>
             </div>
-        }
+        </div>
+    }
 
-        @if (isReferee && !isAdmin)
-        {
-            <div class="row g-3 mb-4">
-                <div class="col-md-6">
-                    <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning p-3">
-                        <div class="d-flex justify-content-between align-items-center">
+    <div class="row g-4">
+
+        <div class="@mainColumnClass">
+
+            @if ((isAuthor || !isReferee) && !isAdmin)
+            {
+                <h6 class="text-muted fw-bold small text-uppercase mb-3 ps-1">Bildiri Durumu</h6>
+                <div class="row g-3 mb-5">
+                    <div class="col-6 col-md-3">
+                        <div class="stat-card">
+                            <div>
+                                <h6 class="text-muted small fw-bold mb-1">TOPLAM</h6>
+                                <h3 class="fw-bold text-dark mb-0">@Model.TotalSubmissions</h3>
+                            </div>
+                            <div class="icon-box theme-blue"><i class="fas fa-file-alt"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stat-card">
+                            <div>
+                                <h6 class="text-muted small fw-bold mb-1">BEKLEYEN</h6>
+                                <h3 class="fw-bold text-dark mb-0">@Model.AwaitingDecision</h3>
+                            </div>
+                            <div class="icon-box theme-orange"><i class="fas fa-hourglass-half"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stat-card">
+                            <div>
+                                <h6 class="text-muted small fw-bold mb-1">KABUL</h6>
+                                <h3 class="fw-bold text-dark mb-0">@Model.AcceptedSubmissions</h3>
+                            </div>
+                            <div class="icon-box theme-green"><i class="fas fa-check-circle"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stat-card">
+                            <div>
+                                <h6 class="text-muted small fw-bold mb-1">RED</h6>
+                                <h3 class="fw-bold text-dark mb-0">@Model.RejectedSubmissions</h3>
+                            </div>
+                            <div class="icon-box theme-red"><i class="fas fa-times-circle"></i></div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (isReferee && !isAdmin)
+            {
+                <h6 class="text-muted fw-bold small text-uppercase mb-3 ps-1">Hakem Görevleri</h6>
+                <div class="row g-3 mb-5">
+                    <div class="col-md-6">
+                        <div class="stat-card border-start border-4 border-warning">
                             <div>
                                 <h6 class="text-muted small fw-bold mb-1">DEĞERLENDİRME BEKLEYEN</h6>
-                                <h2 class="fw-bold text-dark mb-0">@pendingReviews</h2>
+                                <h3 class="fw-bold text-dark mb-0">@pendingReviews</h3>
                             </div>
-                            <i class="fas fa-hourglass-half fa-2x text-warning opacity-50"></i>
+                            <div class="icon-box theme-orange bg-opacity-25"><i class="fas fa-gavel"></i></div>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card border-0 shadow-sm h-100 border-start border-4 border-success p-3">
-                        <div class="d-flex justify-content-between align-items-center">
+                    <div class="col-md-6">
+                        <div class="stat-card border-start border-4 border-success">
                             <div>
                                 <h6 class="text-muted small fw-bold mb-1">TAMAMLANAN</h6>
-                                <h2 class="fw-bold text-dark mb-0">@completedReviews</h2>
+                                <h3 class="fw-bold text-dark mb-0">@completedReviews</h3>
                             </div>
-                            <i class="fas fa-check-circle fa-2x text-success opacity-50"></i>
+                            <div class="icon-box theme-green bg-opacity-25"><i class="fas fa-clipboard-check"></i></div>
                         </div>
                     </div>
                 </div>
-            </div>
-        }
+            }
 
-        <div class="card border-0 shadow-sm" style="min-height: 350px;">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h6 class="fw-bold mb-0">Son Hareketler</h6>
-                @if (!isAdmin && isAuthor)
-                {
-                    <a href="@submissionIndexUrl" class="small fw-bold text-decoration-none">Tümünü Gör</a>
-                }
-            </div>
-            <div class="card-body d-flex align-items-center justify-content-center flex-column">
-                @if (Model.TotalSubmissions == 0 && !isAdmin && !isReferee)
-                {
-                    <div class="mb-3 p-3 bg-light rounded-circle"><i class="fas fa-file-signature fa-2x text-muted opacity-50"></i></div>
-                    <h6 class="fw-bold text-dark">Henüz Bildiri Yok</h6>
-                    <p class="text-muted small mb-4">Kongreye katılım için ilk bildirinizi gönderin.</p>
-                    <a href="@submissionCreateUrl" class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm"><i class="fas fa-plus me-1"></i> Yeni Bildiri</a>
-                }
-                else
-                {
-                    <p class="text-muted small">Güncel bildiriminiz bulunmuyor.</p>
-                }
-            </div>
-        </div>
-    </div>
-
-    <div class="@sideColumnClass">
-
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
-                <h6 class="fw-bold mb-0">Hızlı Geçiş</h6>
-                <a href="@dashboardMyConferencesUrl" class="text-decoration-none small fw-bold" style="font-size: 0.75rem;">TÜMÜ</a>
-            </div>
-
-            <div class="list-group list-group-flush">
-                @if (Model.MyConferences != null && Model.MyConferences.Any())
-                {
-                    @foreach (var conf in Model.MyConferences.Take(5)) // Sadece ilk 5 tanesini göster
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0">Hızlı İşlemler</h6>
+                    @if (!isAdmin && isAuthor)
                     {
-                        var tenantSlug = conf.Tenant?.Slug ?? conf.Slug ?? "";
-                        var isActive = conf.Title == Model.ConferenceName; // Basit bir aktiflik kontrolü
+                        <a href="@submissionIndexUrl" class="btn btn-sm btn-light text-primary fw-bold rounded-pill px-3">Tüm Bildirilerim <i class="fas fa-arrow-right ms-1"></i></a>
+                    }
+                </div>
+                <div class="card-body p-5 text-center">
+                    @if (Model.TotalSubmissions == 0 && !isAdmin && !isReferee)
+                    {
+                        <div class="mb-3">
+                            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                <i class="fas fa-paper-plane fa-3x text-primary opacity-25"></i>
+                            </div>
+                        </div>
+                        <h5 class="fw-bold text-dark">Henüz Bir Bildiri Göndermediniz</h5>
+                        <p class="text-muted small mb-4">Kongreye katılım sağlamak için ilk bilimsel çalışmanızı sisteme yükleyin.</p>
+                        <a href="@submissionCreateUrl" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm fw-bold">
+                            <i class="fas fa-plus me-2"></i> Yeni Bildiri Oluştur
+                        </a>
+                    }
+                    else
+                    {
+                        <div class="row justify-content-center">
+                            <div class="col-md-4 mb-3">
+                                <a href="@submissionCreateUrl" class="btn btn-outline-primary w-100 py-3 rounded-4 fw-bold h-100 d-flex flex-column align-items-center justify-content-center gap-2">
+                                    <i class="fas fa-plus-circle fs-3"></i>
+                                    Yeni Bildiri Ekle
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <a href="@submissionIndexUrl" class="btn btn-outline-dark w-100 py-3 rounded-4 fw-bold h-100 d-flex flex-column align-items-center justify-content-center gap-2">
+                                    <i class="fas fa-list fs-3"></i>
+                                    Bildirilerimi Gör
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <a href="/Message/Index" class="btn btn-outline-warning w-100 py-3 rounded-4 fw-bold h-100 d-flex flex-column align-items-center justify-content-center gap-2 text-dark">
+                                    <i class="fas fa-envelope fs-3"></i>
+                                    Mesajları Kontrol Et
+                                </a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
 
-                        <form asp-controller="Dashboard" asp-action="SelectConferencePost" asp-route-slug="@tenantSlug" method="post">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="conferenceId" value="@conf.Id" />
-                            <input type="hidden" name="returnUrl" value="@dashboardUrl" />
+        </div>
 
-                            <button type="submit" class="conf-switch-btn">
-                                <div class="list-group-item px-3 py-3 border-light conf-list-item @(isActive ? "active-conf" : "")">
-                                    <div class="d-flex align-items-center">
-                                        <div class="date-badge-sm me-3 flex-shrink-0">
-                                            <span class="date-month">@conf.StartDate.ToString("MMM")</span>
-                                            <span class="date-day">@conf.StartDate.Day</span>
+        <div class="@sideColumnClass">
+
+            <div class="conf-list-card mb-4">
+                <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
+                    <h6 class="fw-bold mb-0 text-dark">Kayıtlı Kongrelerim</h6>
+                    <a href="@dashboardMyConferencesUrl" class="text-decoration-none small fw-bold">TÜMÜ</a>
+                </div>
+
+                <div class="list-group list-group-flush">
+                    @if (Model.MyConferences != null && Model.MyConferences.Any())
+                    {
+                        @foreach (var conf in Model.MyConferences.Take(5))
+                        {
+                            var tenantSlug = conf.Tenant?.Slug ?? conf.Slug ?? "";
+                            var isActive = conf.Title == Model.ConferenceName;
+
+                            <form asp-controller="Dashboard" asp-action="SelectConferencePost" asp-route-slug="@tenantSlug" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="conferenceId" value="@conf.Id" />
+                                <input type="hidden" name="returnUrl" value="@dashboardUrl" />
+
+                                <button type="submit" class="conf-item-btn">
+                                    <div class="conf-item @(isActive ? "active" : "")">
+                                        <div class="date-box">
+                                            <div class="date-month">@conf.StartDate.ToString("MMM")</div>
+                                            <div class="date-day">@conf.StartDate.Day</div>
                                         </div>
 
                                         <div class="flex-grow-1" style="min-width: 0;">
-                                            <h6 class="fw-bold text-dark mb-0 text-truncate small" title="@conf.Title">
-                                                @conf.Title
-                                            </h6>
+                                            <h6 class="fw-bold text-dark mb-0 text-truncate small" title="@conf.Title">@conf.Title</h6>
                                             <small class="text-muted d-block text-truncate" style="font-size: 0.7rem;">
-                                                @(conf.City ?? "Online")
+                                                <i class="fas fa-map-marker-alt me-1"></i> @(conf.City ?? "Online")
                                             </small>
                                         </div>
 
-                                        <div class="flex-shrink-0 ms-2 text-muted">
-                                            @if (isActive)
-                                            {
-                                                <i class="fas fa-check-circle text-success"></i>
-                                            }
-                                            else
-                                            {
-                                                <i class="fas fa-chevron-right small"></i>
-                                            }
-                                        </div>
+                                        @if (isActive)
+                                        {
+                                            <i class="fas fa-check-circle text-primary ms-2"></i>
+                                        }
                                     </div>
-                                </div>
-                            </button>
-                        </form>
+                                </button>
+                            </form>
+                        }
                     }
-                }
-                else
-                {
-                    <div class="p-4 text-center text-muted small">
-                        Kayıtlı kongre yok. <a href="/Home/Index#congress-list" class="fw-bold">İncele</a>
-                    </div>
-                }
+                    else
+                    {
+                        <div class="p-5 text-center text-muted">
+                            <i class="fas fa-calendar-times mb-2 fs-4"></i>
+                            <p class="small mb-0">Henüz kayıtlı kongre yok.</p>
+                        </div>
+                    }
+                </div>
             </div>
-        </div>
 
-        <div class="card bg-primary text-white border-0 shadow-sm overflow-hidden position-relative" style="background: linear-gradient(135deg, #00aeef 0%, #007bb5 100%);">
-            <div class="card-body p-4 position-relative z-1">
-                <h6 class="fw-bold mb-2">Yardım Merkezi</h6>
-                <p class="small opacity-75 mb-3">Teknik sorunlarınızda destek ekibimiz yanınızda.</p>
-                <a href="/Home/Contact" class="btn btn-light text-primary fw-bold w-100 shadow-sm rounded-pill btn-sm">Destek Talebi</a>
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden text-white position-relative" style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%);">
+                <div class="card-body p-4 position-relative z-1">
+                    <h6 class="fw-bold mb-2">Yardıma mı ihtiyacınız var?</h6>
+                    <p class="small opacity-75 mb-3">Teknik sorunlarınızda destek ekibimiz yanınızda.</p>
+                    <a href="/Home/Contact" class="btn btn-light text-dark fw-bold w-100 rounded-pill shadow-sm btn-sm">
+                        <i class="fas fa-headset me-2"></i> Destek Talebi
+                    </a>
+                </div>
+                <i class="fas fa-life-ring position-absolute text-white opacity-10" style="font-size: 5rem; right: -20px; bottom: -20px;"></i>
             </div>
-            <i class="far fa-life-ring position-absolute text-white opacity-10" style="font-size: 6rem; right: -15px; bottom: -25px;"></i>
-        </div>
 
+        </div>
     </div>
 </div>

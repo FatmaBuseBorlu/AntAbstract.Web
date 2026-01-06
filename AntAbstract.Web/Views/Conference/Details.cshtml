@@ -5,97 +5,145 @@
 
 @{
     ViewData["Title"] = Model.Title;
-    Layout = "_Layout";
+    Layout = "_Layout"; 
 
-    // Banner yoksa varsayılan
-    var bannerUrl = string.IsNullOrEmpty(Model.BannerPath) ? "https://placehold.co/1920x600/0f172a/FFF?text=Kongre+Gorseli" : Model.BannerPath;
+    var hasBanner = !string.IsNullOrEmpty(Model.BannerPath);
+    var bannerUrl = hasBanner ? Model.BannerPath : "";
 }
 
 <style>
-    /* Hero Alanı İyileştirmesi */
+
     .conf-hero {
         position: relative;
         background-color: #0f172a;
         background-size: cover;
         background-position: center;
-        padding: 140px 0 80px 0;
-        margin-bottom: 40px;
+        padding: 160px 0 100px 0;
+        margin-bottom: 50px;
+        color: white;
+        overflow: hidden;
     }
+
+        .conf-hero.no-banner {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
 
     .hero-overlay {
         position: absolute;
         inset: 0;
-        background: linear-gradient(to bottom, rgba(15,23,42,0.7) 0%, rgba(15,23,42,0.95) 100%);
+        background: linear-gradient(to bottom, rgba(15,23,42,0.4) 0%, rgba(15,23,42,0.9) 100%);
     }
 
-    /* Sticky Sidebar (Sağdaki Yapışkan Alan) */
     .sticky-sidebar {
         position: -webkit-sticky;
         position: sticky;
-        top: 100px; /* Header yüksekliğine göre ayarla */
+        top: 100px; 
         z-index: 10;
     }
 
-    /* Modern Tab Menü */
-    .nav-pills-custom .nav-link {
-        color: #64748b;
-        background: #f1f5f9;
-        font-weight: 600;
-        padding: 12px 20px;
-        border-radius: 8px;
-        margin-right: 10px;
-        margin-bottom: 10px;
-        transition: all 0.3s;
+    .nav-pills-custom {
+        border-bottom: 2px solid #f1f5f9;
+        padding-bottom: 1px;
     }
 
-        .nav-pills-custom .nav-link.active {
-            background-color: #00aeef;
-            color: #fff;
-            box-shadow: 0 4px 10px rgba(0, 174, 239, 0.3);
+        .nav-pills-custom .nav-link {
+            color: #64748b;
+            font-weight: 600;
+            padding: 12px 25px;
+            border-radius: 0;
+            border-bottom: 3px solid transparent;
+            background: transparent;
+            margin-bottom: -3px;
+            transition: all 0.3s;
         }
 
-        .nav-pills-custom .nav-link:hover:not(.active) {
-            background-color: #e2e8f0;
-            color: #334155;
-        }
+            .nav-pills-custom .nav-link:hover {
+                color: #00aeef;
+                background-color: #f8fafc;
+            }
 
-    /* Geri Sayım Kutuları */
+            .nav-pills-custom .nav-link.active {
+                color: #00aeef;
+                background: transparent;
+                border-bottom-color: #00aeef;
+            }
+
+            .nav-pills-custom .nav-link i {
+                margin-right: 8px;
+            }
+
+    .countdown-wrapper {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
     .countdown-box {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 10px;
+        border-radius: 12px;
+        padding: 15px 10px;
         text-align: center;
         flex: 1;
+        transition: transform 0.2s;
     }
 
+        .countdown-box:hover {
+            transform: translateY(-3px);
+            border-color: #00aeef;
+            box-shadow: 0 4px 12px rgba(0, 174, 239, 0.1);
+        }
+
     .countdown-number {
-        font-size: 1.5rem;
+        font-size: 1.8rem;
         font-weight: 800;
         color: #00aeef;
         line-height: 1;
+        display: block;
     }
 
     .countdown-label {
         font-size: 0.7rem;
         text-transform: uppercase;
         color: #64748b;
-        margin-top: 4px;
+        font-weight: 700;
+        margin-top: 5px;
+        letter-spacing: 0.5px;
     }
+
+    .pricing-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px dashed #e2e8f0;
+    }
+
+        .pricing-item:last-child {
+            border-bottom: none;
+        }
 </style>
 
-<div class="conf-hero" style="background-image: url('@bannerUrl');">
+<div class="conf-hero @(hasBanner ? "" : "no-banner")" style="@(hasBanner ? $"background-image: url('{bannerUrl}');" : "")">
     <div class="hero-overlay"></div>
     <div class="container position-relative z-2">
-        <div class="row align-items-end">
-            <div class="col-lg-8 text-white">
-                <span class="badge bg-white bg-opacity-25 border border-white border-opacity-50 text-white mb-3 px-3">
-                    <i class="fas fa-tag me-1"></i> @Model.Tenant.Slug.ToUpper()
+        <div class="row">
+            <div class="col-lg-9">
+                <span class="badge bg-white bg-opacity-10 border border-white border-opacity-25 text-white mb-3 px-3 py-2 rounded-pill backdrop-blur">
+                    <i class="fas fa-hashtag me-1"></i> @(Model.Tenant?.Slug.ToUpper() ?? "KONGRE")
                 </span>
-                <h1 class="display-5 fw-bold mb-3">@Model.Title</h1>
-                <div class="d-flex flex-wrap gap-4 fs-6 text-white-50">
-                    <span><i class="far fa-calendar-alt me-2 text-info"></i> @Model.StartDate.ToString("d MMMM yyyy")</span>
-                    <span><i class="fas fa-map-marker-alt me-2 text-danger"></i> @(Model.City ?? "Online"), @Model.Country</span>
+
+                <h1 class="display-4 fw-extrabold mb-4" style="text-shadow: 0 2px 10px rgba(0,0,0,0.3);">@Model.Title</h1>
+
+                <div class="d-flex flex-wrap gap-4 fs-6 text-white fw-medium">
+                    <div class="d-flex align-items-center bg-dark bg-opacity-50 px-3 py-2 rounded-3 backdrop-blur">
+                        <i class="far fa-calendar-alt me-2 text-info"></i>
+                        @Model.StartDate.ToString("d MMMM yyyy")
+                    </div>
+                    <div class="d-flex align-items-center bg-dark bg-opacity-50 px-3 py-2 rounded-3 backdrop-blur">
+                        <i class="fas fa-map-marker-alt me-2 text-danger"></i>
+                        @(Model.City ?? "Online"), @Model.Country
+                    </div>
                 </div>
             </div>
         </div>
@@ -103,60 +151,67 @@
 </div>
 
 <div class="container pb-5">
-    <div class="row">
+    <div class="row g-5">
 
         <div class="col-lg-8">
 
-            <ul class="nav nav-pills nav-pills-custom mb-4" id="conferenceTabs" role="tablist">
+            <ul class="nav nav-pills-custom mb-4" id="conferenceTabs" role="tablist">
                 <li class="nav-item">
                     <button class="nav-link active" id="about-tab" data-bs-toggle="pill" data-bs-target="#about" type="button">
-                        <i class="fas fa-info-circle me-1"></i> Hakkında
+                        <i class="fas fa-info-circle"></i> Genel Bilgiler
                     </button>
                 </li>
                 <li class="nav-item">
                     <button class="nav-link" id="committees-tab" data-bs-toggle="pill" data-bs-target="#committees" type="button">
-                        <i class="fas fa-users me-1"></i> Kurullar
+                        <i class="fas fa-users"></i> Kurullar
                     </button>
                 </li>
                 <li class="nav-item">
                     <button class="nav-link" id="speakers-tab" data-bs-toggle="pill" data-bs-target="#speakers" type="button">
-                        <i class="fas fa-microphone me-1"></i> Konuşmacılar
+                        <i class="fas fa-microphone"></i> Konuşmacılar
                     </button>
                 </li>
                 <li class="nav-item">
                     <button class="nav-link" id="venue-tab" data-bs-toggle="pill" data-bs-target="#venue" type="button">
-                        <i class="fas fa-hotel me-1"></i> Konaklama
+                        <i class="fas fa-hotel"></i> Konaklama
                     </button>
                 </li>
             </ul>
 
-            <div class="tab-content bg-white p-4 rounded-3 border shadow-sm" id="conferenceTabsContent">
+            <div class="tab-content" id="conferenceTabsContent">
 
                 <div class="tab-pane fade show active" id="about">
-                    <h4 class="fw-bold mb-3">Kongre Hakkında</h4>
-                    <div class="text-muted" style="line-height: 1.8;">
-                        @if (!string.IsNullOrEmpty(Model.Description))
-                        {
-                            @Html.Raw(Model.Description)
-                        }
-                        else
-                        {
-                            <p>Detaylı açıklama yakında eklenecektir.</p>
-                        }
+                    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+                        <h4 class="fw-bold text-dark mb-4">Kongre Hakkında</h4>
+                        <div class="text-muted" style="line-height: 1.8; font-size: 1.05rem;">
+                            @if (!string.IsNullOrEmpty(Model.Description))
+                            {
+                                @Html.Raw(Model.Description)
+                            }
+                            else
+                            {
+                                <div class="text-center py-5">
+                                    <i class="fas fa-align-left fa-3x text-light mb-3"></i>
+                                    <p>Detaylı açıklama yakında eklenecektir.</p>
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
 
                 <div class="tab-pane fade" id="committees">
-                    <h4 class="fw-bold mb-4">Organizasyon Komitesi</h4>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="d-flex align-items-center p-3 border rounded">
-                                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-3" style="width:50px; height:50px;">
-                                    <i class="fas fa-user-tie text-primary"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-0 fw-bold">Prof. Dr. Mehmet Yılmaz</h6>
-                                    <small class="text-muted">Kongre Başkanı</small>
+                    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+                        <h4 class="fw-bold mb-4">Organizasyon Komitesi</h4>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center p-3 border rounded-3 bg-light">
+                                    <div class="bg-white rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" style="width:60px; height:60px;">
+                                        <i class="fas fa-user-tie text-primary fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1 fw-bold text-dark">Prof. Dr. Mehmet Yılmaz</h6>
+                                        <small class="text-muted">Kongre Başkanı</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -164,58 +219,70 @@
                 </div>
 
                 <div class="tab-pane fade" id="speakers">
-                    <div class="alert alert-info border-0">
-                        <i class="fas fa-bullhorn me-2"></i> Davetli konuşmacı listesi yakında ilan edilecektir.
+                    <div class="card border-0 shadow-sm rounded-4 p-5 text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-bullhorn fa-4x text-primary opacity-25"></i>
+                        </div>
+                        <h5 class="fw-bold text-dark">Yakında Açıklanacak</h5>
+                        <p class="text-muted">Davetli konuşmacı listesi üzerinde çalışmalarımız devam ediyor.</p>
                     </div>
                 </div>
 
                 <div class="tab-pane fade" id="venue">
-                    <h4 class="fw-bold mb-3">Konaklama ve Ulaşım</h4>
-                    <p class="text-muted">Kongremiz <strong>@(Model.Venue ?? "Belirlenen Otel")</strong>'de gerçekleşecektir.</p>
-                    <div class="ratio ratio-21x9 bg-light rounded overflow-hidden">
-                        <div class="d-flex align-items-center justify-content-center text-muted">
-                            <span><i class="fas fa-map-marked-alt fa-2x mb-2"></i><br>Harita Yükleniyor...</span>
+                    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+                        <h4 class="fw-bold mb-3">Konaklama ve Ulaşım</h4>
+                        <p class="text-muted mb-4">
+                            Kongremiz, şehrin merkezinde yer alan <strong>@(Model.Venue ?? "Belirlenen Otel")</strong>'de gerçekleşecektir.
+                        </p>
+
+                        <div class="ratio ratio-21x9 bg-light rounded-4 border overflow-hidden position-relative">
+                            <div class="d-flex flex-column align-items-center justify-content-center text-muted h-100 w-100 absolute-center">
+                                <i class="fas fa-map-marked-alt fa-3x mb-3 text-secondary opacity-50"></i>
+                                <span class="fw-bold">Harita Yükleniyor...</span>
+                            </div>
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
 
         <div class="col-lg-4">
             <div class="sticky-sidebar">
 
-                <div class="card border-0 shadow-lg rounded-3 mb-4 overflow-hidden">
-                    <div class="card-header bg-primary text-white text-center py-3">
-                        <h5 class="mb-0 fw-bold">Kayıtlar Başladı!</h5>
+                <div class="card border-0 shadow-lg rounded-4 mb-4 overflow-hidden">
+                    <div class="card-header bg-primary text-white text-center py-4" style="background: linear-gradient(135deg, #00aeef 0%, #0077b6 100%);">
+                        <h5 class="mb-1 fw-bold">Kayıtlar Başladı!</h5>
                         <small class="opacity-75">Erken kayıt fırsatını kaçırmayın</small>
                     </div>
+
                     <div class="card-body p-4">
-                        <div class="d-flex gap-2 mb-4" id="countdown-timer">
+                        <div class="countdown-wrapper" id="countdown-timer">
                             <div class="countdown-box">
-                                <div class="countdown-number" id="days">00</div>
-                                <div class="countdown-label">GÜN</div>
+                                <span class="countdown-number" id="days">00</span>
+                                <span class="countdown-label">GÜN</span>
                             </div>
                             <div class="countdown-box">
-                                <div class="countdown-number" id="hours">00</div>
-                                <div class="countdown-label">SAAT</div>
+                                <span class="countdown-number" id="hours">00</span>
+                                <span class="countdown-label">SAAT</span>
                             </div>
                             <div class="countdown-box">
-                                <div class="countdown-number" id="minutes">00</div>
-                                <div class="countdown-label">DK</div>
+                                <span class="countdown-number" id="minutes">00</span>
+                                <span class="countdown-label">DK</span>
                             </div>
                         </div>
 
-                        <div class="mb-4">
-                            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
-                                <span class="text-muted">Akademisyen</span>
+                        <div class="mb-4 bg-light p-3 rounded-3 border">
+                            <div class="pricing-item">
+                                <span class="text-muted small fw-bold text-uppercase">Akademisyen</span>
                                 <span class="fw-bold text-dark">2.500 ₺</span>
                             </div>
-                            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
-                                <span class="text-muted">Öğrenci</span>
+                            <div class="pricing-item">
+                                <span class="text-muted small fw-bold text-uppercase">Öğrenci</span>
                                 <span class="fw-bold text-dark">1.500 ₺</span>
                             </div>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="text-muted">Dinleyici</span>
+                            <div class="pricing-item">
+                                <span class="text-muted small fw-bold text-uppercase">Dinleyici</span>
                                 <span class="fw-bold text-dark">750 ₺</span>
                             </div>
                         </div>
@@ -224,14 +291,14 @@
                             @if (SignInManager.IsSignedIn(User))
                             {
                                 <a asp-controller="Registration" asp-action="Index" asp-route-id="@Model.Id"
-                                   class="btn btn-primary btn-lg fw-bold shadow-sm" style="background-color: #00aeef; border:none;">
+                                   class="btn btn-primary btn-lg fw-bold shadow-sm rounded-pill py-3">
                                     <i class="fas fa-edit me-2"></i> HEMEN KAYIT OL
                                 </a>
                             }
                             else
                             {
                                 <a href="/Identity/Account/Login?returnUrl=/Conference/Details/@Model.Slug"
-                                   class="btn btn-primary btn-lg fw-bold shadow-sm" style="background-color: #00aeef; border:none;">
+                                   class="btn btn-primary btn-lg fw-bold shadow-sm rounded-pill py-3">
                                     <i class="fas fa-sign-in-alt me-2"></i> GİRİŞ YAP & KAYIT OL
                                 </a>
                             }
@@ -239,23 +306,28 @@
                     </div>
                 </div>
 
-                <div class="card border-0 shadow-sm rounded-3 bg-light">
-                    <div class="card-body">
-                        <h6 class="fw-bold mb-3">İletişim</h6>
-                        <p class="small text-muted mb-2">Sorularınız için bizimle iletişime geçebilirsiniz.</p>
-                        <a href="mailto:info@antabstract.com" class="fw-bold text-dark text-decoration-none">
-                            <i class="far fa-envelope me-2"></i> info@antabstract.com
-                        </a>
+                <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 me-3">
+                            <i class="fas fa-headset fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark">Yardım Merkezi</h6>
+                            <small class="text-muted">Sorularınız mı var?</small>
+                        </div>
                     </div>
+                    <a href="mailto:info@antabstract.com" class="btn btn-outline-dark w-100 fw-bold rounded-pill">
+                        <i class="far fa-envelope me-2"></i> İletişime Geç
+                    </a>
                 </div>
 
             </div>
         </div>
+
     </div>
 </div>
 
 <script>
-
     var countDownDate = new Date("@Model.StartDate.ToString("yyyy-MM-ddTHH:mm:ss")").getTime();
 
     var x = setInterval(function() {
@@ -266,7 +338,6 @@
         var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
 
-   
         if (distance < 0) {
             clearInterval(x);
             days = 0; hours = 0; minutes = 0;
