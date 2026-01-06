@@ -1,8 +1,8 @@
 ﻿using AntAbstract.Application.DTOs.Submission;
-using AntAbstract.Application.DTOs.Conference;
+using AntAbstract.Application.DTOs.Review;
 using AntAbstract.Domain.Entities;
 using AutoMapper;
-using System;
+
 
 namespace AntAbstract.Application.Mappings
 {
@@ -38,6 +38,9 @@ namespace AntAbstract.Application.Mappings
                 .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTime.UtcNow))
                 .ForMember(dest => dest.SubmissionAuthors, opt => opt.Ignore())
                 .ForMember(dest => dest.Files, opt => opt.Ignore());
+
+            CreateMap<ReviewAssignment, ReviewAssignmentDto>()
+                .ForMember(dest => dest.EvaluationDate, opt => opt.MapFrom(src => src.EvaluationDate));
         }
     }
 }

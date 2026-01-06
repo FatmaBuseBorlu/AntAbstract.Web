@@ -1,91 +1,234 @@
-﻿@model List<AntAbstract.Application.DTOs.Review.ReviewAssignmentDto>
+﻿@using AntAbstract.Application.DTOs.Review
+@model List<ReviewAssignmentDto>
 
 @{
     ViewData["Title"] = "Hakem Paneli";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+
+
+    var pendingList = Model.Where(x => !x.IsReviewed).OrderBy(x => x.AssignedDate).ToList();
+    var completedList = Model.Where(x => x.IsReviewed).OrderByDescending(x => x.EvaluationDate).ToList();
 }
 
-<div class="container-fluid px-4">
-    <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
-        <div>
-            <h3 class="fw-bold text-primary"><i class="fas fa-gavel me-2"></i>Hakem Değerlendirme Paneli</h3>
-            <p class="text-muted mb-0">Tarafınıza değerlendirilmek üzere atanan bildiriler aşağıdadır.</p>
+<style>
+
+    .stat-box {
+        background: #fff;
+        border-radius: 12px;
+        padding: 15px 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: 1px solid #f1f5f9;
+    }
+
+    .stat-icon {
+        width: 45px;
+        height: 45px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    .task-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 25px;
+        transition: all 0.3s;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        border-left: 5px solid #f59e0b; 
+    }
+
+        .task-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border-color: #00aeef;
+        }
+
+    .table-custom th {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: #64748b;
+        font-weight: 700;
+        background-color: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+    }
+</style>
+
+<div class="container-fluid px-4 py-4">
+
+    <div class="row align-items-center mb-5">
+        <div class="col-md-6 mb-3 mb-md-0">
+            <h3 class="fw-bold text-dark mb-1"><i class="fas fa-gavel text-primary me-2"></i>Hakem Paneli</h3>
+            <p class="text-muted small mb-0">Bilimsel kaliteyi artırmak için katkılarınız değerlidir.</p>
+        </div>
+        <div class="col-md-6">
+            <div class="d-flex gap-3 justify-content-md-end">
+                <div class="stat-box">
+                    <div>
+                        <h6 class="text-muted small fw-bold mb-0">BEKLEYEN</h6>
+                        <h3 class="fw-bold text-warning mb-0">@pendingList.Count</h3>
+                    </div>
+                    <div class="stat-icon bg-warning bg-opacity-10 text-warning"><i class="fas fa-hourglass-half"></i></div>
+                </div>
+                <div class="stat-box">
+                    <div>
+                        <h6 class="text-muted small fw-bold mb-0">TAMAMLANAN</h6>
+                        <h3 class="fw-bold text-success mb-0">@completedList.Count</h3>
+                    </div>
+                    <div class="stat-icon bg-success bg-opacity-10 text-success"><i class="fas fa-check-circle"></i></div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-body">
-            @if (Model != null && Model.Any())
+    <ul class="nav nav-pills mb-4" id="reviewTabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active fw-bold px-4 py-2" id="pending-tab" data-bs-toggle="pill" data-bs-target="#pending" type="button">
+                <i class="fas fa-clock me-2"></i> Değerlendirme Bekleyenler
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link fw-bold px-4 py-2" id="completed-tab" data-bs-toggle="pill" data-bs-target="#completed" type="button">
+                <i class="fas fa-history me-2"></i> Geçmiş Değerlendirmeler
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="reviewTabsContent">
+
+        <div class="tab-pane fade show active" id="pending">
+            @if (pendingList.Any())
             {
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Atanma Tarihi</th>
-                                <th>Bildiri Başlığı</th>
-                                <th>Kongre</th>
-                                <th>Durum</th>
-                                <th>Puan</th>
-                                <th class="text-end">İşlem</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in Model)
-                            {
-                                <tr>
-                                    <td>@item.AssignedDate.ToLocalTime().ToString("dd.MM.yyyy")</td>
-                                    <td>
-                                        <span class="fw-bold text-dark">@item.SubmissionTitle</span>
-                                    </td>
-                                    <td><span class="badge bg-light text-dark border">@item.ConferenceName</span></td>
-                                    <td>
-                                        @if (item.IsReviewed)
-                                        {
-                                            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Tamamlandı</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Bekliyor</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (item.IsReviewed)
-                                        {
-                                            <span class="fw-bold">@item.Score / 100</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">-</span>
-                                        }
-                                    </td>
-                                    <td class="text-end">
-                                        @if (item.IsReviewed)
-                                        {
-                                            <button class="btn btn-sm btn-outline-secondary disabled" disabled>Değerlendirildi</button>
-                                        }
-                                        else
-                                        {
-                                            <a asp-action="Evaluate" asp-route-id="@item.Id" class="btn btn-sm btn-primary fw-bold shadow-sm">
-                                                <i class="fas fa-edit me-1"></i> Değerlendir
-                                            </a>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                <div class="row g-4">
+                    @foreach (var item in pendingList)
+                    {
+                        <div class="col-lg-6 col-xl-4">
+                            <div class="task-card">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <span class="badge bg-light text-secondary border">#REF-@item.SubmissionId.ToString().Substring(0, 6).ToUpper()</span>
+                                    <small class="text-muted fw-bold">
+                                        <i class="far fa-calendar-alt me-1"></i> @item.AssignedDate.ToLocalTime().ToString("dd MMM yyyy")
+                                    </small>
+                                </div>
+
+                                <h6 class="fw-bold text-dark mb-2 line-clamp-2" style="min-height: 40px;">@item.SubmissionTitle</h6>
+                                <p class="text-muted small mb-3">@item.ConferenceName</p>
+
+                                <div class="mt-auto pt-3 border-top d-flex gap-2">
+                                    <a asp-action="Evaluate" asp-route-id="@item.Id" class="btn btn-primary btn-sm flex-grow-1 fw-bold shadow-sm rounded-pill">
+                                        <i class="fas fa-play me-1"></i> Başla
+                                    </a>
+                                    <button onclick="confirmDecline('@item.Id')" class="btn btn-outline-secondary btn-sm rounded-circle" title="Çıkar Çatışması Bildir" data-bs-toggle="tooltip">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
                 </div>
             }
             else
             {
-                <div class="text-center py-5">
-                    <div class="mb-3">
-                        <i class="fas fa-folder-open fa-3x text-muted opacity-50"></i>
+                <div class="text-center py-5 bg-white rounded-3 shadow-sm border border-light">
+                    <div class="bg-light rounded-circle d-inline-flex p-4 mb-3">
+                        <i class="fas fa-clipboard-check fa-3x text-muted opacity-25"></i>
                     </div>
-                    <h5 class="text-muted">Henüz atanmış bir bildiri yok.</h5>
-                    <p class="text-muted small">Yöneticiler tarafından bildiri atandığında burada listelenecektir.</p>
+                    <h5 class="fw-bold text-dark">Harika! Bekleyen işiniz yok.</h5>
+                    <p class="text-muted small">Şu an için size atanan tüm değerlendirmeleri tamamladınız.</p>
                 </div>
             }
         </div>
+
+        <div class="tab-pane fade" id="completed">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-body p-0">
+                    @if (completedList.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 table-custom">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-4 py-3">Bildiri Başlığı</th>
+                                        <th>Kongre</th>
+                                        <th>Tamamlanma</th>
+                                        <th>Puan</th>
+                                        <th>Karar</th>
+                                        <th class="text-end pe-4">İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in completedList)
+                                    {
+                                        <tr>
+                                            <td class="ps-4">
+                                                <span class="fw-bold text-dark d-block text-truncate" style="max-width: 300px;">@item.SubmissionTitle</span>
+                                                <small class="text-muted">#REF-@item.SubmissionId.ToString().Substring(0, 6)</small>
+                                            </td>
+                                            <td><span class="badge bg-light text-dark border fw-normal">@item.ConferenceName</span></td>
+                                            <td class="text-muted small">@(item.EvaluationDate.HasValue? item.EvaluationDate.Value.ToLocalTime().ToString("dd.MM.yyyy") : "-")</td>
+                                            <td>
+                                                <span class="fw-bold @(item.Score >= 50 ? "text-primary" : "text-danger")">@item.Score</span>
+                                            </td>
+                                            <td>
+                                                @if (item.Recommendation == "Accept")
+                                                {
+                                                    <span class="badge bg-success bg-opacity-10 text-success">Kabul</span>
+                                                }
+                                                else if (item.Recommendation == "Reject")
+                                                {
+
+                                                    <span class="badge bg-danger bg-opacity-10 text-danger">Red</span>
+                                                }
+                                                else
+                                                {
+
+                                                    <span class="badge bg-warning bg-opacity-10 text-warning">Düzeltme</span>
+                                                }
+                                            </td>
+                                            <td class="text-end pe-4">
+                                                <a href="@Url.Action("Evaluate", new { id = item.Id })" class="btn btn-sm btn-light border me-1" title="İncele">
+                                                    <i class="fas fa-eye text-muted"></i>
+                                                </a>
+                                                <a href="@Url.Action("DownloadReviewCertificate", new { id = item.Id })" target="_blank" class="btn btn-sm btn-outline-dark fw-bold rounded-pill">
+                                                    <i class="fas fa-certificate me-1"></i> Belge
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <p class="text-muted small">Henüz tamamlanmış bir değerlendirme kaydı bulunmuyor.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
+
+<script>
+    function confirmDecline(id) {
+        if(confirm("Bu bildiriyi değerlendirmeyi reddetmek (çıkar çatışması vb.) üzeresiniz. Emin misiniz?")) {
+
+            alert("Bu özellik backend tarafında eklenecek.");
+        }
+    }
+
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+</script>

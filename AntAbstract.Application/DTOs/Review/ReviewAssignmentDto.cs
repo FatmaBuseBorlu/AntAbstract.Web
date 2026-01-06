@@ -12,6 +12,7 @@ namespace AntAbstract.Application.DTOs.Review
         public string SubmissionAbstract { get; set; }
         public string ConferenceName { get; set; }
         public DateTime AssignedDate { get; set; }
+        public DateTime? EvaluationDate { get; set; }
         public bool IsReviewed { get; set; }
         public string ReviewerName { get; set; } 
         public int? Score { get; set; }          

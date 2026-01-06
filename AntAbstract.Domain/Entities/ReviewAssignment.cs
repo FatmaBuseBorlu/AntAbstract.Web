@@ -10,6 +10,7 @@ namespace AntAbstract.Domain.Entities
         public int Id { get; set; }
 
         public DateTime AssignedDate { get; set; } = DateTime.UtcNow;
+        public DateTime? EvaluationDate { get; set; }
 
         public Guid SubmissionId { get; set; }
 
