@@ -15,6 +15,8 @@ namespace AntAbstract.Application.Interfaces
 
         Task SubmitReviewAsync(SubmitReviewDto input, string reviewerName);
 
+        Task DeclineAssignmentAsync(int id, string userId, string reason, string note);
+
         Task<List<ReviewAssignmentDto>> GetReviewsBySubmissionIdAsync(Guid submissionId);
     }
 }
