@@ -6,7 +6,6 @@
 }
 
 <style>
-
     .submission-info-card {
         background-color: #fff;
         border-radius: 16px;
@@ -31,11 +30,11 @@
         box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         border: 1px solid #f1f5f9;
         position: sticky;
-        top: 100px; 
+        top: 100px;
     }
 
     .decision-option {
-        display: none; 
+        display: none;
     }
 
     .decision-label {
@@ -106,7 +105,7 @@
         <div class="col-lg-7">
             <div class="submission-info-card p-4 p-md-5 mb-4">
 
-                <span class="badge bg-light text-primary border mb-3">#REF-@Model.Id.ToString().Substring(0, 8).ToUpper()</span>
+                <span class="badge bg-light text-primary border mb-3">#REF-@Model.Id.ToString("D8")</span>
 
                 <h4 class="fw-bold text-dark mb-4">@Model.SubmissionTitle</h4>
 
@@ -232,8 +231,8 @@
         document.getElementById('scoreValue').innerText = val;
 
         var scoreDisplay = document.getElementById('scoreValue');
-        if(val < 50) scoreDisplay.style.color = '#ef4444'; 
-        else if(val < 70) scoreDisplay.style.color = '#f59e0b'; 
-        else scoreDisplay.style.color = '#00aeef'; 
+        if(val < 50) scoreDisplay.style.color = '#ef4444';
+        else if(val < 70) scoreDisplay.style.color = '#f59e0b';
+        else scoreDisplay.style.color = '#00aeef';
     }
 </script>

@@ -21,9 +21,9 @@
     var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
 
     var slug = ViewContext.RouteData.Values["slug"]?.ToString()
-               ?? Tc.Current?.Slug
-               ?? Context.Session.GetString("SelectedConferenceSlug")
-               ?? "";
+                ?? Tc.Current?.Slug
+                ?? Context.Session.GetString("SelectedConferenceSlug")
+                ?? "";
 
     string? confIdStr = null;
     if (Tc.Current != null)
@@ -43,6 +43,7 @@
     }
     selectedConferenceTitle ??= Context.Session.GetString("SelectedConferenceTitle");
 
+    // Link Tanımları
     var dashboardUrl = string.IsNullOrWhiteSpace(slug) ? "/Dashboard" : $"/{slug}/Dashboard";
     var dashboardMyConferencesUrl = string.IsNullOrWhiteSpace(slug) ? "/Dashboard/MyConferences" : $"/{slug}/Dashboard/MyConferences";
     var submissionsAdminUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Submissions" : $"/{slug}/Admin/Submissions";
@@ -206,25 +207,6 @@
             padding: 2px 8px; border-radius: 10px; display: inline-block;
         }
 
-        .premium-dropdown {
-            border: none;
-            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.15);
-            border-radius: 1rem;
-            padding: 0.5rem;
-            margin-top: 1rem !important;
-            width: 240px;
-        }
-        .premium-dropdown .dropdown-header {
-            font-weight: 700; font-size: 0.75rem; color: #94a3b8; letter-spacing: 0.5px; padding: 0.5rem 1rem;
-        }
-        .premium-dropdown .dropdown-item {
-            border-radius: 0.5rem; padding: 0.6rem 1rem; font-weight: 600; color: #475569; transition: all 0.2s;
-            display: flex; align-items: center;
-        }
-        .premium-dropdown .dropdown-item i { width: 20px; text-align: center; margin-right: 0.75rem; font-size: 1.1rem; }
-        .premium-dropdown .dropdown-item:hover { background-color: #f1f5f9; color: var(--primary-color); }
-        .premium-dropdown .dropdown-item.text-danger:hover { background-color: #fef2f2; color: #dc2626; }
-
         .content-wrapper { padding: 2rem; flex-grow: 1; }
 
         .sidebar-overlay {
@@ -266,8 +248,28 @@
                 if (isReferee)
                 {
                     <div class="menu-label">HAKEM</div>
-                    <a href="@reviewIndexUrl" class="nav-link @(currentController == "Review" ? "active" : "")">
+                    <a href="@reviewIndexUrl" class="nav-link @(currentController == "Review" && currentAction == "Index" ? "active" : "")">
                         <i class="fas fa-gavel text-warning"></i> Hakem Görevlerim
+                    </a>
+                    
+                    <a href="/Review/Interests" class="nav-link @(currentController == "Review" && currentAction == "Interests" ? "active" : "")">
+                        <i class="fas fa-tags text-info"></i> Uzmanlık Alanlarım
+                    </a>
+
+                    <a href="/Review/Availability" class="nav-link @(currentController == "Review" && currentAction == "Availability" ? "active" : "")">
+                        <i class="fas fa-calendar-times text-danger"></i> Müsaitlik / İzin
+                    </a>
+
+                    <a href="/Review/Conflicts" class="nav-link @(currentController == "Review" && currentAction == "Conflicts" ? "active" : "")">
+                        <i class="fas fa-handshake-slash text-secondary"></i> Çıkar Çatışmaları
+                    </a>
+
+                    <a href="/Review/Guidelines" class="nav-link @(currentController == "Review" && currentAction == "Guidelines" ? "active" : "")">
+                        <i class="fas fa-book-open text-primary"></i> Hakem Kılavuzu
+                    </a>
+
+                    <a href="/Review/MyCertificates" class="nav-link @(currentController == "Review" && currentAction == "MyCertificates" ? "active" : "")">
+                        <i class="fas fa-certificate text-success"></i> Sertifikalarım
                     </a>
                 }
 
@@ -303,11 +305,6 @@
                             <i class="fas fa-hotel text-warning"></i> Konaklama
                         </a>
                     }
-
-                    <div class="menu-label">HESAP</div>
-                    <a href="@dashboardMyConferencesUrl" class="nav-link @(currentController == "Dashboard" && currentAction == "MyConferences" ? "active" : "")">
-                        <i class="fas fa-globe text-secondary"></i> Katıldığım Kongreler
-                    </a>
                 }
             }
 
@@ -334,6 +331,18 @@
             <a href="@messageIndexUrl" class="nav-link @(currentController == "Message" ? "active" : "")">
                 <i class="fas fa-envelope text-warning"></i> Mesajlarım
             </a>
+
+            <div class="menu-label">HESAP</div>
+            @if (isAuthor || isReferee)
+            {
+                <a href="@dashboardMyConferencesUrl" class="nav-link @(currentController == "Dashboard" && currentAction == "MyConferences" ? "active" : "")">
+                    <i class="fas fa-globe text-secondary"></i> Katıldığım Kongreler
+                </a>
+            }
+            <a href="/Identity/Account/Manage" class="nav-link">
+                <i class="fas fa-user-cog text-secondary"></i> Profil Ayarları
+            </a>
+
         </div>
 
         <div class="p-3 border-top mt-auto">
@@ -345,43 +354,43 @@
 
     <div class="main-content">
         
-<header class="top-header">
-    <div class="d-flex align-items-center">
-        <button class="btn btn-light shadow-sm me-3 border-0" id="sidebarToggle" onclick="toggleSidebar()">
-            <i class="fas fa-bars text-primary"></i>
-        </button>
+        <header class="top-header">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-light shadow-sm me-3 border-0" id="sidebarToggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars text-primary"></i>
+                </button>
 
-        <div class="lh-1 d-none d-sm-block">
-            <h6 class="mb-0 fw-bold text-dark">@displayName</h6>
-            <small class="text-muted" style="font-size: 0.75rem;">
-                @(string.IsNullOrWhiteSpace(headerBadgeText) ? "Yönetim Paneli" : headerBadgeText)
-            </small>
-        </div>
-    </div>
-
-    <div class="d-flex align-items-center gap-3">
-        <a href="/" class="text-decoration-none text-muted fw-bold small d-none d-md-block" data-bs-toggle="tooltip" title="Siteye Dön">
-            <i class="fas fa-external-link-alt me-1"></i> Site
-        </a>
-        @await Component.InvokeAsync("Notification")
-        <div class="dropdown">
-            <div class="user-menu-btn ps-2" data-bs-toggle="dropdown">
-                <img src="@profileImg" class="user-avatar">
+                <div class="lh-1 d-none d-sm-block">
+                    <h6 class="mb-0 fw-bold text-dark">@displayName</h6>
+                    <small class="text-muted" style="font-size: 0.75rem;">
+                        @(string.IsNullOrWhiteSpace(headerBadgeText) ? "Yönetim Paneli" : headerBadgeText)
+                    </small>
+                </div>
             </div>
-            <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-3 rounded-4 p-2" style="width: 220px;">
-                <li><h6 class="dropdown-header small fw-bold">HESABIM</h6></li>
-                <li><a class="dropdown-item rounded-2 py-2" href="/Identity/Account/Manage"><i class="fas fa-user-cog me-2 text-muted"></i> Ayarlar</a></li>
-                <li><a class="dropdown-item rounded-2 py-2" href="@dashboardMyConferencesUrl"><i class="fas fa-exchange-alt me-2 text-muted"></i> Kongre Değiştir</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                    <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post">
-                        <button type="submit" class="dropdown-item rounded-2 py-2 text-danger fw-bold"><i class="fas fa-sign-out-alt me-2"></i> Çıkış</button>
-                    </form>
-                </li>
-            </ul>
-        </div>
-    </div>
-</header>
+
+            <div class="d-flex align-items-center gap-3">
+                <a href="/" class="text-decoration-none text-muted fw-bold small d-none d-md-block" data-bs-toggle="tooltip" title="Siteye Dön">
+                    <i class="fas fa-external-link-alt me-1"></i> Site
+                </a>
+                @await Component.InvokeAsync("Notification")
+                <div class="dropdown">
+                    <div class="user-menu-btn ps-2" data-bs-toggle="dropdown">
+                        <img src="@profileImg" class="user-avatar">
+                    </div>
+                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-3 rounded-4 p-2" style="width: 220px;">
+                        <li><h6 class="dropdown-header small fw-bold">HESABIM</h6></li>
+                        <li><a class="dropdown-item rounded-2 py-2" href="/Identity/Account/Manage"><i class="fas fa-user-cog me-2 text-muted"></i> Ayarlar</a></li>
+                        <li><a class="dropdown-item rounded-2 py-2" href="@dashboardMyConferencesUrl"><i class="fas fa-exchange-alt me-2 text-muted"></i> Kongre Değiştir</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post">
+                                <button type="submit" class="dropdown-item rounded-2 py-2 text-danger fw-bold"><i class="fas fa-sign-out-alt me-2"></i> Çıkış</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </header>
 
         <div class="content-wrapper">
             @if (TempData["SuccessMessage"] != null)

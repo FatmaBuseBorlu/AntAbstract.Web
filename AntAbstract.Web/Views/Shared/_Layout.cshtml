@@ -44,11 +44,10 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
-        /* --- MODERN NAVBAR --- */
         .navbar {
             padding: 16px 0;
             background-color: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px); /* Buzlu cam efekti */
+            backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid rgba(0,0,0,0.05);
             transition: all 0.3s ease;
@@ -74,7 +73,6 @@
             color: var(--primary-color) !important; 
         }
 
-        /* Admin Link Özel Tasarımı */
         .nav-link.admin-link {
             color: #dc3545 !important;
             background-color: rgba(220, 53, 69, 0.1);
@@ -89,12 +87,25 @@
             transform: translateY(-2px);
         }
 
-        /* --- MODERN FOOTER --- */
+        .nav-link.referee-link {
+            color: var(--primary-color) !important;
+            background-color: rgba(0, 174, 239, 0.1);
+            border-radius: 6px;
+            padding: 6px 16px !important;
+            font-weight: 600;
+        }
+
+        .nav-link.referee-link:hover {
+            background-color: var(--primary-color);
+            color: white !important;
+            transform: translateY(-2px);
+        }
+
         .footer-modern {
             background-color: var(--dark-bg);
             color: #94a3b8;
             font-size: 0.9rem;
-            margin-top: auto; /* Sayfanın altına iter */
+            margin-top: auto;
         }
 
         .footer-title {
@@ -114,7 +125,7 @@
 
         .footer-link:hover {
             color: var(--primary-color);
-            padding-left: 5px; /* Hover'da hafif sağa kayma */
+            padding-left: 5px;
         }
 
         .social-btn {
@@ -141,7 +152,6 @@
 <body>
 
 @{
-    // --- MEVCUT MANTIKSAL KODLAR (AYNEN KORUNDU) ---
     var area = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
     var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
@@ -149,6 +159,10 @@
     var isAdminLike = User.Identity != null
         && User.Identity.IsAuthenticated
         && (User.IsInRole("Admin") || User.IsInRole("Organizator"));
+    
+    var isReferee = User.Identity != null
+        && User.Identity.IsAuthenticated
+        && User.IsInRole("Referee");
 
     var isAdminArea = string.Equals(area, "Admin", StringComparison.OrdinalIgnoreCase);
     var path = Context.Request.Path.Value ?? "";
@@ -188,6 +202,7 @@
                     <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Congresses">Kongreler</a></li>
                     <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Contact">İletişim</a></li>
 
+                    @* --- 1. ADMIN BUTONU --- *@
                     @if (!hideAdminNav && isAdminLike && (Tc.Current != null || !string.IsNullOrWhiteSpace(slug)))
                     {
                         <li class="nav-item ms-lg-3">
@@ -200,6 +215,16 @@
                                 {
                                     <i class="fas fa-hand-pointer me-1"></i> @:Kongre Seç
                                 }
+                            </a>
+                        </li>
+                    }
+                    
+                    @* --- 2. YENİ EKLENEN HAKEM BUTONU --- *@
+                    @if (isReferee && !hideAdminNav)
+                    {
+                        <li class="nav-item ms-lg-3">
+                            <a class="nav-link referee-link shadow-sm" href="/Dashboard">
+                                <i class="fas fa-gavel me-1"></i> Hakem Paneli
                             </a>
                         </li>
                     }

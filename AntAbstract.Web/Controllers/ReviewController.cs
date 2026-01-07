@@ -4,7 +4,7 @@ using AntAbstract.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
+
 
 namespace AntAbstract.Web.Controllers
 {
@@ -30,10 +30,10 @@ namespace AntAbstract.Web.Controllers
 
         [HttpGet]
         [Authorize(Roles = "Referee, Admin")]
-        public async Task<IActionResult> Evaluate(int id)
+        public async Task<IActionResult> Evaluate(int id) 
         {
             var user = await _userManager.GetUserAsync(User);
-            var assignmentDto = await _reviewService.GetAssignmentByIdAsync(id, user.Id);
+            var assignmentDto = await _reviewService.GetAssignmentByIdAsync(id, user.Id); 
 
             if (assignmentDto == null)
             {
@@ -73,20 +73,37 @@ namespace AntAbstract.Web.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin, Editor")]
-        public async Task<IActionResult> AssignReviewer(AssignReviewerDto model)
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Referee, Admin")]
+        public async Task<IActionResult> DeclineAssignment(int id, string Reason, string Note) 
         {
             try
             {
-                await _reviewService.AssignReviewerAsync(model);
-                TempData["SuccessMessage"] = "Hakem başarıyla atandı.";
+                var user = await _userManager.GetUserAsync(User);
+                await _reviewService.DeclineAssignmentAsync(id, user.Id, Reason, Note); 
+                TempData["SuccessMessage"] = "Görev iade edildi.";
             }
             catch (System.Exception ex)
             {
-                TempData["ErrorMessage"] = "Hata: " + ex.Message;
+                TempData["ErrorMessage"] = "İşlem başarısız: " + ex.Message;
             }
 
-            return RedirectToAction("Details", "Submission", new { area = "Admin", id = model.SubmissionId });
+            return RedirectToAction(nameof(Index));
+        }
+
+        [Authorize(Roles = "Referee, Admin")]
+        public async Task<IActionResult> DownloadCertificate(int id) 
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var assignment = await _reviewService.GetAssignmentByIdAsync(id, user.Id); 
+
+            if (assignment == null || !assignment.IsReviewed)
+            {
+                return NotFound("Sertifika bulunamadı.");
+            }
+
+            ViewBag.ReviewerName = $"{user.Title} {user.FirstName} {user.LastName}";
+            return View("Certificate", assignment);
         }
     }
 }

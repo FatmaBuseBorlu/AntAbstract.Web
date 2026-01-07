@@ -2,7 +2,7 @@
 using AntAbstract.Application.DTOs.Submission;
 using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
-using Microsoft.AspNetCore.Identity; 
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -43,6 +43,7 @@ namespace AntAbstract.Application.Services
             await _context.SaveChangesAsync();
         }
 
+
         public async Task<List<ReviewAssignmentDto>> GetMyAssignmentsAsync(string reviewerId)
         {
             var list = await _context.ReviewAssignments
@@ -54,13 +55,15 @@ namespace AntAbstract.Application.Services
 
             return list.Select(ra => new ReviewAssignmentDto
             {
-                Id = ra.Id,
+                Id = ra.Id, 
                 SubmissionId = ra.SubmissionId,
                 AssignedDate = ra.AssignedDate,
                 SubmissionTitle = ra.Submission.Title,
                 ConferenceName = ra.Submission.Conference?.Title,
                 IsReviewed = ra.Review != null,
-                Score = ra.Review?.Score
+                Score = ra.Review?.Score,
+                Recommendation = ra.Review?.Recommendation,
+                EvaluationDate = ra.Review?.ReviewedAt 
             }).ToList();
         }
 
@@ -76,7 +79,7 @@ namespace AntAbstract.Application.Services
 
             return new ReviewAssignmentDto
             {
-                Id = assignment.Id,
+                Id = assignment.Id, 
                 SubmissionId = assignment.SubmissionId,
                 AssignedDate = assignment.AssignedDate,
                 SubmissionTitle = assignment.Submission.Title,
@@ -93,7 +96,8 @@ namespace AntAbstract.Application.Services
                 CommentsToAuthor = assignment.Review?.CommentsToAuthor,
                 Recommendation = assignment.Review?.Recommendation,
                 Score = assignment.Review?.Score,
-                IsReviewed = assignment.Review != null
+                IsReviewed = assignment.Review != null,
+                EvaluationDate = assignment.Review?.ReviewedAt
             };
         }
 
@@ -101,7 +105,7 @@ namespace AntAbstract.Application.Services
         {
             var assignment = await _context.ReviewAssignments
                 .Include(ra => ra.Review)
-                .FirstOrDefaultAsync(ra => ra.Id == input.ReviewAssignmentId);
+                .FirstOrDefaultAsync(ra => ra.Id == input.ReviewAssignmentId); 
 
             if (assignment == null) throw new Exception("Atama bulunamadı.");
 
@@ -122,6 +126,18 @@ namespace AntAbstract.Application.Services
 
             await _context.Reviews.AddAsync(review);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task DeclineAssignmentAsync(int id, string userId, string reason, string note)
+        {
+            var entity = await _context.ReviewAssignments
+                .FirstOrDefaultAsync(x => x.Id == id && x.ReviewerId == userId);
+
+            if (entity != null)
+            {
+                _context.ReviewAssignments.Remove(entity);
+                await _context.SaveChangesAsync();
+            }
         }
 
         public async Task<List<ReviewAssignmentDto>> GetReviewsBySubmissionIdAsync(Guid submissionId)
@@ -152,14 +168,15 @@ namespace AntAbstract.Application.Services
 
                 resultList.Add(new ReviewAssignmentDto
                 {
-                    Id = item.Id,
+                    Id = item.Id, 
                     SubmissionId = item.SubmissionId,
                     AssignedDate = item.AssignedDate,
                     IsReviewed = item.Review != null,
                     ReviewerName = rName,
                     Score = item.Review?.Score,
                     Recommendation = item.Review?.Recommendation,
-                    CommentsToAuthor = item.Review?.CommentsToAuthor
+                    CommentsToAuthor = item.Review?.CommentsToAuthor,
+                    EvaluationDate = item.Review?.ReviewedAt
                 });
             }
 
