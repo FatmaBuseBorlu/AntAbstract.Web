@@ -4,7 +4,7 @@ using AntAbstract.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-
+using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -33,7 +33,7 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> Evaluate(int id) 
         {
             var user = await _userManager.GetUserAsync(User);
-            var assignmentDto = await _reviewService.GetAssignmentByIdAsync(id, user.Id); 
+            var assignmentDto = await _reviewService.GetAssignmentByIdAsync(id, user.Id);
 
             if (assignmentDto == null)
             {
@@ -80,7 +80,7 @@ namespace AntAbstract.Web.Controllers
             try
             {
                 var user = await _userManager.GetUserAsync(User);
-                await _reviewService.DeclineAssignmentAsync(id, user.Id, Reason, Note); 
+                await _reviewService.DeclineAssignmentAsync(id, user.Id, Reason, Note);
                 TempData["SuccessMessage"] = "Görev iade edildi.";
             }
             catch (System.Exception ex)
@@ -92,10 +92,10 @@ namespace AntAbstract.Web.Controllers
         }
 
         [Authorize(Roles = "Referee, Admin")]
-        public async Task<IActionResult> DownloadCertificate(int id) 
+        public async Task<IActionResult> DownloadCertificate(int id)
         {
             var user = await _userManager.GetUserAsync(User);
-            var assignment = await _reviewService.GetAssignmentByIdAsync(id, user.Id); 
+            var assignment = await _reviewService.GetAssignmentByIdAsync(id, user.Id);
 
             if (assignment == null || !assignment.IsReviewed)
             {
@@ -104,6 +104,37 @@ namespace AntAbstract.Web.Controllers
 
             ViewBag.ReviewerName = $"{user.Title} {user.FirstName} {user.LastName}";
             return View("Certificate", assignment);
+        }
+
+        [HttpGet]
+        public IActionResult Interests()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult Availability()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult Conflicts()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult Guidelines()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult MyCertificates()
+        {
+  
+            return View();
         }
     }
 }
