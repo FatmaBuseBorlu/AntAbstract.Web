@@ -1,5 +1,5 @@
 ﻿using AntAbstract.Infrastructure.Context;
-using AntAbstract.Infrastructure.Services;
+using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.ViewModels.Admin.Assignment;
 using AntAbstract.Web.Models.ViewModels.Shared;
 using Microsoft.AspNetCore.Authorization;

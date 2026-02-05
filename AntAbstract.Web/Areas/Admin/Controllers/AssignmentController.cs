@@ -1,6 +1,8 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
-using AntAbstract.Infrastructure.Services;
+using AntAbstract.Infrastructure.Services.Conferences;
+using AntAbstract.Infrastructure.Services.Email;
+using AntAbstract.Infrastructure.Services.ReviewerRecommendation;
 using AntAbstract.Web.Models.ViewModels.Admin.Assignment;
 using AntAbstract.Web.Models.ViewModels.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -206,7 +208,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var reviewer = await _userManager.FindByIdAsync(reviewerId);
             if (reviewer != null)
             {
-                try { await _emailService.SendEmailAsync(reviewer.Email, "Yeni Atama", "Bildiri atandı."); } catch { }
+                try { await _emailService.SendAsync(reviewer.Email!, "Yeni Atama", "Bildiri atandı."); } catch { }
+
             }
 
             TempData["SuccessMessage"] = "Hakem ataması başarıyla tamamlandı.";

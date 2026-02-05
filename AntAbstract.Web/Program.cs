@@ -1,13 +1,11 @@
+using AntAbstract.Application.DependencyInjection;
 using AntAbstract.Application.Interfaces;
-using AntAbstract.Application.Mappings;
-using AntAbstract.Application.Services;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services;
-using AntAbstract.Web.Models.ViewModels;
+using AntAbstract.Infrastructure.Services.DependencyInjection;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Rotativa.AspNetCore;
 using Stripe;
@@ -70,22 +68,11 @@ builder.Services.AddAuthentication()
         options.CallbackPath = "/signin-orcid";
     });
 
-builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-builder.Services.AddTransient<IEmailService, EmailService>();
-builder.Services.AddTransient<IEmailSender, EmailService>();
-builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddApplicationServices();
+builder.Services.AddInfrastructureServices(builder.Configuration, builder.Environment);
 
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();
-
-builder.Services.AddScoped<IReviewerRecommendationService, ReviewerRecommendationService>();
-builder.Services.AddScoped<ISubmissionService, SubmissionManager>();
-builder.Services.AddScoped<IReviewService, ReviewManager>();
-builder.Services.AddScoped<ISelectedConferenceService, SelectedConferenceService>();
-
-builder.Services.AddScoped<ICertificateService, CertificateService>();
-
-builder.Services.AddAutoMapper(typeof(GeneralMappingProfile));
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
@@ -171,6 +158,5 @@ app.MapControllerRoute(
     pattern: "{slug}/{controller=Home}/{action=Index}/{id?}");
 
 app.MapControllers();
-
 
 app.Run();

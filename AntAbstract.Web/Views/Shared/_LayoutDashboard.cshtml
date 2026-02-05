@@ -6,8 +6,8 @@
 
 @{
     var user = await UserManager.GetUserAsync(User);
-    var profileImg = !string.IsNullOrEmpty(user?.ProfileImagePath) 
-        ? user.ProfileImagePath 
+    var profileImg = !string.IsNullOrEmpty(user?.ProfileImagePath)
+        ? user.ProfileImagePath
         : $"https://ui-avatars.com/api/?name={user?.FirstName}+{user?.LastName}&background=00aeef&color=fff&size=128&bold=true";
     var displayName = user != null ? $"{user.FirstName} {user.LastName}" : User.Identity?.Name;
 
@@ -50,6 +50,16 @@
     var submissionIndexUrl = string.IsNullOrWhiteSpace(slug) ? "/Submission/Index" : $"/{slug}/Submission/Index";
     var submissionCreateUrl = string.IsNullOrWhiteSpace(slug) ? "/Submission/Create" : $"/{slug}/Submission/Create";
     var reviewIndexUrl = string.IsNullOrWhiteSpace(slug) ? "/Review/Index" : $"/{slug}/Review/Index";
+
+    // ✅ Hakem sayfaları (slug’lı)
+    var reviewInterestsUrl = string.IsNullOrWhiteSpace(slug) ? "/Review/Interests" : $"/{slug}/Review/Interests";
+    var reviewAvailabilityUrl = string.IsNullOrWhiteSpace(slug) ? "/Review/Availability" : $"/{slug}/Review/Availability";
+    var reviewConflictsUrl = string.IsNullOrWhiteSpace(slug) ? "/Review/Conflicts" : $"/{slug}/Review/Conflicts";
+    var reviewGuidelinesUrl = string.IsNullOrWhiteSpace(slug) ? "/Review/Guidelines" : $"/{slug}/Review/Guidelines";
+
+    // ✅ Sertifikalar (yeni controller)
+    var certificatesIndexUrl = string.IsNullOrWhiteSpace(slug) ? "/Certificates" : $"/{slug}/Certificates";
+
     var messageIndexUrl = string.IsNullOrWhiteSpace(slug) ? "/Message/Index" : $"/{slug}/Message/Index";
     var paymentMyUrl = string.IsNullOrWhiteSpace(slug) ? "/Payment/My" : $"/{slug}/Payment/My";
     var accommodationUrl = string.IsNullOrWhiteSpace(slug) ? "/Accommodation/Index" : $"/{slug}/Accommodation/Index";
@@ -84,10 +94,10 @@
     <title>@ViewData["Title"] - AntAbstract</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <style>
         :root {
             --sidebar-width: 270px;
@@ -111,7 +121,8 @@
             width: var(--sidebar-width);
             height: 100vh;
             position: fixed;
-            top: 0; left: 0;
+            top: 0;
+            left: 0;
             background-color: white;
             border-right: 1px solid #e2e8f0;
             z-index: 1050;
@@ -119,7 +130,10 @@
             flex-direction: column;
             transition: all 0.3s ease-in-out;
         }
-        body.sidebar-closed .sidebar { left: calc(var(--sidebar-width) * -1); }
+
+        body.sidebar-closed .sidebar {
+            left: calc(var(--sidebar-width) * -1);
+        }
 
         .sidebar-brand {
             height: var(--header-height);
@@ -133,58 +147,126 @@
             text-decoration: none;
         }
 
-        .sidebar-menu { padding: 1rem; flex-grow: 1; overflow-y: auto; list-style: none; }
-        .sidebar-menu::-webkit-scrollbar { width: 5px; }
-        .sidebar-menu::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .sidebar-menu {
+            padding: 1rem;
+            flex-grow: 1;
+            overflow-y: auto;
+            list-style: none;
+        }
+
+            .sidebar-menu::-webkit-scrollbar {
+                width: 5px;
+            }
+
+            .sidebar-menu::-webkit-scrollbar-thumb {
+                background: #e2e8f0;
+                border-radius: 10px;
+            }
 
         .menu-label {
-            font-size: 0.7rem; text-transform: uppercase; color: #94a3b8;
-            font-weight: 700; letter-spacing: 0.8px; margin: 1.5rem 0 0.5rem 0.8rem;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #94a3b8;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            margin: 1.5rem 0 0.5rem 0.8rem;
         }
-        .menu-label:first-child { margin-top: 0.5rem; }
+
+            .menu-label:first-child {
+                margin-top: 0.5rem;
+            }
 
         .nav-link {
-            display: flex; align-items: center; padding: 0.75rem 1rem;
-            color: var(--menu-text); font-weight: 600; font-size: 0.9rem;
-            border-radius: 0.6rem; margin-bottom: 0.2rem; transition: all 0.2s ease; text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: var(--menu-text);
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-radius: 0.6rem;
+            margin-bottom: 0.2rem;
+            transition: all 0.2s ease;
+            text-decoration: none;
         }
-        .nav-link:hover { background-color: var(--menu-hover-bg); color: var(--primary-color); transform: translateX(3px); }
-        .nav-link.active { background-color: var(--menu-active-bg); color: var(--menu-active-text); }
-        .nav-link i { width: 24px; font-size: 1rem; margin-right: 0.8rem; text-align: center; }
+
+            .nav-link:hover {
+                background-color: var(--menu-hover-bg);
+                color: var(--primary-color);
+                transform: translateX(3px);
+            }
+
+            .nav-link.active {
+                background-color: var(--menu-active-bg);
+                color: var(--menu-active-text);
+            }
+
+            .nav-link i {
+                width: 24px;
+                font-size: 1rem;
+                margin-right: 0.8rem;
+                text-align: center;
+            }
 
         .main-content {
             margin-left: var(--sidebar-width);
             min-height: 100vh;
             transition: all 0.3s ease-in-out;
-            display: flex; flex-direction: column;
+            display: flex;
+            flex-direction: column;
         }
-        body.sidebar-closed .main-content { margin-left: 0; }
+
+        body.sidebar-closed .main-content {
+            margin-left: 0;
+        }
 
         .top-header {
             height: var(--header-height);
             background-color: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border-bottom: 1px solid #e2e8f0;
-            position: sticky; top: 0; z-index: 1040;
+            position: sticky;
+            top: 0;
+            z-index: 1040;
             padding: 0 2rem;
-            display: flex; align-items: center; justify-content: space-between;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .header-icon-btn {
-            width: 40px; height: 40px;
-            display: flex; align-items: center; justify-content: center;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             border-radius: 50%;
-            color: #64748b; background: transparent;
-            transition: all 0.2s; cursor: pointer; text-decoration: none;
+            color: #64748b;
+            background: transparent;
+            transition: all 0.2s;
+            cursor: pointer;
+            text-decoration: none;
         }
-        .header-icon-btn:hover { background-color: #f1f5f9; color: var(--primary-color); }
+
+            .header-icon-btn:hover {
+                background-color: #f1f5f9;
+                color: var(--primary-color);
+            }
+
         .position-relative .badge-notify {
-            position: absolute; top: 2px; right: 2px; width: 8px; height: 8px;
-            background-color: #ef4444; border-radius: 50%; border: 2px solid #fff;
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 8px;
+            height: 8px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            border: 2px solid #fff;
         }
 
         .user-menu-btn {
-            display: flex; align-items: center; cursor: pointer;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
             padding: 6px 12px 6px 6px;
             border-radius: 50px;
             background-color: #fff;
@@ -192,39 +274,92 @@
             transition: all 0.2s;
             box-shadow: 0 2px 4px rgba(0,0,0,0.03);
         }
-        .user-menu-btn:hover { background-color: #f8fafc; border-color: #cbd5e1; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        
+
+            .user-menu-btn:hover {
+                background-color: #f8fafc;
+                border-color: #cbd5e1;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            }
+
         .user-avatar {
-            width: 42px; height: 42px;
-            border-radius: 50%; object-fit: cover;
-            border: 3px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .user-role-badge {
-            font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.5px; color: var(--primary-color);
-            background-color: rgba(0, 174, 239, 0.1);
-            padding: 2px 8px; border-radius: 10px; display: inline-block;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
-        .content-wrapper { padding: 2rem; flex-grow: 1; }
+        .user-role-badge {
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--primary-color);
+            background-color: rgba(0, 174, 239, 0.1);
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        .content-wrapper {
+            padding: 2rem;
+            flex-grow: 1;
+        }
 
         .sidebar-overlay {
             display: none;
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 1045;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1045;
         }
 
         @@media (max-width: 991px) {
-            .sidebar { transform: translateX(-100%); left: 0; }
-            .sidebar.show { transform: translateX(0); }
-            .main-content { margin-left: 0 !important; }
-            .content-wrapper { padding: 1rem; }
-            .sidebar-overlay.show { display: block; }
-            .top-header { padding: 0 1rem; }
-            body.sidebar-closed .sidebar { left: 0; }
-            .user-menu-btn { border: none; background: transparent; box-shadow: none; padding: 0; }
-            .user-avatar { width: 36px; height: 36px; border-width: 2px; }
+            .sidebar {
+                transform: translateX(-100%);
+                left: 0;
+            }
+
+                .sidebar.show {
+                    transform: translateX(0);
+                }
+
+            .main-content {
+                margin-left: 0 !important;
+            }
+
+            .content-wrapper {
+                padding: 1rem;
+            }
+
+            .sidebar-overlay.show {
+                display: block;
+            }
+
+            .top-header {
+                padding: 0 1rem;
+            }
+
+            body.sidebar-closed .sidebar {
+                left: 0;
+            }
+
+            .user-menu-btn {
+                border: none;
+                background: transparent;
+                box-shadow: none;
+                padding: 0;
+            }
+
+            .user-avatar {
+                width: 36px;
+                height: 36px;
+                border-width: 2px;
+            }
         }
     </style>
 </head>
@@ -251,24 +386,25 @@
                     <a href="@reviewIndexUrl" class="nav-link @(currentController == "Review" && currentAction == "Index" ? "active" : "")">
                         <i class="fas fa-gavel text-warning"></i> Hakem Görevlerim
                     </a>
-                    
-                    <a href="/Review/Interests" class="nav-link @(currentController == "Review" && currentAction == "Interests" ? "active" : "")">
+
+                    <a href="@reviewInterestsUrl" class="nav-link @(currentController == "Review" && currentAction == "Interests" ? "active" : "")">
                         <i class="fas fa-tags text-info"></i> Uzmanlık Alanlarım
                     </a>
 
-                    <a href="/Review/Availability" class="nav-link @(currentController == "Review" && currentAction == "Availability" ? "active" : "")">
+                    <a href="@reviewAvailabilityUrl" class="nav-link @(currentController == "Review" && currentAction == "Availability" ? "active" : "")">
                         <i class="fas fa-calendar-times text-danger"></i> Müsaitlik / İzin
                     </a>
 
-                    <a href="/Review/Conflicts" class="nav-link @(currentController == "Review" && currentAction == "Conflicts" ? "active" : "")">
+                    <a href="@reviewConflictsUrl" class="nav-link @(currentController == "Review" && currentAction == "Conflicts" ? "active" : "")">
                         <i class="fas fa-handshake-slash text-secondary"></i> Çıkar Çatışmaları
                     </a>
 
-                    <a href="/Review/Guidelines" class="nav-link @(currentController == "Review" && currentAction == "Guidelines" ? "active" : "")">
+                    <a href="@reviewGuidelinesUrl" class="nav-link @(currentController == "Review" && currentAction == "Guidelines" ? "active" : "")">
                         <i class="fas fa-book-open text-primary"></i> Hakem Kılavuzu
                     </a>
 
-                    <a href="/Review/MyCertificates" class="nav-link @(currentController == "Review" && currentAction == "MyCertificates" ? "active" : "")">
+                    @* ✅ Sertifikalarım artık CertificatesController/Index *@
+                    <a href="@certificatesIndexUrl" class="nav-link @(currentController == "Certificates" ? "active" : "")">
                         <i class="fas fa-certificate text-success"></i> Sertifikalarım
                     </a>
                 }
@@ -353,7 +489,7 @@
     </aside>
 
     <div class="main-content">
-        
+
         <header class="top-header">
             <div class="d-flex align-items-center">
                 <button class="btn btn-light shadow-sm me-3 border-0" id="sidebarToggle" onclick="toggleSidebar()">
@@ -420,7 +556,7 @@
             var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl)
             });
-            
+
             const isClosed = localStorage.getItem("sidebar-closed") === "true";
             if (isClosed) document.body.classList.add("sidebar-closed");
         });
@@ -431,10 +567,10 @@
         }
 
         function toggleMobileSidebar() {
-             const sidebar = document.getElementById('sidebar');
-             const overlay = document.getElementById('sidebarOverlay');
-             sidebar.classList.toggle('show');
-             overlay.classList.toggle('show');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
         }
     </script>
 

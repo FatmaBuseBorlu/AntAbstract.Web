@@ -83,11 +83,12 @@ namespace AntAbstract.Web.Controllers
 
                 if (conferenceId != Guid.Empty)
                 {
+  
                     await _certificateService.EnsureReviewerCertificateAsync(
-                        conferenceId: conferenceId,
-                        reviewerUserId: user.Id,
-                        reviewerFullName: reviewerName,
-                        email: user.Email ?? ""
+                        conferenceId,
+                        user.Id,
+                        reviewerName,
+                        user.Email ?? ""
                     );
                 }
 

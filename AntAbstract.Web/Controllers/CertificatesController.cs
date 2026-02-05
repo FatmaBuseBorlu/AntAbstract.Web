@@ -18,26 +18,25 @@ namespace AntAbstract.Web.Controllers
             _userManager = userManager;
         }
 
-        [HttpGet("/{slug}/Certificates/My")]
-        public async Task<IActionResult> My(string slug, Guid? conferenceId = null)
+        public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Unauthorized();
+            if (user == null) return Challenge();
 
-            var list = await _certificateService.GetMyCertificatesAsync(user.Id, conferenceId);
-            return View("~/Views/Certificates/My.cshtml", list);
+            var certs = await _certificateService.GetMyCertificatesAsync(user.Id);
+            return View(certs); 
         }
 
-        [HttpGet("/{slug}/Certificates/Download/{id:guid}")]
-        public async Task<IActionResult> Download(string slug, Guid id)
+        [HttpGet]
+        public async Task<IActionResult> Download(Guid id)
         {
             var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Unauthorized();
+            if (user == null) return Challenge();
 
             var bytes = await _certificateService.GetCertificateFileAsync(id, user.Id);
-            if (bytes == null) return NotFound();
+            if (bytes == null) return NotFound("Sertifika bulunamadı.");
 
-            return File(bytes, "application/pdf", "certificate.pdf");
+            return File(bytes, "application/pdf", $"certificate_{id}.pdf");
         }
     }
 }

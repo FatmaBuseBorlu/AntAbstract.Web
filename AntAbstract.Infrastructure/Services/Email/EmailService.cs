@@ -1,23 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MailKit.Net.Smtp;
+﻿using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.Extensions.Options;
 using MimeKit;
-using Microsoft.AspNetCore.Identity.UI.Services;
 
-namespace AntAbstract.Infrastructure.Services
+namespace AntAbstract.Infrastructure.Services.Email
 {
-    public class EmailService : IEmailService, IEmailSender
+    public class EmailService : IEmailService, Microsoft.AspNetCore.Identity.UI.Services.IEmailSender
     {
-        private readonly EmailSettings _emailSettings;
+        private readonly EmailOptions _emailSettings;
 
-        public EmailService(IOptions<EmailSettings> emailSettings)
+        public EmailService(IOptions<EmailOptions> emailSettings)
         {
             _emailSettings = emailSettings.Value;
         }
+
+        public Task SendAsync(string toEmail, string subject, string htmlMessage)
+            => SendEmailAsync(toEmail, subject, htmlMessage);
 
         public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage)
         {
@@ -31,7 +29,7 @@ namespace AntAbstract.Infrastructure.Services
             email.Body = builder.ToMessageBody();
 
             using var smtp = new SmtpClient();
-            await smtp.ConnectAsync(_emailSettings.SmtpServer, _emailSettings.Port, MailKit.Security.SecureSocketOptions.StartTls);
+            await smtp.ConnectAsync(_emailSettings.SmtpServer, _emailSettings.Port, SecureSocketOptions.StartTls);
             await smtp.AuthenticateAsync(_emailSettings.Username, _emailSettings.Password);
             await smtp.SendAsync(email);
             await smtp.DisconnectAsync(true);

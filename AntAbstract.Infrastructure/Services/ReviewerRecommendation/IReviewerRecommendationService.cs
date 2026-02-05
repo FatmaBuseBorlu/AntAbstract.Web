@@ -1,10 +1,9 @@
-﻿
-using AntAbstract.Domain.Entities;
+﻿using AntAbstract.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace AntAbstract.Infrastructure.Services
+namespace AntAbstract.Infrastructure.Services.ReviewerRecommendation
 {
     public interface IReviewerRecommendationService
     {
