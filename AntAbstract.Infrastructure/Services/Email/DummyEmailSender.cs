@@ -5,7 +5,7 @@ using System.Text;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using System.Threading.Tasks;
 
-namespace AntAbstract.Infrastructure.Services
+namespace AntAbstract.Infrastructure.Services.Email
 {
     public class DummyEmailSender : IEmailSender
     {

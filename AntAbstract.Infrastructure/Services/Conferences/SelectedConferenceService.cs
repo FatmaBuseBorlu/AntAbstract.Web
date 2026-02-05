@@ -1,9 +1,8 @@
 ﻿using AntAbstract.Infrastructure.Context;
-using AntAbstract.Infrastructure.Services;
 using Microsoft.AspNetCore.Http;
 using System;
 
-namespace AntAbstract.Web.Models.ViewModels
+namespace AntAbstract.Infrastructure.Services.Conferences
 {
     public class SelectedConferenceService : ISelectedConferenceService
     {

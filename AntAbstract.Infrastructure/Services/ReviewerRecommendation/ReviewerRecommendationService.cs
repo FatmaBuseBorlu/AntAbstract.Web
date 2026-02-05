@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace AntAbstract.Infrastructure.Services
+namespace AntAbstract.Infrastructure.Services.ReviewerRecommendation
 {
     public class ReviewerRecommendationService : IReviewerRecommendationService
     {

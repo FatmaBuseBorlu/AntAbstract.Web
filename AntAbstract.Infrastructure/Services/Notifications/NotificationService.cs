@@ -1,13 +1,13 @@
-﻿using AntAbstract.Application.Interfaces; 
+﻿using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
-using AntAbstract.Infrastructure.Context; 
+using AntAbstract.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace AntAbstract.Infrastructure.Services
+namespace AntAbstract.Infrastructure.Services.Notifications
 {
     public class NotificationService : INotificationService
     {

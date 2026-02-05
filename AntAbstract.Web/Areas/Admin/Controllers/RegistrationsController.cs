@@ -1,6 +1,6 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
-using AntAbstract.Infrastructure.Services;
+using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.ViewModels;
 using AntAbstract.Web.Models.ViewModels.Admin.Registrations;
 using AntAbstract.Web.Models.ViewModels.Shared;

@@ -2,7 +2,7 @@
 using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context; // DbContext için
-using AntAbstract.Infrastructure.Services;
+using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.ViewModels.Admin.Submissions;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;

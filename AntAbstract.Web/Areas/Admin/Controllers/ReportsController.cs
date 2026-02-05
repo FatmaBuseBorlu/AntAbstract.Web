@@ -1,6 +1,6 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
-using AntAbstract.Infrastructure.Services;
+using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.ViewModels.Admin.Reports;
 using AntAbstract.Web.Models.ViewModels.Shared;
 using ClosedXML.Excel;
