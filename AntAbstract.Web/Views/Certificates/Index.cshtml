@@ -1,0 +1,67 @@
+﻿@model List<AntAbstract.Domain.Entities.Certificate>
+
+@{
+    ViewData["Title"] = "Sertifikalarım";
+    Layout = "_LayoutDashboard";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-0 fw-bold">Sertifikalarım</h4>
+            <small class="text-muted">Kazanmış olduğunuz sertifikaları buradan indirebilirsiniz.</small>
+        </div>
+    </div>
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-info border-0 shadow-sm rounded-3">
+            Henüz görüntülenecek sertifika bulunamadı.
+        </div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tür</th>
+                            <th>Kongre</th>
+                            <th>Uygunluk</th>
+                            <th>Oluşturulma</th>
+                            <th class="text-end">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        @c.Type
+                                    </span>
+                                </td>
+                                <td>
+                                    @c.ConferenceId
+                                </td>
+                                <td>
+                                    @(c.EligibleAt.ToString("dd.MM.yyyy"))
+                                </td>
+                                <td>
+                                    @(c.GeneratedAt?.ToString("dd.MM.yyyy") ?? "-")
+                                </td>
+                                <td class="text-end">
+                                    <a class="btn btn-sm btn-outline-primary"
+                                       href="@Url.Action("Download", "Certificates", new { id = c.Id, slug = (string?)ViewContext.RouteData.Values["slug"] })">
+                                        <i class="fas fa-download me-1"></i> İndir
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
