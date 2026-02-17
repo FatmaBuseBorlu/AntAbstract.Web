@@ -1,0 +1,128 @@
+﻿@model List<AntAbstract.Domain.Entities.ConferencePageBlock>
+
+@{
+    ViewData["Title"] = "Website Blokları";
+
+    var culture = (string)ViewBag.Culture ?? "tr-TR";
+    var pageKey = (string)ViewBag.Page ?? "Home";
+
+    Guid? conferenceId = null;
+    if (ViewBag.ConferenceId != null)
+    {
+        conferenceId = (Guid)ViewBag.ConferenceId;
+    }
+
+    // slug route’dan gelsin; yoksa boş kalsın
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? "";
+}
+
+<h2>Website Blokları</h2>
+
+<div style="margin-bottom:16px;">
+    <form method="get"
+          asp-area="Admin"
+          asp-controller="Website"
+          asp-action="Index"
+          asp-route-slug="@slug">
+
+        <label>Culture:</label>
+        <select name="culture">
+            <option value="tr-TR" selected="@(culture == "tr-TR")">tr-TR</option>
+            <option value="en-US" selected="@(culture == "en-US")">en-US</option>
+        </select>
+
+        <label style="margin-left:12px;">Page:</label>
+        <select name="page">
+            <option value="Home" selected="@(pageKey == "Home")">Home</option>
+        </select>
+
+        <button type="submit">Filtrele</button>
+    </form>
+</div>
+
+<div style="margin-bottom:16px;">
+    @if (conferenceId.HasValue)
+    {
+        <a class="btn btn-primary"
+           asp-area="Admin"
+           asp-controller="Website"
+           asp-action="Create"
+           asp-route-slug="@slug"
+           asp-route-conferenceId="@(conferenceId.Value)"
+           asp-route-culture="@culture"
+           asp-route-page="@pageKey">
+            + Yeni Blok
+        </a>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            Bu tenant için konferans bulunamadı. Önce bir konferans ekleyin.
+        </div>
+    }
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Order</th>
+            <th>Type</th>
+            <th>Title</th>
+            <th>Active</th>
+            <th style="width:260px;">İşlemler</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model == null || !Model.Any())
+        {
+            <tr><td colspan="5">Henüz blok yok.</td></tr>
+        }
+        else
+        {
+            foreach (var b in Model)
+            {
+                <tr>
+                    <td>@b.Order</td>
+                    <td>@b.BlockType</td>
+                    <td>@b.Title</td>
+                    <td>@(b.IsActive ? "Yes" : "No")</td>
+                    <td>
+                        <a class="btn btn-sm btn-warning"
+                           asp-area="Admin"
+                           asp-controller="Website"
+                           asp-action="Edit"
+                           asp-route-slug="@slug"
+                           asp-route-id="@b.Id">
+                            Düzenle
+                        </a>
+
+                        <form asp-area="Admin"
+                              asp-controller="Website"
+                              asp-action="Toggle"
+                              asp-route-slug="@slug"
+                              asp-route-id="@b.Id"
+                              method="post"
+                              style="display:inline;">
+                            @Html.AntiForgeryToken()
+                            <button class="btn btn-sm btn-secondary" type="submit">
+                                @(b.IsActive ? "Pasif Yap" : "Aktif Yap")
+                            </button>
+                        </form>
+
+                        <form asp-area="Admin"
+                              asp-controller="Website"
+                              asp-action="Delete"
+                              asp-route-slug="@slug"
+                              asp-route-id="@b.Id"
+                              method="post"
+                              style="display:inline;"
+                              onsubmit="return confirm('Silmek istediğine emin misin?');">
+                            @Html.AntiForgeryToken()
+                            <button class="btn btn-sm btn-danger" type="submit">Sil</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>

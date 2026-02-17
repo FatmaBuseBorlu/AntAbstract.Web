@@ -23,7 +23,7 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<Session> Sessions { get; set; }
         public DbSet<CongressType> CongressTypes { get; set; }
         public DbSet<Conference> Conferences { get; set; }
-
+        public DbSet<ConferencePageBlock> ConferencePageBlocks { get; set; }
         public DbSet<Certificate> Certificates { get; set; }
         public DbSet<ConferenceAttendance> ConferenceAttendances { get; set; }
 
@@ -73,6 +73,10 @@ namespace AntAbstract.Infrastructure.Context
             builder.Entity<ConferenceAttendance>()
                 .HasIndex(x => new { x.ConferenceId, x.UserId })
                 .IsUnique();
+
+            builder.Entity<ConferencePageBlock>()
+                .HasIndex(x => new { x.TenantId, x.ConferenceId, x.Page, x.Culture, x.Order });
+
 
             builder.Entity<ReviewAssignment>()
                 .HasOne(ra => ra.Reviewer)

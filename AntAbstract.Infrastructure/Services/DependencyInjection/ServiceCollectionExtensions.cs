@@ -28,6 +28,8 @@ namespace AntAbstract.Infrastructure.Services.DependencyInjection
             services.AddScoped<ICertificateService, CertificateService>();
 
             services.AddScoped<IReviewerRecommendationService, ReviewerRecommendationService>();
+            services.AddScoped<IConferencePageBlockService, ConferencePageBlockService>();
+
 
             return services;
         }

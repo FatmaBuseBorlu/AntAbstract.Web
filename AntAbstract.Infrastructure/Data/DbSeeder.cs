@@ -13,44 +13,86 @@ namespace AntAbstract.Infrastructure.Data
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
             var userManager = serviceProvider.GetRequiredService<UserManager<AppUser>>();
 
-            string[] roleNames = { "Admin", "Author", "Referee", "Listener" };
+            string[] roleNames = { "Admin", "Author", "Referee", "Listener", "Editor", "Organizator", "Reviewer" };
 
             foreach (var roleName in roleNames)
             {
-                var roleExist = await roleManager.RoleExistsAsync(roleName);
-                if (!roleExist)
+                if (!await roleManager.RoleExistsAsync(roleName))
                 {
-                    await roleManager.CreateAsync(new IdentityRole(roleName)); 
+                    await roleManager.CreateAsync(new IdentityRole(roleName));
                 }
             }
 
+            await CreateOrUpdateUser(userManager,
+                email: "admin@ant.com",
+                firstName: "Admin",
+                lastName: "User",
+                password: "Admin123!",
+                role: "Admin"
+            );
 
-            await CreateUser(userManager, "admin@ant.com", "Admin", "User", "Admin123!", "Admin");
+            await CreateOrUpdateUser(userManager,
+                email: "hakem@ant.com",
+                firstName: "Hakem",
+                lastName: "Ahmet",
+                password: "Hakem123!",
+                role: "Referee"
+            );
 
-            await CreateUser(userManager, "hakem@ant.com", "Hakem", "Ahmet", "Hakem123!", "Referee");
+            await CreateOrUpdateUser(userManager,
+                email: "yazar@ant.com",
+                firstName: "Yazar",
+                lastName: "Mehmet",
+                password: "Yazar123!",
+                role: "Author"
+            );
 
-            await CreateUser(userManager, "yazar@ant.com", "Yazar", "Mehmet", "Yazar123!", "Author");
-
-            await CreateUser(userManager, "ogrenci@ant.com", "Ogrenci", "Ayse", "Ogrenci123!", "Listener");
+            await CreateOrUpdateUser(userManager,
+                email: "ogrenci@ant.com",
+                firstName: "Ogrenci",
+                lastName: "Ayse",
+                password: "Ogrenci123!",
+                role: "Listener"
+            );
         }
 
-        private static async Task CreateUser(UserManager<AppUser> userManager, string email, string fName, string lName, string password, string role)
+        private static async Task CreateOrUpdateUser(
+            UserManager<AppUser> userManager,
+            string email,
+            string firstName,
+            string lastName,
+            string password,
+            string role)
         {
-            if (await userManager.FindByEmailAsync(email) == null)
+            var user = await userManager.FindByEmailAsync(email);
+
+            if (user == null)
             {
-                var user = new AppUser
+                user = new AppUser
                 {
                     UserName = email,
                     Email = email,
-                    FirstName = fName,
-                    LastName = lName,
+                    FirstName = firstName,
+                    LastName = lastName,
                     EmailConfirmed = true
                 };
-                var createPowerUser = await userManager.CreateAsync(user, password);
-                if (createPowerUser.Succeeded)
+
+                var createResult = await userManager.CreateAsync(user, password);
+                if (!createResult.Succeeded)
                 {
-                    await userManager.AddToRoleAsync(user, role);
+
+                    return;
                 }
+            }
+            else
+            {
+  
+            }
+
+
+            if (!await userManager.IsInRoleAsync(user, role))
+            {
+                await userManager.AddToRoleAsync(user, role);
             }
         }
     }

@@ -17,7 +17,7 @@ namespace AntAbstract.Domain.Entities
         [StringLength(200)]
         public string? Institution { get; set; }
 
-        [EmailAddress]
+        [EmailAddress, StringLength(200)]
         public string? Email { get; set; }
 
         [StringLength(50)]
@@ -26,12 +26,16 @@ namespace AntAbstract.Domain.Entities
         public bool IsCorrespondingAuthor { get; set; }
         public int Order { get; set; }
 
+        [Required]
         public Guid SubmissionId { get; set; }
 
         [ForeignKey(nameof(SubmissionId))]
         public Submission Submission { get; set; } = null!;
 
+        [StringLength(450)]
         public string? AppUserId { get; set; }
 
+        [ForeignKey(nameof(AppUserId))]
+        public AppUser? AppUser { get; set; }
     }
 }
