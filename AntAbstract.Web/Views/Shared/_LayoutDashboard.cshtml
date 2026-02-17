@@ -75,6 +75,9 @@
     var registrationsUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Registrations" : $"/{slug}/Admin/Registrations";
     var registrationTypesUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/RegistrationTypes" : $"/{slug}/Admin/RegistrationTypes";
 
+    // ✅ Yeni: Website Yönetimi
+    var websiteAdminUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Website" : $"/{slug}/Admin/Website";
+
     var isAdmin = User.IsInRole("Admin") || User.IsInRole("Organizator");
     var isAuthor = User.IsInRole("Author");
     var isReferee = User.IsInRole("Referee");
@@ -403,7 +406,6 @@
                         <i class="fas fa-book-open text-primary"></i> Hakem Kılavuzu
                     </a>
 
-                    @* ✅ Sertifikalarım artık CertificatesController/Index *@
                     <a href="@certificatesIndexUrl" class="nav-link @(currentController == "Certificates" ? "active" : "")">
                         <i class="fas fa-certificate text-success"></i> Sertifikalarım
                     </a>
@@ -461,6 +463,11 @@
                 <a href="@conferencesUrl" class="nav-link @(currentController == "Conferences" ? "active" : "")"><i class="fas fa-sliders-h text-primary"></i> Kongre Tanımları</a>
                 <a href="@registrationsUrl" class="nav-link @(currentController == "Registrations" ? "active" : "")"><i class="fas fa-credit-card text-info"></i> Kayıtlar ve Ödemeler</a>
                 <a href="@registrationTypesUrl" class="nav-link @(currentController == "RegistrationTypes" ? "active" : "")"><i class="fas fa-tags text-primary"></i> Kayıt Tipleri</a>
+
+                <!-- ✅ Yeni: Website Yönetimi -->
+                <a href="@websiteAdminUrl" class="nav-link @(currentController == "Website" ? "active" : "")">
+                    <i class="fas fa-pen-to-square text-success"></i> Website Yönetimi
+                </a>
             }
 
             <div class="menu-label">İLETİŞİM</div>

@@ -8,9 +8,12 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace AntAbstract.Web.Controllers
+namespace AntAbstract.Web.Areas.Admin.Controllers
 {
+    [Area("Admin")]
     [Authorize(Roles = "Admin,Organizator")]
+    [Route("Tenants/{action=Index}/{id?}")]
+    [Route("Admin/Tenants/{action=Index}/{id?}")]
     public class TenantsController : Controller
     {
         private readonly AppDbContext _context;

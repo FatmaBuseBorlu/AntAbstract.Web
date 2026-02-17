@@ -1,0 +1,63 @@
+﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
+@using AntAbstract.Web.Models.WebsiteBlocks
+
+@{
+    var content = (HeroBlockContent)(ViewBag.Content ?? new HeroBlockContent());
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? "";
+
+    string FixUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return "#";
+        if (url.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return url;
+
+        // "/Submission/Create" gibi geldiyse tenant prefix ekle
+        if (!string.IsNullOrWhiteSpace(slug) && url.StartsWith("/"))
+            return "/" + slug + url;
+
+        return url;
+    }
+
+    var bg = content.BackgroundImageUrl;
+}
+
+<section class="py-5" style="background: linear-gradient(135deg, #0ea5e9, #1e293b); color:white; position:relative; overflow:hidden;">
+    @if (!string.IsNullOrWhiteSpace(bg))
+    {
+        <div style="position:absolute; inset:0; background:url('@bg') center/cover no-repeat; opacity:0.18;"></div>
+    }
+
+    <div class="container position-relative">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-5 fw-bold mb-3">@Model.Title</h1>
+                @if (!string.IsNullOrWhiteSpace(Model.Subtitle))
+                {
+                    <p class="lead mb-4" style="opacity:.92;">@Model.Subtitle</p>
+                }
+
+                <div class="d-flex flex-wrap gap-2">
+                    @if (!string.IsNullOrWhiteSpace(content.PrimaryButtonText))
+                    {
+                        <a class="btn btn-light btn-lg fw-semibold" href="@FixUrl(content.PrimaryButtonUrl)">
+                            @content.PrimaryButtonText
+                        </a>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(content.SecondaryButtonText))
+                    {
+                        <a class="btn btn-outline-light btn-lg fw-semibold" href="@FixUrl(content.SecondaryButtonUrl)">
+                            @content.SecondaryButtonText
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <div class="col-lg-4 d-none d-lg-block">
+                <div class="p-4 rounded-4" style="background: rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.18);">
+                    <div class="fw-semibold mb-2">Hızlı Bilgi</div>
+                    <div style="opacity:.9;">Bu alanı sonra “InfoCard” blok tipiyle dinamik yapacağız.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

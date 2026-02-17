@@ -223,20 +223,23 @@
     </div>
 </div>
 
+@{
+    var currentSlug = (string?)ViewContext.RouteData.Values["slug"] ?? "";
+}
 <div class="modal fade" id="assignReviewerModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form asp-controller="Review" asp-action="AssignReviewer" method="post">
+            <form asp-area="Admin" asp-controller="Assignment" asp-action="AssignPost" asp-route-slug="@currentSlug" method="post">
                 <div class="modal-header bg-light">
                     <h5 class="modal-title fw-bold">Hakem Atama</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="hidden" name="SubmissionId" value="@Model.Id" />
+                    <input type="hidden" name="submissionId" value="@Model.Id" />
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Listeden Hakem Seçiniz</label>
-                        <select name="ReviewerId" class="form-select" required>
+                        <select name="reviewerId" class="form-select" required>
                             <option value="">-- Seçim Yapınız --</option>
                             @if (ViewBag.Referees != null)
                             {

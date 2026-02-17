@@ -102,6 +102,21 @@
             transform: translateY(-2px);
         }
 
+        /* ✅ Yeni: Website Yönetimi butonu */
+        .nav-link.website-link {
+            color: #198754 !important;
+            background-color: rgba(25, 135, 84, 0.12);
+            border-radius: 6px;
+            padding: 6px 16px !important;
+            font-weight: 600;
+        }
+
+        .nav-link.website-link:hover {
+            background-color: #198754;
+            color: white !important;
+            transform: translateY(-2px);
+        }
+
         .footer-modern {
             background-color: var(--dark-bg);
             color: #94a3b8;
@@ -183,6 +198,11 @@
     var assignmentUrl = (hasSelectedConference && !string.IsNullOrWhiteSpace(slug))
         ? $"/{slug}/Admin/Assignment?conferenceId={selectedConferenceId.Value}"
         : "/Admin/Assignment";
+
+    /* ✅ Yeni: Website Yönetimi URL */
+    var websiteUrl = (!string.IsNullOrWhiteSpace(slug))
+        ? $"/{slug}/Admin/Website"
+        : "/Admin/Website";
 }
 
 <header>
@@ -218,9 +238,19 @@
                                 }
                             </a>
                         </li>
+
+                        @* ✅ 1.1 Website Yönetimi (konferans seçiliyse göster) *@
+                        @if (hasSelectedConference)
+                        {
+                            <li class="nav-item ms-lg-2">
+                                <a class="nav-link website-link shadow-sm" href="@websiteUrl">
+                                    <i class="fas fa-pen-to-square me-1"></i> Website Yönetimi
+                                </a>
+                            </li>
+                        }
                     }
                     
-                    @* --- 2. YENİ EKLENEN HAKEM BUTONU --- *@
+                    @* --- 2. HAKEM BUTONU --- *@
                     @if (isReferee && !hideAdminNav)
                     {
                         <li class="nav-item ms-lg-3">

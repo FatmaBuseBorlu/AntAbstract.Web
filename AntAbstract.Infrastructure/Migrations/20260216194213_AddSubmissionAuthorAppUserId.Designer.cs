@@ -4,6 +4,7 @@ using AntAbstract.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AntAbstract.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260216194213_AddSubmissionAuthorAppUserId")]
+    partial class AddSubmissionAuthorAppUserId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -363,65 +366,6 @@ namespace AntAbstract.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("ConferenceAttendances");
-                });
-
-            modelBuilder.Entity("AntAbstract.Domain.Entities.ConferencePageBlock", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("BlockType")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("ConferenceId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ContentJson")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Culture")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Page")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("Subtitle")
-                        .HasMaxLength(400)
-                        .HasColumnType("nvarchar(400)");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Title")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ConferenceId");
-
-                    b.HasIndex("TenantId", "ConferenceId", "Page", "Culture", "Order");
-
-                    b.ToTable("ConferencePageBlocks");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.CongressType", b =>
@@ -1309,17 +1253,6 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Navigation("Conference");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("AntAbstract.Domain.Entities.ConferencePageBlock", b =>
-                {
-                    b.HasOne("AntAbstract.Domain.Entities.Conference", "Conference")
-                        .WithMany()
-                        .HasForeignKey("ConferenceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Conference");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.Hotel", b =>

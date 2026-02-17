@@ -1,12 +1,15 @@
+using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
-using AntAbstract.Web.Models.ViewModels; 
+using AntAbstract.Web.Models.ViewModels;
 using AntAbstract.Web.Models.ViewModels.Shared;
+using AntAbstract.Web.Models.ViewModels.Website;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -15,12 +18,18 @@ namespace AntAbstract.Web.Controllers
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IConferencePageBlockService _pageBlockService;
 
-        public HomeController(AppDbContext context, TenantContext tenantContext, UserManager<AppUser> userManager)
+        public HomeController(
+            AppDbContext context,
+            TenantContext tenantContext,
+            UserManager<AppUser> userManager,
+            IConferencePageBlockService pageBlockService)
         {
             _context = context;
             _tenantContext = tenantContext;
             _userManager = userManager;
+            _pageBlockService = pageBlockService;
         }
 
         public async Task<IActionResult> Index()
@@ -30,12 +39,30 @@ namespace AntAbstract.Web.Controllers
                 var currentConference = await _context.Conferences
                     .Include(c => c.Tenant)
                     .Include(c => c.Registrations)
-                    .FirstOrDefaultAsync(c => c.TenantId == _tenantContext.Current.Id);
+                    .Where(c => c.TenantId == _tenantContext.Current.Id)
+                    .OrderByDescending(c => c.StartDate) 
+                    .FirstOrDefaultAsync();
 
-                if (currentConference == null) return NotFound("Kongre aktif deðil.");
-                return View("ConferenceHome", currentConference);
+                if (currentConference == null)
+                    return NotFound("Kongre aktif deðil.");
+
+                var culture = CultureInfo.CurrentUICulture.Name; 
+
+                var blocks = await _pageBlockService.GetBlocksAsync(
+                    tenantId: _tenantContext.Current.Id,
+                    conferenceId: currentConference.Id,
+                    page: "Home",
+                    culture: culture
+                );
+
+                var vm = new ConferenceHomePageViewModel
+                {
+                    Conference = currentConference,
+                    Blocks = blocks
+                };
+
+                return View("ConferenceHome", vm);
             }
-
 
             var user = await _userManager.GetUserAsync(User);
             var registeredConferenceIds = new List<Guid>();
@@ -55,27 +82,24 @@ namespace AntAbstract.Web.Controllers
 
             var lastSubmissions = await _context.Submissions
                 .AsNoTracking()
-                .Include(s => s.Conference) 
-                .Include(s => s.Author)     
-
+                .Include(s => s.Conference)
+                .Include(s => s.Author)
                 .Where(s => s.Status == SubmissionStatus.Accepted)
-
-                .OrderByDescending(s => s.CreatedDate) 
-                .Take(4) 
+                .OrderByDescending(s => s.CreatedDate)
+                .Take(4)
                 .Select(s => new SubmissionCardDto
                 {
                     Title = s.Title,
-
                     AbstractSnippet = (s.Abstract != null && s.Abstract.Length > 120)
                         ? s.Abstract.Substring(0, 120) + "..."
                         : s.Abstract ?? "Özet metni bulunmuyor.",
-
-                    AuthorName = s.Author != null ? $"{s.Author.FirstName} {s.Author.LastName}" : "Misafir Kullanýcý",
-
-                    University = s.Author != null ? (s.Author.Institution ?? "Kurum Belirtilmemiþ") : "",
-
+                    AuthorName = s.Author != null
+                        ? $"{s.Author.FirstName} {s.Author.LastName}"
+                        : "Misafir Kullanýcý",
+                    University = s.Author != null
+                        ? (s.Author.Institution ?? "Kurum Belirtilmemiþ")
+                        : "",
                     ConferenceName = s.Conference.Title,
-
                     AuthorImageUrl = (s.Author != null && !string.IsNullOrEmpty(s.Author.ProfileImagePath))
                         ? s.Author.ProfileImagePath
                         : $"https://ui-avatars.com/api/?name={(s.Author != null ? s.Author.FirstName : "A")}+{(s.Author != null ? s.Author.LastName : "A")}&background=random&color=fff"
@@ -85,9 +109,7 @@ namespace AntAbstract.Web.Controllers
             var model = new LandingPageViewModel
             {
                 TotalUsers = await _userManager.Users.CountAsync(),
-
                 ActiveCongressesCount = conferences.Count,
-
                 ActiveCongresses = conferences.Select(c => new CongressCardDto
                 {
                     Id = c.Id,
@@ -99,7 +121,6 @@ namespace AntAbstract.Web.Controllers
                     Slug = c.Slug ?? c.Id.ToString(),
                     IsRegistered = registeredConferenceIds.Contains(c.Id)
                 }).ToList(),
-
                 LastSubmissions = lastSubmissions
             };
 
@@ -108,12 +129,12 @@ namespace AntAbstract.Web.Controllers
 
         public async Task<IActionResult> Congresses()
         {
-
             var allCongresses = await _context.Conferences
                 .Include(c => c.Tenant)
                 .Include(c => c.Registrations)
                 .OrderBy(c => c.StartDate)
                 .ToListAsync();
+
             return View(allCongresses);
         }
 
@@ -129,13 +150,17 @@ namespace AntAbstract.Web.Controllers
                 CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(culture)),
                 new CookieOptions { Expires = DateTimeOffset.UtcNow.AddYears(1) }
             );
+
             return LocalRedirect(returnUrl);
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View(new ErrorViewModel
+            {
+                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
+            });
         }
     }
 }

@@ -1,0 +1,63 @@
+﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
+@using AntAbstract.Domain.Entities
+
+@{
+    ViewData["Title"] = "Blok Düzenle";
+}
+
+<h2>Blok Düzenle</h2>
+
+<form method="post">
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="ConferenceId" />
+    <input type="hidden" asp-for="TenantId" />
+
+    <div class="form-group">
+        <label asp-for="Page"></label>
+        <input class="form-control" asp-for="Page" />
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Culture"></label>
+        <select class="form-control" asp-for="Culture">
+            <option value="tr-TR">tr-TR</option>
+            <option value="en-US">en-US</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="BlockType"></label>
+        <select class="form-control" asp-for="BlockType" asp-items="Html.GetEnumSelectList<ConferencePageBlockType>()"></select>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Title"></label>
+        <input class="form-control" asp-for="Title" />
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Subtitle"></label>
+        <input class="form-control" asp-for="Subtitle" />
+    </div>
+
+    <div class="form-group">
+        <label asp-for="ContentJson">ContentJson</label>
+        <textarea class="form-control" asp-for="ContentJson" rows="6"></textarea>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Order"></label>
+        <input class="form-control" asp-for="Order" type="number" />
+    </div>
+
+    <div class="form-group">
+        <label>
+            <input asp-for="IsActive" /> Aktif
+        </label>
+    </div>
+
+    <button class="btn btn-success" type="submit">Kaydet</button>
+    <a class="btn btn-secondary" asp-area="Admin" asp-controller="Website" asp-action="Index">İptal</a>
+</form>

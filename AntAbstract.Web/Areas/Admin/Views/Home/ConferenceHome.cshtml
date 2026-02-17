@@ -1,0 +1,12 @@
+﻿@model AntAbstract.Web.Models.ViewModels.Website.ConferenceHomePageViewModel
+
+@using AntAbstract.Domain.Entities
+
+@{
+    var hero = Model.Blocks.FirstOrDefault(x => x.BlockType == ConferencePageBlockType.Hero && x.IsActive);
+}
+
+@if (hero != null)
+{
+    @await Component.InvokeAsync("ConferenceHero", hero)
+}
