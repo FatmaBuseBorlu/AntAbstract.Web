@@ -1,0 +1,46 @@
+﻿@{
+    var title = ViewData["Title"] as string ?? "Admin";
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@title - AntAbstract</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #f3f4f6;
+        }
+
+        .page-wrap {
+            max-width: 1100px;
+            margin: 28px auto;
+        }
+
+        .card {
+            border: 0;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(15,23,42,.06);
+        }
+
+        .muted {
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrap px-3">
+        @RenderBody()
+    </div>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

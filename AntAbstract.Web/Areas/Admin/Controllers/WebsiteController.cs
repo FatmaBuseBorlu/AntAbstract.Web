@@ -2,14 +2,13 @@
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
     [Authorize(Roles = "Admin,Organizator,Editor")]
-    [Route("Admin/[controller]/{action=Index}")]
-    [Route("{slug}/Admin/[controller]/{action=Index}")]
     public class WebsiteController : Controller
     {
         private readonly AppDbContext _context;
@@ -21,20 +20,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _tenantContext = tenantContext;
         }
 
-        private string? CurrentSlug =>
-            RouteData.Values["slug"]?.ToString() ?? _tenantContext.Current?.Slug;
+        private string? CurrentSlug => RouteData.Values["slug"]?.ToString();
 
-        private object IndexRouteValues(Guid? conferenceId, string culture, string pageName)
-            => new { slug = CurrentSlug, conferenceId, culture, pageName };
-
-        public async Task<IActionResult> Index(
-            string culture = "tr-TR",
-            string pageName = "Home",
-            Guid? conferenceId = null)
+        [HttpGet]
+        public async Task<IActionResult> Index(string culture = "tr-TR", string page = "Home", Guid? conferenceId = null)
         {
             var tenant = _tenantContext.Current;
             if (tenant == null)
-                return BadRequest("Tenant bulunamadı. Slug çözümleme başarısız.");
+                return BadRequest("Tenant bulunamadı. URL'yi /{slug}/Admin/Website şeklinde açmalısın.");
 
             var tenantId = tenant.Id;
 
@@ -43,51 +36,50 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .OrderByDescending(x => x.StartDate)
                 .ToListAsync();
 
-            var selectedConference =
-                (conferenceId.HasValue
-                    ? conferences.FirstOrDefault(x => x.Id == conferenceId.Value)
-                    : null)
-                ?? conferences.FirstOrDefault();
-
-            if (selectedConference == null)
-            {
-                TempData["ErrorMessage"] = "Bu tenant için konferans bulunamadı.";
-                ViewBag.Culture = culture;
-                ViewBag.PageName = pageName;
-                ViewBag.ConferenceId = null;
-                ViewBag.Conferences = conferences;
-                return View(new List<ConferencePageBlock>());
-            }
+            var selectedConferenceId = conferenceId ?? conferences.FirstOrDefault()?.Id;
 
             ViewBag.Culture = culture;
-            ViewBag.PageName = pageName;
-            ViewBag.ConferenceId = selectedConference.Id;
-            ViewBag.Conferences = conferences;
+            ViewBag.Page = page;
+            ViewBag.ConferenceId = selectedConferenceId;
 
-            var blocks = await _context.ConferencePageBlocks
-                .Where(x => x.TenantId == tenantId
-                            && x.ConferenceId == selectedConference.Id
-                            && x.Page == pageName
-                            && x.Culture == culture)
-                .OrderBy(x => x.Order)
-                .ToListAsync();
+            ViewBag.CultureOptions = new List<SelectListItem>
+            {
+                new SelectListItem { Value = "tr-TR", Text = "tr-TR", Selected = culture == "tr-TR" },
+                new SelectListItem { Value = "en-US", Text = "en-US", Selected = culture == "en-US" },
+            };
+
+            ViewBag.PageOptions = new List<SelectListItem>
+            {
+                new SelectListItem { Value = "Home", Text = "Home", Selected = page == "Home" }
+            };
+
+            ViewBag.ConferenceOptions = conferences
+                .Select(c => new SelectListItem
+                {
+                    Value = c.Id.ToString(),
+                    Text = c.Title,
+                    Selected = selectedConferenceId.HasValue && c.Id == selectedConferenceId.Value
+                })
+                .ToList();
+
+            var blocks = new List<ConferencePageBlock>();
+
+            if (selectedConferenceId.HasValue)
+            {
+                blocks = await _context.ConferencePageBlocks
+                    .Where(x => x.TenantId == tenantId
+                                && x.ConferenceId == selectedConferenceId.Value
+                                && x.Page == page
+                                && x.Culture == culture)
+                    .OrderBy(x => x.Order)
+                    .ToListAsync();
+            }
 
             return View(blocks);
         }
-        [HttpGet]
-        public IActionResult CreateWithConference(Guid conferenceId, string culture = "tr-TR", string pageName = "Home")
-        {
-            return RedirectToAction(nameof(Create), new
-            {
-                slug = CurrentSlug,
-                conferenceId,
-                culture,
-                pageName
-            });
-        }
 
         [HttpGet]
-        public async Task<IActionResult> Create(Guid conferenceId, string culture = "tr-TR", string pageName = "Home")
+        public async Task<IActionResult> Create(Guid conferenceId, string culture = "tr-TR", string page = "Home")
         {
             var tenant = _tenantContext.Current;
             if (tenant == null) return BadRequest("Tenant bulunamadı.");
@@ -95,16 +87,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var tenantId = tenant.Id;
 
             var exists = await _context.Conferences.AnyAsync(x => x.Id == conferenceId && x.TenantId == tenantId);
-            if (!exists) return NotFound("Konferans bulunamadı / bu tenant'a ait değil.");
+            if (!exists) return NotFound();
 
             var model = new ConferencePageBlock
             {
                 TenantId = tenantId,
                 ConferenceId = conferenceId,
                 Culture = culture,
-                Page = pageName,
+                Page = page,
                 IsActive = true,
-                Order = 0
+                Order = 0,
+                BlockType = ConferencePageBlockType.Hero,
+                ContentJson = "{\"buttonText\":\"Kayıt Ol\",\"buttonUrl\":\"/register\"}"
             };
 
             return View(model);
@@ -121,17 +115,23 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             model.TenantId = tenantId;
 
             var ok = await _context.Conferences.AnyAsync(x => x.Id == model.ConferenceId && x.TenantId == tenantId);
-            if (!ok) return NotFound("Konferans bulunamadı / bu tenant'a ait değil.");
+            if (!ok) return NotFound();
 
             if (!ModelState.IsValid) return View(model);
 
             model.CreatedAt = DateTime.UtcNow;
-
             _context.ConferencePageBlocks.Add(model);
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Blok eklendi.";
-            return RedirectToAction(nameof(Index), IndexRouteValues(model.ConferenceId, model.Culture, model.Page));
+
+            return RedirectToAction(nameof(Index), new
+            {
+                slug = CurrentSlug,
+                culture = model.Culture,
+                page = model.Page,
+                conferenceId = model.ConferenceId
+            });
         }
 
         [HttpGet]
@@ -178,7 +178,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Blok güncellendi.";
-            return RedirectToAction(nameof(Index), IndexRouteValues(block.ConferenceId, block.Culture, block.Page));
+
+            return RedirectToAction(nameof(Index), new
+            {
+                slug = CurrentSlug,
+                culture = block.Culture,
+                page = block.Page,
+                conferenceId = block.ConferenceId
+            });
         }
 
         [HttpPost]
@@ -201,7 +208,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = block.IsActive ? "Blok aktif edildi." : "Blok pasif edildi.";
-            return RedirectToAction(nameof(Index), IndexRouteValues(block.ConferenceId, block.Culture, block.Page));
+
+            return RedirectToAction(nameof(Index), new
+            {
+                slug = CurrentSlug,
+                culture = block.Culture,
+                page = block.Page,
+                conferenceId = block.ConferenceId
+            });
         }
 
         [HttpPost]
@@ -222,7 +236,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Blok silindi.";
-            return RedirectToAction(nameof(Index), IndexRouteValues(block.ConferenceId, block.Culture, block.Page));
+
+            return RedirectToAction(nameof(Index), new
+            {
+                slug = CurrentSlug,
+                culture = block.Culture,
+                page = block.Page,
+                conferenceId = block.ConferenceId
+            });
         }
     }
 }

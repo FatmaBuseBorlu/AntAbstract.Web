@@ -2,82 +2,87 @@
 @using AntAbstract.Domain.Entities
 
 @{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
     ViewData["Title"] = "Blok Ekle";
 
     var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? "";
-    var culture = Model?.Culture ?? "tr-TR";
-    var pageKey = Model?.Page ?? "Home";
+    var backUrl = Url.Action("Index", "Website", new { area = "Admin", slug = slug, culture = Model.Culture, page = Model.Page, conferenceId = Model.ConferenceId });
+    var postUrl = Url.Action("Create", "Website", new { area = "Admin", slug = slug });
 }
 
-<h2>Blok Ekle</h2>
+<div class="card">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h3 class="mb-1">Blok Ekle</h3>
+                <div class="muted">Hero / diğer blok tiplerini buradan oluşturabilirsin</div>
+            </div>
 
-<form asp-area="Admin"
-      asp-controller="Website"
-      asp-action="Create"
-      asp-route-slug="@slug"
-      method="post">
-    @Html.AntiForgeryToken()
+            <a class="btn btn-outline-secondary" href="@backUrl">
+                <i class="fa-solid fa-arrow-left me-2"></i>Geri
+            </a>
+        </div>
 
-    <input type="hidden" asp-for="ConferenceId" />
-    <input type="hidden" asp-for="TenantId" />
-    <input type="hidden" asp-for="Culture" />
-    <input type="hidden" asp-for="Page" />
+        <hr class="my-4" />
 
-    <div class="form-group">
-        <label asp-for="Culture"></label>
-        <select class="form-control" asp-for="Culture">
-            <option value="tr-TR" selected="@(culture == "tr-TR")">tr-TR</option>
-            <option value="en-US" selected="@(culture == "en-US")">en-US</option>
-        </select>
+        <form method="post" action="@postUrl" class="row g-3">
+            @Html.AntiForgeryToken()
+
+            <input type="hidden" asp-for="ConferenceId" />
+            <input type="hidden" asp-for="TenantId" />
+
+            <div class="col-12 col-md-4">
+                <label class="form-label">Page</label>
+                <input class="form-control" asp-for="Page" />
+            </div>
+
+            <div class="col-12 col-md-4">
+                <label class="form-label">Culture</label>
+                <select class="form-select" asp-for="Culture">
+                    <option value="tr-TR">tr-TR</option>
+                    <option value="en-US">en-US</option>
+                </select>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <label class="form-label">BlockType</label>
+                <select class="form-select" asp-for="BlockType" asp-items="Html.GetEnumSelectList<ConferencePageBlockType>()"></select>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <label class="form-label">Title</label>
+                <input class="form-control" asp-for="Title" />
+            </div>
+
+            <div class="col-12 col-md-6">
+                <label class="form-label">Subtitle</label>
+                <input class="form-control" asp-for="Subtitle" />
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">ContentJson</label>
+                <textarea class="form-control" asp-for="ContentJson" rows="8" placeholder='{"buttonText":"Kayıt Ol","buttonUrl":"/register"}'></textarea>
+                <div class="form-text muted">Şimdilik JSON giriyoruz. Bir sonraki adımda Hero için özel form yapacağız.</div>
+            </div>
+
+            <div class="col-12 col-md-3">
+                <label class="form-label">Order</label>
+                <input class="form-control" asp-for="Order" type="number" />
+            </div>
+
+            <div class="col-12 col-md-3 d-flex align-items-end">
+                <div class="form-check">
+                    <input class="form-check-input" asp-for="IsActive" />
+                    <label class="form-check-label" for="IsActive">Aktif</label>
+                </div>
+            </div>
+
+            <div class="col-12 d-flex gap-2 mt-2">
+                <button class="btn btn-success" type="submit">
+                    <i class="fa-regular fa-floppy-disk me-2"></i>Kaydet
+                </button>
+                <a class="btn btn-outline-secondary" href="@backUrl">İptal</a>
+            </div>
+        </form>
     </div>
-
-    <div class="form-group">
-        <label asp-for="Page"></label>
-        <input class="form-control" asp-for="Page" />
-    </div>
-
-    <div class="form-group">
-        <label asp-for="BlockType"></label>
-        <select class="form-control" asp-for="BlockType"
-                asp-items="Html.GetEnumSelectList<ConferencePageBlockType>()">
-        </select>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="Title"></label>
-        <input class="form-control" asp-for="Title" />
-    </div>
-
-    <div class="form-group">
-        <label asp-for="Subtitle"></label>
-        <input class="form-control" asp-for="Subtitle" />
-    </div>
-
-    <div class="form-group">
-        <label asp-for="ContentJson">ContentJson (şimdilik textarea)</label>
-        <textarea class="form-control" asp-for="ContentJson" rows="6"></textarea>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="Order"></label>
-        <input class="form-control" asp-for="Order" type="number" />
-    </div>
-
-    <div class="form-group">
-        <label>
-            <input asp-for="IsActive" /> Aktif
-        </label>
-    </div>
-
-    <button class="btn btn-success" type="submit">Kaydet</button>
-
-    <a class="btn btn-secondary"
-       asp-area="Admin"
-       asp-controller="Website"
-       asp-action="Index"
-       asp-route-slug="@slug"
-       asp-route-culture="@culture"
-       asp-route-page="@pageKey">
-        İptal
-    </a>
-</form>
+</div>

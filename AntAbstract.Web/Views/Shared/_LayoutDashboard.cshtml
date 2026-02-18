@@ -43,7 +43,6 @@
     }
     selectedConferenceTitle ??= Context.Session.GetString("SelectedConferenceTitle");
 
-    // Link Tanımları
     var dashboardUrl = string.IsNullOrWhiteSpace(slug) ? "/Dashboard" : $"/{slug}/Dashboard";
     var dashboardMyConferencesUrl = string.IsNullOrWhiteSpace(slug) ? "/Dashboard/MyConferences" : $"/{slug}/Dashboard/MyConferences";
     var submissionsAdminUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Submissions" : $"/{slug}/Admin/Submissions";
@@ -51,13 +50,11 @@
     var submissionCreateUrl = string.IsNullOrWhiteSpace(slug) ? "/Submission/Create" : $"/{slug}/Submission/Create";
     var reviewIndexUrl = string.IsNullOrWhiteSpace(slug) ? "/Review/Index" : $"/{slug}/Review/Index";
 
-    // ✅ Hakem sayfaları (slug’lı)
     var reviewInterestsUrl = string.IsNullOrWhiteSpace(slug) ? "/Review/Interests" : $"/{slug}/Review/Interests";
     var reviewAvailabilityUrl = string.IsNullOrWhiteSpace(slug) ? "/Review/Availability" : $"/{slug}/Review/Availability";
     var reviewConflictsUrl = string.IsNullOrWhiteSpace(slug) ? "/Review/Conflicts" : $"/{slug}/Review/Conflicts";
     var reviewGuidelinesUrl = string.IsNullOrWhiteSpace(slug) ? "/Review/Guidelines" : $"/{slug}/Review/Guidelines";
 
-    // ✅ Sertifikalar (yeni controller)
     var certificatesIndexUrl = string.IsNullOrWhiteSpace(slug) ? "/Certificates" : $"/{slug}/Certificates";
 
     var messageIndexUrl = string.IsNullOrWhiteSpace(slug) ? "/Message/Index" : $"/{slug}/Message/Index";
@@ -75,7 +72,6 @@
     var registrationsUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Registrations" : $"/{slug}/Admin/Registrations";
     var registrationTypesUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/RegistrationTypes" : $"/{slug}/Admin/RegistrationTypes";
 
-    // ✅ Yeni: Website Yönetimi
     var websiteAdminUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Website" : $"/{slug}/Admin/Website";
 
     var isAdmin = User.IsInRole("Admin") || User.IsInRole("Organizator");
@@ -464,7 +460,6 @@
                 <a href="@registrationsUrl" class="nav-link @(currentController == "Registrations" ? "active" : "")"><i class="fas fa-credit-card text-info"></i> Kayıtlar ve Ödemeler</a>
                 <a href="@registrationTypesUrl" class="nav-link @(currentController == "RegistrationTypes" ? "active" : "")"><i class="fas fa-tags text-primary"></i> Kayıt Tipleri</a>
 
-                <!-- ✅ Yeni: Website Yönetimi -->
                 <a href="@websiteAdminUrl" class="nav-link @(currentController == "Website" ? "active" : "")">
                     <i class="fas fa-pen-to-square text-success"></i> Website Yönetimi
                 </a>
