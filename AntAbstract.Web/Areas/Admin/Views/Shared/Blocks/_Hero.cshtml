@@ -1,0 +1,41 @@
+﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
+@using System.Text.Json
+@using AntAbstract.Web.Models.ViewModels.Website
+
+@{
+    HeroBlockContentDto content = new();
+
+    if (!string.IsNullOrWhiteSpace(Model.ContentJson))
+    {
+        try
+        {
+            content = JsonSerializer.Deserialize<HeroBlockContentDto>(
+                Model.ContentJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            ) ?? new HeroBlockContentDto();
+        }
+        catch
+        {
+            // JSON bozuksa sayfayı patlatma, sadece boş geç
+            content = new HeroBlockContentDto();
+        }
+    }
+
+    var title = Model.Title ?? "";
+    var subtitle = Model.Subtitle ?? "";
+
+    var btnText = content.ButtonText ?? "Kayıt Ol";
+    var btnUrl = content.ButtonUrl ?? "/register";
+    var bg = content.BackgroundImageUrl;
+}
+
+<section class="py-5" style="@(string.IsNullOrWhiteSpace(bg) ? "" : $"background-image:url('{bg}'); background-size:cover; background-position:center;")">
+    <div class="container">
+        <div class="p-5 rounded-4 bg-white bg-opacity-75">
+            <h2 class="mb-2">@title</h2>
+            <p class="mb-4">@subtitle</p>
+
+            <a class="btn btn-primary" href="@btnUrl">@btnText</a>
+        </div>
+    </div>
+</section>

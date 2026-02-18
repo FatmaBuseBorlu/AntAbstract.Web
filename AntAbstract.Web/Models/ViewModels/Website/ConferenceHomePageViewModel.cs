@@ -7,5 +7,7 @@ namespace AntAbstract.Web.Models.ViewModels.Website
     {
         public Conference Conference { get; set; } = null!;
         public List<ConferencePageBlock> Blocks { get; set; } = new();
+        public string Culture { get; set; } = "tr-TR";
+        public string Page { get; set; } = "Home";
     }
 }

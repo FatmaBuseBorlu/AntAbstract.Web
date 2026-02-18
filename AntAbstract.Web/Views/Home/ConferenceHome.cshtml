@@ -1,170 +1,137 @@
-﻿@model AntAbstract.Domain.Entities.Conference
+﻿@model AntAbstract.Web.Models.ViewModels.Website.ConferenceHomePageViewModel
 @using Microsoft.AspNetCore.Identity
 @using AntAbstract.Domain.Entities
 @inject SignInManager<AppUser> SignInManager
 
 @{
-    ViewData["Title"] = Model.Title;
+    ViewData["Title"] = Model.Conference.Title;
     Layout = "_Layout";
 
     var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
 }
 
-<style>
-    .conf-hero {
-        position: relative;
-        background-color: #0f172a;
-        background-size: cover;
-        background-position: center;
-        color: white;
-        padding: 180px 0 120px 0;
-        margin-bottom: 60px;
-    }
-
-    .hero-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(180deg, rgba(15, 23, 42, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
-    }
-
-    .info-cards-container {
-        margin-top: -80px;
-        position: relative;
-        z-index: 10;
-    }
-
-    .modern-card {
-        background: #fff;
-        border-radius: 12px;
-        padding: 30px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        border-top: 4px solid transparent;
-        transition: transform 0.3s ease;
-        height: 100%;
-    }
-
-        .modern-card:hover {
-            transform: translateY(-5px);
+@* ==========================================
+   1. DİNAMİK BLOK SİSTEMİ (YENİ YÖNTEM) 
+   ========================================== *@
+@if (Model.Blocks != null && Model.Blocks.Any(b => b.IsActive))
+{
+    // Sadece aktif olanları Sıra (Order) numarasına göre diz ve ekrana bas
+    foreach (var block in Model.Blocks.Where(b => b.IsActive).OrderBy(x => x.Order))
+    {
+        if (block.BlockType == ConferencePageBlockType.Hero)
+        {
+            @* DÜZELTME: Dosya yolunun başına ~/Areas/Admin/ eklendi *@
+            <partial name="~/Areas/Admin/Views/Shared/Blocks/_HeroBlock.cshtml" model="block" />
         }
-
-    .card-dates {
-        border-top-color: #00aeef;
+        else
+        {
+            @* DÜZELTME: Dosya yolunun başına ~/Areas/Admin/ eklendi *@
+            <partial name="~/Areas/Admin/Views/Shared/Blocks/_RawBlock.cshtml" model="block" />
+        }
     }
-
-    .card-download {
-        border-top-color: #f59e0b;
-    }
-
-    .card-contact {
-        border-top-color: #10b981;
-    }
-
-    .icon-box {
-        width: 50px;
-        height: 50px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        margin-bottom: 20px;
-    }
-
-    .bg-blue-light {
-        background-color: rgba(0, 174, 239, 0.1);
-        color: #00aeef;
-    }
-
-    .bg-orange-light {
-        background-color: rgba(245, 158, 11, 0.1);
-        color: #f59e0b;
-    }
-
-    .bg-green-light {
-        background-color: rgba(16, 185, 129, 0.1);
-        color: #10b981;
-    }
-
-    .btn-hero-primary {
-        background-color: #00aeef;
-        color: white;
-        font-weight: bold;
-        padding: 12px 40px;
-        border-radius: 50px;
-        border: none;
-        box-shadow: 0 4px 15px rgba(0, 174, 239, 0.4);
-        transition: all 0.3s;
-        text-decoration: none;
-        display: inline-block;
-    }
-
-        .btn-hero-primary:hover {
-            background-color: #0095cc;
-            transform: translateY(-2px);
+}
+@* ==========================================
+   2. SABİT TASARIM (ESKİ YÖNTEM - YEDEK) 
+   Hiç blok eklenmemişse burası çalışır.
+   ========================================== *@
+else
+{
+    <style>
+        .conf-hero {
+            position: relative;
+            background-color: #0f172a;
+            background-size: cover;
+            background-position: center;
             color: white;
+            padding: 180px 0 120px 0;
+            margin-bottom: 60px;
         }
-</style>
 
-<div class="conf-hero" style="background-image: url('@(string.IsNullOrEmpty(Model.BannerPath) ? "https://placehold.co/1920x800/0f172a/FFF?text=Kongre+Banner" : Model.BannerPath)');">
-    <div class="hero-overlay"></div>
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
+        }
 
-    <div class="container position-relative text-center z-2">
+        .info-cards-container {
+            margin-top: -80px;
+            position: relative;
+            z-index: 10;
+        }
 
-        <span class="badge border border-white text-white px-3 py-2 rounded-pill mb-4 fw-light tracking-wider">
-            @Model.Tenant.Slug.ToUpper()
-        </span>
+        .btn-hero-primary {
+            background-color: #00aeef;
+            color: white;
+            font-weight: bold;
+            padding: 12px 40px;
+            border-radius: 50px;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0, 174, 239, 0.4);
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
 
-        <h1 class="display-4 fw-bold mb-4 lh-sm">@Model.Title</h1>
-
-        <div class="d-flex justify-content-center gap-4 text-white-50 mb-5 fs-5">
-            <span><i class="far fa-calendar-alt me-2 text-white"></i> @Model.StartDate.ToString("d MMMM yyyy")</span>
-            <span class="d-none d-md-block">|</span>
-            <span><i class="fas fa-map-marker-alt me-2 text-white"></i> @Model.City, @Model.Country</span>
-        </div>
-
-        <div>
-            @if (registeredIds.Contains(Model.Id))
-            {
-                <div class="d-flex justify-content-center gap-3">
-                    <div class="btn btn-success btn-lg px-4 fw-bold" style="cursor: default;">
-                        <i class="fas fa-check-circle me-2"></i> KAYITLISINIZ
-                    </div>
-
-                    <a asp-route="PayForConferenceRoute"
-                       asp-route-slug="@Model.Slug"
-                       asp-route-conferenceId="@Model.Id"
-                       class="btn btn-outline-light btn-lg px-4 fw-bold">ÖDEME YAP</a>
-
-
-                </div>
+            .btn-hero-primary:hover {
+                background-color: #0095cc;
+                transform: translateY(-2px);
+                color: white;
             }
-            else
-            {
-                if (SignInManager.IsSignedIn(User))
+    </style>
+
+    <div class="conf-hero" style="background-image: url('@(string.IsNullOrEmpty(Model.Conference.BannerPath) ? "https://placehold.co/1920x800/0f172a/FFF?text=Kongre+Banner" : Model.Conference.BannerPath)');">
+        <div class="hero-overlay"></div>
+
+        <div class="container position-relative text-center z-2">
+
+            <span class="badge border border-white text-white px-3 py-2 rounded-pill mb-4 fw-light tracking-wider">
+                @Model.Conference.Tenant.Slug.ToUpper()
+            </span>
+
+            <h1 class="display-4 fw-bold mb-4 lh-sm">@Model.Conference.Title</h1>
+
+            <div class="d-flex justify-content-center gap-4 text-white-50 mb-5 fs-5">
+                <span><i class="far fa-calendar-alt me-2 text-white"></i> @Model.Conference.StartDate.ToString("d MMMM yyyy")</span>
+                <span class="d-none d-md-block">|</span>
+                <span><i class="fas fa-map-marker-alt me-2 text-white"></i> @Model.Conference.City, @Model.Conference.Country</span>
+            </div>
+
+            <div>
+                @if (registeredIds.Contains(Model.Conference.Id))
                 {
-                    <a asp-controller="Registration"
-                       asp-action="Index"
-                       asp-route-slug="@Model.Tenant.Slug"
-                       class="btn btn-hero-primary btn-lg">
-                        HEMEN KAYIT OL
-                    </a>
+                    <div class="d-flex justify-content-center gap-3">
+                        <div class="btn btn-success btn-lg px-4 fw-bold" style="cursor: default;">
+                            <i class="fas fa-check-circle me-2"></i> KAYITLISINIZ
+                        </div>
+                        <a asp-route="PayForConferenceRoute"
+                           asp-route-slug="@Model.Conference.Slug"
+                           asp-route-conferenceId="@Model.Conference.Id"
+                           class="btn btn-outline-light btn-lg px-4 fw-bold">ÖDEME YAP</a>
+                    </div>
                 }
                 else
                 {
-                    <a href="/Identity/Account/Register?returnUrl=/@Model.Tenant.Slug/registration"
-                       class="btn btn-hero-primary btn-lg">
-                        HEMEN KAYIT OL
-                    </a>
+                    if (SignInManager.IsSignedIn(User))
+                    {
+                        <a asp-controller="Registration"
+                           asp-action="Index"
+                           asp-route-slug="@Model.Conference.Tenant.Slug"
+                           class="btn btn-hero-primary btn-lg">
+                            HEMEN KAYIT OL
+                        </a>
+                    }
+                    else
+                    {
+                        <a href="/Identity/Account/Register?returnUrl=/@Model.Conference.Tenant.Slug/registration"
+                           class="btn btn-hero-primary btn-lg">
+                            HEMEN KAYIT OL
+                        </a>
+                    }
                 }
-            }
+            </div>
         </div>
     </div>
-</div>
-
-<div class="container info-cards-container mb-5">
-</div>
-<div class="container py-5 my-5">
-</div>
+}

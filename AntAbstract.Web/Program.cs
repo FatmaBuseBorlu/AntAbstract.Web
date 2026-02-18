@@ -107,7 +107,11 @@ using (var scope = app.Services.CreateScope())
 
 StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+else
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
@@ -142,6 +146,16 @@ app.UseAuthorization();
 app.UseRotativa();
 
 app.MapRazorPages();
+
+app.MapControllerRoute(
+    name: "dashboard_slug",
+    pattern: "{slug}/Dashboard/{action=Index}/{id?}",
+    defaults: new { controller = "Dashboard" });
+
+app.MapControllerRoute(
+    name: "dashboard_root",
+    pattern: "Dashboard/{action=Index}/{id?}",
+    defaults: new { controller = "Dashboard" });
 
 app.MapControllerRoute(
     name: "tenant_areas",

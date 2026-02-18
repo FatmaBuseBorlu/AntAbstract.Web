@@ -9,7 +9,7 @@ using AntAbstract.Web.Models.ViewModels.Admin.Dashboard;
 
 namespace AntAbstract.Web.Controllers
 {
-    [Authorize]
+    [Authorize] 
     public class DashboardController : Controller
     {
         private readonly UserManager<AppUser> _userManager;
@@ -206,18 +206,6 @@ namespace AntAbstract.Web.Controllers
             if (user == null)
                 return Challenge();
 
-            var isAdminLike = await IsAdminLikeAsync(user);
-
-            if (!isAdminLike)
-            {
-                var allowed = await GetUserConferenceIds(user.Id).AnyAsync(x => x == conferenceId);
-                if (!allowed)
-                {
-                    TempData["ErrorMessage"] = "Bu kongreye erişim yok.";
-                    return RedirectToAction(nameof(MyConferences), new { slug = GetSlug() });
-                }
-            }
-
             var conf = await _context.Conferences
                 .AsNoTracking()
                 .Include(x => x.Tenant)
@@ -325,21 +313,13 @@ namespace AntAbstract.Web.Controllers
             if (user == null)
                 return Challenge();
 
-            var isAdminLike = await IsAdminLikeAsync(user);
+            var allConfs = await _context.Conferences
+                .AsNoTracking()
+                .Include(c => c.Tenant)
+                .OrderByDescending(c => c.StartDate)
+                .ToListAsync();
 
-            if (isAdminLike)
-            {
-                var allConfs = await _context.Conferences
-                    .AsNoTracking()
-                    .Include(c => c.Tenant)
-                    .OrderByDescending(c => c.StartDate)
-                    .ToListAsync();
-
-                return View(allConfs);
-            }
-
-            var conferences = await GetUserConferencesAsync(user.Id);
-            return View(conferences);
+            return View(allConfs);
         }
     }
 }

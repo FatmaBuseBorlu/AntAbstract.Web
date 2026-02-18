@@ -1,12 +1,48 @@
 ﻿@model AntAbstract.Web.Models.ViewModels.Website.ConferenceHomePageViewModel
-
 @using AntAbstract.Domain.Entities
 
 @{
-    var hero = Model.Blocks.FirstOrDefault(x => x.BlockType == ConferencePageBlockType.Hero && x.IsActive);
+    ViewData["Title"] = Model.Conference?.Title ?? "Conference Home";
+
+    var hero = Model.Blocks?.FirstOrDefault(x => x.BlockType == ConferencePageBlockType.Hero);
+    var others = Model.Blocks?
+        .Where(x => x.BlockType != ConferencePageBlockType.Hero)
+        .OrderBy(x => x.Order)
+        .ToList() ?? new List<ConferencePageBlock>();
 }
+
+@if (Model.Conference == null)
+{
+    <div class="alert alert-danger">Konferans bulunamadı.</div>
+    return;
+}
+
+@* DEBUG (gerekirse aç): Model.Blocks sayısını gör *@
+@* <div class="alert alert-info">Blocks count: @(Model.Blocks?.Count ?? 0)</div> *@
 
 @if (hero != null)
 {
-    @await Component.InvokeAsync("ConferenceHero", hero)
+    <partial name="~/Views/Shared/Blocks/_HeroBlock.cshtml" model="hero" />
+}
+else
+{
+    @* Hero bloğu yoksa istersen eski sabit hero’yu burada fallback olarak bırakabilirsin *@
+    @* Ama dinamik sistemi test ederken bu kısmı geçici olarak boş bırakmak daha iyi *@
+}
+
+@if (others.Any())
+{
+    foreach (var block in others)
+    {
+        switch (block.BlockType)
+        {
+            case ConferencePageBlockType.About:
+                <partial name="~/Views/Shared/Blocks/_About.cshtml" model="block" />
+                break;
+
+            default:
+                <partial name="~/Views/Shared/Blocks/_RawBlock.cshtml" model="block" />
+                break;
+        }
+    }
 }
