@@ -102,7 +102,22 @@
             transform: translateY(-2px);
         }
 
-        /* ✅ Yeni: Website Yönetimi butonu */
+        /* ✅ Yazar / Öğrenci Butonu Stili (Mor) */
+        .nav-link.author-link {
+            color: #6f42c1 !important;
+            background-color: rgba(111, 66, 193, 0.1);
+            border-radius: 6px;
+            padding: 6px 16px !important;
+            font-weight: 600;
+        }
+
+        .nav-link.author-link:hover {
+            background-color: #6f42c1;
+            color: white !important;
+            transform: translateY(-2px);
+        }
+
+        /* ✅ Website Yönetimi Butonu Stili */
         .nav-link.website-link {
             color: #198754 !important;
             background-color: rgba(25, 135, 84, 0.12);
@@ -180,6 +195,11 @@
         && User.Identity.IsAuthenticated
         && User.IsInRole("Referee");
 
+    // ✅ Yazar rolünü kontrol ediyoruz
+    var isAuthor = User.Identity != null 
+        && User.Identity.IsAuthenticated 
+        && User.IsInRole("Author");
+
     var isAdminArea = string.Equals(area, "Admin", StringComparison.OrdinalIgnoreCase);
     var path = Context.Request.Path.Value ?? "";
     var isAdminAssignmentPath = path.StartsWith("/Admin/Assignment", StringComparison.OrdinalIgnoreCase) || path.Contains("/Admin/Assignment", StringComparison.OrdinalIgnoreCase);
@@ -199,7 +219,6 @@
         ? $"/{slug}/Admin/Assignment?conferenceId={selectedConferenceId.Value}"
         : "/Admin/Assignment";
 
-    /* ✅ Yeni: Website Yönetimi URL */
     var websiteUrl = (!string.IsNullOrWhiteSpace(slug))
         ? $"/{slug}/Admin/Website"
         : "/Admin/Website";
@@ -239,7 +258,6 @@
                             </a>
                         </li>
 
-                        @* ✅ 1.1 Website Yönetimi (konferans seçiliyse göster) *@
                         @if (hasSelectedConference)
                         {
                             <li class="nav-item ms-lg-2">
@@ -256,6 +274,16 @@
                         <li class="nav-item ms-lg-3">
                             <a class="nav-link referee-link shadow-sm" href="/Dashboard">
                                 <i class="fas fa-gavel me-1"></i> Hakem Paneli
+                            </a>
+                        </li>
+                    }
+
+                    @* --- 3. YAZAR / ÖĞRENCİ BUTONU --- *@
+                    @if (isAuthor && !hideAdminNav)
+                    {
+                        <li class="nav-item ms-lg-3">
+                            <a class="nav-link author-link shadow-sm" href="/Dashboard">
+                                <i class="fas fa-user-graduate me-1"></i> Yazar Paneli
                             </a>
                         </li>
                     }

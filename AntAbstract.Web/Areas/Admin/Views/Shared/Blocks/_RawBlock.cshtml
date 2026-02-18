@@ -1,0 +1,21 @@
+﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
+
+<section class="mb-4">
+    <div class="container">
+        <div class="card">
+            <div class="card-body">
+                <div class="small text-muted">BlockType: @Model.BlockType</div>
+                <h5 class="mb-2">@Model.Title</h5>
+                @if (!string.IsNullOrWhiteSpace(Model.Subtitle))
+                {
+                    <p>@Model.Subtitle</p>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.ContentJson))
+                {
+                    <pre class="bg-light p-3 rounded">@Model.ContentJson</pre>
+                }
+            </div>
+        </div>
+    </div>
+</section>

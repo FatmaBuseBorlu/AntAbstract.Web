@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -26,54 +27,33 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Index(string culture = "tr-TR", string page = "Home", Guid? conferenceId = null)
         {
             var tenant = _tenantContext.Current;
-            if (tenant == null)
-                return BadRequest("Tenant bulunamadı. URL'yi /{slug}/Admin/Website şeklinde açmalısın.");
-
-            var tenantId = tenant.Id;
+            if (tenant == null) return BadRequest("Tenant bulunamadı.");
 
             var conferences = await _context.Conferences
-                .Where(x => x.TenantId == tenantId)
+                .Where(x => x.TenantId == tenant.Id)
                 .OrderByDescending(x => x.StartDate)
                 .ToListAsync();
 
             var selectedConferenceId = conferenceId ?? conferences.FirstOrDefault()?.Id;
 
+            ViewBag.CultureList = new SelectList(new[] { "tr-TR", "en-US" }, culture);
+            ViewBag.PageList = new SelectList(new[] { "Home", "About", "Contact" }, page);
+            ViewBag.ConferenceList = new SelectList(conferences, "Id", "Title", selectedConferenceId);
+
             ViewBag.Culture = culture;
             ViewBag.Page = page;
             ViewBag.ConferenceId = selectedConferenceId;
 
-            ViewBag.CultureOptions = new List<SelectListItem>
-            {
-                new SelectListItem { Value = "tr-TR", Text = "tr-TR", Selected = culture == "tr-TR" },
-                new SelectListItem { Value = "en-US", Text = "en-US", Selected = culture == "en-US" },
-            };
+            if (selectedConferenceId == null)
+                return View(new List<ConferencePageBlock>());
 
-            ViewBag.PageOptions = new List<SelectListItem>
-            {
-                new SelectListItem { Value = "Home", Text = "Home", Selected = page == "Home" }
-            };
-
-            ViewBag.ConferenceOptions = conferences
-                .Select(c => new SelectListItem
-                {
-                    Value = c.Id.ToString(),
-                    Text = c.Title,
-                    Selected = selectedConferenceId.HasValue && c.Id == selectedConferenceId.Value
-                })
-                .ToList();
-
-            var blocks = new List<ConferencePageBlock>();
-
-            if (selectedConferenceId.HasValue)
-            {
-                blocks = await _context.ConferencePageBlocks
-                    .Where(x => x.TenantId == tenantId
-                                && x.ConferenceId == selectedConferenceId.Value
-                                && x.Page == page
-                                && x.Culture == culture)
-                    .OrderBy(x => x.Order)
-                    .ToListAsync();
-            }
+            var blocks = await _context.ConferencePageBlocks
+                .Where(x => x.TenantId == tenant.Id
+                         && x.ConferenceId == selectedConferenceId
+                         && x.Page == page
+                         && x.Culture == culture)
+                .OrderBy(x => x.Order)
+                .ToListAsync();
 
             return View(blocks);
         }
@@ -84,21 +64,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var tenant = _tenantContext.Current;
             if (tenant == null) return BadRequest("Tenant bulunamadı.");
 
-            var tenantId = tenant.Id;
-
-            var exists = await _context.Conferences.AnyAsync(x => x.Id == conferenceId && x.TenantId == tenantId);
-            if (!exists) return NotFound();
+            var exists = await _context.Conferences.AnyAsync(x => x.Id == conferenceId && x.TenantId == tenant.Id);
+            if (!exists) return NotFound("Geçerli bir konferans bulunamadı.");
 
             var model = new ConferencePageBlock
             {
-                TenantId = tenantId,
+                TenantId = tenant.Id,
                 ConferenceId = conferenceId,
                 Culture = culture,
                 Page = page,
                 IsActive = true,
                 Order = 0,
                 BlockType = ConferencePageBlockType.Hero,
-                ContentJson = "{\"buttonText\":\"Kayıt Ol\",\"buttonUrl\":\"/register\"}"
+                ContentJson = "{}" 
             };
 
             return View(model);
@@ -106,24 +84,42 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(ConferencePageBlock model)
+        public async Task<IActionResult> Create(ConferencePageBlock model, string? btnText, string? btnUrl, string? bgImage, string? sideImage)
         {
             var tenant = _tenantContext.Current;
             if (tenant == null) return BadRequest("Tenant bulunamadı.");
 
-            var tenantId = tenant.Id;
-            model.TenantId = tenantId;
+            ModelState.Remove("TenantId");
+            ModelState.Remove("Conference");
+            ModelState.Remove("CreatedAt");
+            ModelState.Remove("UpdatedAt");
 
-            var ok = await _context.Conferences.AnyAsync(x => x.Id == model.ConferenceId && x.TenantId == tenantId);
-            if (!ok) return NotFound();
+            model.TenantId = tenant.Id;
 
-            if (!ModelState.IsValid) return View(model);
+            var ok = await _context.Conferences.AnyAsync(x => x.Id == model.ConferenceId && x.TenantId == tenant.Id);
+            if (!ok) return NotFound("Konferans bulunamadı.");
+
+            if (!ModelState.IsValid)
+                return View(model);
+
+            if (model.BlockType == ConferencePageBlockType.Hero)
+            {
+                var heroContent = new
+                {
+                    buttonText = btnText,
+                    buttonUrl = btnUrl,
+                    backgroundImageUrl = bgImage,
+                    imageUrl = sideImage
+                };
+                model.ContentJson = JsonSerializer.Serialize(heroContent);
+            }
 
             model.CreatedAt = DateTime.UtcNow;
+
             _context.ConferencePageBlocks.Add(model);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Blok eklendi.";
+            TempData["SuccessMessage"] = "Blok başarıyla eklendi.";
 
             return RedirectToAction(nameof(Index), new
             {
@@ -140,10 +136,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var tenant = _tenantContext.Current;
             if (tenant == null) return BadRequest("Tenant bulunamadı.");
 
-            var tenantId = tenant.Id;
-
             var block = await _context.ConferencePageBlocks
-                .FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenantId);
+                .FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenant.Id);
 
             if (block == null) return NotFound();
 
@@ -152,32 +146,53 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(ConferencePageBlock model)
+        public async Task<IActionResult> Edit(ConferencePageBlock model, string? btnText, string? btnUrl, string? bgImage, string? sideImage)
         {
             var tenant = _tenantContext.Current;
             if (tenant == null) return BadRequest("Tenant bulunamadı.");
 
-            var tenantId = tenant.Id;
+            ModelState.Remove("TenantId");
+            ModelState.Remove("Conference");
+            ModelState.Remove("CreatedAt");
+            ModelState.Remove("UpdatedAt");
 
             var block = await _context.ConferencePageBlocks
-                .FirstOrDefaultAsync(x => x.Id == model.Id && x.TenantId == tenantId);
+                .FirstOrDefaultAsync(x => x.Id == model.Id && x.TenantId == tenant.Id);
 
             if (block == null) return NotFound();
-            if (!ModelState.IsValid) return View(model);
+
+            if (!ModelState.IsValid)
+                return View(model);
+
+            if (model.BlockType == ConferencePageBlockType.Hero)
+            {
+                var heroContent = new
+                {
+                    buttonText = btnText,
+                    buttonUrl = btnUrl,
+                    backgroundImageUrl = bgImage,
+                    imageUrl = sideImage
+                };
+                block.ContentJson = JsonSerializer.Serialize(heroContent);
+            }
+            else
+            {
+
+                block.ContentJson = model.ContentJson;
+            }
 
             block.Page = model.Page;
             block.Culture = model.Culture;
             block.BlockType = model.BlockType;
             block.Title = model.Title;
             block.Subtitle = model.Subtitle;
-            block.ContentJson = model.ContentJson;
             block.Order = model.Order;
             block.IsActive = model.IsActive;
             block.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Blok güncellendi.";
+            TempData["SuccessMessage"] = "Blok başarıyla güncellendi.";
 
             return RedirectToAction(nameof(Index), new
             {
@@ -195,10 +210,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var tenant = _tenantContext.Current;
             if (tenant == null) return BadRequest("Tenant bulunamadı.");
 
-            var tenantId = tenant.Id;
-
             var block = await _context.ConferencePageBlocks
-                .FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenantId);
+                .FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenant.Id);
 
             if (block == null) return NotFound();
 
@@ -225,10 +238,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var tenant = _tenantContext.Current;
             if (tenant == null) return BadRequest("Tenant bulunamadı.");
 
-            var tenantId = tenant.Id;
-
             var block = await _context.ConferencePageBlocks
-                .FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenantId);
+                .FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenant.Id);
 
             if (block == null) return NotFound();
 

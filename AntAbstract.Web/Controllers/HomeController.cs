@@ -40,25 +40,32 @@ namespace AntAbstract.Web.Controllers
                     .Include(c => c.Tenant)
                     .Include(c => c.Registrations)
                     .Where(c => c.TenantId == _tenantContext.Current.Id)
-                    .OrderByDescending(c => c.StartDate) 
+                    .OrderByDescending(c => c.StartDate)
                     .FirstOrDefaultAsync();
 
                 if (currentConference == null)
                     return NotFound("Kongre aktif deðil.");
 
-                var culture = CultureInfo.CurrentUICulture.Name; 
+                var culture = HttpContext.Features.Get<IRequestCultureFeature>()?
+                                  .RequestCulture.UICulture.Name
+                              ?? CultureInfo.CurrentUICulture.Name
+                              ?? "tr-TR";
+
+                var page = "Home";
 
                 var blocks = await _pageBlockService.GetBlocksAsync(
                     tenantId: _tenantContext.Current.Id,
                     conferenceId: currentConference.Id,
-                    page: "Home",
+                    page: page,
                     culture: culture
                 );
 
                 var vm = new ConferenceHomePageViewModel
                 {
                     Conference = currentConference,
-                    Blocks = blocks
+                    Blocks = blocks,
+                    Culture = culture,
+                    Page = page
                 };
 
                 return View("ConferenceHome", vm);
@@ -90,16 +97,21 @@ namespace AntAbstract.Web.Controllers
                 .Select(s => new SubmissionCardDto
                 {
                     Title = s.Title,
+
                     AbstractSnippet = (s.Abstract != null && s.Abstract.Length > 120)
                         ? s.Abstract.Substring(0, 120) + "..."
                         : s.Abstract ?? "Özet metni bulunmuyor.",
+
                     AuthorName = s.Author != null
                         ? $"{s.Author.FirstName} {s.Author.LastName}"
                         : "Misafir Kullanýcý",
+
                     University = s.Author != null
                         ? (s.Author.Institution ?? "Kurum Belirtilmemiþ")
                         : "",
+
                     ConferenceName = s.Conference.Title,
+
                     AuthorImageUrl = (s.Author != null && !string.IsNullOrEmpty(s.Author.ProfileImagePath))
                         ? s.Author.ProfileImagePath
                         : $"https://ui-avatars.com/api/?name={(s.Author != null ? s.Author.FirstName : "A")}+{(s.Author != null ? s.Author.LastName : "A")}&background=random&color=fff"
@@ -110,6 +122,7 @@ namespace AntAbstract.Web.Controllers
             {
                 TotalUsers = await _userManager.Users.CountAsync(),
                 ActiveCongressesCount = conferences.Count,
+
                 ActiveCongresses = conferences.Select(c => new CongressCardDto
                 {
                     Id = c.Id,
@@ -121,6 +134,7 @@ namespace AntAbstract.Web.Controllers
                     Slug = c.Slug ?? c.Id.ToString(),
                     IsRegistered = registeredConferenceIds.Contains(c.Id)
                 }).ToList(),
+
                 LastSubmissions = lastSubmissions
             };
 

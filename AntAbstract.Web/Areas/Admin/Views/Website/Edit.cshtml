@@ -3,61 +3,169 @@
 
 @{
     ViewData["Title"] = "Blok Düzenle";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString();
+
+    // SİHİR 1: Sayfa yüklenirken JSON verisini arka planda okuyup kutulara dağıtıyoruz
+    string? btnText = null, btnUrl = null, bgImage = null, sideImage = null;
+    if (Model.BlockType == ConferencePageBlockType.Hero && !string.IsNullOrWhiteSpace(Model.ContentJson))
+    {
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(Model.ContentJson);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("buttonText", out var bt)) btnText = bt.GetString();
+            if (root.TryGetProperty("buttonUrl", out var bu)) btnUrl = bu.GetString();
+            if (root.TryGetProperty("backgroundImageUrl", out var bgi)) bgImage = bgi.GetString();
+            if (root.TryGetProperty("imageUrl", out var img)) sideImage = img.GetString();
+        }
+        catch { }
+    }
 }
 
-<h2>Blok Düzenle</h2>
+<div class="container" style="max-width: 980px; margin-top: 32px;">
+    <div class="card shadow-sm" style="border-radius:16px;">
+        <div class="card-body p-4">
 
-<form method="post">
-    @Html.AntiForgeryToken()
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <h3 class="mb-1">Blok Düzenle</h3>
+                    <div class="text-muted">Seçili bloğu güncelleyebilirsin</div>
+                </div>
 
-    <input type="hidden" asp-for="Id" />
-    <input type="hidden" asp-for="ConferenceId" />
-    <input type="hidden" asp-for="TenantId" />
+                <a class="btn btn-outline-secondary"
+                   asp-area="Admin"
+                   asp-controller="Website"
+                   asp-action="Index"
+                   asp-route-slug="@slug"
+                   asp-route-culture="@Model.Culture"
+                   asp-route-page="@Model.Page"
+                   asp-route-conferenceId="@Model.ConferenceId">
+                    ← Geri
+                </a>
+            </div>
 
-    <div class="form-group">
-        <label asp-for="Page"></label>
-        <input class="form-control" asp-for="Page" />
+            <hr class="my-4" />
+
+            @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+            <form asp-area="Admin"
+                  asp-controller="Website"
+                  asp-action="Edit"
+                  asp-route-slug="@slug"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="ConferenceId" />
+
+                <input type="hidden" asp-for="ContentJson" />
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="Page"></label>
+                        <input class="form-control" asp-for="Page" />
+                        <span class="text-danger" asp-validation-for="Page"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="Culture"></label>
+                        <select class="form-select" asp-for="Culture">
+                            <option value="tr-TR">tr-TR</option>
+                            <option value="en-US">en-US</option>
+                        </select>
+                        <span class="text-danger" asp-validation-for="Culture"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="BlockType"></label>
+                        <select class="form-select" id="BlockType"
+                                asp-for="BlockType"
+                                asp-items="Html.GetEnumSelectList<ConferencePageBlockType>()">
+                        </select>
+                        <span class="text-danger" asp-validation-for="BlockType"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Title"></label>
+                        <input class="form-control" asp-for="Title" />
+                        <span class="text-danger" asp-validation-for="Title"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Subtitle"></label>
+                        <input class="form-control" asp-for="Subtitle" />
+                        <span class="text-danger" asp-validation-for="Subtitle"></span>
+                    </div>
+
+                    <div class="col-md-6 hero-fields">
+                        <label class="form-label text-primary fw-bold"><i class="fas fa-mouse-pointer me-1"></i> Buton Metni</label>
+                        <input class="form-control" name="btnText" value="@btnText" placeholder="Örn: Hemen Kayıt Ol" />
+                    </div>
+                    <div class="col-md-6 hero-fields">
+                        <label class="form-label text-primary fw-bold"><i class="fas fa-link me-1"></i> Buton Linki (URL)</label>
+                        <input class="form-control" name="btnUrl" value="@btnUrl" placeholder="Örn: /kayit veya https://..." />
+                    </div>
+                    <div class="col-md-6 hero-fields">
+                        <label class="form-label text-primary fw-bold"><i class="fas fa-image me-1"></i> Arka Plan Resmi URL</label>
+                        <input class="form-control" name="bgImage" value="@bgImage" placeholder="Örn: https://.../resim.jpg" />
+                    </div>
+                    <div class="col-md-6 hero-fields">
+                        <label class="form-label text-primary fw-bold"><i class="fas fa-image me-1"></i> Yan Görsel URL</label>
+                        <input class="form-control" name="sideImage" value="@sideImage" placeholder="Örn: https://.../logo.png" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label" asp-for="Order"></label>
+                        <input class="form-control" asp-for="Order" type="number" />
+                        <span class="text-danger" asp-validation-for="Order"></span>
+                    </div>
+
+                    <div class="col-md-3 d-flex align-items-end">
+                        <div class="form-check">
+                            <input class="form-check-input" asp-for="IsActive" />
+                            <label class="form-check-label" asp-for="IsActive">Aktif</label>
+                        </div>
+                    </div>
+
+                    <div class="col-12 d-flex gap-2 mt-2">
+                        <button class="btn btn-warning" type="submit">💾 Güncelle</button>
+
+                        <a class="btn btn-outline-secondary"
+                           asp-area="Admin"
+                           asp-controller="Website"
+                           asp-action="Index"
+                           asp-route-slug="@slug"
+                           asp-route-culture="@Model.Culture"
+                           asp-route-page="@Model.Page"
+                           asp-route-conferenceId="@Model.ConferenceId">
+                            İptal
+                        </a>
+                    </div>
+                </div>
+            </form>
+
+        </div>
     </div>
+</div>
 
-    <div class="form-group">
-        <label asp-for="Culture"></label>
-        <select class="form-control" asp-for="Culture">
-            <option value="tr-TR">tr-TR</option>
-            <option value="en-US">en-US</option>
-        </select>
-    </div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
 
-    <div class="form-group">
-        <label asp-for="BlockType"></label>
-        <select class="form-control" asp-for="BlockType" asp-items="Html.GetEnumSelectList<ConferencePageBlockType>()"></select>
-    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var typeSelect = document.getElementById("BlockType");
+            var heroFields = document.querySelectorAll(".hero-fields");
 
-    <div class="form-group">
-        <label asp-for="Title"></label>
-        <input class="form-control" asp-for="Title" />
-    </div>
+            function toggleFields() {
+                var isHero = typeSelect.options[typeSelect.selectedIndex].text === "Hero";
+                heroFields.forEach(f => f.style.display = isHero ? "block" : "none");
+            }
 
-    <div class="form-group">
-        <label asp-for="Subtitle"></label>
-        <input class="form-control" asp-for="Subtitle" />
-    </div>
-
-    <div class="form-group">
-        <label asp-for="ContentJson">ContentJson</label>
-        <textarea class="form-control" asp-for="ContentJson" rows="6"></textarea>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="Order"></label>
-        <input class="form-control" asp-for="Order" type="number" />
-    </div>
-
-    <div class="form-group">
-        <label>
-            <input asp-for="IsActive" /> Aktif
-        </label>
-    </div>
-
-    <button class="btn btn-success" type="submit">Kaydet</button>
-    <a class="btn btn-secondary" asp-area="Admin" asp-controller="Website" asp-action="Index">İptal</a>
-</form>
+            typeSelect.addEventListener("change", toggleFields);
+            toggleFields();
+        });
+    </script>
+}
