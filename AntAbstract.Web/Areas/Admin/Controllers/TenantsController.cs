@@ -140,6 +140,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return View(tenant);
         }
 
+
         public async Task<IActionResult> Delete(Guid? id)
         {
             if (id == null) return NotFound();
@@ -212,7 +213,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 Email = model.Email,
                 FirstName = model.FirstName,
                 LastName = model.LastName,
-                TenantId = model.TenantId, 
+                TenantId = model.TenantId,
                 EmailConfirmed = true
             };
 
@@ -238,6 +239,48 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             model.TenantName = tenant.Name;
             return View(model);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> AddConference(Guid id)
+        {
+            var tenant = await _context.Tenants.FindAsync(id);
+            if (tenant == null) return NotFound();
+
+            ViewBag.TenantId = tenant.Id;
+            ViewBag.TenantName = tenant.Name;
+
+            var conference = new Conference { TenantId = tenant.Id };
+            return View(conference);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddConference(Guid id, Conference conference)
+        {
+            var tenant = await _context.Tenants.FindAsync(id);
+            if (tenant == null) return NotFound();
+
+            ModelState.Remove("Tenant");
+            ModelState.Remove("Sessions");
+            ModelState.Remove("Submissions");
+            ModelState.Remove("RegistrationTypes");
+
+            if (ModelState.IsValid)
+            {
+                conference.Id = Guid.NewGuid();
+                conference.TenantId = id; 
+
+                _context.Conferences.Add(conference);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = $"{tenant.Name} kurumuna yeni kongre başarıyla eklendi!";
+                return RedirectToAction(nameof(Details), new { id = id }); 
+            }
+
+            ViewBag.TenantId = tenant.Id;
+            ViewBag.TenantName = tenant.Name;
+            return View(conference);
         }
     }
 }

@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
@@ -26,7 +28,23 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         public async Task<IActionResult> Index()
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, "Admin");
+
+
             var referees = await _userManager.GetUsersInRoleAsync("Referee");
+
+            if (!isAdmin && currentUser?.TenantId != null)
+            {
+                
+                referees = referees.Where(r => r.TenantId == currentUser.TenantId).ToList();
+            }
+            else if (!isAdmin && currentUser?.TenantId == null)
+            {
+
+                referees = new List<AppUser>();
+            }
+
             return View(referees);
         }
 
@@ -54,6 +72,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     return View(model);
                 }
 
+                var currentUser = await _userManager.GetUserAsync(User);
+                var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, "Admin");
+
                 var user = new AppUser
                 {
                     UserName = model.Email,
@@ -61,8 +82,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     FirstName = model.FirstName,
                     LastName = model.LastName,
                     Institution = model.Institution,
-                    EmailConfirmed = true 
+                    EmailConfirmed = true
                 };
+
+                if (!isAdmin && currentUser?.TenantId != null)
+                {
+                    user.TenantId = currentUser.TenantId;
+                }
 
                 var result = await _userManager.CreateAsync(user, model.Password);
 
@@ -85,9 +111,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpPost]
         public async Task<IActionResult> Delete(string id)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, "Admin");
+
             var user = await _userManager.FindByIdAsync(id);
             if (user != null)
             {
+                if (!isAdmin && user.TenantId != currentUser?.TenantId)
+                {
+                    TempData["ErrorMessage"] = "Yetkisiz işlem! Başka bir kuruma ait hakemi silemezsiniz.";
+                    return RedirectToAction(nameof(Index));
+                }
 
                 await _userManager.DeleteAsync(user);
                 TempData["SuccessMessage"] = "Hakem silindi.";

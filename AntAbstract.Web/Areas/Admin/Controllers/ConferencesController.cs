@@ -1,11 +1,13 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
-using AntAbstract.Web.Models.ViewModels.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -31,85 +33,45 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         [HttpGet("/Admin/Conferences")]
-        public async Task<IActionResult> SelectConference()
+        public async Task<IActionResult> RootIndex()
         {
+            var user = await _userManager.GetUserAsync(User);
+            var isAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
+
+            if (!isAdmin && user?.TenantId != null)
+            {
+                var tenant = await _context.FindAsync<Tenant>(user.TenantId.Value);
+                if (tenant != null && !string.IsNullOrWhiteSpace(tenant.Slug))
+                {
+                    return Redirect($"/{tenant.Slug}/Admin/Conferences");
+                }
+            }
+
             var selectedId = _selectedConferenceService.GetSelectedConferenceId();
             if (selectedId != null)
             {
-                var selectedConf = await _context.Conferences
+                var conf = await _context.Conferences
                     .AsNoTracking()
                     .Include(x => x.Tenant)
                     .FirstOrDefaultAsync(x => x.Id == selectedId.Value);
 
-                if (selectedConf?.Tenant?.Slug != null)
+                if (conf?.Tenant?.Slug != null)
                 {
-                    HttpContext.Session.SetString("SelectedConferenceSlug", selectedConf.Tenant.Slug);
-                    return Redirect($"/{selectedConf.Tenant.Slug}/Admin/Conferences");
+                    return Redirect($"/{conf.Tenant.Slug}/Admin/Conferences");
                 }
             }
 
-            var user = await _userManager.GetUserAsync(User);
-            var isAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
-
-            var query = _context.Conferences
-                .AsNoTracking()
-                .Include(c => c.Tenant)
-                .AsQueryable();
-
-            if (!isAdmin && user?.TenantId != null)
-            {
-                query = query.Where(c => c.TenantId == user.TenantId.Value);
-            }
-            else if (!isAdmin && user?.TenantId == null)
-            {
-                query = query.Where(c => false);
-            }
-
-            var conferences = await query
-                .OrderByDescending(c => c.StartDate)
-                .ToListAsync();
-
-            var vm = new SelectConferenceViewModel
-            {
-                Title = "Kongre Tanımları",
-                Lead = "Kongre tanımlarını yönetmek için önce bir kongre seçin.",
-                PostUrl = "/Admin/Conferences/Select",
-                SubmitText = "Devam Et",
-                Conferences = conferences
-            };
-
-            return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", vm);
-        }
-
-        [HttpPost("/Admin/Conferences/Select")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SelectConferencePost(Guid conferenceId)
-        {
-            var conf = await _context.Conferences
-                .AsNoTracking()
-                .Include(c => c.Tenant)
-                .FirstOrDefaultAsync(c => c.Id == conferenceId);
-
-            if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
-            {
-                TempData["ErrorMessage"] = "Kongre bulunamadı.";
-                return Redirect("/Admin/Conferences");
-            }
-
-            _selectedConferenceService.SetSelectedConferenceId(conf.Id);
-            HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
-
-            return Redirect($"/{conf.Tenant.Slug}/Admin/Conferences");
+            TempData["ErrorMessage"] = "Lütfen işlem yapmak istediğiniz bir kongreyi ana ekrandan seçin.";
+            return Redirect("/Admin/Dashboard");
         }
 
         [HttpGet("/{slug}/Admin/Conferences")]
         public async Task<IActionResult> Index(string slug)
         {
-            if (_tenantContext.Current == null)
-                return Redirect("/Admin/Conferences");
-
-            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
-                return Redirect("/Admin/Conferences");
+            if (_tenantContext.Current == null || !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return Redirect("/Admin/Dashboard");
+            }
 
             var conferences = await _context.Conferences
                 .AsNoTracking()
@@ -117,17 +79,26 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
+            var user = await _userManager.GetUserAsync(User);
+            ViewBag.IsSuperAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
+
             return View(conferences);
         }
 
         [HttpGet("/{slug}/Admin/Conferences/Create")]
-        public IActionResult Create(string slug)
+        public async Task<IActionResult> Create(string slug)
         {
-            if (_tenantContext.Current == null)
-                return Redirect("/Admin/Conferences");
+            if (_tenantContext.Current == null || !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+                return Redirect("/Admin/Dashboard");
 
-            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
-                return Redirect("/Admin/Conferences");
+            var user = await _userManager.GetUserAsync(User);
+            var isAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
+
+            if (!isAdmin)
+            {
+                TempData["ErrorMessage"] = "Yeni kongre oluşturma yetkisi sadece Sistem Yöneticisine aittir. Lütfen destek talebi oluşturun.";
+                return Redirect($"/{slug}/Admin/Conferences");
+            }
 
             return View();
         }
@@ -136,11 +107,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(string slug, Conference conference)
         {
-            if (_tenantContext.Current == null)
-                return Redirect("/Admin/Conferences");
+            if (_tenantContext.Current == null || !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+                return Redirect("/Admin/Dashboard");
 
-            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
-                return Redirect("/Admin/Conferences");
+            var user = await _userManager.GetUserAsync(User);
+            var isAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
+
+            if (!isAdmin)
+            {
+                TempData["ErrorMessage"] = "Yeni kongre oluşturma yetkisi sadece Sistem Yöneticisine aittir.";
+                return Redirect($"/{slug}/Admin/Conferences");
+            }
 
             if (!ModelState.IsValid)
                 return View(conference);
@@ -151,6 +128,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _context.Conferences.Add(conference);
             await _context.SaveChangesAsync();
 
+            _selectedConferenceService.SetSelectedConferenceId(conference.Id);
+            HttpContext.Session.SetString("SelectedConferenceSlug", _tenantContext.Current.Slug);
+
             TempData["SuccessMessage"] = "Kongre başarıyla oluşturuldu.";
             return Redirect($"/{slug}/Admin/Conferences");
         }
@@ -158,11 +138,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpGet("/{slug}/Admin/Conferences/Edit/{id:guid}")]
         public async Task<IActionResult> Edit(string slug, Guid id)
         {
-            if (_tenantContext.Current == null)
-                return Redirect("/Admin/Conferences");
-
-            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
-                return Redirect("/Admin/Conferences");
+            if (_tenantContext.Current == null || !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+                return Redirect("/Admin/Dashboard");
 
             var conference = await _context.Conferences
                 .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == _tenantContext.Current.Id);
@@ -177,11 +154,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(string slug, Guid id, Conference conference)
         {
-            if (_tenantContext.Current == null)
-                return Redirect("/Admin/Conferences");
-
-            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
-                return Redirect("/Admin/Conferences");
+            if (_tenantContext.Current == null || !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+                return Redirect("/Admin/Dashboard");
 
             if (id != conference.Id)
                 return NotFound();
@@ -211,11 +185,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(string slug, Guid id)
         {
-            if (_tenantContext.Current == null)
-                return Redirect("/Admin/Conferences");
+            if (_tenantContext.Current == null || !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+                return Redirect("/Admin/Dashboard");
 
-            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
-                return Redirect("/Admin/Conferences");
+            var user = await _userManager.GetUserAsync(User);
+            var isAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
+
+            if (!isAdmin)
+            {
+                TempData["ErrorMessage"] = "Kongre silme yetkisi sadece Sistem Yöneticisine aittir.";
+                return Redirect($"/{slug}/Admin/Conferences");
+            }
 
             var conference = await _context.Conferences
                 .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == _tenantContext.Current.Id);

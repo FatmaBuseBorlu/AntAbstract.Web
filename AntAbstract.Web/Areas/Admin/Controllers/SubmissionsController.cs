@@ -63,9 +63,24 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 }
             }
 
-            var conferences = await _context.Conferences
+            var user = await _userManager.GetUserAsync(User);
+            var isAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
+
+            var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
+                .AsQueryable();
+
+            if (!isAdmin && user?.TenantId != null)
+            {
+                query = query.Where(c => c.TenantId == user.TenantId.Value);
+            }
+            else if (!isAdmin && user?.TenantId == null)
+            {
+                query = query.Where(c => false);
+            }
+
+            var conferences = await query
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 

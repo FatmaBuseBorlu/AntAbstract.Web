@@ -31,6 +31,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             IReviewerRecommendationService recommendationService,
             ISelectedConferenceService selectedConferenceService)
         {
+
             _context = context;
             _tenantContext = tenantContext;
             _emailService = emailService;

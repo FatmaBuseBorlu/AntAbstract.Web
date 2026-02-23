@@ -1,0 +1,56 @@
+﻿@model AntAbstract.Domain.Entities.Conference
+@{
+    ViewData["Title"] = "Kuruma Kongre Ekle";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+}
+
+<div class="container mt-5" style="max-width: 800px;">
+    <div class="card shadow-lg border-0 rounded-4">
+        <div class="card-header bg-primary text-white p-4" style="border-radius: 1rem 1rem 0 0;">
+            <h4 class="mb-0 fw-bold"><i class="fas fa-plus-circle me-2"></i> @ViewBag.TenantName İçin Kongre Ekle</h4>
+        </div>
+        <div class="card-body p-5">
+            <form asp-action="AddConference" asp-route-id="@ViewBag.TenantId" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold text-secondary">Kongre Adı <span class="text-danger">*</span></label>
+                        <input type="text" asp-for="Title" class="form-control form-control-lg border-2" placeholder="Örn: 2026 Ulusal Biyoloji Kongresi" required />
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-secondary">Başlangıç Tarihi <span class="text-danger">*</span></label>
+                        <input type="date" asp-for="StartDate" class="form-control border-2" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-secondary">Bitiş Tarihi <span class="text-danger">*</span></label>
+                        <input type="date" asp-for="EndDate" class="form-control border-2" required />
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold text-secondary">Mekan / Konum</label>
+                        <input type="text" asp-for="Venue" class="form-control border-2" placeholder="Örn: Ege Üniversitesi Merkez Kampüsü" />
+                    </div>
+                </div>
+
+                <div class="row mb-5">
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold text-secondary">Kısa Açıklama</label>
+                        <textarea asp-for="Description" class="form-control border-2" rows="3"></textarea>
+                    </div>
+                </div>
+
+                <div class="text-end border-top pt-4">
+                    <a asp-action="Details" asp-route-id="@ViewBag.TenantId" class="btn btn-light px-4 fw-bold me-2">İptal</a>
+                    <button type="submit" class="btn btn-primary px-5 fw-bold shadow-sm">Kongreyi Oluştur <i class="fas fa-check ms-2"></i></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

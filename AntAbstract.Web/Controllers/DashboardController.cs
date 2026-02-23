@@ -254,8 +254,23 @@ namespace AntAbstract.Web.Controllers
                 return Challenge();
 
             var isAdminLike = await IsAdminLikeAsync(user);
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
             var selectedConferenceId = GetSelectedConferenceId();
             var slug = GetSlug();
+
+            if (selectedConferenceId.HasValue && !isAdmin && user.TenantId.HasValue)
+            {
+                var isAuthorizedForSessionConf = await _context.Conferences
+                    .AnyAsync(c => c.Id == selectedConferenceId.Value && c.TenantId == user.TenantId.Value);
+
+                if (!isAuthorizedForSessionConf)
+                {
+
+                    ClearSelectedConference();
+                    TempData["ErrorMessage"] = "Önceki oturumdan kalan yetkisiz kongre erişimi engellendi.";
+                    return RedirectToAction(nameof(MyConferences), new { slug = _tenantContext.Current?.Slug });
+                }
+            }
 
             if (!isAdminLike && !selectedConferenceId.HasValue)
                 return RedirectToAction(nameof(MyConferences), new { slug });
@@ -335,7 +350,7 @@ namespace AntAbstract.Web.Controllers
 
             if (isAdmin)
             {
-            
+
             }
             else if (isOrganizator)
             {
