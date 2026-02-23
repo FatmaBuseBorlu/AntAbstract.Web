@@ -4,11 +4,15 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Organizator")] 
     public class UsersController : Controller
     {
         private readonly UserManager<AppUser> _userManager;
@@ -21,11 +25,26 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         [HttpGet("/Admin/Users")]
+        [HttpGet("/{slug}/Admin/Users")]
         public async Task<IActionResult> Index()
         {
             await EnsureBaseRoles();
 
-            var users = await _userManager.Users.AsNoTracking().ToListAsync();
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, "Admin");
+
+            var query = _userManager.Users.AsNoTracking().AsQueryable();
+
+            if (!isAdmin && currentUser?.TenantId != null)
+            {
+                query = query.Where(u => u.TenantId == currentUser.TenantId);
+            }
+            else if (!isAdmin && currentUser?.TenantId == null)
+            {
+                query = query.Where(u => false);
+            }
+
+            var users = await query.ToListAsync();
             var vm = new List<UserListItemViewModel>();
 
             foreach (var user in users)
@@ -44,10 +63,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return View(vm);
         }
 
-        [HttpGet("/{slug}/Admin/Users")]
-        public IActionResult LegacyTenant(string slug) => Redirect("/Admin/Users");
-
         [HttpGet("/Admin/Users/ManageRoles")]
+        [HttpGet("/{slug}/Admin/Users/ManageRoles")]
         public async Task<IActionResult> ManageRoles(string userId)
         {
             if (string.IsNullOrWhiteSpace(userId))
@@ -55,14 +72,28 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             await EnsureBaseRoles();
 
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, "Admin");
+
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
                 return NotFound();
+
+            if (!isAdmin && user.TenantId != currentUser?.TenantId)
+            {
+                TempData["ErrorMessage"] = "Yetkisiz işlem! Başka kuruma ait kullanıcıyı yönetemezsiniz.";
+                return RedirectToAction(nameof(Index));
+            }
 
             var allRoles = await _roleManager.Roles
                 .AsNoTracking()
                 .OrderBy(x => x.Name)
                 .ToListAsync();
+
+            if (!isAdmin)
+            {
+                allRoles = allRoles.Where(r => r.Name != "Admin").ToList();
+            }
 
             var userRoles = await _userManager.GetRolesAsync(user);
 
@@ -89,10 +120,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return View(model);
         }
 
-        [HttpGet("/{slug}/Admin/Users/ManageRoles")]
-        public IActionResult LegacyTenantManageRoles(string slug, string userId) => Redirect($"/Admin/Users/ManageRoles?userId={userId}");
-
         [HttpPost("/Admin/Users/ManageRoles")]
+        [HttpPost("/{slug}/Admin/Users/ManageRoles")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ManageRoles(UserWithRolesViewModel model)
         {
@@ -101,9 +130,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             model.Roles ??= new List<UserWithRoleViewModel>();
 
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, "Admin");
+
             var user = await _userManager.FindByIdAsync(model.UserId);
             if (user == null)
                 return NotFound();
+
+            if (!isAdmin && user.TenantId != currentUser?.TenantId)
+            {
+                TempData["ErrorMessage"] = "Yetkisiz işlem!";
+                return RedirectToAction(nameof(Index));
+            }
 
             var existingRoles = await _userManager.GetRolesAsync(user);
             existingRoles ??= new List<string>();
@@ -113,6 +151,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .Select(x => x.RoleName.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
+
+            if (!isAdmin && selectedRoles.Contains("Admin", StringComparer.OrdinalIgnoreCase))
+            {
+                selectedRoles.RemoveAll(r => r.Equals("Admin", StringComparison.OrdinalIgnoreCase));
+            }
 
             var rolesToRemove = existingRoles
                 .Where(r => !selectedRoles.Contains(r, StringComparer.OrdinalIgnoreCase))
@@ -153,6 +196,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         [HttpPost("/Admin/Users/AssignRole")]
+        [HttpPost("/{slug}/Admin/Users/AssignRole")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AssignRole(string userId, string roleName)
         {
@@ -162,10 +206,25 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, "Admin");
+
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
                 TempData["ErrorMessage"] = "Kullanıcı bulunamadı.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (!isAdmin && user.TenantId != currentUser?.TenantId)
+            {
+                TempData["ErrorMessage"] = "Yetkisiz işlem!";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (!isAdmin && roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["ErrorMessage"] = "Süper yetki atayamazsınız.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -194,6 +253,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         [HttpPost("/Admin/Users/RemoveRole")]
+        [HttpPost("/{slug}/Admin/Users/RemoveRole")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RemoveRole(string userId, string roleName)
         {
@@ -203,10 +263,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, "Admin");
+
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
                 TempData["ErrorMessage"] = "Kullanıcı bulunamadı.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (!isAdmin && user.TenantId != currentUser?.TenantId)
+            {
+                TempData["ErrorMessage"] = "Yetkisiz işlem!";
                 return RedirectToAction(nameof(Index));
             }
 

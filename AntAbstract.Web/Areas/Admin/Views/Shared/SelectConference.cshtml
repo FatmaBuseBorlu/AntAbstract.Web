@@ -4,6 +4,8 @@
 @{
     ViewData["Title"] = Model.Title;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+
+    bool hasAnyConference = Model.Conferences != null && Model.Conferences.Any();
 }
 
 <style>
@@ -64,6 +66,14 @@
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0, 174, 239, 0.3);
         }
+
+    .empty-state-box {
+        background-color: #f8fafc;
+        border: 2px dashed #cbd5e1;
+        border-radius: 15px;
+        padding: 40px 20px;
+        text-align: center;
+    }
 </style>
 
 <div class="selection-wrapper">
@@ -99,42 +109,58 @@
                                 </div>
                             }
 
-                            <form action="@Model.PostUrl" method="post">
-                                @Html.AntiForgeryToken()
+                            @* EĞER KONGRESİ VARSA NORMAL SEÇİM EKRANINI GÖSTER *@
+                            @if (hasAnyConference)
+                            {
+                                <form action="@Model.PostUrl" method="post">
+                                    @Html.AntiForgeryToken()
 
-                                @* ortak kullanım bozulmasın: ReturnUrl varsa post et *@
-                                @if (!string.IsNullOrWhiteSpace(Model.ReturnUrl))
-                                {
-                                    <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
-                                }
+                                    @if (!string.IsNullOrWhiteSpace(Model.ReturnUrl))
+                                    {
+                                        <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+                                    }
 
-                                <div class="mb-4">
-                                    <label class="form-label fw-bold text-secondary small text-uppercase">Kongre Listesi</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-2 border-end-0" style="border-radius: 10px 0 0 10px;">
-                                            <i class="fas fa-list-ul text-primary"></i>
-                                        </span>
-                                        <select name="conferenceId" class="form-select select-lg-custom border-2 border-start-0" required>
-                                            <option value="" disabled selected>Bir kongre seçin...</option>
-                                            @foreach (var conf in Model.Conferences)
-                                            {
-                                                <option value="@conf.Id">@conf.Title</option>
-                                            }
-                                        </select>
+                                    <div class="mb-4">
+                                        <label class="form-label fw-bold text-secondary small text-uppercase">Kongre Listesi</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-2 border-end-0" style="border-radius: 10px 0 0 10px;">
+                                                <i class="fas fa-list-ul text-primary"></i>
+                                            </span>
+                                            <select name="conferenceId" class="form-select select-lg-custom border-2 border-start-0" required>
+                                                <option value="" disabled selected>Bir kongre seçin...</option>
+                                                @foreach (var conf in Model.Conferences)
+                                                {
+                                                    <option value="@conf.Id">@conf.Title</option>
+                                                }
+                                            </select>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div class="d-grid gap-2">
-                                    <button type="submit" class="btn btn-primary btn-submit-custom shadow-sm">
-                                        @Model.SubmitText <i class="fas fa-chevron-right ms-2"></i>
-                                    </button>
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-primary btn-submit-custom shadow-sm">
+                                            @Model.SubmitText <i class="fas fa-chevron-right ms-2"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                            }
+                            @* EĞER HİÇ KONGRESİ YOKSA ONU DESTEK EKİBİNE YÖNLENDİR *@
+                            else
+                            {
+                                <div class="empty-state-box">
+                                    <i class="fas fa-folder-open fa-3x text-muted mb-3 opacity-50"></i>
+                                    <h5 class="fw-bold text-dark mb-2">Henüz Bir Kongreniz Yok</h5>
+                                    <p class="text-muted small mb-4">Adınıza tanımlanmış aktif bir kongre bulunmuyor. Yeni bir kongre başlatmak için lütfen sistem yöneticisiyle iletişime geçin.</p>
+
+                                    <a href="/Home/Contact" class="btn btn-primary px-4 py-2 shadow-sm" style="border-radius: 8px; font-weight: 600;">
+                                        <i class="fas fa-headset me-2"></i> Destek Ekibine Ulaşın
+                                    </a>
                                 </div>
-                            </form>
+                            }
 
                             <div class="mt-5 pt-4 border-top text-center text-md-start">
                                 <span class="text-muted small">
                                     Sorun mu yaşıyorsunuz?
-                                    <a href="#" class="text-decoration-none">Destek ekibiyle iletişime geçin.</a>
+                                    <a href="/Home/Contact" class="text-decoration-none fw-bold" style="color: var(--primary-color);">Destek ekibiyle iletişime geçin.</a>
                                 </span>
                             </div>
                         </div>

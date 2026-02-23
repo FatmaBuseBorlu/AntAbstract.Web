@@ -175,6 +175,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 };
                 block.ContentJson = JsonSerializer.Serialize(heroContent);
             }
+
             else
             {
 

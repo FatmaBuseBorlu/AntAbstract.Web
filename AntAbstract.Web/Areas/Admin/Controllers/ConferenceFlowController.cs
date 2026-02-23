@@ -61,6 +61,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 query = query.Where(c => c.TenantId == user.TenantId.Value);
             }
+
             else if (!isAdmin && user?.TenantId == null)
             {
                 query = query.Where(c => false);
