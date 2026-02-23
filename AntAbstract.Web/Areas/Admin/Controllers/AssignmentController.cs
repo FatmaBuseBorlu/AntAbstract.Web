@@ -57,9 +57,23 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 }
             }
 
-            // mevcut kodun devamı
-            var conferences = await _context.Conferences
+            var user = await _userManager.GetUserAsync(User);
+            var isAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
+
+            var query = _context.Conferences
                 .Include(c => c.Tenant)
+                .AsQueryable();
+
+            if (!isAdmin && user?.TenantId != null)
+            {
+                query = query.Where(c => c.TenantId == user.TenantId.Value);
+            }
+            else if (!isAdmin && user?.TenantId == null)
+            {
+                query = query.Where(c => false);
+            }
+
+            var conferences = await query
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
@@ -74,7 +88,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", vm);
         }
-
 
         [HttpPost("/Admin/Assignment/Select")]
         [ValidateAntiForgeryToken]
@@ -93,7 +106,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _selectedConferenceService.SetSelectedConferenceId(conf.Id);
             HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
             return Redirect($"/{conf.Tenant.Slug}/Admin/Assignment?conferenceId={conf.Id}");
-
         }
 
         [HttpGet("/{slug}/Admin/Assignment")]
@@ -209,7 +221,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (reviewer != null)
             {
                 try { await _emailService.SendAsync(reviewer.Email!, "Yeni Atama", "Bildiri atandı."); } catch { }
-
             }
 
             TempData["SuccessMessage"] = "Hakem ataması başarıyla tamamlandı.";

@@ -1,0 +1,51 @@
+﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
+@using System.Text.Json
+
+@{
+    string? description = null;
+    string? imageUrl = null;
+
+    if (!string.IsNullOrWhiteSpace(Model.ContentJson))
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(Model.ContentJson);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("description", out var d)) description = d.GetString();
+            if (root.TryGetProperty("imageUrl", out var iu)) imageUrl = iu.GetString();
+        }
+        catch { }
+    }
+}
+
+<section class="py-5">
+    <div class="container">
+        <div class="row align-items-center g-4">
+            <div class="col-md-7">
+                <h2 class="fw-bold mb-3">@Model.Title</h2>
+
+                @if (!string.IsNullOrWhiteSpace(Model.Subtitle))
+                {
+                    <p class="text-muted mb-3">@Model.Subtitle</p>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(description))
+                {
+                    <p class="lead">@description</p>
+                }
+                else
+                {
+                    <p class="text-muted">About içeriği (description) girilmemiş.</p>
+                }
+            </div>
+
+            <div class="col-md-5 text-center">
+                @if (!string.IsNullOrWhiteSpace(imageUrl))
+                {
+                    <img src="@imageUrl" class="img-fluid rounded-4 shadow" alt="About" />
+                }
+            </div>
+        </div>
+    </div>
+</section>

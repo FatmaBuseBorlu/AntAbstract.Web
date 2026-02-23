@@ -1,8 +1,10 @@
-﻿using AntAbstract.Infrastructure.Context;
+﻿using AntAbstract.Domain.Entities;
+using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.ViewModels.Admin.Assignment;
 using AntAbstract.Web.Models.ViewModels.Shared;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,15 +17,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
+        private readonly UserManager<AppUser> _userManager;
 
         public ConferenceFlowController(
             AppDbContext context,
             TenantContext tenantContext,
-            ISelectedConferenceService selectedConferenceService)
+            ISelectedConferenceService selectedConferenceService,
+            UserManager<AppUser> userManager)
         {
             _context = context;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
+            _userManager = userManager;
         }
 
         [HttpGet("/Admin/ConferenceFlow")]
@@ -44,15 +49,30 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 }
             }
 
-            var conferences = await _context.Conferences
+            var user = await _userManager.GetUserAsync(User);
+            var isAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
+
+            var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
+                .AsQueryable();
+
+            if (!isAdmin && user?.TenantId != null)
+            {
+                query = query.Where(c => c.TenantId == user.TenantId.Value);
+            }
+            else if (!isAdmin && user?.TenantId == null)
+            {
+                query = query.Where(c => false);
+            }
+
+            var conferences = await query
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
             var vm = new SelectConferenceViewModel
             {
-                Title = "Kongre Akışı",
+                Title = "Kongre Seç",
                 Lead = "Kongre akışını görüntülemek için lütfen bir kongre seçiniz.",
                 PostUrl = "/Admin/ConferenceFlow/Select",
                 SubmitText = "Devam Et",
@@ -107,7 +127,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 TempData["ErrorMessage"] = "Seçilen kongre bu organizasyona ait değil.";
                 return Redirect("/Admin/ConferenceFlow");
             }
-
 
             var submissionCount = await _context.Submissions
                 .AsNoTracking()

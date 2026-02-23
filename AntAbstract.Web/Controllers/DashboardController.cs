@@ -9,7 +9,7 @@ using AntAbstract.Web.Models.ViewModels.Admin.Dashboard;
 
 namespace AntAbstract.Web.Controllers
 {
-    [Authorize] 
+    [Authorize]
     public class DashboardController : Controller
     {
         private readonly UserManager<AppUser> _userManager;
@@ -217,6 +217,18 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(MyConferences), new { slug = GetSlug() });
             }
 
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+            var isOrganizator = await _userManager.IsInRoleAsync(user, "Organizator");
+
+            if (!isAdmin && isOrganizator)
+            {
+                if (conf.TenantId != user.TenantId)
+                {
+                    TempData["ErrorMessage"] = "Yetkisiz işlem! Başka bir kuruma ait kongreye erişemezsiniz.";
+                    return RedirectToAction(nameof(MyConferences), new { slug = GetSlug() });
+                }
+            }
+
             var selectedSlug = conf.Tenant?.Slug ?? conf.Slug ?? GetSlug();
 
             SaveSelectedConference(conf.TenantId, conf.Id, selectedSlug);
@@ -313,13 +325,38 @@ namespace AntAbstract.Web.Controllers
             if (user == null)
                 return Challenge();
 
-            var allConfs = await _context.Conferences
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+            var isOrganizator = await _userManager.IsInRoleAsync(user, "Organizator");
+
+            var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
-                .OrderByDescending(c => c.StartDate)
-                .ToListAsync();
+                .AsQueryable();
 
-            return View(allConfs);
+            if (isAdmin)
+            {
+            
+            }
+            else if (isOrganizator)
+            {
+                if (user.TenantId.HasValue)
+                {
+                    query = query.Where(c => c.TenantId == user.TenantId.Value);
+                }
+                else
+                {
+                    query = query.Where(c => false);
+                }
+            }
+            else
+            {
+                var myConfIds = GetUserConferenceIds(user.Id);
+                query = query.Where(c => myConfIds.Contains(c.Id));
+            }
+
+            var conferences = await query.OrderByDescending(c => c.StartDate).ToListAsync();
+
+            return View(conferences);
         }
     }
 }

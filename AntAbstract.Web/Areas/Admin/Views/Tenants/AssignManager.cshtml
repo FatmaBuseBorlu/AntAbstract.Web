@@ -1,0 +1,65 @@
+﻿@model AntAbstract.Web.Models.ViewModels.Admin.Tenants.TenantAssignManagerViewModel
+
+@{
+    ViewData["Title"] = "Yönetici Ata";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container" style="max-width: 800px; margin-top: 32px;">
+    <div class="card shadow-sm" style="border-radius:16px;">
+        <div class="card-body p-4">
+
+            <div class="d-flex align-items-start justify-content-between mb-4">
+                <div>
+                    <h3 class="mb-1 text-primary">Yönetici Ata</h3>
+                    <div class="text-muted"><strong>@Model.TenantName</strong> kurumu için yeni bir yönetici hesabı oluşturulacak.</div>
+                </div>
+                <a asp-action="Index" class="btn btn-outline-secondary">← İptal</a>
+            </div>
+
+            @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+            <form asp-action="AssignManager" method="post">
+                <input type="hidden" asp-for="TenantId" />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="FirstName">Adı</label>
+                        <input class="form-control" asp-for="FirstName" placeholder="Örn: Ahmet" />
+                        <span class="text-danger" asp-validation-for="FirstName"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="LastName">Soyadı</label>
+                        <input class="form-control" asp-for="LastName" placeholder="Örn: Yılmaz" />
+                        <span class="text-danger" asp-validation-for="LastName"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Email">E-posta Adresi</label>
+                        <input type="email" class="form-control" asp-for="Email" placeholder="Örn: yonetici@ege.edu.tr" />
+                        <span class="text-danger" asp-validation-for="Email"></span>
+                        <div class="form-text">Yönetici sisteme bu e-posta adresi ile giriş yapacak.</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Password">Sisteme Giriş Şifresi</label>
+                        <input type="password" class="form-control" asp-for="Password" placeholder="En az 6 karakter" />
+                        <span class="text-danger" asp-validation-for="Password"></span>
+                    </div>
+
+                    <div class="col-12 mt-4 text-end">
+                        <button type="submit" class="btn btn-success px-4 py-2 fw-bold">
+                            <i class="fas fa-check-circle me-1"></i> Hesabı Oluştur ve Yetkilendir
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

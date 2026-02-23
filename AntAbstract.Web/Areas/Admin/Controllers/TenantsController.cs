@@ -1,6 +1,7 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -11,16 +12,20 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Organizator")]
+    [Authorize(Roles = "Admin")]
     [Route("Tenants/{action=Index}/{id?}")]
     [Route("Admin/Tenants/{action=Index}/{id?}")]
     public class TenantsController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly UserManager<AppUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
 
-        public TenantsController(AppDbContext context)
+        public TenantsController(AppDbContext context, UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             _context = context;
+            _userManager = userManager;
+            _roleManager = roleManager;
         }
 
         public async Task<IActionResult> Index()
@@ -33,20 +38,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         public async Task<IActionResult> Details(Guid? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var tenant = await _context.Tenants
                 .Include(t => t.ScientificField)
                 .Include(t => t.CongressType)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
-            if (tenant == null)
-            {
-                return NotFound();
-            }
+            if (tenant == null) return NotFound();
 
             return View(tenant);
         }
@@ -62,13 +61,28 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Name,Slug,LogoUrl,ScientificFieldId,CongressTypeId")] Tenant tenant)
         {
+            ModelState.Remove("Conferences");
+            ModelState.Remove("Users");
+            ModelState.Remove("ScientificField");
+            ModelState.Remove("CongressType");
+
             if (ModelState.IsValid)
             {
-                tenant.Id = Guid.NewGuid();
-                _context.Add(tenant);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                var slugExists = await _context.Tenants.AnyAsync(x => x.Slug.ToLower() == tenant.Slug.ToLower());
+                if (slugExists)
+                {
+                    ModelState.AddModelError("Slug", "Bu adres (Slug) zaten kullanılıyor. Lütfen benzersiz bir link belirleyin.");
+                }
+                else
+                {
+                    tenant.Id = Guid.NewGuid();
+                    _context.Add(tenant);
+                    await _context.SaveChangesAsync();
+                    TempData["SuccessMessage"] = "Yeni kurum başarıyla eklendi!";
+                    return RedirectToAction(nameof(Index));
+                }
             }
+
             ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields.OrderBy(s => s.Name), "Id", "Name", tenant.ScientificFieldId);
             ViewBag.CongressTypeId = new SelectList(_context.CongressTypes.OrderBy(c => c.Name), "Id", "Name", tenant.CongressTypeId);
             return View(tenant);
@@ -76,16 +90,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         public async Task<IActionResult> Edit(Guid? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var tenant = await _context.Tenants.FindAsync(id);
-            if (tenant == null)
-            {
-                return NotFound();
-            }
+            if (tenant == null) return NotFound();
 
             ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields.OrderBy(s => s.Name), "Id", "Name", tenant.ScientificFieldId);
             ViewBag.CongressTypeId = new SelectList(_context.CongressTypes.OrderBy(c => c.Name), "Id", "Name", tenant.CongressTypeId);
@@ -96,31 +104,37 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name,Slug,LogoUrl,ScientificFieldId,CongressTypeId")] Tenant tenant)
         {
-            if (id != tenant.Id)
-            {
-                return NotFound();
-            }
+            if (id != tenant.Id) return NotFound();
+
+            ModelState.Remove("Conferences");
+            ModelState.Remove("Users");
+            ModelState.Remove("ScientificField");
+            ModelState.Remove("CongressType");
 
             if (ModelState.IsValid)
             {
-                try
+                var slugExists = await _context.Tenants.AnyAsync(x => x.Slug.ToLower() == tenant.Slug.ToLower() && x.Id != tenant.Id);
+                if (slugExists)
                 {
-                    _context.Update(tenant);
-                    await _context.SaveChangesAsync();
+                    ModelState.AddModelError("Slug", "Bu adres (Slug) zaten kullanılıyor. Lütfen benzersiz bir link belirleyin.");
                 }
-                catch (DbUpdateConcurrencyException)
+                else
                 {
-                    if (!TenantExists(tenant.Id))
+                    try
                     {
-                        return NotFound();
+                        _context.Update(tenant);
+                        await _context.SaveChangesAsync();
+                        TempData["SuccessMessage"] = "Kurum bilgileri güncellendi!";
                     }
-                    else
+                    catch (DbUpdateConcurrencyException)
                     {
-                        throw;
+                        if (!TenantExists(tenant.Id)) return NotFound();
+                        else throw;
                     }
+                    return RedirectToAction(nameof(Index));
                 }
-                return RedirectToAction(nameof(Index));
             }
+
             ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields.OrderBy(s => s.Name), "Id", "Name", tenant.ScientificFieldId);
             ViewBag.CongressTypeId = new SelectList(_context.CongressTypes.OrderBy(c => c.Name), "Id", "Name", tenant.CongressTypeId);
             return View(tenant);
@@ -128,20 +142,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         public async Task<IActionResult> Delete(Guid? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var tenant = await _context.Tenants
                 .Include(t => t.ScientificField)
                 .Include(t => t.CongressType)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
-            if (tenant == null)
-            {
-                return NotFound();
-            }
+            if (tenant == null) return NotFound();
 
             return View(tenant);
         }
@@ -154,15 +162,82 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (tenant != null)
             {
                 _context.Tenants.Remove(tenant);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Kurum başarıyla silindi!";
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool TenantExists(Guid id)
         {
             return _context.Tenants.Any(e => e.Id == id);
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> AssignManager(Guid id)
+        {
+            var tenant = await _context.Tenants.FindAsync(id);
+            if (tenant == null) return NotFound();
+
+            var model = new AntAbstract.Web.Models.ViewModels.Admin.Tenants.TenantAssignManagerViewModel
+            {
+                TenantId = tenant.Id,
+                TenantName = tenant.Name
+            };
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AssignManager(AntAbstract.Web.Models.ViewModels.Admin.Tenants.TenantAssignManagerViewModel model)
+        {
+            if (!ModelState.IsValid) return View(model);
+
+            var tenant = await _context.Tenants.FindAsync(model.TenantId);
+            if (tenant == null) return NotFound();
+
+            var existingUser = await _userManager.FindByEmailAsync(model.Email);
+            if (existingUser != null)
+            {
+                ModelState.AddModelError("Email", "Bu e-posta adresi sistemde zaten kayıtlı!");
+                model.TenantName = tenant.Name;
+                return View(model);
+            }
+
+            var user = new AppUser
+            {
+                UserName = model.Email,
+                Email = model.Email,
+                FirstName = model.FirstName,
+                LastName = model.LastName,
+                TenantId = model.TenantId, 
+                EmailConfirmed = true
+            };
+
+            var result = await _userManager.CreateAsync(user, model.Password);
+
+            if (result.Succeeded)
+            {
+                if (!await _roleManager.RoleExistsAsync("Organizator"))
+                {
+                    await _roleManager.CreateAsync(new IdentityRole("Organizator"));
+                }
+
+                await _userManager.AddToRoleAsync(user, "Organizator");
+
+                TempData["SuccessMessage"] = $"{tenant.Name} için {model.FirstName} {model.LastName} başarıyla yönetici olarak atandı!";
+                return RedirectToAction(nameof(Index));
+            }
+
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            model.TenantName = tenant.Name;
+            return View(model);
         }
     }
 }
