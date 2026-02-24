@@ -2,64 +2,154 @@
 
 @{
     ViewData["Title"] = "Yönetici Ata";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    Layout = "_LayoutDashboard";
 }
 
-<div class="container" style="max-width: 800px; margin-top: 32px;">
-    <div class="card shadow-sm" style="border-radius:16px;">
-        <div class="card-body p-4">
+<div class="container-fluid">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h4 class="mb-0 fw-bold text-dark">👤 Kurum Yöneticisi Ata</h4>
+            <p class="text-muted small mb-0"><strong>@Model.TenantName</strong> kurumu için tam yetkili bir organizatör hesabı oluşturun.</p>
+        </div>
+        <a asp-action="Index" class="btn btn-light border shadow-sm px-3">
+            <i class="fas fa-arrow-left me-2"></i> Listeye Dön
+        </a>
+    </div>
 
-            <div class="d-flex align-items-start justify-content-between mb-4">
-                <div>
-                    <h3 class="mb-1 text-primary">Yönetici Ata</h3>
-                    <div class="text-muted"><strong>@Model.TenantName</strong> kurumu için yeni bir yönetici hesabı oluşturulacak.</div>
+    <div class="row">
+        <div class="col-xl-7 col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4 p-md-5">
+
+                    @Html.ValidationSummary(true, "", new { @class = "alert alert-danger border-0 shadow-sm rounded-3 small" })
+
+                    <form asp-action="AssignManager" method="post">
+                        <input type="hidden" asp-for="TenantId" />
+
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark small" asp-for="FirstName">YÖNETİCİ ADI</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted">
+                                        <i class="fas fa-user"></i>
+                                    </span>
+                                    <input class="form-control bg-light border-start-0 ps-0" asp-for="FirstName" placeholder="Örn: Ahmet" />
+                                </div>
+                                <span class="text-danger small mt-1 d-block" asp-validation-for="FirstName"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark small" asp-for="LastName">SOYADI</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted">
+                                        <i class="fas fa-user-tag"></i>
+                                    </span>
+                                    <input class="form-control bg-light border-start-0 ps-0" asp-for="LastName" placeholder="Örn: Yılmaz" />
+                                </div>
+                                <span class="text-danger small mt-1 d-block" asp-validation-for="LastName"></span>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold text-dark small" asp-for="Email">E-POSTA ADRESİ</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted">
+                                        <i class="fas fa-envelope"></i>
+                                    </span>
+                                    <input type="email" class="form-control bg-light border-start-0 ps-0" asp-for="Email" placeholder="Örn: yonetici@kurum.edu.tr" />
+                                </div>
+                                <div class="form-text text-muted small mt-2">
+                                    <i class="fas fa-info-circle me-1"></i> Yönetici sisteme bu e-posta adresi ile giriş yapacaktır.
+                                </div>
+                                <span class="text-danger small mt-1 d-block" asp-validation-for="Email"></span>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold text-dark small" asp-for="Password">GİRİŞ ŞİFRESİ</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted">
+                                        <i class="fas fa-lock"></i>
+                                    </span>
+                                    <input type="password" class="form-control bg-light border-start-0 ps-0" asp-for="Password" placeholder="En az 6 karakterli bir şifre belirleyin" />
+                                </div>
+                                <span class="text-danger small mt-1 d-block" asp-validation-for="Password"></span>
+                            </div>
+                        </div>
+
+                        <hr class="my-5 opacity-50">
+
+                        <div class="d-grid text-end">
+                            <button type="submit" class="btn btn-success btn-lg rounded-3 fw-bold shadow-sm">
+                                <i class="fas fa-user-check me-2"></i> Hesabı Oluştur ve Yetkilendir
+                            </button>
+                        </div>
+                    </form>
+
                 </div>
-                <a asp-action="Index" class="btn btn-outline-secondary">← İptal</a>
             </div>
+        </div>
 
-            @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
-
-            <form asp-action="AssignManager" method="post">
-                <input type="hidden" asp-for="TenantId" />
-
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label" asp-for="FirstName">Adı</label>
-                        <input class="form-control" asp-for="FirstName" placeholder="Örn: Ahmet" />
-                        <span class="text-danger" asp-validation-for="FirstName"></span>
+        <div class="col-xl-5 col-lg-4 mb-4">
+            <div class="card border-0 bg-success bg-opacity-10 rounded-4 p-2 border-start border-success border-4 h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-white p-3 rounded-circle shadow-sm me-3">
+                            <i class="fas fa-user-shield fa-2x text-success"></i>
+                        </div>
+                        <h5 class="fw-bold text-success mb-0">Yetkilendirme Hakkında</h5>
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label" asp-for="LastName">Soyadı</label>
-                        <input class="form-control" asp-for="LastName" placeholder="Örn: Yılmaz" />
-                        <span class="text-danger" asp-validation-for="LastName"></span>
-                    </div>
+                    <p class="text-dark mb-4" style="line-height: 1.8;">
+                        Buradan oluşturacağınız kullanıcı, arka planda otomatik olarak <strong>"Organizatör"</strong> rolüne sahip olacaktır.
+                    </p>
 
-                    <div class="col-md-6">
-                        <label class="form-label" asp-for="Email">E-posta Adresi</label>
-                        <input type="email" class="form-control" asp-for="Email" placeholder="Örn: yonetici@ege.edu.tr" />
-                        <span class="text-danger" asp-validation-for="Email"></span>
-                        <div class="form-text">Yönetici sisteme bu e-posta adresi ile giriş yapacak.</div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label class="form-label" asp-for="Password">Sisteme Giriş Şifresi</label>
-                        <input type="password" class="form-control" asp-for="Password" placeholder="En az 6 karakter" />
-                        <span class="text-danger" asp-validation-for="Password"></span>
-                    </div>
-
-                    <div class="col-12 mt-4 text-end">
-                        <button type="submit" class="btn btn-success px-4 py-2 fw-bold">
-                            <i class="fas fa-check-circle me-1"></i> Hesabı Oluştur ve Yetkilendir
-                        </button>
-                    </div>
+                    <ul class="list-unstyled">
+                        <li class="mb-3 d-flex">
+                            <i class="fas fa-check-circle text-success mt-1 me-3"></i>
+                            <span class="small text-dark">Kendi kurumuna (<b>@Model.TenantName</b>) ait tüm kongreleri görebilir.</span>
+                        </li>
+                        <li class="mb-3 d-flex">
+                            <i class="fas fa-check-circle text-success mt-1 me-3"></i>
+                            <span class="small text-dark">Sadece kendi kongrelerine gelen bildirileri, hakemleri ve kullanıcıları yönetebilir.</span>
+                        </li>
+                        <li class="mb-3 d-flex">
+                            <i class="fas fa-times-circle text-danger mt-1 me-3"></i>
+                            <span class="small text-dark">Başka kurumlara ait (örneğin diğer üniversitelerin) verilerine kesinlikle erişemez.</span>
+                        </li>
+                        <li class="mb-0 d-flex">
+                            <i class="fas fa-times-circle text-danger mt-1 me-3"></i>
+                            <span class="small text-dark">Yeni bir kurum (Tenant) tanımlayamaz veya silemez.</span>
+                        </li>
+                    </ul>
                 </div>
-            </form>
-
+            </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <style>
+        .form-control:focus {
+            background-color: #fff !important;
+            border-color: #198754;
+            box-shadow: none;
+        }
+
+        .input-group-text {
+            border: 1px solid #dee2e6;
+        }
+
+        .form-label {
+            letter-spacing: 0.5px;
+        }
+
+        .btn-success {
+            transition: all 0.3s ease;
+        }
+
+            .btn-success:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(25, 135, 84, 0.4) !important;
+            }
+    </style>
 }
