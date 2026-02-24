@@ -1,56 +1,152 @@
 ﻿@model AntAbstract.Domain.Entities.Conference
 @{
-    ViewData["Title"] = "Kuruma Kongre Ekle";
-    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    ViewData["Title"] = "Yeni Kongre Ekle";
+    Layout = "_LayoutDashboard";
 }
 
-<div class="container mt-5" style="max-width: 800px;">
-    <div class="card shadow-lg border-0 rounded-4">
-        <div class="card-header bg-primary text-white p-4" style="border-radius: 1rem 1rem 0 0;">
-            <h4 class="mb-0 fw-bold"><i class="fas fa-plus-circle me-2"></i> @ViewBag.TenantName İçin Kongre Ekle</h4>
+<div class="container-fluid">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h4 class="mb-0 fw-bold text-dark">🎯 Yeni Kongre Başlat</h4>
+            <p class="text-muted small mb-0"><strong>@ViewBag.TenantName</strong> kurumu için yeni bir kongre (etkinlik) oluşturuyorsunuz.</p>
         </div>
-        <div class="card-body p-5">
-            <form asp-action="AddConference" asp-route-id="@ViewBag.TenantId" method="post">
-                @Html.AntiForgeryToken()
+        <a asp-action="Details" asp-route-id="@ViewBag.TenantId" class="btn btn-light border shadow-sm px-3">
+            <i class="fas fa-arrow-left me-2"></i> Kurum Detaylarına Dön
+        </a>
+    </div>
 
-                <div class="row mb-3">
-                    <div class="col-md-12">
-                        <label class="form-label fw-bold text-secondary">Kongre Adı <span class="text-danger">*</span></label>
-                        <input type="text" asp-for="Title" class="form-control form-control-lg border-2" placeholder="Örn: 2026 Ulusal Biyoloji Kongresi" required />
-                        <span asp-validation-for="Title" class="text-danger"></span>
-                    </div>
-                </div>
+    <div class="row">
+        <div class="col-xl-7 col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4 p-md-5">
+                    <form asp-action="AddConference" asp-route-id="@ViewBag.TenantId" method="post">
+                        @Html.AntiForgeryToken()
 
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-secondary">Başlangıç Tarihi <span class="text-danger">*</span></label>
-                        <input type="date" asp-for="StartDate" class="form-control border-2" required />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-secondary">Bitiş Tarihi <span class="text-danger">*</span></label>
-                        <input type="date" asp-for="EndDate" class="form-control border-2" required />
-                    </div>
-                </div>
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0 shadow-sm rounded-3 small"></div>
 
-                <div class="row mb-3">
-                    <div class="col-md-12">
-                        <label class="form-label fw-bold text-secondary">Mekan / Konum</label>
-                        <input type="text" asp-for="Venue" class="form-control border-2" placeholder="Örn: Ege Üniversitesi Merkez Kampüsü" />
-                    </div>
-                </div>
+                        <div class="row g-4">
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold text-dark small" asp-for="Title">KONGRE ADI <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted">
+                                        <i class="fas fa-heading"></i>
+                                    </span>
+                                    <input type="text" asp-for="Title" class="form-control bg-light border-start-0 ps-0 form-control-lg fs-6" placeholder="Örn: 2026 Ulusal Biyoloji Kongresi" required />
+                                </div>
+                                <span asp-validation-for="Title" class="text-danger small mt-1 d-block"></span>
+                            </div>
 
-                <div class="row mb-5">
-                    <div class="col-md-12">
-                        <label class="form-label fw-bold text-secondary">Kısa Açıklama</label>
-                        <textarea asp-for="Description" class="form-control border-2" rows="3"></textarea>
-                    </div>
-                </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark small" asp-for="StartDate">BAŞLANGIÇ TARİHİ <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </span>
+                                    <input type="date" asp-for="StartDate" class="form-control bg-light border-start-0 ps-0" required />
+                                </div>
+                            </div>
 
-                <div class="text-end border-top pt-4">
-                    <a asp-action="Details" asp-route-id="@ViewBag.TenantId" class="btn btn-light px-4 fw-bold me-2">İptal</a>
-                    <button type="submit" class="btn btn-primary px-5 fw-bold shadow-sm">Kongreyi Oluştur <i class="fas fa-check ms-2"></i></button>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark small" asp-for="EndDate">BİTİŞ TARİHİ <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted">
+                                        <i class="fas fa-calendar-check"></i>
+                                    </span>
+                                    <input type="date" asp-for="EndDate" class="form-control bg-light border-start-0 ps-0" required />
+                                </div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold text-dark small" asp-for="Venue">MEKAN / KONUM</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                    </span>
+                                    <input type="text" asp-for="Venue" class="form-control bg-light border-start-0 ps-0" placeholder="Örn: Ege Üniversitesi Merkez Kampüsü" />
+                                </div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold text-dark small" asp-for="Description">KISA AÇIKLAMA</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted align-items-start pt-2">
+                                        <i class="fas fa-align-left"></i>
+                                    </span>
+                                    <textarea asp-for="Description" class="form-control bg-light border-start-0 ps-0" rows="3" placeholder="Kongrenin temel amacı veya teması hakkında kısa bir bilgi..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-5 opacity-50">
+
+                        <div class="d-grid text-end">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-3 fw-bold shadow-sm">
+                                <i class="fas fa-paper-plane me-2"></i> Kongreyi Oluştur ve Başlat
+                            </button>
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
+        </div>
+
+        <div class="col-xl-5 col-lg-4 mb-4">
+            <div class="card border-0 bg-primary bg-opacity-10 rounded-4 p-2 border-start border-primary border-4 h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-white p-3 rounded-circle shadow-sm me-3">
+                            <i class="fas fa-rocket fa-2x text-primary"></i>
+                        </div>
+                        <h5 class="fw-bold text-primary mb-0">Kongre Başlatılıyor...</h5>
+                    </div>
+
+                    <p class="text-dark mb-4" style="line-height: 1.8;">
+                        Bu işlemi tamamladığınızda sistem, <strong>@ViewBag.TenantName</strong> kurumu için yepyeni bir kongre veri tabanı hazırlayacak.
+                    </p>
+
+                    <ul class="list-unstyled">
+                        <li class="mb-3 d-flex">
+                            <i class="fas fa-check-circle text-primary mt-1 me-3"></i>
+                            <span class="small text-dark">Bu kuruma bağlı olan tüm yöneticiler sisteme girdiklerinde bu kongreyi görebilecekler.</span>
+                        </li>
+                        <li class="mb-3 d-flex">
+                            <i class="fas fa-check-circle text-primary mt-1 me-3"></i>
+                            <span class="small text-dark">Müşteriniz bu kongrenin detaylarını, bildiri ayarlarını ve hakemlerini kendi paneli üzerinden yönetebilecek.</span>
+                        </li>
+                        <li class="mb-0 d-flex">
+                            <i class="fas fa-check-circle text-primary mt-1 me-3"></i>
+                            <span class="small text-dark">Gerekli durumlarda kongre tarihlerini veya açıklamasını sonradan düzenleyebilirsiniz.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <style>
+        .form-control:focus, .form-select:focus {
+            background-color: #fff !important;
+            border-color: var(--primary-color);
+            box-shadow: none;
+        }
+
+        .input-group-text {
+            border: 1px solid #dee2e6;
+        }
+
+        .form-label {
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            transition: all 0.3s ease;
+        }
+
+            .btn-primary:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(0, 174, 239, 0.4) !important;
+            }
+    </style>
+}
