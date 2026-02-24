@@ -7,9 +7,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AntAbstract.Web.Controllers 
-{ 
-
+namespace AntAbstract.Web.Controllers
+{
     [Authorize]
     public class ConferenceController : Controller
     {
@@ -27,8 +26,7 @@ namespace AntAbstract.Web.Controllers
             _selectedConferenceService = selectedConferenceService;
         }
 
-
-        [AllowAnonymous] 
+        [AllowAnonymous]
         [HttpGet("Conference/Details/{slug}")]
         public async Task<IActionResult> Details(string slug)
         {
@@ -38,12 +36,11 @@ namespace AntAbstract.Web.Controllers
             }
 
             var conference = await _context.Conferences
-                .Include(c => c.Tenant)       
+                .Include(c => c.Tenant)
                 .Include(c => c.Registrations)
-                .AsNoTracking()               
+                .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Slug == slug);
 
-         
             if (conference == null && Guid.TryParse(slug, out Guid guidId))
             {
                 conference = await _context.Conferences
@@ -58,9 +55,15 @@ namespace AntAbstract.Web.Controllers
                 return NotFound("Aradığınız kongre bulunamadı.");
             }
 
+            var pageBlocks = await _context.ConferencePageBlocks
+                .Where(b => b.ConferenceId == conference.Id && b.IsActive && b.Page == "Home")
+                .OrderBy(b => b.Order)
+                .ToListAsync();
+
+            ViewBag.PageBlocks = pageBlocks;
+
             return View(conference);
         }
-
 
         [HttpGet("/Conference/Select")]
         public async Task<IActionResult> Select()
@@ -91,9 +94,9 @@ namespace AntAbstract.Web.Controllers
                     .AsNoTracking()
                     .Where(ra => ra.ReviewerId == user.Id)
                     .Join(_context.Submissions.AsNoTracking(),
-                          ra => ra.SubmissionId,
-                          s => s.Id,
-                          (ra, s) => s.ConferenceId);
+                         ra => ra.SubmissionId,
+                         s => s.Id,
+                         (ra, s) => s.ConferenceId);
 
                 var allowedIds = regIds
                     .Union(authorIds)

@@ -11,7 +11,6 @@
         : $"https://ui-avatars.com/api/?name={user?.FirstName}+{user?.LastName}&background=00aeef&color=fff&size=128&bold=true";
     var displayName = user != null ? $"{user.FirstName} {user.LastName}" : User.Identity?.Name;
 
-    // --- ROLLERİ KESİN ÇİZGİLERLE AYIRIYORUZ ---
     var isSuperAdmin = User.IsInRole("Admin");
     var isOrganizator = User.IsInRole("Organizator");
     var isManagementTeam = isSuperAdmin || isOrganizator;
@@ -51,7 +50,6 @@
     }
     selectedConferenceTitle ??= Context.Session.GetString("SelectedConferenceTitle");
 
-    // URL Tanımlamaları...
     var dashboardUrl = string.IsNullOrWhiteSpace(slug) ? "/Dashboard" : $"/{slug}/Dashboard";
     var dashboardMyConferencesUrl = string.IsNullOrWhiteSpace(slug) ? "/Dashboard/MyConferences" : $"/{slug}/Dashboard/MyConferences";
     var submissionsAdminUrl = string.IsNullOrWhiteSpace(slug) ? "/Admin/Submissions" : $"/{slug}/Admin/Submissions";
@@ -442,14 +440,12 @@
                 }
                 else
                 {
-                    // KONGRE SEÇİLMEMİŞSE ONU UYAR!
                     <div class="menu-label text-danger">KONGRE İŞLEMLERİ</div>
                     <a href="@dashboardMyConferencesUrl" class="nav-link @(currentController == "Dashboard" && currentAction == "MyConferences" ? "active" : "")">
                         <i class="fas fa-hand-pointer text-danger animate__animated animate__pulse animate__infinite"></i> İlk Adım: Kongre Seçin
                     </a>
                 }
 
-                // KÜRESEL SİSTEM AYARLARI (KONGREDEN BAĞIMSIZ) - SADECE SÜPER ADMİN
                 @if (isSuperAdmin)
                 {
                     <div class="menu-label text-info">KÜRESEL SİSTEM</div>
@@ -465,7 +461,6 @@
             </a>
 
             <div class="menu-label">HESAP</div>
-            @* DİKKAT: SADECE KONGRE SEÇİLMİŞSE "KONGRE DEĞİŞTİR" BUTONUNU GÖSTER *@
             @if (hasSelectedConference && (isAuthor || isReferee || isManagementTeam))
             {
                 <a href="@dashboardMyConferencesUrl" class="nav-link @(currentController == "Dashboard" && currentAction == "MyConferences" ? "active" : "")">
@@ -515,7 +510,7 @@
                         <li><a class="dropdown-item rounded-2 py-2" href="@dashboardMyConferencesUrl"><i class="fas fa-exchange-alt me-2 text-muted"></i> Kongre Seçimi</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
-                            <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post">
+                            <form asp-controller="Dashboard" asp-action="CustomLogout" method="post">
                                 <button type="submit" class="dropdown-item rounded-2 py-2 text-danger fw-bold"><i class="fas fa-sign-out-alt me-2"></i> Çıkış</button>
                             </form>
                         </li>
