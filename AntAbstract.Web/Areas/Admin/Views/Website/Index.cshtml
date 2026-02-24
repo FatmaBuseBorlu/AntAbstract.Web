@@ -3,8 +3,8 @@
 
 @{
     ViewData["Title"] = "Website Blokları";
-    // TEMA (LAYOUT) BURADA EKLENİYOR:
-    Layout = "~/Views/Shared/_Layout.cshtml"; // Admin teması kullanıyorsan burayı "~/Views/Shared/_AdminLayout.cshtml" yapabilirsin.
+    // TEMAYI YÖNETİM PANELİNE ÇEVİRDİK
+    Layout = "_LayoutDashboard";
 
     var slug = ViewContext.RouteData.Values["slug"]?.ToString();
     var culture = (string?)ViewBag.Culture ?? "tr-TR";
@@ -12,23 +12,30 @@
     Guid? selectedConferenceId = ViewBag.ConferenceId as Guid?;
 }
 
-<div class="container" style="max-width: 1100px; margin-top: 32px;">
+<div class="container-fluid">
 
-    <h2 class="mb-1">Website Blokları</h2>
-    <div class="text-muted mb-3">Seçili sayfa için blok ekle / düzenle / sırala</div>
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h4 class="mb-0 fw-bold text-dark">🎨 Website Yönetimi</h4>
+            <p class="text-muted small mb-0">Kongre web sitesinin ön yüzünde görünecek blokları buradan düzenleyebilirsiniz.</p>
+        </div>
+        @if (selectedConferenceId.HasValue)
+        {
+            <a class="btn btn-primary shadow-sm px-4 fw-bold rounded-pill"
+               asp-area="Admin"
+               asp-controller="Website"
+               asp-action="Create"
+               asp-route-slug="@slug"
+               asp-route-conferenceId="@selectedConferenceId"
+               asp-route-culture="@culture"
+               asp-route-page="@pageKey">
+                <i class="fas fa-plus-circle me-2"></i> Yeni Blok Ekle
+            </a>
+        }
+    </div>
 
-    <div class="card shadow-sm" style="border-radius:16px;">
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-light">
         <div class="card-body p-4">
-
-            @if (TempData["SuccessMessage"] != null)
-            {
-                <div class="alert alert-success">@TempData["SuccessMessage"]</div>
-            }
-            @if (TempData["ErrorMessage"] != null)
-            {
-                <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
-            }
-
             <form method="get"
                   asp-area="Admin"
                   asp-controller="Website"
@@ -37,65 +44,60 @@
                   class="row g-3 align-items-end">
 
                 <div class="col-md-3">
-                    <label class="form-label">Culture</label>
-                    <select class="form-select" name="culture" asp-items="ViewBag.CultureList"></select>
+                    <label class="form-label fw-bold text-muted small mb-1">DİL (CULTURE)</label>
+                    <select class="form-select border-0 shadow-sm" name="culture" asp-items="ViewBag.CultureList"></select>
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label">Page</label>
-                    <select class="form-select" name="page" asp-items="ViewBag.PageList"></select>
+                    <label class="form-label fw-bold text-muted small mb-1">SAYFA (PAGE)</label>
+                    <select class="form-select border-0 shadow-sm" name="page" asp-items="ViewBag.PageList"></select>
                 </div>
 
                 <div class="col-md-4">
-                    <label class="form-label">Conference</label>
-                    <select class="form-select" name="conferenceId" asp-items="ViewBag.ConferenceList"></select>
+                    <label class="form-label fw-bold text-muted small mb-1">KONGRE (CONFERENCE)</label>
+                    <select class="form-select border-0 shadow-sm" name="conferenceId" asp-items="ViewBag.ConferenceList"></select>
                 </div>
 
-                <div class="col-md-2 d-flex gap-2">
-                    <button type="submit" class="btn btn-outline-primary w-100">Filtrele</button>
+                <div class="col-md-2 d-grid">
+                    <button type="submit" class="btn btn-dark fw-bold shadow-sm rounded-3">
+                        <i class="fas fa-filter me-2"></i> Filtrele
+                    </button>
                 </div>
             </form>
+        </div>
+    </div>
 
-            <hr class="my-4" />
-
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div class="fw-semibold">Blok Listesi</div>
-
-                @if (selectedConferenceId.HasValue)
-                {
-                    <a class="btn btn-primary"
-                       asp-area="Admin"
-                       asp-controller="Website"
-                       asp-action="Create"
-                       asp-route-slug="@slug"
-                       asp-route-conferenceId="@selectedConferenceId"
-                       asp-route-culture="@culture"
-                       asp-route-page="@pageKey">
-                        + Yeni Blok
-                    </a>
-                }
-                else
-                {
-                    <span class="text-danger">Konferans bulunamadı.</span>
-                }
-            </div>
-
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+            <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-layer-group me-2 text-primary"></i> Aktif Blok Listesi</h6>
+            @if (!selectedConferenceId.HasValue)
+            {
+                <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill small">
+                    <i class="fas fa-exclamation-triangle me-1"></i> Kongre Seçilmedi
+                </span>
+            }
+        </div>
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-striped align-middle">
-                    <thead>
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
                         <tr>
-                            <th style="width:90px;">Order</th>
-                            <th style="width:140px;">Type</th>
-                            <th>Title</th>
-                            <th style="width:90px;">Active</th>
-                            <th style="width:280px;">İşlemler</th>
+                            <th class="ps-4 py-3 text-muted fw-bold small" style="width: 80px;">SIRA</th>
+                            <th class="py-3 text-muted fw-bold small" style="width: 150px;">BLOK TİPİ</th>
+                            <th class="py-3 text-muted fw-bold small">BAŞLIK</th>
+                            <th class="py-3 text-muted fw-bold small text-center" style="width: 120px;">DURUM</th>
+                            <th class="pe-4 py-3 text-muted fw-bold small text-end" style="width: 250px;">İŞLEMLER</th>
                         </tr>
                     </thead>
                     <tbody>
                         @if (Model == null || !Model.Any())
                         {
                             <tr>
-                                <td colspan="5" class="text-muted text-center py-4">Henüz blok yok.</td>
+                                <td colspan="5" class="text-center py-5">
+                                    <div class="text-muted mb-2"><i class="fas fa-cubes fa-3x opacity-25"></i></div>
+                                    <h6 class="fw-bold text-dark">Henüz Bir Blok Eklenmemiş</h6>
+                                    <p class="small text-muted mb-0">Bu sayfa için yeni bir tasarım bloğu ekleyerek işe başlayın.</p>
+                                </td>
                             </tr>
                         }
                         else
@@ -103,51 +105,52 @@
                             foreach (var b in Model)
                             {
                                 <tr>
-                                    <td>@b.Order</td>
-                                    <td>@b.BlockType</td>
-                                    <td>@b.Title</td>
+                                    <td class="ps-4">
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary px-2 py-1">#@b.Order</span>
+                                    </td>
                                     <td>
+                                        <span class="fw-bold text-dark small"><i class="fas fa-cube me-1 text-primary opacity-75"></i> @b.BlockType</span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-dark">@b.Title</span>
+                                    </td>
+                                    <td class="text-center">
                                         @if (b.IsActive)
                                         {
-                                            <span class="badge bg-success">Yes</span>
+                                            <span class="badge rounded-pill bg-success bg-opacity-10 text-success px-3 py-2 border border-success" style="font-size: 0.75rem;">
+                                                <i class="fas fa-check-circle me-1"></i> Aktif
+                                            </span>
                                         }
                                         else
                                         {
-                                            <span class="badge bg-secondary">No</span>
+                                            <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger px-3 py-2 border border-danger" style="font-size: 0.75rem;">
+                                                <i class="fas fa-times-circle me-1"></i> Pasif
+                                            </span>
                                         }
                                     </td>
-                                    <td class="d-flex gap-2">
-                                        <a class="btn btn-sm btn-warning"
-                                           asp-area="Admin"
-                                           asp-controller="Website"
-                                           asp-action="Edit"
-                                           asp-route-slug="@slug"
-                                           asp-route-id="@b.Id">
-                                            Düzenle
-                                        </a>
+                                    <td class="pe-4 text-end">
+                                        <div class="d-flex justify-content-end gap-2">
 
-                                        <form asp-area="Admin"
-                                              asp-controller="Website"
-                                              asp-action="Toggle"
-                                              asp-route-slug="@slug"
-                                              asp-route-id="@b.Id"
-                                              method="post">
-                                            @Html.AntiForgeryToken()
-                                            <button class="btn btn-sm btn-outline-secondary" type="submit">
-                                                @(b.IsActive ? "Pasif Yap" : "Aktif Yap")
-                                            </button>
-                                        </form>
+                                            <form asp-area="Admin" asp-controller="Website" asp-action="Toggle" asp-route-slug="@slug" asp-route-id="@b.Id" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <button class="btn btn-sm @(b.IsActive ? "btn-outline-warning" : "btn-outline-success") rounded-3 fw-bold" type="submit" title="Durumu Değiştir">
+                                                    @(b.IsActive ? "Pasife Al" : "Aktif Et")
+                                                </button>
+                                            </form>
 
-                                        <form asp-area="Admin"
-                                              asp-controller="Website"
-                                              asp-action="Delete"
-                                              asp-route-slug="@slug"
-                                              asp-route-id="@b.Id"
-                                              method="post"
-                                              onsubmit="return confirm('Silmek istediğine emin misin?');">
-                                            @Html.AntiForgeryToken()
-                                            <button class="btn btn-sm btn-outline-danger" type="submit">Sil</button>
-                                        </form>
+                                            <div class="btn-group btn-group-sm shadow-sm rounded-3">
+                                                <a asp-area="Admin" asp-controller="Website" asp-action="Edit" asp-route-slug="@slug" asp-route-id="@b.Id" class="btn btn-white text-primary border-end" title="Düzenle">
+                                                    <i class="fas fa-pen"></i>
+                                                </a>
+                                                <form asp-area="Admin" asp-controller="Website" asp-action="Delete" asp-route-slug="@slug" asp-route-id="@b.Id" method="post" onsubmit="return confirm('Bu bloğu kalıcı olarak silmek istediğinize emin misiniz?');" style="display: inline;">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-white text-danger" title="Sil">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+
+                                        </div>
                                     </td>
                                 </tr>
                             }
@@ -155,7 +158,34 @@
                     </tbody>
                 </table>
             </div>
-
         </div>
     </div>
 </div>
+
+<style>
+    .btn-white {
+        background-color: #fff;
+        border: 1px solid #f1f5f9;
+        padding: 0.5rem 0.7rem;
+    }
+
+        .btn-white:hover {
+            background-color: #f8fafc;
+            border-color: #cbd5e1;
+            z-index: 2;
+        }
+
+    .table thead th {
+        letter-spacing: 0.5px;
+        border-bottom: none;
+    }
+
+    .table tbody tr {
+        transition: all 0.2s ease;
+        border-bottom: 1px solid #f8fafc;
+    }
+
+        .table tbody tr:hover {
+            background-color: #fbfcfe !important;
+        }
+</style>

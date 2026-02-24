@@ -146,7 +146,12 @@
         .btn-select.active-btn {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-            cursor: default; pointer-events: none; opacity: 0.9;
+            cursor: pointer; 
+            opacity: 1;
+        }
+        .btn-select.active-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
         }
 
         .btn-secondary-custom {
@@ -182,7 +187,7 @@
                 <li><a class="dropdown-item rounded-2 py-2" href="/Identity/Account/Manage"><i class="fas fa-user-cog me-2 text-muted"></i> Ayarlar</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li>
-                    <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post">
+                    <form asp-controller="Dashboard" asp-action="CustomLogout" method="post">
                         <button type="submit" class="dropdown-item rounded-2 text-danger fw-bold py-2">
                             <i class="fas fa-sign-out-alt me-2"></i> Çıkış Yap
                         </button>
@@ -195,7 +200,7 @@
     <div class="selection-container">
         
         <div class="text-center mb-5">
-            <h2 class="fw-bold text-dark mb-2">Hoş Geldiniz 👋</h2>
+            <h2 class="fw-bold text-dark mb-2">Hoş Geldiniz </h2>
             <p class="text-muted" style="font-size: 1.1rem;">İşlem yapmak istediğiniz çalışma alanını (kongreyi) aşağıdan seçiniz.</p>
         </div>
 
@@ -264,7 +269,7 @@
                                     <button type="submit" class="btn-select @(isSelected ? "active-btn" : "")">
                                         @if (isSelected)
                                         {
-                                            <span>Şu An Aktif</span> <i class="fas fa-check-circle"></i>
+                                            <span>Panele Dön (Aktif)</span> <i class="fas fa-sign-in-alt"></i>
                                         }
                                         else
                                         {

@@ -265,14 +265,13 @@ namespace AntAbstract.Web.Controllers
 
                 if (!isAuthorizedForSessionConf)
                 {
-
                     ClearSelectedConference();
                     TempData["ErrorMessage"] = "Önceki oturumdan kalan yetkisiz kongre erişimi engellendi.";
                     return RedirectToAction(nameof(MyConferences), new { slug = _tenantContext.Current?.Slug });
                 }
             }
 
-            if (!isAdminLike && !selectedConferenceId.HasValue)
+            if (!selectedConferenceId.HasValue)
                 return RedirectToAction(nameof(MyConferences), new { slug });
 
             var submissionsQuery = _context.Submissions.AsQueryable()
@@ -372,6 +371,14 @@ namespace AntAbstract.Web.Controllers
             var conferences = await query.OrderByDescending(c => c.StartDate).ToListAsync();
 
             return View(conferences);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CustomLogout([FromServices] SignInManager<AppUser> signInManager)
+        {
+            HttpContext.Session.Clear(); 
+            await signInManager.SignOutAsync(); 
+            return Redirect("/"); 
         }
     }
 }

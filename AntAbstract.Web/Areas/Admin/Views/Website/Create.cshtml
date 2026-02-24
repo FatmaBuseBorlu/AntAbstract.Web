@@ -2,149 +2,233 @@
 @using AntAbstract.Domain.Entities
 
 @{
-    ViewData["Title"] = "Blok Ekle";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Yeni Blok Ekle";
+    Layout = "_LayoutDashboard";
 
     var slug = ViewContext.RouteData.Values["slug"]?.ToString();
 }
 
-<div class="container" style="max-width: 980px; margin-top: 32px;">
-    <div class="card shadow-sm" style="border-radius:16px;">
-        <div class="card-body p-4">
+<div class="container-fluid">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h4 class="mb-0 fw-bold text-dark">🧱 Yeni Blok Oluştur</h4>
+            <p class="text-muted small mb-0">Kongre sitenizin <strong>@Model.Page</strong> sayfası için yeni bir tasarım bloğu ekliyorsunuz.</p>
+        </div>
+        <a class="btn btn-light border shadow-sm px-3"
+           asp-area="Admin" asp-controller="Website" asp-action="Index"
+           asp-route-slug="@slug" asp-route-culture="@Model.Culture"
+           asp-route-page="@Model.Page" asp-route-conferenceId="@Model.ConferenceId">
+            <i class="fas fa-arrow-left me-2"></i> Listeye Dön
+        </a>
+    </div>
 
-            <div class="d-flex align-items-start justify-content-between">
-                <div>
-                    <h3 class="mb-1">Blok Ekle</h3>
-                    <div class="text-muted">Hero / diğer blok tiplerini buradan oluşturabilirsin</div>
-                </div>
+    <div class="row">
+        <div class="col-xl-8 col-lg-7 mb-4">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4 p-md-5">
 
-                <a class="btn btn-outline-secondary"
-                   asp-area="Admin"
-                   asp-controller="Website"
-                   asp-action="Index"
-                   asp-route-slug="@slug"
-                   asp-route-culture="@Model.Culture"
-                   asp-route-page="@Model.Page"
-                   asp-route-conferenceId="@Model.ConferenceId">
-                    ← Geri
-                </a>
-            </div>
+                    @Html.ValidationSummary(true, "", new { @class = "alert alert-danger border-0 shadow-sm rounded-3 small" })
 
-            <hr class="my-4" />
+                    <form asp-area="Admin" asp-controller="Website" asp-action="Create" asp-route-slug="@slug" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="ConferenceId" />
+                        <input type="hidden" asp-for="ContentJson" value="{}" />
 
-            @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark small" asp-for="Page">SAYFA (PAGE)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-file-alt"></i></span>
+                                    <input class="form-control bg-light border-start-0 ps-0" asp-for="Page" readonly />
+                                </div>
+                                <span class="text-danger small mt-1" asp-validation-for="Page"></span>
+                            </div>
 
-            <form asp-area="Admin"
-                  asp-controller="Website"
-                  asp-action="Create"
-                  asp-route-slug="@slug"
-                  method="post">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark small" asp-for="Culture">DİL (CULTURE)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-globe"></i></span>
+                                    <select class="form-select bg-light border-start-0 ps-0" asp-for="Culture">
+                                        <option value="tr-TR">Türkçe (tr-TR)</option>
+                                        <option value="en-US">English (en-US)</option>
+                                    </select>
+                                </div>
+                                <span class="text-danger small mt-1" asp-validation-for="Culture"></span>
+                            </div>
 
-                @Html.AntiForgeryToken()
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark small" asp-for="BlockType">BLOK TİPİ <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-primary"><i class="fas fa-cubes"></i></span>
+                                    <select class="form-select bg-light border-start-0 ps-0 fw-bold" id="BlockType" asp-for="BlockType" asp-items="Html.GetEnumSelectList<ConferencePageBlockType>()"></select>
+                                </div>
+                                <span class="text-danger small mt-1" asp-validation-for="BlockType"></span>
+                            </div>
 
-                <input type="hidden" asp-for="ConferenceId" />
+                            <div class="col-md-12 mt-4">
+                                <h6 class="fw-bold border-bottom pb-2 mb-3 text-secondary">Metin İçerikleri</h6>
+                            </div>
 
-                <input type="hidden" asp-for="ContentJson" value="{}" />
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark small" asp-for="Title">BAŞLIK <span class="text-danger">*</span></label>
+                                <input class="form-control" asp-for="Title" placeholder="Örn: Kongre Hakkında" />
+                                <span class="text-danger small mt-1" asp-validation-for="Title"></span>
+                            </div>
 
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label" asp-for="Page"></label>
-                        <input class="form-control" asp-for="Page" />
-                        <span class="text-danger" asp-validation-for="Page"></span>
-                    </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark small" asp-for="Subtitle">ALT BAŞLIK / ÖZET</label>
+                                <input class="form-control" asp-for="Subtitle" placeholder="Örn: Bilimin Geleceğini Şekillendiriyoruz" />
+                                <span class="text-danger small mt-1" asp-validation-for="Subtitle"></span>
+                            </div>
 
-                    <div class="col-md-4">
-                        <label class="form-label" asp-for="Culture"></label>
-                        <select class="form-select" asp-for="Culture">
-                            <option value="tr-TR">tr-TR</option>
-                            <option value="en-US">en-US</option>
-                        </select>
-                        <span class="text-danger" asp-validation-for="Culture"></span>
-                    </div>
+                            <div class="col-12 hero-fields" style="display: none;">
+                                <div class="card bg-primary bg-opacity-10 border-0 rounded-3 p-3 mt-2">
+                                    <h6 class="fw-bold text-primary mb-3"><i class="fas fa-star me-2"></i> Hero (Karşılama) Ayarları</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold text-dark small">BUTON METNİ</label>
+                                            <input class="form-control bg-white" name="btnText" placeholder="Örn: Hemen Kayıt Ol" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold text-dark small">BUTON LİNKİ (URL)</label>
+                                            <input class="form-control bg-white" name="btnUrl" placeholder="Örn: /kayit veya https://..." />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold text-dark small">ARKA PLAN RESMİ URL</label>
+                                            <input class="form-control bg-white" name="bgImage" placeholder="Örn: https://.../resim.jpg" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold text-dark small">YAN GÖRSEL URL</label>
+                                            <input class="form-control bg-white" name="sideImage" placeholder="Örn: https://.../logo.png" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                    <div class="col-md-4">
-                        <label class="form-label" asp-for="BlockType"></label>
-                        <select class="form-select" id="BlockType"
-                                asp-for="BlockType"
-                                asp-items="Html.GetEnumSelectList<ConferencePageBlockType>()">
-                        </select>
-                        <span class="text-danger" asp-validation-for="BlockType"></span>
-                    </div>
+                            <div class="col-md-12 mt-4">
+                                <h6 class="fw-bold border-bottom pb-2 mb-3 text-secondary">Görünüm Ayarları</h6>
+                            </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label" asp-for="Title"></label>
-                        <input class="form-control" asp-for="Title" />
-                        <span class="text-danger" asp-validation-for="Title"></span>
-                    </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark small" asp-for="Order">SIRALAMA (ORDER)</label>
+                                <div class="input-group w-50">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-sort-numeric-down"></i></span>
+                                    <input class="form-control bg-light border-start-0 ps-0" asp-for="Order" type="number" value="0" />
+                                </div>
+                                <div class="form-text text-muted small mt-1">Sayı ne kadar küçükse, blok o kadar yukarıda görünür.</div>
+                                <span class="text-danger small mt-1" asp-validation-for="Order"></span>
+                            </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label" asp-for="Subtitle"></label>
-                        <input class="form-control" asp-for="Subtitle" />
-                        <span class="text-danger" asp-validation-for="Subtitle"></span>
-                    </div>
-
-                    <div class="col-md-6 hero-fields">
-                        <label class="form-label text-primary fw-bold"><i class="fas fa-mouse-pointer me-1"></i> Buton Metni</label>
-                        <input class="form-control" name="btnText" placeholder="Örn: Hemen Kayıt Ol" />
-                    </div>
-                    <div class="col-md-6 hero-fields">
-                        <label class="form-label text-primary fw-bold"><i class="fas fa-link me-1"></i> Buton Linki (URL)</label>
-                        <input class="form-control" name="btnUrl" placeholder="Örn: /kayit veya https://..." />
-                    </div>
-                    <div class="col-md-6 hero-fields">
-                        <label class="form-label text-primary fw-bold"><i class="fas fa-image me-1"></i> Arka Plan Resmi URL</label>
-                        <input class="form-control" name="bgImage" placeholder="Örn: https://.../resim.jpg" />
-                    </div>
-                    <div class="col-md-6 hero-fields">
-                        <label class="form-label text-primary fw-bold"><i class="fas fa-image me-1"></i> Yan Görsel URL</label>
-                        <input class="form-control" name="sideImage" placeholder="Örn: https://.../logo.png" />
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label" asp-for="Order"></label>
-                        <input class="form-control" asp-for="Order" type="number" value="0" />
-                        <span class="text-danger" asp-validation-for="Order"></span>
-                    </div>
-
-                    <div class="col-md-3 d-flex align-items-end">
-                        <div class="form-check">
-                            <input class="form-check-input" asp-for="IsActive" />
-                            <label class="form-check-label" asp-for="IsActive">Aktif</label>
+                            <div class="col-md-6 d-flex align-items-center">
+                                <div class="form-check form-switch mt-3">
+                                    <input class="form-check-input" type="checkbox" asp-for="IsActive" id="flexSwitchCheckChecked" checked>
+                                    <label class="form-check-label fw-bold ms-2" for="flexSwitchCheckChecked">Bu Bloğu Sitede Aktif Olarak Göster</label>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="col-12 d-flex gap-2 mt-2">
-                        <button class="btn btn-success" type="submit">💾 Kaydet</button>
+                        <hr class="my-5 opacity-50">
 
-                        <a class="btn btn-outline-secondary"
-                           asp-area="Admin"
-                           asp-controller="Website"
-                           asp-action="Index"
-                           asp-route-slug="@slug"
-                           asp-route-culture="@Model.Culture"
-                           asp-route-page="@Model.Page"
-                           asp-route-conferenceId="@Model.ConferenceId">
-                            İptal
-                        </a>
-                    </div>
+                        <div class="d-flex justify-content-end gap-3">
+                            <a class="btn btn-light btn-lg rounded-3 fw-bold border px-4"
+                               asp-area="Admin" asp-controller="Website" asp-action="Index"
+                               asp-route-slug="@slug" asp-route-culture="@Model.Culture"
+                               asp-route-page="@Model.Page" asp-route-conferenceId="@Model.ConferenceId">
+                                İptal Et
+                            </a>
+                            <button class="btn btn-primary btn-lg rounded-3 fw-bold shadow-sm px-5" type="submit">
+                                <i class="fas fa-save me-2"></i> Bloğu Kaydet
+                            </button>
+                        </div>
+                    </form>
+
                 </div>
-            </form>
+            </div>
+        </div>
 
+        <div class="col-xl-4 col-lg-5 mb-4">
+            <div class="card border-0 bg-info bg-opacity-10 rounded-4 p-2 border-start border-info border-4 h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-white p-3 rounded-circle shadow-sm me-3">
+                            <i class="fas fa-lightbulb fa-2x text-info"></i>
+                        </div>
+                        <h5 class="fw-bold text-info mb-0">Nasıl Çalışır?</h5>
+                    </div>
+
+                    <p class="text-dark mb-4" style="line-height: 1.8;">
+                        Web sitenizin tasarımı, tıpkı legolar gibi üst üste dizilmiş bloklardan (Block) oluşur.
+                    </p>
+
+                    <ul class="list-unstyled">
+                        <li class="mb-3 d-flex">
+                            <i class="fas fa-cube text-info mt-1 me-3"></i>
+                            <span class="small text-dark"><strong>Blok Tipi Seçin:</strong> Hero (Giriş), About (Hakkında), Speakers (Konuşmacılar) vb. içerik tiplerini belirler.</span>
+                        </li>
+                        <li class="mb-3 d-flex">
+                            <i class="fas fa-sort-amount-down text-info mt-1 me-3"></i>
+                            <span class="small text-dark"><strong>Sıralama:</strong> 0, 1, 2, 3 gibi numaralar vererek blokların sitede hangi sırayla dizileceğini ayarlayabilirsiniz.</span>
+                        </li>
+                        <li class="mb-0 d-flex">
+                            <i class="fas fa-eye-slash text-info mt-1 me-3"></i>
+                            <span class="small text-dark"><strong>Gizleme:</strong> Henüz hazır olmayan veya süresi geçen (Örn: Erken Kayıt) bir bloğu silmeden pasife alabilirsiniz.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <style>
+        .form-control:focus, .form-select:focus {
+            background-color: #fff !important;
+            border-color: var(--primary-color);
+            box-shadow: none;
+        }
 
+        .input-group-text {
+            border: 1px solid #dee2e6;
+        }
+
+        .form-label {
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            transition: all 0.3s ease;
+        }
+
+            .btn-primary:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(0, 174, 239, 0.4) !important;
+            }
+
+        .form-switch .form-check-input {
+            width: 2.5em;
+            height: 1.25em;
+            cursor: pointer;
+        }
+    </style>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             var typeSelect = document.getElementById("BlockType");
             var heroFields = document.querySelectorAll(".hero-fields");
 
             function toggleFields() {
-                var isHero = typeSelect.options[typeSelect.selectedIndex].text === "Hero";
-                heroFields.forEach(f => f.style.display = isHero ? "block" : "none");
+                var selectedText = typeSelect.options[typeSelect.selectedIndex].text;
+                var isHero = selectedText.includes("Hero");
+
+                heroFields.forEach(f => {
+                    if(isHero){
+                        f.style.display = "block";
+                        f.classList.add("animate__animated", "animate__fadeInIn"); 
+                    } else {
+                        f.style.display = "none";
+                    }
+                });
             }
 
             typeSelect.addEventListener("change", toggleFields);
