@@ -3,18 +3,18 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
-using AntAbstract.Domain.Entities; 
+using AntAbstract.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Http; 
+using Microsoft.AspNetCore.Http;
+using AntAbstract.Infrastructure.Context;
+using Microsoft.EntityFrameworkCore;
 
 namespace AntAbstract.Web.Areas.Identity.Pages.Account
 {
@@ -24,16 +24,18 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
         private readonly SignInManager<AppUser> _signInManager;
         private readonly UserManager<AppUser> _userManager;
         private readonly ILogger<RegisterModel> _logger;
-    
+        private readonly AppDbContext _context;
 
         public RegisterModel(
             UserManager<AppUser> userManager,
             SignInManager<AppUser> signInManager,
-            ILogger<RegisterModel> logger)
+            ILogger<RegisterModel> logger,
+            AppDbContext context)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _logger = logger;
+            _context = context;
         }
 
         [BindProperty]
@@ -41,68 +43,78 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
 
         public string ReturnUrl { get; set; }
 
+        public SelectList UniversityList { get; set; }
+        public SelectList TitleList { get; set; }
+        public SelectList FacultyList { get; set; }
+        public SelectList DepartmentList { get; set; }
+
         public class InputModel
         {
             [Required(ErrorMessage = "İsim zorunludur")]
-            [Display(Name = "İsim")]
             public string FirstName { get; set; }
 
             [Required(ErrorMessage = "Soyisim zorunludur")]
-            [Display(Name = "Soyisim")]
             public string LastName { get; set; }
 
             [Required(ErrorMessage = "TC/Pasaport No zorunludur")]
-            [Display(Name = "TC No")]
             public string IdentityNumber { get; set; }
 
             [Required(ErrorMessage = "E-Posta zorunludur")]
             [EmailAddress(ErrorMessage = "Geçerli bir E-Posta giriniz")]
-            [Display(Name = "Email")]
             public string Email { get; set; }
 
             [EmailAddress]
-            [Display(Name = "Alternatif E-Posta")]
             public string? AlternativeEmail { get; set; }
 
             [Phone]
-            [Display(Name = "Cep Telefonu")]
             public string PhoneNumber { get; set; }
 
-            [Display(Name = "Üniversite")]
+            [Required(ErrorMessage = "Lütfen kurumunuzu seçiniz")]
             public string University { get; set; }
 
-            [Display(Name = "Ünvan")]
+            [Required(ErrorMessage = "Lütfen ünvanınızı seçiniz")]
             public string Title { get; set; }
 
-            [Display(Name = "Meslek/Uzmanlık")]
-            public string Profession { get; set; }
+            [Required(ErrorMessage = "Lütfen fakültenizi seçiniz")]
+            public string Faculty { get; set; }
 
-            [Display(Name = "Şehir")]
-            public string City { get; set; }
-
-            [Display(Name = "Adres")]
-            public string Address { get; set; }
+            [Required(ErrorMessage = "Lütfen bölümünüzü seçiniz")]
+            public string Department { get; set; }
 
             [Required(ErrorMessage = "Şifre zorunludur")]
             [StringLength(100, ErrorMessage = "{0} en az {2} karakter olmalıdır.", MinimumLength = 6)]
             [DataType(DataType.Password)]
-            [Display(Name = "Şifre")]
             public string Password { get; set; }
 
             [DataType(DataType.Password)]
-            [Display(Name = "Şifre Tekrar")]
             [Compare("Password", ErrorMessage = "Şifreler eşleşmiyor.")]
             public string ConfirmPassword { get; set; }
 
-            [Display(Name = "Profil Resmi")]
             public IFormFile? ProfileImage { get; set; }
 
+            [Range(typeof(bool), "true", "true", ErrorMessage = "Kullanım koşullarını kabul etmelisiniz.")]
             public bool TermsAccepted { get; set; }
         }
 
-        public void OnGet(string returnUrl = null)
+        private async Task LoadDropdownListsAsync()
+        {
+            var parameters = await _context.SystemParameters
+                .AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Order)
+                .ThenBy(x => x.Name)
+                .ToListAsync();
+
+            UniversityList = new SelectList(parameters.Where(p => p.Group == "University"), "Name", "Name");
+            TitleList = new SelectList(parameters.Where(p => p.Group == "Title"), "Name", "Name");
+            FacultyList = new SelectList(parameters.Where(p => p.Group == "Faculty"), "Name", "Name");
+            DepartmentList = new SelectList(parameters.Where(p => p.Group == "Department"), "Name", "Name");
+        }
+
+        public async Task OnGetAsync(string returnUrl = null)
         {
             ReturnUrl = returnUrl;
+            await LoadDropdownListsAsync();
         }
 
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
@@ -122,9 +134,8 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                     PhoneNumber = Input.PhoneNumber,
                     University = Input.University,
                     Title = Input.Title,
-                    Profession = Input.Profession,
-                    City = Input.City,
-                    Address = Input.Address
+                    Faculty = Input.Faculty,
+                    Department = Input.Department
                 };
 
                 if (Input.ProfileImage != null)
@@ -133,7 +144,6 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                     {
                         var extension = Path.GetExtension(Input.ProfileImage.FileName);
                         var newFileName = Guid.NewGuid().ToString() + extension;
-
                         var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "users");
                         if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
 
@@ -143,7 +153,6 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                         {
                             await Input.ProfileImage.CopyToAsync(stream);
                         }
-
                         user.ProfileImagePath = "/uploads/users/" + newFileName;
                     }
                     catch (Exception ex)
@@ -156,8 +165,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
 
                 if (result.Succeeded)
                 {
-                    _logger.LogInformation("User created a new account with password.");
-
+                    _logger.LogInformation("Kullanıcı başarıyla oluşturuldu.");
                     await _signInManager.SignInAsync(user, isPersistent: false);
                     return LocalRedirect(returnUrl);
                 }
@@ -168,6 +176,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 }
             }
 
+            await LoadDropdownListsAsync();
             return Page();
         }
     }

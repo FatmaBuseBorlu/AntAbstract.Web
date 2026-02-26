@@ -48,5 +48,7 @@ namespace AntAbstract.Domain.Entities
         public Guid? TenantId { get; set; }
 
         public virtual Tenant? Tenant { get; set; }
+        public string? Faculty { get; set; }
+        public string? Department { get; set; }
     }
 }

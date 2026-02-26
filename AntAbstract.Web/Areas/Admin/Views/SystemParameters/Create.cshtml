@@ -1,0 +1,86 @@
+﻿@model AntAbstract.Domain.Entities.SystemParameter
+@{
+    ViewData["Title"] = "Yeni Parametre Ekle";
+    Layout = "_Layout"; 
+    
+    var groups = new List<SelectListItem>
+    {
+        new SelectListItem { Text = "Üniversite / Kurum", Value = "University" },
+        new SelectListItem { Text = "Fakülte", Value = "Faculty" },
+        new SelectListItem { Text = "Bölüm / Uzmanlık", Value = "Department" },
+        new SelectListItem { Text = "Ünvan", Value = "Title" }
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold text-dark mb-0">Yeni Parametre Ekle</h3>
+        <p class="text-muted small">Sisteme yeni bir açılır liste elemanı ekliyorsunuz.</p>
+    </div>
+    <a asp-action="Index" class="btn btn-light shadow-sm rounded-pill fw-bold px-4">
+        <i class="fas fa-arrow-left me-2"></i> Listeye Dön
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4 p-md-5">
+                <form asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="Group" class="form-label fw-bold text-muted small">PARAMETRE GRUBU</label>
+                            <select asp-for="Group" asp-items="groups" class="form-select bg-light border-0 py-2"></select>
+                            <span asp-validation-for="Group" class="text-danger small"></span>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label asp-for="Order" class="form-label fw-bold text-muted small">SIRALAMA (İsteğe Bağlı)</label>
+                            <input asp-for="Order" type="number" class="form-control bg-light border-0 py-2" placeholder="Örn: 1" />
+                            <span asp-validation-for="Order" class="text-danger small"></span>
+                            <small class="text-muted" style="font-size:0.75rem;">Listede kaçıncı sırada görüneceğini belirler (Küçükten büyüğe).</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Name" class="form-label fw-bold text-muted small">İSİM / DEĞER <span class="text-danger">*</span></label>
+                        <input asp-for="Name" class="form-control bg-light border-0 py-3 fw-bold fs-5" placeholder="Örn: Ankara Üniversitesi veya Prof. Dr." required />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-5">
+                        <div class="form-check form-switch fs-5">
+                            <input class="form-check-input" type="checkbox" asp-for="IsActive" id="IsActiveSwitch" style="cursor: pointer;">
+                            <label class="form-check-label ms-2 fs-6 text-dark" for="IsActiveSwitch" style="cursor: pointer;">Bu öğeyi sitede aktif olarak göster</label>
+                        </div>
+                    </div>
+
+                    <hr class="border-light mb-4">
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary rounded-pill px-5 py-2 fw-bold shadow-sm">
+                            <i class="fas fa-save me-2"></i> Sistemi Güncelle
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 bg-primary bg-opacity-10 border border-primary border-opacity-25 sticky-top" style="top: 100px;">
+            <div class="card-body p-4">
+                <h6 class="fw-bold text-primary mb-3"><i class="fas fa-lightbulb me-2"></i> İpucu</h6>
+                <p class="text-dark opacity-75 small mb-3">
+                    Buradan eklediğiniz parametreler anında sistemdeki tüm "Kayıt Ol" formlarına yansır.
+                </p>
+                <ul class="list-unstyled text-dark opacity-75 small mb-0">
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Sıralama:</strong> En sık kullanılan üniversiteleri en üste almak için buraya 1, 2, 3 gibi rakamlar yazabilirsiniz. Boş bırakırsanız (0) alfabetik dizilir.</li>
+                    <li><i class="fas fa-check text-success me-2"></i> <strong>Aktiflik:</strong> Eski bir üniversitenin adını silmek yerine pasife alırsanız, geçmiş veriler bozulmaz ama yeni kayıtlarda da çıkmaz.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
