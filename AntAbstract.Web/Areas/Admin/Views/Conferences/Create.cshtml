@@ -22,6 +22,18 @@
                           method="post">
                         @Html.AntiForgeryToken()
 
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <div class="mb-4 p-3 bg-light border rounded-3">
+                                <label class="form-label fw-bold small text-primary">Ait Olduğu Kurum (Sadece Süper Admin Görür) *</label>
+                                <select asp-for="TenantId" asp-items="ViewBag.Tenants" class="form-select form-select-lg border-primary" required>
+                                    <option value="">-- Hangi Kuruma Atanacak? Seçiniz --</option>
+                                </select>
+                                <span asp-validation-for="TenantId" class="text-danger small"></span>
+                                <small class="text-muted d-block mt-1"><i class="fas fa-info-circle"></i> Bu kongreyi oluşturduğunuzda, seçilen kurumun yöneticileri (Örn: Ege Admin) yönetim panellerinde bu kongreyi görmeye başlayacaktır.</small>
+                            </div>
+                        }
+
                         <div class="mb-3">
                             <label class="form-label fw-bold small text-muted">Kongre Adı</label>
                             <input asp-for="Title" class="form-control form-control-lg" placeholder="Örn: 5. Uluslararası Bilim Kongresi" required />

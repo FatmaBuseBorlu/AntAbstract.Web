@@ -6,6 +6,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.WebUtilities;
 using AntAbstract.Web.Models.ViewModels.Admin.Dashboard;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -272,7 +276,27 @@ namespace AntAbstract.Web.Controllers
             }
 
             if (!selectedConferenceId.HasValue)
+            {
+                var isOrganizator = await _userManager.IsInRoleAsync(user, "Organizator");
+
+                if (isOrganizator && !isAdmin && user.TenantId.HasValue)
+                {
+                    var autoConf = await _context.Conferences
+                        .Include(c => c.Tenant)
+                        .Where(c => c.TenantId == user.TenantId.Value)
+                        .OrderByDescending(c => c.StartDate)
+                        .FirstOrDefaultAsync();
+
+                    if (autoConf != null)
+                    {
+                        var selectedSlug = autoConf.Tenant?.Slug ?? slug;
+                        SaveSelectedConference(autoConf.TenantId, autoConf.Id, selectedSlug);
+                        return Redirect($"/{selectedSlug}/Dashboard");
+                    }
+                }
+
                 return RedirectToAction(nameof(MyConferences), new { slug });
+            }
 
             var submissionsQuery = _context.Submissions.AsQueryable()
                 .Where(s => s.AuthorId == user.Id);
@@ -342,6 +366,37 @@ namespace AntAbstract.Web.Controllers
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
             var isOrganizator = await _userManager.IsInRoleAsync(user, "Organizator");
 
+            if (isOrganizator && !isAdmin)
+            {
+                if (!user.TenantId.HasValue)
+                {
+                    TempData["ErrorMessage"] = "HATA 1: Bu kullanıcının (Ege Admin) sisteme kayıtlı bir Kurumu (Tenant) YOK! Lütfen Süper Admin ile girip Kullanıcı Yönetimi'nden bu kişiye kurum atayın.";
+                }
+                else
+                {
+                    var autoConf = await _context.Conferences
+                        .Include(c => c.Tenant)
+                        .Where(c => c.TenantId == user.TenantId.Value)
+                        .OrderByDescending(c => c.StartDate)
+                        .FirstOrDefaultAsync();
+
+                    if (autoConf != null)
+                    {
+                        var selectedSlug = autoConf.Tenant?.Slug ?? _tenantContext.Current?.Slug;
+                        SaveSelectedConference(autoConf.TenantId, autoConf.Id, selectedSlug);
+                        return Redirect($"/{selectedSlug}/Dashboard");
+                    }
+                    else
+                    {
+                        TempData["ErrorMessage"] = $"HATA 2: Kullanıcının kurumu var ama bu kuruma atanmış hiçbir KONGRE yok! Kongre oluştururken yanlış kuruma atamış olabilirsiniz.";
+                    }
+                }
+            }
+            else if (!isOrganizator && !isAdmin)
+            {
+                TempData["ErrorMessage"] = "HATA 3: Bu kullanıcı 'Organizator' (Kurum Yöneticisi) rolüne sahip değil! Normal bir üye veya yazar gibi görünüyor.";
+            }
+
             var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
@@ -349,7 +404,7 @@ namespace AntAbstract.Web.Controllers
 
             if (isAdmin)
             {
-
+                
             }
             else if (isOrganizator)
             {
@@ -376,9 +431,9 @@ namespace AntAbstract.Web.Controllers
         [HttpPost]
         public async Task<IActionResult> CustomLogout([FromServices] SignInManager<AppUser> signInManager)
         {
-            HttpContext.Session.Clear(); 
-            await signInManager.SignOutAsync(); 
-            return Redirect("/"); 
+            HttpContext.Session.Clear();
+            await signInManager.SignOutAsync();
+            return Redirect("/");
         }
     }
 }

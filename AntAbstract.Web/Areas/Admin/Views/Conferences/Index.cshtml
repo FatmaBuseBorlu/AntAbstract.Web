@@ -1,98 +1,92 @@
 ﻿@model IEnumerable<AntAbstract.Domain.Entities.Conference>
 
 @{
-    ViewData["Title"] = "Kongre Listesi";
+    ViewData["Title"] = "Kongre Tanımları";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     var slug = Context.GetRouteValue("slug")?.ToString() ?? "";
+    bool isSuperAdmin = ViewBag.IsSuperAdmin ?? false;
 }
 
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold text-dark"><i class="fas fa-globe me-2"></i> Kongrelerim</h4>
-
-        <a asp-area="Admin"
-           asp-controller="Conferences"
-           asp-action="Create"
-           asp-route-slug="@slug"
-           class="btn btn-primary fw-bold shadow-sm">
-            <i class="fas fa-plus me-1"></i> Yeni Kongre Ekle
-        </a>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold text-dark mb-0">Kongre Tanımları</h3>
+        <p class="text-muted small">Sisteme kayıtlı kongreleri buradan yönetebilir, yeni kongre ekleyebilirsiniz.</p>
     </div>
+    <a asp-action="Create" asp-route-slug="@slug" class="btn btn-primary rounded-pill fw-bold px-4 shadow-sm">
+        <i class="fas fa-plus me-2"></i> Yeni Kongre Ekle
+    </a>
+</div>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success border-0 shadow-sm">
-            <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
-        </div>
-    }
-
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger border-0 shadow-sm">
-            <i class="fas fa-times-circle me-2"></i> @TempData["ErrorMessage"]
-        </div>
-    }
-
-    <div class="card border-0 shadow-sm">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light">
-                    <tr>
-                        <th class="ps-4">Kongre Adı</th>
-                        <th>Başlangıç</th>
-                        <th>Bitiş</th>
-                        <th>Konum</th>
-                        <th class="text-end pe-4">İşlemler</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null && Model.Any())
-                    {
-                        foreach (var item in Model)
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="text-center p-5 text-muted">
+                <div class="mb-3">
+                    <i class="fas fa-calendar-times fa-4x opacity-25 text-primary"></i>
+                </div>
+                <h5 class="fw-bold text-dark">Henüz Bir Kongre Yok</h5>
+                <p class="small">Sisteme henüz hiçbir kongre eklenmemiş. Sağ üstteki butondan ilk kongrenizi oluşturun.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-muted small">
+                        <tr>
+                            <th class="ps-4">KONGRE ADI</th>
+                            <th>TARİHLER</th>
+                            <th>LOKASYON</th>
+                            @if (isSuperAdmin)
+                            {
+                                <th>AİT OLDUĞU KURUM</th>
+                            }
+                            <th class="text-end pe-4">İŞLEMLER</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
                         {
                             <tr>
-                                <td class="ps-4 fw-bold text-primary">@item.Title</td>
-                                <td>@item.StartDate.ToString("dd.MM.yyyy")</td>
-                                <td>@item.EndDate.ToString("dd.MM.yyyy")</td>
-                                <td>@item.Venue</td>
-                                <td class="text-end pe-4">
-                                    <a asp-area="Admin"
-                                       asp-controller="Conferences"
-                                       asp-action="Edit"
-                                       asp-route-slug="@slug"
-                                       asp-route-id="@item.Id"
-                                       class="btn btn-sm btn-outline-primary me-1">
-                                        <i class="fas fa-edit"></i> Düzenle
-                                    </a>
+                                <td class="ps-4">
+                                    <span class="fw-bold text-dark fs-6 d-block">@item.Title</span>
+                                    <span class="text-muted small">URL: /@item.Slug</span>
+                                </td>
+                                <td>
+                                    <div class="small">
+                                        <span class="text-success fw-bold"><i class="fas fa-play-circle me-1"></i> @item.StartDate.ToString("dd MMM yyyy HH:mm")</span> <br />
+                                        <span class="text-danger fw-bold"><i class="fas fa-stop-circle me-1"></i> @item.EndDate.ToString("dd MMM yyyy HH:mm")</span>
+                                    </div>
+                                </td>
+                                <td class="text-muted small">
+                                    <i class="fas fa-map-marker-alt text-primary me-1"></i> @(string.IsNullOrEmpty(item.Venue) ? "Belirtilmemiş" : item.Venue)
+                                </td>
 
-                                    <form asp-area="Admin"
-                                          asp-controller="Conferences"
-                                          asp-action="Delete"
-                                          asp-route-slug="@slug"
-                                          method="post"
-                                          style="display:inline;"
-                                          onsubmit="return confirm('Bu kongreyi silmek istediğinize emin misiniz? Tüm veriler kaybolabilir!');">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@item.Id" />
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                @if (isSuperAdmin)
+                                {
+                                    <td>
+                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill px-3 py-2">
+                                            <i class="fas fa-building me-1"></i> @item.Tenant?.Name
+                                        </span>
+                                    </td>
+                                }
+
+                                <td class="text-end pe-4">
+                                    <a asp-action="Edit" asp-route-id="@item.Id" asp-route-slug="@slug" class="btn btn-sm btn-light text-primary me-1" title="Düzenle">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form asp-action="Delete" asp-route-id="@item.Id" asp-route-slug="@slug" method="post" class="d-inline" onsubmit="return confirm('Bu kongreyi silmek istediğinize emin misiniz? DİKKAT: Kongreye ait tüm kayıtlar silinebilir!');">
+                                        <button type="submit" class="btn btn-sm btn-light text-danger" title="Sil">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
                                 </td>
                             </tr>
                         }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">
-                                <i class="fas fa-folder-open fa-3x mb-3 opacity-25"></i>
-                                <p>Henüz kayıtlı bir kongre yok.</p>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
+            </div>
+        }
     </div>
 </div>

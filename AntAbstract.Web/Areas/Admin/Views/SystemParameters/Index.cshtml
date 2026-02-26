@@ -1,0 +1,118 @@
+﻿@model IEnumerable<AntAbstract.Domain.Entities.SystemParameter>
+@{
+    ViewData["Title"] = "Sistem Parametreleri";
+    Layout = "_LayoutDashboard";
+
+    var tabData = new[]
+    {
+        new { Id = "university", Title = "Üniversite / Kurum", Icon = "fa-university", Group = "University", EmptyMsg = "Henüz hiçbir üniversite/kurum eklenmemiş." },
+        new { Id = "faculty", Title = "Fakülte", Icon = "fa-building", Group = "Faculty", EmptyMsg = "Henüz hiçbir fakülte eklenmemiş." },
+        new { Id = "department", Title = "Bölüm / Uzmanlık", Icon = "fa-microscope", Group = "Department", EmptyMsg = "Henüz hiçbir bölüm eklenmemiş." },
+        new { Id = "title", Title = "Ünvan", Icon = "fa-user-tag", Group = "Title", EmptyMsg = "Henüz hiçbir ünvan eklenmemiş." }
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold text-dark mb-0">Sistem Parametreleri</h3>
+        <p class="text-muted small">Kayıt formlarında ve site genelinde çıkan açılır listeleri buradan yönetin.</p>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success border-0 shadow-sm rounded-3">
+        <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+    </div>
+}
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="card-header bg-white p-0 border-bottom">
+        <ul class="nav nav-tabs nav-justified" id="paramTabs" role="tablist">
+            @foreach (var tab in tabData)
+            {
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold py-3 @(tab.Id == "university" ? "active" : "")"
+                            data-bs-toggle="tab" data-bs-target="#@tab.Id" type="button" role="tab">
+                        <i class="fas @tab.Icon me-2"></i> @tab.Title
+                    </button>
+                </li>
+            }
+        </ul>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="tab-content" id="paramTabsContent">
+
+            @foreach (var tab in tabData)
+            {
+                var items = Model.Where(x => x.Group == tab.Group).ToList();
+
+                <div class="tab-pane fade @(tab.Id == "university" ? "show active" : "")" id="@tab.Id" role="tabpanel">
+
+                    <div class="p-4 bg-light border-bottom d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-muted">Toplam: @items.Count kayıt</span>
+                        <a asp-action="Create" asp-route-group="@tab.Group" class="btn btn-primary btn-sm rounded-pill fw-bold px-3">
+                            <i class="fas fa-plus me-1"></i> Yeni Ekle
+                        </a>
+                    </div>
+
+                    @if (!items.Any())
+                    {
+                        <div class="text-center p-5 text-muted">
+                            <i class="fas fa-folder-open fa-3x mb-3 opacity-25"></i>
+                            <p>@tab.EmptyMsg</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light text-muted small">
+                                    <tr>
+                                        <th class="ps-4">SIRA</th>
+                                        <th>İSİM (Ekranda Görünen)</th>
+                                        <th>DURUM</th>
+                                        <th class="text-end pe-4">İŞLEMLER</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in items)
+                                    {
+                                        <tr>
+                                            <td class="ps-4 fw-bold text-muted">@item.Order</td>
+                                            <td class="fw-bold text-dark">@item.Name</td>
+                                            <td>
+                                                @if (item.IsActive)
+                                                {
+                                                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">Aktif</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3">Pasif</span>
+                                                }
+                                            </td>
+                                            <td class="text-end pe-4">
+                                                <form asp-action="Toggle" asp-route-id="@item.Id" method="post" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-light text-primary me-1" title="Aktif/Pasif Yap">
+                                                        <i class="fas fa-sync-alt"></i>
+                                                    </button>
+                                                </form>
+                                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Bu kaydı silmek istediğinize emin misiniz?');">
+                                                    <button type="submit" class="btn btn-sm btn-light text-danger" title="Sil">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            }
+
+        </div>
+    </div>
+</div>

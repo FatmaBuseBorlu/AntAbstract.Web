@@ -2,7 +2,7 @@
 @model RegisterModel
 @{
     ViewData["Title"] = "Kayıt Ol";
-    Layout = null; 
+    Layout = null;
 }
 
 <!DOCTYPE html>
@@ -40,7 +40,7 @@
         }
 
         .register-sidebar {
-            width: 40%; 
+            width: 40%;
             background: url('https://images.unsplash.com/photo-1523580494863-6f3031224c94?q=80&w=2070&auto=format&fit=crop') no-repeat center center;
             background-size: cover;
             position: relative;
@@ -67,23 +67,23 @@
         }
 
         .register-form-container {
-            width: 60%; 
+            width: 60%;
             display: flex;
             justify-content: center;
             padding: 2rem;
             background-color: #fff;
             position: relative;
-            overflow-y: auto; 
+            overflow-y: auto;
         }
 
         .register-card {
             width: 100%;
-            max-width: 700px; 
+            max-width: 700px;
             padding-top: 1rem;
             padding-bottom: 2rem;
         }
 
-        .form-control {
+        .form-control, .custom-select {
             padding: 0.7rem 1rem;
             border-radius: 0.5rem;
             border: 1px solid #e2e8f0;
@@ -93,10 +93,11 @@
             font-size: 0.95rem;
         }
 
-            .form-control:focus {
+            .form-control:focus, .custom-select:focus {
                 background-color: #fff;
                 border-color: var(--primary-color);
                 box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
+                outline: none;
             }
 
         .form-label {
@@ -218,43 +219,49 @@
                     </div>
 
                     <div class="row g-3 mb-3">
-                        <div class="col-md-4">
-                            <label asp-for="Input.University" class="form-label">Kurum</label>
-                            <input asp-for="Input.University" class="form-control" placeholder="Üniversite Adı" />
+                        <div class="col-md-6">
+                            <label asp-for="Input.University" class="form-label">Kurum / Üniversite <span class="text-danger">*</span></label>
+                            <select asp-for="Input.University" asp-items="Model.UniversityList" class="form-select custom-select">
+                                <option value="">Seçiniz...</option>
+                            </select>
+                            <span asp-validation-for="Input.University" class="text-danger small"></span>
                         </div>
-                        <div class="col-md-4">
-                            <label asp-for="Input.Title" class="form-label">Ünvan</label>
-                            <input asp-for="Input.Title" class="form-control" placeholder="Prof. Dr." />
-                        </div>
-                        <div class="col-md-4">
-                            <label asp-for="Input.Profession" class="form-label">Uzmanlık</label>
-                            <input asp-for="Input.Profession" class="form-control" placeholder="Bölümünüz" />
-                        </div>
-                    </div>
-
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-4">
-                            <label asp-for="Input.City" class="form-label">Şehir</label>
-                            <input asp-for="Input.City" class="form-control" placeholder="İstanbul" />
-                        </div>
-                        <div class="col-md-8">
-                            <label asp-for="Input.Address" class="form-label">Adres</label>
-                            <input asp-for="Input.Address" class="form-control" placeholder="Mahalle, Cadde, No..." />
+                        <div class="col-md-6">
+                            <label asp-for="Input.Title" class="form-label">Ünvan <span class="text-danger">*</span></label>
+                            <select asp-for="Input.Title" asp-items="Model.TitleList" class="form-select custom-select">
+                                <option value="">Seçiniz...</option>
+                            </select>
+                            <span asp-validation-for="Input.Title" class="text-danger small"></span>
                         </div>
                     </div>
 
-                    <div class="p-4 mb-4 rounded-3 bg-light border border-secondary border-opacity-10">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label asp-for="Input.Password" class="form-label">Şifre <span class="text-danger">*</span></label>
-                                <input asp-for="Input.Password" class="form-control" placeholder="••••••••" />
-                                <span asp-validation-for="Input.Password" class="text-danger small"></span>
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="Input.ConfirmPassword" class="form-label">Şifre Tekrar <span class="text-danger">*</span></label>
-                                <input asp-for="Input.ConfirmPassword" class="form-control" placeholder="••••••••" />
-                                <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
-                            </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="Input.Faculty" class="form-label">Fakülte <span class="text-danger">*</span></label>
+                            <select asp-for="Input.Faculty" asp-items="Model.FacultyList" class="form-select custom-select">
+                                <option value="">Seçiniz...</option>
+                            </select>
+                            <span asp-validation-for="Input.Faculty" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Input.Department" class="form-label">Bölüm <span class="text-danger">*</span></label>
+                            <select asp-for="Input.Department" asp-items="Model.DepartmentList" class="form-select custom-select">
+                                <option value="">Seçiniz...</option>
+                            </select>
+                            <span asp-validation-for="Input.Department" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="Input.Password" class="form-label">Şifre <span class="text-danger">*</span></label>
+                            <input asp-for="Input.Password" class="form-control" placeholder="••••••••" />
+                            <span asp-validation-for="Input.Password" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Input.ConfirmPassword" class="form-label">Şifre Tekrar <span class="text-danger">*</span></label>
+                            <input asp-for="Input.ConfirmPassword" class="form-control" placeholder="••••••••" />
+                            <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
                         </div>
                     </div>
 
@@ -266,9 +273,9 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-check">
-                                <input asp-for="Input.TermsAccepted" class="form-check-input" type="checkbox" checked />
+                                <input asp-for="Input.TermsAccepted" class="form-check-input" type="checkbox" id="termsCheckbox" />
                                 <label class="form-check-label small text-muted">
-                                    <a href="#" class="text-decoration-none fw-bold" style="color: var(--primary-color);">Kullanım Koşullarını</a> okudum.
+                                    <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal" class="text-decoration-none fw-bold" style="color: var(--primary-color);">Kullanım Koşullarını</a> okudum.
                                 </label>
                             </div>
                         </div>
@@ -293,8 +300,56 @@
         </div>
     </div>
 
+    <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 rounded-4 shadow-lg">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold text-dark" id="termsModalLabel">Kullanım Koşulları ve KVKK</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body text-muted small" style="line-height: 1.8;">
+                    <p>
+                        <strong>1. Kapsam ve Kabul</strong><br>
+                        Bu sistemi kullanarak, AntAbstract platformunun belirlediği kuralları ve akademik dürüstlük ilkelerini kabul etmiş sayılırsınız.
+                    </p>
+
+                    <p>
+                        <strong>2. KVKK ve Veri Gizliliği</strong><br>
+                        Sisteme girdiğiniz kişisel veriler (Ad, Soyad, TC No, İletişim bilgileri vb.) 6698 sayılı Kişisel Verilerin Korunması Kanunu kapsamında, sadece kongre/etkinlik süreçlerinin yürütülmesi amacıyla işlenmektedir. Üçüncü şahıslarla reklam amacıyla kesinlikle paylaşılmaz.
+                    </p>
+
+                    <p>
+                        <strong>3. Hesap Güvenliği</strong><br>
+                        Hesap şifrenizin güvenliğinden tamamen siz sorumlusunuz. Şifrenizin üçüncü kişilerle paylaşılması durumunda doğacak sorunlardan AntAbstract sorumlu tutulamaz.
+                    </p>
+
+                    <p>
+                        <strong>4. İptal ve İade Şartları</strong><br>
+                        Kayıt olduğunuz kongrelere dair ücret iadesi ve iptal kuralları, ilgili kongrenin Düzenleme Kurulu tarafından belirlenir. Sistem sağlayıcı olarak AntAbstract sadece ödeme altyapısını sunar.
+                    </p>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" id="btnAcceptTerms" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" data-bs-dismiss="modal">Okudum, Anladım</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var acceptBtn = document.getElementById("btnAcceptTerms");
+            var termsCheckbox = document.getElementById("termsCheckbox");
+
+            if (acceptBtn && termsCheckbox) {
+                acceptBtn.addEventListener("click", function () {
+                    termsCheckbox.checked = true;
+                });
+            }
+        });
+    </script>
 </body>
 </html>

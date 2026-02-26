@@ -41,6 +41,7 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<AccommodationBooking> AccommodationBookings { get; set; }
         public DbSet<SubmissionAuthor> SubmissionAuthors { get; set; }
         public DbSet<SubmissionFile> SubmissionFiles { get; set; }
+        public DbSet<SystemParameter> SystemParameters { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

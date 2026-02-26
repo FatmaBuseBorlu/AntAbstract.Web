@@ -4,6 +4,7 @@ using AntAbstract.Infrastructure.Services.Conferences;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
@@ -100,6 +101,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return Redirect($"/{slug}/Admin/Conferences");
             }
 
+            var tenants = await _context.Tenants.ToListAsync();
+            ViewBag.Tenants = new SelectList(tenants, "Id", "Name", _tenantContext.Current.Id);
+
             return View();
         }
 
@@ -119,20 +123,47 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return Redirect($"/{slug}/Admin/Conferences");
             }
 
+            ModelState.Remove("Tenant");
+            ModelState.Remove("Slug");
+            ModelState.Remove("Registrations");
+            ModelState.Remove("ConferencePageBlocks");
+            ModelState.Remove("Submissions");
+            ModelState.Remove("ReviewAssignments");
+            ModelState.Remove("Sessions");
+
             if (!ModelState.IsValid)
+            {
+                var tenants = await _context.Tenants.ToListAsync();
+                ViewBag.Tenants = new SelectList(tenants, "Id", "Name", conference.TenantId);
                 return View(conference);
+            }
 
             conference.Id = Guid.NewGuid();
-            conference.TenantId = _tenantContext.Current.Id;
+
+            if (conference.TenantId == Guid.Empty)
+            {
+                conference.TenantId = _tenantContext.Current.Id;
+            }
+
+            if (string.IsNullOrEmpty(conference.Slug) && !string.IsNullOrEmpty(conference.Title))
+            {
+                string text = conference.Title.ToLowerInvariant();
+                text = text.Replace("ş", "s").Replace("ı", "i").Replace("ğ", "g").Replace("ü", "u").Replace("ö", "o").Replace("ç", "c");
+                text = System.Text.RegularExpressions.Regex.Replace(text, @"[^a-z0-9\s-]", "");
+                conference.Slug = System.Text.RegularExpressions.Regex.Replace(text, @"\s+", "-").Trim('-');
+            }
 
             _context.Conferences.Add(conference);
             await _context.SaveChangesAsync();
 
-            _selectedConferenceService.SetSelectedConferenceId(conference.Id);
-            HttpContext.Session.SetString("SelectedConferenceSlug", _tenantContext.Current.Slug);
+            var assignedTenant = await _context.Tenants.FindAsync(conference.TenantId);
+            var redirectSlug = assignedTenant?.Slug ?? slug;
 
-            TempData["SuccessMessage"] = "Kongre başarıyla oluşturuldu.";
-            return Redirect($"/{slug}/Admin/Conferences");
+            _selectedConferenceService.SetSelectedConferenceId(conference.Id);
+            HttpContext.Session.SetString("SelectedConferenceSlug", redirectSlug);
+
+            TempData["SuccessMessage"] = "Harika! Kongre başarıyla oluşturuldu ve ilgili kuruma atandı.";
+            return Redirect($"/{redirectSlug}/Admin/Conferences");
         }
 
         [HttpGet("/{slug}/Admin/Conferences/Edit/{id:guid}")]
@@ -159,6 +190,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (id != conference.Id)
                 return NotFound();
+
+            ModelState.Remove("Tenant");
+            ModelState.Remove("Slug");
+            ModelState.Remove("Registrations");
+            ModelState.Remove("ConferencePageBlocks");
+            ModelState.Remove("Submissions");
+            ModelState.Remove("ReviewAssignments");
+            ModelState.Remove("Sessions");
 
             if (!ModelState.IsValid)
                 return View(conference);
