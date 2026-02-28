@@ -1,0 +1,85 @@
+﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
+@using AntAbstract.Domain.Entities
+@using AntAbstract.Web.Models.WebsiteBlocks
+
+@{
+    ViewData["Title"] = "Blok Düzenle - " + Model.BlockType.ToString();
+
+    var aboutContent = ViewBag.AboutContent as AboutBlockContent;
+}
+
+<div class="container-fluid mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="fas fa-edit"></i> @Model.BlockType.ToString() Bloğunu Düzenle</h4>
+        </div>
+        <div class="card-body">
+            <form asp-action="Edit" method="post">
+                <input type="hidden" asp-for="Id" />
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Title" class="form-label fw-bold">Blok Ana Başlığı</label>
+                        <input asp-for="Title" class="form-control" placeholder="Örn: Kongremiz Hakkında" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Subtitle" class="form-label fw-bold">Alt Başlık</label>
+                        <input asp-for="Subtitle" class="form-control" placeholder="Örn: Bilimin Işığında Buluşuyoruz" />
+                    </div>
+                </div>
+
+                <hr class="my-4" />
+
+                @if (Model.BlockType == ConferencePageBlockType.About && aboutContent != null)
+                {
+                    <h5 class="text-primary mb-3">📝 Hakkımızda İçeriği</h5>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Açıklama Yazısı (Description)</label>
+                        <textarea name="aboutContent.Description" class="form-control" rows="5" placeholder="Kongrenizin amacını ve vizyonunu buraya yazın...">@aboutContent.Description</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Görsel Linki (URL)</label>
+                        <input type="text" name="aboutContent.ImageUrl" class="form-control" value="@aboutContent.ImageUrl" placeholder="/images/about-us.jpg veya https://..." />
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Öne Çıkan Özellikler (Maddeler)</label>
+                            <p class="text-muted small">Sitenizde yan yana görünecek 3 temel özelliği yazabilirsiniz.</p>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label text-muted">Madde 1</label>
+                            <input type="text" name="aboutContent.Features[0]" class="form-control" value="@(aboutContent.Features.Count > 0 ? aboutContent.Features[0] : "")" placeholder="Örn: Alanında Uzman Konuşmacılar" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label text-muted">Madde 2</label>
+                            <input type="text" name="aboutContent.Features[1]" class="form-control" value="@(aboutContent.Features.Count > 1 ? aboutContent.Features[1] : "")" placeholder="Örn: Uluslararası Katılım" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label text-muted">Madde 3</label>
+                            <input type="text" name="aboutContent.Features[2]" class="form-control" value="@(aboutContent.Features.Count > 2 ? aboutContent.Features[2] : "")" placeholder="Örn: SCI İndeksli Yayın Fırsatı" />
+                        </div>
+                    </div>
+                }
+
+                <hr class="my-4" />
+
+                <div class="mb-4 form-check form-switch">
+                    <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch" id="activeSwitch">
+                    <label asp-for="IsActive" class="form-check-label" for="activeSwitch">Bu bloğu web sitesinde (Vitrin) göster</label>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="/@ViewContext.RouteData.Values["slug"]/Admin/PageBlocks" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Geri Dön
+                    </a>
+                    <button type="submit" class="btn btn-success px-5">
+                        <i class="fas fa-save"></i> Değişiklikleri Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

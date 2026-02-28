@@ -1,7 +1,7 @@
 ﻿using AntAbstract.Application.DTOs.Submission;
 using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
-using AntAbstract.Infrastructure.Context; // DbContext için
+using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.ViewModels.Admin.Submissions;
 using AutoMapper;
@@ -53,7 +53,6 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         public async Task<IActionResult> Index(string? slug = null)
         {
             var user = await _userManager.GetUserAsync(User);
-
             var submissionDtos = await _submissionService.GetMySubmissionsAsync(user.Id);
 
             if (!string.IsNullOrEmpty(slug))
@@ -66,7 +65,6 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 if (conference != null)
                 {
                     ViewBag.CurrentConferenceTitle = conference.Title;
-
                     submissionDtos = submissionDtos.Where(s => s.ConferenceId == conference.Id).ToList();
                 }
             }
@@ -87,19 +85,26 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [HttpGet("/{slug}/Submission/Create")]
         public async Task<IActionResult> Create(string? slug = null)
         {
-            var conferenceDtos = await _submissionService.GetActiveConferencesAsync();
             var selectedId = _selectedConferenceService.GetSelectedConferenceId();
+
+            IQueryable<Conference> confQuery = _context.Conferences
+                .Include(c => c.Tenant)
+                .AsNoTracking();
+
+            if (!string.IsNullOrEmpty(slug))
+            {
+                confQuery = confQuery.Where(c => c.Slug == slug || (c.Tenant != null && c.Tenant.Slug == slug));
+            }
+
+            var availableConferences = await confQuery.ToListAsync();
 
             if (!selectedId.HasValue && !string.IsNullOrEmpty(slug))
             {
-                var confEntity = await _context.Conferences
-                    .Include(c => c.Tenant)
-                    .FirstOrDefaultAsync(c => c.Slug == slug || (c.Tenant != null && c.Tenant.Slug == slug));
-
+                var confEntity = availableConferences.FirstOrDefault();
                 if (confEntity != null) selectedId = confEntity.Id;
             }
 
-            var selectList = conferenceDtos.Select(c => new SelectListItem
+            var selectList = availableConferences.Select(c => new SelectListItem
             {
                 Value = c.Id.ToString(),
                 Text = c.Title,
@@ -121,68 +126,81 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         public async Task<IActionResult> Create(SubmissionCreateViewModel model, string? slug = null)
         {
             if (model.SubmissionFile == null || model.SubmissionFile.Length == 0)
-                ModelState.AddModelError("SubmissionFile", "Lütfen dosya yükleyiniz.");
+                ModelState.AddModelError("SubmissionFile", "Lütfen bir bildiri dosyası yükleyiniz.");
 
             if (ModelState.IsValid)
             {
-                var user = await _userManager.GetUserAsync(User);
-                var fileInfo = await UploadFileAsync(model.SubmissionFile);
-
-                string presentationTypeStr = model.PresentationTypeId == 1 ? "Poster" : "Oral";
-                string finalKeywords = string.IsNullOrEmpty(model.Keywords)
-                    ? presentationTypeStr
-                    : model.Keywords + ", " + presentationTypeStr;
-
-                var allAuthors = new List<SubmissionAuthorDto>();
-
-                allAuthors.Add(new SubmissionAuthorDto
+                try
                 {
-                    FirstName = user.FirstName ?? "Ad",
-                    LastName = user.LastName ?? "Soyad",
-                    Email = user.Email,
-                    Institution = "Kurum Belirtilmedi",
-                    IsCorrespondingAuthor = true,
-                    Order = 1
-                });
+                    var user = await _userManager.GetUserAsync(User);
 
-                if (model.Authors != null && model.Authors.Any())
-                {
-                    int orderCounter = 2;
-                    foreach (var authorVm in model.Authors)
+                    // GÜVENLİ DOSYA YÜKLEME ÇAĞRISI
+                    var fileInfo = await UploadFileAsync(model.SubmissionFile);
+
+                    string presentationTypeStr = model.PresentationTypeId == 1 ? "Poster" : "Oral";
+                    string finalKeywords = string.IsNullOrEmpty(model.Keywords)
+                        ? presentationTypeStr
+                        : model.Keywords + ", " + presentationTypeStr;
+
+                    var allAuthors = new List<SubmissionAuthorDto>
                     {
-                        allAuthors.Add(new SubmissionAuthorDto
+                        new SubmissionAuthorDto
                         {
-                            FirstName = authorVm.FirstName,
-                            LastName = authorVm.LastName,
-                            Email = authorVm.Email,
-                            Institution = authorVm.Institution,
-                            ORCID = authorVm.ORCID,
-                            IsCorrespondingAuthor = authorVm.IsCorrespondingAuthor,
-                            Order = orderCounter++
-                        });
+                            FirstName = user.FirstName ?? "Ad",
+                            LastName = user.LastName ?? "Soyad",
+                            Email = user.Email,
+                            Institution = "Kurum Belirtilmedi",
+                            IsCorrespondingAuthor = true,
+                            Order = 1
+                        }
+                    };
+
+                    if (model.Authors != null && model.Authors.Any())
+                    {
+                        int orderCounter = 2;
+                        foreach (var authorVm in model.Authors)
+                        {
+                            allAuthors.Add(new SubmissionAuthorDto
+                            {
+                                FirstName = authorVm.FirstName,
+                                LastName = authorVm.LastName,
+                                Email = authorVm.Email,
+                                Institution = authorVm.Institution,
+                                ORCID = authorVm.ORCID,
+                                IsCorrespondingAuthor = authorVm.IsCorrespondingAuthor,
+                                Order = orderCounter++
+                            });
+                        }
                     }
+
+                    var createDto = new CreateSubmissionDto
+                    {
+                        ConferenceId = model.ConferenceId,
+                        Title = model.Title,
+                        Abstract = model.AbstractText,
+                        Keywords = finalKeywords,
+                        FilePath = fileInfo.FilePathDb,
+                        StoredFileName = fileInfo.StoredFileName,
+                        OriginalFileName = fileInfo.OriginalFileName,
+                        SubmissionAuthors = allAuthors
+                    };
+
+                    await _submissionService.CreateSubmissionAsync(createDto, user.Id);
+
+                    TempData["SuccessMessage"] = "Harika! Bildiriniz başarıyla gönderildi.";
+                    return RedirectToAction(nameof(Index), new { slug });
                 }
-
-                var createDto = new CreateSubmissionDto
+                catch (Exception ex)
                 {
-                    ConferenceId = model.ConferenceId,
-                    Title = model.Title,
-                    Abstract = model.AbstractText,
-                    Keywords = finalKeywords,
-                    FilePath = fileInfo.FilePathDb,
-                    StoredFileName = fileInfo.StoredFileName,
-                    OriginalFileName = fileInfo.OriginalFileName,
-                    SubmissionAuthors = allAuthors
-                };
-
-                await _submissionService.CreateSubmissionAsync(createDto, user.Id);
-
-                TempData["SuccessMessage"] = "Bildiriniz başarıyla gönderildi.";
-                return RedirectToAction(nameof(Index), new { slug });
+                    ModelState.AddModelError("SubmissionFile", ex.Message);
+                }
             }
 
-            var conferenceDtos = await _submissionService.GetActiveConferencesAsync();
-            model.AvailableConferences = conferenceDtos.Select(c => new SelectListItem
+            IQueryable<Conference> confQuery = _context.Conferences.AsNoTracking().Include(c => c.Tenant);
+            if (!string.IsNullOrEmpty(slug)) confQuery = confQuery.Where(c => c.Slug == slug || (c.Tenant != null && c.Tenant.Slug == slug));
+
+            var availableConferences = await confQuery.ToListAsync();
+            model.AvailableConferences = availableConferences.Select(c => new SelectListItem
             {
                 Value = c.Id.ToString(),
                 Text = c.Title,
@@ -240,43 +258,43 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 string storedFileName = null;
                 string originalFileName = null;
 
-                if (model.SubmissionFile != null && model.SubmissionFile.Length > 0)
-                {
-                    var fileInfo = await UploadFileAsync(model.SubmissionFile);
-                    filePath = fileInfo.FilePathDb;
-                    storedFileName = fileInfo.StoredFileName;
-                    originalFileName = fileInfo.OriginalFileName;
-                }
-
-                var updateDto = new CreateSubmissionDto
-                {
-                    Title = model.Title,
-                    Abstract = model.AbstractText,
-                    Keywords = model.Keywords,
-                    FilePath = filePath,
-                    StoredFileName = storedFileName,
-                    OriginalFileName = originalFileName,
-                    SubmissionAuthors = model.Authors?.Select(a => new SubmissionAuthorDto
-                    {
-                        FirstName = a.FirstName,
-                        LastName = a.LastName,
-                        Email = a.Email,
-                        Institution = a.Institution,
-                        ORCID = a.ORCID,
-                        IsCorrespondingAuthor = a.IsCorrespondingAuthor,
-                        Order = a.Order
-                    }).ToList() ?? new List<SubmissionAuthorDto>()
-                };
-
                 try
                 {
+                    if (model.SubmissionFile != null && model.SubmissionFile.Length > 0)
+                    {
+                        var fileInfo = await UploadFileAsync(model.SubmissionFile);
+                        filePath = fileInfo.FilePathDb;
+                        storedFileName = fileInfo.StoredFileName;
+                        originalFileName = fileInfo.OriginalFileName;
+                    }
+
+                    var updateDto = new CreateSubmissionDto
+                    {
+                        Title = model.Title,
+                        Abstract = model.AbstractText,
+                        Keywords = model.Keywords,
+                        FilePath = filePath,
+                        StoredFileName = storedFileName,
+                        OriginalFileName = originalFileName,
+                        SubmissionAuthors = model.Authors?.Select(a => new SubmissionAuthorDto
+                        {
+                            FirstName = a.FirstName,
+                            LastName = a.LastName,
+                            Email = a.Email,
+                            Institution = a.Institution,
+                            ORCID = a.ORCID,
+                            IsCorrespondingAuthor = a.IsCorrespondingAuthor,
+                            Order = a.Order
+                        }).ToList() ?? new List<SubmissionAuthorDto>()
+                    };
+
                     await _submissionService.UpdateSubmissionAsync(id, updateDto);
                     TempData["SuccessMessage"] = "Bildiri başarıyla güncellendi.";
                     return RedirectToAction(nameof(Index), new { slug });
                 }
                 catch (Exception ex)
                 {
-                    ModelState.AddModelError("", "Güncelleme hatası: " + ex.Message);
+                    ModelState.AddModelError("SubmissionFile", ex.Message);
                 }
             }
 
@@ -333,9 +351,17 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 return RedirectToAction(nameof(UploadRevision), new { id, slug });
             }
 
-            await UploadFileAsync(revisionFile);
-            TempData["SuccessMessage"] = "Revizyon dosyası başarıyla yüklendi.";
-            return RedirectToAction(nameof(Details), new { id, slug });
+            try
+            {
+                await UploadFileAsync(revisionFile);
+                TempData["SuccessMessage"] = "Revizyon dosyası başarıyla yüklendi.";
+                return RedirectToAction(nameof(Details), new { id, slug });
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction(nameof(UploadRevision), new { id, slug });
+            }
         }
 
         [HttpGet("/Submission/DownloadAcceptanceLetter/{id:guid}")]
@@ -385,10 +411,22 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
         private async Task<(string FilePathDb, string StoredFileName, string OriginalFileName)> UploadFileAsync(IFormFile file)
         {
+            var allowedExtensions = new[] { ".pdf", ".doc", ".docx" };
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+            if (!allowedExtensions.Contains(extension))
+            {
+                throw new Exception("Sistem güvenliği: Sadece PDF, DOC ve DOCX uzantılı bildiri dosyaları yükleyebilirsiniz.");
+            }
+
+            if (file.Length > 10 * 1024 * 1024)
+            {
+                throw new Exception("Dosya boyutu çok büyük! Maksimum 10 MB büyüklüğünde bir dosya yükleyebilirsiniz.");
+            }
+
             string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "submissions");
             if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
-            string extension = Path.GetExtension(file.FileName);
             string uniqueFileName = Guid.NewGuid().ToString() + extension;
             string filePath = Path.Combine(uploadsFolder, uniqueFileName);
 

@@ -370,7 +370,7 @@ namespace AntAbstract.Web.Controllers
             {
                 if (!user.TenantId.HasValue)
                 {
-                    TempData["ErrorMessage"] = "HATA 1: Bu kullanıcının (Ege Admin) sisteme kayıtlı bir Kurumu (Tenant) YOK! Lütfen Süper Admin ile girip Kullanıcı Yönetimi'nden bu kişiye kurum atayın.";
+                    TempData["ErrorMessage"] = "Hesabınıza atanmış bir kurum bulunamadı. Lütfen Sistem Yöneticisi ile iletişime geçin.";
                 }
                 else
                 {
@@ -388,13 +388,10 @@ namespace AntAbstract.Web.Controllers
                     }
                     else
                     {
-                        TempData["ErrorMessage"] = $"HATA 2: Kullanıcının kurumu var ama bu kuruma atanmış hiçbir KONGRE yok! Kongre oluştururken yanlış kuruma atamış olabilirsiniz.";
+                        
+                        TempData["InfoMessage"] = "Kurumunuza ait henüz bir etkinlik/kongre oluşturulmamış. Sistem Yöneticisi atama yaptığında panelleriniz aktif olacaktır.";
                     }
                 }
-            }
-            else if (!isOrganizator && !isAdmin)
-            {
-                TempData["ErrorMessage"] = "HATA 3: Bu kullanıcı 'Organizator' (Kurum Yöneticisi) rolüne sahip değil! Normal bir üye veya yazar gibi görünüyor.";
             }
 
             var query = _context.Conferences
