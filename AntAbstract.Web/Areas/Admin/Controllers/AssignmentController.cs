@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -31,7 +34,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             IReviewerRecommendationService recommendationService,
             ISelectedConferenceService selectedConferenceService)
         {
-
             _context = context;
             _tenantContext = tenantContext;
             _emailService = emailService;
@@ -62,6 +64,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var isAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
 
             var query = _context.Conferences
+                .AsNoTracking()
                 .Include(c => c.Tenant)
                 .AsQueryable();
 
@@ -112,9 +115,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpGet("/{slug}/Admin/Assignment")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId)
         {
-            if (_tenantContext.Current == null)
+            if (_tenantContext.Current == null || !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
+                TempData["ErrorMessage"] = "Lütfen önce geçerli bir kongre seçin.";
                 return RedirectToAction(nameof(SelectConference));
             }
 
@@ -127,15 +130,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             var conference = await _context.Conferences
+                .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == conferenceId && c.TenantId == _tenantContext.Current.Id);
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = "Seçilen kongre bu tenant'a ait değil veya bulunamadı.";
+                TempData["ErrorMessage"] = "Seçilen kongre bu kuruma ait değil veya bulunamadı.";
                 return RedirectToAction(nameof(SelectConference));
             }
 
             var submissions = await _context.Submissions
+                .AsNoTracking()
                 .Where(s => s.ConferenceId == conference.Id)
                 .Include(s => s.Author)
                 .Include(s => s.ReviewAssignments).ThenInclude(ra => ra.Reviewer)
@@ -151,13 +156,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpGet("/{slug}/Admin/Assignment/Assign/{id:guid}")]
         public async Task<IActionResult> Assign(string slug, Guid id)
         {
-            if (_tenantContext.Current == null)
+            if (_tenantContext.Current == null || !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
                 TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
                 return RedirectToAction(nameof(SelectConference));
             }
 
             var submission = await _context.Submissions
+                .AsNoTracking()
                 .Include(s => s.Author)
                 .Include(s => s.Conference)
                 .FirstOrDefaultAsync(s => s.Id == id);
@@ -189,7 +195,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AssignPost(string slug, Guid submissionId, string reviewerId)
         {
-            if (_tenantContext.Current == null) return RedirectToAction(nameof(SelectConference));
+            if (_tenantContext.Current == null || !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+                return RedirectToAction(nameof(SelectConference));
 
             var submission = await _context.Submissions
                 .Include(s => s.Conference)
@@ -198,6 +205,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (submission == null || submission.Conference.TenantId != _tenantContext.Current.Id)
             {
                 return NotFound("Yetkisiz erişim veya geçersiz bildiri.");
+            }
+
+            var reviewer = await _userManager.FindByIdAsync(reviewerId);
+
+            if (reviewer == null)
+            {
+                TempData["ErrorMessage"] = "Geçersiz hakem seçimi!";
+                return Redirect($"/{slug}/Admin/Assignment/Assign/{submissionId}");
             }
 
             var alreadyAssigned = await _context.ReviewAssignments
@@ -218,13 +233,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             await _context.SaveChangesAsync();
 
-            var reviewer = await _userManager.FindByIdAsync(reviewerId);
-            if (reviewer != null)
+            try
             {
-                try { await _emailService.SendAsync(reviewer.Email!, "Yeni Atama", "Bildiri atandı."); } catch { }
+                await _emailService.SendAsync(reviewer.Email!, "Yeni Bildiri Ataması", $"Sayın {reviewer.FirstName} {reviewer.LastName}, incelemeniz için yeni bir bildiri atandı.");
             }
+            catch {  }
 
-            TempData["SuccessMessage"] = "Hakem ataması başarıyla tamamlandı.";
+            TempData["SuccessMessage"] = "Harika! Sistem havuzundan hakem ataması başarıyla tamamlandı.";
             return Redirect($"/{slug}/Admin/Assignment?conferenceId={submission.ConferenceId}");
         }
     }

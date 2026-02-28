@@ -8,6 +8,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -123,10 +126,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpGet("/{slug}/Admin/Submissions")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId = null, string? search = null, string? status = null)
         {
-            if (_tenantContext.Current == null)
-                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Submissions" });
-
-            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            if (_tenantContext.Current == null || !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
                 return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Submissions" });
 
             if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
@@ -202,6 +202,22 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (submission == null)
                 return NotFound();
 
+            var user = await _userManager.GetUserAsync(User);
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+
+            if (!isAdmin)
+            {
+                var isAuthorized = await _context.Submissions
+                    .Include(s => s.Conference)
+                    .AnyAsync(s => s.Id == id && s.Conference.TenantId == user.TenantId);
+
+                if (!isAuthorized)
+                {
+                    TempData["ErrorMessage"] = "Yetkisiz Erişim! Başka bir kuruma ait bildiriyi görüntüleyemezsiniz.";
+                    return RedirectToAction(nameof(Index), new { slug = slug ?? _tenantContext.Current?.Slug });
+                }
+            }
+
             ViewBag.Referees = await _userManager.GetUsersInRoleAsync("Referee");
             ViewBag.Reviews = await _reviewService.GetReviewsBySubmissionIdAsync(id);
 
@@ -222,10 +238,26 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangeStatus(Guid id, string status, string? slug = null, string? returnUrl = null)
         {
+            var user = await _userManager.GetUserAsync(User);
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+
+            if (!isAdmin)
+            {
+                var isAuthorized = await _context.Submissions
+                    .Include(s => s.Conference)
+                    .AnyAsync(s => s.Id == id && s.Conference.TenantId == user.TenantId);
+
+                if (!isAuthorized)
+                {
+                    TempData["ErrorMessage"] = "Yetkisiz İşlem! Başka bir kuruma ait bildirinin durumunu değiştiremezsiniz.";
+                    return RedirectToAction(nameof(Index), new { slug = slug ?? _tenantContext.Current?.Slug });
+                }
+            }
+
             if (Enum.TryParse<SubmissionStatus>(status, out var newStatus))
             {
                 await _submissionService.UpdateStatusAsync(id, newStatus);
-                TempData["SuccessMessage"] = "Bildiri durumu güncellendi: " + status;
+                TempData["SuccessMessage"] = "Bildiri durumu başarıyla güncellendi: " + status;
             }
             else
             {
@@ -246,8 +278,24 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(Guid id, string? slug = null, string? returnUrl = null)
         {
+            var user = await _userManager.GetUserAsync(User);
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+
+            if (!isAdmin)
+            {
+                var isAuthorized = await _context.Submissions
+                    .Include(s => s.Conference)
+                    .AnyAsync(s => s.Id == id && s.Conference.TenantId == user.TenantId);
+
+                if (!isAuthorized)
+                {
+                    TempData["ErrorMessage"] = "Yetkisiz İşlem! Başka bir kuruma ait bildiriyi silemezsiniz.";
+                    return RedirectToAction(nameof(Index), new { slug = slug ?? _tenantContext.Current?.Slug });
+                }
+            }
+
             await _submissionService.DeleteSubmissionAsync(id);
-            TempData["SuccessMessage"] = "Bildiri silindi.";
+            TempData["SuccessMessage"] = "Bildiri başarıyla silindi.";
 
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
                 return Redirect(returnUrl);
