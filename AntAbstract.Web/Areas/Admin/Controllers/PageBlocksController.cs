@@ -74,7 +74,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             ViewBag.BlockType = block.BlockType;
 
-            // JSON verisini formlar için C# nesnesine çeviriyoruz
+   
             if (block.BlockType == ConferencePageBlockType.About)
             {
                 var content = string.IsNullOrEmpty(block.ContentJson)
