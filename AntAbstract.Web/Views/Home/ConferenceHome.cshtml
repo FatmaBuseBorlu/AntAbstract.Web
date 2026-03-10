@@ -1,6 +1,8 @@
 ﻿@model AntAbstract.Web.Models.ViewModels.Website.ConferenceHomePageViewModel
 @using Microsoft.AspNetCore.Identity
 @using AntAbstract.Domain.Entities
+@using AntAbstract.Web.Models.WebsiteBlocks
+@using System.Text.Json
 @inject SignInManager<AppUser> SignInManager
 
 @{
@@ -8,130 +10,291 @@
     Layout = "_Layout";
 
     var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
-}
+    var activeBlocks = Model.Blocks?.Where(b => b.IsActive).OrderBy(b => b.Order).ToList() ?? new List<ConferencePageBlock>();
 
-@* ==========================================
-   1. DİNAMİK BLOK SİSTEMİ (YENİ YÖNTEM) 
-   ========================================== *@
-@if (Model.Blocks != null && Model.Blocks.Any(b => b.IsActive))
-{
-    // Sadece aktif olanları Sıra (Order) numarasına göre diz ve ekrana bas
-    foreach (var block in Model.Blocks.Where(b => b.IsActive).OrderBy(x => x.Order))
+    var heroBlock = activeBlocks.FirstOrDefault(b => b.BlockType == ConferencePageBlockType.Hero);
+    string? heroBtnText = null, heroBtnUrl = null;
+
+    if (heroBlock != null && !string.IsNullOrWhiteSpace(heroBlock.ContentJson))
     {
-        if (block.BlockType == ConferencePageBlockType.Hero)
+        try
         {
-            @* DÜZELTME: Dosya yolunun başına ~/Areas/Admin/ eklendi *@
-            <partial name="~/Areas/Admin/Views/Shared/Blocks/_HeroBlock.cshtml" model="block" />
+            using var doc = JsonDocument.Parse(heroBlock.ContentJson);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("buttonText", out var bt)) heroBtnText = bt.GetString();
+            if (root.TryGetProperty("buttonUrl", out var bu)) heroBtnUrl = bu.GetString();
         }
-        else
-        {
-            @* DÜZELTME: Dosya yolunun başına ~/Areas/Admin/ eklendi *@
-            <partial name="~/Areas/Admin/Views/Shared/Blocks/_RawBlock.cshtml" model="block" />
-        }
+        catch { }
     }
+
+    var finalHeroBg = Model.Conference.BannerPath ?? "https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80";
 }
-@* ==========================================
-   2. SABİT TASARIM (ESKİ YÖNTEM - YEDEK) 
-   Hiç blok eklenmemişse burası çalışır.
-   ========================================== *@
-else
-{
-    <style>
-        .conf-hero {
-            position: relative;
-            background-color: #0f172a;
-            background-size: cover;
-            background-position: center;
-            color: white;
-            padding: 180px 0 120px 0;
-            margin-bottom: 60px;
-        }
 
-        .hero-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(180deg, rgba(15, 23, 42, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
-        }
+<style>
+    :root {
+        --theme-primary: #0f172a;
+        --theme-accent: #00aeef;
+        --theme-danger: #ef4444;
+    }
 
-        .info-cards-container {
-            margin-top: -80px;
-            position: relative;
-            z-index: 10;
-        }
+    /* --- MODERN HERO ALANI --- */
+    .conf-hero-modern {
+        position: relative;
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        padding: 160px 0 100px 0;
+        color: white;
+        border-bottom: 5px solid var(--theme-accent);
+    }
+    .hero-glass-overlay {
+        position: absolute; inset: 0;
+        background: linear-gradient(135deg, rgba(15,23,42,0.85) 0%, rgba(15,23,42,0.6) 100%);
+        backdrop-filter: blur(3px);
+    }
 
-        .btn-hero-primary {
-            background-color: #00aeef;
-            color: white;
-            font-weight: bold;
-            padding: 12px 40px;
-            border-radius: 50px;
-            border: none;
-            box-shadow: 0 4px 15px rgba(0, 174, 239, 0.4);
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-block;
-        }
+    /* --- MODERN SOL MENÜ --- */
+    .sticky-sidebar { position: sticky; top: 30px; z-index: 10; }
+    .modern-menu-list { background: #fff; border-radius: 20px; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; }
+    .modern-menu-item {
+        color: #475569 !important; font-weight: 600; padding: 14px 20px !important; margin-bottom: 5px;
+        border-radius: 12px !important; transition: all 0.3s ease; border: none !important;
+    }
+    .modern-menu-item:hover, .modern-menu-item.active {
+        background-color: var(--theme-accent) !important; color: #fff !important; transform: translateX(5px); box-shadow: 0 4px 10px rgba(0, 174, 239, 0.2);
+    }
 
-            .btn-hero-primary:hover {
-                background-color: #0095cc;
-                transform: translateY(-2px);
-                color: white;
-            }
-    </style>
+    /* --- MODERN ORTA ALAN (YAZILAR) --- */
+    .content-card {
+        background: #fff; border-radius: 24px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+        border: 1px solid rgba(0,0,0,0.02); margin-bottom: 40px; scroll-margin-top: 40px;
+    }
+    .content-title { color: var(--theme-primary); font-weight: 800; font-size: 1.75rem; margin-bottom: 25px; position: relative; padding-bottom: 15px; }
+    .content-title::after { content: ''; position: absolute; bottom: 0; left: 0; width: 60px; height: 4px; background: var(--theme-accent); border-radius: 2px; }
+    .content-text { color: #475569; font-size: 1.1rem; line-height: 1.9; text-align: justify; }
 
-    <div class="conf-hero" style="background-image: url('@(string.IsNullOrEmpty(Model.Conference.BannerPath) ? "https://placehold.co/1920x800/0f172a/FFF?text=Kongre+Banner" : Model.Conference.BannerPath)');">
-        <div class="hero-overlay"></div>
+    /* --- MODERN SAĞ SÜTUN (KIRMIZI BUTON VE WORD DOSYALARI) --- */
+    .modern-red-pulse-btn {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        width: 100%; aspect-ratio: 1/1; max-height: 240px;
+        background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+        border-radius: 50%; text-decoration: none; color: white;
+        box-shadow: 0 15px 35px rgba(255, 75, 43, 0.3); transition: all 0.4s ease;
+        position: relative; overflow: hidden; border: 8px solid rgba(255,255,255,0.5);
+    }
+    .modern-red-pulse-btn:hover { transform: scale(1.05) translateY(-5px); color: white; box-shadow: 0 20px 40px rgba(255, 75, 43, 0.4); border-color: #fff; }
+    .modern-red-pulse-btn i { transition: transform 0.3s; }
+    .modern-red-pulse-btn:hover i { transform: translateY(-5px); }
 
-        <div class="container position-relative text-center z-2">
+    /* Modern Word Kartları */
+    .word-doc-card {
+        display: flex; align-items: center; text-decoration: none; padding: 15px;
+        background: #fff; border-radius: 16px; border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    .word-doc-card:hover { transform: translateY(-4px); box-shadow: 0 12px 25px rgba(0,0,0,0.06); border-color: #2b579a; }
+    .word-icon-wrapper {
+        width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(135deg, #2b579a 0%, #1e3c6b 100%); color: white; margin-right: 15px; font-size: 1.5rem; flex-shrink: 0;
+    }
+    .word-text-wrapper h6 { color: #1e293b; font-weight: 700; font-size: 0.95rem; margin: 0 0 4px 0; line-height: 1.3; }
+    .word-text-wrapper small { color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
 
-            <span class="badge border border-white text-white px-3 py-2 rounded-pill mb-4 fw-light tracking-wider">
-                @Model.Conference.Tenant.Slug.ToUpper()
-            </span>
+    /* --- ALT KAYIT ŞERİDİ --- */
+    .modern-bottom-cta { background: var(--theme-primary); padding: 80px 0; position: relative; overflow: hidden; }
+    .modern-bottom-cta::before { content: ''; position: absolute; top: -50%; right: -10%; width: 500px; height: 500px; background: var(--theme-accent); border-radius: 50%; filter: blur(100px); opacity: 0.2; }
+</style>
 
-            <h1 class="display-4 fw-bold mb-4 lh-sm">@Model.Conference.Title</h1>
-
-            <div class="d-flex justify-content-center gap-4 text-white-50 mb-5 fs-5">
-                <span><i class="far fa-calendar-alt me-2 text-white"></i> @Model.Conference.StartDate.ToString("d MMMM yyyy")</span>
-                <span class="d-none d-md-block">|</span>
-                <span><i class="fas fa-map-marker-alt me-2 text-white"></i> @Model.Conference.City, @Model.Conference.Country</span>
+<div class="bg-white py-2 border-bottom d-none d-md-block shadow-sm position-relative" style="z-index: 100;">
+    <div class="container d-flex justify-content-between align-items-center">
+        <div class="fw-bold text-dark d-flex align-items-center">
+            <i class="fas fa-university text-primary me-2"></i> @Model.Conference.Title
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-flex gap-2">
+                <a href="#" class="btn btn-sm btn-light rounded-circle text-primary"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" class="btn btn-sm btn-light rounded-circle text-info"><i class="fab fa-twitter"></i></a>
+                <a href="#" class="btn btn-sm btn-light rounded-circle text-primary"><i class="fab fa-linkedin-in"></i></a>
             </div>
+            <a href="/Submission/Create" class="btn btn-dark btn-sm rounded-pill px-4 fw-bold shadow-sm">
+                <i class="fas fa-paper-plane me-2 text-info"></i> Özet Gönder
+            </a>
+        </div>
+    </div>
+</div>
 
-            <div>
-                @if (registeredIds.Contains(Model.Conference.Id))
-                {
-                    <div class="d-flex justify-content-center gap-3">
-                        <div class="btn btn-success btn-lg px-4 fw-bold" style="cursor: default;">
-                            <i class="fas fa-check-circle me-2"></i> KAYITLISINIZ
-                        </div>
-                        <a asp-route="PayForConferenceRoute"
-                           asp-route-slug="@Model.Conference.Slug"
-                           asp-route-conferenceId="@Model.Conference.Id"
-                           class="btn btn-outline-light btn-lg px-4 fw-bold">ÖDEME YAP</a>
-                    </div>
-                }
-                else
-                {
-                    if (SignInManager.IsSignedIn(User))
-                    {
-                        <a asp-controller="Registration"
-                           asp-action="Index"
-                           asp-route-slug="@Model.Conference.Tenant.Slug"
-                           class="btn btn-hero-primary btn-lg">
-                            HEMEN KAYIT OL
-                        </a>
-                    }
-                    else
-                    {
-                        <a href="/Identity/Account/Register?returnUrl=/@Model.Conference.Tenant.Slug/registration"
-                           class="btn btn-hero-primary btn-lg">
-                            HEMEN KAYIT OL
-                        </a>
-                    }
-                }
+<div class="conf-hero-modern" style="background-image: url('@finalHeroBg');">
+    <div class="hero-glass-overlay"></div>
+    <div class="container position-relative z-2">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <span class="badge bg-white text-dark px-3 py-2 rounded-pill mb-3 fw-bold tracking-widest shadow-sm">
+                    <i class="fas fa-satellite-dish text-danger me-1 animate__animated animate__flash animate__infinite"></i> 
+                    @(Model.Conference.City ?? "ONLINE KONGRE")
+                </span>
+                <h1 class="display-4 fw-extrabold mb-4 lh-sm">@(heroBlock?.Title ?? Model.Conference.Title)</h1>
+                <div class="d-flex flex-wrap gap-4 fs-5 text-white-50 fw-medium mb-4">
+                    <div class="d-flex align-items-center"><i class="far fa-calendar-alt me-2 text-info"></i> @Model.Conference.StartDate.ToString("d MMMM yyyy")</div>
+                </div>
             </div>
         </div>
     </div>
-}
+</div>
+
+<div class="container py-5" style="margin-top: -30px; position: relative; z-index: 5;">
+    <div class="row g-4 g-lg-5">
+
+        <div class="col-lg-3 d-none d-lg-block">
+            <div class="sticky-sidebar">
+                <div class="modern-menu-list list-group">
+                    @if(!activeBlocks.Any(b => b.BlockType != ConferencePageBlockType.Hero))
+                    {
+                        <div class="p-3 text-muted text-center small"><i class="fas fa-info-circle mb-2 fa-2x opacity-25"></i><br>Menüler Admin Panelinden eklenecek.</div>
+                    }
+                    @foreach (var b in activeBlocks.Where(x => x.BlockType != ConferencePageBlockType.Hero))
+                    {
+                        <a href="#block-@b.Id" class="list-group-item modern-menu-item">
+                            <i class="fas fa-chevron-right me-2 opacity-50" style="font-size: 0.7rem;"></i> @b.Title
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            @if(!activeBlocks.Any(b => b.BlockType != ConferencePageBlockType.Hero))
+            {
+                <div class="content-card text-center py-5">
+                    <img src="https://illustrations.popsy.co/amber/web-design.svg" alt="Yapım Aşamasında" style="width: 200px; opacity: 0.5;">
+                    <h4 class="text-muted mt-4 fw-bold">İçerikler Hazırlanıyor</h4>
+                    <p class="text-muted">Kongre bilgileri çok yakında burada yer alacaktır.</p>
+                </div>
+            }
+
+            @foreach (var b in activeBlocks.Where(x => x.BlockType != ConferencePageBlockType.Hero))
+            {
+                <div id="block-@b.Id" class="content-card">
+                    <h3 class="content-title">@b.Title</h3>
+                    
+                    @if (b.BlockType == ConferencePageBlockType.About && !string.IsNullOrWhiteSpace(b.ContentJson))
+                    {
+                        AboutBlockContent? aboutContent = null;
+                        try { aboutContent = JsonSerializer.Deserialize<AboutBlockContent>(b.ContentJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }); } catch { }
+
+                        if (aboutContent != null)
+                        {
+                            <div class="content-text">
+                                @Html.Raw(aboutContent.Description?.Replace("\n", "<br/>"))
+                            </div>
+                            
+                            @if (aboutContent.Features != null && aboutContent.Features.Any(f => !string.IsNullOrWhiteSpace(f)))
+                            {
+                                <div class="row mt-4 g-3">
+                                    @foreach(var f in aboutContent.Features.Where(f => !string.IsNullOrWhiteSpace(f)))
+                                    {
+                                        <div class="col-sm-12">
+                                            <div class="d-flex align-items-center bg-light p-3 rounded-3 border">
+                                                <i class="fas fa-check-circle text-success fs-4 me-3"></i>
+                                                <span class="fw-bold text-dark">@f</span>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                    }
+                    else 
+                    {
+                        <div class="content-text">
+                            @if(!string.IsNullOrEmpty(b.Subtitle))
+                            {
+                                @Html.Raw(b.Subtitle.Replace("\n", "<br/>"))
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="col-lg-3">
+            <div class="sticky-sidebar">
+                
+                <div class="d-flex justify-content-center mb-5 mx-auto" style="max-width: 240px;">
+                    <a href="/Submission/Create" class="modern-red-pulse-btn">
+                        <i class="fas fa-cloud-upload-alt fa-3x mb-2 opacity-75"></i>
+                        <span class="fs-6 fw-bold mb-1 opacity-75">ÇEVRİMİÇİ</span>
+                        <span class="fs-4 fw-bolder lh-1 text-center">KAYIT VE<br>ÖZET GÖNDER</span>
+                    </a>
+                </div>
+
+                <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">Belgeler ve Şablonlar</h5>
+                
+                <div class="d-flex flex-column gap-3 mb-5">
+                    <a href="#" class="word-doc-card">
+                        <div class="word-icon-wrapper"><i class="fas fa-file-word"></i></div>
+                        <div class="word-text-wrapper">
+                            <h6>Yazım Kuralları</h6>
+                            <small>Özet ve Tam Metin</small>
+                        </div>
+                    </a>
+                    
+                    <a href="#" class="word-doc-card">
+                        <div class="word-icon-wrapper"><i class="fas fa-file-word"></i></div>
+                        <div class="word-text-wrapper">
+                            <h6>Örnek Özet Formatı</h6>
+                            <small>.DOCX İndir</small>
+                        </div>
+                    </a>
+
+                    <a href="#" class="word-doc-card">
+                        <div class="word-icon-wrapper"><i class="fas fa-file-word"></i></div>
+                        <div class="word-text-wrapper">
+                            <h6>Tam Metin Formatı</h6>
+                            <small>.DOCX İndir</small>
+                        </div>
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modern-bottom-cta">
+    <div class="container text-center position-relative z-2">
+        <h2 class="display-6 fw-bold mb-4">Siz de Aramıza Katılın!</h2>
+        <p class="lead text-white-50 mb-5 mw-600 mx-auto">Alanında uzman konuşmacılar ve dopdolu bir bilimsel program sizi bekliyor. Kontenjanlar dolmadan yerinizi ayırtın.</p>
+        
+        @if (registeredIds.Contains(Model.Conference.Id))
+        {
+            <a asp-route="PayForConferenceRoute" asp-route-slug="@Model.Conference.Slug" asp-route-conferenceId="@Model.Conference.Id" class="btn btn-light btn-lg rounded-pill px-5 py-3 fw-bold text-primary shadow-lg">
+                <i class="fas fa-credit-card me-2"></i> ÖDEME İŞLEMLERİ
+            </a>
+        }
+        else
+        {
+            <a asp-controller="Registration" asp-action="Index" asp-route-slug="@Model.Conference.Tenant?.Slug" class="btn btn-info btn-lg rounded-pill px-5 py-3 fw-bold text-white shadow-lg border-0" style="background-color: var(--theme-accent);">
+                <i class="fas fa-user-plus me-2"></i> HEMEN KAYIT OL
+            </a>
+        }
+    </div>
+</div>
+
+<div class="bg-light py-5 border-top">
+    <div class="container py-4">
+        <h3 class="text-center fw-bold text-dark mb-5">Önerilen Diğer Kongreler</h3>
+        <div class="row g-4 justify-content-center">
+            @for (int i = 1; i <= 4; i++)
+            {
+                <div class="col-md-3 col-sm-6">
+                    <a href="#" class="text-decoration-none">
+                        <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden transition-all" style="transition: transform 0.3s; cursor: pointer;" onmouseover="this.style.transform='translateY(-10px)'" onmouseout="this.style.transform='translateY(0)'">
+                            <img src="https://placehold.co/300x400/e2e8f0/64748b?text=Kongre+Afişi+@i" class="card-img-top" alt="Kongre Afişi">
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>

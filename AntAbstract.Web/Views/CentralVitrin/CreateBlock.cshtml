@@ -1,0 +1,75 @@
+﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
+@using AntAbstract.Domain.Entities
+
+@{
+    ViewData["Title"] = "Yeni Blok Ekle";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+}
+
+<style>
+    .cms-card {
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        border: 1px solid #f1f5f9;
+    }
+
+    .cms-header {
+        background: linear-gradient(135deg, #00aeef 0%, #0077b6 100%);
+        padding: 25px;
+        color: white;
+    }
+
+    .form-control-modern {
+        border-radius: 12px;
+        border: 2px solid #e2e8f0;
+        padding: 12px 15px;
+        transition: all 0.3s;
+    }
+
+        .form-control-modern:focus {
+            border-color: #00aeef;
+            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
+        }
+</style>
+
+<div class="container-fluid mt-4 mb-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a asp-action="ManageBlocks" asp-route-conferenceId="@Model.ConferenceId" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
+            <i class="fas fa-arrow-left me-2"></i> İptal
+        </a>
+    </div>
+
+    <div class="card cms-card">
+        <div class="cms-header">
+            <h4 class="mb-0 fw-bold"><i class="fas fa-plus-circle me-2"></i> Yeni Vitrin Menüsü Ekle</h4>
+        </div>
+
+        <div class="card-body p-4 p-lg-5">
+            <form asp-controller="CentralVitrin" asp-action="CreateBlock" method="post">
+                <input type="hidden" asp-for="ConferenceId" />
+                <input type="hidden" asp-for="BlockType" /> <div class="mb-4">
+                    <label asp-for="Title" class="form-label fw-bold text-dark">Menü Başlığı <span class="text-danger">*</span></label>
+                    <input asp-for="Title" class="form-control form-control-modern" placeholder="Örn: Ulaşım ve Konaklama" required />
+                    <small class="text-muted mt-2 d-block">Bu başlık kongre ana sayfasındaki sol menüde görünecektir.</small>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-between border-top pt-4 mt-4">
+                    <div class="form-check form-switch fs-5">
+                        <input asp-for="IsActive" class="form-check-input shadow-sm" type="checkbox" role="switch" id="activeSwitch" checked>
+                        <label asp-for="IsActive" class="form-check-label fw-bold text-dark ms-2" for="activeSwitch">Oluşturur oluşturmaz yayına al</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-lg rounded-pill px-5 fw-bold shadow-lg">
+                        <i class="fas fa-check me-2"></i> Bloğu Oluştur
+                    </button>
+                </div>
+            </form>
+
+            <div class="alert alert-info mt-4 rounded-3 border-0">
+                <i class="fas fa-info-circle me-2"></i> Yeni bloğu oluşturduktan sonra, listeden <b>"Düzenle"</b> butonuna basarak içine detaylı (Word benzeri) zengin metinler ekleyebilirsiniz.
+            </div>
+        </div>
+    </div>
+</div>
