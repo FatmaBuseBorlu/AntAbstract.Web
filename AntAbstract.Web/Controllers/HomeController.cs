@@ -176,5 +176,11 @@ namespace AntAbstract.Web.Controllers
                 RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
             });
         }
+            public IActionResult Proceedings()
+        {
+            
+            return View();
+        }
     }
 }
+

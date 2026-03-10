@@ -1,0 +1,193 @@
+﻿@{
+    ViewData["Title"] = "Bildiri Kitapları & Akademik Arşiv";
+}
+
+<style>
+    .archive-hero {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        padding: 100px 0 60px 0;
+        color: white;
+        text-align: center;
+        border-bottom: 5px solid var(--primary-color);
+    }
+
+    .search-box {
+        max-width: 600px;
+        margin: -30px auto 40px auto;
+        position: relative;
+        z-index: 10;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        border-radius: 50px;
+        background: white;
+        padding: 8px;
+        display: flex;
+    }
+
+        .search-box input {
+            border: none;
+            box-shadow: none;
+            padding-left: 20px;
+            border-radius: 50px;
+        }
+
+            .search-box input:focus {
+                outline: none;
+                box-shadow: none;
+            }
+
+    .book-card {
+        background: #fff;
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+        .book-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 174, 239, 0.15);
+            border-color: var(--primary-color);
+        }
+
+    .book-cover {
+        background: #f8fafc;
+        height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .pdf-icon-wrapper {
+        width: 80px;
+        height: 80px;
+        background: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        box-shadow: 0 5px 15px rgba(220, 53, 69, 0.2);
+    }
+
+    .isbn-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: #1e293b;
+        color: white;
+        font-size: 0.7rem;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+
+    .year-badge {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        background: var(--primary-color);
+        color: white;
+        font-size: 0.8rem;
+        padding: 4px 12px;
+        border-radius: 8px;
+        font-weight: bold;
+    }
+</style>
+
+<div class="archive-hero">
+    <div class="container">
+        <h1 class="display-4 fw-bold mb-3">Akademik Arşiv & Bildiri Kitapları</h1>
+        <p class="lead text-white-50 mx-auto" style="max-width: 700px;">
+            Platformumuz üzerinden gerçekleştirilen kongrelere ait yayınlanmış özet ve tam metin bildiri kitaplarına buradan ulaşabilirsiniz.
+        </p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="search-box">
+        <input type="text" class="form-control form-control-lg" placeholder="Kongre adı, ISBN veya yıl arayın...">
+        <button class="btn btn-primary rounded-pill px-4 fw-bold">
+            <i class="fas fa-search"></i> Ara
+        </button>
+    </div>
+</div>
+
+<div class="container mb-5 pb-5">
+
+    <div class="row g-4">
+        <div class="col-lg-4 col-md-6">
+            <div class="book-card">
+                <div class="book-cover">
+                    <span class="year-badge">2025</span>
+                    <span class="isbn-badge">ISBN: 978-605-123</span>
+                    <div class="pdf-icon-wrapper">
+                        <i class="fas fa-file-pdf"></i>
+                    </div>
+                </div>
+                <div class="card-body p-4 d-flex flex-column">
+                    <h5 class="fw-bold text-dark mb-2 line-clamp-2">14. Ulusal Moleküler Biyoloji ve Biyoteknoloji Kongresi</h5>
+                    <p class="text-muted small mb-4">Editörler: Prof. Dr. Ahmet Yılmaz, Doç. Dr. Ayşe Kaya</p>
+
+                    <div class="mt-auto d-grid gap-2">
+                        <a href="#" class="btn btn-outline-danger fw-bold rounded-pill">
+                            <i class="fas fa-download me-2"></i> PDF Olarak İndir
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="book-card">
+                <div class="book-cover">
+                    <span class="year-badge">2026</span>
+                    <span class="isbn-badge">ISBN: 978-605-456</span>
+                    <div class="pdf-icon-wrapper">
+                        <i class="fas fa-file-pdf"></i>
+                    </div>
+                </div>
+                <div class="card-body p-4 d-flex flex-column">
+                    <h5 class="fw-bold text-dark mb-2 line-clamp-2">International Summit on Artificial Intelligence (ISAI 2026)</h5>
+                    <p class="text-muted small mb-4">Editör: Dr. John Doe</p>
+
+                    <div class="mt-auto d-grid gap-2">
+                        <a href="#" class="btn btn-outline-danger fw-bold rounded-pill">
+                            <i class="fas fa-download me-2"></i> PDF Olarak İndir
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="book-card">
+                <div class="book-cover">
+                    <span class="year-badge">2025</span>
+                    <span class="isbn-badge">E-KİTAP</span>
+                    <div class="pdf-icon-wrapper">
+                        <i class="fas fa-file-pdf"></i>
+                    </div>
+                </div>
+                <div class="card-body p-4 d-flex flex-column">
+                    <h5 class="fw-bold text-dark mb-2 line-clamp-2">3. Uluslararası Veteriner Farmakoloji ve Toksikoloji Kongresi</h5>
+                    <p class="text-muted small mb-4">Özet Bildiri Kitapçığı</p>
+
+                    <div class="mt-auto d-grid gap-2">
+                        <a href="#" class="btn btn-outline-danger fw-bold rounded-pill">
+                            <i class="fas fa-download me-2"></i> PDF Olarak İndir
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>

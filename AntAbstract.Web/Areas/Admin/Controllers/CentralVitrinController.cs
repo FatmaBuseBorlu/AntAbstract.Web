@@ -1,9 +1,7 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
-using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.WebsiteBlocks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -12,39 +10,44 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace AntAbstract.Web.Areas.Admin.Controllers
+namespace AntAbstract.Web.Controllers 
 {
-    [Area("Admin")]
-    [Authorize(Roles = "Admin,Organizator")]
-    public class PageBlocksController : Controller
+    [Authorize(Roles = "Admin")]
+    public class CentralVitrinController : Controller
     {
         private readonly AppDbContext _context;
-        private readonly TenantContext _tenantContext;
-        private readonly ISelectedConferenceService _selectedConferenceService;
 
-        public PageBlocksController(AppDbContext context, TenantContext tenantContext, ISelectedConferenceService selectedConferenceService)
+        public CentralVitrinController(AppDbContext context)
         {
             _context = context;
-            _tenantContext = tenantContext;
-            _selectedConferenceService = selectedConferenceService;
         }
 
-        [HttpGet("/{slug}/Admin/PageBlocks")]
-        public async Task<IActionResult> Index(string slug)
+        public async Task<IActionResult> Index()
         {
-            var confId = _selectedConferenceService.GetSelectedConferenceId();
-            if (confId == null)
-            {
-                TempData["ErrorMessage"] = "Lütfen önce bir kongre seçin.";
-                return Redirect($"/{slug}/Admin/Submissions");
-            }
+            var allConferences = await _context.Conferences
+                .Include(c => c.Tenant)
+                .OrderByDescending(c => c.StartDate)
+                .ToListAsync();
+
+            return View(allConferences);
+        }
+
+        public async Task<IActionResult> ManageBlocks(Guid conferenceId)
+        {
+            var conference = await _context.Conferences
+                .Include(c => c.Tenant)
+                .FirstOrDefaultAsync(c => c.Id == conferenceId);
+
+            if (conference == null) return NotFound("Kongre bulunamadı.");
+
+            ViewBag.ConferenceName = conference.Title;
+            ViewBag.ConferenceId = conference.Id;
 
             var blocks = await _context.ConferencePageBlocks
-                .Where(b => b.ConferenceId == confId && b.TenantId == _tenantContext.Current.Id)
+                .Where(b => b.ConferenceId == conferenceId)
                 .OrderBy(b => b.Order)
                 .ToListAsync();
 
-            
             var academicTemplate = new List<(ConferencePageBlockType Type, string Title, int Order)>
             {
                 (ConferencePageBlockType.Hero, "Ana Karşılama (Hero)", 1),
@@ -64,11 +67,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 {
                     var newBlock = new ConferencePageBlock
                     {
-                        ConferenceId = confId.Value,
-                        TenantId = _tenantContext.Current.Id,
+                        ConferenceId = conferenceId,
+                        TenantId = conference.TenantId, 
                         BlockType = item.Type,
                         Title = item.Title,
-                        IsActive = true, 
+                        IsActive = true,
                         Order = item.Order,
                         CreatedAt = DateTime.UtcNow
                     };
@@ -88,15 +91,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return View(blocks);
         }
 
-        [HttpGet("/{slug}/Admin/PageBlocks/Edit/{id}")]
-        public async Task<IActionResult> Edit(string slug, int id)
+        [HttpGet]
+        public async Task<IActionResult> EditBlock(int id)
         {
             var block = await _context.ConferencePageBlocks
-                .FirstOrDefaultAsync(b => b.Id == id && b.TenantId == _tenantContext.Current.Id);
+                .Include(b => b.Conference)
+                .FirstOrDefaultAsync(b => b.Id == id);
 
-            if (block == null) return NotFound("Blok bulunamadı veya yetkiniz yok.");
+            if (block == null) return NotFound();
 
             ViewBag.BlockType = block.BlockType;
+            ViewBag.ConferenceId = block.ConferenceId;
 
             if (block.BlockType == ConferencePageBlockType.About)
             {
@@ -109,13 +114,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return View(block);
         }
 
-        [HttpPost("/{slug}/Admin/PageBlocks/Edit/{id}")]
+        [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(string slug, int id, ConferencePageBlock model, AboutBlockContent aboutContent)
+        public async Task<IActionResult> EditBlock(int id, ConferencePageBlock model, AboutBlockContent aboutContent)
         {
-            var block = await _context.ConferencePageBlocks
-                .FirstOrDefaultAsync(b => b.Id == id && b.TenantId == _tenantContext.Current.Id);
-
+            var block = await _context.ConferencePageBlocks.FindAsync(id);
             if (block == null) return NotFound();
 
             block.Title = model.Title;
@@ -129,9 +132,38 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Blok başarıyla güncellendi!";
+            TempData["SuccessMessage"] = "Süper Admin Yetkisiyle Başarıyla Güncellendi!";
 
-            return Redirect($"/{slug}/Admin/PageBlocks");
+            return RedirectToAction(nameof(ManageBlocks), new { conferenceId = block.ConferenceId });
+        }
+
+        [HttpGet]
+        public IActionResult CreateBlock(Guid conferenceId)
+        {
+            ViewBag.ConferenceId = conferenceId;
+            return View(new ConferencePageBlock { ConferenceId = conferenceId, IsActive = true, BlockType = ConferencePageBlockType.About });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateBlock(ConferencePageBlock model)
+        {
+            var conference = await _context.Conferences.FindAsync(model.ConferenceId);
+            if (conference == null) return NotFound();
+
+            var lastOrder = await _context.ConferencePageBlocks
+                .Where(b => b.ConferenceId == model.ConferenceId)
+                .MaxAsync(b => (int?)b.Order) ?? 0;
+
+            model.TenantId = conference.TenantId;
+            model.Order = lastOrder + 1;
+            model.CreatedAt = DateTime.UtcNow;
+
+            _context.ConferencePageBlocks.Add(model);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Yeni blok başarıyla eklendi!";
+            return RedirectToAction(nameof(ManageBlocks), new { conferenceId = model.ConferenceId });
         }
     }
 }
