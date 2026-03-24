@@ -11,10 +11,6 @@
 @{
     ViewData["Title"] = "Tüm Kongreler";
     Layout = "_Layout";
-
-    var isAdminLike = User.Identity != null
-        && User.Identity.IsAuthenticated
-        && (User.IsInRole("Admin") || User.IsInRole("Organizator"));
 }
 
 <style>
@@ -233,18 +229,9 @@
                                 <span><i class="fas fa-calendar-check text-primary me-1"></i> @kongre.StartDate.Year</span>
                             </div>
 
-                            @if (isAdminLike)
-                            {
-                                <a href="/@slug/Dashboard" class="btn-detail">
-                                    YÖNETİM PANELİ <i class="fas fa-cog"></i>
-                                </a>
-                            }
-                            else
-                            {
-                                <a href="/@slug" class="btn-detail">
-                                    DETAYLARI GÖR <i class="fas fa-arrow-right"></i>
-                                </a>
-                            }
+                            <a href="/@slug" class="btn-detail">
+                                SİTEYİ İNCELE <i class="fas fa-external-link-alt"></i>
+                            </a>
                         </div>
                     </div>
                 </div>

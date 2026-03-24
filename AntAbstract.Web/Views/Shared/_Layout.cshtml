@@ -59,6 +59,7 @@
             font-size: 1.6rem;
             color: #1e293b;
             letter-spacing: -0.5px;
+            text-decoration: none;
         }
 
         .nav-link {
@@ -102,7 +103,6 @@
             transform: translateY(-2px);
         }
 
-        /* ✅ Yazar / Öğrenci Butonu Stili (Mor) */
         .nav-link.author-link {
             color: #6f42c1 !important;
             background-color: rgba(111, 66, 193, 0.1);
@@ -117,7 +117,6 @@
             transform: translateY(-2px);
         }
 
-        /* ✅ Website Yönetimi Butonu Stili */
         .nav-link.website-link {
             color: #198754 !important;
             background-color: rgba(25, 135, 84, 0.12);
@@ -195,7 +194,6 @@
         && User.Identity.IsAuthenticated
         && User.IsInRole("Referee");
 
-    // ✅ Yazar rolünü kontrol ediyoruz
     var isAuthor = User.Identity != null 
         && User.Identity.IsAuthenticated 
         && User.IsInRole("Author");
@@ -227,7 +225,7 @@
 <header>
     <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
-            <a class="navbar-brand" asp-controller="Home" asp-action="Index">
+            <a class="navbar-brand" href="/">
                 ANT<span style="color: var(--primary-color);">ABSTRACT</span>
             </a>
 
@@ -237,13 +235,11 @@
 
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav mx-auto align-items-center">
-                    <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index">Ana Sayfa</a></li>
-                    <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="About">Hakkımızda</a></li>
-                    <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Congresses">Kongreler</a></li>
-                    
-                    <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Proceedings">Bildiri Kitabı</a></li>
-
-                    <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Contact">İletişim</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/">Ana Sayfa</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Home/About">Hakkımızda</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Home/Congresses">Kongreler</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Home/Proceedings">Bildiri Kitabı</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Home/Contact">İletişim</a></li>
 
                     @* --- 1. ADMIN BUTONU --- *@
                     @if (!hideAdminNav && isAdminLike && (Tc.Current != null || !string.IsNullOrWhiteSpace(slug)))
@@ -325,7 +321,7 @@
 
             <div class="col-lg-2 col-md-6">
                 <h6 class="footer-title">Platform</h6>
-                <a href="/Home/Index" class="footer-link">Ana Sayfa</a>
+                <a href="/" class="footer-link">Ana Sayfa</a>
                 <a href="/Home/Congresses" class="footer-link">Kongreler</a>
                 <a href="/Home/About" class="footer-link">Hakkımızda</a>
                 <a href="/Identity/Account/Login" class="footer-link">Giriş Yap</a>

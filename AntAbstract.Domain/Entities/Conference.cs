@@ -27,5 +27,8 @@ namespace AntAbstract.Domain.Entities
         public Guid TenantId { get; set; }
         public Tenant Tenant { get; set; } = null!;
         public ICollection<Registration> Registrations { get; set; }
+        public string? WritingRulesPath { get; set; }
+        public string? AbstractTemplatePath { get; set; }
+        public string? FullTextTemplatePath { get; set; }
     }
 }
