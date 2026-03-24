@@ -34,6 +34,7 @@ namespace AntAbstract.Web.Controllers
 
         public async Task<IActionResult> Index()
         {
+            // --- 1. DURUM: EÐER BÝR KONGRENÝN (TENANT) ÝÇÝNDEYSEK (VÝTRÝN) ---
             if (_tenantContext.Current != null)
             {
                 var currentConference = await _context.Conferences
@@ -60,17 +61,28 @@ namespace AntAbstract.Web.Controllers
                     culture: culture
                 );
 
+                // YENÝ EKLENEN: Diðer Önerilen Kongreleri Çekiyoruz (Kendi kongremiz hariç)
+                var suggestedConferences = await _context.Conferences
+                    .Include(c => c.Tenant)
+                    .Where(c => c.Id != currentConference.Id && c.EndDate > DateTime.Now)
+                    .OrderBy(c => c.StartDate)
+                    .Take(4)
+                    .AsNoTracking()
+                    .ToListAsync();
+
                 var vm = new ConferenceHomePageViewModel
                 {
                     Conference = currentConference,
                     Blocks = blocks,
                     Culture = culture,
-                    Page = page
+                    Page = page,
+                    SuggestedConferences = suggestedConferences // Çantaya ekledik!
                 };
 
                 return View("ConferenceHome", vm);
             }
 
+            // --- 2. DURUM: ANA PLATFORM (ANTABSTRACT ANA SAYFASI) ---
             var user = await _userManager.GetUserAsync(User);
             var registeredConferenceIds = new List<Guid>();
 
@@ -97,21 +109,12 @@ namespace AntAbstract.Web.Controllers
                 .Select(s => new SubmissionCardDto
                 {
                     Title = s.Title,
-
                     AbstractSnippet = (s.Abstract != null && s.Abstract.Length > 120)
                         ? s.Abstract.Substring(0, 120) + "..."
                         : s.Abstract ?? "Özet metni bulunmuyor.",
-
-                    AuthorName = s.Author != null
-                        ? $"{s.Author.FirstName} {s.Author.LastName}"
-                        : "Misafir Kullanýcý",
-
-                    University = s.Author != null
-                        ? (s.Author.Institution ?? "Kurum Belirtilmemiþ")
-                        : "",
-
+                    AuthorName = s.Author != null ? $"{s.Author.FirstName} {s.Author.LastName}" : "Misafir Kullanýcý",
+                    University = s.Author != null ? (s.Author.Institution ?? "Kurum Belirtilmemiþ") : "",
                     ConferenceName = s.Conference.Title,
-
                     AuthorImageUrl = (s.Author != null && !string.IsNullOrEmpty(s.Author.ProfileImagePath))
                         ? s.Author.ProfileImagePath
                         : $"https://ui-avatars.com/api/?name={(s.Author != null ? s.Author.FirstName : "A")}+{(s.Author != null ? s.Author.LastName : "A")}&background=random&color=fff"
@@ -122,7 +125,6 @@ namespace AntAbstract.Web.Controllers
             {
                 TotalUsers = await _userManager.Users.CountAsync(),
                 ActiveCongressesCount = conferences.Count,
-
                 ActiveCongresses = conferences.Select(c => new CongressCardDto
                 {
                     Id = c.Id,
@@ -134,7 +136,6 @@ namespace AntAbstract.Web.Controllers
                     Slug = c.Slug ?? c.Id.ToString(),
                     IsRegistered = registeredConferenceIds.Contains(c.Id)
                 }).ToList(),
-
                 LastSubmissions = lastSubmissions
             };
 
@@ -176,11 +177,10 @@ namespace AntAbstract.Web.Controllers
                 RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
             });
         }
-            public IActionResult Proceedings()
+
+        public IActionResult Proceedings()
         {
-            
             return View();
         }
     }
 }
-

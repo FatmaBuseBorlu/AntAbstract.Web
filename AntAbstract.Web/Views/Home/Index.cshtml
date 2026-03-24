@@ -9,8 +9,6 @@
 @{
     ViewData["Title"] = "Ana Sayfa";
     Layout = "_Layout";
-
-    var isUserLoggedIn = SignInManager.IsSignedIn(User).ToString().ToLower();
 }
 
 <style>
@@ -245,9 +243,7 @@
                 {
                     @foreach (var item in Model.ActiveCongresses)
                     {
-                        var detailUrl = $"/Conference/Details/{item.Slug}";
-                        var registerUrl = $"/{item.Slug}/registration/join";
-                        var loginUrl = $"/Identity/Account/Login?ReturnUrl={System.Net.WebUtility.UrlEncode(Context.Request.Path)}";
+                        var vitrinUrl = $"/{item.Slug}";
 
                         <div class="col-md-6 col-lg-4">
                             <div class="card h-100 shadow-sm border-0 congress-card rounded-4 overflow-hidden">
@@ -277,7 +273,7 @@
                                     </div>
 
                                     <h5 class="card-title fw-bold mb-3 text-dark">
-                                        <a href="@detailUrl" class="text-decoration-none text-dark stretched-link">@item.Title</a>
+                                        <a href="@vitrinUrl" class="text-decoration-none text-dark stretched-link">@item.Title</a>
                                     </h5>
 
                                     <p class="card-text text-muted small mb-4 flex-grow-1">
@@ -285,20 +281,9 @@
                                     </p>
 
                                     <div class="d-grid gap-2 position-relative" style="z-index: 2;">
-                                        @if (item.IsRegistered)
-                                        {
-                                            <button class="btn btn-success fw-bold disabled border-0" style="opacity: 0.9;">
-                                                <i class="fas fa-check-circle me-2"></i> Kayıtlısınız
-                                            </button>
-                                        }
-                                        else
-                                        {
-                                            <button onclick="akilliKayitYonlendirme(@isUserLoggedIn, '@loginUrl', '@registerUrl')"
-                                                    class="btn btn-primary fw-bold text-white"
-                                                    style="border: none;">
-                                                Hemen Kayıt Ol
-                                            </button>
-                                        }
+                                        <a href="@vitrinUrl" class="btn btn-primary fw-bold text-white shadow-sm py-2" style="border-radius: 12px; transition: all 0.3s;">
+                                            <i class="fas fa-external-link-alt me-2"></i> Kongre Sitesini İncele
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -612,28 +597,3 @@
         </div>
     </section>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-    function akilliKayitYonlendirme(girisYapmisMi, loginUrl, registerUrl) {
-        if (girisYapmisMi === true) {
-            window.location.href = registerUrl;
-        } else {
-            Swal.fire({
-                title: 'Giriş Yapmalısınız',
-                text: "Kongreye kayıt olabilmek için sisteme giriş yapmanız veya üye olmanız gerekmektedir.",
-                icon: 'info',
-                showCancelButton: true,
-                confirmButtonColor: '#00aeef',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Giriş Yap / Üye Ol',
-                cancelButtonText: 'İptal',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = loginUrl;
-                }
-            });
-        }
-    }
-</script>

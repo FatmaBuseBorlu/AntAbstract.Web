@@ -8,26 +8,30 @@
 
 <div class="container py-4">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0">Kongre Düzenle</h5>
+        <div class="col-md-10">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0"><i class="fas fa-edit text-primary me-2"></i> Kongre Ayarları</h5>
 
-                    <span class="badge bg-light text-dark border">
+                    <span class="badge bg-light text-dark border px-3 py-2">
                         @Model.Title
                     </span>
                 </div>
 
-                <div class="card-body p-4">
+                <div class="card-body p-4 p-lg-5">
                     <form asp-area="Admin"
                           asp-controller="Conferences"
                           asp-action="Edit"
                           asp-route-slug="@slug"
                           asp-route-id="@Model.Id"
-                          method="post">
-                        @Html.AntiForgeryToken()
+                          method="post"
+                          enctype="multipart/form-data">
 
+                        @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="Id" />
+                        <input type="hidden" asp-for="TenantId" />
+
+                        <h6 class="fw-bold text-dark mb-3"><i class="fas fa-info-circle text-info me-2"></i> Temel Bilgiler</h6>
 
                         <div class="mb-3">
                             <label class="form-label fw-bold small text-muted">Kongre Adı</label>
@@ -60,17 +64,80 @@
                             <span asp-validation-for="Description" class="text-danger small"></span>
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center">
+                        <hr class="my-5 border-secondary opacity-25" />
+
+                        <h6 class="fw-bold text-dark mb-4"><i class="fas fa-file-word text-primary me-2"></i> Şablon ve Belge Yüklemeleri</h6>
+                        <p class="text-muted small mb-4">Bu alana yüklediğiniz dosyalar, kongre vitrininde sağ taraftaki "Belgeler ve Şablonlar" kısmında anında yayınlanır. <i>(Mevcut dosyayı değiştirmek isterseniz yeni dosya seçmeniz yeterlidir.)</i></p>
+
+                        <div class="row g-4 mb-5">
+
+                            <div class="col-md-4">
+                                <div class="p-4 border rounded-4 bg-light text-center h-100 d-flex flex-column justify-content-between">
+                                    <div>
+                                        <i class="fas fa-book-open fa-2x text-secondary mb-3"></i>
+                                        <h6 class="fw-bold text-dark">Yazım Kuralları</h6>
+                                        <input type="file" name="WritingRulesFile" class="form-control form-control-sm mb-3 shadow-sm" accept=".doc,.docx,.pdf" />
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(Model.WritingRulesPath))
+                                    {
+                                        <a href="@Model.WritingRulesPath" target="_blank" class="badge bg-success text-decoration-none p-2 w-100 shadow-sm"><i class="fas fa-check-circle me-1"></i> Yüklü (Görüntüle)</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary bg-opacity-25 text-secondary p-2 w-100">Henüz Yüklenmedi</span>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="p-4 border rounded-4 bg-light text-center h-100 d-flex flex-column justify-content-between">
+                                    <div>
+                                        <i class="fas fa-file-alt fa-2x text-secondary mb-3"></i>
+                                        <h6 class="fw-bold text-dark">Özet Şablonu</h6>
+                                        <input type="file" name="AbstractTemplateFile" class="form-control form-control-sm mb-3 shadow-sm" accept=".doc,.docx,.pdf" />
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(Model.AbstractTemplatePath))
+                                    {
+                                        <a href="@Model.AbstractTemplatePath" target="_blank" class="badge bg-success text-decoration-none p-2 w-100 shadow-sm"><i class="fas fa-check-circle me-1"></i> Yüklü (Görüntüle)</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary bg-opacity-25 text-secondary p-2 w-100">Henüz Yüklenmedi</span>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="p-4 border rounded-4 bg-light text-center h-100 d-flex flex-column justify-content-between">
+                                    <div>
+                                        <i class="fas fa-file-word fa-2x text-secondary mb-3"></i>
+                                        <h6 class="fw-bold text-dark">Tam Metin Şablonu</h6>
+                                        <input type="file" name="FullTextTemplateFile" class="form-control form-control-sm mb-3 shadow-sm" accept=".doc,.docx,.pdf" />
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(Model.FullTextTemplatePath))
+                                    {
+                                        <a href="@Model.FullTextTemplatePath" target="_blank" class="badge bg-success text-decoration-none p-2 w-100 shadow-sm"><i class="fas fa-check-circle me-1"></i> Yüklü (Görüntüle)</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary bg-opacity-25 text-secondary p-2 w-100">Henüz Yüklenmedi</span>
+                                    }
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded-4 border">
                             <a asp-area="Admin"
                                asp-controller="Conferences"
                                asp-action="Index"
                                asp-route-slug="@slug"
-                               class="btn btn-light text-muted">
+                               class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
                                 İptal
                             </a>
 
-                            <button type="submit" class="btn btn-primary fw-bold px-5">
-                                <i class="fas fa-save me-2"></i> Güncelle
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold px-5 rounded-pill shadow-sm">
+                                <i class="fas fa-save me-2"></i> Ayarları ve Dosyaları Kaydet
                             </button>
                         </div>
                     </form>

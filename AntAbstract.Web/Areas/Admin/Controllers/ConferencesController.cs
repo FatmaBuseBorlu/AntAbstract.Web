@@ -2,11 +2,14 @@
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting; // YENİ EKLENDİ
+using Microsoft.AspNetCore.Http; // YENİ EKLENDİ
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.IO; // YENİ EKLENDİ
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -20,17 +23,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IWebHostEnvironment _env; 
 
         public ConferencesController(
             AppDbContext context,
             TenantContext tenantContext,
             ISelectedConferenceService selectedConferenceService,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IWebHostEnvironment env) 
         {
             _context = context;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
             _userManager = userManager;
+            _env = env;
         }
 
         [HttpGet("/Admin/Conferences")]
@@ -183,7 +189,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         [HttpPost("/{slug}/Admin/Conferences/Edit/{id:guid}")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(string slug, Guid id, Conference conference)
+        public async Task<IActionResult> Edit(string slug, Guid id, Conference conference, IFormFile? WritingRulesFile, IFormFile? AbstractTemplateFile, IFormFile? FullTextTemplateFile)
         {
             if (_tenantContext.Current == null || !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
                 return Redirect("/Admin/Dashboard");
@@ -208,6 +214,34 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (existingConf == null)
                 return NotFound();
 
+            
+            string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "templates");
+            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+            if (WritingRulesFile != null && WritingRulesFile.Length > 0)
+            {
+                string uniqueFileName = Guid.NewGuid().ToString() + "_" + WritingRulesFile.FileName;
+                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                using (var fileStream = new FileStream(filePath, FileMode.Create)) { await WritingRulesFile.CopyToAsync(fileStream); }
+                existingConf.WritingRulesPath = "/uploads/templates/" + uniqueFileName;
+            }
+
+            if (AbstractTemplateFile != null && AbstractTemplateFile.Length > 0)
+            {
+                string uniqueFileName = Guid.NewGuid().ToString() + "_" + AbstractTemplateFile.FileName;
+                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                using (var fileStream = new FileStream(filePath, FileMode.Create)) { await AbstractTemplateFile.CopyToAsync(fileStream); }
+                existingConf.AbstractTemplatePath = "/uploads/templates/" + uniqueFileName;
+            }
+
+            if (FullTextTemplateFile != null && FullTextTemplateFile.Length > 0)
+            {
+                string uniqueFileName = Guid.NewGuid().ToString() + "_" + FullTextTemplateFile.FileName;
+                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                using (var fileStream = new FileStream(filePath, FileMode.Create)) { await FullTextTemplateFile.CopyToAsync(fileStream); }
+                existingConf.FullTextTemplatePath = "/uploads/templates/" + uniqueFileName;
+            }
+
             existingConf.Title = conference.Title;
             existingConf.StartDate = conference.StartDate;
             existingConf.EndDate = conference.EndDate;
@@ -215,7 +249,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             existingConf.Venue = conference.Venue;
 
             await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Kongre bilgileri güncellendi.";
+            TempData["SuccessMessage"] = "Kongre bilgileri ve dosyalar başarıyla güncellendi.";
 
             return Redirect($"/{slug}/Admin/Conferences");
         }

@@ -73,7 +73,6 @@ namespace AntAbstract.Domain.Entities
 
         public Guid TenantId { get; set; }
 
-        // Oturum İlişkisi (Session)
         public Guid? SessionId { get; set; }
         [ForeignKey("SessionId")]
         public virtual Session Session { get; set; }
