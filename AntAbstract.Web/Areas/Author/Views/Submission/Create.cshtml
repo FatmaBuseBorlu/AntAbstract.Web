@@ -136,13 +136,27 @@
                     <div class="p-4 p-md-5">
 
                         <div class="mb-4">
-                            <label asp-for="ConferenceId" class="form-label">Başvuru Yapılacak Kongre <span class="text-danger">*</span></label>
-                            <div class="position-relative">
-                                <select asp-for="ConferenceId" asp-items="Model.AvailableConferences" class="form-select form-select-lg">
-                                    <option value="">-- Kongre Seçiniz --</option>
-                                </select>
-                            </div>
-                            <span asp-validation-for="ConferenceId" class="text-danger small mt-1 d-block"></span>
+                            <label class="form-label">Başvuru Yapılacak Kongre</label>
+
+                            @if (Model.ConferenceId != Guid.Empty && Model.AvailableConferences.Any(c => c.Value == Model.ConferenceId.ToString()))
+                            {
+                                var selectedConfName = Model.AvailableConferences.First(c => c.Value == Model.ConferenceId.ToString()).Text;
+                                <div class="p-3 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded-3 text-dark fw-bold d-flex align-items-center">
+                                    <i class="fas fa-university text-primary fs-5 me-3"></i>
+                                    <span class="fs-6">@selectedConfName</span>
+                                </div>
+                                <input type="hidden" asp-for="ConferenceId" />
+                            }
+                            else
+                            {
+                                
+                                <div class="position-relative">
+                                    <select asp-for="ConferenceId" asp-items="Model.AvailableConferences" class="form-select form-select-lg">
+                                        <option value="">-- Kongre Seçiniz --</option>
+                                    </select>
+                                </div>
+                                <span asp-validation-for="ConferenceId" class="text-danger small mt-1 d-block"></span>
+                            }
                         </div>
 
                         <div class="mb-4">
@@ -154,7 +168,7 @@
                         <div class="row g-4">
                             <div class="col-md-6">
                                 <label class="form-label">Sunum Türü</label>
-                                <select asp-for="PresentationTypeId" class="form-select form-select-lg">
+                                <select asp-for="PresentationType"" class="form-select form-select-lg">
                                     <option value="0">🎙️ Sözlü Sunum (Oral)</option>
                                     <option value="1">🖼️ Poster Sunum</option>
                                 </select>

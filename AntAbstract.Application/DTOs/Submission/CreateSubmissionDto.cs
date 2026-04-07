@@ -21,5 +21,7 @@ namespace AntAbstract.Application.DTOs.Submission
         public string? FilePath { get; set; }
         public string? OriginalFileName { get; set; }
         public string? StoredFileName { get; set; }
+        public string Topic { get; set; }
+        public string PresentationType { get; set; }
     }
 }

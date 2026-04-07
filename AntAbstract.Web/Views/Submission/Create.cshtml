@@ -118,7 +118,7 @@
     <div class="row justify-content-center mb-5">
         <div class="col-lg-9 text-center">
             <h2 class="fw-bold text-dark mb-2">Bilimsel Çalışmanızı Gönderin</h2>
-            <p class="text-muted">Aşağıdaki adımları takiperek bildirinizin detaylarını giriniz.</p>
+            <p class="text-muted">Aşağıdaki adımları takip ederek bildirinizin detaylarını giriniz.</p>
         </div>
     </div>
 
@@ -136,13 +136,28 @@
                     <div class="p-4 p-md-5">
 
                         <div class="mb-4">
-                            <label asp-for="ConferenceId" class="form-label">Başvuru Yapılacak Kongre <span class="text-danger">*</span></label>
-                            <div class="position-relative">
-                                <select asp-for="ConferenceId" asp-items="Model.AvailableConferences" class="form-select form-select-lg">
-                                    <option value="">-- Kongre Seçiniz --</option>
-                                </select>
-                            </div>
-                            <span asp-validation-for="ConferenceId" class="text-danger small mt-1 d-block"></span>
+                            <label class="form-label">Başvuru Yapılacak Kongre</label>
+
+                            @if (Model.ConferenceId != Guid.Empty && Model.AvailableConferences.Any(c => c.Value == Model.ConferenceId.ToString()))
+                            {
+                                
+                                var selectedConfName = Model.AvailableConferences.First(c => c.Value == Model.ConferenceId.ToString()).Text;
+                                <div class="p-3 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded-3 text-dark fw-bold d-flex align-items-center">
+                                    <i class="fas fa-university text-primary fs-5 me-3"></i>
+                                    <span class="fs-6">@selectedConfName</span>
+                                </div>
+                                <input type="hidden" asp-for="ConferenceId" />
+                            }
+                            else
+                            {
+                               
+                                <div class="position-relative">
+                                    <select asp-for="ConferenceId" asp-items="Model.AvailableConferences" class="form-select form-select-lg">
+                                        <option value="">-- Kongre Seçiniz --</option>
+                                    </select>
+                                </div>
+                                <span asp-validation-for="ConferenceId" class="text-danger small mt-1 d-block"></span>
+                            }
                         </div>
 
                         <div class="mb-4">
@@ -151,16 +166,23 @@
                             <span asp-validation-for="Title" class="text-danger small mt-1 d-block"></span>
                         </div>
 
-                        <div class="row g-4">
+                        <div class="row g-4 mb-4">
                             <div class="col-md-6">
-                                <label class="form-label">Sunum Türü</label>
-                                <select asp-for="PresentationTypeId" class="form-select form-select-lg">
-                                    <option value="0">🎙️ Sözlü Sunum (Oral)</option>
-                                    <option value="1">🖼️ Poster Sunum</option>
-                                </select>
+                                <label asp-for="Topic" class="form-label">Bildiri Konusu (Kategori) <span class="text-danger">*</span></label>
+                                <input asp-for="Topic" class="form-control form-control-lg" placeholder="Örn: Bilgisayar Bilimleri..." />
+                                <span asp-validation-for="Topic" class="text-danger small mt-1 d-block"></span>
                             </div>
+
                             <div class="col-md-6">
-                                <label asp-for="Keywords" class="form-label">Anahtar Kelimeler</label>
+                                <label asp-for="PresentationType" class="form-label">Sunum Türü <span class="text-danger">*</span></label>
+                                <select asp-for="PresentationType" asp-items="Model.PresentationTypes" class="form-select form-select-lg">
+                                    <option value="">-- Seçiniz --</option>
+                                </select>
+                                <span asp-validation-for="PresentationType" class="text-danger small mt-1 d-block"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="Keywords" class="form-label">Anahtar Kelimeler <span class="text-danger">*</span></label>
                                 <input asp-for="Keywords" class="form-control form-control-lg" placeholder="Örn: AI, Tarım, Verimlilik..." />
                                 <span asp-validation-for="Keywords" class="text-danger small mt-1 d-block"></span>
                             </div>
@@ -206,7 +228,7 @@
                         <h5 class="section-title">Dosya Yükleme</h5>
                     </div>
                     <div class="p-4 p-md-5 text-center">
-                        <label class="form-label d-block text-start mb-3">Tam Metin Dosyası <span class="text-danger">*</span></label>
+                        <label class="form-label d-block text-start mb-3">Tam Metin / Özet Dosyası <span class="text-danger">*</span></label>
 
                         <div class="upload-zone p-5 position-relative">
                             <div id="upload-placeholder">
@@ -235,7 +257,7 @@
                     <a href="/Dashboard" class="text-decoration-none text-muted fw-bold">
                         <i class="fas fa-arrow-left me-2"></i> İptal
                     </a>
-                    <button type="button" class="btn btn-primary btn-action btn-primary-glow text-white px-5 py-3" onclick="this.form.submit();">
+                    <button type="submit" class="btn btn-primary btn-action btn-primary-glow text-white px-5 py-3">
                         Bildiriyi Gönder <i class="fas fa-paper-plane ms-2"></i>
                     </button>
                 </div>

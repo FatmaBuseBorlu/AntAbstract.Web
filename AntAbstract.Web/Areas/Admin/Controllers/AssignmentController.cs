@@ -6,6 +6,7 @@ using AntAbstract.Infrastructure.Services.ReviewerRecommendation;
 using AntAbstract.Web.Models.ViewModels.Admin.Assignment;
 using AntAbstract.Web.Models.ViewModels.Shared;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -231,15 +232,27 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 AssignedDate = DateTime.UtcNow
             });
 
+            if (submission.Status == SubmissionStatus.New || submission.Status == SubmissionStatus.Pending)
+            {
+                submission.Status = SubmissionStatus.UnderReview;
+            }
+
             await _context.SaveChangesAsync();
 
             try
             {
-                await _emailService.SendAsync(reviewer.Email!, "Yeni Bildiri Ataması", $"Sayın {reviewer.FirstName} {reviewer.LastName}, incelemeniz için yeni bir bildiri atandı.");
-            }
-            catch {  }
+                string mailSubject = $"Yeni Bildiri Ataması: İnceleme Bekleniyor";
+                string mailBody = $"Sayın {reviewer.FirstName} {reviewer.LastName},<br><br>" +
+                                  $"Kongre sistemimiz üzerinden size yeni bir bildiri değerlendirmesi atanmıştır.<br><br>" +
+                                  $"<strong>Bildiri Başlığı:</strong> {submission.Title}<br><br>" +
+                                  $"Lütfen en kısa sürede sisteme giriş yaparak değerlendirme formunu doldurunuz.<br><br>" +
+                                  $"İyi çalışmalar dileriz.";
 
-            TempData["SuccessMessage"] = "Harika! Sistem havuzundan hakem ataması başarıyla tamamlandı.";
+                await _emailService.SendAsync(reviewer.Email!, mailSubject, mailBody);
+            }
+            catch { }
+
+            TempData["SuccessMessage"] = "Harika! Sistem havuzundan hakem ataması başarıyla tamamlandı ve bildirinin durumu güncellendi.";
             return Redirect($"/{slug}/Admin/Assignment?conferenceId={submission.ConferenceId}");
         }
     }

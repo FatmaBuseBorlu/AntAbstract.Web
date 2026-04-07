@@ -52,6 +52,7 @@
         .decision-label:hover {
             background-color: #f8fafc;
             border-color: #cbd5e1;
+            transform: translateY(-2px);
         }
 
     .decision-option:checked + .decision-label {
@@ -59,6 +60,7 @@
         border-color: #00aeef;
         color: #00aeef;
         box-shadow: 0 4px 10px rgba(0, 174, 239, 0.2);
+        transform: translateY(0);
     }
 
     .decision-option[value="Reject"]:checked + .decision-label {
@@ -76,15 +78,19 @@
     .range {
         width: 100%;
         cursor: pointer;
+        height: 8px;
+        border-radius: 5px;
+        accent-color: #00aeef;
     }
 
     .score-display {
-        font-size: 2.5rem;
-        font-weight: 800;
+        font-size: 3rem;
+        font-weight: 900;
         color: #00aeef;
         text-align: center;
         display: block;
-        margin-bottom: 10px;
+        margin-bottom: 5px;
+        transition: color 0.3s ease;
     }
 </style>
 
@@ -92,8 +98,8 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h4 class="fw-bold text-dark mb-1">Bildiri Değerlendirme</h4>
-            <p class="text-muted small mb-0">Lütfen çalışmayı objektif kriterlere göre değerlendiriniz.</p>
+            <h4 class="fw-bold text-dark mb-1">Bildiri Değerlendirme Paneli</h4>
+            <p class="text-muted small mb-0">Lütfen çalışmayı objektif akademik kriterlere göre değerlendiriniz.</p>
         </div>
         <a href="@Url.Action("Index", "Review", new { area = "" })" class="btn btn-outline-secondary rounded-pill px-4 btn-sm fw-bold">
             <i class="fas fa-arrow-left me-2"></i> Listeye Dön
@@ -101,20 +107,21 @@
     </div>
 
     <div class="row g-4">
-
         <div class="col-lg-7">
             <div class="submission-info-card p-4 p-md-5 mb-4">
 
-                <span class="badge bg-light text-primary border mb-3">#REF-@Model.Id.ToString("D8")</span>
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 mb-3 px-3 py-2 rounded-pill">
+                    <i class="fas fa-hashtag me-1"></i> REF-@Model.Id.ToString("D8")
+                </span>
 
-                <h4 class="fw-bold text-dark mb-4">@Model.SubmissionTitle</h4>
+                <h4 class="fw-bold text-dark mb-4 lh-base">@Model.SubmissionTitle</h4>
 
-                <h6 class="text-uppercase text-muted small fw-bold mb-2 ls-1">Özet Metni</h6>
+                <h6 class="text-uppercase text-muted small fw-bold mb-2 ls-1"><i class="fas fa-align-left me-2"></i>Özet Metni (Abstract)</h6>
                 <div class="abstract-box mb-5">
                     @Model.SubmissionAbstract
                 </div>
 
-                <h6 class="text-uppercase text-muted small fw-bold mb-3 ls-1">Ekli Dosyalar</h6>
+                <h6 class="text-uppercase text-muted small fw-bold mb-3 ls-1"><i class="fas fa-paperclip me-2"></i>Ekli Dosyalar</h6>
                 @if (Model.Files != null && Model.Files.Any())
                 {
                     <div class="row g-3">
@@ -130,7 +137,7 @@
                                             <div class="fw-bold text-dark text-truncate">@file.FileName</div>
                                             <small class="text-muted">Görüntülemek için tıklayın</small>
                                         </div>
-                                        <i class="fas fa-download text-muted ms-2"></i>
+                                        <i class="fas fa-external-link-alt text-primary ms-2"></i>
                                     </div>
                                 </a>
                             </div>
@@ -139,8 +146,8 @@
                 }
                 else
                 {
-                    <div class="alert alert-warning border-0 small bg-warning bg-opacity-10 text-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i> Bu bildiride indirilebilir dosya bulunmamaktadır.
+                    <div class="alert alert-warning border-0 small bg-warning bg-opacity-10 text-warning rounded-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i> Bu bildiride indirilebilir dosya bulunmamaktadır. Değerlendirmeyi özet metnine göre yapınız.
                     </div>
                 }
             </div>
@@ -163,20 +170,18 @@
                     <form asp-area="" asp-controller="Review" asp-action="Evaluate" method="post">
                         <input type="hidden" name="ReviewAssignmentId" value="@Model.Id" />
 
-                        <div class="mb-5 text-center">
-                            <label class="form-label fw-bold text-muted small text-uppercase mb-3">Genel Puan (0-100)</label>
-
+                        <div class="mb-5 text-center bg-light p-4 rounded-4 border">
+                            <label class="form-label fw-bold text-muted small text-uppercase mb-2">Genel Puan (0-100)</label>
                             <span id="scoreValue" class="score-display">85</span>
-
-                            <input type="range" class="form-range range" name="Score" id="scoreRange" min="0" max="100" value="85" oninput="updateScore(this.value)">
-                            <div class="d-flex justify-content-between text-muted small px-1">
-                                <span>0 (Zayıf)</span>
-                                <span>100 (Mükemmel)</span>
+                            <input type="range" class="form-range range mt-2" name="Score" id="scoreRange" min="0" max="100" value="85" oninput="updateScore(this.value)">
+                            <div class="d-flex justify-content-between text-muted small px-1 mt-2 fw-bold">
+                                <span class="text-danger">0 (Zayıf)</span>
+                                <span class="text-success">100 (Mükemmel)</span>
                             </div>
                         </div>
 
-                        <div class="mb-5">
-                            <label class="form-label fw-bold text-muted small text-uppercase mb-3">Kararınız</label>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted small text-uppercase mb-3">Nihai Kararınız</label>
                             <div class="row g-2">
                                 <div class="col-6">
                                     <input type="radio" class="decision-option" name="Recommendation" id="rec_accept" value="Accept" required>
@@ -206,15 +211,24 @@
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold text-muted small text-uppercase">Yazara Notlar</label>
-                            <textarea name="CommentsToAuthor" class="form-control bg-light" rows="6"
-                                      placeholder="Çalışmanın güçlü ve zayıf yönlerini, varsa düzeltme taleplerinizi buraya yazınız..."
+                            <label class="form-label fw-bold text-muted small text-uppercase"><i class="fas fa-user-edit me-2"></i>Yazara İletilecek Notlar</label>
+                            <textarea name="CommentsToAuthor" class="form-control bg-light" rows="4"
+                                      placeholder="Çalışmanın güçlü/zayıf yönlerini ve varsa düzeltme taleplerinizi buraya yazınız..."
                                       style="border-radius: 12px; border: 1px solid #e2e8f0; resize: none;" required></textarea>
+                            <div class="form-text small">Bu notlar bildiri yazarı tarafından görülecektir.</div>
                         </div>
 
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary py-3 fw-bold rounded-pill shadow-lg" onclick="return confirm('Bu değerlendirmeyi göndermek istediğinize emin misiniz?');">
-                                <i class="fas fa-paper-plane me-2"></i> Raporu Tamamla
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-danger small text-uppercase"><i class="fas fa-user-secret me-2"></i>Editöre Gizli Notlar</label>
+                            <textarea name="CommentsToEditor" class="form-control" rows="3"
+                                      placeholder="Sadece sistem yöneticisinin/editörün görmesini istediğiniz özel notlarınız..."
+                                      style="border-radius: 12px; border: 1px dashed #ef4444; background-color: #fff5f5; resize: none;"></textarea>
+                            <div class="form-text small text-danger">Bu notlar yazarla **kesinlikle** paylaşılmaz.</div>
+                        </div>
+
+                        <div class="d-grid mt-5">
+                            <button type="submit" class="btn btn-primary py-3 fw-bold rounded-pill shadow-sm" onclick="return confirm('Bu değerlendirmeyi göndermek istediğinize emin misiniz?');">
+                                <i class="fas fa-paper-plane me-2"></i> Raporu Tamamla ve Gönder
                             </button>
                         </div>
 
@@ -231,8 +245,23 @@
         document.getElementById('scoreValue').innerText = val;
 
         var scoreDisplay = document.getElementById('scoreValue');
-        if(val < 50) scoreDisplay.style.color = '#ef4444';
-        else if(val < 70) scoreDisplay.style.color = '#f59e0b';
-        else scoreDisplay.style.color = '#00aeef';
+        var scoreRange = document.getElementById('scoreRange');
+
+        if(val < 50) {
+            scoreDisplay.style.color = '#ef4444';
+            scoreRange.style.accentColor = '#ef4444';
+        }
+        else if(val < 75) {
+            scoreDisplay.style.color = '#f59e0b'; 
+            scoreRange.style.accentColor = '#f59e0b';
+        }
+        else {
+            scoreDisplay.style.color = '#10b981'; 
+            scoreRange.style.accentColor = '#10b981';
+        }
     }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        updateScore(document.getElementById('scoreRange').value);
+    });
 </script>
