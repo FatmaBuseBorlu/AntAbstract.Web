@@ -21,6 +21,8 @@ namespace AntAbstract.Application.DTOs.Submission
         public List<SubmissionAuthorDto> Authors { get; set; }
 
         public List<SubmissionFileDto> Files { get; set; }
+        public string Topic { get; set; }
+        public string PresentationType { get; set; }
     }
 
 }

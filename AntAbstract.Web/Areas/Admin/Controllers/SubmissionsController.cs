@@ -5,17 +5,21 @@ using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.ViewModels.Admin.Submissions;
 using AntAbstract.Web.Models.ViewModels.Shared;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Organizator,Editor")]
+    [Authorize(Roles = "Admin,Organizator,Editor,Author")]
     public class SubmissionsController : Controller
     {
         private readonly AppDbContext _context;
@@ -24,6 +28,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
+        private readonly IWebHostEnvironment _env;
 
         public SubmissionsController(
             AppDbContext context,
@@ -31,7 +36,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             IReviewService reviewService,
             UserManager<AppUser> userManager,
             TenantContext tenantContext,
-            ISelectedConferenceService selectedConferenceService)
+            ISelectedConferenceService selectedConferenceService,
+            IWebHostEnvironment env)
         {
             _context = context;
             _submissionService = submissionService;
@@ -39,6 +45,138 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _userManager = userManager;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
+            _env = env;
+        }
+
+
+        [HttpGet("/Admin/Submissions/Create")]
+        [HttpGet("/{slug}/Admin/Submissions/Create")]
+        public async Task<IActionResult> Create(string? slug = null)
+        {
+            var model = new SubmissionCreateViewModel();
+
+            var conferences = await _context.Conferences.AsNoTracking().ToListAsync();
+            model.AvailableConferences = conferences.Select(c => new SelectListItem
+            {
+                Value = c.Id.ToString(),
+                Text = c.Title
+            }).ToList();
+
+            if (!string.IsNullOrEmpty(slug))
+            {
+                var currentConf = await _context.Conferences
+                    .Include(c => c.Tenant)
+                    .FirstOrDefaultAsync(c => c.Tenant != null && c.Tenant.Slug == slug);
+
+                if (currentConf != null)
+                {
+                    model.ConferenceId = currentConf.Id;
+                }
+            }
+
+            return View("~/Areas/Admin/Views/Submissions/Create.cshtml", model);
+        }
+
+        [HttpPost("/Admin/Submissions/Create")]
+        [HttpPost("/{slug}/Admin/Submissions/Create")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(SubmissionCreateViewModel model, string? slug = null)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null) return Challenge();
+
+            var conference = await _context.Conferences.Include(c => c.Tenant).FirstOrDefaultAsync(c => c.Id == model.ConferenceId);
+            if (conference == null)
+            {
+                ModelState.AddModelError("ConferenceId", "Geçersiz kongre seçimi.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                var conferences = await _context.Conferences.AsNoTracking().ToListAsync();
+                model.AvailableConferences = conferences.Select(c => new SelectListItem
+                {
+                    Value = c.Id.ToString(),
+                    Text = c.Title
+                }).ToList();
+                return View("~/Areas/Admin/Views/Submissions/Create.cshtml", model);
+            }
+
+            var newSubmission = new Submission
+            {
+                Id = Guid.NewGuid(), 
+                Title = model.Title,
+                Abstract = model.AbstractText,
+                Keywords = model.Keywords,
+                Topic = model.Topic,
+                PresentationType = model.PresentationType,
+                ConferenceId = model.ConferenceId,
+                TenantId = conference.TenantId,
+                AuthorId = currentUser.Id,
+                Status = SubmissionStatus.New,
+                CreatedDate = DateTime.Now
+            };
+
+
+            if (model.SubmissionFile != null && model.SubmissionFile.Length > 0)
+            {
+                var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "submissions");
+                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+                var uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(model.SubmissionFile.FileName);
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await model.SubmissionFile.CopyToAsync(fileStream);
+                }
+
+               
+                newSubmission.Files.Add(new SubmissionFile
+                {
+                    FileName = model.SubmissionFile.FileName,
+                    FilePath = "/uploads/submissions/" + uniqueFileName,
+                    UploadedAt = DateTime.Now
+                });
+            }
+
+
+            newSubmission.SubmissionAuthors.Add(new SubmissionAuthor
+            {
+                FirstName = currentUser.FirstName ?? currentUser.UserName,
+                LastName = currentUser.LastName ?? "",
+                Email = currentUser.Email,
+                Institution = currentUser.Institution ?? "Belirtilmemiş",
+                IsCorrespondingAuthor = true,
+                Order = 1
+            });
+
+            if (model.Authors != null && model.Authors.Any())
+            {
+                foreach (var author in model.Authors)
+                {
+                    newSubmission.SubmissionAuthors.Add(new SubmissionAuthor
+                    {
+                        FirstName = author.FirstName,
+                        LastName = author.LastName,
+                        Email = author.Email,
+                        Institution = author.Institution,
+                        ORCID = author.ORCID,
+                        IsCorrespondingAuthor = author.IsCorrespondingAuthor,
+                        Order = author.Order > 0 ? author.Order : 2
+                    });
+                }
+            }
+
+            _context.Submissions.Add(newSubmission);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Tebrikler! Bildiriniz başarıyla sisteme yüklendi.";
+
+            if (!string.IsNullOrWhiteSpace(slug))
+                return RedirectToAction(nameof(Index), new { slug });
+
+            return RedirectToAction(nameof(SelectConference));
         }
 
         [HttpGet("/Admin/Submissions")]

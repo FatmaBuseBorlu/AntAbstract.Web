@@ -80,5 +80,10 @@ namespace AntAbstract.Domain.Entities
         public virtual ICollection<SubmissionAuthor> SubmissionAuthors { get; set; }
         public virtual ICollection<SubmissionFile> Files { get; set; }
         public virtual ICollection<ReviewAssignment> ReviewAssignments { get; set; }
+        [MaxLength(100)]
+        public string Topic { get; set; } 
+
+        [MaxLength(50)]
+        public string PresentationType { get; set; }
     }
 }

@@ -134,13 +134,8 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 {
                     var user = await _userManager.GetUserAsync(User);
 
-                    // GÜVENLİ DOSYA YÜKLEME ÇAĞRISI
+                    // Güvenli dosya yükleme servisini kullanıyoruz
                     var fileInfo = await UploadFileAsync(model.SubmissionFile);
-
-                    string presentationTypeStr = model.PresentationTypeId == 1 ? "Poster" : "Oral";
-                    string finalKeywords = string.IsNullOrEmpty(model.Keywords)
-                        ? presentationTypeStr
-                        : model.Keywords + ", " + presentationTypeStr;
 
                     var allAuthors = new List<SubmissionAuthorDto>
                     {
@@ -178,7 +173,12 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                         ConferenceId = model.ConferenceId,
                         Title = model.Title,
                         Abstract = model.AbstractText,
-                        Keywords = finalKeywords,
+                        Keywords = model.Keywords,
+
+                        // YENİ EKLENEN ALANLAR BURADA DTO'YA GÖNDERİLİYOR
+                        Topic = model.Topic,
+                        PresentationType = model.PresentationType,
+
                         FilePath = fileInfo.FilePathDb,
                         StoredFileName = fileInfo.StoredFileName,
                         OriginalFileName = fileInfo.OriginalFileName,
@@ -196,6 +196,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 }
             }
 
+            // Hata olursa Dropdown'ı tekrar doldur
             IQueryable<Conference> confQuery = _context.Conferences.AsNoTracking().Include(c => c.Tenant);
             if (!string.IsNullOrEmpty(slug)) confQuery = confQuery.Where(c => c.Slug == slug || (c.Tenant != null && c.Tenant.Slug == slug));
 
@@ -229,6 +230,11 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 Title = submissionDto.Title,
                 AbstractText = submissionDto.Abstract,
                 Keywords = submissionDto.Keywords,
+
+                // YENİ EKLENEN ALANLAR (Düzenleme formuna veri basmak için)
+                Topic = submissionDto.Topic,
+                PresentationType = submissionDto.PresentationType,
+
                 ExistingFilePath = submissionDto.Files?.OrderByDescending(f => f.UploadedAt).FirstOrDefault()?.FilePath,
                 Authors = submissionDto.Authors.Select(a => new SubmissionAuthorViewModel
                 {
@@ -273,6 +279,11 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                         Title = model.Title,
                         Abstract = model.AbstractText,
                         Keywords = model.Keywords,
+
+                    
+                        Topic = model.Topic,
+                        PresentationType = model.PresentationType,
+
                         FilePath = filePath,
                         StoredFileName = storedFileName,
                         OriginalFileName = originalFileName,
