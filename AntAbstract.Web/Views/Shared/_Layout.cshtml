@@ -5,11 +5,14 @@
 @using Microsoft.AspNetCore.Http
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Localization
+@using Microsoft.Extensions.Options 
+
 @inject SignInManager<AppUser> SignInManager
 @inject UserManager<AppUser> UserManager
 @inject AntAbstract.Infrastructure.Context.TenantContext Tc
 @inject ISelectedConferenceService SelectedConferenceService
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject IOptions<RequestLocalizationOptions> LocOptions 
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
 <!DOCTYPE html>
@@ -20,7 +23,6 @@
     <title>@ViewData["Title"] - AntAbstract</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
@@ -220,6 +222,12 @@
     var websiteUrl = (!string.IsNullOrWhiteSpace(slug))
         ? $"/{slug}/Admin/Website"
         : "/Admin/Website";
+
+    var requestCulture = Context.Features.Get<IRequestCultureFeature>();
+    var cultureItems = LocOptions.Value.SupportedUICultures
+        .Select(c => new SelectListItem { Value = c.Name, Text = c.NativeName })
+        .ToList();
+    var returnUrl = string.IsNullOrEmpty(Context.Request.Path) ? "~/" : $"~{Context.Request.Path.Value}{Context.Request.QueryString}";
 }
 
 <header>
@@ -289,6 +297,25 @@
                 </ul>
 
                 <div class="d-flex align-items-center gap-2">
+                    
+                    @* --- DİL DEĞİŞTİRİCİ FORM (EKLENDİ) --- *@
+                    <form id="selectLanguage" 
+                          asp-area="" 
+                          asp-controller="Language" 
+                          asp-action="ChangeLanguage" 
+                          asp-route-returnUrl="@returnUrl" 
+                          method="post" 
+                          class="form-horizontal m-0" 
+                          role="form">
+                        <select name="culture"
+                                class="form-select form-select-sm" 
+                                style="width: auto; cursor: pointer; border-color: #e2e8f0; color: #64748b; font-weight: 500;"
+                                onchange="this.form.submit();"
+                                asp-for="@requestCulture.RequestCulture.UICulture.Name"
+                                asp-items="cultureItems">
+                        </select>
+                    </form>
+
                     <partial name="_LoginPartial" />
                 </div>
             </div>
