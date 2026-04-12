@@ -12,9 +12,11 @@ using Microsoft.EntityFrameworkCore;
 using Rotativa.AspNetCore;
 using Stripe;
 using System.Security.Claims;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+#region 1. Veritabaný ve Temel Servisler
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
@@ -29,7 +31,9 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
+#endregion
 
+#region 2. Kimlik Doðrulama ve Identity
 builder.Services.AddIdentity<AppUser, IdentityRole>(opt =>
 {
     opt.Password.RequiredLength = 6;
@@ -44,12 +48,6 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Identity/Account/Login";
     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
-});
-
-builder.Services.Configure<RouteOptions>(options =>
-{
-    options.LowercaseUrls = false;
-    options.AppendTrailingSlash = false;
 });
 
 builder.Services.AddAuthentication()
@@ -69,23 +67,35 @@ builder.Services.AddAuthentication()
         options.SaveTokens = true;
         options.CallbackPath = "/signin-orcid";
     });
+#endregion
 
+#region 3. Uygulama, Altyapý ve Tenant Servisleri
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration, builder.Environment);
 
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();
+#endregion
 
+#region 4. Çoklu Dil (Localization) ve MVC Ayarlarý
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+
+builder.Services.Configure<RouteOptions>(options =>
+{
+    options.LowercaseUrls = false;
+    options.AppendTrailingSlash = false;
+});
 
 builder.Services.AddControllersWithViews()
     .AddViewLocalization(Microsoft.AspNetCore.Mvc.Razor.LanguageViewLocationExpanderFormat.Suffix)
     .AddDataAnnotationsLocalization();
 
 builder.Services.AddRazorPages();
+#endregion
 
 var app = builder.Build();
 
+#region 5. Veritabaný Baþlatma (Seeding) ve Ayarlar
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -106,7 +116,9 @@ using (var scope = app.Services.CreateScope())
 }
 
 StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
+#endregion
 
+#region 6. HTTP Ýstek Hattý (Middleware Pipeline)
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -129,7 +141,6 @@ var localizationOptions = new RequestLocalizationOptions()
 app.UseRequestLocalization(localizationOptions);
 
 app.UseRouting();
-
 app.UseSession();
 
 app.Use(async (ctx, next) =>
@@ -144,7 +155,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseRotativa();
+#endregion
 
+#region 7. Yönlendirmeler (Endpoints)
 app.MapRazorPages();
 
 app.MapControllerRoute(
@@ -174,5 +187,6 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.MapControllers();
+#endregion
 
 app.Run();
