@@ -103,7 +103,7 @@ namespace AntAbstract.Infrastructure.Context
                 .HasOne(ra => ra.Review)
                 .WithOne(r => r.ReviewAssignment)
                 .HasForeignKey<Review>(r => r.ReviewAssignmentId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict); 
         }
 
         static readonly MethodInfo SetGlobalQueryMethod = typeof(AppDbContext)

@@ -1,24 +1,52 @@
 ﻿@using AntAbstract.Domain.Entities
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Mvc.Localization
+@using Microsoft.AspNetCore.Http
+
 @inject SignInManager<AppUser> SignInManager
 @inject UserManager<AppUser> UserManager
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject IViewLocalizer Localizer
+@inject AntAbstract.Infrastructure.Context.TenantContext Tc
 
 <ul class="navbar-nav align-items-center">
 
     @if (SignInManager.IsSignedIn(User))
     {
         var user = await UserManager.GetUserAsync(User);
-        var displayName = user?.FirstName != null ? $"{user.FirstName} {user.LastName}" : User.Identity?.Name;
+
+        var displayName = !string.IsNullOrWhiteSpace(user?.FirstName)
+        ? $"{user.FirstName} {user.LastName}"
+        : User.Identity?.Name;
+
         var profileImg = user?.ProfileImagePath;
 
+        var slug = ViewContext.RouteData.Values["slug"]?.ToString()
+        ?? Tc.Current?.Slug
+        ?? Context.Session.GetString("SelectedConferenceSlug")
+        ?? "";
+
         var isAdmin = User.IsInRole("Admin") || User.IsInRole("Organizator");
-        var panelUrl = isAdmin ? "/admin/assignment" : "/Dashboard";
-        var panelText = isAdmin ? "Yönetim Paneli" : "Panelim"; 
+
+        var panelUrl = isAdmin
+        ? (!string.IsNullOrWhiteSpace(slug) ? $"/{slug}/Admin/Assignment" : "/Admin/Assignment")
+        : (!string.IsNullOrWhiteSpace(slug) ? $"/{slug}/Dashboard" : "/Dashboard");
+
+        string panelText = isAdmin
+        ? Localizer["ManagementPanel"].Value
+        : Localizer["MyPanel"].Value;
+
+        var firstLetter = !string.IsNullOrWhiteSpace(displayName)
+        ? displayName.Substring(0, 1).ToUpper()
+        : "U";
 
         <li class="nav-item dropdown ms-3">
             <a class="nav-link dropdown-toggle d-flex align-items-center p-0"
-               href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="border:none; background:none;">
+               href="#"
+               id="userDropdown"
+               role="button"
+               data-bs-toggle="dropdown"
+               aria-expanded="false"
+               style="border:none; background:none;">
 
                 <div class="d-flex align-items-center gap-2">
                     <span class="fw-bold text-dark d-none d-md-block">@displayName</span>
@@ -27,19 +55,19 @@
                          style="width: 40px; height: 40px;">
                         @if (!string.IsNullOrEmpty(profileImg))
                         {
-                            <img src="@profileImg" alt="Profil" style="width: 100%; height: 100%; object-fit: cover;">
+                            <img src="@profileImg" alt="@Localizer["ProfileImageAlt"]" style="width: 100%; height: 100%; object-fit: cover;">
                         }
                         else
                         {
                             <span style="font-size: 1.1rem; font-weight:bold;">
-                                @(displayName?.Substring(0, 1).ToUpper())
+                                @firstLetter
                             </span>
                         }
                     </div>
                 </div>
             </a>
 
-            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-3 rounded-3 animate__animated animate__fadeIn" style="min-width: 200px;">
+            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-3 rounded-3 animate__animated animate__fadeIn" style="min-width: 220px;">
 
                 <li class="px-3 py-2 border-bottom mb-2">
                     <div class="fw-bold text-dark">@displayName</div>
@@ -54,7 +82,7 @@
 
                 <li>
                     <a class="dropdown-item py-2" asp-area="Identity" asp-page="/Account/Manage/Index">
-                        <i class="fas fa-user-cog me-2 text-info" style="width:20px;"></i> Profil Ayarları
+                        <i class="fas fa-user-cog me-2 text-info" style="width:20px;"></i> @Localizer["ProfileSettings"]
                     </a>
                 </li>
 
@@ -63,7 +91,7 @@
                 <li>
                     <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post">
                         <button type="submit" class="dropdown-item py-2 text-danger fw-bold w-100 text-start">
-                            <i class="fas fa-sign-out-alt me-2" style="width:20px;"></i> Çıkış Yap
+                            <i class="fas fa-sign-out-alt me-2" style="width:20px;"></i> @Localizer["Logout"]
                         </button>
                     </form>
                 </li>
@@ -73,15 +101,18 @@
     else
     {
         <li class="nav-item ms-2">
-            <a class="btn btn-outline-dark fw-bold px-4 rounded-pill btn-sm" asp-area="Identity" asp-page="/Account/Login">
-                Giriş Yap
+            <a class="btn btn-outline-dark fw-bold px-4 rounded-pill btn-sm"
+               asp-area="Identity"
+               asp-page="/Account/Login">
+                @Localizer["Login"]
             </a>
         </li>
         <li class="nav-item ms-2">
             <a class="btn btn-primary fw-bold px-4 rounded-pill shadow-sm text-white btn-sm"
                style="background-color: #00aeef; border: none;"
-               asp-area="Identity" asp-page="/Account/Register">
-                Kayıt Ol
+               asp-area="Identity"
+               asp-page="/Account/Register">
+                @Localizer["Register"]
             </a>
         </li>
     }

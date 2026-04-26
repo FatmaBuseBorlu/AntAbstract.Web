@@ -1,17 +1,23 @@
 ﻿@using AntAbstract.Application.DTOs.Submission
 @using System.Linq
+@using System.Globalization
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model SubmissionDto
 
 @{
     Layout = null;
-    // DTO içindeki yazarlar listesinden ilk sıradakini buluyoruz
+    ViewData["Title"] = Localizer["PageTitle"].Value;
+
     var firstAuthor = Model.Authors?.OrderBy(a => a.Order).FirstOrDefault();
     var authorName = firstAuthor != null ? $"{firstAuthor.FirstName} {firstAuthor.LastName}" : Model.CorrespondingAuthorName;
+    var currentLang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
 }
 
 <!DOCTYPE html>
-<html>
+<html lang="@currentLang">
 <head>
+    <meta charset="utf-8" />
+    <title>@Localizer["PageTitle"]</title>
     <style>
         body {
             font-family: 'Times New Roman', serif;
@@ -62,51 +68,53 @@
 <body>
 
     <div class="header">
-        <div class="logo">ANT ABSTRACT KONGRE KOMİTESİ</div>
-        <div style="font-size: 14px; margin-top: 5px;">Bilimsel Değerlendirme Kurulu</div>
+        <div class="logo">@Localizer["CommitteeTitle"]</div>
+        <div style="font-size: 14px; margin-top: 5px;">@Localizer["ScientificBoardTitle"]</div>
     </div>
 
     <div style="text-align: right; margin-bottom: 20px;">
-        <strong>Tarih:</strong> @DateTime.Now.ToString("dd MMMM yyyy")
+        <strong>@Localizer["DateLabel"]</strong> @DateTime.Now.ToString("dd MMMM yyyy")
     </div>
 
-    <p><strong>Sayın @authorName,</strong></p>
+    <p><strong>@Localizer["GreetingText", authorName]</strong></p>
 
     <div class="content">
         <p>
-            Öncelikle <strong>"Ref: #@Model.Id.ToString().Substring(0, 8).ToUpper()"</strong> referans numaralı ve
-            <strong>"@Model.Title"</strong> başlıklı çalışmanızı kongremize gönderdiğiniz için teşekkür ederiz.
+            @Localizer["Paragraph1_Part1"]
+            <strong>"Ref: #@Model.Id.ToString().Substring(0, 8).ToUpper()"</strong>
+            @Localizer["Paragraph1_Part2"]
+            <strong>"@Model.Title"</strong>
+            @Localizer["Paragraph1_Part3"]
         </p>
 
         <p>
-            Bilimsel kurulumuz ve hakemlerimiz tarafından yapılan titiz değerlendirmeler sonucunda, ne yazık ki çalışmanızın
-            mevcut kongre programına dahil edilmek üzere <strong>kabul edilemediğini</strong> üzülerek bildiririz.
+            @Localizer["Paragraph2_Part1"]
+            <strong>@Localizer["RejectedHighlight"]</strong>
+            @Localizer["Paragraph2_Part2"]
         </p>
 
         <p>
-            Bu yıl kongremize rekor sayıda ve yüksek nitelikli başvuru yapılmıştır. Seçim süreci oldukça rekabetçi geçmiş olup,
-            birçok değerli çalışma kontenjan sınırlaması ve tema uygunluğu gibi kriterler nedeniyle elenmek durumunda kalmıştır.
+            @Localizer["Paragraph3"]
         </p>
 
         <p>
-            Bu karar çalışmanızın bilimsel değerini değil, sadece bu kongrenin spesifik kriterlerine uygunluğunu yansıtmaktadır.
-            Gelecekteki çalışmalarınızda ve etkinliklerimizde sizi tekrar aramızda görmekten mutluluk duyarız.
+            @Localizer["Paragraph4"]
         </p>
 
-        <p>Çalışmalarınızda başarılar dileriz.</p>
+        <p>@Localizer["SuccessWishText"]</p>
     </div>
 
     <div class="signature">
-        <p>Saygılarımızla,</p>
+        <p>@Localizer["SignatureGreeting"]</p>
         <br />
-        <strong>Prof. Dr. Bilim İnsanı</strong><br />
-        Kongre Başkanı<br />
-        AntAbstract Bilim Kurulu
+        <strong>@Localizer["SignatureName"]</strong><br />
+        @Localizer["SignatureTitle1"]<br />
+        @Localizer["SignatureTitle2"]
     </div>
 
     <div class="footer">
-        Bu belge elektronik ortamda üretilmiştir, ıslak imza gerektirmez.<br />
-        AntAbstract Kongre Yönetim Sistemi | www.antabstract.com
+        @Localizer["FooterLine1"]<br />
+        @Localizer["FooterLine2"]
     </div>
 
 </body>

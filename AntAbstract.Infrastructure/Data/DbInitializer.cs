@@ -3,7 +3,6 @@ using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -11,9 +10,13 @@ namespace AntAbstract.Infrastructure.Data
 {
     public static class DbInitializer
     {
-        public static async Task Initialize(UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager, AppDbContext context)
+        public static async Task Initialize(
+            UserManager<AppUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            AppDbContext context)
         {
             string[] roleNames = { "Admin", "Organizator", "Reviewer", "Author" };
+
             foreach (var roleName in roleNames)
             {
                 if (!await roleManager.RoleExistsAsync(roleName))
@@ -72,11 +75,10 @@ namespace AntAbstract.Infrastructure.Data
                 context.Tenants.AddRange(tenantVet, tenantTech, tenantTourism);
                 await context.SaveChangesAsync();
 
-
                 var confVet = new Conference
                 {
                     Title = "3. Uluslararası Veteriner Farmakoloji ve Toksikoloji Kongresi",
-                    Description = "<p>Veteriner farmakolojisi alanındaki en güncel gelişmelerin tartışılacağı, uluslararası katılımlı bilimsel şölen.</p><ul><li>İlaç etkileşimleri</li><li>Klinik toksikoloji</li><li>Yeni tedavi yöntemleri</li></ul>",
+                    Description = "Veteriner farmakolojisi alanındaki en güncel gelişmelerin tartışılacağı, uluslararası katılımlı bilimsel şölen.",
                     StartDate = DateTime.Now.AddMonths(2),
                     EndDate = DateTime.Now.AddMonths(2).AddDays(3),
                     City = "Antalya",
@@ -91,7 +93,7 @@ namespace AntAbstract.Infrastructure.Data
                 var confTech = new Conference
                 {
                     Title = "International Summit on Artificial Intelligence 2025",
-                    Description = "<p>Yapay zeka, makine öğrenmesi ve büyük veri konularında dünyanın önde gelen uzmanlarını bir araya getiriyoruz.</p><p>Geleceğin teknolojilerini bugünden keşfedin.</p>",
+                    Description = "Yapay zeka, makine öğrenmesi ve büyük veri konularında dünyanın önde gelen uzmanlarını bir araya getiriyoruz. Geleceğin teknolojilerini bugünden keşfedin.",
                     StartDate = DateTime.Now.AddMonths(5),
                     EndDate = DateTime.Now.AddMonths(5).AddDays(2),
                     City = "İstanbul",
@@ -106,7 +108,7 @@ namespace AntAbstract.Infrastructure.Data
                 var confTourism = new Conference
                 {
                     Title = "14. Uluslararası Kırsal Turizm ve Kalkınma Kongresi",
-                    Description = "<p>Sürdürülebilir turizm ve kırsal kalkınma modellerinin inceleneceği akademik buluşma.</p>",
+                    Description = "Sürdürülebilir turizm ve kırsal kalkınma modellerinin inceleneceği akademik buluşma.",
                     StartDate = DateTime.Now.AddMonths(1),
                     EndDate = DateTime.Now.AddMonths(1).AddDays(4),
                     City = "Nevşehir",

@@ -1,7 +1,8 @@
 ﻿@model IEnumerable<AntAbstract.Domain.Entities.Hotel>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Konaklama Seçenekleri";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 }
 
@@ -11,9 +12,9 @@
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white p-4">
                     <h3 class="fw-bold text-dark mb-0">
-                        <i class="fas fa-hotel text-warning me-2"></i> Konaklama & Otel Seçenekleri
+                        <i class="fas fa-hotel text-warning me-2"></i> @Localizer["HeaderTitle"]
                     </h3>
-                    <p class="text-muted mb-0 mt-2">Kongre süresince konaklayabileceğiniz anlaşmalı oteller ve özel fiyatlar.</p>
+                    <p class="text-muted mb-0 mt-2">@Localizer["HeaderDescription"]</p>
                 </div>
             </div>
         </div>
@@ -30,13 +31,13 @@
                             <div class="col-md-4 bg-light d-flex align-items-center justify-content-center" style="min-height: 250px;">
                                 @if (!string.IsNullOrEmpty(hotel.PhotoPath))
                                 {
-                                    <img src="@hotel.PhotoPath" class="img-fluid" style="object-fit:cover; height:100%; width:100%">
+                                    <img src="@hotel.PhotoPath" class="img-fluid" style="object-fit:cover; height:100%; width:100%" alt="@Localizer["HotelImageAlt"]" />
                                 }
                                 else
                                 {
                                     <div class="text-center text-muted">
                                         <i class="fas fa-hotel fa-4x mb-3 opacity-50"></i>
-                                        <p>Görsel Yok</p>
+                                        <p>@Localizer["NoImageText"]</p>
                                     </div>
                                 }
                             </div>
@@ -46,9 +47,11 @@
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div>
                                             <h4 class="card-title fw-bold mb-1">@hotel.Name</h4>
-                                            <p class="text-muted small mb-2"><i class="fas fa-map-marker-alt me-1 text-danger"></i> @hotel.Address</p>
+                                            <p class="text-muted small mb-2">
+                                                <i class="fas fa-map-marker-alt me-1 text-danger"></i> @hotel.Address
+                                            </p>
                                         </div>
-                                        <span class="badge bg-primary">Anlaşmalı</span>
+                                        <span class="badge bg-primary">@Localizer["PartnerBadge"]</span>
                                     </div>
 
                                     <p class="card-text text-secondary mt-3">@hotel.Description</p>
@@ -57,9 +60,9 @@
                                         <table class="table table-hover align-middle mb-0">
                                             <thead class="table-light small text-uppercase text-muted">
                                                 <tr>
-                                                    <th>Oda Tipi</th>
-                                                    <th>Kapasite</th>
-                                                    <th class="text-end">Fiyat (Gecelik)</th>
+                                                    <th>@Localizer["RoomTypeColumn"]</th>
+                                                    <th>@Localizer["CapacityColumn"]</th>
+                                                    <th class="text-end">@Localizer["PricePerNightColumn"]</th>
                                                     <th></th>
                                                 </tr>
                                             </thead>
@@ -70,11 +73,14 @@
                                                     {
                                                         <tr>
                                                             <td class="fw-bold text-dark">@room.Name</td>
-                                                            <td><i class="fas fa-user me-1"></i> @room.Capacity Kişilik</td>
+                                                            <td>
+                                                                <i class="fas fa-user me-1"></i> @room.Capacity @Localizer["PersonCapacityText"]
+                                                            </td>
                                                             <td class="text-end fw-bold text-primary">@room.Price @room.Currency</td>
                                                             <td class="text-end">
-                                                                <button class="btn btn-sm btn-warning fw-bold text-white shadow-sm" style="background-color: #ff9800; border:none;">
-                                                                    SEÇ & REZERVE ET
+                                                                <button class="btn btn-sm btn-warning fw-bold text-white shadow-sm"
+                                                                        style="background-color: #ff9800; border:none;">
+                                                                    @Localizer["SelectReserveButton"]
                                                                 </button>
                                                             </td>
                                                         </tr>
@@ -97,13 +103,13 @@
         <div class="text-center py-5">
             <div class="alert alert-light border d-inline-block px-5">
                 <i class="fas fa-info-circle fa-2x text-muted mb-3"></i>
-                <h5>Henüz listelenen bir otel yok.</h5>
-                <p class="text-muted">Lütfen daha sonra tekrar kontrol ediniz.</p>
+                <h5>@Localizer["NoHotelsTitle"]</h5>
+                <p class="text-muted">@Localizer["NoHotelsDescription"]</p>
 
                 <div class="mt-3 pt-3 border-top">
-                    <small class="text-danger fw-bold">Geliştirici Modu:</small><br>
+                    <small class="text-danger fw-bold">@Localizer["DeveloperModeLabel"]</small><br>
                     <a href="/Accommodation/SeedData" class="btn btn-outline-danger btn-sm mt-2">
-                        <i class="fas fa-database me-1"></i> Test Verisi Ekle
+                        <i class="fas fa-database me-1"></i> @Localizer["AddTestDataButton"]
                     </a>
                 </div>
             </div>

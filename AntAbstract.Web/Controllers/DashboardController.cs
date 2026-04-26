@@ -1,15 +1,12 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
+using AntAbstract.Web.Models.ViewModels.Admin.Dashboard;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.WebUtilities;
-using AntAbstract.Web.Models.ViewModels.Admin.Dashboard;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -19,12 +16,18 @@ namespace AntAbstract.Web.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
+        private readonly IStringLocalizer<DashboardController> _localizer;
 
-        public DashboardController(AppDbContext context, UserManager<AppUser> userManager, TenantContext tenantContext)
+        public DashboardController(
+            AppDbContext context,
+            UserManager<AppUser> userManager,
+            TenantContext tenantContext,
+            IStringLocalizer<DashboardController> localizer)
         {
             _context = context;
             _userManager = userManager;
             _tenantContext = tenantContext;
+            _localizer = localizer;
         }
 
         public async Task<IActionResult> WhoAmI()
@@ -202,7 +205,7 @@ namespace AntAbstract.Web.Controllers
         {
             if (conferenceId == Guid.Empty)
             {
-                TempData["ErrorMessage"] = "Kongre seçimi geçersiz.";
+                TempData["ErrorMessage"] = _localizer["InvalidConferenceSelection"].Value;
                 return RedirectToAction(nameof(MyConferences), new { slug = GetSlug() });
             }
 
@@ -217,7 +220,7 @@ namespace AntAbstract.Web.Controllers
 
             if (conf == null)
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                TempData["ErrorMessage"] = _localizer["ConferenceNotFound"].Value;
                 return RedirectToAction(nameof(MyConferences), new { slug = GetSlug() });
             }
 
@@ -228,7 +231,7 @@ namespace AntAbstract.Web.Controllers
             {
                 if (conf.TenantId != user.TenantId)
                 {
-                    TempData["ErrorMessage"] = "Yetkisiz işlem! Başka bir kuruma ait kongreye erişemezsiniz.";
+                    TempData["ErrorMessage"] = _localizer["UnauthorizedConferenceAccess"].Value;
                     return RedirectToAction(nameof(MyConferences), new { slug = GetSlug() });
                 }
             }
@@ -270,7 +273,7 @@ namespace AntAbstract.Web.Controllers
                 if (!isAuthorizedForSessionConf)
                 {
                     ClearSelectedConference();
-                    TempData["ErrorMessage"] = "Önceki oturumdan kalan yetkisiz kongre erişimi engellendi.";
+                    TempData["ErrorMessage"] = _localizer["UnauthorizedPreviousConferenceAccess"].Value;
                     return RedirectToAction(nameof(MyConferences), new { slug = _tenantContext.Current?.Slug });
                 }
             }
@@ -325,7 +328,8 @@ namespace AntAbstract.Web.Controllers
 
             var myConferences = await GetUserConferencesAsync(user.Id);
 
-            var currentConferenceName = "Genel Yönetim Paneli";
+            var currentConferenceName = _localizer["GeneralManagementPanel"].Value;
+
             if (selectedConferenceId.HasValue)
             {
                 var selectedTitle = await _context.Conferences
@@ -370,7 +374,7 @@ namespace AntAbstract.Web.Controllers
             {
                 if (!user.TenantId.HasValue)
                 {
-                    TempData["ErrorMessage"] = "Hesabınıza atanmış bir kurum bulunamadı. Lütfen Sistem Yöneticisi ile iletişime geçin.";
+                    TempData["ErrorMessage"] = _localizer["NoInstitutionAssigned"].Value;
                 }
                 else
                 {
@@ -388,8 +392,7 @@ namespace AntAbstract.Web.Controllers
                     }
                     else
                     {
-                        
-                        TempData["InfoMessage"] = "Kurumunuza ait henüz bir etkinlik/kongre oluşturulmamış. Sistem Yöneticisi atama yaptığında panelleriniz aktif olacaktır.";
+                        TempData["InfoMessage"] = _localizer["NoConferenceAssignedToInstitution"].Value;
                     }
                 }
             }
@@ -401,7 +404,6 @@ namespace AntAbstract.Web.Controllers
 
             if (isAdmin)
             {
-                
             }
             else if (isOrganizator)
             {

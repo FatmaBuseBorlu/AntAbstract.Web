@@ -26,7 +26,7 @@ namespace AntAbstract.Web.Controllers
                 .Where(s => s.ConferenceId == _tenantContext.Current.Id)
                 .Include(s => s.Submissions)
                     .ThenInclude(sub => sub.Author)
-                .OrderBy(s => s.SessionDate) 
+                .OrderBy(s => s.SessionDate)
                 .ToListAsync();
 
             ViewBag.ConferenceName = _tenantContext.Current.Name;

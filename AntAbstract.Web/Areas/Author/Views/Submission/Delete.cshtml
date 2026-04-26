@@ -1,8 +1,9 @@
 ﻿@using AntAbstract.Application.DTOs.Submission
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model SubmissionDto
 
 @{
-    ViewData["Title"] = "Bildiriyi Sil";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 }
 
@@ -11,30 +12,37 @@
         <div class="col-md-6">
             <div class="card border-danger shadow-lg">
                 <div class="card-header bg-danger text-white">
-                    <h5 class="mb-0 fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Bildiri Silme Onayı</h5>
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fas fa-exclamation-triangle me-2"></i> @Localizer["CardTitle"]
+                    </h5>
                 </div>
-                <div class="card-body p-4 text-center">
 
+                <div class="card-body p-4 text-center">
                     <div class="mb-4">
                         <i class="fas fa-trash-alt fa-4x text-danger opacity-50"></i>
                     </div>
 
-                    <h4 class="card-title fw-bold text-dark mb-3">Bu bildiriyi silmek istediğinize emin misiniz?</h4>
+                    <h4 class="card-title fw-bold text-dark mb-3">@Localizer["ConfirmTitle"]</h4>
 
                     <p class="card-text text-muted mb-4 fs-5">
-                        "<strong>@Model.Title</strong>" başlıklı çalışmanız silinecektir.<br />
-                        <span class="text-danger small fw-bold">Bu işlem geri alınamaz!</span>
+                        "@Localizer["SubmissionPrefix"] <strong>@Model.Title</strong>" @Localizer["SubmissionSuffix"]<br />
+                        <span class="text-danger small fw-bold">@Localizer["IrreversibleWarning"]</span>
                     </p>
 
-                    <form asp-area="" asp-controller="Submission" asp-action="Delete">
+                    <form asp-area=""
+                          asp-controller="Submission"
+                          asp-action="Delete"
+                          asp-route-id="@Model.Id"
+                          method="post">
+                        @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="Id" />
 
                         <div class="d-flex justify-content-center gap-3">
                             <a asp-area="" asp-controller="Submission" asp-action="Index" class="btn btn-secondary px-4 py-2">
-                                <i class="fas fa-arrow-left me-1"></i> Vazgeç
+                                <i class="fas fa-arrow-left me-1"></i> @Localizer["CancelButton"]
                             </a>
                             <button type="submit" class="btn btn-danger px-4 py-2 fw-bold">
-                                <i class="fas fa-trash me-1"></i> Evet, Sil
+                                <i class="fas fa-trash me-1"></i> @Localizer["DeleteButton"]
                             </button>
                         </div>
                     </form>

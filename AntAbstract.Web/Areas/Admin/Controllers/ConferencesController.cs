@@ -2,14 +2,15 @@
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Hosting; // YENİ EKLENDİ
-using Microsoft.AspNetCore.Http; // YENİ EKLENDİ
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using System;
-using System.IO; // YENİ EKLENDİ
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -23,20 +24,23 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly UserManager<AppUser> _userManager;
-        private readonly IWebHostEnvironment _env; 
+        private readonly IWebHostEnvironment _env;
+        private readonly IStringLocalizer<ConferencesController> _localizer;
 
         public ConferencesController(
             AppDbContext context,
             TenantContext tenantContext,
             ISelectedConferenceService selectedConferenceService,
             UserManager<AppUser> userManager,
-            IWebHostEnvironment env) 
+            IWebHostEnvironment env,
+            IStringLocalizer<ConferencesController> localizer)
         {
             _context = context;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
             _userManager = userManager;
             _env = env;
+            _localizer = localizer;
         }
 
         [HttpGet("/Admin/Conferences")]
@@ -68,7 +72,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 }
             }
 
-            TempData["ErrorMessage"] = "Lütfen işlem yapmak istediğiniz bir kongreyi ana ekrandan seçin.";
+            TempData["ErrorMessage"] = _localizer["Error_SelectConferenceFromDashboard"];
             return Redirect("/Admin/Dashboard");
         }
 
@@ -103,7 +107,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (!isAdmin)
             {
-                TempData["ErrorMessage"] = "Yeni kongre oluşturma yetkisi sadece Sistem Yöneticisine aittir. Lütfen destek talebi oluşturun.";
+                TempData["ErrorMessage"] = _localizer["Error_CreatePermissionWithSupport"];
                 return Redirect($"/{slug}/Admin/Conferences");
             }
 
@@ -125,7 +129,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (!isAdmin)
             {
-                TempData["ErrorMessage"] = "Yeni kongre oluşturma yetkisi sadece Sistem Yöneticisine aittir.";
+                TempData["ErrorMessage"] = _localizer["Error_CreatePermission"];
                 return Redirect($"/{slug}/Admin/Conferences");
             }
 
@@ -168,7 +172,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _selectedConferenceService.SetSelectedConferenceId(conference.Id);
             HttpContext.Session.SetString("SelectedConferenceSlug", redirectSlug);
 
-            TempData["SuccessMessage"] = "Harika! Kongre başarıyla oluşturuldu ve ilgili kuruma atandı.";
+            TempData["SuccessMessage"] = _localizer["Success_ConferenceCreated"];
             return Redirect($"/{redirectSlug}/Admin/Conferences");
         }
 
@@ -214,31 +218,33 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (existingConf == null)
                 return NotFound();
 
-            
             string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "templates");
             if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
             if (WritingRulesFile != null && WritingRulesFile.Length > 0)
             {
-                string uniqueFileName = Guid.NewGuid().ToString() + "_" + WritingRulesFile.FileName;
+                string uniqueFileName = Guid.NewGuid() + "_" + WritingRulesFile.FileName;
                 string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-                using (var fileStream = new FileStream(filePath, FileMode.Create)) { await WritingRulesFile.CopyToAsync(fileStream); }
+                using var fileStream = new FileStream(filePath, FileMode.Create);
+                await WritingRulesFile.CopyToAsync(fileStream);
                 existingConf.WritingRulesPath = "/uploads/templates/" + uniqueFileName;
             }
 
             if (AbstractTemplateFile != null && AbstractTemplateFile.Length > 0)
             {
-                string uniqueFileName = Guid.NewGuid().ToString() + "_" + AbstractTemplateFile.FileName;
+                string uniqueFileName = Guid.NewGuid() + "_" + AbstractTemplateFile.FileName;
                 string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-                using (var fileStream = new FileStream(filePath, FileMode.Create)) { await AbstractTemplateFile.CopyToAsync(fileStream); }
+                using var fileStream = new FileStream(filePath, FileMode.Create);
+                await AbstractTemplateFile.CopyToAsync(fileStream);
                 existingConf.AbstractTemplatePath = "/uploads/templates/" + uniqueFileName;
             }
 
             if (FullTextTemplateFile != null && FullTextTemplateFile.Length > 0)
             {
-                string uniqueFileName = Guid.NewGuid().ToString() + "_" + FullTextTemplateFile.FileName;
+                string uniqueFileName = Guid.NewGuid() + "_" + FullTextTemplateFile.FileName;
                 string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-                using (var fileStream = new FileStream(filePath, FileMode.Create)) { await FullTextTemplateFile.CopyToAsync(fileStream); }
+                using var fileStream = new FileStream(filePath, FileMode.Create);
+                await FullTextTemplateFile.CopyToAsync(fileStream);
                 existingConf.FullTextTemplatePath = "/uploads/templates/" + uniqueFileName;
             }
 
@@ -249,7 +255,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             existingConf.Venue = conference.Venue;
 
             await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Kongre bilgileri ve dosyalar başarıyla güncellendi.";
+            TempData["SuccessMessage"] = _localizer["Success_ConferenceUpdated"];
 
             return Redirect($"/{slug}/Admin/Conferences");
         }
@@ -266,7 +272,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (!isAdmin)
             {
-                TempData["ErrorMessage"] = "Kongre silme yetkisi sadece Sistem Yöneticisine aittir.";
+                TempData["ErrorMessage"] = _localizer["Error_DeletePermission"];
                 return Redirect($"/{slug}/Admin/Conferences");
             }
 
@@ -277,7 +283,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 _context.Conferences.Remove(conference);
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Kongre silindi.";
+                TempData["SuccessMessage"] = _localizer["Success_ConferenceDeleted"];
             }
 
             return Redirect($"/{slug}/Admin/Conferences");

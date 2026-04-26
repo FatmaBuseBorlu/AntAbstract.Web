@@ -1,17 +1,20 @@
 ﻿@using AntAbstract.Web.Models.ViewModels
 @using AntAbstract.Web.Models.ViewModels.Admin.Users
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model List<UserListItemViewModel>
 
 @{
-    ViewData["Title"] = "Kullanıcı Yönetimi";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 }
 
 <div class="card border-0 shadow-sm mb-4 bg-white">
     <div class="card-body p-4 d-flex align-items-center justify-content-between">
         <div>
-            <h6 class="text-muted text-uppercase fw-bold small mb-1" style="font-size: 0.75rem; letter-spacing: 1px;">YÖNETİM</h6>
-            <h4 class="fw-bold text-dark mb-0">Kullanıcı Rol Yönetimi</h4>
+            <h6 class="text-muted text-uppercase fw-bold small mb-1" style="font-size: 0.75rem; letter-spacing: 1px;">
+                @Localizer["SectionLabel"]
+            </h6>
+            <h4 class="fw-bold text-dark mb-0">@Localizer["PageHeading"]</h4>
         </div>
         <div class="d-none d-md-block text-end">
             <div class="icon-shape bg-danger bg-opacity-10 text-danger rounded-circle p-3">
@@ -41,10 +44,10 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="bg-light text-muted small text-uppercase">
                     <tr>
-                        <th class="ps-4 py-3 border-0">Kullanıcı</th>
-                        <th class="py-3 border-0">Email</th>
-                        <th class="py-3 border-0">Mevcut Roller</th>
-                        <th class="py-3 border-0 text-end pe-4">İşlemler</th>
+                        <th class="ps-4 py-3 border-0">@Localizer["TableHeaderUser"]</th>
+                        <th class="py-3 border-0">@Localizer["TableHeaderEmail"]</th>
+                        <th class="py-3 border-0">@Localizer["TableHeaderCurrentRoles"]</th>
+                        <th class="py-3 border-0 text-end pe-4">@Localizer["TableHeaderActions"]</th>
                     </tr>
                 </thead>
 
@@ -72,14 +75,26 @@
                                     {
                                         foreach (var role in user.Roles)
                                         {
+                                            var localizedRole = role switch
+                                            {
+                                                "Admin" => Localizer["Role_Admin"].Value,
+                                                "Organizator" => Localizer["Role_Organizer"].Value,
+                                                "Author" => Localizer["Role_Author"].Value,
+                                                "Referee" => Localizer["Role_Referee"].Value,
+                                                _ => role
+                                            };
+
                                             <span class="badge bg-light text-dark border me-1 position-relative">
-                                                @role
+                                                @localizedRole
 
                                                 <form asp-area="Admin" asp-controller="Users" asp-action="RemoveRole" method="post" style="display:inline;">
                                                     @Html.AntiForgeryToken()
                                                     <input type="hidden" name="userId" value="@user.UserId" />
                                                     <input type="hidden" name="roleName" value="@role" />
-                                                    <button type="submit" class="btn btn-link text-danger p-0 ms-2 text-decoration-none" style="font-size: 10px; vertical-align: text-top;">
+                                                    <button type="submit"
+                                                            class="btn btn-link text-danger p-0 ms-2 text-decoration-none"
+                                                            style="font-size: 10px; vertical-align: text-top;"
+                                                            title="@Localizer["RemoveRoleTitle"]">
                                                         <i class="fas fa-times"></i>
                                                     </button>
                                                 </form>
@@ -98,12 +113,12 @@
                                        asp-action="ManageRoles"
                                        asp-route-userId="@user.UserId"
                                        class="btn btn-sm btn-outline-secondary me-2">
-                                        Rolleri Düzenle
+                                        @Localizer["EditRolesButton"]
                                     </a>
 
                                     <div class="dropdown d-inline-block">
                                         <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                            Yetki Ver
+                                            @Localizer["GrantRoleButton"]
                                         </button>
 
                                         <ul class="dropdown-menu dropdown-menu-end shadow border-0">
@@ -113,7 +128,7 @@
                                                     <input type="hidden" name="userId" value="@user.UserId" />
                                                     <input type="hidden" name="roleName" value="Referee" />
                                                     <button type="submit" class="dropdown-item small">
-                                                        <i class="fas fa-gavel text-warning me-2"></i> Hakem Yap
+                                                        <i class="fas fa-gavel text-warning me-2"></i> @Localizer["MakeRefereeAction"]
                                                     </button>
                                                 </form>
                                             </li>
@@ -124,7 +139,7 @@
                                                     <input type="hidden" name="userId" value="@user.UserId" />
                                                     <input type="hidden" name="roleName" value="Author" />
                                                     <button type="submit" class="dropdown-item small">
-                                                        <i class="fas fa-pen-nib text-primary me-2"></i> Yazar Yap
+                                                        <i class="fas fa-pen-nib text-primary me-2"></i> @Localizer["MakeAuthorAction"]
                                                     </button>
                                                 </form>
                                             </li>
@@ -137,7 +152,7 @@
                                                     <input type="hidden" name="userId" value="@user.UserId" />
                                                     <input type="hidden" name="roleName" value="Admin" />
                                                     <button type="submit" class="dropdown-item small text-danger fw-bold">
-                                                        <i class="fas fa-shield-alt me-2"></i> Admin Yap
+                                                        <i class="fas fa-shield-alt me-2"></i> @Localizer["MakeAdminAction"]
                                                     </button>
                                                 </form>
                                             </li>
@@ -151,7 +166,7 @@
                     {
                         <tr>
                             <td colspan="4" class="text-center py-5 text-muted">
-                                <p class="mb-0">Kayıtlı kullanıcı yok.</p>
+                                <p class="mb-0">@Localizer["EmptyMessage"]</p>
                             </td>
                         </tr>
                     }

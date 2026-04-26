@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using System;
 using System.IO;
 using System.Linq;
@@ -29,6 +30,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly IWebHostEnvironment _env;
+        private readonly IStringLocalizer<SubmissionsController> _localizer;
 
         public SubmissionsController(
             AppDbContext context,
@@ -37,7 +39,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             UserManager<AppUser> userManager,
             TenantContext tenantContext,
             ISelectedConferenceService selectedConferenceService,
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            IStringLocalizer<SubmissionsController> localizer)
         {
             _context = context;
             _submissionService = submissionService;
@@ -46,8 +49,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
             _env = env;
+            _localizer = localizer;
         }
-
 
         [HttpGet("/Admin/Submissions/Create")]
         [HttpGet("/{slug}/Admin/Submissions/Create")]
@@ -85,10 +88,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser == null) return Challenge();
 
-            var conference = await _context.Conferences.Include(c => c.Tenant).FirstOrDefaultAsync(c => c.Id == model.ConferenceId);
+            var conference = await _context.Conferences
+                .Include(c => c.Tenant)
+                .FirstOrDefaultAsync(c => c.Id == model.ConferenceId);
+
             if (conference == null)
             {
-                ModelState.AddModelError("ConferenceId", "Geçersiz kongre seçimi.");
+                ModelState.AddModelError("ConferenceId", _localizer["Error_InvalidConferenceSelection"].Value);
             }
 
             if (!ModelState.IsValid)
@@ -99,12 +105,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     Value = c.Id.ToString(),
                     Text = c.Title
                 }).ToList();
+
                 return View("~/Areas/Admin/Views/Submissions/Create.cshtml", model);
             }
 
             var newSubmission = new Submission
             {
-                Id = Guid.NewGuid(), 
+                Id = Guid.NewGuid(),
                 Title = model.Title,
                 Abstract = model.AbstractText,
                 Keywords = model.Keywords,
@@ -117,13 +124,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 CreatedDate = DateTime.Now
             };
 
-
             if (model.SubmissionFile != null && model.SubmissionFile.Length > 0)
             {
                 var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "submissions");
                 if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
-                var uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(model.SubmissionFile.FileName);
+                var uniqueFileName = Guid.NewGuid() + "_" + Path.GetFileName(model.SubmissionFile.FileName);
                 var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
                 using (var fileStream = new FileStream(filePath, FileMode.Create))
@@ -131,7 +137,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     await model.SubmissionFile.CopyToAsync(fileStream);
                 }
 
-               
                 newSubmission.Files.Add(new SubmissionFile
                 {
                     FileName = model.SubmissionFile.FileName,
@@ -140,13 +145,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 });
             }
 
-
             newSubmission.SubmissionAuthors.Add(new SubmissionAuthor
             {
                 FirstName = currentUser.FirstName ?? currentUser.UserName,
                 LastName = currentUser.LastName ?? "",
                 Email = currentUser.Email,
-                Institution = currentUser.Institution ?? "Belirtilmemiş",
+                Institution = currentUser.Institution ?? _localizer["DefaultInstitution"].Value,
                 IsCorrespondingAuthor = true,
                 Order = 1
             });
@@ -171,7 +175,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _context.Submissions.Add(newSubmission);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Tebrikler! Bildiriniz başarıyla sisteme yüklendi.";
+            TempData["SuccessMessage"] = _localizer["Success_SubmissionCreated"].Value;
 
             if (!string.IsNullOrWhiteSpace(slug))
                 return RedirectToAction(nameof(Index), new { slug });
@@ -227,10 +231,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var vm = new SelectConferenceViewModel
             {
-                Title = "Tüm Başvurular",
-                Lead = "Başvuruları görüntülemek için önce kongre seçin.",
+                Title = _localizer["SelectConference_Title"].Value,
+                Lead = _localizer["SelectConference_Lead"].Value,
                 PostUrl = "/Admin/Submissions/Select",
-                SubmitText = "Başvuruları Görüntüle",
+                SubmitText = _localizer["SelectConference_Submit"].Value,
                 Conferences = conferences,
                 ReturnUrl = returnUrl
             };
@@ -248,7 +252,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                TempData["ErrorMessage"] = _localizer["Error_ConferenceNotFound"].Value;
                 return RedirectToAction(nameof(SelectConference));
             }
 
@@ -351,7 +355,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                 if (!isAuthorized)
                 {
-                    TempData["ErrorMessage"] = "Yetkisiz Erişim! Başka bir kuruma ait bildiriyi görüntüleyemezsiniz.";
+                    TempData["ErrorMessage"] = _localizer["Error_UnauthorizedView"].Value;
                     return RedirectToAction(nameof(Index), new { slug = slug ?? _tenantContext.Current?.Slug });
                 }
             }
@@ -387,7 +391,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                 if (!isAuthorized)
                 {
-                    TempData["ErrorMessage"] = "Yetkisiz İşlem! Başka bir kuruma ait bildirinin durumunu değiştiremezsiniz.";
+                    TempData["ErrorMessage"] = _localizer["Error_UnauthorizedChangeStatus"].Value;
                     return RedirectToAction(nameof(Index), new { slug = slug ?? _tenantContext.Current?.Slug });
                 }
             }
@@ -395,11 +399,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (Enum.TryParse<SubmissionStatus>(status, out var newStatus))
             {
                 await _submissionService.UpdateStatusAsync(id, newStatus);
-                TempData["SuccessMessage"] = "Bildiri durumu başarıyla güncellendi: " + status;
+                var localizedStatus = GetLocalizedSubmissionStatus(newStatus);
+                TempData["SuccessMessage"] = _localizer["Success_SubmissionStatusUpdated", localizedStatus].Value;
             }
             else
             {
-                TempData["ErrorMessage"] = "Geçersiz durum bilgisi.";
+                TempData["ErrorMessage"] = _localizer["Error_InvalidStatus"].Value;
             }
 
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
@@ -427,13 +432,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                 if (!isAuthorized)
                 {
-                    TempData["ErrorMessage"] = "Yetkisiz İşlem! Başka bir kuruma ait bildiriyi silemezsiniz.";
+                    TempData["ErrorMessage"] = _localizer["Error_UnauthorizedDelete"].Value;
                     return RedirectToAction(nameof(Index), new { slug = slug ?? _tenantContext.Current?.Slug });
                 }
             }
 
             await _submissionService.DeleteSubmissionAsync(id);
-            TempData["SuccessMessage"] = "Bildiri başarıyla silindi.";
+            TempData["SuccessMessage"] = _localizer["Success_SubmissionDeleted"].Value;
 
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
                 return Redirect(returnUrl);
@@ -442,6 +447,21 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index), new { slug });
 
             return RedirectToAction(nameof(SelectConference));
+        }
+
+        private string GetLocalizedSubmissionStatus(SubmissionStatus status)
+        {
+            return status switch
+            {
+                SubmissionStatus.New => _localizer["Status_New"].Value,
+                SubmissionStatus.Pending => _localizer["Status_Pending"].Value,
+                SubmissionStatus.UnderReview => _localizer["Status_UnderReview"].Value,
+                SubmissionStatus.Accepted => _localizer["Status_Accepted"].Value,
+                SubmissionStatus.Rejected => _localizer["Status_Rejected"].Value,
+                SubmissionStatus.RevisionRequired => _localizer["Status_RevisionRequired"].Value,
+                SubmissionStatus.Presented => _localizer["Status_Presented"].Value,
+                _ => status.ToString()
+            };
         }
     }
 }

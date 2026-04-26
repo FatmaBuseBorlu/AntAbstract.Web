@@ -1515,7 +1515,7 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.HasOne("AntAbstract.Domain.Entities.ReviewAssignment", "ReviewAssignment")
                         .WithOne("Review")
                         .HasForeignKey("AntAbstract.Domain.Entities.Review", "ReviewAssignmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("ReviewAssignment");

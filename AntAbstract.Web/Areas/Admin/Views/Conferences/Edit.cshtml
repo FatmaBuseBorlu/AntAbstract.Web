@@ -1,7 +1,8 @@
 ﻿@model AntAbstract.Domain.Entities.Conference
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Kongre Düzenle";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     var slug = Context.GetRouteValue("slug")?.ToString() ?? "";
 }
@@ -11,7 +12,9 @@
         <div class="col-md-10">
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0"><i class="fas fa-edit text-primary me-2"></i> Kongre Ayarları</h5>
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-edit text-primary me-2"></i> @Localizer["CardTitle"]
+                    </h5>
 
                     <span class="badge bg-light text-dark border px-3 py-2">
                         @Model.Title
@@ -31,43 +34,49 @@
                         <input type="hidden" asp-for="Id" />
                         <input type="hidden" asp-for="TenantId" />
 
-                        <h6 class="fw-bold text-dark mb-3"><i class="fas fa-info-circle text-info me-2"></i> Temel Bilgiler</h6>
+                        <h6 class="fw-bold text-dark mb-3">
+                            <i class="fas fa-info-circle text-info me-2"></i> @Localizer["BasicInfoHeader"]
+                        </h6>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold small text-muted">Kongre Adı</label>
+                            <label class="form-label fw-bold small text-muted">@Localizer["TitleLabel"]</label>
                             <input asp-for="Title" class="form-control form-control-lg" required />
                             <span asp-validation-for="Title" class="text-danger small"></span>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold small text-muted">Başlangıç Tarihi</label>
+                                <label class="form-label fw-bold small text-muted">@Localizer["StartDateLabel"]</label>
                                 <input asp-for="StartDate" type="datetime-local" class="form-control" required />
                                 <span asp-validation-for="StartDate" class="text-danger small"></span>
                             </div>
+
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold small text-muted">Bitiş Tarihi</label>
+                                <label class="form-label fw-bold small text-muted">@Localizer["EndDateLabel"]</label>
                                 <input asp-for="EndDate" type="datetime-local" class="form-control" required />
                                 <span asp-validation-for="EndDate" class="text-danger small"></span>
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold small text-muted">Konum / Otel / Şehir</label>
+                            <label class="form-label fw-bold small text-muted">@Localizer["VenueLabel"]</label>
                             <input asp-for="Venue" class="form-control" />
                             <span asp-validation-for="Venue" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold small text-muted">Açıklama</label>
+                            <label class="form-label fw-bold small text-muted">@Localizer["DescriptionLabel"]</label>
                             <textarea asp-for="Description" class="form-control" rows="4"></textarea>
                             <span asp-validation-for="Description" class="text-danger small"></span>
                         </div>
 
                         <hr class="my-5 border-secondary opacity-25" />
 
-                        <h6 class="fw-bold text-dark mb-4"><i class="fas fa-file-word text-primary me-2"></i> Şablon ve Belge Yüklemeleri</h6>
-                        <p class="text-muted small mb-4">Bu alana yüklediğiniz dosyalar, kongre vitrininde sağ taraftaki "Belgeler ve Şablonlar" kısmında anında yayınlanır. <i>(Mevcut dosyayı değiştirmek isterseniz yeni dosya seçmeniz yeterlidir.)</i></p>
+                        <h6 class="fw-bold text-dark mb-4">
+                            <i class="fas fa-file-word text-primary me-2"></i> @Localizer["DocumentsHeader"]
+                        </h6>
+
+                        <p class="text-muted small mb-4">@Localizer["DocumentsLead"]</p>
 
                         <div class="row g-4 mb-5">
 
@@ -75,16 +84,21 @@
                                 <div class="p-4 border rounded-4 bg-light text-center h-100 d-flex flex-column justify-content-between">
                                     <div>
                                         <i class="fas fa-book-open fa-2x text-secondary mb-3"></i>
-                                        <h6 class="fw-bold text-dark">Yazım Kuralları</h6>
+                                        <h6 class="fw-bold text-dark">@Localizer["WritingRulesTitle"]</h6>
                                         <input type="file" name="WritingRulesFile" class="form-control form-control-sm mb-3 shadow-sm" accept=".doc,.docx,.pdf" />
                                     </div>
+
                                     @if (!string.IsNullOrEmpty(Model.WritingRulesPath))
                                     {
-                                        <a href="@Model.WritingRulesPath" target="_blank" class="badge bg-success text-decoration-none p-2 w-100 shadow-sm"><i class="fas fa-check-circle me-1"></i> Yüklü (Görüntüle)</a>
+                                        <a href="@Model.WritingRulesPath" target="_blank" class="badge bg-success text-decoration-none p-2 w-100 shadow-sm">
+                                            <i class="fas fa-check-circle me-1"></i> @Localizer["UploadedView"]
+                                        </a>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-secondary bg-opacity-25 text-secondary p-2 w-100">Henüz Yüklenmedi</span>
+                                        <span class="badge bg-secondary bg-opacity-25 text-secondary p-2 w-100">
+                                            @Localizer["NotUploadedYet"]
+                                        </span>
                                     }
                                 </div>
                             </div>
@@ -93,16 +107,21 @@
                                 <div class="p-4 border rounded-4 bg-light text-center h-100 d-flex flex-column justify-content-between">
                                     <div>
                                         <i class="fas fa-file-alt fa-2x text-secondary mb-3"></i>
-                                        <h6 class="fw-bold text-dark">Özet Şablonu</h6>
+                                        <h6 class="fw-bold text-dark">@Localizer["AbstractTemplateTitle"]</h6>
                                         <input type="file" name="AbstractTemplateFile" class="form-control form-control-sm mb-3 shadow-sm" accept=".doc,.docx,.pdf" />
                                     </div>
+
                                     @if (!string.IsNullOrEmpty(Model.AbstractTemplatePath))
                                     {
-                                        <a href="@Model.AbstractTemplatePath" target="_blank" class="badge bg-success text-decoration-none p-2 w-100 shadow-sm"><i class="fas fa-check-circle me-1"></i> Yüklü (Görüntüle)</a>
+                                        <a href="@Model.AbstractTemplatePath" target="_blank" class="badge bg-success text-decoration-none p-2 w-100 shadow-sm">
+                                            <i class="fas fa-check-circle me-1"></i> @Localizer["UploadedView"]
+                                        </a>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-secondary bg-opacity-25 text-secondary p-2 w-100">Henüz Yüklenmedi</span>
+                                        <span class="badge bg-secondary bg-opacity-25 text-secondary p-2 w-100">
+                                            @Localizer["NotUploadedYet"]
+                                        </span>
                                     }
                                 </div>
                             </div>
@@ -111,16 +130,21 @@
                                 <div class="p-4 border rounded-4 bg-light text-center h-100 d-flex flex-column justify-content-between">
                                     <div>
                                         <i class="fas fa-file-word fa-2x text-secondary mb-3"></i>
-                                        <h6 class="fw-bold text-dark">Tam Metin Şablonu</h6>
+                                        <h6 class="fw-bold text-dark">@Localizer["FullTextTemplateTitle"]</h6>
                                         <input type="file" name="FullTextTemplateFile" class="form-control form-control-sm mb-3 shadow-sm" accept=".doc,.docx,.pdf" />
                                     </div>
+
                                     @if (!string.IsNullOrEmpty(Model.FullTextTemplatePath))
                                     {
-                                        <a href="@Model.FullTextTemplatePath" target="_blank" class="badge bg-success text-decoration-none p-2 w-100 shadow-sm"><i class="fas fa-check-circle me-1"></i> Yüklü (Görüntüle)</a>
+                                        <a href="@Model.FullTextTemplatePath" target="_blank" class="badge bg-success text-decoration-none p-2 w-100 shadow-sm">
+                                            <i class="fas fa-check-circle me-1"></i> @Localizer["UploadedView"]
+                                        </a>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-secondary bg-opacity-25 text-secondary p-2 w-100">Henüz Yüklenmedi</span>
+                                        <span class="badge bg-secondary bg-opacity-25 text-secondary p-2 w-100">
+                                            @Localizer["NotUploadedYet"]
+                                        </span>
                                     }
                                 </div>
                             </div>
@@ -133,20 +157,20 @@
                                asp-action="Index"
                                asp-route-slug="@slug"
                                class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
-                                İptal
+                                @Localizer["CancelButton"]
                             </a>
 
                             <button type="submit" class="btn btn-primary btn-lg fw-bold px-5 rounded-pill shadow-sm">
-                                <i class="fas fa-save me-2"></i> Ayarları ve Dosyaları Kaydet
+                                <i class="fas fa-save me-2"></i> @Localizer["SaveButton"]
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
-
-            @section Scripts {
-                <partial name="_ValidationScriptsPartial" />
-            }
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -18,17 +19,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IStringLocalizer<ConferenceFlowController> _localizer;
 
         public ConferenceFlowController(
             AppDbContext context,
             TenantContext tenantContext,
             ISelectedConferenceService selectedConferenceService,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IStringLocalizer<ConferenceFlowController> localizer)
         {
             _context = context;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
             _userManager = userManager;
+            _localizer = localizer;
         }
 
         [HttpGet("/Admin/ConferenceFlow")]
@@ -61,7 +65,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 query = query.Where(c => c.TenantId == user.TenantId.Value);
             }
-
             else if (!isAdmin && user?.TenantId == null)
             {
                 query = query.Where(c => false);
@@ -73,10 +76,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var vm = new SelectConferenceViewModel
             {
-                Title = "Kongre Seç",
-                Lead = "Kongre akışını görüntülemek için lütfen bir kongre seçiniz.",
+                Title = _localizer["SelectConference_Title"],
+                Lead = _localizer["SelectConference_Lead"],
                 PostUrl = "/Admin/ConferenceFlow/Select",
-                SubmitText = "Devam Et",
+                SubmitText = _localizer["SelectConference_Submit"],
                 Conferences = conferences
             };
 
@@ -94,7 +97,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
             {
-                TempData["ErrorMessage"] = "Seçilen kongre bulunamadı.";
+                TempData["ErrorMessage"] = _localizer["Error_SelectedConferenceNotFound"];
                 return Redirect("/Admin/ConferenceFlow");
             }
 
@@ -109,7 +112,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             if (_tenantContext.Current == null || !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                TempData["ErrorMessage"] = "Geçersiz organizasyon (tenant). Lütfen tekrar seçim yapın.";
+                TempData["ErrorMessage"] = _localizer["Error_InvalidTenant"];
                 return Redirect("/Admin/ConferenceFlow");
             }
 
@@ -125,7 +128,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = "Seçilen kongre bu organizasyona ait değil.";
+                TempData["ErrorMessage"] = _localizer["Error_ConferenceNotBelongToOrganization"];
                 return Redirect("/Admin/ConferenceFlow");
             }
 

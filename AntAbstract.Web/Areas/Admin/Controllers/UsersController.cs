@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,16 +13,21 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Organizator")] 
+    [Authorize(Roles = "Admin,Organizator")]
     public class UsersController : Controller
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IStringLocalizer<UsersController> _localizer;
 
-        public UsersController(UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager)
+        public UsersController(
+            UserManager<AppUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            IStringLocalizer<UsersController> localizer)
         {
             _userManager = userManager;
             _roleManager = roleManager;
+            _localizer = localizer;
         }
 
         [HttpGet("/Admin/Users")]
@@ -81,7 +87,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (!isAdmin && user.TenantId != currentUser?.TenantId)
             {
-                TempData["ErrorMessage"] = "Yetkisiz işlem! Başka kuruma ait kullanıcıyı yönetemezsiniz.";
+                TempData["ErrorMessage"] = _localizer["Error_UnauthorizedManageUser"].Value;
                 return RedirectToAction(nameof(Index));
             }
 
@@ -139,7 +145,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (!isAdmin && user.TenantId != currentUser?.TenantId)
             {
-                TempData["ErrorMessage"] = "Yetkisiz işlem!";
+                TempData["ErrorMessage"] = _localizer["Error_UnauthorizedAction"].Value;
                 return RedirectToAction(nameof(Index));
             }
 
@@ -170,7 +176,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 var removeResult = await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
                 if (!removeResult.Succeeded)
                 {
-                    TempData["ErrorMessage"] = "Rol kaldırma sırasında hata oluştu.";
+                    TempData["ErrorMessage"] = _localizer["Error_RemoveRoleFailed"].Value;
                     return View(model);
                 }
             }
@@ -186,12 +192,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 var addResult = await _userManager.AddToRolesAsync(user, rolesToAdd);
                 if (!addResult.Succeeded)
                 {
-                    TempData["ErrorMessage"] = "Rol atama sırasında hata oluştu.";
+                    TempData["ErrorMessage"] = _localizer["Error_AssignRoleFailed"].Value;
                     return View(model);
                 }
             }
 
-            TempData["SuccessMessage"] = "Roller güncellendi.";
+            TempData["SuccessMessage"] = _localizer["Success_RolesUpdated"].Value;
             return RedirectToAction(nameof(Index));
         }
 
@@ -202,7 +208,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(roleName))
             {
-                TempData["ErrorMessage"] = "Kullanıcı veya rol bilgisi eksik.";
+                TempData["ErrorMessage"] = _localizer["Error_MissingUserOrRole"].Value;
                 return RedirectToAction(nameof(Index));
             }
 
@@ -212,19 +218,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
-                TempData["ErrorMessage"] = "Kullanıcı bulunamadı.";
+                TempData["ErrorMessage"] = _localizer["Error_UserNotFound"].Value;
                 return RedirectToAction(nameof(Index));
             }
 
             if (!isAdmin && user.TenantId != currentUser?.TenantId)
             {
-                TempData["ErrorMessage"] = "Yetkisiz işlem!";
+                TempData["ErrorMessage"] = _localizer["Error_UnauthorizedAction"].Value;
                 return RedirectToAction(nameof(Index));
             }
 
             if (!isAdmin && roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
             {
-                TempData["ErrorMessage"] = "Süper yetki atayamazsınız.";
+                TempData["ErrorMessage"] = _localizer["Error_CannotAssignSuperRole"].Value;
                 return RedirectToAction(nameof(Index));
             }
 
@@ -233,7 +239,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 var createRoleResult = await _roleManager.CreateAsync(new IdentityRole(roleName));
                 if (!createRoleResult.Succeeded)
                 {
-                    TempData["ErrorMessage"] = "Rol oluşturulamadı.";
+                    TempData["ErrorMessage"] = _localizer["Error_RoleCouldNotBeCreated"].Value;
                     return RedirectToAction(nameof(Index));
                 }
             }
@@ -243,12 +249,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 var addResult = await _userManager.AddToRoleAsync(user, roleName);
                 if (!addResult.Succeeded)
                 {
-                    TempData["ErrorMessage"] = "Rol atama başarısız.";
+                    TempData["ErrorMessage"] = _localizer["Error_RoleAssignmentFailed"].Value;
                     return RedirectToAction(nameof(Index));
                 }
             }
 
-            TempData["SuccessMessage"] = "Rol ataması yapıldı.";
+            TempData["SuccessMessage"] = _localizer["Success_RoleAssigned"].Value;
             return RedirectToAction(nameof(Index));
         }
 
@@ -259,7 +265,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(roleName))
             {
-                TempData["ErrorMessage"] = "Kullanıcı veya rol bilgisi eksik.";
+                TempData["ErrorMessage"] = _localizer["Error_MissingUserOrRole"].Value;
                 return RedirectToAction(nameof(Index));
             }
 
@@ -269,13 +275,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
-                TempData["ErrorMessage"] = "Kullanıcı bulunamadı.";
+                TempData["ErrorMessage"] = _localizer["Error_UserNotFound"].Value;
                 return RedirectToAction(nameof(Index));
             }
 
             if (!isAdmin && user.TenantId != currentUser?.TenantId)
             {
-                TempData["ErrorMessage"] = "Yetkisiz işlem!";
+                TempData["ErrorMessage"] = _localizer["Error_UnauthorizedAction"].Value;
                 return RedirectToAction(nameof(Index));
             }
 
@@ -284,12 +290,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 var removeResult = await _userManager.RemoveFromRoleAsync(user, roleName);
                 if (!removeResult.Succeeded)
                 {
-                    TempData["ErrorMessage"] = "Rol kaldırma başarısız.";
+                    TempData["ErrorMessage"] = _localizer["Error_RoleRemovalFailed"].Value;
                     return RedirectToAction(nameof(Index));
                 }
             }
 
-            TempData["SuccessMessage"] = "Rol kaldırıldı.";
+            TempData["SuccessMessage"] = _localizer["Success_RoleRemoved"].Value;
             return RedirectToAction(nameof(Index));
         }
 

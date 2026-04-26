@@ -6,7 +6,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Areas.Reviewer.Controllers
@@ -19,17 +21,20 @@ namespace AntAbstract.Web.Areas.Reviewer.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly AppDbContext _context;
         private readonly ICertificateService _certificateService;
+        private readonly IStringLocalizer<ReviewController> _localizer;
 
         public ReviewController(
             IReviewService reviewService,
             UserManager<AppUser> userManager,
             AppDbContext context,
-            ICertificateService certificateService)
+            ICertificateService certificateService,
+            IStringLocalizer<ReviewController> localizer)
         {
             _reviewService = reviewService;
             _userManager = userManager;
             _context = context;
             _certificateService = certificateService;
+            _localizer = localizer;
         }
 
         [HttpGet("/Review/Index")]
@@ -52,7 +57,7 @@ namespace AntAbstract.Web.Areas.Reviewer.Controllers
 
             if (assignmentDto == null)
             {
-                TempData["ErrorMessage"] = "Atama bulunamadı veya yetkiniz yok.";
+                TempData["ErrorMessage"] = _localizer["AssignmentNotFoundOrUnauthorized"];
                 return RedirectToAction(nameof(Index));
             }
 
@@ -67,7 +72,7 @@ namespace AntAbstract.Web.Areas.Reviewer.Controllers
         {
             if (!ModelState.IsValid)
             {
-                TempData["ErrorMessage"] = "Lütfen tüm alanları doldurunuz.";
+                TempData["ErrorMessage"] = _localizer["PleaseFillAllFields"];
                 return RedirectToAction(nameof(Evaluate), new { id = model.ReviewAssignmentId });
             }
 
@@ -88,7 +93,6 @@ namespace AntAbstract.Web.Areas.Reviewer.Controllers
 
                 if (conferenceId != Guid.Empty)
                 {
-  
                     await _certificateService.EnsureReviewerCertificateAsync(
                         conferenceId,
                         user.Id,
@@ -97,12 +101,12 @@ namespace AntAbstract.Web.Areas.Reviewer.Controllers
                     );
                 }
 
-                TempData["SuccessMessage"] = "Değerlendirmeniz başarıyla kaydedildi.";
+                TempData["SuccessMessage"] = _localizer["ReviewSavedSuccessfully"];
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "Hata: " + ex.Message;
+                TempData["ErrorMessage"] = _localizer["ErrorPrefix"] + ex.Message;
                 return RedirectToAction(nameof(Evaluate), new { id = model.ReviewAssignmentId });
             }
         }
@@ -117,11 +121,11 @@ namespace AntAbstract.Web.Areas.Reviewer.Controllers
             {
                 var user = await _userManager.GetUserAsync(User);
                 await _reviewService.DeclineAssignmentAsync(id, user.Id, Reason, Note);
-                TempData["SuccessMessage"] = "Görev iade edildi.";
+                TempData["SuccessMessage"] = _localizer["AssignmentReturned"];
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "İşlem başarısız: " + ex.Message;
+                TempData["ErrorMessage"] = _localizer["OperationFailedPrefix"] + ex.Message;
             }
 
             return RedirectToAction(nameof(Index));
@@ -137,7 +141,7 @@ namespace AntAbstract.Web.Areas.Reviewer.Controllers
 
             if (assignment == null || !assignment.IsReviewed)
             {
-                return NotFound("Sertifika bulunamadı.");
+                return NotFound(_localizer["CertificateNotFound"]);
             }
 
             ViewBag.ReviewerName = $"{user.Title} {user.FirstName} {user.LastName}";

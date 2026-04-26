@@ -1,7 +1,8 @@
 ﻿@model AntAbstract.Domain.Entities.Session
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Oturum Düzenle";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
     var slug = Context.GetRouteValue("slug")?.ToString() ?? "";
@@ -26,8 +27,8 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center justify-content-between mb-4">
-                        <h4 class="fw-bold mb-0">Oturum Düzenle</h4>
-                        <a href="@backUrl" class="btn btn-light border">
+                        <h4 class="fw-bold mb-0">@Localizer["PageTitle"]</h4>
+                        <a href="@backUrl" class="btn btn-light border" title="@Localizer["BackButton"]">
                             <i class="fas fa-arrow-left"></i>
                         </a>
                     </div>
@@ -42,13 +43,13 @@
                         @Html.AntiForgeryToken()
 
                         <div class="mb-3">
-                            <label class="form-label text-muted small fw-bold">Oturum Başlığı</label>
+                            <label class="form-label text-muted small fw-bold">@Localizer["TitleLabel"]</label>
                             <input asp-for="Title" class="form-control" required />
                             <span asp-validation-for="Title" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label text-muted small fw-bold">Tarih ve Saat</label>
+                            <label class="form-label text-muted small fw-bold">@Localizer["SessionDateLabel"]</label>
                             <input name="SessionDate"
                                    type="datetime-local"
                                    class="form-control"
@@ -58,22 +59,22 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label text-muted small fw-bold">Salon / Konum</label>
+                            <label class="form-label text-muted small fw-bold">@Localizer["LocationLabel"]</label>
                             <input asp-for="Location" class="form-control" />
                             <span asp-validation-for="Location" class="text-danger small"></span>
                         </div>
 
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary fw-bold">Kaydet</button>
-                            <a href="@backUrl" class="btn btn-outline-secondary">İptal</a>
+                            <button type="submit" class="btn btn-primary fw-bold">@Localizer["SaveButton"]</button>
+                            <a href="@backUrl" class="btn btn-outline-secondary">@Localizer["CancelButton"]</a>
                         </div>
                     </form>
-
-                    @section Scripts {
-                        <partial name="_ValidationScriptsPartial" />
-                    }
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

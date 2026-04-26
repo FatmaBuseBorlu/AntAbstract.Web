@@ -1,8 +1,10 @@
 ﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
 @using AntAbstract.Domain.Entities
+@using Microsoft.AspNetCore.Mvc.Rendering
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Blok Düzenle";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
     var slug = ViewContext.RouteData.Values["slug"]?.ToString();
@@ -21,19 +23,37 @@
         }
         catch { }
     }
+
+    var cultureOptions = new List<SelectListItem>
+    {
+        new SelectListItem { Text = Localizer["Culture_TR"].Value, Value = "tr-TR" },
+        new SelectListItem { Text = Localizer["Culture_EN"].Value, Value = "en-US" }
+    };
+
+    var blockTypeOptions = new List<SelectListItem>
+    {
+        new SelectListItem { Text = Localizer["BlockType_Hero"].Value, Value = nameof(ConferencePageBlockType.Hero) },
+        new SelectListItem { Text = Localizer["BlockType_About"].Value, Value = nameof(ConferencePageBlockType.About) },
+        new SelectListItem { Text = Localizer["BlockType_CallForPapers"].Value, Value = nameof(ConferencePageBlockType.CallForPapers) },
+        new SelectListItem { Text = Localizer["BlockType_Topics"].Value, Value = nameof(ConferencePageBlockType.Topics) },
+        new SelectListItem { Text = Localizer["BlockType_Committees"].Value, Value = nameof(ConferencePageBlockType.Committees) },
+        new SelectListItem { Text = Localizer["BlockType_Fees"].Value, Value = nameof(ConferencePageBlockType.Fees) }
+    };
 }
 
 <div class="container-fluid">
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
-            <h4 class="mb-0 fw-bold text-dark">⚙️ Blok Düzenle</h4>
-            <p class="text-muted small mb-0"><strong>@Model.Title</strong> isimli bloğun ayarlarını ve içeriğini güncelliyorsunuz.</p>
+            <h4 class="mb-0 fw-bold text-dark">@Localizer["PageHeading"]</h4>
+            <p class="text-muted small mb-0">
+                <strong>@Model.Title</strong> @Localizer["PageLead"]
+            </p>
         </div>
         <a class="btn btn-light border shadow-sm px-3"
            asp-area="Admin" asp-controller="Website" asp-action="Index"
            asp-route-slug="@slug" asp-route-culture="@Model.Culture"
            asp-route-page="@Model.Page" asp-route-conferenceId="@Model.ConferenceId">
-            <i class="fas fa-arrow-left me-2"></i> Listeye Dön
+            <i class="fas fa-arrow-left me-2"></i> @Localizer["BackToListButton"]
         </a>
     </div>
 
@@ -53,7 +73,7 @@
 
                         <div class="row g-4">
                             <div class="col-md-4">
-                                <label class="form-label fw-bold text-dark small" asp-for="Page">SAYFA (PAGE)</label>
+                                <label class="form-label fw-bold text-dark small" asp-for="Page">@Localizer["PageLabel"]</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-file-alt"></i></span>
                                     <input class="form-control bg-light border-start-0 ps-0 text-muted" asp-for="Page" readonly />
@@ -62,84 +82,81 @@
                             </div>
 
                             <div class="col-md-4">
-                                <label class="form-label fw-bold text-dark small" asp-for="Culture">DİL (CULTURE)</label>
+                                <label class="form-label fw-bold text-dark small" asp-for="Culture">@Localizer["CultureLabel"]</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-globe"></i></span>
-                                    <select class="form-select bg-light border-start-0 ps-0 text-muted" asp-for="Culture" disabled>
-                                        <option value="tr-TR">Türkçe (tr-TR)</option>
-                                        <option value="en-US">English (en-US)</option>
-                                    </select>
+                                    <select class="form-select bg-light border-start-0 ps-0 text-muted" asp-for="Culture" asp-items="cultureOptions" disabled></select>
                                     <input type="hidden" asp-for="Culture" />
                                 </div>
                             </div>
 
                             <div class="col-md-4">
-                                <label class="form-label fw-bold text-dark small" asp-for="BlockType">BLOK TİPİ</label>
+                                <label class="form-label fw-bold text-dark small" asp-for="BlockType">@Localizer["BlockTypeLabel"]</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0 text-warning"><i class="fas fa-cubes"></i></span>
-                                    <select class="form-select bg-light border-start-0 ps-0 fw-bold" id="BlockType" asp-for="BlockType" asp-items="Html.GetEnumSelectList<ConferencePageBlockType>()"></select>
+                                    <select class="form-select bg-light border-start-0 ps-0 fw-bold" id="BlockType" asp-for="BlockType" asp-items="blockTypeOptions"></select>
                                 </div>
                                 <span class="text-danger small mt-1" asp-validation-for="BlockType"></span>
                             </div>
 
                             <div class="col-md-12 mt-4">
-                                <h6 class="fw-bold border-bottom pb-2 mb-3 text-secondary">Metin İçerikleri</h6>
+                                <h6 class="fw-bold border-bottom pb-2 mb-3 text-secondary">@Localizer["TextContentHeader"]</h6>
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-dark small" asp-for="Title">BAŞLIK <span class="text-danger">*</span></label>
+                                <label class="form-label fw-bold text-dark small" asp-for="Title">@Localizer["TitleLabel"] <span class="text-danger">*</span></label>
                                 <input class="form-control" asp-for="Title" />
                                 <span class="text-danger small mt-1" asp-validation-for="Title"></span>
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-dark small" asp-for="Subtitle">ALT BAŞLIK / ÖZET</label>
+                                <label class="form-label fw-bold text-dark small" asp-for="Subtitle">@Localizer["SubtitleLabel"]</label>
                                 <input class="form-control" asp-for="Subtitle" />
                                 <span class="text-danger small mt-1" asp-validation-for="Subtitle"></span>
                             </div>
 
                             <div class="col-12 hero-fields" style="display: none;">
                                 <div class="card bg-warning bg-opacity-10 border-0 rounded-3 p-3 mt-2">
-                                    <h6 class="fw-bold text-warning mb-3"><i class="fas fa-star me-2"></i> Hero (Karşılama) Ayarları</h6>
+                                    <h6 class="fw-bold text-warning mb-3"><i class="fas fa-star me-2"></i> @Localizer["HeroSettingsHeader"]</h6>
                                     <div class="row g-3">
                                         <div class="col-md-6">
-                                            <label class="form-label fw-bold text-dark small">BUTON METNİ</label>
-                                            <input class="form-control bg-white" name="btnText" value="@btnText" placeholder="Örn: Hemen Kayıt Ol" />
+                                            <label class="form-label fw-bold text-dark small">@Localizer["HeroButtonTextLabel"]</label>
+                                            <input class="form-control bg-white" name="btnText" value="@btnText" placeholder="@Localizer["HeroButtonTextPlaceholder"]" />
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label fw-bold text-dark small">BUTON LİNKİ (URL)</label>
-                                            <input class="form-control bg-white" name="btnUrl" value="@btnUrl" placeholder="Örn: /kayit veya https://..." />
+                                            <label class="form-label fw-bold text-dark small">@Localizer["HeroButtonUrlLabel"]</label>
+                                            <input class="form-control bg-white" name="btnUrl" value="@btnUrl" placeholder="@Localizer["HeroButtonUrlPlaceholder"]" />
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label fw-bold text-dark small">ARKA PLAN RESMİ URL</label>
-                                            <input class="form-control bg-white" name="bgImage" value="@bgImage" placeholder="Örn: https://.../resim.jpg" />
+                                            <label class="form-label fw-bold text-dark small">@Localizer["HeroBackgroundImageLabel"]</label>
+                                            <input class="form-control bg-white" name="bgImage" value="@bgImage" placeholder="@Localizer["HeroBackgroundImagePlaceholder"]" />
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label fw-bold text-dark small">YAN GÖRSEL URL</label>
-                                            <input class="form-control bg-white" name="sideImage" value="@sideImage" placeholder="Örn: https://.../logo.png" />
+                                            <label class="form-label fw-bold text-dark small">@Localizer["HeroSideImageLabel"]</label>
+                                            <input class="form-control bg-white" name="sideImage" value="@sideImage" placeholder="@Localizer["HeroSideImagePlaceholder"]" />
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="col-md-12 mt-4">
-                                <h6 class="fw-bold border-bottom pb-2 mb-3 text-secondary">Görünüm Ayarları</h6>
+                                <h6 class="fw-bold border-bottom pb-2 mb-3 text-secondary">@Localizer["AppearanceHeader"]</h6>
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-dark small" asp-for="Order">SIRALAMA (ORDER)</label>
+                                <label class="form-label fw-bold text-dark small" asp-for="Order">@Localizer["OrderLabel"]</label>
                                 <div class="input-group w-50">
                                     <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-sort-numeric-down"></i></span>
                                     <input class="form-control bg-light border-start-0 ps-0 fw-bold" asp-for="Order" type="number" />
                                 </div>
-                                <div class="form-text text-muted small mt-1">Mevcut Sıra: @Model.Order</div>
+                                <div class="form-text text-muted small mt-1">@Localizer["CurrentOrderLabel"] @Model.Order</div>
                                 <span class="text-danger small mt-1" asp-validation-for="Order"></span>
                             </div>
 
                             <div class="col-md-6 d-flex align-items-center">
                                 <div class="form-check form-switch mt-3">
                                     <input class="form-check-input" type="checkbox" asp-for="IsActive" id="flexSwitchCheckChecked">
-                                    <label class="form-check-label fw-bold ms-2" for="flexSwitchCheckChecked">Bu Bloğu Sitede Aktif Olarak Göster</label>
+                                    <label class="form-check-label fw-bold ms-2" for="flexSwitchCheckChecked">@Localizer["IsActiveLabel"]</label>
                                 </div>
                             </div>
                         </div>
@@ -151,10 +168,10 @@
                                asp-area="Admin" asp-controller="Website" asp-action="Index"
                                asp-route-slug="@slug" asp-route-culture="@Model.Culture"
                                asp-route-page="@Model.Page" asp-route-conferenceId="@Model.ConferenceId">
-                                İptal Et
+                                @Localizer["CancelButton"]
                             </a>
                             <button class="btn btn-warning btn-lg rounded-3 fw-bold shadow-sm px-5 text-white" type="submit">
-                                <i class="fas fa-sync-alt me-2"></i> Değişiklikleri Güncelle
+                                <i class="fas fa-sync-alt me-2"></i> @Localizer["UpdateButton"]
                             </button>
                         </div>
                     </form>
@@ -170,23 +187,23 @@
                         <div class="bg-white bg-opacity-10 p-3 rounded-circle me-3">
                             <i class="fas fa-shield-alt fa-2x text-warning"></i>
                         </div>
-                        <h5 class="fw-bold mb-0">Düzenleme Modu</h5>
+                        <h5 class="fw-bold mb-0">@Localizer["EditModeTitle"]</h5>
                     </div>
 
                     <p class="text-light opacity-75 mb-4" style="line-height: 1.8;">
-                        Şu anda <strong>@Model.Page</strong> sayfasındaki bir bloğu düzenliyorsunuz. Yaptığınız değişiklikler kaydettiğiniz anda canlı siteye yansıyacaktır.
+                        @Localizer["EditModeLead_Part1"] <strong>@Model.Page</strong> @Localizer["EditModeLead_Part2"]
                     </p>
 
                     <div class="bg-white bg-opacity-10 rounded-3 p-3 mb-3">
-                        <small class="d-block text-warning fw-bold mb-1">DİKKAT EDİLECEK HUSUSLAR</small>
+                        <small class="d-block text-warning fw-bold mb-1">@Localizer["WarningsHeader"]</small>
                         <ul class="list-unstyled mb-0 small opacity-75">
-                            <li class="mb-2"><i class="fas fa-exclamation-circle text-warning me-2"></i> Görsel URL'lerinin çalışan ve güvenli (https) bir link olduğundan emin olun.</li>
-                            <li class="mb-2"><i class="fas fa-exclamation-circle text-warning me-2"></i> Dil ve Sayfa ayarları güvenlik nedeniyle düzenleme ekranında kilitlenmiştir.</li>
+                            <li class="mb-2"><i class="fas fa-exclamation-circle text-warning me-2"></i> @Localizer["WarningImageUrl"]</li>
+                            <li class="mb-2"><i class="fas fa-exclamation-circle text-warning me-2"></i> @Localizer["WarningLockedFields"]</li>
                         </ul>
                     </div>
 
                     <div class="mt-auto pt-3 border-top border-secondary">
-                        <small class="text-muted d-block">SİSTEM ID</small>
+                        <small class="text-muted d-block">@Localizer["SystemIdLabel"]</small>
                         <code class="text-warning">@Model.Id</code>
                     </div>
                 </div>
@@ -230,13 +247,13 @@
             var heroFields = document.querySelectorAll(".hero-fields");
 
             function toggleFields() {
-                var selectedText = typeSelect.options[typeSelect.selectedIndex].text;
-                var isHero = selectedText.includes("Hero");
+                var selectedValue = typeSelect.value;
+                var isHero = selectedValue === "Hero";
 
                 heroFields.forEach(f => {
-                    if(isHero){
+                    if (isHero) {
                         f.style.display = "block";
-                        f.classList.add("animate__animated", "animate__fadeInIn");
+                        f.classList.add("animate__animated", "animate__fadeIn");
                     } else {
                         f.style.display = "none";
                     }

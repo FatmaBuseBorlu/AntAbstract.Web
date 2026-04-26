@@ -1,6 +1,7 @@
 ﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
 @using System.Text.Json
 @using AntAbstract.Web.Models.WebsiteBlocks
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     AboutBlockContent? content = null;
@@ -9,7 +10,9 @@
     {
         try
         {
-            content = JsonSerializer.Deserialize<AboutBlockContent>(Model.ContentJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            content = JsonSerializer.Deserialize<AboutBlockContent>(
+                Model.ContentJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         }
         catch { }
     }
@@ -38,12 +41,15 @@
                     }
                     else
                     {
-                        <p class="text-muted"><em>İçerik henüz girilmedi.</em></p>
+                        <p class="text-muted"><em>@Localizer["EmptyContentMessage"]</em></p>
                     }
                 </div>
             </div>
             <div class="col-md-5 text-center">
-                <img src="@content.ImageUrl" class="img-fluid rounded-4 shadow-sm border p-1" alt="@Model.Title" style="max-height: 250px; object-fit: cover;" />
+                <img src="@content.ImageUrl"
+                     class="img-fluid rounded-4 shadow-sm border p-1"
+                     alt="@Model.Title"
+                     style="max-height: 250px; object-fit: cover;" />
             </div>
         }
         else
@@ -56,7 +62,7 @@
                     }
                     else
                     {
-                        <p class="text-muted"><em>İçerik henüz girilmedi.</em></p>
+                        <p class="text-muted"><em>@Localizer["EmptyContentMessage"]</em></p>
                     }
                 </div>
             </div>

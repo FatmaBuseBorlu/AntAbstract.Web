@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -16,15 +17,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly AppDbContext _context;
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IStringLocalizer<ConferenceContextController> _localizer;
 
         public ConferenceContextController(
             AppDbContext context,
             ISelectedConferenceService selectedConferenceService,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IStringLocalizer<ConferenceContextController> localizer)
         {
             _context = context;
             _selectedConferenceService = selectedConferenceService;
             _userManager = userManager;
+            _localizer = localizer;
         }
 
         [HttpGet("/Admin/SelectConference")]
@@ -69,10 +73,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var vm = new SelectConferenceViewModel
             {
-                Title = string.IsNullOrWhiteSpace(title) ? "Kongre Seç" : title,
-                Lead = string.IsNullOrWhiteSpace(lead) ? "Devam etmek için bir kongre seçin." : lead,
+                Title = string.IsNullOrWhiteSpace(title) ? _localizer["SelectConference_Title"] : title,
+                Lead = string.IsNullOrWhiteSpace(lead) ? _localizer["SelectConference_Lead"] : lead,
                 PostUrl = "/Admin/SelectConference",
-                SubmitText = "Devam Et",
+                SubmitText = _localizer["SelectConference_Submit"],
                 Conferences = conferences,
                 ReturnUrl = returnUrl
             };
@@ -91,7 +95,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                TempData["ErrorMessage"] = _localizer["Error_ConferenceNotFound"];
                 return RedirectToAction(nameof(SelectConference), new { returnUrl, title, lead });
             }
 

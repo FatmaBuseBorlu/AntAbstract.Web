@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,12 +22,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
+        private readonly IStringLocalizer<PageBlocksController> _localizer;
 
-        public PageBlocksController(AppDbContext context, TenantContext tenantContext, ISelectedConferenceService selectedConferenceService)
+        public PageBlocksController(
+            AppDbContext context,
+            TenantContext tenantContext,
+            ISelectedConferenceService selectedConferenceService,
+            IStringLocalizer<PageBlocksController> localizer)
         {
             _context = context;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
+            _localizer = localizer;
         }
 
         [HttpGet("/{slug}/Admin/PageBlocks")]
@@ -35,7 +42,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var confId = _selectedConferenceService.GetSelectedConferenceId();
             if (confId == null)
             {
-                TempData["ErrorMessage"] = "Lütfen önce bir kongre seçin.";
+                TempData["ErrorMessage"] = _localizer["Error_SelectConferenceFirst"];
                 return Redirect($"/{slug}/Admin/Submissions");
             }
 
@@ -44,7 +51,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .OrderBy(b => b.Order)
                 .ToListAsync();
 
-            
             var academicTemplate = new List<(ConferencePageBlockType Type, string Title, int Order)>
             {
                 (ConferencePageBlockType.Hero, "Ana Karşılama (Hero)", 1),
@@ -68,7 +74,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         TenantId = _tenantContext.Current.Id,
                         BlockType = item.Type,
                         Title = item.Title,
-                        IsActive = true, 
+                        IsActive = true,
                         Order = item.Order,
                         CreatedAt = DateTime.UtcNow
                     };
@@ -94,7 +100,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var block = await _context.ConferencePageBlocks
                 .FirstOrDefaultAsync(b => b.Id == id && b.TenantId == _tenantContext.Current.Id);
 
-            if (block == null) return NotFound("Blok bulunamadı veya yetkiniz yok.");
+            if (block == null)
+                return NotFound(_localizer["Error_BlockNotFoundOrUnauthorized"]);
 
             ViewBag.BlockType = block.BlockType;
 
@@ -129,7 +136,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Blok başarıyla güncellendi!";
+            TempData["SuccessMessage"] = _localizer["Success_BlockUpdated"];
 
             return Redirect($"/{slug}/Admin/PageBlocks");
         }

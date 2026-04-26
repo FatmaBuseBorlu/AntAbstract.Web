@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -20,12 +21,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IStringLocalizer<TenantsController> _localizer;
 
-        public TenantsController(AppDbContext context, UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager)
+        public TenantsController(
+            AppDbContext context,
+            UserManager<AppUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            IStringLocalizer<TenantsController> localizer)
         {
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
+            _localizer = localizer;
         }
 
         public async Task<IActionResult> Index()
@@ -33,6 +40,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var tenants = _context.Tenants
                 .Include(t => t.ScientificField)
                 .Include(t => t.CongressType);
+
             return View(await tenants.ToListAsync());
         }
 
@@ -71,14 +79,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 var slugExists = await _context.Tenants.AnyAsync(x => x.Slug.ToLower() == tenant.Slug.ToLower());
                 if (slugExists)
                 {
-                    ModelState.AddModelError("Slug", "Bu adres (Slug) zaten kullanılıyor. Lütfen benzersiz bir link belirleyin.");
+                    ModelState.AddModelError("Slug", _localizer["Error_SlugAlreadyExists"].Value);
                 }
                 else
                 {
                     tenant.Id = Guid.NewGuid();
                     _context.Add(tenant);
                     await _context.SaveChangesAsync();
-                    TempData["SuccessMessage"] = "Yeni kurum başarıyla eklendi!";
+                    TempData["SuccessMessage"] = _localizer["Success_TenantCreated"].Value;
                     return RedirectToAction(nameof(Index));
                 }
             }
@@ -116,7 +124,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 var slugExists = await _context.Tenants.AnyAsync(x => x.Slug.ToLower() == tenant.Slug.ToLower() && x.Id != tenant.Id);
                 if (slugExists)
                 {
-                    ModelState.AddModelError("Slug", "Bu adres (Slug) zaten kullanılıyor. Lütfen benzersiz bir link belirleyin.");
+                    ModelState.AddModelError("Slug", _localizer["Error_SlugAlreadyExists"].Value);
                 }
                 else
                 {
@@ -124,13 +132,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     {
                         _context.Update(tenant);
                         await _context.SaveChangesAsync();
-                        TempData["SuccessMessage"] = "Kurum bilgileri güncellendi!";
+                        TempData["SuccessMessage"] = _localizer["Success_TenantUpdated"].Value;
                     }
                     catch (DbUpdateConcurrencyException)
                     {
                         if (!TenantExists(tenant.Id)) return NotFound();
                         else throw;
                     }
+
                     return RedirectToAction(nameof(Index));
                 }
             }
@@ -139,7 +148,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ViewBag.CongressTypeId = new SelectList(_context.CongressTypes.OrderBy(c => c.Name), "Id", "Name", tenant.CongressTypeId);
             return View(tenant);
         }
-
 
         public async Task<IActionResult> Delete(Guid? id)
         {
@@ -164,8 +172,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 _context.Tenants.Remove(tenant);
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Kurum başarıyla silindi!";
+                TempData["SuccessMessage"] = _localizer["Success_TenantDeleted"].Value;
             }
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -173,7 +182,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             return _context.Tenants.Any(e => e.Id == id);
         }
-
 
         [HttpGet]
         public async Task<IActionResult> AssignManager(Guid id)
@@ -202,7 +210,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var existingUser = await _userManager.FindByEmailAsync(model.Email);
             if (existingUser != null)
             {
-                ModelState.AddModelError("Email", "Bu e-posta adresi sistemde zaten kayıtlı!");
+                ModelState.AddModelError("Email", _localizer["Error_EmailAlreadyRegistered"].Value);
                 model.TenantName = tenant.Name;
                 return View(model);
             }
@@ -228,7 +236,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                 await _userManager.AddToRoleAsync(user, "Organizator");
 
-                TempData["SuccessMessage"] = $"{tenant.Name} için {model.FirstName} {model.LastName} başarıyla yönetici olarak atandı!";
+                TempData["SuccessMessage"] = _localizer["Success_ManagerAssigned", tenant.Name, model.FirstName, model.LastName].Value;
                 return RedirectToAction(nameof(Index));
             }
 
@@ -269,13 +277,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (ModelState.IsValid)
             {
                 conference.Id = Guid.NewGuid();
-                conference.TenantId = id; 
+                conference.TenantId = id;
 
                 _context.Conferences.Add(conference);
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = $"{tenant.Name} kurumuna yeni kongre başarıyla eklendi!";
-                return RedirectToAction(nameof(Details), new { id = id }); 
+                TempData["SuccessMessage"] = _localizer["Success_ConferenceAddedToTenant", tenant.Name].Value;
+                return RedirectToAction(nameof(Details), new { id = id });
             }
 
             ViewBag.TenantId = tenant.Id;

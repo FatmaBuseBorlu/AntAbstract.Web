@@ -1,13 +1,17 @@
 ﻿@using Microsoft.AspNetCore.Identity
 @using AntAbstract.Domain.Entities
 @inject UserManager<AppUser> UserManager
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model AntAbstract.Domain.Entities.Conference
 
 @{
     Layout = "_Layout";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
+
     var slug = ViewContext.RouteData.Values["slug"];
     var user = await UserManager.GetUserAsync(User);
     var backUrl = ViewBag.BackUrl as string;
+
     if (string.IsNullOrEmpty(backUrl))
     {
         backUrl = "/";
@@ -99,12 +103,12 @@
             <div class="d-flex align-items-center justify-content-center mb-4">
                 <div class="text-center">
                     <div class="step active">1</div>
-                    <small class="fw-bold mt-1 d-block text-primary">Kayıt Onayı</small>
+                    <small class="fw-bold mt-1 d-block text-primary">@Localizer["Step1Label"]</small>
                 </div>
                 <div class="step-line"></div>
                 <div class="text-center">
                     <div class="step">2</div>
-                    <small class="fw-bold mt-1 d-block text-muted">Ödeme</small>
+                    <small class="fw-bold mt-1 d-block text-muted">@Localizer["Step2Label"]</small>
                 </div>
             </div>
         </div>
@@ -114,8 +118,8 @@
         <div class="col-md-8 col-lg-6">
             <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
                 <div class="card-header bg-white p-4 text-center border-bottom">
-                    <h4 class="fw-bold text-dark mb-1">Kongre Kayıt Onayı</h4>
-                    <p class="text-muted small mb-0">Lütfen bilgilerinizi kontrol edip onaylayın</p>
+                    <h4 class="fw-bold text-dark mb-1">@Localizer["HeaderTitle"]</h4>
+                    <p class="text-muted small mb-0">@Localizer["HeaderDescription"]</p>
                 </div>
 
                 <div class="card-body p-4 p-md-5">
@@ -125,12 +129,12 @@
                         <h5 class="fw-bold text-dark">@Model.Title</h5>
                         <div class="d-flex justify-content-center gap-3 text-muted small mt-2">
                             <span><i class="fas fa-calendar-alt me-1"></i> @Model.StartDate.ToString("dd MMMM yyyy")</span>
-                            <span><i class="fas fa-map-marker-alt me-1"></i> @(Model.City ?? "Online")</span>
+                            <span><i class="fas fa-map-marker-alt me-1"></i> @(Model.City ?? Localizer["OnlineText"].Value)</span>
                         </div>
                     </div>
 
                     <div class="summary-card p-3 mb-4">
-                        <label class="small text-muted fw-bold text-uppercase mb-2">Kayıt Yapılacak Hesap</label>
+                        <label class="small text-muted fw-bold text-uppercase mb-2">@Localizer["AccountSummaryLabel"]</label>
                         <div class="user-profile-mini">
                             <div class="avatar-circle">
                                 @(user?.UserName?.Substring(0, 1).ToUpper() ?? "U")
@@ -145,8 +149,8 @@
 
                     <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
                         <div>
-                            <span class="fw-bold text-dark">Katılım Ücreti</span>
-                            <div class="small text-muted">Standart Katılım Bedeli</div>
+                            <span class="fw-bold text-dark">@Localizer["ParticipationFeeLabel"]</span>
+                            <div class="small text-muted">@Localizer["StandardParticipationText"]</div>
                         </div>
                         <div class="fs-4 fw-bold text-primary">
                             @ViewBag.Price @ViewBag.Currency
@@ -154,30 +158,32 @@
                     </div>
 
                     <form asp-action="Create" asp-route-slug="@slug" method="post">
+                        @Html.AntiForgeryToken()
                         <input type="hidden" name="conferenceId" value="@Model.Id" />
 
                         <div class="form-check bg-light p-3 rounded border mb-4">
                             <input class="form-check-input mt-1" type="checkbox" id="termsCheck" required style="cursor: pointer;">
                             <label class="form-check-label small text-muted lh-sm ms-2" for="termsCheck" style="cursor: pointer;">
                                 <a href="#" class="terms-link fw-bold" data-bs-toggle="modal" data-bs-target="#termsModal">
-                                    Katılım ve İptal Koşulları
-                                </a>'nı okudum, kişisel verilerimin işlenmesini kabul ediyorum ve kaydımı onaylıyorum.
+                                    @Localizer["TermsLinkText"]
+                                </a>
+                                @Localizer["TermsApprovalText"]
                             </label>
                         </div>
 
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary btn-lg py-3 fw-bold shadow-sm" style="background-color: #00aeef; border: none;">
-                                <span>KAYDI TAMAMLA</span> <i class="fas fa-arrow-right ms-2"></i>
+                                <span>@Localizer["CompleteRegistrationButton"]</span> <i class="fas fa-arrow-right ms-2"></i>
                             </button>
 
-                            <a href="@backUrl" class="btn btn-link text-muted text-decoration-none btn-sm">Vazgeç ve Geri Dön</a>
+                            <a href="@backUrl" class="btn btn-link text-muted text-decoration-none btn-sm">@Localizer["CancelAndGoBackButton"]</a>
                         </div>
                     </form>
                 </div>
             </div>
 
             <div class="text-center mt-4 text-muted small">
-                <i class="fas fa-lock me-1"></i> Tüm işlemleriniz 256-bit SSL ile korunmaktadır.
+                <i class="fas fa-lock me-1"></i> @Localizer["SslInfoText"]
             </div>
 
         </div>
@@ -190,43 +196,39 @@
 
             <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
                 <h5 class="modal-title fw-bold text-dark" id="termsModalLabel">
-                    <i class="fas fa-file-contract me-2 text-primary"></i>Katılım ve İptal Koşulları
+                    <i class="fas fa-file-contract me-2 text-primary"></i>@Localizer["TermsModalTitle"]
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@Localizer["CloseButton"]"></button>
             </div>
 
             <div class="modal-body p-4 text-secondary" style="font-size: 0.9rem; line-height: 1.7;">
-                <h6 class="fw-bold text-dark mt-2">1. Taraflar</h6>
-                <p>İşbu sözleşme, <strong>AntAbstract</strong> (Hizmet Sağlayıcı) ile Kongre Katılımcısı (Kullanıcı) arasında akdedilmiştir.</p>
+                <h6 class="fw-bold text-dark mt-2">@Localizer["Section1Title"]</h6>
+                <p>@Localizer["Section1Text_Part1"] <strong>AntAbstract</strong> @Localizer["Section1Text_Part2"]</p>
 
-                <h6 class="fw-bold text-dark mt-3">2. Hizmetin Kapsamı</h6>
-                <p>Kullanıcı, işbu form ile seçmiş olduğu kongreye kayıt olmayı, belirlenen katılım ücretini ödemeyi ve kongre kurallarına uymayı taahhüt eder.</p>
+                <h6 class="fw-bold text-dark mt-3">@Localizer["Section2Title"]</h6>
+                <p>@Localizer["Section2Text"]</p>
 
-                <h6 class="fw-bold text-dark mt-3">3. İptal ve İade Koşulları</h6>
+                <h6 class="fw-bold text-dark mt-3">@Localizer["Section3Title"]</h6>
                 <div class="bg-light p-3 rounded-3 border mb-2">
                     <ul class="mb-0 ps-3">
-                        <li>Kongre tarihine <strong>30 gün kala</strong> yapılan iptallerde ücretin %100'ü iade edilir.</li>
-                        <li>Kongre tarihine <strong>15 gün kala</strong> yapılan iptallerde ücretin %50'si iade edilir.</li>
-                        <li>Son 15 gün içerisinde yapılan iptallerde <strong>iade yapılmamaktadır.</strong></li>
+                        <li>@Localizer["RefundRule1_Part1"] <strong>@Localizer["RefundRule1_Highlight"]</strong> @Localizer["RefundRule1_Part2"]</li>
+                        <li>@Localizer["RefundRule2_Part1"] <strong>@Localizer["RefundRule2_Highlight"]</strong> @Localizer["RefundRule2_Part2"]</li>
+                        <li>@Localizer["RefundRule3_Part1"] <strong>@Localizer["RefundRule3_Highlight"]</strong></li>
                     </ul>
                 </div>
 
-                <h6 class="fw-bold text-dark mt-3">4. KVKK Aydınlatma Metni</h6>
-                <p>
-                    6698 sayılı Kişisel Verilerin Korunması Kanunu uyarınca, kimlik, iletişim ve ödeme bilgileriniz;
-                    kongre kaydının oluşturulması, fatura kesilmesi ve iletişim faaliyetlerinin yürütülmesi amacıyla işlenmektedir.
-                    Verileriniz yasal zorunluluklar haricinde üçüncü kişilerle paylaşılmamaktadır.
-                </p>
+                <h6 class="fw-bold text-dark mt-3">@Localizer["Section4Title"]</h6>
+                <p>@Localizer["Section4Text"]</p>
 
                 <p class="small text-muted fst-italic mt-4 border-top pt-2">
-                    * Bu metin bilgilendirme amaçlıdır. Onaylayarak tüm koşulları kabul etmiş sayılırsınız.
+                    @Localizer["InfoNoteText"]
                 </p>
             </div>
 
             <div class="modal-footer border-top-0 px-4 pb-4">
-                <button type="button" class="btn btn-light fw-bold rounded-pill px-4" data-bs-dismiss="modal">Kapat</button>
+                <button type="button" class="btn btn-light fw-bold rounded-pill px-4" data-bs-dismiss="modal">@Localizer["CloseButton"]</button>
                 <button type="button" class="btn btn-primary fw-bold rounded-pill px-4" onclick="acceptTerms()">
-                    <i class="fas fa-check-circle me-2"></i> Okudum, Kabul Ediyorum
+                    <i class="fas fa-check-circle me-2"></i> @Localizer["AcceptTermsButton"]
                 </button>
             </div>
 
@@ -237,9 +239,9 @@
 <script>
     function acceptTerms() {
         var checkbox = document.getElementById('termsCheck');
-        if(checkbox) {
+        if (checkbox) {
             checkbox.checked = true;
-            checkbox.focus(); 
+            checkbox.focus();
         }
 
         var modalEl = document.getElementById('termsModal');

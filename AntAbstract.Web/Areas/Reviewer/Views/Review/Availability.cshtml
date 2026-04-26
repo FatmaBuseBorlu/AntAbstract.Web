@@ -1,5 +1,7 @@
-﻿@{
-    ViewData["Title"] = "Müsaitlik Durumu";
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
+@{
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 }
 
@@ -8,25 +10,31 @@
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm rounded-4 h-100">
                 <div class="card-header bg-white py-3 px-4 border-bottom-0">
-                    <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-calendar-plus text-danger me-2"></i> İzin Oluştur</h5>
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="fas fa-calendar-plus text-danger me-2"></i> @Localizer["CreateLeaveTitle"]
+                    </h5>
                 </div>
                 <div class="card-body p-4 pt-0">
-                    <p class="text-muted small mb-4">Müsait olmadığınız tarih aralıklarını belirtirseniz, bu tarihlerde size görev ataması yapılmayacaktır.</p>
+                    <p class="text-muted small mb-4">@Localizer["CreateLeaveDescription"]</p>
+
                     <form>
                         <div class="mb-3">
-                            <label class="form-label fw-bold small text-secondary">Başlangıç Tarihi</label>
+                            <label class="form-label fw-bold small text-secondary">@Localizer["StartDateLabel"]</label>
                             <input type="date" class="form-control bg-light border-0 py-2">
                         </div>
+
                         <div class="mb-3">
-                            <label class="form-label fw-bold small text-secondary">Bitiş Tarihi</label>
+                            <label class="form-label fw-bold small text-secondary">@Localizer["EndDateLabel"]</label>
                             <input type="date" class="form-control bg-light border-0 py-2">
                         </div>
+
                         <div class="mb-4">
-                            <label class="form-label fw-bold small text-secondary">Sebep (Opsiyonel)</label>
-                            <input type="text" class="form-control bg-light border-0 py-2" placeholder="Yıllık İzin, Konferans vb.">
+                            <label class="form-label fw-bold small text-secondary">@Localizer["ReasonOptionalLabel"]</label>
+                            <input type="text" class="form-control bg-light border-0 py-2" placeholder="@Localizer["ReasonPlaceholder"]">
                         </div>
+
                         <button class="btn btn-danger w-100 rounded-pill fw-bold py-2 shadow-sm">
-                            <i class="fas fa-check-circle me-2"></i> İzin Kaydet
+                            <i class="fas fa-check-circle me-2"></i> @Localizer["SaveLeaveButton"]
                         </button>
                     </form>
                 </div>
@@ -36,24 +44,33 @@
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm rounded-4 h-100">
                 <div class="card-header bg-white py-3 px-4 border-bottom">
-                    <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-history text-secondary me-2"></i> İzin Geçmişi</h5>
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="fas fa-history text-secondary me-2"></i> @Localizer["LeaveHistoryTitle"]
+                    </h5>
                 </div>
+
                 <div class="card-body p-0">
                     <div class="list-group list-group-flush">
                         <div class="list-group-item p-4 d-flex justify-content-between align-items-center bg-danger bg-opacity-10 border-start border-4 border-danger">
                             <div>
-                                <span class="badge bg-danger mb-2">Gelecek Plan</span>
+                                <span class="badge bg-danger mb-2">@Localizer["UpcomingPlanBadge"]</span>
                                 <h6 class="fw-bold mb-1 text-dark">15 Ocak 2026 - 20 Ocak 2026</h6>
-                                <small class="text-danger fw-bold"><i class="fas fa-plane me-1"></i> Akademik Konferans Katılımı</small>
+                                <small class="text-danger fw-bold">
+                                    <i class="fas fa-plane me-1"></i> @Localizer["UpcomingPlanReason"]
+                                </small>
                             </div>
-                            <button class="btn btn-sm btn-white border shadow-sm text-danger" title="İptal Et"><i class="fas fa-times"></i></button>
+                            <button class="btn btn-sm btn-white border shadow-sm text-danger" title="@Localizer["CancelTitle"]">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
 
                         <div class="list-group-item p-4 d-flex justify-content-between align-items-center">
                             <div>
-                                <span class="badge bg-secondary mb-2 bg-opacity-25 text-secondary border border-secondary border-opacity-25">Tamamlandı</span>
+                                <span class="badge bg-secondary mb-2 bg-opacity-25 text-secondary border border-secondary border-opacity-25">
+                                    @Localizer["CompletedBadge"]
+                                </span>
                                 <h6 class="fw-bold mb-1 text-muted text-decoration-line-through">10 Aralık 2025 - 15 Aralık 2025</h6>
-                                <small class="text-muted">Sağlık Nedeniyle</small>
+                                <small class="text-muted">@Localizer["CompletedReason"]</small>
                             </div>
                             <i class="fas fa-check-circle text-success fs-4 opacity-50"></i>
                         </div>

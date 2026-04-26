@@ -1,8 +1,9 @@
 ﻿@using AntAbstract.Application.DTOs.Review
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model List<ReviewAssignmentDto>
 
 @{
-    ViewData["Title"] = "Hakem Paneli";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
     var pendingList = Model.Where(x => !x.IsReviewed).OrderBy(x => x.AssignedDate).ToList();
@@ -41,7 +42,7 @@
         height: 100%;
         display: flex;
         flex-direction: column;
-        border-left: 5px solid #f59e0b; 
+        border-left: 5px solid #f59e0b;
         position: relative;
     }
 
@@ -85,21 +86,23 @@
 
     <div class="row align-items-center mb-5">
         <div class="col-md-6 mb-3 mb-md-0">
-            <h3 class="fw-bold text-dark mb-1"><i class="fas fa-gavel text-primary me-2"></i>Hakem Paneli</h3>
-            <p class="text-muted small mb-0">Bilimsel kaliteyi artırmak için katkılarınız değerlidir.</p>
+            <h3 class="fw-bold text-dark mb-1">
+                <i class="fas fa-gavel text-primary me-2"></i>@Localizer["PageHeading"]
+            </h3>
+            <p class="text-muted small mb-0">@Localizer["PageDescription"]</p>
         </div>
         <div class="col-md-6">
             <div class="d-flex gap-3 justify-content-md-end flex-wrap">
                 <div class="stat-box">
                     <div>
-                        <h6 class="text-muted small fw-bold mb-0 text-uppercase">Bekleyen</h6>
+                        <h6 class="text-muted small fw-bold mb-0 text-uppercase">@Localizer["PendingCountLabel"]</h6>
                         <h3 class="fw-bold text-warning mb-0">@pendingList.Count</h3>
                     </div>
                     <div class="stat-icon bg-warning bg-opacity-10 text-warning"><i class="fas fa-hourglass-half"></i></div>
                 </div>
                 <div class="stat-box">
                     <div>
-                        <h6 class="text-muted small fw-bold mb-0 text-uppercase">Tamamlanan</h6>
+                        <h6 class="text-muted small fw-bold mb-0 text-uppercase">@Localizer["CompletedCountLabel"]</h6>
                         <h3 class="fw-bold text-success mb-0">@completedList.Count</h3>
                     </div>
                     <div class="stat-icon bg-success bg-opacity-10 text-success"><i class="fas fa-check-circle"></i></div>
@@ -111,12 +114,12 @@
     <ul class="nav nav-pills nav-pills-custom mb-4" id="reviewTabs" role="tablist">
         <li class="nav-item">
             <button class="nav-link active me-2" id="pending-tab" data-bs-toggle="pill" data-bs-target="#pending" type="button">
-                <i class="fas fa-clock me-2"></i> Değerlendirme Bekleyenler
+                <i class="fas fa-clock me-2"></i> @Localizer["PendingTabTitle"]
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link" id="completed-tab" data-bs-toggle="pill" data-bs-target="#completed" type="button">
-                <i class="fas fa-history me-2"></i> Geçmiş Değerlendirmeler
+                <i class="fas fa-history me-2"></i> @Localizer["CompletedTabTitle"]
             </button>
         </li>
     </ul>
@@ -145,9 +148,14 @@
 
                                 <div class="mt-auto d-flex gap-2">
                                     <a asp-area="" asp-controller="Review" asp-action="Evaluate" asp-route-id="@item.Id" class="btn btn-primary btn-sm flex-grow-1 fw-bold shadow-sm rounded-pill py-2">
-                                        <i class="fas fa-play me-2"></i> Değerlendir
+                                        <i class="fas fa-play me-2"></i> @Localizer["EvaluateButton"]
                                     </a>
-                                    <button type="button" onclick="openDeclineModal('@item.Id')" class="btn btn-outline-danger btn-sm rounded-circle shadow-sm" style="width: 38px; height: 38px;" title="Görevi Reddet / İade Et" data-bs-toggle="tooltip">
+                                    <button type="button"
+                                            onclick="openDeclineModal('@item.Id')"
+                                            class="btn btn-outline-danger btn-sm rounded-circle shadow-sm"
+                                            style="width: 38px; height: 38px;"
+                                            title="@Localizer["DeclineTaskTitle"]"
+                                            data-bs-toggle="tooltip">
                                         <i class="fas fa-ban"></i>
                                     </button>
                                 </div>
@@ -162,8 +170,8 @@
                     <div class="bg-light rounded-circle d-inline-flex p-4 mb-3">
                         <i class="fas fa-clipboard-check fa-3x text-muted opacity-25"></i>
                     </div>
-                    <h5 class="fw-bold text-dark">Harika! Bekleyen işiniz yok.</h5>
-                    <p class="text-muted small">Şu an için size atanan tüm değerlendirmeleri tamamladınız.</p>
+                    <h5 class="fw-bold text-dark">@Localizer["NoPendingTitle"]</h5>
+                    <p class="text-muted small">@Localizer["NoPendingDescription"]</p>
                 </div>
             }
         </div>
@@ -173,7 +181,7 @@
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
                 <div class="card-header bg-white py-3 px-4 border-bottom border-light">
                     <h6 class="fw-bold mb-0 text-secondary d-flex align-items-center">
-                        <i class="fas fa-history text-primary me-2 opacity-50"></i> Değerlendirme Geçmişi
+                        <i class="fas fa-history text-primary me-2 opacity-50"></i> @Localizer["CompletedHistoryHeader"]
                     </h6>
                 </div>
 
@@ -181,11 +189,11 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light">
                             <tr>
-                                <th class="py-3 px-4 text-muted small text-uppercase fw-bold" style="width: 40%;">Bildiri Bilgisi</th>
-                                <th class="py-3 text-muted small text-uppercase fw-bold">Tarih</th>
-                                <th class="py-3 text-center text-muted small text-uppercase fw-bold">Puan</th>
-                                <th class="py-3 text-center text-muted small text-uppercase fw-bold">Karar</th>
-                                <th class="py-3 px-4 text-end text-muted small text-uppercase fw-bold">İşlemler</th>
+                                <th class="py-3 px-4 text-muted small text-uppercase fw-bold" style="width: 40%;">@Localizer["TableSubmissionInfo"]</th>
+                                <th class="py-3 text-muted small text-uppercase fw-bold">@Localizer["TableDate"]</th>
+                                <th class="py-3 text-center text-muted small text-uppercase fw-bold">@Localizer["TableScore"]</th>
+                                <th class="py-3 text-center text-muted small text-uppercase fw-bold">@Localizer["TableDecision"]</th>
+                                <th class="py-3 px-4 text-end text-muted small text-uppercase fw-bold">@Localizer["TableActions"]</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -222,12 +230,10 @@
                                             }
                                             else if (item.Score >= 50)
                                             {
-
                                                 <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3 py-2">@item.Score</span>
                                             }
                                             else
                                             {
-
                                                 <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-2">@item.Score</span>
                                             }
                                         </td>
@@ -235,19 +241,19 @@
                                             @if (item.Recommendation == "Accept")
                                             {
                                                 <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2">
-                                                    <i class="fas fa-check-circle me-1"></i> Kabul
+                                                    <i class="fas fa-check-circle me-1"></i> @Localizer["DecisionAccept"]
                                                 </span>
                                             }
                                             else if (item.Recommendation == "Reject")
                                             {
                                                 <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-2">
-                                                    <i class="fas fa-times-circle me-1"></i> Red
+                                                    <i class="fas fa-times-circle me-1"></i> @Localizer["DecisionReject"]
                                                 </span>
                                             }
                                             else if (!string.IsNullOrEmpty(item.Recommendation) && item.Recommendation.Contains("Revision"))
                                             {
                                                 <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill px-3 py-2">
-                                                    <i class="fas fa-tools me-1"></i> Düzeltme
+                                                    <i class="fas fa-tools me-1"></i> @Localizer["DecisionRevision"]
                                                 </span>
                                             }
                                             else
@@ -260,9 +266,12 @@
                                         <td class="text-end px-4">
                                             <div class="d-flex justify-content-end gap-2">
                                                 <a href="@Url.Action("DownloadCertificate", "Review", new { area = "", id = item.Id })" target="_blank" class="btn btn-outline-dark btn-sm rounded-pill fw-bold px-3 shadow-sm">
-                                                    <i class="fas fa-certificate text-warning me-1"></i> Belge
+                                                    <i class="fas fa-certificate text-warning me-1"></i> @Localizer["CertificateButton"]
                                                 </a>
-                                                <a href="@Url.Action("Evaluate", "Review", new { area = "", id = item.Id })" class="btn btn-light text-muted btn-sm rounded-circle border shadow-sm" title="Detayları İncele" data-bs-toggle="tooltip">
+                                                <a href="@Url.Action("Evaluate", "Review", new { area = "", id = item.Id })"
+                                                   class="btn btn-light text-muted btn-sm rounded-circle border shadow-sm"
+                                                   title="@Localizer["ViewDetailsTitle"]"
+                                                   data-bs-toggle="tooltip">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                             </div>
@@ -275,7 +284,7 @@
                                 <tr>
                                     <td colspan="5" class="text-center py-5">
                                         <div class="text-muted opacity-50 mb-2"><i class="fas fa-inbox fa-3x"></i></div>
-                                        <p class="small fw-bold text-muted mb-0">Henüz tamamlanmış bir değerlendirme kaydı bulunmuyor.</p>
+                                        <p class="small fw-bold text-muted mb-0">@Localizer["NoCompletedReviewsMessage"]</p>
                                     </td>
                                 </tr>
                             }
@@ -293,28 +302,30 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="fw-bold text-danger"><i class="fas fa-exclamation-circle me-2"></i> Görevi İade Et</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="fw-bold text-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i> @Localizer["DeclineModalTitle"]
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@Localizer["CloseAriaLabel"]"></button>
             </div>
 
             <form asp-area="" asp-controller="Review" asp-action="DeclineAssignment" method="post">
+                @Html.AntiForgeryToken()
                 <div class="modal-body pt-3">
                     <input type="hidden" name="id" id="declineAssignmentId" />
 
                     <p class="text-muted small mb-4">
-                        Bu bildiriyi değerlendiremeyeceğinizi belirtmek üzeresiniz.
-                        Lütfen yöneticiye yardımcı olmak için bir sebep seçiniz.
+                        @Localizer["DeclineModalDescription"]
                     </p>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold small text-uppercase text-muted">Reddetme Nedeni</label>
+                        <label class="form-label fw-bold small text-uppercase text-muted">@Localizer["DeclineReasonLabel"]</label>
                         <div class="d-grid gap-2">
                             <input type="radio" class="btn-check" name="Reason" id="reason1" value="ConflictOfInterest" required>
                             <label class="btn btn-outline-light text-dark text-start border shadow-sm p-3 d-flex align-items-center rounded-3" for="reason1">
                                 <i class="fas fa-handshake-slash text-danger me-3 fs-5"></i>
                                 <div>
-                                    <span class="d-block fw-bold" style="font-size: 0.9rem;">Çıkar Çatışması</span>
-                                    <small class="text-muted" style="font-size: 0.75rem;">Yazarı tanıyorum veya çalışmada adım geçiyor.</small>
+                                    <span class="d-block fw-bold" style="font-size: 0.9rem;">@Localizer["ReasonConflictTitle"]</span>
+                                    <small class="text-muted" style="font-size: 0.75rem;">@Localizer["ReasonConflictText"]</small>
                                 </div>
                             </label>
 
@@ -322,8 +333,8 @@
                             <label class="btn btn-outline-light text-dark text-start border shadow-sm p-3 d-flex align-items-center rounded-3" for="reason2">
                                 <i class="fas fa-flask text-warning me-3 fs-5"></i>
                                 <div>
-                                    <span class="d-block fw-bold" style="font-size: 0.9rem;">Uzmanlık Alanı Dışı</span>
-                                    <small class="text-muted" style="font-size: 0.75rem;">Konu benim çalışma alanıma girmiyor.</small>
+                                    <span class="d-block fw-bold" style="font-size: 0.9rem;">@Localizer["ReasonFieldTitle"]</span>
+                                    <small class="text-muted" style="font-size: 0.75rem;">@Localizer["ReasonFieldText"]</small>
                                 </div>
                             </label>
 
@@ -331,22 +342,22 @@
                             <label class="btn btn-outline-light text-dark text-start border shadow-sm p-3 d-flex align-items-center rounded-3" for="reason3">
                                 <i class="fas fa-hourglass-end text-primary me-3 fs-5"></i>
                                 <div>
-                                    <span class="d-block fw-bold" style="font-size: 0.9rem;">Zaman Kısıtı</span>
-                                    <small class="text-muted" style="font-size: 0.75rem;">Belirtilen sürede tamamlayacak vaktim yok.</small>
+                                    <span class="d-block fw-bold" style="font-size: 0.9rem;">@Localizer["ReasonTimeTitle"]</span>
+                                    <small class="text-muted" style="font-size: 0.75rem;">@Localizer["ReasonTimeText"]</small>
                                 </div>
                             </label>
                         </div>
                     </div>
 
                     <div class="mb-2">
-                        <label class="form-label fw-bold small text-muted">Ek Açıklama (Opsiyonel)</label>
-                        <textarea name="Note" class="form-control bg-light" rows="2" placeholder="Yöneticiye iletmek istediğiniz not..."></textarea>
+                        <label class="form-label fw-bold small text-muted">@Localizer["AdditionalNoteLabel"]</label>
+                        <textarea name="Note" class="form-control bg-light" rows="2" placeholder="@Localizer["AdditionalNotePlaceholder"]"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer border-top-0 pt-0 pb-4 px-4">
-                    <button type="button" class="btn btn-light rounded-pill fw-bold" data-bs-dismiss="modal">Vazgeç</button>
+                    <button type="button" class="btn btn-light rounded-pill fw-bold" data-bs-dismiss="modal">@Localizer["CancelButton"]</button>
                     <button type="submit" class="btn btn-danger rounded-pill fw-bold px-4 shadow-sm">
-                        <i class="fas fa-ban me-2"></i> Görevi Reddet
+                        <i class="fas fa-ban me-2"></i> @Localizer["DeclineTaskButton"]
                     </button>
                 </div>
             </form>
@@ -355,17 +366,16 @@
 </div>
 
 <script>
-
     function openDeclineModal(id) {
         document.getElementById('declineAssignmentId').value = id;
         var myModal = new bootstrap.Modal(document.getElementById('declineModal'));
         myModal.show();
     }
 
-    document.addEventListener("DOMContentLoaded", function(){
+    document.addEventListener("DOMContentLoaded", function () {
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-          return new bootstrap.Tooltip(tooltipTriggerEl)
+            return new bootstrap.Tooltip(tooltipTriggerEl)
         });
     });
 </script>

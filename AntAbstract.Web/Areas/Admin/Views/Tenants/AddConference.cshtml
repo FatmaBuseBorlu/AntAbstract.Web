@@ -1,17 +1,22 @@
 ﻿@model AntAbstract.Domain.Entities.Conference
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
 @{
-    ViewData["Title"] = "Yeni Kongre Ekle";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 }
 
 <div class="container-fluid">
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
-            <h4 class="mb-0 fw-bold text-dark">🎯 Yeni Kongre Başlat</h4>
-            <p class="text-muted small mb-0"><strong>@ViewBag.TenantName</strong> kurumu için yeni bir kongre (etkinlik) oluşturuyorsunuz.</p>
+            <h4 class="mb-0 fw-bold text-dark">@Localizer["PageHeading"]</h4>
+            <p class="text-muted small mb-0">
+                <strong>@ViewBag.TenantName</strong> @Localizer["PageLead"]
+            </p>
         </div>
+
         <a asp-action="Details" asp-route-id="@ViewBag.TenantId" class="btn btn-light border shadow-sm px-3">
-            <i class="fas fa-arrow-left me-2"></i> Kurum Detaylarına Dön
+            <i class="fas fa-arrow-left me-2"></i> @Localizer["BackButton"]
         </a>
     </div>
 
@@ -26,18 +31,26 @@
 
                         <div class="row g-4">
                             <div class="col-md-12">
-                                <label class="form-label fw-bold text-dark small" asp-for="Title">KONGRE ADI <span class="text-danger">*</span></label>
+                                <label class="form-label fw-bold text-dark small" asp-for="Title">
+                                    @Localizer["TitleLabel"] <span class="text-danger">*</span>
+                                </label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0 text-muted">
                                         <i class="fas fa-heading"></i>
                                     </span>
-                                    <input type="text" asp-for="Title" class="form-control bg-light border-start-0 ps-0 form-control-lg fs-6" placeholder="Örn: 2026 Ulusal Biyoloji Kongresi" required />
+                                    <input type="text"
+                                           asp-for="Title"
+                                           class="form-control bg-light border-start-0 ps-0 form-control-lg fs-6"
+                                           placeholder="@Localizer["TitlePlaceholder"]"
+                                           required />
                                 </div>
                                 <span asp-validation-for="Title" class="text-danger small mt-1 d-block"></span>
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-dark small" asp-for="StartDate">BAŞLANGIÇ TARİHİ <span class="text-danger">*</span></label>
+                                <label class="form-label fw-bold text-dark small" asp-for="StartDate">
+                                    @Localizer["StartDateLabel"] <span class="text-danger">*</span>
+                                </label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0 text-muted">
                                         <i class="fas fa-calendar-alt"></i>
@@ -47,7 +60,9 @@
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-dark small" asp-for="EndDate">BİTİŞ TARİHİ <span class="text-danger">*</span></label>
+                                <label class="form-label fw-bold text-dark small" asp-for="EndDate">
+                                    @Localizer["EndDateLabel"] <span class="text-danger">*</span>
+                                </label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0 text-muted">
                                         <i class="fas fa-calendar-check"></i>
@@ -57,22 +72,28 @@
                             </div>
 
                             <div class="col-md-12">
-                                <label class="form-label fw-bold text-dark small" asp-for="Venue">MEKAN / KONUM</label>
+                                <label class="form-label fw-bold text-dark small" asp-for="Venue">@Localizer["VenueLabel"]</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0 text-muted">
                                         <i class="fas fa-map-marker-alt"></i>
                                     </span>
-                                    <input type="text" asp-for="Venue" class="form-control bg-light border-start-0 ps-0" placeholder="Örn: Ege Üniversitesi Merkez Kampüsü" />
+                                    <input type="text"
+                                           asp-for="Venue"
+                                           class="form-control bg-light border-start-0 ps-0"
+                                           placeholder="@Localizer["VenuePlaceholder"]" />
                                 </div>
                             </div>
 
                             <div class="col-md-12">
-                                <label class="form-label fw-bold text-dark small" asp-for="Description">KISA AÇIKLAMA</label>
+                                <label class="form-label fw-bold text-dark small" asp-for="Description">@Localizer["DescriptionLabel"]</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0 text-muted align-items-start pt-2">
                                         <i class="fas fa-align-left"></i>
                                     </span>
-                                    <textarea asp-for="Description" class="form-control bg-light border-start-0 ps-0" rows="3" placeholder="Kongrenin temel amacı veya teması hakkında kısa bir bilgi..."></textarea>
+                                    <textarea asp-for="Description"
+                                              class="form-control bg-light border-start-0 ps-0"
+                                              rows="3"
+                                              placeholder="@Localizer["DescriptionPlaceholder"]"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -81,7 +102,7 @@
 
                         <div class="d-grid text-end">
                             <button type="submit" class="btn btn-primary btn-lg rounded-3 fw-bold shadow-sm">
-                                <i class="fas fa-paper-plane me-2"></i> Kongreyi Oluştur ve Başlat
+                                <i class="fas fa-paper-plane me-2"></i> @Localizer["CreateButton"]
                             </button>
                         </div>
                     </form>
@@ -96,25 +117,25 @@
                         <div class="bg-white p-3 rounded-circle shadow-sm me-3">
                             <i class="fas fa-rocket fa-2x text-primary"></i>
                         </div>
-                        <h5 class="fw-bold text-primary mb-0">Kongre Başlatılıyor...</h5>
+                        <h5 class="fw-bold text-primary mb-0">@Localizer["InfoCardTitle"]</h5>
                     </div>
 
                     <p class="text-dark mb-4" style="line-height: 1.8;">
-                        Bu işlemi tamamladığınızda sistem, <strong>@ViewBag.TenantName</strong> kurumu için yepyeni bir kongre veri tabanı hazırlayacak.
+                        @Localizer["InfoLead_Part1"] <strong>@ViewBag.TenantName</strong> @Localizer["InfoLead_Part2"]
                     </p>
 
                     <ul class="list-unstyled">
                         <li class="mb-3 d-flex">
                             <i class="fas fa-check-circle text-primary mt-1 me-3"></i>
-                            <span class="small text-dark">Bu kuruma bağlı olan tüm yöneticiler sisteme girdiklerinde bu kongreyi görebilecekler.</span>
+                            <span class="small text-dark">@Localizer["InfoItem1"]</span>
                         </li>
                         <li class="mb-3 d-flex">
                             <i class="fas fa-check-circle text-primary mt-1 me-3"></i>
-                            <span class="small text-dark">Müşteriniz bu kongrenin detaylarını, bildiri ayarlarını ve hakemlerini kendi paneli üzerinden yönetebilecek.</span>
+                            <span class="small text-dark">@Localizer["InfoItem2"]</span>
                         </li>
                         <li class="mb-0 d-flex">
                             <i class="fas fa-check-circle text-primary mt-1 me-3"></i>
-                            <span class="small text-dark">Gerekli durumlarda kongre tarihlerini veya açıklamasını sonradan düzenleyebilirsiniz.</span>
+                            <span class="small text-dark">@Localizer["InfoItem3"]</span>
                         </li>
                     </ul>
                 </div>

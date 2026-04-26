@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -15,15 +16,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly AppDbContext _context;
         private readonly ICertificateService _certificateService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IStringLocalizer<CertificatesController> _localizer;
 
         public CertificatesController(
             AppDbContext context,
             ICertificateService certificateService,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IStringLocalizer<CertificatesController> localizer)
         {
             _context = context;
             _certificateService = certificateService;
             _userManager = userManager;
+            _localizer = localizer;
         }
 
         private async Task<bool> IsAuthorizedForCertificate(Guid certId)
@@ -31,8 +35,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var user = await _userManager.GetUserAsync(User);
             var isAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
 
-            if (isAdmin) return true; 
-            if (user?.TenantId == null) return false; 
+            if (isAdmin) return true;
+            if (user?.TenantId == null) return false;
 
             var cert = await _context.Certificates
                 .AsNoTracking()
@@ -64,7 +68,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
             else if (!isAdmin && currentUser?.TenantId == null)
             {
-                q = q.Where(x => false); 
+                q = q.Where(x => false);
             }
 
             if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
@@ -96,12 +100,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             if (!await IsAuthorizedForCertificate(id))
             {
-                TempData["ErrorMessage"] = "Yetkisiz işlem! Başka bir kuruma ait sertifikayı üretemezsiniz.";
+                TempData["ErrorMessage"] = _localizer["Error_UnauthorizedRegenerate"];
                 return RedirectToAction(nameof(Index));
             }
 
             await _certificateService.RegenerateCertificateFileAsync(id, resendEmail: false);
-            TempData["SuccessMessage"] = "Sertifika dosyası yeniden üretildi.";
+            TempData["SuccessMessage"] = _localizer["Success_CertificateRegenerated"];
             return RedirectToAction(nameof(Index));
         }
 
@@ -111,12 +115,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             if (!await IsAuthorizedForCertificate(id))
             {
-                TempData["ErrorMessage"] = "Yetkisiz işlem! Başka bir kuruma ait sertifikayı gönderemezsiniz.";
+                TempData["ErrorMessage"] = _localizer["Error_UnauthorizedResendEmail"];
                 return RedirectToAction(nameof(Index));
             }
 
             await _certificateService.ResendCertificateEmailAsync(id);
-            TempData["SuccessMessage"] = "Sertifika e-postası tekrar gönderildi.";
+            TempData["SuccessMessage"] = _localizer["Success_CertificateEmailResent"];
             return RedirectToAction(nameof(Index));
         }
 
@@ -125,11 +129,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             if (!await IsAuthorizedForCertificate(id))
             {
-                return Unauthorized("Yetkisiz işlem! Başka bir kuruma ait dosyayı indiremezsiniz.");
+                return Unauthorized(_localizer["Error_UnauthorizedDownload"]);
             }
 
             var bytes = await _certificateService.GetCertificateFileAdminAsync(id);
-            if (bytes == null) return NotFound("Sertifika dosyası bulunamadı.");
+            if (bytes == null) return NotFound(_localizer["Error_CertificateFileNotFound"]);
 
             return File(bytes, "application/pdf", $"certificate_{id}.pdf");
         }

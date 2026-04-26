@@ -1,5 +1,7 @@
 ﻿@using AntAbstract.Application.DTOs.Submission
 @using System.Linq
+@using System.Globalization
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model SubmissionDto
 
 @{
@@ -8,16 +10,22 @@
     var author = Model.Authors?.OrderBy(a => a.Order).FirstOrDefault();
     var authorName = author != null ? $"{author.FirstName} {author.LastName}" : Model.CorrespondingAuthorName;
 
-    var institution = author != null ? author.Institution : "Kurum Bilgisi Bulunamadı";
+    var institution = author != null
+        ? author.Institution
+        : Localizer["InstitutionNotFoundText"].Value;
 
-    var conferenceName = Model.ConferenceTitle ?? "AntAbstract Conference";
+    var conferenceName = !string.IsNullOrWhiteSpace(Model.ConferenceTitle)
+        ? Model.ConferenceTitle
+        : Localizer["DefaultConferenceName"].Value;
+
+    var currentLang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
 }
 
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="@currentLang">
 <head>
     <meta charset="utf-8" />
-    <title>Yaka Kartı</title>
+    <title>@Localizer["PageTitle"]</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         @@page {
@@ -136,7 +144,7 @@
         </div>
 
         <div class="footer">
-            KATILIMCI
+            @Localizer["ParticipantText"]
         </div>
     </div>
 

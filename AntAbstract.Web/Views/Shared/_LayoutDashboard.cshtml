@@ -1,15 +1,29 @@
 ﻿@using Microsoft.AspNetCore.Http
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Localization
+@using Microsoft.AspNetCore.Mvc.Localization
 @using AntAbstract.Domain.Entities
+@using System.Globalization
+
 @inject UserManager<AppUser> UserManager
 @inject AntAbstract.Infrastructure.Context.TenantContext Tc
+@inject IViewLocalizer Localizer
 
 @{
+    Func<string, string, string> L = (key, fallback) =>
+    {
+        var text = Localizer[key].Value;
+        return string.Equals(text, key, StringComparison.OrdinalIgnoreCase) ? fallback : text;
+    };
+
     var user = await UserManager.GetUserAsync(User);
     var profileImg = !string.IsNullOrEmpty(user?.ProfileImagePath)
         ? user.ProfileImagePath
         : $"https://ui-avatars.com/api/?name={user?.FirstName}+{user?.LastName}&background=00aeef&color=fff&size=128&bold=true";
-    var displayName = user != null ? $"{user.FirstName} {user.LastName}" : User.Identity?.Name;
+
+    var displayName = user != null
+        ? $"{user.FirstName} {user.LastName}"
+        : User.Identity?.Name;
 
     var isSuperAdmin = User.IsInRole("Admin");
     var isOrganizator = User.IsInRole("Organizator");
@@ -18,11 +32,11 @@
     var isAuthor = User.IsInRole("Author");
     var isReferee = User.IsInRole("Referee");
 
-    string userRole = "Kullanıcı";
-    if (isSuperAdmin) { userRole = "Sistem Yöneticisi"; }
-    else if (isOrganizator) { userRole = "Kurum Yöneticisi"; }
-    else if (isReferee) { userRole = "Hakem"; }
-    else if (isAuthor) { userRole = "Yazar"; }
+    string userRole = L("Role_User", "Kullanıcı");
+    if (isSuperAdmin) { userRole = L("Role_SuperAdmin", "Süper Admin"); }
+    else if (isOrganizator) { userRole = L("Role_Organizer", "Organizatör"); }
+    else if (isReferee) { userRole = L("Role_Referee", "Hakem"); }
+    else if (isAuthor) { userRole = L("Role_Author", "Yazar"); }
 
     var currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
     var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
@@ -82,10 +96,16 @@
     {
         headerBadgeText = slug;
     }
+
+    var requestCulture = Context.Features.Get<IRequestCultureFeature>();
+    var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? "tr-TR";
+    var returnUrl = string.IsNullOrEmpty(Context.Request.Path)
+        ? "/"
+        : $"{Context.Request.Path}{Context.Request.QueryString}";
 }
 
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="@CultureInfo.CurrentUICulture.Name">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -94,6 +114,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 
     <style>
         :root {
@@ -315,6 +336,45 @@
             z-index: 1045;
         }
 
+        .language-switcher {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+        }
+
+            .language-switcher form {
+                margin: 0;
+            }
+
+        .lang-btn {
+            border: none;
+            background: transparent;
+            color: #64748b;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 8px 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+
+            .lang-btn:hover {
+                background: #f1f5f9;
+                color: var(--primary-color);
+            }
+
+            .lang-btn.active {
+                background: var(--primary-color);
+                color: white;
+                box-shadow: 0 4px 12px rgba(0, 174, 239, 0.25);
+            }
+
         @@media (max-width: 991px) {
             .sidebar {
                 transform: translateX(-100%);
@@ -357,6 +417,10 @@
                 height: 36px;
                 border-width: 2px;
             }
+
+            .language-switcher {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -370,119 +434,117 @@
         </a>
 
         <div class="sidebar-menu">
-            <div class="menu-label">GENEL</div>
+            <div class="menu-label">@L("Section_General", "Genel")</div>
             <a href="@dashboardUrl" class="nav-link @(currentController == "Dashboard" && currentAction == "Index" ? "active" : "")">
-                <i class="fas fa-home"></i> Ana Panel
+                <i class="fas fa-home"></i> @L("Dashboard_Home", "Ana Sayfa")
             </a>
 
-            @* YAZAR VE HAKEMLER İÇİN *@
             @if (!isManagementTeam)
             {
                 if (isReferee)
                 {
-                    <div class="menu-label">HAKEM</div>
-                    <a href="@reviewIndexUrl" class="nav-link"><i class="fas fa-gavel text-warning"></i> Hakem Görevlerim</a>
-                    <a href="@reviewInterestsUrl" class="nav-link"><i class="fas fa-tags text-info"></i> Uzmanlık Alanlarım</a>
-                    <a href="@reviewAvailabilityUrl" class="nav-link"><i class="fas fa-calendar-times text-danger"></i> Müsaitlik / İzin</a>
-                    <a href="@reviewConflictsUrl" class="nav-link"><i class="fas fa-handshake-slash text-secondary"></i> Çıkar Çatışmaları</a>
-                    <a href="@reviewGuidelinesUrl" class="nav-link"><i class="fas fa-book-open text-primary"></i> Hakem Kılavuzu</a>
-                    <a href="@certificatesIndexUrl" class="nav-link"><i class="fas fa-certificate text-success"></i> Sertifikalarım</a>
+                    <div class="menu-label">@L("Section_Referee", "Hakem")</div>
+                    <a href="@reviewIndexUrl" class="nav-link"><i class="fas fa-gavel text-warning"></i> @L("Referee_MyTasks", "Görevlerim")</a>
+                    <a href="@reviewInterestsUrl" class="nav-link"><i class="fas fa-tags text-info"></i> @L("Referee_Expertise", "Uzmanlık Alanlarım")</a>
+                    <a href="@reviewAvailabilityUrl" class="nav-link"><i class="fas fa-calendar-times text-danger"></i> @L("Referee_Availability", "Müsaitlik Durumu")</a>
+                    <a href="@reviewConflictsUrl" class="nav-link"><i class="fas fa-handshake-slash text-secondary"></i> @L("Referee_Conflicts", "Çıkar Çatışmaları")</a>
+                    <a href="@reviewGuidelinesUrl" class="nav-link"><i class="fas fa-book-open text-primary"></i> @L("Referee_Guide", "Hakem Rehberi")</a>
+                    <a href="@certificatesIndexUrl" class="nav-link"><i class="fas fa-certificate text-success"></i> @L("Referee_Certificates", "Sertifikalarım")</a>
                 }
 
                 if (isAuthor)
                 {
-                    <div class="menu-label">BİLDİRİ İŞLEMLERİ</div>
-                    <a href="@submissionCreateUrl" class="nav-link"><i class="fas fa-plus-circle text-success"></i> Yeni Bildiri Gönder</a>
-                    <a href="@submissionIndexUrl" class="nav-link"><i class="fas fa-file-contract text-info"></i> Bildirilerim</a>
+                    <div class="menu-label">@L("Section_Submissions", "Başvurular")</div>
+                    <a href="@submissionCreateUrl" class="nav-link"><i class="fas fa-plus-circle text-success"></i> @L("Author_NewSubmission", "Yeni Başvuru")</a>
+                    <a href="@submissionIndexUrl" class="nav-link"><i class="fas fa-file-contract text-info"></i> @L("Author_MySubmissions", "Başvurularım")</a>
 
-                    <div class="menu-label">KONGRE</div>
+                    <div class="menu-label">@L("Section_Congress", "Kongre")</div>
                     @if (!hasSelectedConference)
                     {
-                        <a href="@dashboardMyConferencesUrl" class="nav-link"><i class="fas fa-hand-pointer text-danger"></i> Kongre Seç</a>
+                        <a href="@dashboardMyConferencesUrl" class="nav-link"><i class="fas fa-hand-pointer text-danger"></i> @L("Common_SelectConference", "Kongre Seç")</a>
                     }
                     else
                     {
-                        <a href="@programUrl" class="nav-link"><i class="fas fa-calendar-day text-danger"></i> Kongre Programı</a>
-                        <a href="@proceedingsUrl" class="nav-link"><i class="fas fa-book" style="color: #6f42c1;"></i> Bildiri Kitabı</a>
-                        <a href="@paymentMyUrl" class="nav-link"><i class="fas fa-file-invoice-dollar text-info"></i> Ödemelerim</a>
-                        <a href="@accommodationUrl" class="nav-link"><i class="fas fa-hotel text-warning"></i> Konaklama</a>
+                        <a href="@programUrl" class="nav-link"><i class="fas fa-calendar-day text-danger"></i> @L("Congress_Program", "Program")</a>
+                        <a href="@proceedingsUrl" class="nav-link"><i class="fas fa-book" style="color: #6f42c1;"></i> @L("Congress_Proceedings", "Bildiri Kitabı")</a>
+                        <a href="@paymentMyUrl" class="nav-link"><i class="fas fa-file-invoice-dollar text-info"></i> @L("Congress_MyPayments", "Ödemelerim")</a>
+                        <a href="@accommodationUrl" class="nav-link"><i class="fas fa-hotel text-warning"></i> @L("Congress_Accommodation", "Konaklama")</a>
                     }
                 }
             }
 
-            @* YÖNETİM EKİBİ (SÜPER ADMİN + MÜŞTERİ ORTAK ALANLARI) *@
             @if (isManagementTeam)
             {
                 @if (hasSelectedConference)
                 {
-                    <div class="menu-label text-primary">KONGRE AKIŞI</div>
-                    <a href="@conferenceFlowUrl" class="nav-link @(currentController == "ConferenceFlow" ? "active" : "")"><i class="fas fa-stream text-primary"></i> Kongre Akışı</a>
-                    <a href="@reportsUrl" class="nav-link @(currentController == "Reports" ? "active" : "")"><i class="fas fa-chart-pie text-warning"></i> Raporlar</a>
-                    <a href="@assignmentUrl" class="nav-link @(currentController == "Assignment" ? "active" : "")"><i class="fas fa-tasks text-info"></i> Özet Atama</a>
-                    <a href="@submissionsAdminUrl" class="nav-link @(currentController == "Submissions" ? "active" : "")"><i class="fas fa-file-alt text-primary"></i> Tüm Başvurular</a>
-                    <a href="@decisionUrl" class="nav-link @(currentController == "Decision" ? "active" : "")"><i class="fas fa-gavel text-danger"></i> Karar Ekranı</a>
+                    <div class="menu-label text-primary">@L("Section_CongressFlow", "Kongre Akışı")</div>
+                    <a href="@conferenceFlowUrl" class="nav-link @(currentController == "ConferenceFlow" ? "active" : "")"><i class="fas fa-stream text-primary"></i> @L("Management_CongressFlow", "Kongre Akışı")</a>
+                    <a href="@reportsUrl" class="nav-link @(currentController == "Reports" ? "active" : "")"><i class="fas fa-chart-pie text-warning"></i> @L("Management_Reports", "Raporlar")</a>
+                    <a href="@assignmentUrl" class="nav-link @(currentController == "Assignment" ? "active" : "")"><i class="fas fa-tasks text-info"></i> @L("Management_Assignment", "Atamalar")</a>
+                    <a href="@submissionsAdminUrl" class="nav-link @(currentController == "Submissions" ? "active" : "")"><i class="fas fa-file-alt text-primary"></i> @L("Management_AllApplications", "Tüm Başvurular")</a>
+                    <a href="@decisionUrl" class="nav-link @(currentController == "Decision" ? "active" : "")"><i class="fas fa-gavel text-danger"></i> @L("Management_DecisionScreen", "Karar Ekranı")</a>
 
-                    <div class="menu-label text-danger">YÖNETİM</div>
-                    <a href="@sessionUrl" class="nav-link @(currentController == "Session" ? "active" : "")"><i class="fas fa-microphone-alt text-success"></i> Oturum Yönetimi</a>
-                    <a href="@usersUrl" class="nav-link @(currentController == "Users" ? "active" : "")"><i class="fas fa-users-cog text-danger"></i> Kullanıcı Yönetimi</a>
+                    <div class="menu-label text-danger">@L("Section_Management", "Yönetim")</div>
+                    <a href="@sessionUrl" class="nav-link @(currentController == "Session" ? "active" : "")"><i class="fas fa-microphone-alt text-success"></i> @L("Management_Session", "Oturumlar")</a>
+                    <a href="@usersUrl" class="nav-link @(currentController == "Users" ? "active" : "")"><i class="fas fa-users-cog text-danger"></i> @L("Management_Users", "Kullanıcılar")</a>
 
-                    <div class="menu-label text-primary">SİSTEM AYARLARI</div>
-                    <a href="@conferencesUrl" class="nav-link @(currentController == "Conferences" ? "active" : "")"><i class="fas fa-sliders-h text-primary"></i> Kongre Tanımları</a>
-                    <a href="@registrationsUrl" class="nav-link @(currentController == "Registrations" ? "active" : "")"><i class="fas fa-credit-card text-info"></i> Kayıtlar ve Ödemeler</a>
-                    <a href="@registrationTypesUrl" class="nav-link @(currentController == "RegistrationTypes" ? "active" : "")"><i class="fas fa-tags text-primary"></i> Kayıt Tipleri</a>
+                    <div class="menu-label text-primary">@L("Section_SystemSettings", "Sistem Ayarları")</div>
+                    <a href="@conferencesUrl" class="nav-link @(currentController == "Conferences" ? "active" : "")"><i class="fas fa-sliders-h text-primary"></i> @L("System_ConferenceDefinitions", "Konferans Tanımları")</a>
+                    <a href="@registrationsUrl" class="nav-link @(currentController == "Registrations" ? "active" : "")"><i class="fas fa-credit-card text-info"></i> @L("System_RegistrationsPayments", "Kayıtlar ve Ödemeler")</a>
+                    <a href="@registrationTypesUrl" class="nav-link @(currentController == "RegistrationTypes" ? "active" : "")"><i class="fas fa-tags text-primary"></i> @L("System_RegistrationTypes", "Kayıt Türleri")</a>
 
                     @if (isSuperAdmin)
                     {
                         <a href="@websiteAdminUrl" class="nav-link @(currentController == "Website" ? "active" : "")">
-                            <i class="fas fa-pen-to-square text-success"></i> Website Yönetimi
+                            <i class="fas fa-pen-to-square text-success"></i> @L("System_WebsiteManagement", "Website Yönetimi")
                         </a>
                     }
                 }
                 else
                 {
-                    <div class="menu-label text-danger">KONGRE İŞLEMLERİ</div>
+                    <div class="menu-label text-danger">@L("Section_CongressOperations", "Kongre İşlemleri")</div>
                     <a href="@dashboardMyConferencesUrl" class="nav-link @(currentController == "Dashboard" && currentAction == "MyConferences" ? "active" : "")">
-                        <i class="fas fa-hand-pointer text-danger animate__animated animate__pulse animate__infinite"></i> İlk Adım: Kongre Seçin
+                        <i class="fas fa-hand-pointer text-danger animate__animated animate__pulse animate__infinite"></i> @L("Management_FirstStepSelectConference", "İlk Adım: Kongre Seç")
                     </a>
                 }
 
                 @if (isSuperAdmin)
                 {
-                    <div class="menu-label text-info">KÜRESEL SİSTEM</div>
+                    <div class="menu-label text-info">@L("Section_GlobalSystem", "Global Sistem")</div>
                     <a href="/Admin/Tenants" class="nav-link @(currentController == "Tenants" ? "active" : "")">
-                        <i class="fas fa-building text-info"></i> Kurum Yönetimi
+                        <i class="fas fa-building text-info"></i> @L("Global_Institutions", "Kurumlar")
                     </a>
 
                     <a href="/CentralVitrin/Index" class="nav-link @(currentController == "CentralVitrin" ? "active" : "")">
-                        <i class="fas fa-globe text-primary"></i> Tüm Vitrinleri Yönet
+                        <i class="fas fa-globe text-primary"></i> @L("Global_AllShowcases", "Tüm Vitrinler")
                     </a>
 
                     <a href="/Admin/SystemParameters" class="nav-link @(currentController == "SystemParameters" ? "active" : "")">
-                        <i class="fas fa-cogs text-info"></i> Sistem Parametreleri
+                        <i class="fas fa-cogs text-info"></i> @L("Global_SystemParameters", "Sistem Parametreleri")
                     </a>
                 }
             }
 
-            <div class="menu-label">İLETİŞİM</div>
+            <div class="menu-label">@L("Section_Communication", "İletişim")</div>
             <a href="@messageIndexUrl" class="nav-link @(currentController == "Message" ? "active" : "")">
-                <i class="fas fa-envelope text-warning"></i> Mesajlarım
+                <i class="fas fa-envelope text-warning"></i> @L("Common_Messages", "Mesajlar")
             </a>
 
-            <div class="menu-label">HESAP</div>
+            <div class="menu-label">@L("Section_Account", "Hesap")</div>
             @if (hasSelectedConference && (isAuthor || isReferee || isManagementTeam))
             {
                 <a href="@dashboardMyConferencesUrl" class="nav-link @(currentController == "Dashboard" && currentAction == "MyConferences" ? "active" : "")">
-                    <i class="fas fa-exchange-alt text-secondary"></i> Kongre Değiştir
+                    <i class="fas fa-exchange-alt text-secondary"></i> @L("Common_ChangeConference", "Kongre Değiştir")
                 </a>
             }
             <a href="/Identity/Account/Manage" class="nav-link">
-                <i class="fas fa-user-cog text-secondary"></i> Profil Ayarları
+                <i class="fas fa-user-cog text-secondary"></i> @L("Common_ProfileSettings", "Profil Ayarları")
             </a>
         </div>
 
         <div class="p-3 border-top mt-auto">
             <a href="/Home/Contact" class="nav-link text-muted small justify-content-center">
-                <i class="far fa-question-circle me-2"></i> Destek Merkezi
+                <i class="far fa-question-circle me-2"></i> @L("Common_SupportCenter", "Destek Merkezi")
             </a>
         </div>
     </aside>
@@ -497,29 +559,45 @@
                 <div class="lh-1 d-none d-sm-block">
                     <h6 class="mb-0 fw-bold text-dark">@displayName</h6>
                     <small class="text-muted" style="font-size: 0.75rem;">
-                        @(string.IsNullOrWhiteSpace(headerBadgeText) ? "Yönetim Paneli" : headerBadgeText)
+                        @((string.IsNullOrWhiteSpace(headerBadgeText) ? L("Header_ManagementPanel", "Yönetim Paneli") : headerBadgeText))
                         <span class="ms-2 user-role-badge">@userRole</span>
                     </small>
                 </div>
             </div>
 
             <div class="d-flex align-items-center gap-3">
-                <a href="/" class="text-decoration-none text-muted fw-bold small d-none d-md-block" data-bs-toggle="tooltip" title="Siteye Dön">
-                    <i class="fas fa-external-link-alt me-1"></i> Site
+                <a href="/" class="text-decoration-none text-muted fw-bold small d-none d-md-block" data-bs-toggle="tooltip" title="@L("Header_BackToSiteTooltip", "Siteye dön")">
+                    <i class="fas fa-external-link-alt me-1"></i> @L("Header_Site", "Site")
                 </a>
+
+                <div class="language-switcher d-none d-sm-inline-flex">
+                    <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                        <input type="hidden" name="culture" value="tr-TR" />
+                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                        <button type="submit" class="lang-btn @(currentCulture == "tr-TR" ? "active" : "")">TR</button>
+                    </form>
+
+                    <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                        <input type="hidden" name="culture" value="en-US" />
+                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                        <button type="submit" class="lang-btn @(currentCulture == "en-US" ? "active" : "")">EN</button>
+                    </form>
+                </div>
+
                 @await Component.InvokeAsync("Notification")
+
                 <div class="dropdown">
                     <div class="user-menu-btn ps-2" data-bs-toggle="dropdown">
                         <img src="@profileImg" class="user-avatar">
                     </div>
                     <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-3 rounded-4 p-2" style="width: 220px;">
-                        <li><h6 class="dropdown-header small fw-bold">HESABIM</h6></li>
-                        <li><a class="dropdown-item rounded-2 py-2" href="/Identity/Account/Manage"><i class="fas fa-user-cog me-2 text-muted"></i> Ayarlar</a></li>
-                        <li><a class="dropdown-item rounded-2 py-2" href="@dashboardMyConferencesUrl"><i class="fas fa-exchange-alt me-2 text-muted"></i> Kongre Seçimi</a></li>
+                        <li><h6 class="dropdown-header small fw-bold">@L("Dropdown_MyAccount", "Hesabım")</h6></li>
+                        <li><a class="dropdown-item rounded-2 py-2" href="/Identity/Account/Manage"><i class="fas fa-user-cog me-2 text-muted"></i> @L("Dropdown_Settings", "Ayarlar")</a></li>
+                        <li><a class="dropdown-item rounded-2 py-2" href="@dashboardMyConferencesUrl"><i class="fas fa-exchange-alt me-2 text-muted"></i> @L("Dropdown_ConferenceSelection", "Kongre Seçimi")</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form asp-controller="Dashboard" asp-action="CustomLogout" method="post">
-                                <button type="submit" class="dropdown-item rounded-2 py-2 text-danger fw-bold"><i class="fas fa-sign-out-alt me-2"></i> Çıkış</button>
+                                <button type="submit" class="dropdown-item rounded-2 py-2 text-danger fw-bold"><i class="fas fa-sign-out-alt me-2"></i> @L("Dropdown_Logout", "Çıkış Yap")</button>
                             </form>
                         </li>
                     </ul>
@@ -542,6 +620,13 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             }
+            @if (TempData["InfoMessage"] != null)
+            {
+                <div class="alert alert-info alert-dismissible fade show border-0 shadow-sm mb-4 rounded-3">
+                    <i class="fas fa-info-circle me-2"></i> @TempData["InfoMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
 
             @RenderBody()
         </div>
@@ -551,9 +636,9 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl)
+                return new bootstrap.Tooltip(tooltipTriggerEl);
             });
 
             const isClosed = localStorage.getItem("sidebar-closed") === "true";

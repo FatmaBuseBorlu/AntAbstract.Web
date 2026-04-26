@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -18,17 +19,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IStringLocalizer<RegistrationTypesController> _localizer;
 
         public RegistrationTypesController(
             AppDbContext context,
             TenantContext tenantContext,
             ISelectedConferenceService selectedConferenceService,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IStringLocalizer<RegistrationTypesController> localizer)
         {
             _context = context;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
             _userManager = userManager;
+            _localizer = localizer;
         }
 
         [HttpGet("/Admin/RegistrationTypes")]
@@ -77,10 +81,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var vm = new SelectConferenceViewModel
             {
-                Title = "Kayıt Tipleri",
-                Lead = "Kayıt tipi yönetimi için önce kongre seçin.",
+                Title = _localizer["SelectConference_Title"],
+                Lead = _localizer["SelectConference_Lead"],
                 PostUrl = "/Admin/RegistrationTypes/Select",
-                SubmitText = "Devam Et",
+                SubmitText = _localizer["SelectConference_Submit"],
                 Conferences = conferences,
                 ReturnUrl = returnUrl
             };
@@ -98,7 +102,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                TempData["ErrorMessage"] = _localizer["Error_ConferenceNotFound"];
                 return RedirectToAction(nameof(SelectConference));
             }
 
@@ -228,7 +232,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var name = (model.Name ?? "").Trim();
             if (string.IsNullOrWhiteSpace(name))
             {
-                ModelState.AddModelError(nameof(model.Name), "Ad zorunludur.");
+                ModelState.AddModelError(nameof(model.Name), _localizer["Error_NameRequired"]);
                 return View("~/Areas/Admin/Views/RegistrationTypes/Form.cshtml", model);
             }
 
@@ -280,16 +284,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var usage = await _context.Registrations.CountAsync(r => r.RegistrationTypeId == entity.Id);
             if (usage > 0)
             {
-                TempData["ErrorMessage"] = "Bu kayıt tipine bağlı kayıtlar var. Önce kayıtları taşıyın ya da silin.";
-                var back = (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)) ? returnUrl : $"/{slug}/Admin/RegistrationTypes";
+                TempData["ErrorMessage"] = _localizer["Error_RegistrationTypeHasDependencies"];
+                var back = (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    ? returnUrl
+                    : $"/{slug}/Admin/RegistrationTypes";
                 return Redirect(back);
             }
 
             _context.RegistrationTypes.Remove(entity);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Kayıt tipi silindi.";
-            return Redirect((!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)) ? returnUrl : $"/{slug}/Admin/RegistrationTypes");
+            TempData["SuccessMessage"] = _localizer["Success_RegistrationTypeDeleted"];
+            return Redirect((!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                ? returnUrl
+                : $"/{slug}/Admin/RegistrationTypes");
         }
 
         private async Task<AdminRegistrationTypeFormModel?> BuildFormModel(string slug, Guid? id, string? returnUrl)

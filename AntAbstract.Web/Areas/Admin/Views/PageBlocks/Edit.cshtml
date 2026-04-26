@@ -1,31 +1,48 @@
 ﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
 @using AntAbstract.Domain.Entities
 @using AntAbstract.Web.Models.WebsiteBlocks
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Blok Düzenle - " + Model.BlockType.ToString();
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
     var aboutContent = ViewBag.AboutContent as AboutBlockContent;
+
+    var blockTypeText = Model.BlockType switch
+    {
+        ConferencePageBlockType.Hero => Localizer["BlockType_Hero"].Value,
+        ConferencePageBlockType.About => Localizer["BlockType_About"].Value,
+        ConferencePageBlockType.CallForPapers => Localizer["BlockType_CallForPapers"].Value,
+        ConferencePageBlockType.Topics => Localizer["BlockType_Topics"].Value,
+        ConferencePageBlockType.Committees => Localizer["BlockType_Committees"].Value,
+        ConferencePageBlockType.Fees => Localizer["BlockType_Fees"].Value,
+        _ => Model.BlockType.ToString()
+    };
+
+    ViewData["Title"] = $"{Localizer["PageTitlePrefix"].Value} - {blockTypeText}";
 }
 
 <div class="container-fluid mt-4">
     <div class="card shadow">
         <div class="card-header bg-primary text-white">
-            <h4 class="mb-0"><i class="fas fa-edit"></i> @Model.BlockType.ToString() Bloğunu Düzenle</h4>
+            <h4 class="mb-0">
+                <i class="fas fa-edit"></i> @Localizer["CardTitle", blockTypeText]
+            </h4>
         </div>
+
         <div class="card-body">
             <form asp-action="Edit" method="post">
                 <input type="hidden" asp-for="Id" />
 
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label asp-for="Title" class="form-label fw-bold">Blok Ana Başlığı</label>
-                        <input asp-for="Title" class="form-control" placeholder="Örn: Kongremiz Hakkında" />
+                        <label asp-for="Title" class="form-label fw-bold">@Localizer["TitleLabel"]</label>
+                        <input asp-for="Title" class="form-control" placeholder="@Localizer["TitlePlaceholder"]" />
                     </div>
+
                     <div class="col-md-6 mb-3">
-                        <label asp-for="Subtitle" class="form-label fw-bold">Alt Başlık</label>
-                        <input asp-for="Subtitle" class="form-control" placeholder="Örn: Bilimin Işığında Buluşuyoruz" />
+                        <label asp-for="Subtitle" class="form-label fw-bold">@Localizer["SubtitleLabel"]</label>
+                        <input asp-for="Subtitle" class="form-control" placeholder="@Localizer["SubtitlePlaceholder"]" />
                     </div>
                 </div>
 
@@ -33,34 +50,56 @@
 
                 @if (Model.BlockType == ConferencePageBlockType.About && aboutContent != null)
                 {
-                    <h5 class="text-primary mb-3">📝 Hakkımızda İçeriği</h5>
+                    <h5 class="text-primary mb-3">@Localizer["AboutContentHeader"]</h5>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Açıklama Yazısı (Description)</label>
-                        <textarea name="aboutContent.Description" class="form-control" rows="5" placeholder="Kongrenizin amacını ve vizyonunu buraya yazın...">@aboutContent.Description</textarea>
+                        <label class="form-label fw-bold">@Localizer["DescriptionLabel"]</label>
+                        <textarea name="aboutContent.Description"
+                              class="form-control"
+                              rows="5"
+                              placeholder="@Localizer["DescriptionPlaceholder"]">@aboutContent.Description</textarea>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Görsel Linki (URL)</label>
-                        <input type="text" name="aboutContent.ImageUrl" class="form-control" value="@aboutContent.ImageUrl" placeholder="/images/about-us.jpg veya https://..." />
+                        <label class="form-label fw-bold">@Localizer["ImageUrlLabel"]</label>
+                        <input type="text"
+                               name="aboutContent.ImageUrl"
+                               class="form-control"
+                               value="@aboutContent.ImageUrl"
+                               placeholder="@Localizer["ImageUrlPlaceholder"]" />
                     </div>
 
                     <div class="row mt-4">
                         <div class="col-12">
-                            <label class="form-label fw-bold">Öne Çıkan Özellikler (Maddeler)</label>
-                            <p class="text-muted small">Sitenizde yan yana görünecek 3 temel özelliği yazabilirsiniz.</p>
+                            <label class="form-label fw-bold">@Localizer["FeaturesLabel"]</label>
+                            <p class="text-muted small">@Localizer["FeaturesLead"]</p>
                         </div>
+
                         <div class="col-md-4 mb-3">
-                            <label class="form-label text-muted">Madde 1</label>
-                            <input type="text" name="aboutContent.Features[0]" class="form-control" value="@(aboutContent.Features.Count > 0 ? aboutContent.Features[0] : "")" placeholder="Örn: Alanında Uzman Konuşmacılar" />
+                            <label class="form-label text-muted">@Localizer["Feature1Label"]</label>
+                            <input type="text"
+                                   name="aboutContent.Features[0]"
+                                   class="form-control"
+                                   value="@(aboutContent.Features.Count > 0 ? aboutContent.Features[0] : "")"
+                                   placeholder="@Localizer["Feature1Placeholder"]" />
                         </div>
+
                         <div class="col-md-4 mb-3">
-                            <label class="form-label text-muted">Madde 2</label>
-                            <input type="text" name="aboutContent.Features[1]" class="form-control" value="@(aboutContent.Features.Count > 1 ? aboutContent.Features[1] : "")" placeholder="Örn: Uluslararası Katılım" />
+                            <label class="form-label text-muted">@Localizer["Feature2Label"]</label>
+                            <input type="text"
+                                   name="aboutContent.Features[1]"
+                                   class="form-control"
+                                   value="@(aboutContent.Features.Count > 1 ? aboutContent.Features[1] : "")"
+                                   placeholder="@Localizer["Feature2Placeholder"]" />
                         </div>
+
                         <div class="col-md-4 mb-3">
-                            <label class="form-label text-muted">Madde 3</label>
-                            <input type="text" name="aboutContent.Features[2]" class="form-control" value="@(aboutContent.Features.Count > 2 ? aboutContent.Features[2] : "")" placeholder="Örn: SCI İndeksli Yayın Fırsatı" />
+                            <label class="form-label text-muted">@Localizer["Feature3Label"]</label>
+                            <input type="text"
+                                   name="aboutContent.Features[2]"
+                                   class="form-control"
+                                   value="@(aboutContent.Features.Count > 2 ? aboutContent.Features[2] : "")"
+                                   placeholder="@Localizer["Feature3Placeholder"]" />
                         </div>
                     </div>
                 }
@@ -69,15 +108,18 @@
 
                 <div class="mb-4 form-check form-switch">
                     <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch" id="activeSwitch">
-                    <label asp-for="IsActive" class="form-check-label" for="activeSwitch">Bu bloğu web sitesinde (Vitrin) göster</label>
+                    <label asp-for="IsActive" class="form-check-label" for="activeSwitch">
+                        @Localizer["ShowOnWebsiteLabel"]
+                    </label>
                 </div>
 
                 <div class="d-flex justify-content-between">
                     <a href="/@ViewContext.RouteData.Values["slug"]/Admin/PageBlocks" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left"></i> Geri Dön
+                        <i class="fas fa-arrow-left"></i> @Localizer["BackButton"]
                     </a>
+
                     <button type="submit" class="btn btn-success px-5">
-                        <i class="fas fa-save"></i> Değişiklikleri Kaydet
+                        <i class="fas fa-save"></i> @Localizer["SaveButton"]
                     </button>
                 </div>
             </form>

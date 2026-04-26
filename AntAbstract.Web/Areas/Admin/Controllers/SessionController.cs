@@ -4,9 +4,11 @@ using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.ViewModels.Admin.Sessions;
 using AntAbstract.Web.Models.ViewModels.Shared;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -18,17 +20,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IStringLocalizer<SessionController> _localizer;
 
         public SessionController(
             AppDbContext context,
             TenantContext tenantContext,
             ISelectedConferenceService selectedConferenceService,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IStringLocalizer<SessionController> localizer)
         {
             _context = context;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
             _userManager = userManager;
+            _localizer = localizer;
         }
 
         private async Task<Conference?> GetConferenceOrNull(string? slug, Guid? conferenceId)
@@ -88,10 +93,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var vm = new SelectConferenceViewModel
             {
-                Title = "Oturum Yönetimi",
-                Lead = "Oturumları yönetmek istediğiniz kongreyi seçerek devam edin.",
+                Title = _localizer["SelectConference_Title"].Value,
+                Lead = _localizer["SelectConference_Lead"].Value,
                 PostUrl = "/Admin/Session/Select",
-                SubmitText = "Devam Et",
+                SubmitText = _localizer["SelectConference_Submit"].Value,
                 Conferences = conferences
             };
 
@@ -109,7 +114,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                TempData["ErrorMessage"] = _localizer["Error_ConferenceNotFound"].Value;
                 return Redirect("/Admin/Session");
             }
 
@@ -194,7 +199,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _context.Sessions.Add(entity);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Oturum başarıyla oluşturuldu.";
+            TempData["SuccessMessage"] = _localizer["Success_SessionCreated"].Value;
 
             var fallback = $"/{slug}/Admin/Session?conferenceId={conference.Id}";
             var go = (!string.IsNullOrWhiteSpace(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl)) ? model.ReturnUrl : fallback;
@@ -244,7 +249,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             existingSession.SessionDate = session.SessionDate;
 
             await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Oturum güncellendi.";
+            TempData["SuccessMessage"] = _localizer["Success_SessionUpdated"].Value;
 
             return Redirect($"/{slug}/Admin/Session?conferenceId={conference.Id}");
         }
@@ -296,7 +301,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 submission.SessionId = sessionId;
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Bildiri oturuma eklendi.";
+                TempData["SuccessMessage"] = _localizer["Success_SubmissionAddedToSession"].Value;
             }
 
             return Redirect($"/{slug}/Admin/Session/Manage/{sessionId}?conferenceId={conference.Id}");
@@ -316,7 +321,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 submission.SessionId = null;
                 await _context.SaveChangesAsync();
-                TempData["InfoMessage"] = "Bildiri oturumdan çıkarıldı.";
+                TempData["InfoMessage"] = _localizer["Info_SubmissionRemovedFromSession"].Value;
             }
 
             return Redirect($"/{slug}/Admin/Session/Manage/{sessionId}?conferenceId={conference.Id}");
@@ -340,7 +345,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                 _context.Sessions.Remove(session);
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Oturum silindi.";
+                TempData["SuccessMessage"] = _localizer["Success_SessionDeleted"].Value;
             }
 
             return Redirect($"/{slug}/Admin/Session?conferenceId={conference.Id}");

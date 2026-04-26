@@ -1,9 +1,13 @@
 ﻿@using AntAbstract.Web.Models.ViewModels
 @using AntAbstract.Web.Models.ViewModels.Admin.RegistrationTypes
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model AdminRegistrationTypeFormModel
 
 @{
-    ViewData["Title"] = Model.Id.HasValue ? "Kayıt Tipi Düzenle" : "Yeni Kayıt Tipi";
+    ViewData["Title"] = Model.Id.HasValue
+        ? Localizer["EditPageTitle"].Value
+        : Localizer["CreatePageTitle"].Value;
+
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     var slug = Model.Slug ?? "";
 }
@@ -13,11 +17,11 @@
         <div>
             <h3 class="fw-bold mb-1 text-dark">@ViewData["Title"]</h3>
             <div class="text-muted">
-                Kongre: <span class="badge bg-light text-dark border">@Model.ConferenceTitle</span>
+                @Localizer["ConferenceLabel"] <span class="badge bg-light text-dark border">@Model.ConferenceTitle</span>
             </div>
         </div>
 
-        <a class="btn btn-outline-secondary btn-sm" href="@Model.ReturnUrl">Geri Dön</a>
+        <a class="btn btn-outline-secondary btn-sm" href="@Model.ReturnUrl">@Localizer["BackButton"]</a>
     </div>
 
     <div class="card border-0 shadow-sm">
@@ -33,32 +37,32 @@
 
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label">Ad</label>
+                        <label class="form-label">@Localizer["NameLabel"]</label>
                         <input class="form-control" asp-for="Name" />
                         <span class="text-danger small" asp-validation-for="Name"></span>
                     </div>
 
                     <div class="col-md-3">
-                        <label class="form-label">Ücret</label>
+                        <label class="form-label">@Localizer["PriceLabel"]</label>
                         <input class="form-control" asp-for="Price" />
                         <span class="text-danger small" asp-validation-for="Price"></span>
                     </div>
 
                     <div class="col-md-3">
-                        <label class="form-label">Para Birimi</label>
+                        <label class="form-label">@Localizer["CurrencyLabel"]</label>
                         <input class="form-control" asp-for="Currency" />
                         <span class="text-danger small" asp-validation-for="Currency"></span>
                     </div>
 
                     <div class="col-12">
-                        <label class="form-label">Açıklama</label>
+                        <label class="form-label">@Localizer["DescriptionLabel"]</label>
                         <textarea class="form-control" asp-for="Description" rows="4"></textarea>
                         <span class="text-danger small" asp-validation-for="Description"></span>
                     </div>
                 </div>
 
                 <div class="d-flex justify-content-end mt-3">
-                    <button class="btn btn-primary" type="submit">Kaydet</button>
+                    <button class="btn btn-primary" type="submit">@Localizer["SaveButton"]</button>
                 </div>
             </form>
         </div>

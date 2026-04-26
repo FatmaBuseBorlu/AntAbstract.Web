@@ -1,12 +1,24 @@
 ﻿@page
 @model RegisterModel
+@using Microsoft.AspNetCore.Localization
+@using Microsoft.AspNetCore.Mvc.Localization
+@using System.Globalization
+@inject IViewLocalizer Localizer
+
 @{
-    ViewData["Title"] = "Kayıt Ol";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = null;
+
+    var requestCulture = HttpContext.Features.Get<IRequestCultureFeature>();
+    var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? "tr-TR";
+
+    var currentReturnUrl = string.IsNullOrEmpty(HttpContext.Request.Path.Value)
+        ? "/Identity/Account/Register"
+        : $"{HttpContext.Request.Path.Value}{HttpContext.Request.QueryString}";
 }
 
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="@CultureInfo.CurrentUICulture.Name">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -14,7 +26,6 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 
@@ -29,12 +40,12 @@
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: #fff;
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
         .register-wrapper {
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             width: 100%;
         }
@@ -54,10 +65,7 @@
             .register-sidebar::before {
                 content: '';
                 position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
+                inset: 0;
                 background: linear-gradient(to bottom, rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.95));
             }
 
@@ -133,6 +141,45 @@
             text-decoration: none;
         }
 
+        .language-switcher {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+        }
+
+            .language-switcher form {
+                margin: 0;
+            }
+
+        .lang-btn {
+            border: none;
+            background: transparent;
+            color: #64748b;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 8px 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+
+            .lang-btn:hover {
+                background: #f1f5f9;
+                color: var(--primary-color);
+            }
+
+            .lang-btn.active {
+                background: var(--primary-color);
+                color: white;
+                box-shadow: 0 4px 12px rgba(0, 174, 239, 0.25);
+            }
+
         @@media (max-width: 991px) {
             .register-sidebar {
                 display: none;
@@ -152,11 +199,11 @@
             <div class="sidebar-content">
                 <div class="mb-4">
                     <span class="badge bg-white text-primary px-3 py-2 rounded-pill fw-bold mb-3">
-                        <i class="fas fa-users me-2"></i>Akademik Ağ
+                        <i class="fas fa-users me-2"></i>@Localizer["AcademicNetwork"]
                     </span>
-                    <h1 class="display-5 fw-bold mb-3">Bilim Dünyasının <br> Parçası Olun.</h1>
+                    <h1 class="display-5 fw-bold mb-3">@Localizer["HeroTitleLine1"] <br>@Localizer["HeroTitleLine2"]</h1>
                     <p class="lead opacity-75 fs-6">
-                        Hesabınızı oluşturun ve binlerce akademisyenin yer aldığı bu büyük ağa hemen katılın.
+                        @Localizer["HeroDescription"]
                     </p>
                 </div>
                 <div class="d-flex gap-2 opacity-50 small">
@@ -166,9 +213,25 @@
         </div>
 
         <div class="register-form-container">
-            <a href="/" class="position-absolute top-0 end-0 m-4 text-muted text-decoration-none small fw-bold">
-                <i class="fas fa-times me-1"></i> KAPAT
-            </a>
+            <div class="position-absolute top-0 end-0 m-4 d-flex align-items-center gap-3">
+                <div class="language-switcher">
+                    <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                        <input type="hidden" name="culture" value="tr-TR" />
+                        <input type="hidden" name="returnUrl" value="@currentReturnUrl" />
+                        <button type="submit" class="lang-btn @(currentCulture == "tr-TR" ? "active" : "")">TR</button>
+                    </form>
+
+                    <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                        <input type="hidden" name="culture" value="en-US" />
+                        <input type="hidden" name="returnUrl" value="@currentReturnUrl" />
+                        <button type="submit" class="lang-btn @(currentCulture == "en-US" ? "active" : "")">EN</button>
+                    </form>
+                </div>
+
+                <a href="/" class="text-muted text-decoration-none small fw-bold">
+                    <i class="fas fa-times me-1"></i> @Localizer["Close"]
+                </a>
+            </div>
 
             <div class="register-card animate__animated animate__fadeInRight">
 
@@ -177,8 +240,8 @@
                 </a>
 
                 <div class="mb-4">
-                    <h3 class="fw-bold text-dark">Aramıza Katılın 🚀</h3>
-                    <p class="text-muted small">Kongre sistemine tam erişim için formu eksiksiz doldurunuz.</p>
+                    <h3 class="fw-bold text-dark">@Localizer["JoinUs"]</h3>
+                    <p class="text-muted small">@Localizer["RegisterIntro"]</p>
                 </div>
 
                 <form asp-route-returnUrl="@Model.ReturnUrl" method="post" enctype="multipart/form-data">
@@ -186,50 +249,50 @@
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-4">
-                            <label asp-for="Input.FirstName" class="form-label">İsim <span class="text-danger">*</span></label>
-                            <input asp-for="Input.FirstName" class="form-control" placeholder="Adınız" />
+                            <label asp-for="Input.FirstName" class="form-label">@Localizer["FirstName"] <span class="text-danger">*</span></label>
+                            <input asp-for="Input.FirstName" class="form-control" placeholder="@Localizer["FirstNamePlaceholder"]" />
                             <span asp-validation-for="Input.FirstName" class="text-danger small"></span>
                         </div>
                         <div class="col-md-4">
-                            <label asp-for="Input.LastName" class="form-label">Soyisim <span class="text-danger">*</span></label>
-                            <input asp-for="Input.LastName" class="form-control" placeholder="Soyadınız" />
+                            <label asp-for="Input.LastName" class="form-label">@Localizer["LastName"] <span class="text-danger">*</span></label>
+                            <input asp-for="Input.LastName" class="form-control" placeholder="@Localizer["LastNamePlaceholder"]" />
                             <span asp-validation-for="Input.LastName" class="text-danger small"></span>
                         </div>
                         <div class="col-md-4">
-                            <label asp-for="Input.IdentityNumber" class="form-label">TC / Pasaport <span class="text-danger">*</span></label>
-                            <input asp-for="Input.IdentityNumber" class="form-control" placeholder="Kimlik No" />
+                            <label asp-for="Input.IdentityNumber" class="form-label">@Localizer["IdentityNumber"] <span class="text-danger">*</span></label>
+                            <input asp-for="Input.IdentityNumber" class="form-control" placeholder="@Localizer["IdentityNumberPlaceholder"]" />
                             <span asp-validation-for="Input.IdentityNumber" class="text-danger small"></span>
                         </div>
                     </div>
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-4">
-                            <label asp-for="Input.Email" class="form-label">E-Posta <span class="text-danger">*</span></label>
-                            <input asp-for="Input.Email" class="form-control" placeholder="ornek@email.com" />
+                            <label asp-for="Input.Email" class="form-label">@Localizer["Email"] <span class="text-danger">*</span></label>
+                            <input asp-for="Input.Email" class="form-control" placeholder="@Localizer["EmailPlaceholder"]" />
                             <span asp-validation-for="Input.Email" class="text-danger small"></span>
                         </div>
                         <div class="col-md-4">
-                            <label asp-for="Input.AlternativeEmail" class="form-label">Alt. E-Posta</label>
-                            <input asp-for="Input.AlternativeEmail" class="form-control" placeholder="Opsiyonel" />
+                            <label asp-for="Input.AlternativeEmail" class="form-label">@Localizer["AlternativeEmail"]</label>
+                            <input asp-for="Input.AlternativeEmail" class="form-control" placeholder="@Localizer["Optional"]" />
                         </div>
                         <div class="col-md-4">
-                            <label asp-for="Input.PhoneNumber" class="form-label">Telefon</label>
-                            <input asp-for="Input.PhoneNumber" class="form-control" placeholder="555 123 45 67" />
+                            <label asp-for="Input.PhoneNumber" class="form-label">@Localizer["Phone"]</label>
+                            <input asp-for="Input.PhoneNumber" class="form-control" placeholder="@Localizer["PhonePlaceholder"]" />
                         </div>
                     </div>
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
-                            <label asp-for="Input.University" class="form-label">Kurum / Üniversite <span class="text-danger">*</span></label>
+                            <label asp-for="Input.University" class="form-label">@Localizer["University"] <span class="text-danger">*</span></label>
                             <select asp-for="Input.University" asp-items="Model.UniversityList" class="form-select custom-select">
-                                <option value="">Seçiniz...</option>
+                                <option value="">@Localizer["SelectOption"]</option>
                             </select>
                             <span asp-validation-for="Input.University" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="Input.Title" class="form-label">Ünvan <span class="text-danger">*</span></label>
+                            <label asp-for="Input.Title" class="form-label">@Localizer["AcademicTitle"] <span class="text-danger">*</span></label>
                             <select asp-for="Input.Title" asp-items="Model.TitleList" class="form-select custom-select">
-                                <option value="">Seçiniz...</option>
+                                <option value="">@Localizer["SelectOption"]</option>
                             </select>
                             <span asp-validation-for="Input.Title" class="text-danger small"></span>
                         </div>
@@ -237,16 +300,16 @@
 
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label asp-for="Input.Faculty" class="form-label">Fakülte <span class="text-danger">*</span></label>
+                            <label asp-for="Input.Faculty" class="form-label">@Localizer["Faculty"] <span class="text-danger">*</span></label>
                             <select asp-for="Input.Faculty" asp-items="Model.FacultyList" class="form-select custom-select">
-                                <option value="">Seçiniz...</option>
+                                <option value="">@Localizer["SelectOption"]</option>
                             </select>
                             <span asp-validation-for="Input.Faculty" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="Input.Department" class="form-label">Bölüm <span class="text-danger">*</span></label>
+                            <label asp-for="Input.Department" class="form-label">@Localizer["Department"] <span class="text-danger">*</span></label>
                             <select asp-for="Input.Department" asp-items="Model.DepartmentList" class="form-select custom-select">
-                                <option value="">Seçiniz...</option>
+                                <option value="">@Localizer["SelectOption"]</option>
                             </select>
                             <span asp-validation-for="Input.Department" class="text-danger small"></span>
                         </div>
@@ -254,12 +317,12 @@
 
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label asp-for="Input.Password" class="form-label">Şifre <span class="text-danger">*</span></label>
+                            <label asp-for="Input.Password" class="form-label">@Localizer["Password"] <span class="text-danger">*</span></label>
                             <input asp-for="Input.Password" class="form-control" placeholder="••••••••" />
                             <span asp-validation-for="Input.Password" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="Input.ConfirmPassword" class="form-label">Şifre Tekrar <span class="text-danger">*</span></label>
+                            <label asp-for="Input.ConfirmPassword" class="form-label">@Localizer["ConfirmPassword"] <span class="text-danger">*</span></label>
                             <input asp-for="Input.ConfirmPassword" class="form-control" placeholder="••••••••" />
                             <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
                         </div>
@@ -267,15 +330,15 @@
 
                     <div class="row g-3 align-items-center mb-4">
                         <div class="col-md-6">
-                            <label asp-for="Input.ProfileImage" class="form-label">Profil Resmi</label>
+                            <label asp-for="Input.ProfileImage" class="form-label">@Localizer["ProfileImage"]</label>
                             <input asp-for="Input.ProfileImage" type="file" class="form-control form-control-sm" />
-                            <small class="text-muted" style="font-size: 0.7rem;">(Opsiyonel) Vesikalık formatında.</small>
+                            <small class="text-muted" style="font-size: 0.7rem;">@Localizer["ProfileImageHint"]</small>
                         </div>
                         <div class="col-md-6">
                             <div class="form-check">
                                 <input asp-for="Input.TermsAccepted" class="form-check-input" type="checkbox" id="termsCheckbox" />
                                 <label class="form-check-label small text-muted">
-                                    <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal" class="text-decoration-none fw-bold" style="color: var(--primary-color);">Kullanım Koşullarını</a> okudum.
+                                    <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal" class="text-decoration-none fw-bold" style="color: var(--primary-color);">@Localizer["TermsLink"]</a> @Localizer["TermsAcceptedText"]
                                 </label>
                             </div>
                         </div>
@@ -283,15 +346,15 @@
 
                     <div class="d-grid mb-4">
                         <button type="submit" class="btn btn-primary btn-lg shadow-sm">
-                            KAYDI TAMAMLA
+                            @Localizer["CompleteRegistration"]
                         </button>
                     </div>
 
                     <div class="text-center">
                         <p class="text-muted small mb-0">
-                            Zaten hesabınız var mı?
+                            @Localizer["AlreadyHaveAccount"]
                             <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl" class="text-primary fw-bold text-decoration-none">
-                                Giriş Yapın
+                                @Localizer["LoginNow"]
                             </a>
                         </p>
                     </div>
@@ -304,32 +367,34 @@
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 rounded-4 shadow-lg">
                 <div class="modal-header border-bottom-0 pb-0">
-                    <h5 class="modal-title fw-bold text-dark" id="termsModalLabel">Kullanım Koşulları ve KVKK</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                    <h5 class="modal-title fw-bold text-dark" id="termsModalLabel">@Localizer["TermsModalTitle"]</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@Localizer["Close"]"></button>
                 </div>
                 <div class="modal-body text-muted small" style="line-height: 1.8;">
                     <p>
-                        <strong>1. Kapsam ve Kabul</strong><br>
-                        Bu sistemi kullanarak, AntAbstract platformunun belirlediği kuralları ve akademik dürüstlük ilkelerini kabul etmiş sayılırsınız.
+                        <strong>@Localizer["TermsSection1Title"]</strong><br>
+                        @Localizer["TermsSection1Text"]
                     </p>
 
                     <p>
-                        <strong>2. KVKK ve Veri Gizliliği</strong><br>
-                        Sisteme girdiğiniz kişisel veriler (Ad, Soyad, TC No, İletişim bilgileri vb.) 6698 sayılı Kişisel Verilerin Korunması Kanunu kapsamında, sadece kongre/etkinlik süreçlerinin yürütülmesi amacıyla işlenmektedir. Üçüncü şahıslarla reklam amacıyla kesinlikle paylaşılmaz.
+                        <strong>@Localizer["TermsSection2Title"]</strong><br>
+                        @Localizer["TermsSection2Text"]
                     </p>
 
                     <p>
-                        <strong>3. Hesap Güvenliği</strong><br>
-                        Hesap şifrenizin güvenliğinden tamamen siz sorumlusunuz. Şifrenizin üçüncü kişilerle paylaşılması durumunda doğacak sorunlardan AntAbstract sorumlu tutulamaz.
+                        <strong>@Localizer["TermsSection3Title"]</strong><br>
+                        @Localizer["TermsSection3Text"]
                     </p>
 
                     <p>
-                        <strong>4. İptal ve İade Şartları</strong><br>
-                        Kayıt olduğunuz kongrelere dair ücret iadesi ve iptal kuralları, ilgili kongrenin Düzenleme Kurulu tarafından belirlenir. Sistem sağlayıcı olarak AntAbstract sadece ödeme altyapısını sunar.
+                        <strong>@Localizer["TermsSection4Title"]</strong><br>
+                        @Localizer["TermsSection4Text"]
                     </p>
                 </div>
                 <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" id="btnAcceptTerms" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" data-bs-dismiss="modal">Okudum, Anladım</button>
+                    <button type="button" id="btnAcceptTerms" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" data-bs-dismiss="modal">
+                        @Localizer["TermsAcceptButton"]
+                    </button>
                 </div>
             </div>
         </div>

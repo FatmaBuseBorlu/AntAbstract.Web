@@ -1,6 +1,8 @@
 ﻿@using AntAbstract.Domain.Entities
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
 @{
-    ViewData["Title"] = "Mesaj Merkezi";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
     var inboxMessages = ViewBag.Inbox as List<AntAbstract.Domain.Entities.Message>;
@@ -84,11 +86,11 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h3 class="fw-bold text-dark mb-1">Mesaj Merkezi</h3>
-            <p class="text-muted small mb-0">Kongre yönetimi ile olan yazışmalarınızı buradan yönetin.</p>
+            <h3 class="fw-bold text-dark mb-1">@Localizer["PageHeading"]</h3>
+            <p class="text-muted small mb-0">@Localizer["PageDescription"]</p>
         </div>
         <a href="/Message/Create" class="btn btn-compose text-white">
-            <i class="fas fa-plus me-2"></i> Yeni Mesaj Yaz
+            <i class="fas fa-plus me-2"></i> @Localizer["NewMessageButton"]
         </a>
     </div>
 
@@ -97,23 +99,23 @@
             <div class="list-group message-nav shadow-sm bg-white p-2 rounded-4 border-0">
                 <a class="list-group-item list-group-item-action active" id="list-inbox-list" data-bs-toggle="list" href="#list-inbox" role="tab">
                     <div class="d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-inbox me-2"></i> Gelen Kutusu</span>
+                        <span><i class="fas fa-inbox me-2"></i> @Localizer["InboxTab"]</span>
                         <span class="badge rounded-pill bg-primary">@inboxMessages?.Count</span>
                     </div>
                 </a>
                 <a class="list-group-item list-group-item-action" id="list-sent-list" data-bs-toggle="list" href="#list-sent" role="tab">
                     <div class="d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-paper-plane me-2"></i> Gönderilenler</span>
+                        <span><i class="fas fa-paper-plane me-2"></i> @Localizer["SentTab"]</span>
                         <span class="badge rounded-pill bg-secondary bg-opacity-25 text-secondary">@sentMessages?.Count</span>
                     </div>
                 </a>
                 <a href="#" class="list-group-item list-group-item-action disabled text-muted opacity-50">
-                    <i class="fas fa-trash-alt me-2"></i> Çöp Kutusu
+                    <i class="fas fa-trash-alt me-2"></i> @Localizer["TrashTab"]
                 </a>
             </div>
 
             <div class="mt-4 p-3 bg-primary bg-opacity-10 rounded-4 text-primary small">
-                <i class="fas fa-info-circle me-2"></i> Mesajlarınız, bildiri süreçlerinizle ilgili önemli güncellemeleri içerir.
+                <i class="fas fa-info-circle me-2"></i> @Localizer["InfoBoxText"]
             </div>
         </div>
 
@@ -123,7 +125,7 @@
                 <div class="tab-pane fade show active" id="list-inbox" role="tabpanel">
                     <div class="message-card">
                         <div class="card-header bg-white p-3 border-bottom-0">
-                            <h6 class="fw-bold m-0 text-dark">Gelen Mesajlar</h6>
+                            <h6 class="fw-bold m-0 text-dark">@Localizer["InboxMessagesHeader"]</h6>
                         </div>
                         <div class="list-group list-group-flush">
                             @if (inboxMessages != null && inboxMessages.Any())
@@ -142,12 +144,15 @@
                                                 </div>
                                                 <p class="mb-1 text-muted small text-truncate" style="max-width: 500px;">@msg.Content</p>
                                                 <small class="text-primary fw-600">
-                                                    <i class="fas fa-user-circle me-1"></i> @(msg.Sender?.FirstName + " " + msg.Sender?.LastName ?? "Sistem")
-                                                </small>
-                                            </div>
-                                        </div>
-                                    </a>
-                                }
+                                                    <i class="fas fa-user-circle me-1"></i>
+                                                    @(msg.Sender != null
+                                                                                                ? $"{msg.Sender.FirstName} {msg.Sender.LastName}"
+                                                                                                : Localizer["SystemSender"].Value)
+                                        </small>
+                                    </div>
+                                </div>
+                            </a>
+                                                        }
                             }
                             else
                             {
@@ -155,8 +160,8 @@
                                     <div class="mb-3">
                                         <i class="fas fa-envelope-open-text fa-4x text-muted opacity-25"></i>
                                     </div>
-                                    <h6 class="text-dark fw-bold">Gelen kutunuz tertemiz!</h6>
-                                    <p class="text-muted small">Şu an için yeni bir mesajınız bulunmuyor.</p>
+                                    <h6 class="text-dark fw-bold">@Localizer["InboxEmptyTitle"]</h6>
+                                    <p class="text-muted small">@Localizer["InboxEmptyText"]</p>
                                 </div>
                             }
                         </div>
@@ -166,7 +171,7 @@
                 <div class="tab-pane fade" id="list-sent" role="tabpanel">
                     <div class="message-card">
                         <div class="card-header bg-white p-3 border-bottom-0">
-                            <h6 class="fw-bold m-0 text-dark">Gönderilen Mesajlar</h6>
+                            <h6 class="fw-bold m-0 text-dark">@Localizer["SentMessagesHeader"]</h6>
                         </div>
                         <div class="list-group list-group-flush">
                             @if (sentMessages != null && sentMessages.Any())
@@ -185,7 +190,8 @@
                                                 </div>
                                                 <p class="mb-1 text-muted small text-truncate" style="max-width: 500px;">@msg.Content</p>
                                                 <small class="text-muted">
-                                                    <i class="fas fa-user-check me-1"></i> Alıcı: @(msg.Receiver?.FirstName ?? "Yönetici")
+                                                    <i class="fas fa-user-check me-1"></i>
+                                                    @Localizer["RecipientLabel"] @(msg.Receiver?.FirstName ?? Localizer["DefaultRecipient"].Value)
                                                 </small>
                                             </div>
                                         </div>
@@ -198,8 +204,8 @@
                                     <div class="mb-3 text-muted opacity-25">
                                         <i class="fas fa-paper-plane fa-4x"></i>
                                     </div>
-                                    <h6 class="text-dark fw-bold">Henüz mesaj göndermediniz.</h6>
-                                    <p class="text-muted small">İletişime geçmek için sağ üstteki butonu kullanabilirsiniz.</p>
+                                    <h6 class="text-dark fw-bold">@Localizer["SentEmptyTitle"]</h6>
+                                    <p class="text-muted small">@Localizer["SentEmptyText"]</p>
                                 </div>
                             }
                         </div>

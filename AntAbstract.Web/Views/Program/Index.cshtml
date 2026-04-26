@@ -1,15 +1,17 @@
 ﻿@model IEnumerable<AntAbstract.Domain.Entities.Session>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
 @{
-    ViewData["Title"] = "Bilimsel Program";
-    Layout = "_Layout"; 
-    
+    ViewData["Title"] = Localizer["PageTitle"].Value;
+    Layout = "_Layout";
+
     var groups = Model.GroupBy(x => x.SessionDate.Date).OrderBy(x => x.Key).ToList();
 }
 
 <div class="container py-5 mt-4">
     <div class="text-center mb-5">
-        <h6 class="text-primary fw-bold text-uppercase ls-2">TAKVİM</h6>
-        <h2 class="fw-bold">Bilimsel Program</h2>
+        <h6 class="text-primary fw-bold text-uppercase ls-2">@Localizer["CalendarLabel"]</h6>
+        <h2 class="fw-bold">@Localizer["PageHeading"]</h2>
         <p class="text-muted">@ViewBag.ConferenceName</p>
     </div>
 
@@ -17,7 +19,7 @@
     {
         <div class="alert alert-light text-center border py-5">
             <i class="far fa-calendar-times fa-3x text-muted mb-3 opacity-50"></i>
-            <p class="text-muted">Henüz program açıklanmamıştır. Lütfen daha sonra tekrar kontrol ediniz.</p>
+            <p class="text-muted">@Localizer["EmptyProgramText"]</p>
         </div>
     }
     else
@@ -27,11 +29,11 @@
             {
                 var group = groups[i];
                 <li class="nav-item mx-1" role="presentation">
-                    <button class="nav-link px-4 py-2 fw-bold @(i == 0 ? "active" : "") shadow-sm" 
-                            id="tab-@i" 
-                            data-bs-toggle="pill" 
-                            data-bs-target="#content-@i" 
-                            type="button" 
+                    <button class="nav-link px-4 py-2 fw-bold @(i == 0 ? "active" : "") shadow-sm"
+                            id="tab-@i"
+                            data-bs-toggle="pill"
+                            data-bs-target="#content-@i"
+                            type="button"
                             role="tab">
                         @group.Key.ToString("dd MMMM dddd")
                     </button>
@@ -44,7 +46,7 @@
             {
                 var group = groups[i];
                 <div class="tab-pane fade @(i == 0 ? "show active" : "")" id="content-@i" role="tabpanel">
-                    
+
                     <div class="row g-4">
                         @foreach (var session in group.OrderBy(s => s.SessionDate))
                         {
@@ -57,16 +59,16 @@
                                                     <i class="far fa-clock me-1"></i> @session.SessionDate.ToString("HH:mm")
                                                 </span>
                                                 <span class="badge bg-secondary bg-opacity-10 text-secondary mb-2 ms-1">
-                                                    <i class="fas fa-map-marker-alt me-1"></i> @(session.Location ?? "Salon Belirtilmedi")
+                                                    <i class="fas fa-map-marker-alt me-1"></i> @(session.Location ?? Localizer["LocationNotSpecified"].Value)
                                                 </span>
                                             </div>
                                         </div>
                                         <h5 class="card-title fw-bold text-dark mt-2 mb-1">@session.Title</h5>
                                     </div>
-                                    
+
                                     <div class="card-body px-4">
                                         <hr class="text-muted opacity-10 my-3">
-                                        
+
                                         @if (session.Submissions != null && session.Submissions.Any())
                                         {
                                             <ul class="list-unstyled mb-0">
@@ -84,7 +86,7 @@
                                         }
                                         else
                                         {
-                                            <p class="text-muted small fst-italic mb-0">Detaylar yakında eklenecektir.</p>
+                                            <p class="text-muted small fst-italic mb-0">@Localizer["DetailsComingSoonText"]</p>
                                         }
                                     </div>
                                 </div>
@@ -101,11 +103,13 @@
 <style>
     .hover-shadow:hover {
         transform: translateY(-5px);
-        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
     }
+
     .transition-all {
         transition: all 0.3s ease;
     }
+
     .last-no-border:last-child {
         border-bottom: none !important;
         margin-bottom: 0 !important;

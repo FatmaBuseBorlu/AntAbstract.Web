@@ -2,44 +2,72 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"];
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_Layout";
 }
 
 <style>
-    /* STEPPER STİLLERİ */
-    .step-indicator { display: flex; justify-content: center; margin-bottom: 30px; }
+    .step-indicator {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 30px;
+    }
+
     .step {
-        width: 40px; height: 40px; border-radius: 50%;
-        background: #e9ecef; color: #6c757d;
-        display: flex; align-items: center; justify-content: center;
-        font-weight: bold; margin: 0 10px; position: relative;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #e9ecef;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin: 0 10px;
+        position: relative;
         z-index: 1;
     }
-    .step.completed {
-        background: #198754; color: white; /* Yeşil - Tamamlandı */
-    }
-    .step.active {
-        background: #00aeef; color: white; /* Mavi - Aktif */
-        box-shadow: 0 0 10px rgba(0, 174, 239, 0.4);
-    }
-    .step-line {
-        height: 2px; background: #e9ecef; flex: 1;
-        margin-top: 20px; max-width: 100px;
-    }
-    .step-line.completed { background: #198754; }
 
-    /* KART VE FİYAT STİLLERİ */
+        .step.completed {
+            background: #198754;
+            color: white;
+        }
+
+        .step.active {
+            background: #00aeef;
+            color: white;
+            box-shadow: 0 0 10px rgba(0, 174, 239, 0.4);
+        }
+
+    .step-line {
+        height: 2px;
+        background: #e9ecef;
+        flex: 1;
+        margin-top: 20px;
+        max-width: 100px;
+    }
+
+        .step-line.completed {
+            background: #198754;
+        }
+
     .payment-card {
         border: none;
         border-radius: 15px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         overflow: hidden;
     }
+
     .user-profile-mini {
-        display: flex; align-items: center; gap: 15px; padding: 15px;
-        background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
     }
+
     .price-tag {
         background-color: #f1f8ff;
         border-radius: 10px;
@@ -48,7 +76,13 @@
         border: 2px dashed #00aeef;
         margin: 20px 0;
     }
-    .payment-icons i { font-size: 26px; margin: 0 8px; color: #6c757d; opacity: 0.7; }
+
+    .payment-icons i {
+        font-size: 26px;
+        margin: 0 8px;
+        color: #6c757d;
+        opacity: 0.7;
+    }
 </style>
 
 <div class="container mt-5 pt-5 mb-5">
@@ -58,12 +92,12 @@
             <div class="d-flex align-items-center justify-content-center mb-4">
                 <div class="text-center">
                     <div class="step completed"><i class="fas fa-check"></i></div>
-                    <small class="fw-bold mt-1 d-block text-success">Kayıt</small>
+                    <small class="fw-bold mt-1 d-block text-success">@Localizer["Step1Label"]</small>
                 </div>
                 <div class="step-line completed"></div>
                 <div class="text-center">
                     <div class="step active">2</div>
-                    <small class="fw-bold mt-1 d-block text-primary">Ödeme</small>
+                    <small class="fw-bold mt-1 d-block text-primary">@Localizer["Step2Label"]</small>
                 </div>
             </div>
         </div>
@@ -78,7 +112,7 @@
                 </div>
 
                 <div class="card-body p-4 p-md-5">
-                    
+
                     <div class="user-profile-mini mb-4">
                         <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width:45px; height:45px; font-size:18px; min-width: 45px;">
                             <i class="fas fa-user"></i>
@@ -98,9 +132,9 @@
                         <span class="fw-bold text-dark">@Model.RegistrationDate.ToLocalTime().ToString("dd MMM yyyy")</span>
                     </div>
                     <div class="d-flex justify-content-between">
-                        <span class="text-muted">Durum</span>
+                        <span class="text-muted">@Localizer["StatusLabel"]</span>
                         <span>
-                             @if (Model.IsPaid)
+                            @if (Model.IsPaid)
                             {
                                 <span class="badge bg-success">@Localizer["StatusPaid"]</span>
                             }
@@ -124,18 +158,19 @@
                             <i class="fas fa-check-circle fs-4 mb-2"></i><br>
                             <strong>@Localizer["PaidMessage"]</strong>
                         </div>
-                        <a href="/" class="btn btn-outline-secondary w-100 fw-bold">Ana Sayfaya Dön</a>
+                        <a href="/" class="btn btn-outline-secondary w-100 fw-bold">@Localizer["BackToHomeButton"]</a>
                     }
                     else
                     {
                         <form asp-controller="Payment" asp-action="CreateCheckoutSession" method="post">
+                            @Html.AntiForgeryToken()
                             <input type="hidden" name="registrationId" value="@Model.Id" />
-                            
+
                             <button type="submit" class="btn btn-lg btn-success w-100 py-3 fw-bold shadow-sm" style="transition: transform 0.2s;">
                                 <i class="fas fa-lock me-2"></i> @Localizer["PayNowButton"]
                             </button>
                         </form>
-                        
+
                         <div class="text-center mt-4">
                             <div class="payment-icons mb-2">
                                 <i class="fab fa-cc-visa" title="Visa"></i>
@@ -143,7 +178,7 @@
                                 <i class="fab fa-cc-amex" title="American Express"></i>
                             </div>
                             <small class="text-muted" style="font-size: 11px;">
-                                <i class="fas fa-shield-alt text-success me-1"></i> 256-bit SSL ile güvenli ödeme
+                                <i class="fas fa-shield-alt text-success me-1"></i> @Localizer["SecurePaymentText"]
                             </small>
                         </div>
                     }

@@ -1,18 +1,22 @@
 ﻿@model AntAbstract.Web.Models.ViewModels.Admin.Tenants.TenantAssignManagerViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Yönetici Ata";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 }
 
 <div class="container-fluid">
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
-            <h4 class="mb-0 fw-bold text-dark">👤 Kurum Yöneticisi Ata</h4>
-            <p class="text-muted small mb-0"><strong>@Model.TenantName</strong> kurumu için tam yetkili bir organizatör hesabı oluşturun.</p>
+            <h4 class="mb-0 fw-bold text-dark">@Localizer["PageHeading"]</h4>
+            <p class="text-muted small mb-0">
+                <strong>@Model.TenantName</strong> @Localizer["PageLead"]
+            </p>
         </div>
+
         <a asp-action="Index" class="btn btn-light border shadow-sm px-3">
-            <i class="fas fa-arrow-left me-2"></i> Listeye Dön
+            <i class="fas fa-arrow-left me-2"></i> @Localizer["BackToListButton"]
         </a>
     </div>
 
@@ -24,52 +28,53 @@
                     @Html.ValidationSummary(true, "", new { @class = "alert alert-danger border-0 shadow-sm rounded-3 small" })
 
                     <form asp-action="AssignManager" method="post">
+                        @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="TenantId" />
 
                         <div class="row g-4">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-dark small" asp-for="FirstName">YÖNETİCİ ADI</label>
+                                <label class="form-label fw-bold text-dark small" asp-for="FirstName">@Localizer["FirstNameLabel"]</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0 text-muted">
                                         <i class="fas fa-user"></i>
                                     </span>
-                                    <input class="form-control bg-light border-start-0 ps-0" asp-for="FirstName" placeholder="Örn: Ahmet" />
+                                    <input class="form-control bg-light border-start-0 ps-0" asp-for="FirstName" placeholder="@Localizer["FirstNamePlaceholder"]" />
                                 </div>
                                 <span class="text-danger small mt-1 d-block" asp-validation-for="FirstName"></span>
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-dark small" asp-for="LastName">SOYADI</label>
+                                <label class="form-label fw-bold text-dark small" asp-for="LastName">@Localizer["LastNameLabel"]</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0 text-muted">
                                         <i class="fas fa-user-tag"></i>
                                     </span>
-                                    <input class="form-control bg-light border-start-0 ps-0" asp-for="LastName" placeholder="Örn: Yılmaz" />
+                                    <input class="form-control bg-light border-start-0 ps-0" asp-for="LastName" placeholder="@Localizer["LastNamePlaceholder"]" />
                                 </div>
                                 <span class="text-danger small mt-1 d-block" asp-validation-for="LastName"></span>
                             </div>
 
                             <div class="col-md-12">
-                                <label class="form-label fw-bold text-dark small" asp-for="Email">E-POSTA ADRESİ</label>
+                                <label class="form-label fw-bold text-dark small" asp-for="Email">@Localizer["EmailLabel"]</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0 text-muted">
                                         <i class="fas fa-envelope"></i>
                                     </span>
-                                    <input type="email" class="form-control bg-light border-start-0 ps-0" asp-for="Email" placeholder="Örn: yonetici@kurum.edu.tr" />
+                                    <input type="email" class="form-control bg-light border-start-0 ps-0" asp-for="Email" placeholder="@Localizer["EmailPlaceholder"]" />
                                 </div>
                                 <div class="form-text text-muted small mt-2">
-                                    <i class="fas fa-info-circle me-1"></i> Yönetici sisteme bu e-posta adresi ile giriş yapacaktır.
+                                    <i class="fas fa-info-circle me-1"></i> @Localizer["EmailHelpText"]
                                 </div>
                                 <span class="text-danger small mt-1 d-block" asp-validation-for="Email"></span>
                             </div>
 
                             <div class="col-md-12">
-                                <label class="form-label fw-bold text-dark small" asp-for="Password">GİRİŞ ŞİFRESİ</label>
+                                <label class="form-label fw-bold text-dark small" asp-for="Password">@Localizer["PasswordLabel"]</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0 text-muted">
                                         <i class="fas fa-lock"></i>
                                     </span>
-                                    <input type="password" class="form-control bg-light border-start-0 ps-0" asp-for="Password" placeholder="En az 6 karakterli bir şifre belirleyin" />
+                                    <input type="password" class="form-control bg-light border-start-0 ps-0" asp-for="Password" placeholder="@Localizer["PasswordPlaceholder"]" />
                                 </div>
                                 <span class="text-danger small mt-1 d-block" asp-validation-for="Password"></span>
                             </div>
@@ -79,7 +84,7 @@
 
                         <div class="d-grid text-end">
                             <button type="submit" class="btn btn-success btn-lg rounded-3 fw-bold shadow-sm">
-                                <i class="fas fa-user-check me-2"></i> Hesabı Oluştur ve Yetkilendir
+                                <i class="fas fa-user-check me-2"></i> @Localizer["CreateAndAuthorizeButton"]
                             </button>
                         </div>
                     </form>
@@ -95,29 +100,29 @@
                         <div class="bg-white p-3 rounded-circle shadow-sm me-3">
                             <i class="fas fa-user-shield fa-2x text-success"></i>
                         </div>
-                        <h5 class="fw-bold text-success mb-0">Yetkilendirme Hakkında</h5>
+                        <h5 class="fw-bold text-success mb-0">@Localizer["InfoCardTitle"]</h5>
                     </div>
 
                     <p class="text-dark mb-4" style="line-height: 1.8;">
-                        Buradan oluşturacağınız kullanıcı, arka planda otomatik olarak <strong>"Organizatör"</strong> rolüne sahip olacaktır.
+                        @Localizer["InfoLead_Part1"] <strong>@Localizer["OrganizerRoleName"]</strong> @Localizer["InfoLead_Part2"]
                     </p>
 
                     <ul class="list-unstyled">
                         <li class="mb-3 d-flex">
                             <i class="fas fa-check-circle text-success mt-1 me-3"></i>
-                            <span class="small text-dark">Kendi kurumuna (<b>@Model.TenantName</b>) ait tüm kongreleri görebilir.</span>
+                            <span class="small text-dark">@Localizer["InfoItem1_Part1"] <b>@Model.TenantName</b>@Localizer["InfoItem1_Part2"]</span>
                         </li>
                         <li class="mb-3 d-flex">
                             <i class="fas fa-check-circle text-success mt-1 me-3"></i>
-                            <span class="small text-dark">Sadece kendi kongrelerine gelen bildirileri, hakemleri ve kullanıcıları yönetebilir.</span>
+                            <span class="small text-dark">@Localizer["InfoItem2"]</span>
                         </li>
                         <li class="mb-3 d-flex">
                             <i class="fas fa-times-circle text-danger mt-1 me-3"></i>
-                            <span class="small text-dark">Başka kurumlara ait (örneğin diğer üniversitelerin) verilerine kesinlikle erişemez.</span>
+                            <span class="small text-dark">@Localizer["InfoItem3"]</span>
                         </li>
                         <li class="mb-0 d-flex">
                             <i class="fas fa-times-circle text-danger mt-1 me-3"></i>
-                            <span class="small text-dark">Yeni bir kurum (Tenant) tanımlayamaz veya silemez.</span>
+                            <span class="small text-dark">@Localizer["InfoItem4"]</span>
                         </li>
                     </ul>
                 </div>

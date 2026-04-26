@@ -1,4 +1,6 @@
 ﻿@model List<AntAbstract.Domain.Entities.Notification>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
 @{
     int unreadCount = ViewBag.UnreadCount ?? 0;
 }
@@ -91,11 +93,11 @@
 
     <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-3 rounded-4 p-0 overflow-hidden" aria-labelledby="notifDropdownBtn" style="width: 320px;">
         <li class="p-3 border-bottom d-flex justify-content-between align-items-center bg-white">
-            <h6 class="fw-bold mb-0 text-dark">Bildirimler</h6>
+            <h6 class="fw-bold mb-0 text-dark">@Localizer["HeaderTitle"]</h6>
             @if (unreadCount > 0)
             {
                 <button onclick="markAllRead()" class="btn btn-link btn-sm p-0 text-decoration-none text-primary fw-bold" style="font-size: 0.75rem;">
-                    Tümünü Okundu Yap
+                    @Localizer["MarkAllReadButton"]
                 </button>
             }
         </li>
@@ -127,13 +129,13 @@
             {
                 <div class="text-center py-5 text-muted">
                     <i class="far fa-bell-slash fa-2x mb-3 opacity-25"></i>
-                    <p class="small mb-0">Henüz bildiriminiz yok.</p>
+                    <p class="small mb-0">@Localizer["EmptyStateText"]</p>
                 </div>
             }
         </div>
 
         <li class="p-2 text-center bg-light border-top">
-            <a href="#" class="small fw-bold text-decoration-none text-muted">Tümünü Gör</a>
+            <a href="#" class="small fw-bold text-decoration-none text-muted">@Localizer["ViewAllLink"]</a>
         </li>
     </ul>
 </div>
@@ -148,7 +150,7 @@
         fetch('/Notification/MarkAllRead', { method: 'POST' }).then(() => {
             document.querySelectorAll('.notif-item.unread').forEach(el => el.classList.remove('unread'));
             var badge = document.getElementById('notifBadge');
-            if(badge) badge.style.display = 'none';
+            if (badge) badge.style.display = 'none';
         });
     }
 </script>

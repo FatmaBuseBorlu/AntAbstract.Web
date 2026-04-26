@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -12,17 +13,21 @@ namespace AntAbstract.Web.Controllers
     {
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IStringLocalizer<SurveyController> _localizer;
 
-        public SurveyController(AppDbContext context, UserManager<AppUser> userManager)
+        public SurveyController(
+            AppDbContext context,
+            UserManager<AppUser> userManager,
+            IStringLocalizer<SurveyController> localizer)
         {
             _context = context;
             _userManager = userManager;
+            _localizer = localizer;
         }
 
         [HttpGet]
         public IActionResult Index(Guid? submissionId)
         {
-
             ViewBag.SubmissionId = submissionId;
             return View();
         }
@@ -32,32 +37,34 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> Submit(Guid? submissionId, string q1, string q2, string q3, string q4, string q5)
         {
             var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return Challenge();
 
             var adminUser = (await _userManager.GetUsersInRoleAsync("Admin")).FirstOrDefault()
                             ?? await _userManager.Users.FirstOrDefaultAsync();
 
             if (adminUser == null)
             {
-                TempData["ErrorMessage"] = "Yönetici bulunamadığı için anket gönderilemedi.";
+                TempData["ErrorMessage"] = _localizer["AdminNotFound"];
                 return RedirectToAction("Index", "Dashboard");
             }
 
             string surveyContent = $@"
-                <p><strong>Kullanıcı:</strong> {user.FirstName} {user.LastName} ({user.Email})</p>
+                <p><strong>{_localizer["UserLabel"]}</strong> {user.FirstName} {user.LastName} ({user.Email})</p>
                 <hr>
-                <p><strong>1. Beklentileri karşıladı mı?</strong><br>{q1}</p>
-                <p><strong>2. Tavsiye eder misiniz?</strong><br>{q2}</p>
-                <p><strong>3. Network katkısı oldu mu?</strong><br>{q3}</p>
-                <p><strong>4. Ne öğrendiniz?</strong><br>{q4}</p>
-                <p><strong>5. Uygulama planınız nedir?</strong><br>{q5}</p>
+                <p><strong>{_localizer["Question1Label"]}</strong><br>{q1}</p>
+                <p><strong>{_localizer["Question2Label"]}</strong><br>{q2}</p>
+                <p><strong>{_localizer["Question3Label"]}</strong><br>{q3}</p>
+                <p><strong>{_localizer["Question4Label"]}</strong><br>{q4}</p>
+                <p><strong>{_localizer["Question5Label"]}</strong><br>{q5}</p>
             ";
 
             var message = new Message
             {
                 SenderId = user.Id,
                 ReceiverId = adminUser.Id,
-                Subject = "📋 Kongre Değerlendirme Anketi",
-                Content = surveyContent, 
+                Subject = _localizer["SurveySubject"],
+                Content = surveyContent,
                 SentDate = DateTime.UtcNow,
                 IsRead = false,
                 IsDeleted = false
@@ -70,14 +77,14 @@ namespace AntAbstract.Web.Controllers
                 var submission = await _context.Submissions.FindAsync(submissionId.Value);
                 if (submission != null)
                 {
-                    submission.IsFeedbackGiven = true; 
+                    submission.IsFeedbackGiven = true;
                     _context.Submissions.Update(submission);
                 }
             }
 
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Değerli geri bildiriminiz için teşekkür ederiz! Mesajınız yöneticiye iletildi.";
+            TempData["SuccessMessage"] = _localizer["SurveySubmitSuccess"];
 
             if (submissionId.HasValue)
             {

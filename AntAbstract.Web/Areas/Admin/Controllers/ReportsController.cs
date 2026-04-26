@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -19,17 +20,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IStringLocalizer<ReportsController> _localizer;
 
         public ReportsController(
             AppDbContext context,
             TenantContext tenantContext,
             ISelectedConferenceService selectedConferenceService,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IStringLocalizer<ReportsController> localizer)
         {
             _context = context;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
             _userManager = userManager;
+            _localizer = localizer;
         }
 
         [HttpGet("/Admin/Reports")]
@@ -66,7 +70,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 query = query.Where(c => c.TenantId == user.TenantId.Value);
             }
-
             else if (!isAdmin && user?.TenantId == null)
             {
                 query = query.Where(c => false);
@@ -78,10 +81,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var vm = new SelectConferenceViewModel
             {
-                Title = "Raporlama Merkezi",
-                Lead = "Verilerini incelemek istediğiniz kongreyi seçerek devam edin.",
+                Title = _localizer["SelectConference_Title"],
+                Lead = _localizer["SelectConference_Lead"],
                 PostUrl = "/Admin/Reports/Select",
-                SubmitText = "Raporları Görüntüle",
+                SubmitText = _localizer["SelectConference_Submit"],
                 Conferences = conferences,
                 ReturnUrl = returnUrl
             };
@@ -99,7 +102,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                TempData["ErrorMessage"] = _localizer["Error_ConferenceNotFound"];
                 return RedirectToAction(nameof(SelectConference));
             }
 
@@ -246,7 +249,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 })
                 .ToListAsync();
 
-            var registrations = await _context.Registrations
+            var registrationsData = await _context.Registrations
                 .AsNoTracking()
                 .Where(r => r.ConferenceId == confId)
                 .Select(r => new
@@ -262,13 +265,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             using var wb = new XLWorkbook();
 
-            var ws1 = wb.Worksheets.Add("Submissions");
-            ws1.Cell(1, 1).Value = "Id";
-            ws1.Cell(1, 2).Value = "Title";
-            ws1.Cell(1, 3).Value = "AuthorEmail";
-            ws1.Cell(1, 4).Value = "Status";
-            ws1.Cell(1, 5).Value = "CreatedAt";
-            ws1.Cell(1, 6).Value = "DecisionDate";
+            var ws1 = wb.Worksheets.Add(_localizer["Excel_SubmissionsSheet"].Value);
+            ws1.Cell(1, 1).Value = _localizer["Excel_Id"].Value;
+            ws1.Cell(1, 2).Value = _localizer["Excel_Title"].Value;
+            ws1.Cell(1, 3).Value = _localizer["Excel_AuthorEmail"].Value;
+            ws1.Cell(1, 4).Value = _localizer["Excel_Status"].Value;
+            ws1.Cell(1, 5).Value = _localizer["Excel_CreatedAt"].Value;
+            ws1.Cell(1, 6).Value = _localizer["Excel_DecisionDate"].Value;
 
             for (int i = 0; i < submissions.Count; i++)
             {
@@ -282,23 +285,25 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
             ws1.Columns().AdjustToContents();
 
-            var ws2 = wb.Worksheets.Add("Registrations");
-            ws2.Cell(1, 1).Value = "Id";
-            ws2.Cell(1, 2).Value = "Amount";
-            ws2.Cell(1, 3).Value = "IsPaid";
-            ws2.Cell(1, 4).Value = "RegistrationDate";
-            ws2.Cell(1, 5).Value = "PaymentDate";
-            ws2.Cell(1, 6).Value = "PaymentTransactionId";
+            var ws2 = wb.Worksheets.Add(_localizer["Excel_RegistrationsSheet"].Value);
+            ws2.Cell(1, 1).Value = _localizer["Excel_Id"].Value;
+            ws2.Cell(1, 2).Value = _localizer["Excel_Amount"].Value;
+            ws2.Cell(1, 3).Value = _localizer["Excel_IsPaid"].Value;
+            ws2.Cell(1, 4).Value = _localizer["Excel_RegistrationDate"].Value;
+            ws2.Cell(1, 5).Value = _localizer["Excel_PaymentDate"].Value;
+            ws2.Cell(1, 6).Value = _localizer["Excel_PaymentTransactionId"].Value;
 
-            for (int i = 0; i < registrations.Count; i++)
+            for (int i = 0; i < registrationsData.Count; i++)
             {
                 var r = i + 2;
-                ws2.Cell(r, 1).Value = registrations[i].Id.ToString();
-                ws2.Cell(r, 2).Value = registrations[i].Amount;
-                ws2.Cell(r, 3).Value = registrations[i].IsPaid ? "Paid" : "Unpaid";
-                ws2.Cell(r, 4).Value = registrations[i].RegistrationDate;
-                ws2.Cell(r, 5).Value = registrations[i].PaymentDate;
-                ws2.Cell(r, 6).Value = registrations[i].PaymentTransactionId;
+                ws2.Cell(r, 1).Value = registrationsData[i].Id.ToString();
+                ws2.Cell(r, 2).Value = registrationsData[i].Amount;
+                ws2.Cell(r, 3).Value = registrationsData[i].IsPaid
+                    ? _localizer["Excel_Paid"].Value
+                    : _localizer["Excel_Unpaid"].Value;
+                ws2.Cell(r, 4).Value = registrationsData[i].RegistrationDate;
+                ws2.Cell(r, 5).Value = registrationsData[i].PaymentDate;
+                ws2.Cell(r, 6).Value = registrationsData[i].PaymentTransactionId;
             }
             ws2.Columns().AdjustToContents();
 
