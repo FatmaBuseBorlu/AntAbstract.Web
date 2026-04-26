@@ -1,24 +1,30 @@
 ﻿@page
 @model ResetAuthenticatorModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
 @{
-    ViewData["Title"] = "Reset authenticator key";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     ViewData["ActivePage"] = ManageNavPages.TwoFactorAuthentication;
 }
 
 <partial name="_StatusMessage" for="StatusMessage" />
 <h3>@ViewData["Title"]</h3>
+
 <div class="alert alert-warning" role="alert">
     <p>
         <span class="glyphicon glyphicon-warning-sign"></span>
-        <strong>If you reset your authenticator key your authenticator app will not work until you reconfigure it.</strong>
+        <strong>@Localizer["WarningTitle"]</strong>
     </p>
     <p>
-        This process disables 2FA until you verify your authenticator app.
-        If you do not complete your authenticator app configuration you may lose access to your account.
+        @Localizer["WarningText"]
     </p>
 </div>
+
 <div>
     <form id="reset-authenticator-form" method="post">
-        <button id="reset-authenticator-button" class="btn btn-danger" type="submit">Reset authenticator key</button>
+        @Html.AntiForgeryToken()
+        <button id="reset-authenticator-button" class="btn btn-danger" type="submit">
+            @Localizer["ResetButton"]
+        </button>
     </form>
 </div>

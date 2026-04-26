@@ -1,10 +1,13 @@
 ﻿@using Microsoft.AspNetCore.Identity
 @using AntAbstract.Domain.Entities
 @inject UserManager<AppUser> UserManager
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model AntAbstract.Domain.Entities.Registration
 
 @{
     Layout = "_Layout";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
+
     var slug = ViewBag.Slug;
     var user = ViewBag.User as AppUser;
     var ticket = ViewBag.Ticket as RegistrationType;
@@ -96,12 +99,12 @@
             <div class="d-flex align-items-center justify-content-center mb-4">
                 <div class="text-center">
                     <div class="step active">1</div>
-                    <small class="fw-bold mt-1 d-block text-primary">Kayıt & Fatura</small>
+                    <small class="fw-bold mt-1 d-block text-primary">@Localizer["Step1Label"]</small>
                 </div>
                 <div class="step-line"></div>
                 <div class="text-center">
                     <div class="step">2</div>
-                    <small class="fw-bold mt-1 d-block text-muted">Ödeme</small>
+                    <small class="fw-bold mt-1 d-block text-muted">@Localizer["Step2Label"]</small>
                 </div>
             </div>
         </div>
@@ -111,8 +114,8 @@
         <div class="col-md-8 col-lg-7">
             <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
                 <div class="card-header bg-white p-4 text-center border-bottom">
-                    <h4 class="fw-bold text-dark mb-1">Kongre Kayıt Onayı</h4>
-                    <p class="text-muted small mb-0">Lütfen fatura bilgilerinizi eksiksiz doldurun</p>
+                    <h4 class="fw-bold text-dark mb-1">@Localizer["HeaderTitle"]</h4>
+                    <p class="text-muted small mb-0">@Localizer["HeaderDescription"]</p>
                 </div>
 
                 <div class="card-body p-4 p-md-5">
@@ -123,7 +126,7 @@
                     </div>
 
                     <div class="summary-card p-3 mb-4">
-                        <label class="small text-muted fw-bold text-uppercase mb-2">Kayıt Yapılacak Hesap</label>
+                        <label class="small text-muted fw-bold text-uppercase mb-2">@Localizer["AccountSummaryLabel"]</label>
                         <div class="user-profile-mini">
                             <div class="avatar-circle">
                                 @(user?.FirstName?.Substring(0, 1).ToUpper() ?? "U")
@@ -139,7 +142,7 @@
                     <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
                         <div>
                             <span class="fw-bold text-dark text-uppercase">@ticket.Name</span>
-                            <div class="small text-muted">Katılım Bedeli</div>
+                            <div class="small text-muted">@Localizer["ParticipationFeeText"]</div>
                         </div>
                         <div class="fs-4 fw-bold text-primary">
                             @ticket.Price.ToString("N2") @ticket.Currency
@@ -147,25 +150,54 @@
                     </div>
 
                     <form asp-action="CheckoutPost" asp-route-slug="@slug" asp-route-typeId="@ticket.Id" method="post">
+                        @Html.AntiForgeryToken()
 
-                        <h6 class="fw-bold text-dark mb-3"><i class="fas fa-file-invoice me-2 text-secondary"></i>Fatura Bilgileri</h6>
+                        <h6 class="fw-bold text-dark mb-3">
+                            <i class="fas fa-file-invoice me-2 text-secondary"></i>@Localizer["InvoiceInfoTitle"]
+                        </h6>
+
                         <div class="bg-light p-4 rounded-3 border mb-4">
                             <div class="row g-3">
                                 <div class="col-md-12">
-                                    <label class="form-label small fw-bold text-muted">Fatura Adı / Kurum Adı <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" name="BillingName" value="@(user?.FirstName + " " + user?.LastName)" required placeholder="Örn: X Üniversitesi veya Ad Soyad">
+                                    <label class="form-label small fw-bold text-muted">
+                                        @Localizer["BillingNameLabel"] <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text"
+                                           class="form-control"
+                                           name="BillingName"
+                                           value="@(user?.FirstName + " " + user?.LastName)"
+                                           required
+                                           placeholder="@Localizer["BillingNamePlaceholder"]">
                                 </div>
+
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-muted">Vergi Dairesi</label>
-                                    <input type="text" class="form-control" name="TaxOffice" placeholder="Kurumsal ise doldurun">
+                                    <label class="form-label small fw-bold text-muted">@Localizer["TaxOfficeLabel"]</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           name="TaxOffice"
+                                           placeholder="@Localizer["TaxOfficePlaceholder"]">
                                 </div>
+
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-muted">Vergi No / T.C. Kimlik No <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" name="TaxNumber" required placeholder="Zorunlu">
+                                    <label class="form-label small fw-bold text-muted">
+                                        @Localizer["TaxNumberLabel"] <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text"
+                                           class="form-control"
+                                           name="TaxNumber"
+                                           required
+                                           placeholder="@Localizer["TaxNumberPlaceholder"]">
                                 </div>
+
                                 <div class="col-md-12">
-                                    <label class="form-label small fw-bold text-muted">Açık Fatura Adresi <span class="text-danger">*</span></label>
-                                    <textarea class="form-control" name="BillingAddress" rows="2" required placeholder="İl, ilçe ve açık adresinizi giriniz..."></textarea>
+                                    <label class="form-label small fw-bold text-muted">
+                                        @Localizer["BillingAddressLabel"] <span class="text-danger">*</span>
+                                    </label>
+                                    <textarea class="form-control"
+                                              name="BillingAddress"
+                                              rows="2"
+                                              required
+                                              placeholder="@Localizer["BillingAddressPlaceholder"]"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -174,24 +206,27 @@
                             <input class="form-check-input mt-1" type="checkbox" id="termsCheck" required style="cursor: pointer;">
                             <label class="form-check-label small text-muted lh-sm ms-2" for="termsCheck" style="cursor: pointer;">
                                 <a href="#" class="terms-link fw-bold" data-bs-toggle="modal" data-bs-target="#termsModal">
-                                    Katılım ve İptal Koşulları
-                                </a>'nı okudum, kişisel verilerimin işlenmesini kabul ediyorum ve kaydımı onaylıyorum.
+                                    @Localizer["TermsLinkText"]
+                                </a>
+                                @Localizer["TermsApprovalText"]
                             </label>
                         </div>
 
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary btn-lg py-3 fw-bold shadow-sm" style="background-color: #00aeef; border: none;">
-                                <span>ÖDEME ADIMINA GEÇ</span> <i class="fas fa-arrow-right ms-2"></i>
+                                <span>@Localizer["GoToPaymentButton"]</span> <i class="fas fa-arrow-right ms-2"></i>
                             </button>
 
-                            <a href="@backUrl" class="btn btn-link text-muted text-decoration-none btn-sm mt-2">Vazgeç ve Biletlere Dön</a>
+                            <a href="@backUrl" class="btn btn-link text-muted text-decoration-none btn-sm mt-2">
+                                @Localizer["BackToTicketsButton"]
+                            </a>
                         </div>
                     </form>
                 </div>
             </div>
 
             <div class="text-center mt-4 text-muted small">
-                <i class="fas fa-lock me-1"></i> Tüm işlemleriniz 256-bit SSL ile korunmaktadır.
+                <i class="fas fa-lock me-1"></i> @Localizer["SslInfoText"]
             </div>
 
         </div>
@@ -203,17 +238,17 @@
         <div class="modal-content rounded-4 border-0 shadow-lg">
             <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
                 <h5 class="modal-title fw-bold text-dark" id="termsModalLabel">
-                    <i class="fas fa-file-contract me-2 text-primary"></i>Katılım ve İptal Koşulları
+                    <i class="fas fa-file-contract me-2 text-primary"></i>@Localizer["TermsModalTitle"]
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@Localizer["CloseButton"]"></button>
             </div>
             <div class="modal-body p-4 text-secondary" style="font-size: 0.9rem; line-height: 1.7;">
-                <p>İşbu sözleşme AntAbstract ile katılımcı arasındadır...</p>
+                <p>@Localizer["TermsModalBody"]</p>
             </div>
             <div class="modal-footer border-top-0 px-4 pb-4">
-                <button type="button" class="btn btn-light fw-bold rounded-pill px-4" data-bs-dismiss="modal">Kapat</button>
+                <button type="button" class="btn btn-light fw-bold rounded-pill px-4" data-bs-dismiss="modal">@Localizer["CloseButton"]</button>
                 <button type="button" class="btn btn-primary fw-bold rounded-pill px-4" onclick="acceptTerms()">
-                    <i class="fas fa-check-circle me-2"></i> Okudum, Kabul Ediyorum
+                    <i class="fas fa-check-circle me-2"></i> @Localizer["AcceptTermsButton"]
                 </button>
             </div>
         </div>
@@ -223,7 +258,7 @@
 <script>
     function acceptTerms() {
         var checkbox = document.getElementById('termsCheck');
-        if(checkbox) {
+        if (checkbox) {
             checkbox.checked = true;
         }
         var modalEl = document.getElementById('termsModal');

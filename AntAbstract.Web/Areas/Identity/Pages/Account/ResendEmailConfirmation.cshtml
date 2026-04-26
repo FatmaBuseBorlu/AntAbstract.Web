@@ -1,26 +1,205 @@
 ﻿@page
 @model ResendEmailConfirmationModel
+@using Microsoft.AspNetCore.Localization
+@using Microsoft.AspNetCore.Mvc.Localization
+@using System.Globalization
+@inject IViewLocalizer Localizer
+
 @{
-    ViewData["Title"] = "Resend email confirmation";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
+
+    var requestCulture = HttpContext.Features.Get<IRequestCultureFeature>();
+    var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? "tr-TR";
+
+    var currentReturnUrl = string.IsNullOrEmpty(HttpContext.Request.Path.Value)
+        ? "/Identity/Account/ResendEmailConfirmation"
+        : $"{HttpContext.Request.Path.Value}{HttpContext.Request.QueryString}";
 }
 
-<h1>@ViewData["Title"]</h1>
-<h2>Enter your email.</h2>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form method="post">
-            <div asp-validation-summary="All" class="text-danger" role="alert"></div>
-            <div class="form-floating mb-3">
-                <input asp-for="Input.Email" class="form-control" aria-required="true" placeholder="name@example.com" />
-                <label asp-for="Input.Email" class="form-label"></label>
-                <span asp-validation-for="Input.Email" class="text-danger"></span>
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Resend</button>
-        </form>
+<!DOCTYPE html>
+<html lang="@CultureInfo.CurrentUICulture.Name">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - AntAbstract</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-color: #00aeef;
+            --primary-hover: #0095cd;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .resend-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .resend-card {
+            width: 100%;
+            max-width: 460px;
+            background: #fff;
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+            border: 1px solid #e2e8f0;
+        }
+
+        .brand-logo {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-control {
+            padding: 0.9rem 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+            background-color: #f8fafc;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+            .form-control:focus {
+                background-color: #fff;
+                border-color: var(--primary-color);
+                box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
+            }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 0.9rem;
+            font-weight: 700;
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+            .btn-primary:hover {
+                background-color: var(--primary-hover);
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(0, 174, 239, 0.2);
+            }
+
+        .language-switcher {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+        }
+
+            .language-switcher form {
+                margin: 0;
+            }
+
+        .lang-btn {
+            border: none;
+            background: transparent;
+            color: #64748b;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 8px 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+
+            .lang-btn:hover {
+                background: #f1f5f9;
+                color: var(--primary-color);
+            }
+
+            .lang-btn.active {
+                background: var(--primary-color);
+                color: white;
+                box-shadow: 0 4px 12px rgba(0, 174, 239, 0.25);
+            }
+
+        .top-actions {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-actions">
+        <div class="language-switcher">
+            <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                <input type="hidden" name="culture" value="tr-TR" />
+                <input type="hidden" name="returnUrl" value="@currentReturnUrl" />
+                <button type="submit" class="lang-btn @(currentCulture == "tr-TR" ? "active" : "")">TR</button>
+            </form>
+
+            <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                <input type="hidden" name="culture" value="en-US" />
+                <input type="hidden" name="returnUrl" value="@currentReturnUrl" />
+                <button type="submit" class="lang-btn @(currentCulture == "en-US" ? "active" : "")">EN</button>
+            </form>
+        </div>
+
+        <a href="/" class="text-muted text-decoration-none small fw-bold">
+            <i class="fas fa-times me-1"></i> @Localizer["Close"]
+        </a>
     </div>
-</div>
 
-@section Scripts {
+    <div class="resend-wrapper">
+        <div class="resend-card">
+            <a href="/" class="brand-logo">
+                ANT<span style="color: #00aeef;">ABSTRACT</span>
+            </a>
+
+            <div class="mb-4">
+                <h1 class="h3 fw-bold text-dark mb-2">@Localizer["PageTitle"]</h1>
+                <p class="text-muted mb-0">@Localizer["PageDescription"]</p>
+            </div>
+
+            <form method="post">
+                <div asp-validation-summary="All" class="alert alert-danger border-0 rounded-3 small mb-4" role="alert"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Input.Email" class="form-label fw-bold text-muted">@Localizer["EmailAddress"]</label>
+                    <input asp-for="Input.Email"
+                           class="form-control"
+                           aria-required="true"
+                           placeholder="@Localizer["EmailPlaceholder"]" />
+                    <span asp-validation-for="Input.Email" class="text-danger small"></span>
+                </div>
+
+                <button type="submit" class="w-100 btn btn-lg btn-primary">
+                    @Localizer["ResendButton"]
+                </button>
+            </form>
+        </div>
+    </div>
+
     <partial name="_ValidationScriptsPartial" />
-}
+</body>
+</html>

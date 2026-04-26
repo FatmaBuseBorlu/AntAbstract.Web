@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = Localizer["PageTitleCancel"];
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? "";
 }
 
 <div class="container text-center mt-5">
@@ -14,7 +15,12 @@
                     <p class="lead text-muted">@Localizer["CancelLead"]</p>
                     <hr>
                     <p>@Localizer["CancelInfo"]</p>
-                    <a asp-controller="Registration" asp-action="Index" class="btn btn-secondary mt-3">@Localizer["BackToRegistrationLink"]</a>
+                    <a asp-controller="Registration"
+                       asp-action="Index"
+                       asp-route-slug="@slug"
+                       class="btn btn-secondary mt-3">
+                        @Localizer["BackToRegistrationLink"]
+                    </a>
                 </div>
             </div>
         </div>

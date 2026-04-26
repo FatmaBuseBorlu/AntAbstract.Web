@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using Rotativa.AspNetCore;
 using System;
 using System.Collections.Generic;
@@ -31,6 +32,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         private readonly IMapper _mapper;
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly AppDbContext _context;
+        private readonly IStringLocalizer<SubmissionController> _localizer;
 
         public SubmissionController(
             ISubmissionService submissionService,
@@ -38,7 +40,8 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             IWebHostEnvironment env,
             IMapper mapper,
             ISelectedConferenceService selectedConferenceService,
-            AppDbContext context)
+            AppDbContext context,
+            IStringLocalizer<SubmissionController> localizer)
         {
             _submissionService = submissionService;
             _userManager = userManager;
@@ -46,6 +49,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             _mapper = mapper;
             _selectedConferenceService = selectedConferenceService;
             _context = context;
+            _localizer = localizer;
         }
 
         [HttpGet("/Submission/Index")]
@@ -126,7 +130,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         public async Task<IActionResult> Create(SubmissionCreateViewModel model, string? slug = null)
         {
             if (model.SubmissionFile == null || model.SubmissionFile.Length == 0)
-                ModelState.AddModelError("SubmissionFile", "Lütfen bir bildiri dosyası yükleyiniz.");
+                ModelState.AddModelError("SubmissionFile", _localizer["SubmissionFileRequired"]);
 
             if (ModelState.IsValid)
             {
@@ -134,17 +138,16 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 {
                     var user = await _userManager.GetUserAsync(User);
 
-                    // Güvenli dosya yükleme servisini kullanıyoruz
                     var fileInfo = await UploadFileAsync(model.SubmissionFile);
 
                     var allAuthors = new List<SubmissionAuthorDto>
                     {
                         new SubmissionAuthorDto
                         {
-                            FirstName = user.FirstName ?? "Ad",
-                            LastName = user.LastName ?? "Soyad",
+                            FirstName = user.FirstName ?? _localizer["DefaultFirstName"],
+                            LastName = user.LastName ?? _localizer["DefaultLastName"],
                             Email = user.Email,
-                            Institution = "Kurum Belirtilmedi",
+                            Institution = _localizer["DefaultInstitution"],
                             IsCorrespondingAuthor = true,
                             Order = 1
                         }
@@ -174,11 +177,8 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                         Title = model.Title,
                         Abstract = model.AbstractText,
                         Keywords = model.Keywords,
-
-                        // YENİ EKLENEN ALANLAR BURADA DTO'YA GÖNDERİLİYOR
                         Topic = model.Topic,
                         PresentationType = model.PresentationType,
-
                         FilePath = fileInfo.FilePathDb,
                         StoredFileName = fileInfo.StoredFileName,
                         OriginalFileName = fileInfo.OriginalFileName,
@@ -187,7 +187,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
                     await _submissionService.CreateSubmissionAsync(createDto, user.Id);
 
-                    TempData["SuccessMessage"] = "Harika! Bildiriniz başarıyla gönderildi.";
+                    TempData["SuccessMessage"] = _localizer["SubmissionCreateSuccess"];
                     return RedirectToAction(nameof(Index), new { slug });
                 }
                 catch (Exception ex)
@@ -196,9 +196,9 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 }
             }
 
-            // Hata olursa Dropdown'ı tekrar doldur
             IQueryable<Conference> confQuery = _context.Conferences.AsNoTracking().Include(c => c.Tenant);
-            if (!string.IsNullOrEmpty(slug)) confQuery = confQuery.Where(c => c.Slug == slug || (c.Tenant != null && c.Tenant.Slug == slug));
+            if (!string.IsNullOrEmpty(slug))
+                confQuery = confQuery.Where(c => c.Slug == slug || (c.Tenant != null && c.Tenant.Slug == slug));
 
             var availableConferences = await confQuery.ToListAsync();
             model.AvailableConferences = availableConferences.Select(c => new SelectListItem
@@ -220,7 +220,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             if (submissionDto.Status == "Accepted" || submissionDto.Status == "Rejected")
             {
-                TempData["ErrorMessage"] = "Sonuçlanmış bildiriler düzenlenemez.";
+                TempData["ErrorMessage"] = _localizer["CompletedSubmissionCannotBeEdited"];
                 return RedirectToAction(nameof(Details), new { id, slug });
             }
 
@@ -230,11 +230,8 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 Title = submissionDto.Title,
                 AbstractText = submissionDto.Abstract,
                 Keywords = submissionDto.Keywords,
-
-                // YENİ EKLENEN ALANLAR (Düzenleme formuna veri basmak için)
                 Topic = submissionDto.Topic,
                 PresentationType = submissionDto.PresentationType,
-
                 ExistingFilePath = submissionDto.Files?.OrderByDescending(f => f.UploadedAt).FirstOrDefault()?.FilePath,
                 Authors = submissionDto.Authors.Select(a => new SubmissionAuthorViewModel
                 {
@@ -279,11 +276,8 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                         Title = model.Title,
                         Abstract = model.AbstractText,
                         Keywords = model.Keywords,
-
-                    
                         Topic = model.Topic,
                         PresentationType = model.PresentationType,
-
                         FilePath = filePath,
                         StoredFileName = storedFileName,
                         OriginalFileName = originalFileName,
@@ -300,7 +294,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                     };
 
                     await _submissionService.UpdateSubmissionAsync(id, updateDto);
-                    TempData["SuccessMessage"] = "Bildiri başarıyla güncellendi.";
+                    TempData["SuccessMessage"] = _localizer["SubmissionUpdateSuccess"];
                     return RedirectToAction(nameof(Index), new { slug });
                 }
                 catch (Exception ex)
@@ -321,7 +315,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             if (submissionDto.Status != "New")
             {
-                TempData["ErrorMessage"] = "İşlem görmüş bildiriler silinemez.";
+                TempData["ErrorMessage"] = _localizer["ProcessedSubmissionCannotBeDeleted"];
                 return RedirectToAction(nameof(Details), new { id, slug });
             }
 
@@ -334,7 +328,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         public async Task<IActionResult> DeleteConfirmed(Guid id, string? slug = null)
         {
             await _submissionService.DeleteSubmissionAsync(id);
-            TempData["SuccessMessage"] = "Bildiri başarıyla silindi.";
+            TempData["SuccessMessage"] = _localizer["SubmissionDeleteSuccess"];
             return RedirectToAction(nameof(Index), new { slug });
         }
 
@@ -345,7 +339,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
             if (submissionDto.Status != "RevisionRequired")
             {
-                TempData["ErrorMessage"] = "Bu bildirinin revizyon süresi kapalıdır.";
+                TempData["ErrorMessage"] = _localizer["RevisionPeriodClosed"];
                 return RedirectToAction(nameof(Index), new { slug });
             }
             return View(submissionDto);
@@ -358,14 +352,14 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         {
             if (revisionFile == null || revisionFile.Length == 0)
             {
-                TempData["ErrorMessage"] = "Lütfen bir dosya seçiniz.";
+                TempData["ErrorMessage"] = _localizer["RevisionFileRequired"];
                 return RedirectToAction(nameof(UploadRevision), new { id, slug });
             }
 
             try
             {
                 await UploadFileAsync(revisionFile);
-                TempData["SuccessMessage"] = "Revizyon dosyası başarıyla yüklendi.";
+                TempData["SuccessMessage"] = _localizer["RevisionUploadSuccess"];
                 return RedirectToAction(nameof(Details), new { id, slug });
             }
             catch (Exception ex)
@@ -381,7 +375,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         {
             var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
             if (submissionDto.Status != "Accepted" && submissionDto.Status != "Presented")
-                return BadRequest("Bu belge henüz oluşmamıştır.");
+                return BadRequest(_localizer["AcceptanceLetterNotReady"]);
 
             return new ViewAsPdf("AcceptanceLetterPreview", submissionDto)
             {
@@ -396,7 +390,8 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         public async Task<IActionResult> DownloadRejectionLetter(Guid id)
         {
             var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
-            if (submissionDto.Status != "Rejected") return BadRequest("Hata");
+            if (submissionDto.Status != "Rejected")
+                return BadRequest(_localizer["GenericError"]);
 
             return new ViewAsPdf("RejectionLetter", submissionDto)
             {
@@ -410,7 +405,8 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         public async Task<IActionResult> DownloadBadge(Guid id)
         {
             var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
-            if (submissionDto.Status != "Accepted" && submissionDto.Status != "Presented") return BadRequest("Hata");
+            if (submissionDto.Status != "Accepted" && submissionDto.Status != "Presented")
+                return BadRequest(_localizer["GenericError"]);
 
             return new ViewAsPdf("BadgePreview", submissionDto)
             {
@@ -427,12 +423,12 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             if (!allowedExtensions.Contains(extension))
             {
-                throw new Exception("Sistem güvenliği: Sadece PDF, DOC ve DOCX uzantılı bildiri dosyaları yükleyebilirsiniz.");
+                throw new Exception(_localizer["InvalidFileExtension"]);
             }
 
             if (file.Length > 10 * 1024 * 1024)
             {
-                throw new Exception("Dosya boyutu çok büyük! Maksimum 10 MB büyüklüğünde bir dosya yükleyebilirsiniz.");
+                throw new Exception(_localizer["FileTooLarge"]);
             }
 
             string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "submissions");

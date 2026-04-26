@@ -1,7 +1,8 @@
 ﻿@model AntAbstract.Domain.Entities.Payment
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Ödeme Başarılı";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 }
 
@@ -19,31 +20,31 @@
                         </div>
                     </div>
 
-                    <h2 class="fw-bold text-dark mb-2">Ödeme Başarılı!</h2>
+                    <h2 class="fw-bold text-dark mb-2">@Localizer["SuccessHeading"]</h2>
                     <p class="text-muted mb-4">
-                        İşleminiz başarıyla tamamlandı. Aşağıda işlem özetinizi bulabilirsiniz.
+                        @Localizer["SuccessDescription"]
                     </p>
 
                     @if (Model != null)
                     {
                         <div class="bg-light rounded-3 p-4 mb-4 text-start border border-dashed" style="border-style: dashed !important; border-color: #cbd5e1 !important;">
                             <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted small">Referans No:</span>
+                                <span class="text-muted small">@Localizer["ReferenceNoLabel"]</span>
                                 <span class="fw-bold text-dark small">#@Model.TransactionId</span>
                             </div>
                             <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted small">Tarih:</span>
+                                <span class="text-muted small">@Localizer["DateLabel"]</span>
                                 <span class="fw-bold text-dark small">@Model.PaymentDate.ToString("dd.MM.yyyy HH:mm")</span>
                             </div>
                             <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted small">Ödeme Yöntemi:</span>
+                                <span class="text-muted small">@Localizer["PaymentMethodLabel"]</span>
                                 <span class="fw-bold text-dark small">
-                                    <i class="fas fa-credit-card me-1"></i> Kredi Kartı
+                                    <i class="fas fa-credit-card me-1"></i> @Localizer["CreditCardText"]
                                 </span>
                             </div>
                             <hr class="my-3" style="opacity: 0.1;">
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="text-muted fw-bold">Toplam Tutar</span>
+                                <span class="text-muted fw-bold">@Localizer["TotalAmountLabel"]</span>
                                 <span class="fs-4 fw-bold text-primary">@Model.Amount.ToString("N2") @Model.Currency</span>
                             </div>
                         </div>
@@ -51,15 +52,15 @@
 
                     <div class="d-grid gap-2">
                         <a href="/Dashboard" class="btn btn-primary py-3 fw-bold rounded-pill shadow-sm" style="background-color: #00aeef; border:none;">
-                            <i class="fas fa-home me-2"></i> Ana Panele Dön
+                            <i class="fas fa-home me-2"></i> @Localizer["BackToDashboardButton"]
                         </a>
 
                         <div class="d-flex gap-2">
                             <a href="/Payment/My" class="btn btn-light w-100 py-2 border fw-bold text-muted">
-                                <i class="fas fa-list me-2"></i> Geçmiş
+                                <i class="fas fa-list me-2"></i> @Localizer["HistoryButton"]
                             </a>
                             <button onclick="window.print()" class="btn btn-light w-100 py-2 border fw-bold text-muted">
-                                <i class="fas fa-print me-2"></i> Yazdır
+                                <i class="fas fa-print me-2"></i> @Localizer["PrintButton"]
                             </button>
                         </div>
                     </div>
@@ -68,7 +69,9 @@
             </div>
 
             <p class="mt-4 small text-muted">
-                Bir sorun mu var? <a href="#" class="text-decoration-none fw-bold" style="color: #00aeef;">Destek Ekibi</a> ile iletişime geçin.
+                @Localizer["SupportText_Part1"]
+                <a href="#" class="text-decoration-none fw-bold" style="color: #00aeef;">@Localizer["SupportTeamLinkText"]</a>
+                @Localizer["SupportText_Part2"]
             </p>
 
         </div>

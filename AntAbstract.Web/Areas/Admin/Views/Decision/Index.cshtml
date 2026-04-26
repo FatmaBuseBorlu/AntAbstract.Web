@@ -1,9 +1,10 @@
 ﻿@using AntAbstract.Domain.Entities
 @using AntAbstract.Web.Models.ViewModels.Admin.Decision
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model DecisionIndexViewModel
 
 @{
-    ViewData["Title"] = "Karar Ekranı";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     var slug = (ViewBag.Slug as string) ?? Context.GetRouteValue("slug")?.ToString() ?? "";
 }
@@ -12,35 +13,35 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h4 class="fw-bold mb-1">Bildiri Karar Ekranı</h4>
-            <p class="text-muted small mb-0">Kongre: <strong>@ViewBag.ConferenceTitle</strong></p>
+            <h4 class="fw-bold mb-1">@Localizer["PageHeading"]</h4>
+            <p class="text-muted small mb-0">@Localizer["ConferenceLabel"] <strong>@ViewBag.ConferenceTitle</strong></p>
         </div>
     </div>
 
-@if (TempData["SuccessMessage"] != null)
-{
+    @if (TempData["SuccessMessage"] != null)
+    {
         <div class="alert alert-success border-0 shadow-sm">
             <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
         </div>
-}
+    }
 
-@if (TempData["ErrorMessage"] != null)
-{
+    @if (TempData["ErrorMessage"] != null)
+    {
         <div class="alert alert-danger border-0 shadow-sm">
             <i class="fas fa-times-circle me-2"></i> @TempData["ErrorMessage"]
         </div>
-}
+    }
 
     <ul class="nav nav-tabs mb-4" id="decisionTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active fw-bold" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">
-                <i class="fas fa-hourglass-half me-2 text-warning"></i> Bekleyen Kararlar
+                <i class="fas fa-hourglass-half me-2 text-warning"></i> @Localizer["PendingDecisionsTab"]
                 <span class="badge bg-warning text-dark ms-2">@Model.AwaitingDecision.Count</span>
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link fw-bold text-muted" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab">
-                <i class="fas fa-check-circle me-2 text-success"></i> Sonuçlananlar
+                <i class="fas fa-check-circle me-2 text-success"></i> @Localizer["CompletedTab"]
                 <span class="badge bg-light text-dark border ms-2">@Model.AlreadyDecided.Count</span>
             </button>
         </li>
@@ -54,10 +55,10 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light">
                             <tr>
-                                <th class="ps-4">Bildiri</th>
-                                <th>Hakem Puanları</th>
-                                <th>Ortalama</th>
-                                <th class="text-end pe-4">Aksiyon</th>
+                                <th class="ps-4">@Localizer["TableHeaderSubmission"]</th>
+                                <th>@Localizer["TableHeaderReviewerScores"]</th>
+                                <th>@Localizer["TableHeaderAverage"]</th>
+                                <th class="text-end pe-4">@Localizer["TableHeaderAction"]</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -86,24 +87,24 @@
                                                 <div class="d-flex gap-1">
                                                     @foreach (var assign in item.ReviewAssignments)
                                                     {
-                                                        var reviewerName = assign.Reviewer?.FirstName ?? "Hakem";
+                                                        var reviewerName = assign.Reviewer?.FirstName ?? Localizer["ReviewerFallback"].Value;
 
                                                         if (assign.Review != null)
                                                         {
-                                                            <span class="badge bg-light text-dark border" title="@reviewerName: @assign.Review.Score">
+                                                            <span class="badge bg-light text-dark border" title="@($"{reviewerName}: {assign.Review.Score}")">
                                                                 @assign.Review.Score
                                                             </span>
                                                         }
                                                         else
                                                         {
-                                                            <span class="badge bg-secondary opacity-25" title="@reviewerName (Bekliyor)">-</span>
+                                                            <span class="badge bg-secondary opacity-25" title="@($"{reviewerName} ({Localizer["WaitingLabel"]})")">-</span>
                                                         }
                                                     }
                                                 </div>
                                             }
                                             else
                                             {
-                                                <span class="text-muted small fst-italic">Hakem yok</span>
+                                                <span class="text-muted small fst-italic">@Localizer["NoReviewer"]</span>
                                             }
                                         </td>
 
@@ -120,14 +121,14 @@
 
                                         <td class="text-end pe-4">
                                             <button class="btn btn-sm btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#decisionModal-@item.Id">
-                                                Karar Ver
+                                                @Localizer["MakeDecisionButton"]
                                             </button>
 
                                             <div class="modal fade" id="decisionModal-@item.Id" tabindex="-1">
                                                 <div class="modal-dialog">
                                                     <div class="modal-content text-start">
                                                         <div class="modal-header">
-                                                            <h5 class="modal-title fw-bold">Karar Ver: @item.SubmissionIdCode</h5>
+                                                            <h5 class="modal-title fw-bold">@Localizer["DecisionModalTitle"] @item.SubmissionIdCode</h5>
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                         </div>
 
@@ -142,19 +143,19 @@
                                                                 <input type="hidden" name="submissionId" value="@item.Id" />
 
                                                                 <div class="mb-3">
-                                                                    <label class="form-label fw-bold small text-muted">Yönetici Notu (Opsiyonel)</label>
-                                                                    <textarea name="note" class="form-control" rows="3" placeholder="Örn: İmla hatalarını düzelterek kabul ediyoruz..."></textarea>
+                                                                    <label class="form-label fw-bold small text-muted">@Localizer["AdminNoteLabel"]</label>
+                                                                    <textarea name="note" class="form-control" rows="3" placeholder="@Localizer["AdminNotePlaceholder"]"></textarea>
                                                                 </div>
 
                                                                 <div class="d-grid gap-2">
                                                                     <button type="submit" name="decision" value="Accept" class="btn btn-success fw-bold">
-                                                                        <i class="fas fa-check me-2"></i> KABUL ET
+                                                                        <i class="fas fa-check me-2"></i> @Localizer["AcceptButton"]
                                                                     </button>
                                                                     <button type="submit" name="decision" value="Revision" class="btn btn-warning fw-bold text-dark">
-                                                                        <i class="fas fa-edit me-2"></i> REVİZYON İSTE
+                                                                        <i class="fas fa-edit me-2"></i> @Localizer["RevisionButton"]
                                                                     </button>
                                                                     <button type="submit" name="decision" value="Reject" class="btn btn-danger fw-bold">
-                                                                        <i class="fas fa-times me-2"></i> REDDET
+                                                                        <i class="fas fa-times me-2"></i> @Localizer["RejectButton"]
                                                                     </button>
                                                                 </div>
                                                             </div>
@@ -172,7 +173,7 @@
                                 <tr>
                                     <td colspan="4" class="text-center py-5 text-muted">
                                         <i class="fas fa-clipboard-check fa-3x mb-3 opacity-25"></i>
-                                        <p>Şu an karar bekleyen bildiri yok.</p>
+                                        <p>@Localizer["NoPendingSubmission"]</p>
                                     </td>
                                 </tr>
                             }
@@ -188,4 +189,111 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light">
                             <tr>
-                                <th class="ps-4">Bildiri</th>
+                                <th class="ps-4">@Localizer["TableHeaderSubmission"]</th>
+                                <th>@Localizer["TableHeaderReviewerScores"]</th>
+                                <th>@Localizer["TableHeaderAverage"]</th>
+                                <th>@Localizer["TableHeaderFinalDecision"]</th>
+                                <th>@Localizer["TableHeaderDecisionDate"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.AlreadyDecided.Any())
+                            {
+                                foreach (var item in Model.AlreadyDecided)
+                                {
+                                    var reviews = item.ReviewAssignments
+                                    .Where(ra => ra.Review != null)
+                                    .Select(ra => ra.Review)
+                                    .ToList();
+
+                                    double avgScore = reviews.Any() ? reviews.Average(r => r.Score) : 0;
+                                    string scoreColor = avgScore >= 70 ? "text-success" : (avgScore >= 50 ? "text-warning" : "text-danger");
+
+                                    <tr>
+                                        <td class="ps-4">
+                                            <div class="fw-bold text-truncate" style="max-width: 350px;">@item.Title</div>
+                                            <small class="text-muted">@item.Author?.FirstName @item.Author?.LastName</small>
+                                        </td>
+
+                                        <td>
+                                            @if (item.ReviewAssignments.Any())
+                                            {
+                                                <div class="d-flex gap-1 flex-wrap">
+                                                    @foreach (var assign in item.ReviewAssignments)
+                                                    {
+                                                        var reviewerName = assign.Reviewer?.FirstName ?? Localizer["ReviewerFallback"].Value;
+
+                                                        if (assign.Review != null)
+                                                        {
+                                                            <span class="badge bg-light text-dark border" title="@($"{reviewerName}: {assign.Review.Score}")">
+                                                                @assign.Review.Score
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-secondary opacity-25" title="@($"{reviewerName} ({Localizer["WaitingLabel"]})")">-</span>
+                                                        }
+                                                    }
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small fst-italic">@Localizer["NoReviewer"]</span>
+                                            }
+                                        </td>
+
+                                        <td>
+                                            @if (reviews.Any())
+                                            {
+                                                <span class="fw-bold fs-6 @scoreColor">@avgScore.ToString("0.0")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+
+                                        <td>
+                                            @{
+                                                var statusClass = item.Status == SubmissionStatus.Accepted
+                                                ? "bg-success"
+                                                : item.Status == SubmissionStatus.Rejected
+                                                ? "bg-danger"
+                                                : "bg-warning text-dark";
+                                            }
+
+                                            <span class="badge @statusClass">
+                                                @item.Status
+                                            </span>
+                                        </td>
+
+                                        <td>
+                                            @if (item.DecisionDate != null)
+                                            {
+                                                <span>@item.DecisionDate.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center py-5 text-muted">
+                                        <i class="fas fa-inbox fa-3x mb-3 opacity-25"></i>
+                                        <p>@Localizer["NoCompletedSubmission"]</p>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

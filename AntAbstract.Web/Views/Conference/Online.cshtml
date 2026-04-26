@@ -1,5 +1,7 @@
-﻿@{
-    ViewData["Title"] = "Online Katılım";
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
+@{
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? "";
     var conferenceId = (Guid)ViewBag.ConferenceId;
     var onlineUrl = ViewBag.OnlineUrl as string ?? "";
@@ -10,13 +12,15 @@
 </form>
 
 <div class="container py-4">
-    <h4>Online Katılım Başlatıldı</h4>
-    <p>Toplantıyı açmak için butona tıkla. Bu sayfa açık kalmalı, 10 dakika tamamlanınca sertifikan otomatik oluşacak.</p>
+    <h4>@Localizer["PageHeading"]</h4>
+    <p>@Localizer["PageDescription"]</p>
 
-    <a class="btn btn-primary" href="@onlineUrl" target="_blank">Toplantıyı yeni sekmede aç</a>
+    <a class="btn btn-primary" href="@onlineUrl" target="_blank">
+        @Localizer["OpenMeetingButton"]
+    </a>
 
     <div class="mt-3">
-        <span id="statusText">Süre ölçülüyor</span>
+        <span id="statusText">@Localizer["TrackingStatusText"]</span>
     </div>
 </div>
 
@@ -24,6 +28,10 @@
     const slug = "@slug";
     const conferenceId = "@conferenceId";
     const token = document.querySelector('#afForm input[name="__RequestVerificationToken"]').value;
+
+    const completedText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["CompletedText"].Value));
+    const remainingPrefix = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["RemainingPrefix"].Value));
+    const remainingSuffix = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["RemainingSuffix"].Value));
 
     async function post(url) {
         const res = await fetch(url, {
@@ -43,10 +51,11 @@
         setInterval(async () => {
             const data = await post(`/${slug}/Attendance/Ping`);
             const remain = Math.max(0, (data.requiredSeconds - data.totalSeconds));
+
             if (data.completed) {
-                document.getElementById("statusText").innerText = "Katılım tamamlandı, sertifika oluşturuldu ve mail gönderildi.";
+                document.getElementById("statusText").innerText = completedText;
             } else {
-                document.getElementById("statusText").innerText = "Kalan süre: " + remain + " saniye";
+                document.getElementById("statusText").innerText = remainingPrefix + remain + remainingSuffix;
             }
         }, 30000);
     })();

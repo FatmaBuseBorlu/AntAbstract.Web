@@ -2,7 +2,7 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"];
+    ViewData["Title"] = Localizer["PageTitle"].Value;
 }
 
 <h1 class="display-5 text-danger">@Localizer["ConfirmationHeader"]</h1>
@@ -18,6 +18,7 @@
         <dd class="col-sm-9">
             @Html.DisplayFor(model => model.Name)
         </dd>
+
         <dt class="col-sm-3">
             @Localizer["SlugLabel"]
         </dt>
@@ -26,7 +27,8 @@
         </dd>
     </dl>
 
-    <form asp-action="Delete" asp-route-id="@Model.Id" class="mt-4">
+    <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="mt-4">
+        @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
         <button type="submit" class="btn btn-danger">@Localizer["DeleteButton"]</button>
         <a asp-action="Index" class="btn btn-secondary">@Localizer["CancelButton"]</a>

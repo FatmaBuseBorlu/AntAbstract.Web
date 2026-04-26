@@ -1,10 +1,193 @@
 ﻿@page
 @model LockoutModel
+@using Microsoft.AspNetCore.Localization
+@using Microsoft.AspNetCore.Mvc.Localization
+@using System.Globalization
+@inject IViewLocalizer Localizer
+
 @{
-    ViewData["Title"] = "Locked out";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
+
+    var requestCulture = HttpContext.Features.Get<IRequestCultureFeature>();
+    var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? "tr-TR";
+
+    var currentReturnUrl = string.IsNullOrEmpty(HttpContext.Request.Path.Value)
+        ? "/Identity/Account/Lockout"
+        : $"{HttpContext.Request.Path.Value}{HttpContext.Request.QueryString}";
 }
 
-<header>
-    <h1 class="text-danger">@ViewData["Title"]</h1>
-    <p class="text-danger">This account has been locked out, please try again later.</p>
-</header>
+<!DOCTYPE html>
+<html lang="@CultureInfo.CurrentUICulture.Name">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - AntAbstract</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-color: #00aeef;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --danger-color: #dc2626;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .lockout-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .lockout-card {
+            width: 100%;
+            max-width: 540px;
+            background: #fff;
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .brand-logo {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 1.5rem;
+        }
+
+        .lockout-icon {
+            width: 84px;
+            height: 84px;
+            margin: 0 auto 1.5rem auto;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(220, 38, 38, 0.10);
+            color: var(--danger-color);
+            font-size: 2rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 0.9rem 1.25rem;
+            font-weight: 700;
+            border-radius: 0.75rem;
+        }
+
+        .btn-outline-secondary {
+            border-radius: 0.75rem;
+            font-weight: 700;
+            padding: 0.9rem 1.25rem;
+        }
+
+        .language-switcher {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+        }
+
+            .language-switcher form {
+                margin: 0;
+            }
+
+        .lang-btn {
+            border: none;
+            background: transparent;
+            color: #64748b;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 8px 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+            .lang-btn:hover {
+                background: #f1f5f9;
+                color: var(--primary-color);
+            }
+
+            .lang-btn.active {
+                background: var(--primary-color);
+                color: white;
+            }
+
+        .top-actions {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-actions">
+        <div class="language-switcher">
+            <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                <input type="hidden" name="culture" value="tr-TR" />
+                <input type="hidden" name="returnUrl" value="@currentReturnUrl" />
+                <button type="submit" class="lang-btn @(currentCulture == "tr-TR" ? "active" : "")">TR</button>
+            </form>
+
+            <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                <input type="hidden" name="culture" value="en-US" />
+                <input type="hidden" name="returnUrl" value="@currentReturnUrl" />
+                <button type="submit" class="lang-btn @(currentCulture == "en-US" ? "active" : "")">EN</button>
+            </form>
+        </div>
+
+        <a href="/" class="text-muted text-decoration-none small fw-bold">
+            <i class="fas fa-times me-1"></i> @Localizer["Close"]
+        </a>
+    </div>
+
+    <div class="lockout-wrapper">
+        <div class="lockout-card">
+            <a href="/" class="brand-logo">
+                ANT<span style="color: #00aeef;">ABSTRACT</span>
+            </a>
+
+            <div class="lockout-icon">
+                <i class="fas fa-lock"></i>
+            </div>
+
+            <h1 class="h3 fw-bold text-danger mb-3">@Localizer["PageTitle"]</h1>
+            <p class="text-muted mb-4">@Localizer["Description"]</p>
+
+            <div class="d-flex justify-content-center gap-2 flex-wrap">
+                <a href="/" class="btn btn-primary">
+                    @Localizer["BackToHomeButton"]
+                </a>
+                <a asp-page="./Login" class="btn btn-outline-secondary">
+                    @Localizer["GoToLoginButton"]
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

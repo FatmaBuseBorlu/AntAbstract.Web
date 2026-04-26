@@ -1,5 +1,5 @@
 ﻿@model AntAbstract.Web.Models.ViewModels.Components.ConferenceSwitcherModel
-
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     var currentSlug = ViewContext.RouteData.Values["slug"]?.ToString() ?? "";
@@ -34,7 +34,7 @@
         if (!Model.SelectedConferenceId.HasValue)
         {
             <a href="@myConferencesUrl" class="btn btn-sm btn-danger px-3 rounded-3 me-2">
-                <i class="fas fa-hand-pointer me-1"></i> Kongre Seç
+                <i class="fas fa-hand-pointer me-1"></i> @Localizer["SelectConferenceButton"]
             </a>
         }
         else
@@ -44,13 +44,13 @@
                         type="button"
                         data-bs-toggle="dropdown"
                         aria-expanded="false">
-                    <i class="fas fa-university me-1"></i> @(Model.CurrentConferenceName ?? "Kongre Seçildi")
+                    <i class="fas fa-university me-1"></i> @(Model.CurrentConferenceName ?? Localizer["ConferenceSelectedFallback"].Value)
                 </button>
 
                 <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                     <li>
                         <a class="dropdown-item" href="@myConferencesUrl">
-                            <i class="fas fa-exchange-alt me-2"></i> Kongre Değiştir
+                            <i class="fas fa-exchange-alt me-2"></i> @Localizer["ChangeConferenceButton"]
                         </a>
                     </li>
 

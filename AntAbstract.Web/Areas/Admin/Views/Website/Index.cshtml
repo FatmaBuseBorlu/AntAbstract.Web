@@ -1,8 +1,9 @@
 ﻿@model List<AntAbstract.Domain.Entities.ConferencePageBlock>
 @using AntAbstract.Domain.Entities
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Website Blokları";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
     var slug = ViewContext.RouteData.Values["slug"]?.ToString();
@@ -15,8 +16,8 @@
 
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
-            <h4 class="mb-0 fw-bold text-dark">🎨 Website Yönetimi</h4>
-            <p class="text-muted small mb-0">Kongre web sitesinin ön yüzünde görünecek blokları buradan düzenleyebilirsiniz.</p>
+            <h4 class="mb-0 fw-bold text-dark">@Localizer["PageHeading"]</h4>
+            <p class="text-muted small mb-0">@Localizer["PageLead"]</p>
         </div>
         @if (selectedConferenceId.HasValue)
         {
@@ -28,7 +29,7 @@
                asp-route-conferenceId="@selectedConferenceId"
                asp-route-culture="@culture"
                asp-route-page="@pageKey">
-                <i class="fas fa-plus-circle me-2"></i> Yeni Blok Ekle
+                <i class="fas fa-plus-circle me-2"></i> @Localizer["AddNewBlockButton"]
             </a>
         }
     </div>
@@ -43,23 +44,23 @@
                   class="row g-3 align-items-end">
 
                 <div class="col-md-3">
-                    <label class="form-label fw-bold text-muted small mb-1">DİL (CULTURE)</label>
+                    <label class="form-label fw-bold text-muted small mb-1">@Localizer["CultureLabel"]</label>
                     <select class="form-select border-0 shadow-sm" name="culture" asp-items="ViewBag.CultureList"></select>
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label fw-bold text-muted small mb-1">SAYFA (PAGE)</label>
+                    <label class="form-label fw-bold text-muted small mb-1">@Localizer["PageLabel"]</label>
                     <select class="form-select border-0 shadow-sm" name="page" asp-items="ViewBag.PageList"></select>
                 </div>
 
                 <div class="col-md-4">
-                    <label class="form-label fw-bold text-muted small mb-1">KONGRE (CONFERENCE)</label>
+                    <label class="form-label fw-bold text-muted small mb-1">@Localizer["ConferenceLabel"]</label>
                     <select class="form-select border-0 shadow-sm" name="conferenceId" asp-items="ViewBag.ConferenceList"></select>
                 </div>
 
                 <div class="col-md-2 d-grid">
                     <button type="submit" class="btn btn-dark fw-bold shadow-sm rounded-3">
-                        <i class="fas fa-filter me-2"></i> Filtrele
+                        <i class="fas fa-filter me-2"></i> @Localizer["FilterButton"]
                     </button>
                 </div>
             </form>
@@ -68,24 +69,27 @@
 
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
         <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
-            <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-layer-group me-2 text-primary"></i> Aktif Blok Listesi</h6>
+            <h6 class="mb-0 fw-bold text-dark">
+                <i class="fas fa-layer-group me-2 text-primary"></i> @Localizer["ActiveBlocksHeader"]
+            </h6>
             @if (!selectedConferenceId.HasValue)
             {
                 <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill small">
-                    <i class="fas fa-exclamation-triangle me-1"></i> Kongre Seçilmedi
+                    <i class="fas fa-exclamation-triangle me-1"></i> @Localizer["ConferenceNotSelected"]
                 </span>
             }
         </div>
+
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="bg-light">
                         <tr>
-                            <th class="ps-4 py-3 text-muted fw-bold small" style="width: 80px;">SIRA</th>
-                            <th class="py-3 text-muted fw-bold small" style="width: 150px;">BLOK TİPİ</th>
-                            <th class="py-3 text-muted fw-bold small">BAŞLIK</th>
-                            <th class="py-3 text-muted fw-bold small text-center" style="width: 120px;">DURUM</th>
-                            <th class="pe-4 py-3 text-muted fw-bold small text-end" style="width: 250px;">İŞLEMLER</th>
+                            <th class="ps-4 py-3 text-muted fw-bold small" style="width: 80px;">@Localizer["TableHeaderOrder"]</th>
+                            <th class="py-3 text-muted fw-bold small" style="width: 150px;">@Localizer["TableHeaderBlockType"]</th>
+                            <th class="py-3 text-muted fw-bold small">@Localizer["TableHeaderTitle"]</th>
+                            <th class="py-3 text-muted fw-bold small text-center" style="width: 120px;">@Localizer["TableHeaderStatus"]</th>
+                            <th class="pe-4 py-3 text-muted fw-bold small text-end" style="width: 250px;">@Localizer["TableHeaderActions"]</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -94,8 +98,8 @@
                             <tr>
                                 <td colspan="5" class="text-center py-5">
                                     <div class="text-muted mb-2"><i class="fas fa-cubes fa-3x opacity-25"></i></div>
-                                    <h6 class="fw-bold text-dark">Henüz Bir Blok Eklenmemiş</h6>
-                                    <p class="small text-muted mb-0">Bu sayfa için yeni bir tasarım bloğu ekleyerek işe başlayın.</p>
+                                    <h6 class="fw-bold text-dark">@Localizer["EmptyTitle"]</h6>
+                                    <p class="small text-muted mb-0">@Localizer["EmptyMessage"]</p>
                                 </td>
                             </tr>
                         }
@@ -103,12 +107,25 @@
                         {
                             foreach (var b in Model)
                             {
+                                var localizedBlockType = b.BlockType switch
+                                {
+                                    ConferencePageBlockType.Hero => Localizer["BlockType_Hero"].Value,
+                                    ConferencePageBlockType.About => Localizer["BlockType_About"].Value,
+                                    ConferencePageBlockType.CallForPapers => Localizer["BlockType_CallForPapers"].Value,
+                                    ConferencePageBlockType.Topics => Localizer["BlockType_Topics"].Value,
+                                    ConferencePageBlockType.Committees => Localizer["BlockType_Committees"].Value,
+                                    ConferencePageBlockType.Fees => Localizer["BlockType_Fees"].Value,
+                                    _ => b.BlockType.ToString()
+                                };
+
                                 <tr>
                                     <td class="ps-4">
                                         <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary px-2 py-1">#@b.Order</span>
                                     </td>
                                     <td>
-                                        <span class="fw-bold text-dark small"><i class="fas fa-cube me-1 text-primary opacity-75"></i> @b.BlockType</span>
+                                        <span class="fw-bold text-dark small">
+                                            <i class="fas fa-cube me-1 text-primary opacity-75"></i> @localizedBlockType
+                                        </span>
                                     </td>
                                     <td>
                                         <span class="fw-bold text-dark">@b.Title</span>
@@ -117,13 +134,13 @@
                                         @if (b.IsActive)
                                         {
                                             <span class="badge rounded-pill bg-success bg-opacity-10 text-success px-3 py-2 border border-success" style="font-size: 0.75rem;">
-                                                <i class="fas fa-check-circle me-1"></i> Aktif
+                                                <i class="fas fa-check-circle me-1"></i> @Localizer["StatusActive"]
                                             </span>
                                         }
                                         else
                                         {
                                             <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger px-3 py-2 border border-danger" style="font-size: 0.75rem;">
-                                                <i class="fas fa-times-circle me-1"></i> Pasif
+                                                <i class="fas fa-times-circle me-1"></i> @Localizer["StatusPassive"]
                                             </span>
                                         }
                                     </td>
@@ -132,18 +149,34 @@
 
                                             <form asp-area="Admin" asp-controller="Website" asp-action="Toggle" asp-route-slug="@slug" asp-route-id="@b.Id" method="post">
                                                 @Html.AntiForgeryToken()
-                                                <button class="btn btn-sm @(b.IsActive ? "btn-outline-warning" : "btn-outline-success") rounded-3 fw-bold" type="submit" title="Durumu Değiştir">
-                                                    @(b.IsActive ? "Pasife Al" : "Aktif Et")
+                                                <button class="btn btn-sm @(b.IsActive ? "btn-outline-warning" : "btn-outline-success") rounded-3 fw-bold"
+                                                        type="submit"
+                                                        title="@Localizer["ToggleStatusTitle"]">
+                                                    @(b.IsActive? Localizer["DeactivateButton"].Value : Localizer["ActivateButton"].Value)
                                                 </button>
                                             </form>
 
                                             <div class="btn-group btn-group-sm shadow-sm rounded-3">
-                                                <a asp-area="Admin" asp-controller="Website" asp-action="Edit" asp-route-slug="@slug" asp-route-id="@b.Id" class="btn btn-white text-primary border-end" title="Düzenle">
+                                                <a asp-area="Admin"
+                                                   asp-controller="Website"
+                                                   asp-action="Edit"
+                                                   asp-route-slug="@slug"
+                                                   asp-route-id="@b.Id"
+                                                   class="btn btn-white text-primary border-end"
+                                                   title="@Localizer["EditTitle"]">
                                                     <i class="fas fa-pen"></i>
                                                 </a>
-                                                <form asp-area="Admin" asp-controller="Website" asp-action="Delete" asp-route-slug="@slug" asp-route-id="@b.Id" method="post" onsubmit="return confirm('Bu bloğu kalıcı olarak silmek istediğinize emin misiniz?');" style="display: inline;">
+
+                                                <form asp-area="Admin"
+                                                      asp-controller="Website"
+                                                      asp-action="Delete"
+                                                      asp-route-slug="@slug"
+                                                      asp-route-id="@b.Id"
+                                                      method="post"
+                                                      onsubmit="return confirm('@Localizer["DeleteConfirmMessage"]');"
+                                                      style="display: inline;">
                                                     @Html.AntiForgeryToken()
-                                                    <button type="submit" class="btn btn-white text-danger" title="Sil">
+                                                    <button type="submit" class="btn btn-white text-danger" title="@Localizer["DeleteTitle"]">
                                                         <i class="fas fa-trash-alt"></i>
                                                     </button>
                                                 </form>

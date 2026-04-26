@@ -1,5 +1,6 @@
 ﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
 @using AntAbstract.Web.Models.WebsiteBlocks
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     var content = (HeroBlockContent)(ViewBag.Content ?? new HeroBlockContent());
@@ -10,7 +11,6 @@
         if (string.IsNullOrWhiteSpace(url)) return "#";
         if (url.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return url;
 
-        // "/Submission/Create" gibi geldiyse tenant prefix ekle
         if (!string.IsNullOrWhiteSpace(slug) && url.StartsWith("/"))
             return "/" + slug + url;
 
@@ -30,6 +30,7 @@
         <div class="row align-items-center">
             <div class="col-lg-8">
                 <h1 class="display-5 fw-bold mb-3">@Model.Title</h1>
+
                 @if (!string.IsNullOrWhiteSpace(Model.Subtitle))
                 {
                     <p class="lead mb-4" style="opacity:.92;">@Model.Subtitle</p>
@@ -54,8 +55,8 @@
 
             <div class="col-lg-4 d-none d-lg-block">
                 <div class="p-4 rounded-4" style="background: rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.18);">
-                    <div class="fw-semibold mb-2">Hızlı Bilgi</div>
-                    <div style="opacity:.9;">Bu alanı sonra “InfoCard” blok tipiyle dinamik yapacağız.</div>
+                    <div class="fw-semibold mb-2">@Localizer["QuickInfoTitle"]</div>
+                    <div style="opacity:.9;">@Localizer["QuickInfoDescription"]</div>
                 </div>
             </div>
         </div>

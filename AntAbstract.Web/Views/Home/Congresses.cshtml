@@ -9,7 +9,7 @@
 @model IEnumerable<Conference>
 
 @{
-    ViewData["Title"] = "Tüm Kongreler";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_Layout";
 }
 
@@ -177,14 +177,17 @@
 
 <div class="search-section text-center">
     <div class="container">
-        <h1 class="display-5 fw-bold text-dark mb-3">Kongreler & Etkinlikler</h1>
-        <p class="lead text-muted mb-5">Alanınızdaki en güncel bilimsel gelişmeleri keşfedin, kaydınızı oluşturun.</p>
+        <h1 class="display-5 fw-bold text-dark mb-3">@Localizer["HeroTitle"]</h1>
+        <p class="lead text-muted mb-5">@Localizer["HeroDescription"]</p>
 
         <div class="search-container">
             <div class="search-input-group shadow-sm">
-                <input type="text" id="congressSearch" placeholder="Kongre adı, şehir veya konu ara..." aria-label="Search">
+                <input type="text"
+                       id="congressSearch"
+                       placeholder="@Localizer["SearchPlaceholder"]"
+                       aria-label="@Localizer["SearchAriaLabel"]">
                 <button type="button" class="btn btn-primary px-5 rounded-pill fw-bold" style="background-color: #00aeef; border:none;">
-                    <i class="fas fa-search me-2"></i> ARA
+                    <i class="fas fa-search me-2"></i> @Localizer["SearchButton"]
                 </button>
             </div>
         </div>
@@ -215,7 +218,7 @@
                             {
                                 <div class="text-muted text-center opacity-25">
                                     <i class="fa fa-university fa-4x mb-2"></i>
-                                    <div class="small fw-bold">Görsel Yok</div>
+                                    <div class="small fw-bold">@Localizer["NoImageText"]</div>
                                 </div>
                             }
                         </div>
@@ -225,12 +228,12 @@
                             <a href="/@slug" class="congress-title" title="@kongre.Title">@kongre.Title</a>
 
                             <div class="meta-info">
-                                <span><i class="fas fa-map-marker-alt text-danger me-1"></i> @(kongre.City ?? "Online")</span>
+                                <span><i class="fas fa-map-marker-alt text-danger me-1"></i> @(kongre.City ?? Localizer["OnlineText"].Value)</span>
                                 <span><i class="fas fa-calendar-check text-primary me-1"></i> @kongre.StartDate.Year</span>
                             </div>
 
                             <a href="/@slug" class="btn-detail">
-                                SİTEYİ İNCELE <i class="fas fa-external-link-alt"></i>
+                                @Localizer["ReviewSiteButton"] <i class="fas fa-external-link-alt"></i>
                             </a>
                         </div>
                     </div>
@@ -242,8 +245,8 @@
             <div class="col-12 text-center py-5">
                 <div class="alert alert-light border shadow-sm d-inline-block px-5 py-4 rounded-4">
                     <i class="fas fa-search text-muted mb-3 fs-1 opacity-50"></i>
-                    <h5 class="text-dark fw-bold">Kongre Bulunamadı</h5>
-                    <p class="mb-0 text-muted">Şu anda listelenecek aktif bir etkinlik bulunmuyor.</p>
+                    <h5 class="text-dark fw-bold">@Localizer["EmptyStateTitle"]</h5>
+                    <p class="mb-0 text-muted">@Localizer["EmptyStateText"]</p>
                 </div>
             </div>
         }

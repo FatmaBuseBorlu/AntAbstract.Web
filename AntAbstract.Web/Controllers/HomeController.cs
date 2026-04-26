@@ -8,8 +8,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using System.Diagnostics;
 using System.Globalization;
+using System.Net;
+using System.Text.RegularExpressions;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -19,22 +22,47 @@ namespace AntAbstract.Web.Controllers
         private readonly TenantContext _tenantContext;
         private readonly UserManager<AppUser> _userManager;
         private readonly IConferencePageBlockService _pageBlockService;
+        private readonly IStringLocalizer<HomeController> _localizer;
 
         public HomeController(
             AppDbContext context,
             TenantContext tenantContext,
             UserManager<AppUser> userManager,
-            IConferencePageBlockService pageBlockService)
+            IConferencePageBlockService pageBlockService,
+            IStringLocalizer<HomeController> localizer)
         {
             _context = context;
             _tenantContext = tenantContext;
             _userManager = userManager;
             _pageBlockService = pageBlockService;
+            _localizer = localizer;
+        }
+
+        private static string ToPlainText(string? html)
+        {
+            if (string.IsNullOrWhiteSpace(html))
+                return string.Empty;
+
+            var text = Regex.Replace(html, "<.*?>", " ");
+            text = WebUtility.HtmlDecode(text);
+            text = Regex.Replace(text, @"\s+", " ").Trim();
+
+            return text;
+        }
+
+        private static string Shorten(string? text, int maxLength = 90)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return string.Empty;
+
+            if (text.Length <= maxLength)
+                return text;
+
+            return text.Substring(0, maxLength).Trim() + "...";
         }
 
         public async Task<IActionResult> Index()
         {
-            // --- 1. DURUM: EÐER BÝR KONGRENÝN (TENANT) ÝÇÝNDEYSEK (VÝTRÝN) ---
             if (_tenantContext.Current != null)
             {
                 var currentConference = await _context.Conferences
@@ -45,7 +73,7 @@ namespace AntAbstract.Web.Controllers
                     .FirstOrDefaultAsync();
 
                 if (currentConference == null)
-                    return NotFound("Kongre aktif deðil.");
+                    return NotFound(_localizer["ConferenceNotActive"]);
 
                 var culture = HttpContext.Features.Get<IRequestCultureFeature>()?
                                   .RequestCulture.UICulture.Name
@@ -61,7 +89,6 @@ namespace AntAbstract.Web.Controllers
                     culture: culture
                 );
 
-                // YENÝ EKLENEN: Diðer Önerilen Kongreleri Çekiyoruz (Kendi kongremiz hariç)
                 var suggestedConferences = await _context.Conferences
                     .Include(c => c.Tenant)
                     .Where(c => c.Id != currentConference.Id && c.EndDate > DateTime.Now)
@@ -76,13 +103,12 @@ namespace AntAbstract.Web.Controllers
                     Blocks = blocks,
                     Culture = culture,
                     Page = page,
-                    SuggestedConferences = suggestedConferences // Çantaya ekledik!
+                    SuggestedConferences = suggestedConferences
                 };
 
                 return View("ConferenceHome", vm);
             }
 
-            // --- 2. DURUM: ANA PLATFORM (ANTABSTRACT ANA SAYFASI) ---
             var user = await _userManager.GetUserAsync(User);
             var registeredConferenceIds = new List<Guid>();
 
@@ -99,6 +125,12 @@ namespace AntAbstract.Web.Controllers
                 .OrderBy(c => c.StartDate)
                 .ToListAsync();
 
+            var abstractNotFoundText = _localizer["AbstractNotFound"].Value;
+            var guestUserText = _localizer["GuestUser"].Value;
+            var institutionNotSpecifiedText = _localizer["InstitutionNotSpecified"].Value;
+            var reviewDetailsText = _localizer["ReviewForDetails"].Value;
+            var onlineText = _localizer["Online"].Value;
+
             var lastSubmissions = await _context.Submissions
                 .AsNoTracking()
                 .Include(s => s.Conference)
@@ -111,9 +143,9 @@ namespace AntAbstract.Web.Controllers
                     Title = s.Title,
                     AbstractSnippet = (s.Abstract != null && s.Abstract.Length > 120)
                         ? s.Abstract.Substring(0, 120) + "..."
-                        : s.Abstract ?? "Özet metni bulunmuyor.",
-                    AuthorName = s.Author != null ? $"{s.Author.FirstName} {s.Author.LastName}" : "Misafir Kullanýcý",
-                    University = s.Author != null ? (s.Author.Institution ?? "Kurum Belirtilmemiþ") : "",
+                        : s.Abstract ?? abstractNotFoundText,
+                    AuthorName = s.Author != null ? $"{s.Author.FirstName} {s.Author.LastName}" : guestUserText,
+                    University = s.Author != null ? (s.Author.Institution ?? institutionNotSpecifiedText) : "",
                     ConferenceName = s.Conference.Title,
                     AuthorImageUrl = (s.Author != null && !string.IsNullOrEmpty(s.Author.ProfileImagePath))
                         ? s.Author.ProfileImagePath
@@ -129,10 +161,17 @@ namespace AntAbstract.Web.Controllers
                 {
                     Id = c.Id,
                     Title = c.Title,
-                    Description = c.Description ?? "Detaylar için inceleyiniz.",
+                    Description = Shorten(
+                        ToPlainText(string.IsNullOrWhiteSpace(c.Description) ? reviewDetailsText : c.Description),
+                        90
+                    ),
                     StartDate = c.StartDate,
-                    Location = string.IsNullOrEmpty(c.City) ? "Online" : $"{c.City} {(c.Country != null ? "/ " + c.Country : "")}",
-                    ImageUrl = string.IsNullOrEmpty(c.BannerPath) ? "/abstract/upload/img/resimyok3.png" : c.BannerPath,
+                    Location = string.IsNullOrEmpty(c.City)
+                        ? onlineText
+                        : $"{c.City}{(c.Country != null ? " / " + c.Country : "")}",
+                    ImageUrl = string.IsNullOrEmpty(c.BannerPath)
+                        ? "/abstract/upload/img/resimyok3.png"
+                        : c.BannerPath,
                     Slug = c.Slug ?? c.Id.ToString(),
                     IsRegistered = registeredConferenceIds.Contains(c.Id)
                 }).ToList(),

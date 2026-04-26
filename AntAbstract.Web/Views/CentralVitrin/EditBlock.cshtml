@@ -1,12 +1,15 @@
 ﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
 @using AntAbstract.Domain.Entities
 @using AntAbstract.Web.Models.WebsiteBlocks
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Blok Düzenle (God Mode)";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
     var aboutContent = ViewBag.AboutContent as AboutBlockContent;
+
+    var blockTypeText = Model.BlockType.ToString();
 }
 
 <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
@@ -53,41 +56,50 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <a asp-action="ManageBlocks" asp-route-conferenceId="@Model.ConferenceId" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
-            <i class="fas fa-arrow-left me-2"></i> Vitrine Dön
+            <i class="fas fa-arrow-left me-2"></i> @Localizer["BackToShowcaseButton"]
         </a>
-        <h4 class="text-muted fw-bold mb-0">İçerik Yönetimi</h4>
+        <h4 class="text-muted fw-bold mb-0">@Localizer["ContentManagementTitle"]</h4>
     </div>
 
     <div class="card cms-card">
         <div class="cms-header">
-            <h4 class="mb-1 fw-bold"><i class="fas fa-pen-nib me-2 text-info"></i> Düzenle: @Model.Title</h4>
-            <small class="text-white-50">Değişiklikler anında web sitesine yansıyacaktır.</small>
+            <h4 class="mb-1 fw-bold">
+                <i class="fas fa-pen-nib me-2 text-info"></i> @Localizer["EditPrefix"] @Model.Title
+            </h4>
+            <small class="text-white-50">@Localizer["ChangesReflectImmediatelyText"]</small>
         </div>
 
         <div class="card-body p-4 p-lg-5">
             <form asp-controller="CentralVitrin" asp-action="EditBlock" method="post">
+                @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="Id" />
                 <input type="hidden" asp-for="ConferenceId" />
 
                 <div class="row g-4 mb-5">
                     <div class="col-md-6">
-                        <label asp-for="Title" class="form-label fw-bold text-dark">Sol Menüde Görünecek Başlık <span class="text-danger">*</span></label>
-                        <input asp-for="Title" class="form-control form-control-modern" placeholder="Örn: Kongreye Çağrı" required />
+                        <label asp-for="Title" class="form-label fw-bold text-dark">
+                            @Localizer["VisibleMenuTitleLabel"] <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="Title" class="form-control form-control-modern" placeholder="@Localizer["VisibleMenuTitlePlaceholder"]" required />
                     </div>
                     <div class="col-md-6">
-                        <label asp-for="Subtitle" class="form-label fw-bold text-dark">Blok Tipi</label>
-                        <input type="text" class="form-control form-control-modern bg-light text-muted" value="@Model.BlockType" readonly />
+                        <label asp-for="Subtitle" class="form-label fw-bold text-dark">@Localizer["BlockTypeLabel"]</label>
+                        <input type="text" class="form-control form-control-modern bg-light text-muted" value="@blockTypeText" readonly />
                     </div>
                 </div>
 
                 @if (Model.BlockType == ConferencePageBlockType.About && aboutContent != null)
                 {
                     <div class="bg-light p-4 rounded-4 border mb-5">
-                        <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-file-alt me-2"></i> Detaylı İçerik (Zengin Metin)</h5>
+                        <h5 class="fw-bold mb-4 text-primary">
+                            <i class="fas fa-file-alt me-2"></i> @Localizer["DetailedContentHeader"]
+                        </h5>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold">İçerik Yazısı</label>
-                            <p class="small text-muted mb-2"><i class="fas fa-info-circle"></i> Word'den kopyaladığınız yazıları buraya yapıştırabilir, kalın/italik yapabilirsiniz.</p>
+                            <label class="form-label fw-bold">@Localizer["ContentTextLabel"]</label>
+                            <p class="small text-muted mb-2">
+                                <i class="fas fa-info-circle"></i> @Localizer["ContentTextHelpText"]
+                            </p>
                             <textarea id="summernote" name="aboutContent.Description">@aboutContent.Description</textarea>
                         </div>
                     </div>
@@ -95,7 +107,7 @@
                 else
                 {
                     <div class="mb-5">
-                        <label asp-for="Subtitle" class="form-label fw-bold text-dark">Kısa Açıklama / İçerik</label>
+                        <label asp-for="Subtitle" class="form-label fw-bold text-dark">@Localizer["ShortDescriptionLabel"]</label>
                         <textarea asp-for="Subtitle" class="form-control form-control-modern" rows="4"></textarea>
                     </div>
                 }
@@ -103,11 +115,13 @@
                 <div class="d-flex align-items-center justify-content-between border-top pt-4 mt-2">
                     <div class="form-check form-switch fs-5">
                         <input asp-for="IsActive" class="form-check-input shadow-sm" type="checkbox" role="switch" id="activeSwitch" style="cursor: pointer;">
-                        <label asp-for="IsActive" class="form-check-label fw-bold text-dark ms-2" for="activeSwitch" style="cursor: pointer;">Sitede Yayınla (Aktif)</label>
+                        <label asp-for="IsActive" class="form-check-label fw-bold text-dark ms-2" for="activeSwitch" style="cursor: pointer;">
+                            @Localizer["PublishOnSiteLabel"]
+                        </label>
                     </div>
 
                     <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-lg">
-                        <i class="fas fa-save me-2"></i> Değişiklikleri Kaydet
+                        <i class="fas fa-save me-2"></i> @Localizer["SaveChangesButton"]
                     </button>
                 </div>
             </form>
@@ -118,9 +132,11 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
     <script>
+        const summernotePlaceholder = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["SummernotePlaceholder"].Value));
+
         $(document).ready(function() {
             $('#summernote').summernote({
-                placeholder: 'İçeriğinizi buraya yazın veya yapıştırın...',
+                placeholder: summernotePlaceholder,
                 tabsize: 2,
                 height: 300,
                 toolbar: [

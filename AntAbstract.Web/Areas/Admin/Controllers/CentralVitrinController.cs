@@ -4,22 +4,27 @@ using AntAbstract.Web.Models.WebsiteBlocks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace AntAbstract.Web.Controllers 
+namespace AntAbstract.Web.Controllers
 {
     [Authorize(Roles = "Admin")]
     public class CentralVitrinController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly IStringLocalizer<CentralVitrinController> _localizer;
 
-        public CentralVitrinController(AppDbContext context)
+        public CentralVitrinController(
+            AppDbContext context,
+            IStringLocalizer<CentralVitrinController> localizer)
         {
             _context = context;
+            _localizer = localizer;
         }
 
         public async Task<IActionResult> Index()
@@ -38,7 +43,8 @@ namespace AntAbstract.Web.Controllers
                 .Include(c => c.Tenant)
                 .FirstOrDefaultAsync(c => c.Id == conferenceId);
 
-            if (conference == null) return NotFound("Kongre bulunamadı.");
+            if (conference == null)
+                return NotFound(_localizer["ConferenceNotFound"]);
 
             ViewBag.ConferenceName = conference.Title;
             ViewBag.ConferenceId = conference.Id;
@@ -68,7 +74,7 @@ namespace AntAbstract.Web.Controllers
                     var newBlock = new ConferencePageBlock
                     {
                         ConferenceId = conferenceId,
-                        TenantId = conference.TenantId, 
+                        TenantId = conference.TenantId,
                         BlockType = item.Type,
                         Title = item.Title,
                         IsActive = true,
@@ -132,7 +138,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Süper Admin Yetkisiyle Başarıyla Güncellendi!";
+            TempData["SuccessMessage"] = _localizer["BlockUpdatedSuccessfully"];
 
             return RedirectToAction(nameof(ManageBlocks), new { conferenceId = block.ConferenceId });
         }
@@ -141,7 +147,12 @@ namespace AntAbstract.Web.Controllers
         public IActionResult CreateBlock(Guid conferenceId)
         {
             ViewBag.ConferenceId = conferenceId;
-            return View(new ConferencePageBlock { ConferenceId = conferenceId, IsActive = true, BlockType = ConferencePageBlockType.About });
+            return View(new ConferencePageBlock
+            {
+                ConferenceId = conferenceId,
+                IsActive = true,
+                BlockType = ConferencePageBlockType.About
+            });
         }
 
         [HttpPost]
@@ -162,7 +173,7 @@ namespace AntAbstract.Web.Controllers
             _context.ConferencePageBlocks.Add(model);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Yeni blok başarıyla eklendi!";
+            TempData["SuccessMessage"] = _localizer["BlockCreatedSuccessfully"];
             return RedirectToAction(nameof(ManageBlocks), new { conferenceId = model.ConferenceId });
         }
     }

@@ -1,10 +1,9 @@
 ﻿using AntAbstract.Domain.Entities;
-using AntAbstract.Infrastructure.Context;
 using AntAbstract.Web.Models.ViewModels.Admin.Referee;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
@@ -14,11 +13,16 @@ namespace AntAbstract.Web.Controllers
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IStringLocalizer<RefereeController> _localizer;
 
-        public RefereeController(UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager)
+        public RefereeController(
+            UserManager<AppUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            IStringLocalizer<RefereeController> localizer)
         {
             _userManager = userManager;
             _roleManager = roleManager;
+            _localizer = localizer;
         }
 
         public async Task<IActionResult> Index()
@@ -47,7 +51,7 @@ namespace AntAbstract.Web.Controllers
                 var existingUser = await _userManager.FindByEmailAsync(model.Email);
                 if (existingUser != null)
                 {
-                    ModelState.AddModelError("", "Bu email adresiyle zaten bir kullanıcı kayıtlı.");
+                    ModelState.AddModelError("", _localizer["EmailAlreadyRegistered"]);
                     return View(model);
                 }
 
@@ -58,7 +62,7 @@ namespace AntAbstract.Web.Controllers
                     FirstName = model.FirstName,
                     LastName = model.LastName,
                     Institution = model.Institution,
-                    EmailConfirmed = true 
+                    EmailConfirmed = true
                 };
 
                 var result = await _userManager.CreateAsync(user, model.Password);
@@ -67,7 +71,7 @@ namespace AntAbstract.Web.Controllers
                 {
                     await _userManager.AddToRoleAsync(user, "Referee");
 
-                    TempData["SuccessMessage"] = "Hakem başarıyla sisteme eklendi.";
+                    TempData["SuccessMessage"] = _localizer["RefereeAddedSuccessfully"];
                     return RedirectToAction(nameof(Index));
                 }
 
@@ -76,19 +80,21 @@ namespace AntAbstract.Web.Controllers
                     ModelState.AddModelError("", error.Description);
                 }
             }
+
             return View(model);
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
             if (user != null)
             {
-
                 await _userManager.DeleteAsync(user);
-                TempData["SuccessMessage"] = "Hakem silindi.";
+                TempData["SuccessMessage"] = _localizer["RefereeDeleted"];
             }
+
             return RedirectToAction(nameof(Index));
         }
     }

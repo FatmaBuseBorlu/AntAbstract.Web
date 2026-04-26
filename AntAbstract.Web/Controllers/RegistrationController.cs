@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,12 +18,18 @@ namespace AntAbstract.Web.Controllers
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
         private readonly TenantContext _tenantContext;
+        private readonly IStringLocalizer<RegistrationController> _localizer;
 
-        public RegistrationController(AppDbContext context, UserManager<AppUser> userManager, TenantContext tenantContext)
+        public RegistrationController(
+            AppDbContext context,
+            UserManager<AppUser> userManager,
+            TenantContext tenantContext,
+            IStringLocalizer<RegistrationController> localizer)
         {
             _context = context;
             _userManager = userManager;
             _tenantContext = tenantContext;
+            _localizer = localizer;
         }
 
         [HttpGet("")]
@@ -40,7 +47,7 @@ namespace AntAbstract.Web.Controllers
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                TempData["ErrorMessage"] = _localizer["ConferenceNotFound"];
                 return RedirectToAction("Index", "Home");
             }
 
@@ -50,9 +57,9 @@ namespace AntAbstract.Web.Controllers
             if (existingRegistration != null)
             {
                 if (existingRegistration.IsPaid)
-                    TempData["SuccessMessage"] = "Zaten kayıtlısınız ve ödemeniz tamamlanmış.";
+                    TempData["SuccessMessage"] = _localizer["AlreadyRegisteredAndPaid"];
                 else
-                    TempData["InfoMessage"] = "Zaten bir kaydınız mevcut. Ödeme ekranına yönlendirildiniz.";
+                    TempData["InfoMessage"] = _localizer["ExistingRegistrationRedirectedToPayment"];
 
                 return RedirectToAction("Index", "Payment", new { slug = slug, id = existingRegistration.Id });
             }
@@ -73,6 +80,8 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> Checkout(Guid typeId)
         {
             var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
             var slug = RouteData.Values["slug"]?.ToString();
 
             var ticketType = await _context.RegistrationTypes
@@ -81,12 +90,13 @@ namespace AntAbstract.Web.Controllers
 
             if (ticketType == null || !ticketType.IsActive || (ticketType.Deadline.HasValue && ticketType.Deadline.Value <= DateTime.UtcNow))
             {
-                TempData["ErrorMessage"] = "Seçilen bilet geçersiz veya süresi dolmuş.";
+                TempData["ErrorMessage"] = _localizer["InvalidOrExpiredTicket"];
                 return RedirectToAction(nameof(Index), new { slug = slug });
             }
 
             var exists = await _context.Registrations.AnyAsync(r => r.ConferenceId == ticketType.ConferenceId && r.AppUserId == user.Id);
-            if (exists) return RedirectToAction(nameof(Index), new { slug = slug });
+            if (exists)
+                return RedirectToAction(nameof(Index), new { slug = slug });
 
             ViewBag.Ticket = ticketType;
             ViewBag.User = user;
@@ -100,6 +110,8 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> CheckoutPost(Guid typeId, string BillingName, string TaxOffice, string TaxNumber, string BillingAddress)
         {
             var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
             var slug = RouteData.Values["slug"]?.ToString();
 
             var ticketType = await _context.RegistrationTypes.FindAsync(typeId);
@@ -125,7 +137,6 @@ namespace AntAbstract.Web.Controllers
                 RegistrationDate = DateTime.UtcNow,
                 IsPaid = false,
                 Amount = ticketType.Price,
-
                 BillingName = BillingName,
                 TaxOffice = TaxOffice,
                 TaxNumber = TaxNumber,
@@ -135,7 +146,7 @@ namespace AntAbstract.Web.Controllers
             _context.Registrations.Add(newRegistration);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Kayıt işleminiz başarılı! Lütfen ödemenizi tamamlayınız.";
+            TempData["SuccessMessage"] = _localizer["RegistrationSuccessCompletePayment"];
 
             return RedirectToAction("Index", "Payment", new { slug = slug, id = newRegistration.Id });
         }

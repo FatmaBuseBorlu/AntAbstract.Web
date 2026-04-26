@@ -1,7 +1,8 @@
 ﻿@model AntAbstract.Domain.Entities.Conference
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Yeni Kongre";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     var slug = Context.GetRouteValue("slug")?.ToString() ?? "";
 }
@@ -11,7 +12,7 @@
         <div class="col-md-8">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white py-3">
-                    <h5 class="fw-bold mb-0">Yeni Kongre Oluştur</h5>
+                    <h5 class="fw-bold mb-0">@Localizer["CardTitle"]</h5>
                 </div>
 
                 <div class="card-body p-4">
@@ -25,43 +26,60 @@
                         @if (User.IsInRole("Admin"))
                         {
                             <div class="mb-4 p-3 bg-light border rounded-3">
-                                <label class="form-label fw-bold small text-primary">Ait Olduğu Kurum (Sadece Süper Admin Görür) *</label>
+                                <label class="form-label fw-bold small text-primary">
+                                    @Localizer["TenantLabel"]
+                                </label>
+
                                 <select asp-for="TenantId" asp-items="ViewBag.Tenants" class="form-select form-select-lg border-primary" required>
-                                    <option value="">-- Hangi Kuruma Atanacak? Seçiniz --</option>
+                                    <option value="">@Localizer["TenantSelectPlaceholder"]</option>
                                 </select>
+
                                 <span asp-validation-for="TenantId" class="text-danger small"></span>
-                                <small class="text-muted d-block mt-1"><i class="fas fa-info-circle"></i> Bu kongreyi oluşturduğunuzda, seçilen kurumun yöneticileri (Örn: Ege Admin) yönetim panellerinde bu kongreyi görmeye başlayacaktır.</small>
+
+                                <small class="text-muted d-block mt-1">
+                                    <i class="fas fa-info-circle"></i>
+                                    @Localizer["TenantHelpText"]
+                                </small>
                             </div>
                         }
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold small text-muted">Kongre Adı</label>
-                            <input asp-for="Title" class="form-control form-control-lg" placeholder="Örn: 5. Uluslararası Bilim Kongresi" required />
+                            <label class="form-label fw-bold small text-muted">@Localizer["TitleLabel"]</label>
+                            <input asp-for="Title"
+                                   class="form-control form-control-lg"
+                                   placeholder="@Localizer["TitlePlaceholder"]"
+                                   required />
                             <span asp-validation-for="Title" class="text-danger small"></span>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold small text-muted">Başlangıç Tarihi</label>
+                                <label class="form-label fw-bold small text-muted">@Localizer["StartDateLabel"]</label>
                                 <input asp-for="StartDate" type="datetime-local" class="form-control" required />
                                 <span asp-validation-for="StartDate" class="text-danger small"></span>
                             </div>
+
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold small text-muted">Bitiş Tarihi</label>
+                                <label class="form-label fw-bold small text-muted">@Localizer["EndDateLabel"]</label>
                                 <input asp-for="EndDate" type="datetime-local" class="form-control" required />
                                 <span asp-validation-for="EndDate" class="text-danger small"></span>
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold small text-muted">Konum / Otel / Şehir</label>
-                            <input asp-for="Venue" class="form-control" placeholder="Örn: Titanic Hotel, Antalya" />
+                            <label class="form-label fw-bold small text-muted">@Localizer["VenueLabel"]</label>
+                            <input asp-for="Venue"
+                                   class="form-control"
+                                   placeholder="@Localizer["VenuePlaceholder"]" />
                             <span asp-validation-for="Venue" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold small text-muted">Açıklama</label>
-                            <textarea asp-for="Description" class="form-control" rows="4" placeholder="Kongre hakkında kısa bilgi..."></textarea>
+                            <label class="form-label fw-bold small text-muted">@Localizer["DescriptionLabel"]</label>
+                            <textarea asp-for="Description"
+                                      class="form-control"
+                                      rows="4"
+                                      placeholder="@Localizer["DescriptionPlaceholder"]"></textarea>
                             <span asp-validation-for="Description" class="text-danger small"></span>
                         </div>
 
@@ -71,20 +89,20 @@
                                asp-action="Index"
                                asp-route-slug="@slug"
                                class="btn btn-light text-muted">
-                                İptal
+                                @Localizer["CancelButton"]
                             </a>
 
                             <button type="submit" class="btn btn-primary fw-bold px-5">
-                                <i class="fas fa-save me-2"></i> Kaydet
+                                <i class="fas fa-save me-2"></i> @Localizer["SaveButton"]
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
-
-            @section Scripts {
-                <partial name="_ValidationScriptsPartial" />
-            }
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

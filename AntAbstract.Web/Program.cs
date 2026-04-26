@@ -95,7 +95,7 @@ builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
-#region 5. Veritabaný Baþlatma (Seeding) ve Ayarlar
+#region 5. Veritabaný Baþlatma (Migration + Seeding) ve Ayarlar
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -105,13 +105,15 @@ using (var scope = app.Services.CreateScope())
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         var context = services.GetRequiredService<AppDbContext>();
 
+        await context.Database.MigrateAsync();
+
         await AntAbstract.Infrastructure.Data.DbInitializer.Initialize(userManager, roleManager, context);
         await AntAbstract.Infrastructure.Data.DbSeeder.SeedRolesAndUsers(services);
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Seeding sýrasýnda bir hata oluþtu.");
+        logger.LogError(ex, "Migration/Seeding sýrasýnda bir hata oluþtu.");
     }
 }
 

@@ -1,20 +1,21 @@
 ﻿@using AntAbstract.Web.Models.ViewModels
 @using AntAbstract.Web.Models.ViewModels.Admin.Submissions
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model SubmissionEditViewModel
 
 @{
-    ViewData["Title"] = "Bildiri Düzenle";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 }
 
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h4 class="fw-bold mb-1">Bildiri Düzenle</h4>
-            <p class="text-muted small mb-0">Gönderilmiş bildiriniz üzerinde değişiklik yapın.</p>
+            <h4 class="fw-bold mb-1">@Localizer["PageHeading"]</h4>
+            <p class="text-muted small mb-0">@Localizer["PageLead"]</p>
         </div>
         <a href="/Submission/Index" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-1"></i> Geri Dön
+            <i class="fas fa-arrow-left me-1"></i> @Localizer["BackButton"]
         </a>
     </div>
 
@@ -24,43 +25,49 @@
                 <div class="card-body p-4">
 
                     <form asp-action="Edit" enctype="multipart/form-data" method="post">
+                        @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="Id" />
                         <input type="hidden" asp-for="ConferenceId" />
 
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm mb-4" role="alert"></div>
 
-                        <h5 class="fw-bold text-dark mb-3"><i class="fas fa-edit me-2 text-primary"></i> Çalışma Bilgileri</h5>
+                        <h5 class="fw-bold text-dark mb-3">
+                            <i class="fas fa-edit me-2 text-primary"></i> @Localizer["StudyInfoTitle"]
+                        </h5>
 
                         <div class="mb-4">
-                            <label asp-for="Title" class="form-label fw-bold text-dark">Bildiri Başlığı</label>
+                            <label asp-for="Title" class="form-label fw-bold text-dark">@Localizer["SubmissionTitleLabel"]</label>
                             <input asp-for="Title" class="form-control form-control-lg bg-light border-0" />
                             <span asp-validation-for="Title" class="text-danger small"></span>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-4">
-                                <label class="form-label fw-bold text-dark">Sunum Türü</label>
+                                <label class="form-label fw-bold text-dark">@Localizer["PresentationTypeLabel"]</label>
                                 <select asp-for="PresentationType" class="form-select bg-light border-0">
-                                    <option value="0">Sözlü Sunum</option>
-                                    <option value="1">Poster Sunum</option>
+                                    <option value="0">@Localizer["OralPresentationOption"]</option>
+                                    <option value="1">@Localizer["PosterPresentationOption"]</option>
                                 </select>
                             </div>
+
                             <div class="col-md-6 mb-4">
-                                <label asp-for="Keywords" class="form-label fw-bold text-dark">Anahtar Kelimeler</label>
+                                <label asp-for="Keywords" class="form-label fw-bold text-dark">@Localizer["KeywordsLabel"]</label>
                                 <input asp-for="Keywords" class="form-control bg-light border-0" />
                                 <span asp-validation-for="Keywords" class="text-danger small"></span>
                             </div>
                         </div>
 
                         <div class="mb-4">
-                            <label asp-for="AbstractText" class="form-label fw-bold text-dark">Özet Metni</label>
+                            <label asp-for="AbstractText" class="form-label fw-bold text-dark">@Localizer["AbstractLabel"]</label>
                             <textarea asp-for="AbstractText" id="AbstractText" class="form-control bg-light border-0" rows="8"></textarea>
                             <span asp-validation-for="AbstractText" class="text-danger small"></span>
                         </div>
 
                         <hr class="my-5">
 
-                        <h5 class="fw-bold text-dark mb-3"><i class="fas fa-users me-2 text-primary"></i> Ortak Yazarlar</h5>
+                        <h5 class="fw-bold text-dark mb-3">
+                            <i class="fas fa-users me-2 text-primary"></i> @Localizer["CoAuthorsTitle"]
+                        </h5>
 
                         <div id="author-list">
                             @if (Model.Authors != null)
@@ -72,35 +79,35 @@
                                         <input type="hidden" name="Authors[@i].Order" value="@(i + 1)" />
 
                                         <div class="col-md-3">
-                                            <label class="small text-muted mb-1">Adı</label>
+                                            <label class="small text-muted mb-1">@Localizer["FirstNameLabel"]</label>
                                             <input name="Authors[@i].FirstName" value="@Model.Authors[i].FirstName" class="form-control form-control-sm" required />
                                         </div>
                                         <div class="col-md-3">
-                                            <label class="small text-muted mb-1">Soyadı</label>
+                                            <label class="small text-muted mb-1">@Localizer["LastNameLabel"]</label>
                                             <input name="Authors[@i].LastName" value="@Model.Authors[i].LastName" class="form-control form-control-sm" required />
                                         </div>
                                         <div class="col-md-4">
-                                            <label class="small text-muted mb-1">Kurum</label>
+                                            <label class="small text-muted mb-1">@Localizer["InstitutionLabel"]</label>
                                             <input name="Authors[@i].Institution" value="@Model.Authors[i].Institution" class="form-control form-control-sm" required />
                                         </div>
                                         <div class="col-md-2 d-flex align-items-end">
                                             <button type="button" class="btn btn-danger btn-sm w-100 remove-author-btn">
-                                                <i class="fas fa-trash-alt me-1"></i> Sil
+                                                <i class="fas fa-trash-alt me-1"></i> @Localizer["DeleteButton"]
                                             </button>
                                         </div>
 
                                         <div class="col-md-4">
-                                            <label class="small text-muted mb-1">E-Posta</label>
+                                            <label class="small text-muted mb-1">@Localizer["EmailLabel"]</label>
                                             <input name="Authors[@i].Email" value="@Model.Authors[i].Email" class="form-control form-control-sm" />
                                         </div>
                                         <div class="col-md-4">
-                                            <label class="small text-muted mb-1">ORCID</label>
+                                            <label class="small text-muted mb-1">@Localizer["OrcidLabel"]</label>
                                             <input name="Authors[@i].ORCID" value="@Model.Authors[i].ORCID" class="form-control form-control-sm" />
                                         </div>
                                         <div class="col-md-4 d-flex align-items-center justify-content-end">
                                             <div class="form-check mt-3">
                                                 <input class="form-check-input" type="checkbox" name="Authors[@i].IsCorrespondingAuthor" value="true" @(Model.Authors[i].IsCorrespondingAuthor ? "checked" : "")>
-                                                <label class="form-check-label small">Sorumlu Yazar</label>
+                                                <label class="form-check-label small">@Localizer["CorrespondingAuthorLabel"]</label>
                                             </div>
                                         </div>
                                     </div>
@@ -110,13 +117,15 @@
 
                         <div class="mb-4">
                             <button type="button" class="btn btn-outline-primary btn-sm fw-bold" id="add-author-btn">
-                                <i class="fas fa-plus me-1"></i> Yazar Ekle
+                                <i class="fas fa-plus me-1"></i> @Localizer["AddAuthorButton"]
                             </button>
                         </div>
 
                         <hr class="my-5">
 
-                        <h5 class="fw-bold text-dark mb-3"><i class="fas fa-paperclip me-2 text-primary"></i> Dosya Güncelleme</h5>
+                        <h5 class="fw-bold text-dark mb-3">
+                            <i class="fas fa-paperclip me-2 text-primary"></i> @Localizer["FileUpdateTitle"]
+                        </h5>
 
                         <div class="mb-4">
                             @if (!string.IsNullOrEmpty(Model.ExistingFilePath))
@@ -124,19 +133,19 @@
                                 <div class="alert alert-secondary d-flex align-items-center" role="alert">
                                     <i class="fas fa-file-pdf fa-2x me-3 text-danger"></i>
                                     <div>
-                                        <strong>Mevcut Dosya Yüklü</strong><br>
-                                        <small>Yeni bir dosya seçmezseniz mevcut dosya korunacaktır.</small>
+                                        <strong>@Localizer["ExistingFileTitle"]</strong><br>
+                                        <small>@Localizer["ExistingFileText"]</small>
                                     </div>
                                 </div>
                             }
 
-                            <label asp-for="SubmissionFile" class="form-label fw-bold text-dark">Yeni Dosya Seç (Opsiyonel)</label>
+                            <label asp-for="SubmissionFile" class="form-label fw-bold text-dark">@Localizer["NewFileLabel"]</label>
                             <input asp-for="SubmissionFile" type="file" class="form-control" accept=".pdf,.docx" />
                         </div>
 
                         <div class="text-end">
                             <button type="submit" class="btn btn-primary btn-lg px-5">
-                                <i class="fas fa-save me-2"></i> DEĞİŞİKLİKLERİ KAYDET
+                                <i class="fas fa-save me-2"></i> @Localizer["SaveChangesButton"]
                             </button>
                         </div>
                     </form>
@@ -151,8 +160,17 @@
     <partial name="_ValidationScriptsPartial" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
+        const removeText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["RemoveAriaLabel"].Value));
+        const coAuthorText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["CoAuthorText"].Value));
+        const firstNameRequiredText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["FirstNameRequiredLabel"].Value));
+        const lastNameRequiredText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["LastNameRequiredLabel"].Value));
+        const institutionRequiredText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["InstitutionRequiredLabel"].Value));
+        const deleteText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["DeleteButton"].Value));
+        const emailText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["EmailLabel"].Value));
+        const orcidText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["OrcidLabel"].Value));
+        const correspondingAuthorText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["CorrespondingAuthorLabel"].Value));
+
         $(document).ready(function () {
-            // Mevcut yazar sayısını alıyoruz ki index karışmasın
             let authorIndex = @(Model.Authors?.Count ?? 0);
 
             function getAuthorRowTemplate(index) {
@@ -162,32 +180,32 @@
                         <input type="hidden" name="Authors[${index}].Order" value="${index + 1}" />
 
                         <div class="col-md-3">
-                            <label class="small text-muted mb-1">Adı*</label>
+                            <label class="small text-muted mb-1">${firstNameRequiredText}</label>
                             <input name="Authors[${index}].FirstName" class="form-control form-control-sm" required />
                         </div>
                         <div class="col-md-3">
-                            <label class="small text-muted mb-1">Soyadı*</label>
+                            <label class="small text-muted mb-1">${lastNameRequiredText}</label>
                             <input name="Authors[${index}].LastName" class="form-control form-control-sm" required />
                         </div>
                         <div class="col-md-4">
-                            <label class="small text-muted mb-1">Kurum*</label>
+                            <label class="small text-muted mb-1">${institutionRequiredText}</label>
                             <input name="Authors[${index}].Institution" class="form-control form-control-sm" required />
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
-                            <button type="button" class="btn btn-danger btn-sm w-100 remove-author-btn">Sil</button>
+                            <button type="button" class="btn btn-danger btn-sm w-100 remove-author-btn" aria-label="${removeText}">${deleteText}</button>
                         </div>
                         <div class="col-md-4">
-                            <label class="small text-muted mb-1">E-Posta</label>
+                            <label class="small text-muted mb-1">${emailText}</label>
                             <input name="Authors[${index}].Email" class="form-control form-control-sm" />
                         </div>
                         <div class="col-md-4">
-                            <label class="small text-muted mb-1">ORCID</label>
+                            <label class="small text-muted mb-1">${orcidText}</label>
                             <input name="Authors[${index}].ORCID" class="form-control form-control-sm" />
                         </div>
                         <div class="col-md-4 d-flex align-items-center justify-content-end">
-                             <div class="form-check mt-3">
+                            <div class="form-check mt-3">
                                 <input class="form-check-input" type="checkbox" name="Authors[${index}].IsCorrespondingAuthor" value="true">
-                                <label class="form-check-label small">Sorumlu Yazar</label>
+                                <label class="form-check-label small">${correspondingAuthorText}</label>
                             </div>
                         </div>
                     </div>`;

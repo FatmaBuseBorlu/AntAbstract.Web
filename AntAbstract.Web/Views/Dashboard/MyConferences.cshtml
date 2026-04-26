@@ -1,33 +1,44 @@
 ﻿@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Mvc.Localization
+@using Microsoft.AspNetCore.Localization
+@using System.Globalization
 @using AntAbstract.Domain.Entities
+
 @inject UserManager<AppUser> UserManager
+@inject IViewLocalizer Localizer
+
 @model IEnumerable<AntAbstract.Domain.Entities.Conference>
 
 @{
-    ViewData["Title"] = "Kongre Seçimi";
-    Layout = null; 
+    ViewData["Title"] = Localizer["PageTitle"].Value;
+    Layout = null;
 
     var user = await UserManager.GetUserAsync(User);
-    var fullName = user != null ? $"{user.FirstName} {user.LastName}" : "Kullanıcı";
-    
-    var profileImg = !string.IsNullOrEmpty(user?.ProfileImagePath) 
-        ? user.ProfileImagePath 
+    var fullName = user != null ? $"{user.FirstName} {user.LastName}" : Localizer["DefaultUser"].Value;
+
+    var profileImg = !string.IsNullOrEmpty(user?.ProfileImagePath)
+        ? user.ProfileImagePath
         : $"https://ui-avatars.com/api/?name={fullName}&background=00aeef&color=fff&size=128&bold=true";
 
     var returnUrl = Context.Request.Query["returnUrl"].ToString();
     var selectedIdStr = Context.Session.GetString("SelectedConferenceId");
     Guid? selectedConferenceId = Guid.TryParse(selectedIdStr, out var sid) ? sid : null;
+
+    var requestCulture = Context.Features.Get<IRequestCultureFeature>();
+    var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? "tr-TR";
+    var currentReturnUrl = string.IsNullOrEmpty(Context.Request.Path)
+        ? "/Dashboard/MyConferences"
+        : $"{Context.Request.Path}{Context.Request.QueryString}";
 }
 
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="@CultureInfo.CurrentUICulture.Name">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Çalışma Alanı Seçimi - AntAbstract</title>
+    <title>@Localizer["PageTitle"] - AntAbstract</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -52,49 +63,129 @@
             border-bottom: 1px solid #e2e8f0;
             padding: 1rem 2rem;
             height: 80px;
-            position: sticky; top: 0; z-index: 100;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
+
         .brand-logo {
-            font-size: 1.5rem; font-weight: 800; color: #1e293b; text-decoration: none;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1e293b;
+            text-decoration: none;
+        }
+
+        .language-switcher {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            background: #fff;
+        }
+
+        .language-switcher form { margin: 0; }
+
+        .lang-btn {
+            border: none;
+            background: transparent;
+            color: #64748b;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 8px 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+
+        .lang-btn:hover {
+            background: #f1f5f9;
+            color: var(--primary-color);
+        }
+
+        .lang-btn.active {
+            background: var(--primary-color);
+            color: white;
         }
 
         .user-chip {
-            display: flex; align-items: center; gap: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
             padding: 6px 6px 6px 16px;
-            background: #f1f5f9; border-radius: 50px;
-            transition: all 0.2s; text-decoration: none; color: #334155; cursor: pointer;
+            background: #f1f5f9;
+            border-radius: 50px;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: #334155;
+            cursor: pointer;
             border: 1px solid transparent;
         }
-        .user-chip:hover { background: #fff; border-color: #e2e8f0; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .user-avatar { width: 38px; height: 38px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; }
+
+        .user-chip:hover {
+            background: #fff;
+            border-color: #e2e8f0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .user-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            object-fit: cover;
+        }
 
         .selection-container {
-            max-width: 1200px; margin: 0 auto; padding: 3rem 1.5rem; flex-grow: 1; width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+            flex-grow: 1;
+            width: 100%;
         }
 
         .search-wrapper { max-width: 600px; margin: 0 auto 3rem auto; position: relative; }
+
         .search-input {
-            width: 100%; padding: 1.2rem 1.5rem 1.2rem 3.5rem;
-            border-radius: 50px; border: 1px solid #e2e8f0;
-            background-color: #fff; font-size: 1rem; transition: all 0.3s;
+            width: 100%;
+            padding: 1.2rem 1.5rem 1.2rem 3.5rem;
+            border-radius: 50px;
+            border: 1px solid #e2e8f0;
+            background-color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s;
             box-shadow: 0 4px 20px rgba(0,0,0,0.03);
         }
+
         .search-input:focus {
-            outline: none; border-color: var(--primary-color);
+            outline: none;
+            border-color: var(--primary-color);
             box-shadow: 0 8px 30px rgba(0, 174, 239, 0.15);
         }
+
         .search-icon {
-            position: absolute; left: 1.5rem; top: 50%; transform: translateY(-50%);
-            color: #94a3b8; font-size: 1.2rem;
+            position: absolute;
+            left: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 1.2rem;
         }
+
         .conf-card {
             background: #fff;
             border: 1px solid #e2e8f0;
             border-radius: 24px;
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            position: relative; overflow: hidden; height: 100%;
-            display: flex; flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
         }
+
         .conf-card:hover {
             transform: translateY(-8px);
             box-shadow: 0 20px 40px rgba(0,0,0,0.08);
@@ -105,38 +196,82 @@
             border: 2px solid #10b981;
             background-color: #fcfdfd;
         }
-        .conf-card.active::before {
-            content: 'AKTİF'; position: absolute; top: 20px; right: 20px;
-            background: #10b981; color: #fff; font-size: 0.7rem; font-weight: 800;
-            padding: 5px 12px; border-radius: 20px; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+
+        .active-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 5px 12px;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
         }
 
         .logo-wrapper {
-            width: 72px; height: 72px;
+            width: 72px;
+            height: 72px;
             border-radius: 20px;
-            background: #f8fafc; border: 1px solid #f1f5f9;
-            display: flex; align-items: center; justify-content: center;
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             margin-bottom: 1.5rem;
         }
-        .logo-wrapper img { width: 100%; height: 100%; object-fit: contain; padding: 10px; border-radius: 20px; }
-        .logo-placeholder { font-size: 1.5rem; font-weight: 800; color: var(--primary-color); }
+
+        .logo-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 10px;
+            border-radius: 20px;
+        }
+
+        .logo-placeholder {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary-color);
+        }
 
         .card-meta {
-            font-size: 0.9rem; color: #64748b; margin-bottom: 0.6rem;
-            display: flex; align-items: center; gap: 10px; font-weight: 500;
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
         }
+
         .card-meta i { width: 20px; text-align: center; }
 
-        .footer-actions { margin-top: auto; padding-top: 1.5rem; display: grid; gap: 12px; }
+        .footer-actions {
+            margin-top: auto;
+            padding-top: 1.5rem;
+            display: grid;
+            gap: 12px;
+        }
 
         .btn-select {
             background: linear-gradient(135deg, #00aeef 0%, #0984e3 100%);
-            color: white; border: none; font-weight: 700; padding: 12px;
-            border-radius: 14px; transition: all 0.3s ease;
+            color: white;
+            border: none;
+            font-weight: 700;
+            padding: 12px;
+            border-radius: 14px;
+            transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(0, 174, 239, 0.3);
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            font-size: 0.95rem; width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            width: 100%;
         }
+
         .btn-select:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0, 174, 239, 0.4);
@@ -146,27 +281,44 @@
         .btn-select.active-btn {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-            cursor: pointer; 
+            cursor: pointer;
             opacity: 1;
         }
+
         .btn-select.active-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
         }
 
         .btn-secondary-custom {
-            background-color: #f8fafc; color: #64748b;
-            border: 1px solid #e2e8f0; font-weight: 600;
-            padding: 10px; border-radius: 14px;
-            transition: all 0.2s; font-size: 0.9rem;
-            text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .btn-secondary-custom:hover {
-            background-color: #fff; color: #334155;
-            border-color: #cbd5e1; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            background-color: #f8fafc;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+            font-weight: 600;
+            padding: 10px;
+            border-radius: 14px;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
-        .no-results { display: none; text-align: center; padding: 4rem; color: #94a3b8; }
+        .btn-secondary-custom:hover {
+            background-color: #fff;
+            color: #334155;
+            border-color: #cbd5e1;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .no-results {
+            display: none;
+            text-align: center;
+            padding: 4rem;
+            color: #94a3b8;
+        }
     </style>
 </head>
 <body>
@@ -176,37 +328,56 @@
             ANT<span style="color: var(--primary-color);">ABSTRACT</span>
         </a>
 
-        <div class="dropdown">
-            <a href="#" class="user-chip" data-bs-toggle="dropdown">
-                <span class="fw-bold small d-none d-sm-block">@fullName</span>
-                <img src="@profileImg" class="user-avatar">
-                <i class="fas fa-chevron-down small text-muted ms-1"></i>
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 rounded-4 p-2" style="width: 200px;">
-                <li><h6 class="dropdown-header small fw-bold">HESABIM</h6></li>
-                <li><a class="dropdown-item rounded-2 py-2" href="/Identity/Account/Manage"><i class="fas fa-user-cog me-2 text-muted"></i> Ayarlar</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                    <form asp-controller="Dashboard" asp-action="CustomLogout" method="post">
-                        <button type="submit" class="dropdown-item rounded-2 text-danger fw-bold py-2">
-                            <i class="fas fa-sign-out-alt me-2"></i> Çıkış Yap
-                        </button>
-                    </form>
-                </li>
-            </ul>
+        <div class="d-flex align-items-center gap-3">
+            <div class="language-switcher">
+                <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                    <input type="hidden" name="culture" value="tr-TR" />
+                    <input type="hidden" name="returnUrl" value="@currentReturnUrl" />
+                    <button type="submit" class="lang-btn @(currentCulture == "tr-TR" ? "active" : "")">TR</button>
+                </form>
+
+                <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                    <input type="hidden" name="culture" value="en-US" />
+                    <input type="hidden" name="returnUrl" value="@currentReturnUrl" />
+                    <button type="submit" class="lang-btn @(currentCulture == "en-US" ? "active" : "")">EN</button>
+                </form>
+            </div>
+
+            <div class="dropdown">
+                <a href="#" class="user-chip" data-bs-toggle="dropdown">
+                    <span class="fw-bold small d-none d-sm-block">@fullName</span>
+                    <img src="@profileImg" class="user-avatar">
+                    <i class="fas fa-chevron-down small text-muted ms-1"></i>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 rounded-4 p-2" style="width: 200px;">
+                    <li><h6 class="dropdown-header small fw-bold">@Localizer["MyAccount"]</h6></li>
+                    <li>
+                        <a class="dropdown-item rounded-2 py-2" href="/Identity/Account/Manage">
+                            <i class="fas fa-user-cog me-2 text-muted"></i> @Localizer["Settings"]
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form asp-controller="Dashboard" asp-action="CustomLogout" method="post">
+                            <button type="submit" class="dropdown-item rounded-2 text-danger fw-bold py-2">
+                                <i class="fas fa-sign-out-alt me-2"></i> @Localizer["Logout"]
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
         </div>
     </nav>
 
     <div class="selection-container">
-        
         <div class="text-center mb-5">
-            <h2 class="fw-bold text-dark mb-2">Hoş Geldiniz </h2>
-            <p class="text-muted" style="font-size: 1.1rem;">İşlem yapmak istediğiniz çalışma alanını (kongreyi) aşağıdan seçiniz.</p>
+            <h2 class="fw-bold text-dark mb-2">@Localizer["Welcome"]</h2>
+            <p class="text-muted" style="font-size: 1.1rem;">@Localizer["SelectWorkspaceDescription"]</p>
         </div>
 
         <div class="search-wrapper">
             <i class="fas fa-search search-icon"></i>
-            <input type="text" id="conferenceSearch" class="search-input" placeholder="Kongre adı ile arama yapın...">
+            <input type="text" id="conferenceSearch" class="search-input" placeholder="@Localizer["SearchPlaceholder"]">
         </div>
 
         <div class="row g-4 justify-content-center" id="conferenceGrid">
@@ -215,10 +386,10 @@
                 foreach (var kongre in Model)
                 {
                     var tenantSlug = kongre.Tenant?.Slug ?? kongre.Slug ?? "";
-                    
+
                     var fallbackReturnUrl = string.IsNullOrWhiteSpace(tenantSlug) ? "/Dashboard" : $"/{tenantSlug}/Dashboard";
                     var effectiveReturnUrl = fallbackReturnUrl;
-                    
+
                     if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
                     {
                         if (returnUrl.Contains("/Dashboard")) { effectiveReturnUrl = returnUrl; }
@@ -229,7 +400,12 @@
 
                     <div class="col-md-6 col-lg-4 col-xl-4 conf-item">
                         <div class="conf-card p-4 @(isSelected ? "active" : "")">
-                            
+
+                            @if (isSelected)
+                            {
+                                <span class="active-badge">@Localizer["Active"]</span>
+                            }
+
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="logo-wrapper">
                                     @if (hasLogo)
@@ -241,6 +417,7 @@
                                         <span class="logo-placeholder">@kongre.Title?.Substring(0, 1).ToUpper()</span>
                                     }
                                 </div>
+
                                 @if (!string.IsNullOrWhiteSpace(tenantSlug))
                                 {
                                     <span class="badge bg-light text-secondary border rounded-pill px-3">@tenantSlug</span>
@@ -253,11 +430,11 @@
 
                             <div class="card-meta">
                                 <i class="far fa-calendar-alt text-primary"></i>
-                                <span class="fw-bold text-dark">@kongre.StartDate.ToString("dd MMMM yyyy")</span>
+                                <span class="fw-bold text-dark">@kongre.StartDate.ToString("dd MMMM yyyy", CultureInfo.CurrentUICulture)</span>
                             </div>
                             <div class="card-meta">
                                 <i class="fas fa-map-marker-alt text-danger"></i>
-                                <span>@(kongre.City ?? "Online / Sanal")</span>
+                                <span>@(kongre.City ?? Localizer["OnlineVirtual"].Value)</span>
                             </div>
 
                             <div class="footer-actions">
@@ -269,17 +446,17 @@
                                     <button type="submit" class="btn-select @(isSelected ? "active-btn" : "")">
                                         @if (isSelected)
                                         {
-                                            <span>Panele Dön (Aktif)</span> <i class="fas fa-sign-in-alt"></i>
+                                            <span>@Localizer["ReturnToPanelActive"]</span> <i class="fas fa-sign-in-alt"></i>
                                         }
                                         else
                                         {
-                                            <span>Seç ve Başla</span> <i class="fas fa-arrow-right"></i>
+                                            <span>@Localizer["SelectAndStart"]</span> <i class="fas fa-arrow-right"></i>
                                         }
                                     </button>
                                 </form>
-                                
+
                                 <a href="/@tenantSlug" target="_blank" class="btn-secondary-custom">
-                                    <i class="fas fa-external-link-alt small"></i> <span>Web Sitesi</span>
+                                    <i class="fas fa-external-link-alt small"></i> <span>@Localizer["Website"]</span>
                                 </a>
                             </div>
 
@@ -293,32 +470,34 @@
                     <div class="bg-white d-inline-block p-5 rounded-circle shadow-sm mb-4">
                         <i class="far fa-folder-open fa-4x text-muted opacity-50"></i>
                     </div>
-                    <h3 class="fw-bold text-dark">Henüz Bir Kaydınız Yok</h3>
-                    <p class="text-muted mb-4">Sistemi kullanmak için önce bir etkinliğe kayıt olmalısınız.</p>
-                    <a href="/Home/Index#congress-list" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">Etkinlikleri Keşfet</a>
+                    <h3 class="fw-bold text-dark">@Localizer["NoRegistrationTitle"]</h3>
+                    <p class="text-muted mb-4">@Localizer["NoRegistrationDescription"]</p>
+                    <a href="/Home/Index#congress-list" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
+                        @Localizer["DiscoverEvents"]
+                    </a>
                 </div>
             }
         </div>
 
         <div id="noResults" class="no-results">
             <i class="fas fa-search fa-3x mb-3 opacity-25"></i>
-            <h4>Aradığınız kriterde kongre bulunamadı.</h4>
+            <h4>@Localizer["NoSearchResults"]</h4>
         </div>
-
     </div>
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.getElementById('conferenceSearch').addEventListener('keyup', function() {
+        document.getElementById('conferenceSearch').addEventListener('keyup', function () {
             var input = this.value.toLowerCase();
             var items = document.querySelectorAll('.conf-item');
             var noResults = document.getElementById('noResults');
             var hasVisible = false;
 
-            items.forEach(function(item) {
+            items.forEach(function (item) {
                 var title = item.querySelector('.conf-title').innerText.toLowerCase();
                 if (title.includes(input)) {
-                    item.style.display = 'block'; hasVisible = true;
+                    item.style.display = 'block';
+                    hasVisible = true;
                 } else {
                     item.style.display = 'none';
                 }

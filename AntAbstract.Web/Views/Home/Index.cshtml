@@ -7,7 +7,7 @@
 @model LandingPageViewModel
 
 @{
-    ViewData["Title"] = "Ana Sayfa";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_Layout";
 }
 
@@ -16,7 +16,6 @@
         padding-top: 0;
     }
 
-    /* --- HERO ALANI --- */
     .hero-section {
         padding-top: 140px;
         padding-bottom: 80px;
@@ -37,7 +36,6 @@
             box-shadow: -10px 10px 40px rgba(0,0,0,0.2);
         }
 
-    /* --- ORTAK KART STİLLERİ --- */
     .feature-card, .pricing-card {
         background: #fff;
         transition: all 0.3s ease;
@@ -99,7 +97,6 @@
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
 
-    /* --- KONGRE KARTLARI --- */
     .congress-card {
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         border: 1px solid rgba(0,0,0,0.05);
@@ -182,25 +179,25 @@
             <div class="row align-items-center">
                 <div class="col-lg-6 mb-5 mb-lg-0 pe-lg-5">
                     <div class="d-inline-flex align-items-center bg-white shadow-sm rounded-pill px-3 py-2 mb-4 border">
-                        <span class="badge bg-primary rounded-pill me-2">YENİ</span>
-                        <span class="text-muted small fw-bold">N-Katmanlı Mimari ile Güçlendirildi</span>
+                        <span class="badge bg-primary rounded-pill me-2">@Localizer["NewBadge"]</span>
+                        <span class="text-muted small fw-bold">@Localizer["HeroMiniBadgeText"]</span>
                     </div>
 
                     <h1 class="display-4 fw-bold lh-sm mb-4 text-dark">
-                        Bilimsel Etkinlikleri <br>
-                        <span style="color: var(--primary-color);">Zirveye Taşıyın</span>
+                        @Localizer["HeroTitleLine1"] <br>
+                        <span style="color: var(--primary-color);">@Localizer["HeroTitleLine2"]</span>
                     </h1>
 
                     <p class="lead text-muted mb-5">
-                        Kongre süreçlerinizi tek platformdan yönetin. Özet toplama, hakem atama, online ödeme ve dinamik program oluşturma işlemleri artık çok kolay.
+                        @Localizer["HeroDescription"]
                     </p>
 
                     <div class="d-flex gap-3">
                         <a href="#congress-list" class="btn btn-primary btn-lg px-5 shadow-sm rounded-pill fw-bold border-0">
-                            Kongreleri Keşfet
+                            @Localizer["DiscoverCongressesButton"]
                         </a>
                         <a href="#pricing" class="btn btn-outline-dark btn-lg px-4 rounded-pill">
-                            <i class="fas fa-tags me-2"></i>Paketler
+                            <i class="fas fa-tags me-2"></i>@Localizer["PackagesButton"]
                         </a>
                     </div>
                 </div>
@@ -209,7 +206,7 @@
                     <div class="position-relative" style="z-index: 10;">
                         <img src="https://ui-avatars.com/api/?name=Admin+Panel&background=00aeef&color=fff&size=800&font-size=0.1"
                              class="img-fluid dashboard-preview-card"
-                             alt="AntAbstract Yönetim Paneli">
+                             alt="@Localizer["AdminPanelAlt"]">
 
                         <div class="position-absolute bg-white p-3 rounded-3 shadow-lg text-start animate__animated animate__fadeInUp"
                              style="bottom: 30px; left: -20px; z-index: 20; max-width: 200px;">
@@ -219,7 +216,7 @@
                                 </div>
                                 <div>
                                     <h5 class="mb-0 fw-bold">100%</h5>
-                                    <small class="text-muted">Dijital Dönüşüm</small>
+                                    <small class="text-muted">@Localizer["DigitalTransformationText"]</small>
                                 </div>
                             </div>
                         </div>
@@ -232,9 +229,9 @@
     <section id="congress-list" class="py-5 bg-white">
         <div class="container py-5">
             <div class="text-center mb-5">
-                <h6 class="text-uppercase text-primary letter-spacing-2 fw-bold">YAKLAŞAN ETKİNLİKLER</h6>
-                <h2 class="fw-bold mb-3 display-6" style="color: #333;">Güncel Kongre Takvimi</h2>
-                <p class="text-muted mw-600 mx-auto">Başvurusu devam eden ve katılım sağlayabileceğiniz aktif organizasyonlar.</p>
+                <h6 class="text-uppercase text-primary letter-spacing-2 fw-bold">@Localizer["UpcomingEventsLabel"]</h6>
+                <h2 class="fw-bold mb-3 display-6" style="color: #333;">@Localizer["CongressCalendarTitle"]</h2>
+                <p class="text-muted mw-600 mx-auto">@Localizer["CongressCalendarDescription"]</p>
                 <div style="width: 60px; height: 4px; background: var(--primary-color); margin: 20px auto 0; border-radius: 2px;"></div>
             </div>
 
@@ -256,7 +253,7 @@
                                     {
                                         <div class="text-center text-muted opacity-50">
                                             <i class="fas fa-university fa-3x mb-2"></i>
-                                            <div>Görsel Eklenmemiş</div>
+                                            <div>@Localizer["NoImageUploadedText"]</div>
                                         </div>
                                     }
                                     <div class="position-absolute top-0 end-0 m-3 bg-white rounded-3 shadow-sm p-2 text-center lh-1">
@@ -277,12 +274,12 @@
                                     </h5>
 
                                     <p class="card-text text-muted small mb-4 flex-grow-1">
-                                        @(item.Description.Length > 90 ? item.Description.Substring(0, 87) + "..." : item.Description)
+                                        @item.Description
                                     </p>
 
                                     <div class="d-grid gap-2 position-relative" style="z-index: 2;">
                                         <a href="@vitrinUrl" class="btn btn-primary fw-bold text-white shadow-sm py-2" style="border-radius: 12px; transition: all 0.3s;">
-                                            <i class="fas fa-external-link-alt me-2"></i> Kongre Sitesini İncele
+                                            <i class="fas fa-external-link-alt me-2"></i> @Localizer["ReviewCongressSiteButton"]
                                         </a>
                                     </div>
                                 </div>
@@ -295,7 +292,7 @@
                     <div class="col-12 text-center py-5">
                         <div class="alert alert-light border shadow-sm d-inline-block px-5">
                             <i class="fas fa-info-circle text-primary mb-3 fs-1"></i>
-                            <h5 class="text-muted">Şu anda aktif bir kongre bulunmamaktadır.</h5>
+                            <h5 class="text-muted">@Localizer["NoActiveCongressText"]</h5>
                         </div>
                     </div>
                 }
@@ -306,9 +303,9 @@
     <section class="py-5 bg-light">
         <div class="container py-5">
             <div class="text-center mb-5">
-                <h6 class="text-uppercase text-primary letter-spacing-2 fw-bold">SÜREÇLERİMİZ</h6>
-                <h2 class="fw-bold display-6">Uçtan Uca Kongre Yönetimi</h2>
-                <p class="text-muted mw-600 mx-auto">Etkinliklerinizin A'dan Z'ye tüm aşamalarını tek bir noktadan profesyonelce yönetin.</p>
+                <h6 class="text-uppercase text-primary letter-spacing-2 fw-bold">@Localizer["ProcessesLabel"]</h6>
+                <h2 class="fw-bold display-6">@Localizer["EndToEndManagementTitle"]</h2>
+                <p class="text-muted mw-600 mx-auto">@Localizer["EndToEndManagementDescription"]</p>
             </div>
 
             <div class="row g-4">
@@ -317,8 +314,8 @@
                         <div class="feature-icon bg-primary bg-opacity-10 text-primary">
                             <i class="fas fa-laptop-code"></i>
                         </div>
-                        <h4 class="fw-bold mb-3">Yönetim Sistemi</h4>
-                        <p class="text-muted">Online ve yüz yüze kongrelerinizde kayıt işleminden program yapmaya kadar her türlü iş ve işlemi dijital ortamda yürüten güçlü altyapı.</p>
+                        <h4 class="fw-bold mb-3">@Localizer["Feature1Title"]</h4>
+                        <p class="text-muted">@Localizer["Feature1Description"]</p>
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -326,8 +323,8 @@
                         <div class="feature-icon bg-success bg-opacity-10 text-success">
                             <i class="fas fa-user-check"></i>
                         </div>
-                        <h4 class="fw-bold mb-3">Hızlı Kayıt İşlemi</h4>
-                        <p class="text-muted">Katılımcılar için çok hızlı ve basit kayıt süreci. Kayıt sonrası tüm yazışmalar ve belgeler dijital olarak anında görüntülenebilir.</p>
+                        <h4 class="fw-bold mb-3">@Localizer["Feature2Title"]</h4>
+                        <p class="text-muted">@Localizer["Feature2Description"]</p>
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -335,8 +332,8 @@
                         <div class="feature-icon bg-warning bg-opacity-10 text-warning">
                             <i class="fas fa-book-open"></i>
                         </div>
-                        <h4 class="fw-bold mb-3">Yayıncılık Hizmeti</h4>
-                        <p class="text-muted">Bildiri kitapları (özet ve tam metin) sisteme online yüklenir. Yayın hizmetleri konferans yönetimiyle tam entegredir.</p>
+                        <h4 class="fw-bold mb-3">@Localizer["Feature3Title"]</h4>
+                        <p class="text-muted">@Localizer["Feature3Description"]</p>
                     </div>
                 </div>
             </div>
@@ -347,35 +344,36 @@
         <div class="container py-5">
             <div class="row align-items-center gy-5">
                 <div class="col-lg-6 order-2 order-lg-1">
-                    <span class="badge bg-primary bg-opacity-10 text-primary mb-3 px-3 py-2 rounded-pill">15 YILLIK DENEYİM</span>
-                    <h2 class="display-5 fw-bold mb-4">Ant Abstract Nedir?</h2>
+                    <span class="badge bg-primary bg-opacity-10 text-primary mb-3 px-3 py-2 rounded-pill">@Localizer["ExperienceBadge"]</span>
+                    <h2 class="display-5 fw-bold mb-4">@Localizer["WhatIsAntAbstractTitle"]</h2>
                     <p class="lead text-dark opacity-75 mb-4">
-                        Ulusal veya uluslararası kongre, sempozyum ve konferansların A’dan Z’ye tüm süreçlerini online organize edebileceğiniz işlevsel bir yazılım sistemidir.
+                        @Localizer["WhatIsAntAbstractParagraph1"]
                     </p>
                     <p class="text-muted mb-5">
-                        Kongrelerinizi, web sayfası yaptırmadan, özet yönetim sistemi satın almadan; kabul mektubu, katılım belgesi, özet kitabı ve kongre programı işleri ile uğraşmadan bu sistemimiz üzerinden sorunsuz yönetebilirsiniz.
+                        @Localizer["WhatIsAntAbstractParagraph2"]
                     </p>
 
                     <div class="row g-3 mb-4">
                         <div class="col-sm-6">
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-check-circle text-success me-2"></i>
-                                <span class="fw-bold">500+ Kongre Tecrübesi</span>
+                                <span class="fw-bold">@Localizer["ExperienceFeatureText"]</span>
                             </div>
                         </div>
                         <div class="col-sm-6">
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-check-circle text-success me-2"></i>
-                                <span class="fw-bold">7/24 Teknik Destek</span>
+                                <span class="fw-bold">@Localizer["SupportFeatureText"]</span>
                             </div>
                         </div>
                     </div>
-                    <a href="/Home/About" class="btn btn-primary rounded-pill px-4 py-2 fw-bold">Daha Fazla Bilgi</a>
+                    <a href="/Home/About" class="btn btn-primary rounded-pill px-4 py-2 fw-bold">@Localizer["MoreInfoButton"]</a>
                 </div>
+
                 <div class="col-lg-6 order-1 order-lg-2">
                     <div class="position-relative ms-lg-5">
                         <img src="https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                             alt="Kongre Toplantısı"
+                             alt="@Localizer["ConferenceMeetingAlt"]"
                              class="img-fluid rounded-4 shadow-lg"
                              style="transform: rotate(2deg);">
                         <div class="position-absolute bg-primary opacity-10 rounded-4"
@@ -388,7 +386,7 @@
 
     <section class="py-4 border-bottom border-top bg-light">
         <div class="container">
-            <p class="text-center text-muted small fw-bold letter-spacing-2 mb-4">GÜÇLÜ İŞBİRLİKLERİ VE ÇÖZÜM ORTAKLARIMIZ</p>
+            <p class="text-center text-muted small fw-bold letter-spacing-2 mb-4">@Localizer["PartnersLabel"]</p>
             <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-4 justify-content-center align-items-center opacity-75">
                 <div class="col text-center"><i class="fas fa-university fa-2x text-secondary hover-color"></i><div class="small mt-2 text-muted">Ankara Üni.</div></div>
                 <div class="col text-center"><i class="fas fa-graduation-cap fa-2x text-secondary hover-color"></i><div class="small mt-2 text-muted">Hacettepe</div></div>
@@ -403,69 +401,69 @@
     <section id="pricing" class="py-5 bg-white">
         <div class="container py-5">
             <div class="text-center mb-5">
-                <h6 class="text-uppercase text-primary letter-spacing-2 fw-bold">PAKETLER</h6>
-                <h2 class="fw-bold mb-3 display-6">Sizin İçin En Uygun Planı Seçin</h2>
-                <p class="text-muted mw-600 mx-auto">İhtiyaçlarınıza özel ölçeklenebilir çözümler.</p>
+                <h6 class="text-uppercase text-primary letter-spacing-2 fw-bold">@Localizer["PackagesLabel"]</h6>
+                <h2 class="fw-bold mb-3 display-6">@Localizer["ChoosePlanTitle"]</h2>
+                <p class="text-muted mw-600 mx-auto">@Localizer["ChoosePlanDescription"]</p>
             </div>
 
             <div class="row align-items-center g-4">
                 <div class="col-lg-4">
                     <div class="pricing-card p-4">
-                        <h5 class="fw-bold text-dark">Temel Paket</h5>
-                        <p class="text-muted small">Küçük ölçekli etkinlikler için</p>
+                        <h5 class="fw-bold text-dark">@Localizer["BasicPackageTitle"]</h5>
+                        <p class="text-muted small">@Localizer["BasicPackageSubtitle"]</p>
                         <div class="my-4">
                             <span class="display-6 fw-bold text-dark">10.000 ₺</span>
-                            <span class="text-muted">/ Tek Sefer</span>
+                            <span class="text-muted">@Localizer["OneTimeText"]</span>
                         </div>
                         <ul class="list-unstyled mb-4 text-muted small">
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> 50 Bildiriye Kadar</li>
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Kongre Web Sitesi</li>
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Kayıt & Özet Sistemi</li>
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> 1 Yıl Arşiv</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> @Localizer["BasicFeature1"]</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> @Localizer["BasicFeature2"]</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> @Localizer["BasicFeature3"]</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> @Localizer["BasicFeature4"]</li>
                         </ul>
                         <div class="d-grid">
-                            <a href="/Home/Contact" class="btn btn-outline-dark fw-bold rounded-pill">Satın Al</a>
+                            <a href="/Home/Contact" class="btn btn-outline-dark fw-bold rounded-pill">@Localizer["BuyButton"]</a>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-lg-4">
                     <div class="pricing-card popular p-5 shadow-lg">
-                        <div class="popular-badge">POPÜLER</div>
-                        <h5 class="fw-bold text-primary">Standart Paket</h5>
-                        <p class="text-muted small">Orta ölçekli kongreler için</p>
+                        <div class="popular-badge">@Localizer["PopularBadge"]</div>
+                        <h5 class="fw-bold text-primary">@Localizer["StandardPackageTitle"]</h5>
+                        <p class="text-muted small">@Localizer["StandardPackageSubtitle"]</p>
                         <div class="my-4">
                             <span class="display-5 fw-bold text-dark">20.000 ₺</span>
-                            <span class="text-muted">/ 1 Yıl</span>
+                            <span class="text-muted">@Localizer["PerYearText"]</span>
                         </div>
                         <ul class="list-unstyled mb-4 text-secondary">
-                            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> <strong>500 Bildiriye Kadar</strong></li>
-                            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> Tüm Temel Özellikler</li>
-                            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> Tam Metin Toplama</li>
-                            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> Dijital Program Modülü</li>
+                            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> <strong>@Localizer["StandardFeature1"]</strong></li>
+                            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> @Localizer["StandardFeature2"]</li>
+                            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> @Localizer["StandardFeature3"]</li>
+                            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> @Localizer["StandardFeature4"]</li>
                         </ul>
                         <div class="d-grid">
-                            <a href="/Home/Contact" class="btn btn-primary fw-bold rounded-pill py-3">Hemen Başla</a>
+                            <a href="/Home/Contact" class="btn btn-primary fw-bold rounded-pill py-3">@Localizer["StartNowButton"]</a>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-lg-4">
                     <div class="pricing-card p-4">
-                        <h5 class="fw-bold text-dark">Gelişmiş Paket</h5>
-                        <p class="text-muted small">Büyük kurumlar için</p>
+                        <h5 class="fw-bold text-dark">@Localizer["AdvancedPackageTitle"]</h5>
+                        <p class="text-muted small">@Localizer["AdvancedPackageSubtitle"]</p>
                         <div class="my-4">
                             <span class="display-6 fw-bold text-dark">40.000 ₺</span>
-                            <span class="text-muted">/ 1 Yıl</span>
+                            <span class="text-muted">@Localizer["PerYearText"]</span>
                         </div>
                         <ul class="list-unstyled mb-4 text-muted small">
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>5 Farklı Kongre</strong></li>
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Sınırsız Arşiv</li>
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Özel Teknik Destek</li>
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Sanal POS Entegrasyonu</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>@Localizer["AdvancedFeature1"]</strong></li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> @Localizer["AdvancedFeature2"]</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> @Localizer["AdvancedFeature3"]</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> @Localizer["AdvancedFeature4"]</li>
                         </ul>
                         <div class="d-grid">
-                            <a href="/Home/Contact" class="btn btn-outline-dark fw-bold rounded-pill">İletişime Geç</a>
+                            <a href="/Home/Contact" class="btn btn-outline-dark fw-bold rounded-pill">@Localizer["ContactUsButton"]</a>
                         </div>
                     </div>
                 </div>
@@ -477,11 +475,11 @@
         <div class="container py-4">
             <div class="d-flex justify-content-between align-items-end mb-5">
                 <div>
-                    <h6 class="text-uppercase text-primary letter-spacing-2 fw-bold">AKADEMİK AKIŞ</h6>
-                    <h2 class="fw-bold mb-0 display-6">Sisteme Yüklenen Son Bildiriler</h2>
+                    <h6 class="text-uppercase text-primary letter-spacing-2 fw-bold">@Localizer["AcademicFlowLabel"]</h6>
+                    <h2 class="fw-bold mb-0 display-6">@Localizer["LatestSubmissionsTitle"]</h2>
                 </div>
                 <a href="#" class="btn btn-outline-light text-muted border-0 d-none d-md-block">
-                    Tümünü Gör <i class="fas fa-arrow-right ms-2"></i>
+                    @Localizer["ViewAllButton"] <i class="fas fa-arrow-right ms-2"></i>
                 </a>
             </div>
 
@@ -516,7 +514,7 @@
                 }
                 else
                 {
-                    <div class="col-12 text-center py-4 text-muted">Henüz yayınlanmış bildiri bulunmuyor.</div>
+                    <div class="col-12 text-center py-4 text-muted">@Localizer["NoPublishedSubmissionsText"]</div>
                 }
             </div>
         </div>
@@ -527,45 +525,47 @@
             <div class="row justify-content-center">
                 <div class="col-lg-8">
                     <div class="text-center mb-5">
-                        <h6 class="text-uppercase text-primary fw-bold">MERAK EDİLENLER</h6>
-                        <h2 class="fw-bold mb-3">Sıkça Sorulan Sorular</h2>
-                        <p class="text-muted">Süreçler hakkında aklınıza takılan soruların cevapları.</p>
+                        <h6 class="text-uppercase text-primary fw-bold">@Localizer["FaqLabel"]</h6>
+                        <h2 class="fw-bold mb-3">@Localizer["FaqTitle"]</h2>
+                        <p class="text-muted">@Localizer["FaqDescription"]</p>
                     </div>
 
                     <div class="accordion shadow-sm rounded-3 overflow-hidden" id="faqAccordion">
                         <div class="accordion-item border-0 border-bottom">
                             <h2 class="accordion-header">
                                 <button class="accordion-button fw-bold collapsed bg-white py-4" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-                                    Kongre sistemini kurmak ne kadar sürer?
+                                    @Localizer["Faq1Question"]
                                 </button>
                             </h2>
                             <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                                 <div class="accordion-body text-muted pb-4">
-                                    Başvurunuzdan sonra <strong>24 saat içinde</strong> kongre web siteniz ve bildiri toplama sisteminiz yayına alınır.
+                                    @Localizer["Faq1AnswerPart1"] <strong>@Localizer["Faq1AnswerHighlight"]</strong> @Localizer["Faq1AnswerPart2"]
                                 </div>
                             </div>
                         </div>
+
                         <div class="accordion-item border-0 border-bottom">
                             <h2 class="accordion-header">
                                 <button class="accordion-button fw-bold collapsed bg-white py-4" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
-                                    Kredi kartı ile ödeme alabilir miyim?
+                                    @Localizer["Faq2Question"]
                                 </button>
                             </h2>
                             <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                                 <div class="accordion-body text-muted pb-4">
-                                    Evet, sistemimiz iyzico ve PayTR altyapılarıyla tam entegredir. Katılımcılarınızdan güvenle online ödeme alabilirsiniz.
+                                    @Localizer["Faq2Answer"]
                                 </div>
                             </div>
                         </div>
+
                         <div class="accordion-item border-0 border-bottom">
                             <h2 class="accordion-header">
                                 <button class="accordion-button fw-bold collapsed bg-white py-4" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
-                                    Hakem atama süreci nasıl işliyor?
+                                    @Localizer["Faq3Question"]
                                 </button>
                             </h2>
                             <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                                 <div class="accordion-body text-muted pb-4">
-                                    Otomatik veya manuel atama yapabilirsiniz. Sistem, bildirinin anahtar kelimelerine göre en uygun hakemleri önerir.
+                                    @Localizer["Faq3Answer"]
                                 </div>
                             </div>
                         </div>
@@ -581,17 +581,17 @@
                 <div class="col-md-4 stat-item">
                     <i class="fas fa-users mb-3 display-4 text-white-50"></i>
                     <div class="stat-number">@Model.TotalUsers.ToString("N0")</div>
-                    <div class="text-uppercase letter-spacing-1 opacity-75">Aktif Kullanıcı</div>
+                    <div class="text-uppercase letter-spacing-1 opacity-75">@Localizer["ActiveUsersStat"]</div>
                 </div>
                 <div class="col-md-4 stat-item">
                     <i class="fas fa-globe-americas mb-3 display-4 text-white-50"></i>
                     <div class="stat-number">@Model.ActiveCongressesCount</div>
-                    <div class="text-uppercase letter-spacing-1 opacity-75">Aktif Kongre</div>
+                    <div class="text-uppercase letter-spacing-1 opacity-75">@Localizer["ActiveCongressesStat"]</div>
                 </div>
                 <div class="col-md-4 stat-item">
                     <i class="fas fa-file-alt mb-3 display-4 text-white-50"></i>
                     <div class="stat-number">500+</div>
-                    <div class="text-uppercase letter-spacing-1 opacity-75">Tamamlanan Organizasyon</div>
+                    <div class="text-uppercase letter-spacing-1 opacity-75">@Localizer["CompletedOrganizationsStat"]</div>
                 </div>
             </div>
         </div>

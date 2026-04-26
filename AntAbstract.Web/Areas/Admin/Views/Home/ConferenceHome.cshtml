@@ -1,8 +1,9 @@
 ﻿@model AntAbstract.Web.Models.ViewModels.Website.ConferenceHomePageViewModel
 @using AntAbstract.Domain.Entities
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = Model.Conference?.Title ?? "Kongre Vitrini";
+    ViewData["Title"] = Model.Conference?.Title ?? Localizer["DefaultPageTitle"].Value;
 
     var hero = Model.Blocks?.FirstOrDefault(x => x.BlockType == ConferencePageBlockType.Hero);
     var others = Model.Blocks?
@@ -13,7 +14,7 @@
 
 @if (Model.Conference == null)
 {
-    <div class="alert alert-danger mt-5 container">Konferans bulunamadı.</div>
+    <div class="alert alert-danger mt-5 container">@Localizer["ConferenceNotFound"]</div>
     return;
 }
 
@@ -22,24 +23,123 @@
         --theme-primary: #0f172a;
         --theme-accent: #00aeef;
     }
-    .sticky-sidebar { position: sticky; top: 30px; z-index: 10; }
-    .modern-menu-list { background: #fff; border-radius: 20px; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; }
-    .modern-menu-item { color: #475569 !important; font-weight: 600; padding: 14px 20px !important; margin-bottom: 5px; border-radius: 12px !important; transition: all 0.3s ease; border: none !important; }
-    .modern-menu-item:hover { background-color: var(--theme-accent) !important; color: #fff !important; transform: translateX(5px); box-shadow: 0 4px 10px rgba(0, 174, 239, 0.2); }
-    .content-card { background: #fff; border-radius: 24px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.02); margin-bottom: 40px; scroll-margin-top: 40px; }
-    .content-title { color: var(--theme-primary); font-weight: 800; font-size: 1.75rem; margin-bottom: 25px; position: relative; padding-bottom: 15px; }
-    .content-title::after { content: ''; position: absolute; bottom: 0; left: 0; width: 60px; height: 4px; background: var(--theme-accent); border-radius: 2px; }
+
+    .sticky-sidebar {
+        position: sticky;
+        top: 30px;
+        z-index: 10;
+    }
+
+    .modern-menu-list {
+        background: #fff;
+        border-radius: 20px;
+        padding: 10px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+        border: 1px solid #f1f5f9;
+    }
+
+    .modern-menu-item {
+        color: #475569 !important;
+        font-weight: 600;
+        padding: 14px 20px !important;
+        margin-bottom: 5px;
+        border-radius: 12px !important;
+        transition: all 0.3s ease;
+        border: none !important;
+    }
+
+        .modern-menu-item:hover {
+            background-color: var(--theme-accent) !important;
+            color: #fff !important;
+            transform: translateX(5px);
+            box-shadow: 0 4px 10px rgba(0, 174, 239, 0.2);
+        }
+
+    .content-card {
+        background: #fff;
+        border-radius: 24px;
+        padding: 40px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+        border: 1px solid rgba(0,0,0,0.02);
+        margin-bottom: 40px;
+        scroll-margin-top: 40px;
+    }
+
+    .content-title {
+        color: var(--theme-primary);
+        font-weight: 800;
+        font-size: 1.75rem;
+        margin-bottom: 25px;
+        position: relative;
+        padding-bottom: 15px;
+    }
+
+        .content-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: var(--theme-accent);
+            border-radius: 2px;
+        }
 
     .modern-red-pulse-btn {
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        width: 100%; aspect-ratio: 1/1; max-height: 240px; background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
-        border-radius: 50%; text-decoration: none; color: white; box-shadow: 0 15px 35px rgba(255, 75, 43, 0.3); transition: all 0.4s ease; border: 8px solid rgba(255,255,255,0.5);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        aspect-ratio: 1/1;
+        max-height: 240px;
+        background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+        border-radius: 50%;
+        text-decoration: none;
+        color: white;
+        box-shadow: 0 15px 35px rgba(255, 75, 43, 0.3);
+        transition: all 0.4s ease;
+        border: 8px solid rgba(255,255,255,0.5);
     }
-    .modern-red-pulse-btn:hover { transform: scale(1.05) translateY(-5px); color: white; box-shadow: 0 20px 40px rgba(255, 75, 43, 0.4); border-color: #fff; }
 
-    .word-doc-card { display: flex; align-items: center; text-decoration: none; padding: 15px; background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; transition: all 0.3s; margin-bottom: 15px; }
-    .word-doc-card:hover { transform: translateY(-4px); box-shadow: 0 12px 25px rgba(0,0,0,0.06); border-color: #2b579a; }
-    .word-icon-wrapper { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #2b579a 0%, #1e3c6b 100%); color: white; margin-right: 15px; font-size: 1.5rem; flex-shrink: 0; }
+        .modern-red-pulse-btn:hover {
+            transform: scale(1.05) translateY(-5px);
+            color: white;
+            box-shadow: 0 20px 40px rgba(255, 75, 43, 0.4);
+            border-color: #fff;
+        }
+
+    .word-doc-card {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        padding: 15px;
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s;
+        margin-bottom: 15px;
+    }
+
+        .word-doc-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.06);
+            border-color: #2b579a;
+        }
+
+    .word-icon-wrapper {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #2b579a 0%, #1e3c6b 100%);
+        color: white;
+        margin-right: 15px;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
 </style>
 
 @if (hero != null)
@@ -50,7 +150,7 @@ else
 {
     <div class="bg-dark text-white text-center py-5">
         <h1 class="display-4 fw-bold">@Model.Conference.Title</h1>
-        <p class="lead">Hoş Geldiniz</p>
+        <p class="lead">@Localizer["WelcomeText"]</p>
     </div>
 }
 
@@ -62,8 +162,9 @@ else
                 <div class="modern-menu-list list-group">
                     @if (!others.Any())
                     {
-                        <div class="p-3 text-muted text-center small">Menüler çok yakında eklenecektir.</div>
+                        <div class="p-3 text-muted text-center small">@Localizer["MenuComingSoon"]</div>
                     }
+
                     @foreach (var block in others)
                     {
                         <a href="#block-@block.Id" class="list-group-item modern-menu-item">
@@ -79,8 +180,8 @@ else
             {
                 <div class="content-card text-center py-5">
                     <i class="fas fa-tools fa-4x text-muted mb-3 opacity-25"></i>
-                    <h4 class="text-muted fw-bold">İçerikler Hazırlanıyor</h4>
-                    <p class="text-muted">Kongre bilgileri çok yakında burada yer alacaktır.</p>
+                    <h4 class="text-muted fw-bold">@Localizer["ContentPreparingTitle"]</h4>
+                    <p class="text-muted">@Localizer["ContentPreparingLead"]</p>
                 </div>
             }
 
@@ -104,20 +205,22 @@ else
                 <div class="d-flex justify-content-center mb-5 mx-auto" style="max-width: 240px;">
                     <a href="/Submission/Create" class="modern-red-pulse-btn">
                         <i class="fas fa-cloud-upload-alt fa-3x mb-2 opacity-75"></i>
-                        <span class="fs-6 fw-bold mb-1 opacity-75">ÇEVRİMİÇİ</span>
-                        <span class="fs-4 fw-bolder lh-1 text-center">KAYIT VE<br>ÖZET GÖNDER</span>
+                        <span class="fs-6 fw-bold mb-1 opacity-75">@Localizer["OnlineLabel"]</span>
+                        <span class="fs-4 fw-bolder lh-1 text-center">
+                            @Localizer["RegisterLabel"]<br>@Localizer["SubmitAbstractLabel"]
+                        </span>
                     </a>
                 </div>
 
-                <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">Belgeler ve Şablonlar</h5>
+                <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">@Localizer["DocumentsHeader"]</h5>
 
                 @if (!string.IsNullOrEmpty(Model.Conference.WritingRulesPath))
                 {
                     <a href="@Model.Conference.WritingRulesPath" target="_blank" class="word-doc-card">
                         <div class="word-icon-wrapper"><i class="fas fa-file-word"></i></div>
                         <div>
-                            <h6 class="text-dark fw-bold mb-0">Yazım Kuralları</h6>
-                            <small class="text-muted">Özet ve Tam Metin</small>
+                            <h6 class="text-dark fw-bold mb-0">@Localizer["WritingRulesTitle"]</h6>
+                            <small class="text-muted">@Localizer["WritingRulesSubtitle"]</small>
                         </div>
                     </a>
                 }
@@ -127,8 +230,8 @@ else
                     <a href="@Model.Conference.AbstractTemplatePath" target="_blank" class="word-doc-card" download>
                         <div class="word-icon-wrapper"><i class="fas fa-file-word"></i></div>
                         <div>
-                            <h6 class="text-dark fw-bold mb-0">Örnek Özet Formatı</h6>
-                            <small class="text-muted">.DOCX İndir</small>
+                            <h6 class="text-dark fw-bold mb-0">@Localizer["AbstractTemplateTitle"]</h6>
+                            <small class="text-muted">@Localizer["DownloadDocx"]</small>
                         </div>
                     </a>
                 }
@@ -138,8 +241,8 @@ else
                     <a href="@Model.Conference.FullTextTemplatePath" target="_blank" class="word-doc-card" download>
                         <div class="word-icon-wrapper"><i class="fas fa-file-word"></i></div>
                         <div>
-                            <h6 class="text-dark fw-bold mb-0">Tam Metin Formatı</h6>
-                            <small class="text-muted">.DOCX İndir</small>
+                            <h6 class="text-dark fw-bold mb-0">@Localizer["FullTextTemplateTitle"]</h6>
+                            <small class="text-muted">@Localizer["DownloadDocx"]</small>
                         </div>
                     </a>
                 }
@@ -149,7 +252,7 @@ else
                                 string.IsNullOrEmpty(Model.Conference.FullTextTemplatePath))
                 {
                     <div class="alert alert-light border text-muted small rounded-3">
-                        <i class="fas fa-info-circle me-1"></i> Şablon dosyaları henüz yüklenmedi.
+                        <i class="fas fa-info-circle me-1"></i> @Localizer["TemplatesNotUploaded"]
                     </div>
                 }
 
@@ -162,18 +265,26 @@ else
 {
     <div class="bg-light py-5 border-top">
         <div class="container py-4">
-            <h3 class="text-center fw-bold text-dark mb-5">İlginizi Çekebilecek Diğer Kongreler</h3>
+            <h3 class="text-center fw-bold text-dark mb-5">@Localizer["SuggestedConferencesHeader"]</h3>
             <div class="row g-4 justify-content-center">
                 @foreach (var conf in Model.SuggestedConferences)
                 {
-                    var bannerUrl = !string.IsNullOrEmpty(conf.BannerPath) ? conf.BannerPath : "https://placehold.co/300x400/e2e8f0/64748b?text=Kongre+Afişi";
+                    var bannerUrl = !string.IsNullOrEmpty(conf.BannerPath)
+                    ? conf.BannerPath
+                    : "https://placehold.co/300x400/e2e8f0/64748b?text=Poster";
+
                     <div class="col-md-3 col-sm-6">
                         <a href="/@conf.Tenant?.Slug" class="text-decoration-none">
-                            <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden" style="transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-10px)'" onmouseout="this.style.transform='translateY(0)'">
+                            <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden"
+                                 style="transition: transform 0.3s;"
+                                 onmouseover="this.style.transform='translateY(-10px)'"
+                                 onmouseout="this.style.transform='translateY(0)'">
                                 <img src="@bannerUrl" class="card-img-top" alt="@conf.Title" style="height: 350px; object-fit: cover;">
                                 <div class="position-absolute bottom-0 start-0 w-100 p-3" style="background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);">
                                     <h6 class="text-white fw-bold mb-1" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">@conf.Title</h6>
-                                    <small class="text-info fw-bold"><i class="far fa-calendar-alt me-1"></i> @conf.StartDate.ToString("dd MMM yyyy")</small>
+                                    <small class="text-info fw-bold">
+                                        <i class="far fa-calendar-alt me-1"></i> @conf.StartDate.ToString("dd MMM yyyy")
+                                    </small>
                                 </div>
                             </div>
                         </a>

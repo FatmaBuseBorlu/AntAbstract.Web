@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -15,15 +16,18 @@ namespace AntAbstract.Web.Controllers
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
         private readonly ISelectedConferenceService _selectedConferenceService;
+        private readonly IStringLocalizer<ConferenceController> _localizer;
 
         public ConferenceController(
             AppDbContext context,
             UserManager<AppUser> userManager,
-            ISelectedConferenceService selectedConferenceService)
+            ISelectedConferenceService selectedConferenceService,
+            IStringLocalizer<ConferenceController> localizer)
         {
             _context = context;
             _userManager = userManager;
             _selectedConferenceService = selectedConferenceService;
+            _localizer = localizer;
         }
 
         [AllowAnonymous]
@@ -32,7 +36,7 @@ namespace AntAbstract.Web.Controllers
         {
             if (string.IsNullOrEmpty(slug))
             {
-                return NotFound("Kongre belirtilmedi.");
+                return NotFound(_localizer["ConferenceNotSpecified"]);
             }
 
             var conference = await _context.Conferences
@@ -52,7 +56,7 @@ namespace AntAbstract.Web.Controllers
 
             if (conference == null)
             {
-                return NotFound("Aradığınız kongre bulunamadı.");
+                return NotFound(_localizer["ConferenceNotFound"]);
             }
 
             var pageBlocks = await _context.ConferencePageBlocks
@@ -112,10 +116,10 @@ namespace AntAbstract.Web.Controllers
 
             var vm = new SelectConferenceViewModel
             {
-                Title = "Kongre Seç",
-                Lead = "Devam etmek için bir kongre seçin.",
+                Title = _localizer["SelectConferenceTitle"],
+                Lead = _localizer["SelectConferenceLead"],
                 PostUrl = "/Conference/Select",
-                SubmitText = "Devam Et",
+                SubmitText = _localizer["ContinueButton"],
                 Conferences = conferences
             };
 
@@ -133,7 +137,7 @@ namespace AntAbstract.Web.Controllers
 
             if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                TempData["ErrorMessage"] = _localizer["ConferenceNotFoundShort"];
                 return Redirect("/Conference/Select");
             }
 

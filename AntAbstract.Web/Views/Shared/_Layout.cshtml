@@ -5,18 +5,16 @@
 @using Microsoft.AspNetCore.Http
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Localization
-@using Microsoft.Extensions.Options 
 
 @inject SignInManager<AppUser> SignInManager
 @inject UserManager<AppUser> UserManager
 @inject AntAbstract.Infrastructure.Context.TenantContext Tc
 @inject ISelectedConferenceService SelectedConferenceService
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
-@inject IOptions<RequestLocalizationOptions> LocOptions 
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="@CultureInfo.CurrentUICulture.Name">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -35,8 +33,8 @@
             --text-main: #334155;
         }
 
-        body { 
-            font-family: 'Inter', sans-serif; 
+        body {
+            font-family: 'Inter', sans-serif;
             color: var(--text-main);
             display: flex;
             flex-direction: column;
@@ -73,65 +71,65 @@
             position: relative;
         }
 
-        .nav-link:hover { 
-            color: var(--primary-color) !important; 
-        }
+            .nav-link:hover {
+                color: var(--primary-color) !important;
+            }
 
-        .nav-link.admin-link {
-            color: #dc3545 !important;
-            background-color: rgba(220, 53, 69, 0.1);
-            border-radius: 6px;
-            padding: 6px 16px !important;
-            font-weight: 600;
-        }
+            .nav-link.admin-link {
+                color: #dc3545 !important;
+                background-color: rgba(220, 53, 69, 0.1);
+                border-radius: 6px;
+                padding: 6px 16px !important;
+                font-weight: 600;
+            }
 
-        .nav-link.admin-link:hover {
-            background-color: #dc3545;
-            color: white !important;
-            transform: translateY(-2px);
-        }
+                .nav-link.admin-link:hover {
+                    background-color: #dc3545;
+                    color: white !important;
+                    transform: translateY(-2px);
+                }
 
-        .nav-link.referee-link {
-            color: var(--primary-color) !important;
-            background-color: rgba(0, 174, 239, 0.1);
-            border-radius: 6px;
-            padding: 6px 16px !important;
-            font-weight: 600;
-        }
+            .nav-link.referee-link {
+                color: var(--primary-color) !important;
+                background-color: rgba(0, 174, 239, 0.1);
+                border-radius: 6px;
+                padding: 6px 16px !important;
+                font-weight: 600;
+            }
 
-        .nav-link.referee-link:hover {
-            background-color: var(--primary-color);
-            color: white !important;
-            transform: translateY(-2px);
-        }
+                .nav-link.referee-link:hover {
+                    background-color: var(--primary-color);
+                    color: white !important;
+                    transform: translateY(-2px);
+                }
 
-        .nav-link.author-link {
-            color: #6f42c1 !important;
-            background-color: rgba(111, 66, 193, 0.1);
-            border-radius: 6px;
-            padding: 6px 16px !important;
-            font-weight: 600;
-        }
+            .nav-link.author-link {
+                color: #6f42c1 !important;
+                background-color: rgba(111, 66, 193, 0.1);
+                border-radius: 6px;
+                padding: 6px 16px !important;
+                font-weight: 600;
+            }
 
-        .nav-link.author-link:hover {
-            background-color: #6f42c1;
-            color: white !important;
-            transform: translateY(-2px);
-        }
+                .nav-link.author-link:hover {
+                    background-color: #6f42c1;
+                    color: white !important;
+                    transform: translateY(-2px);
+                }
 
-        .nav-link.website-link {
-            color: #198754 !important;
-            background-color: rgba(25, 135, 84, 0.12);
-            border-radius: 6px;
-            padding: 6px 16px !important;
-            font-weight: 600;
-        }
+            .nav-link.website-link {
+                color: #198754 !important;
+                background-color: rgba(25, 135, 84, 0.12);
+                border-radius: 6px;
+                padding: 6px 16px !important;
+                font-weight: 600;
+            }
 
-        .nav-link.website-link:hover {
-            background-color: #198754;
-            color: white !important;
-            transform: translateY(-2px);
-        }
+                .nav-link.website-link:hover {
+                    background-color: #198754;
+                    color: white !important;
+                    transform: translateY(-2px);
+                }
 
         .footer-modern {
             background-color: var(--dark-bg);
@@ -155,10 +153,10 @@
             transition: color 0.2s;
         }
 
-        .footer-link:hover {
-            color: var(--primary-color);
-            padding-left: 5px;
-        }
+            .footer-link:hover {
+                color: var(--primary-color);
+                padding-left: 5px;
+            }
 
         .social-btn {
             width: 36px;
@@ -174,227 +172,269 @@
             text-decoration: none;
         }
 
-        .social-btn:hover {
-            background: var(--primary-color);
-            color: white;
-            transform: translateY(-3px);
+            .social-btn:hover {
+                background: var(--primary-color);
+                color: white;
+                transform: translateY(-3px);
+            }
+
+        .language-switcher {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
         }
+
+            .language-switcher form {
+                margin: 0;
+            }
+
+        .lang-btn {
+            border: none;
+            background: transparent;
+            color: #64748b;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 8px 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+
+            .lang-btn:hover {
+                background: #f1f5f9;
+                color: var(--primary-color);
+            }
+
+            .lang-btn.active {
+                background: var(--primary-color);
+                color: white;
+                box-shadow: 0 4px 12px rgba(0, 174, 239, 0.25);
+            }
     </style>
 </head>
 <body>
 
-@{
-    var area = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
-    var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
-    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    @{
+        var area = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
+        var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+        var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
 
-    var isAdminLike = User.Identity != null
+        var isAdminLike = User.Identity != null
         && User.Identity.IsAuthenticated
         && (User.IsInRole("Admin") || User.IsInRole("Organizator"));
-    
-    var isReferee = User.Identity != null
+
+        var isReferee = User.Identity != null
         && User.Identity.IsAuthenticated
         && User.IsInRole("Referee");
 
-    var isAuthor = User.Identity != null 
-        && User.Identity.IsAuthenticated 
+        var isAuthor = User.Identity != null
+        && User.Identity.IsAuthenticated
         && User.IsInRole("Author");
 
-    var isAdminArea = string.Equals(area, "Admin", StringComparison.OrdinalIgnoreCase);
-    var path = Context.Request.Path.Value ?? "";
-    var isAdminAssignmentPath = path.StartsWith("/Admin/Assignment", StringComparison.OrdinalIgnoreCase) || path.Contains("/Admin/Assignment", StringComparison.OrdinalIgnoreCase);
+        var isAdminArea = string.Equals(area, "Admin", StringComparison.OrdinalIgnoreCase);
+        var path = Context.Request.Path.Value ?? "";
+        var isAdminAssignmentPath = path.StartsWith("/Admin/Assignment", StringComparison.OrdinalIgnoreCase) || path.Contains("/Admin/Assignment", StringComparison.OrdinalIgnoreCase);
 
-    var isHomeIndexPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Index", StringComparison.OrdinalIgnoreCase);
-    var isHomeAboutPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "About", StringComparison.OrdinalIgnoreCase);
-    var isHomeContactPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Contact", StringComparison.OrdinalIgnoreCase);
-    var isHomeCongressesPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Congresses", StringComparison.OrdinalIgnoreCase);
+        var isHomeIndexPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Index", StringComparison.OrdinalIgnoreCase);
+        var isHomeAboutPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "About", StringComparison.OrdinalIgnoreCase);
+        var isHomeContactPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Contact", StringComparison.OrdinalIgnoreCase);
+        var isHomeCongressesPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Congresses", StringComparison.OrdinalIgnoreCase);
 
-    var hideAdminNav = isAdminArea || isAdminAssignmentPath || isHomeIndexPage || isHomeAboutPage || isHomeContactPage || isHomeCongressesPage;
+        var hideAdminNav = isAdminArea || isAdminAssignmentPath || isHomeIndexPage || isHomeAboutPage || isHomeContactPage || isHomeCongressesPage;
 
-    var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? Tc.Current?.Slug ?? Context.Session.GetString("SelectedConferenceSlug") ?? "";
-    var selectedConferenceId = SelectedConferenceService.GetSelectedConferenceId();
-    var hasSelectedConference = selectedConferenceId.HasValue;
+        var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? Tc.Current?.Slug ?? Context.Session.GetString("SelectedConferenceSlug") ?? "";
+        var selectedConferenceId = SelectedConferenceService.GetSelectedConferenceId();
+        var hasSelectedConference = selectedConferenceId.HasValue;
 
-    var assignmentUrl = (hasSelectedConference && !string.IsNullOrWhiteSpace(slug))
+        var assignmentUrl = (hasSelectedConference && !string.IsNullOrWhiteSpace(slug))
         ? $"/{slug}/Admin/Assignment?conferenceId={selectedConferenceId.Value}"
         : "/Admin/Assignment";
 
-    var websiteUrl = (!string.IsNullOrWhiteSpace(slug))
+        var websiteUrl = (!string.IsNullOrWhiteSpace(slug))
         ? $"/{slug}/Admin/Website"
         : "/Admin/Website";
 
-    var requestCulture = Context.Features.Get<IRequestCultureFeature>();
-    var cultureItems = LocOptions.Value.SupportedUICultures
-        .Select(c => new SelectListItem { Value = c.Name, Text = c.NativeName })
-        .ToList();
-    var returnUrl = string.IsNullOrEmpty(Context.Request.Path) ? "~/" : $"~{Context.Request.Path.Value}{Context.Request.QueryString}";
-}
+        var requestCulture = Context.Features.Get<IRequestCultureFeature>();
+        var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? "tr-TR";
+        var returnUrl = string.IsNullOrEmpty(Context.Request.Path)
+        ? "/"
+        : $"{Context.Request.Path}{Context.Request.QueryString}";
+    }
 
-<header>
-    <nav class="navbar navbar-expand-lg fixed-top">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                ANT<span style="color: var(--primary-color);">ABSTRACT</span>
-            </a>
+    <header>
+        <nav class="navbar navbar-expand-lg fixed-top">
+            <div class="container">
+                <a class="navbar-brand" href="/">
+                    ANT<span style="color: var(--primary-color);">ABSTRACT</span>
+                </a>
 
-            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
 
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav mx-auto align-items-center">
-                    <li class="nav-item"><a class="nav-link" href="/">Ana Sayfa</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/Home/About">Hakkımızda</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/Home/Congresses">Kongreler</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/Home/Proceedings">Bildiri Kitabı</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/Home/Contact">İletişim</a></li>
-
-                    @* --- 1. ADMIN BUTONU --- *@
-                    @if (!hideAdminNav && isAdminLike && (Tc.Current != null || !string.IsNullOrWhiteSpace(slug)))
-                    {
-                        <li class="nav-item ms-lg-3">
-                            <a class="nav-link admin-link shadow-sm" href="@assignmentUrl">
-                                @if (hasSelectedConference)
-                                {
-                                    <i class="fas fa-tasks me-1"></i> @:Yönetim Paneli
-                                }
-                                else
-                                {
-                                    <i class="fas fa-hand-pointer me-1"></i> @:Kongre Seç
-                                }
-                            </a>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav mx-auto align-items-center">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/">@Localizer["Menu_Home"]</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Home/About">@Localizer["Menu_About"]</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Home/Congresses">@Localizer["Menu_Congresses"]</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Home/Proceedings">@Localizer["Menu_Proceedings"]</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Home/Contact">@Localizer["Menu_Contact"]</a>
                         </li>
 
-                        @if (hasSelectedConference)
+                        @if (!hideAdminNav && isAdminLike && (Tc.Current != null || !string.IsNullOrWhiteSpace(slug)))
                         {
-                            <li class="nav-item ms-lg-2">
-                                <a class="nav-link website-link shadow-sm" href="@websiteUrl">
-                                    <i class="fas fa-pen-to-square me-1"></i> Website Yönetimi
+                            <li class="nav-item ms-lg-3">
+                                <a class="nav-link admin-link shadow-sm" href="@assignmentUrl">
+                                    @if (hasSelectedConference)
+                                    {
+                                        <i class="fas fa-tasks me-1"></i> 
+                                        @Localizer["AdminPanel"]
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-hand-pointer me-1"></i> 
+                                        @Localizer["SelectConference"]
+                                    }
+                                </a>
+                            </li>
+
+                            @if (hasSelectedConference)
+                            {
+                                <li class="nav-item ms-lg-2">
+                                    <a class="nav-link website-link shadow-sm" href="@websiteUrl">
+                                        <i class="fas fa-pen-to-square me-1"></i> @Localizer["WebsiteManagement"]
+                                    </a>
+                                </li>
+                            }
+                        }
+
+                        @if (isReferee && !hideAdminNav)
+                        {
+                            <li class="nav-item ms-lg-3">
+                                <a class="nav-link referee-link shadow-sm" href="/Dashboard">
+                                    <i class="fas fa-gavel me-1"></i> @Localizer["RefereePanel"]
                                 </a>
                             </li>
                         }
-                    }
-                    
-                    @* --- 2. HAKEM BUTONU --- *@
-                    @if (isReferee && !hideAdminNav)
-                    {
-                        <li class="nav-item ms-lg-3">
-                            <a class="nav-link referee-link shadow-sm" href="/Dashboard">
-                                <i class="fas fa-gavel me-1"></i> Hakem Paneli
-                            </a>
-                        </li>
-                    }
 
-                    @* --- 3. YAZAR / ÖĞRENCİ BUTONU --- *@
-                    @if (isAuthor && !hideAdminNav)
-                    {
-                        <li class="nav-item ms-lg-3">
-                            <a class="nav-link author-link shadow-sm" href="/Dashboard">
-                                <i class="fas fa-user-graduate me-1"></i> Yazar Paneli
-                            </a>
-                        </li>
-                    }
-                </ul>
+                        @if (isAuthor && !hideAdminNav)
+                        {
+                            <li class="nav-item ms-lg-3">
+                                <a class="nav-link author-link shadow-sm" href="/Dashboard">
+                                    <i class="fas fa-user-graduate me-1"></i> @Localizer["AuthorPanel"]
+                                </a>
+                            </li>
+                        }
+                    </ul>
 
-                <div class="d-flex align-items-center gap-2">
-                    
-                    @* --- DİL DEĞİŞTİRİCİ FORM (EKLENDİ) --- *@
-                    <form id="selectLanguage" 
-                          asp-area="" 
-                          asp-controller="Language" 
-                          asp-action="ChangeLanguage" 
-                          asp-route-returnUrl="@returnUrl" 
-                          method="post" 
-                          class="form-horizontal m-0" 
-                          role="form">
-                        <select name="culture"
-                                class="form-select form-select-sm" 
-                                style="width: auto; cursor: pointer; border-color: #e2e8f0; color: #64748b; font-weight: 500;"
-                                onchange="this.form.submit();"
-                                asp-for="@requestCulture.RequestCulture.UICulture.Name"
-                                asp-items="cultureItems">
-                        </select>
-                    </form>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="language-switcher">
+                            <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                                <input type="hidden" name="culture" value="tr-TR" />
+                                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                <button type="submit" class="lang-btn @(currentCulture == "tr-TR" ? "active" : "")">TR</button>
+                            </form>
 
-                    <partial name="_LoginPartial" />
+                            <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                                <input type="hidden" name="culture" value="en-US" />
+                                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                <button type="submit" class="lang-btn @(currentCulture == "en-US" ? "active" : "")">EN</button>
+                            </form>
+                        </div>
+
+                        <partial name="_LoginPartial" />
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main role="main" class="flex-grow-1">
+        @RenderBody()
+    </main>
+
+    <footer class="footer-modern pt-5 pb-4">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <h5 class="text-white fw-bold mb-3">
+                        <i class="fas fa-layer-group me-2 text-primary"></i>ANT ABSTRACT
+                    </h5>
+                    <p class="mb-4" style="line-height: 1.8;">
+                        @Localizer["Footer_Description"]
+                    </p>
+                    <div class="d-flex">
+                        <a href="#" class="social-btn"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-btn"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#" class="social-btn"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-btn"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-6">
+                    <h6 class="footer-title">@Localizer["Footer_Platform"]</h6>
+                    <a href="/" class="footer-link">@Localizer["Menu_Home"]</a>
+                    <a href="/Home/Congresses" class="footer-link">@Localizer["Menu_Congresses"]</a>
+                    <a href="/Home/About" class="footer-link">@Localizer["Menu_About"]</a>
+                    <a href="/Identity/Account/Login" class="footer-link">@Localizer["Menu_Login"]</a>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <h6 class="footer-title">@Localizer["Footer_SupportLegal"]</h6>
+                    <a href="#" class="footer-link">@Localizer["Footer_FAQ"]</a>
+                    <a href="#" class="footer-link">@Localizer["Footer_PrivacyPolicy"]</a>
+                    <a href="#" class="footer-link">@Localizer["Footer_Terms"]</a>
+                    <a href="/Home/Contact" class="footer-link">@Localizer["Menu_Contact"]</a>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <h6 class="footer-title">@Localizer["Footer_ContactUs"]</h6>
+                    <div class="d-flex mb-3">
+                        <i class="fas fa-map-marker-alt text-primary mt-1 me-3"></i>
+                        <span>@Localizer["Footer_Address"]</span>
+                    </div>
+                    <div class="d-flex mb-3">
+                        <i class="fas fa-phone text-primary mt-1 me-3"></i>
+                        <span>+90 850 123 45 67</span>
+                    </div>
+                    <div class="d-flex">
+                        <i class="fas fa-envelope text-primary mt-1 me-3"></i>
+                        <span>destek@antabstract.com</span>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="my-4 border-secondary opacity-25">
+
+            <div class="row align-items-center">
+                <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+                    &copy; @DateTime.Now.Year <strong>AntAbstract</strong>. @Localizer["Footer_AllRightsReserved"]
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">v2.1.0 Stable</span>
                 </div>
             </div>
         </div>
-    </nav>
-</header>
+    </footer>
 
-<main role="main" class="flex-grow-1">
-    @RenderBody()
-</main>
-
-<footer class="footer-modern pt-5 pb-4">
-    <div class="container">
-        <div class="row g-4">
-            
-            <div class="col-lg-4 col-md-6">
-                <h5 class="text-white fw-bold mb-3">
-                    <i class="fas fa-layer-group me-2 text-primary"></i>ANT ABSTRACT
-                </h5>
-                <p class="mb-4" style="line-height: 1.8;">
-                    Akademik süreçlerinizi dijitalleştirin. Özet toplama, hakem değerlendirme ve katılımcı kayıt süreçlerinde güvenilir çözüm ortağınız.
-                </p>
-                <div class="d-flex">
-                    <a href="#" class="social-btn"><i class="fab fa-twitter"></i></a>
-                    <a href="#" class="social-btn"><i class="fab fa-linkedin-in"></i></a>
-                    <a href="#" class="social-btn"><i class="fab fa-instagram"></i></a>
-                    <a href="#" class="social-btn"><i class="fab fa-youtube"></i></a>
-                </div>
-            </div>
-
-            <div class="col-lg-2 col-md-6">
-                <h6 class="footer-title">Platform</h6>
-                <a href="/" class="footer-link">Ana Sayfa</a>
-                <a href="/Home/Congresses" class="footer-link">Kongreler</a>
-                <a href="/Home/About" class="footer-link">Hakkımızda</a>
-                <a href="/Identity/Account/Login" class="footer-link">Giriş Yap</a>
-            </div>
-
-            <div class="col-lg-3 col-md-6">
-                <h6 class="footer-title">Destek & Yasal</h6>
-                <a href="#" class="footer-link">Sıkça Sorulan Sorular</a>
-                <a href="#" class="footer-link">Gizlilik Politikası</a>
-                <a href="#" class="footer-link">Kullanım Koşulları</a>
-                <a href="/Home/Contact" class="footer-link">İletişim</a>
-            </div>
-
-            <div class="col-lg-3 col-md-6">
-                <h6 class="footer-title">Bize Ulaşın</h6>
-                <div class="d-flex mb-3">
-                    <i class="fas fa-map-marker-alt text-primary mt-1 me-3"></i>
-                    <span>Teknokent Binası, Ar-Ge Blokları No:12, Antalya / Türkiye</span>
-                </div>
-                <div class="d-flex mb-3">
-                    <i class="fas fa-phone text-primary mt-1 me-3"></i>
-                    <span>+90 850 123 45 67</span>
-                </div>
-                <div class="d-flex">
-                    <i class="fas fa-envelope text-primary mt-1 me-3"></i>
-                    <span>destek@antabstract.com</span>
-                </div>
-            </div>
-        </div>
-
-        <hr class="my-4 border-secondary opacity-25">
-
-        <div class="row align-items-center">
-            <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
-                &copy; @DateTime.Now.Year <strong>AntAbstract</strong>. Tüm hakları saklıdır.
-            </div>
-            <div class="col-md-6 text-center text-md-end">
-                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">v2.1.0 Stable</span>
-            </div>
-        </div>
-    </div>
-</footer>
-
-<script src="~/lib/jquery/dist/jquery.min.js"></script>
-<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-<script src="~/js/site.js" asp-append-version="true"></script>
-@await RenderSectionAsync("Scripts", required: false)
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

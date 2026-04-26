@@ -6,33 +6,37 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using System;
 using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
     [Authorize]
-    [Route("{slug}/Payment")] 
+    [Route("{slug}/Payment")]
     public class PaymentController : Controller
     {
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
         private readonly TenantContext _tenantContext;
         private readonly INotificationService _notificationService;
+        private readonly IStringLocalizer<PaymentController> _localizer;
 
         public PaymentController(
             AppDbContext context,
             UserManager<AppUser> userManager,
             TenantContext tenantContext,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            IStringLocalizer<PaymentController> localizer)
         {
             _context = context;
             _userManager = userManager;
             _tenantContext = tenantContext;
             _notificationService = notificationService;
+            _localizer = localizer;
         }
 
-        #region Yardımcı Metodlar
+        #region Helper Methods
 
         private string GetSlug()
         {
@@ -45,29 +49,43 @@ namespace AntAbstract.Web.Controllers
         private Guid? GetSelectedConferenceId()
         {
             string? confIdStr = null;
+
             if (_tenantContext.Current != null)
             {
                 var tenantKey = $"SelectedConferenceId:{_tenantContext.Current.Id}";
                 confIdStr = HttpContext.Session.GetString(tenantKey);
             }
+
             confIdStr ??= HttpContext.Session.GetString("SelectedConferenceId");
             return Guid.TryParse(confIdStr, out var parsedId) ? parsedId : null;
         }
 
         private IActionResult RedirectToConferencePicker(string slug, string returnUrl, string? message = null)
         {
-            if (!string.IsNullOrWhiteSpace(message)) TempData["ErrorMessage"] = message;
+            if (!string.IsNullOrWhiteSpace(message))
+                TempData["ErrorMessage"] = message;
+
             var url = string.IsNullOrWhiteSpace(slug)
                 ? $"/Dashboard/MyConferences?returnUrl={Uri.EscapeDataString(returnUrl)}"
                 : $"/{slug}/Dashboard/MyConferences?returnUrl={Uri.EscapeDataString(returnUrl)}";
+
             return Redirect(url);
         }
 
         private static bool SlugMatches(Conference? c, string slug)
         {
-            if (c == null || string.IsNullOrWhiteSpace(slug)) return false;
-            if (!string.IsNullOrWhiteSpace(c.Slug) && string.Equals(c.Slug, slug, StringComparison.OrdinalIgnoreCase)) return true;
-            if (c.Tenant != null && !string.IsNullOrWhiteSpace(c.Tenant.Slug) && string.Equals(c.Tenant.Slug, slug, StringComparison.OrdinalIgnoreCase)) return true;
+            if (c == null || string.IsNullOrWhiteSpace(slug))
+                return false;
+
+            if (!string.IsNullOrWhiteSpace(c.Slug) &&
+                string.Equals(c.Slug, slug, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (c.Tenant != null &&
+                !string.IsNullOrWhiteSpace(c.Tenant.Slug) &&
+                string.Equals(c.Tenant.Slug, slug, StringComparison.OrdinalIgnoreCase))
+                return true;
+
             return false;
         }
 
@@ -94,7 +112,12 @@ namespace AntAbstract.Web.Controllers
 
             var selectedConferenceId = GetSelectedConferenceId();
             if (!selectedConferenceId.HasValue)
-                return RedirectToConferencePicker(slug, returnUrl, "Ödeme geçmişini görmek için önce kongre seçmelisiniz.");
+            {
+                return RedirectToConferencePicker(
+                    slug,
+                    returnUrl,
+                    _localizer["SelectConferenceForPaymentHistory"]);
+            }
 
             var conference = await _context.Conferences
                 .Include(c => c.Tenant)
@@ -105,12 +128,19 @@ namespace AntAbstract.Web.Controllers
             {
                 HttpContext.Session.Remove("SelectedConferenceId");
                 HttpContext.Session.Remove("SelectedConferenceSlug");
-                return RedirectToConferencePicker(slug, returnUrl, "Seçili kongre bulunamadı.");
+
+                return RedirectToConferencePicker(
+                    slug,
+                    returnUrl,
+                    _localizer["SelectedConferenceNotFound"]);
             }
 
             var canonicalSlug = conference.Tenant?.Slug ?? conference.Slug ?? slug;
-            if (!string.IsNullOrWhiteSpace(canonicalSlug) && !string.Equals(canonicalSlug, slug, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(canonicalSlug) &&
+                !string.Equals(canonicalSlug, slug, StringComparison.OrdinalIgnoreCase))
+            {
                 return Redirect($"/{canonicalSlug}/Payment/My");
+            }
 
             var payments = await _context.Payments
                 .Include(p => p.Conference)
@@ -121,8 +151,8 @@ namespace AntAbstract.Web.Controllers
             return View(payments);
         }
 
-        [HttpGet("/Payment/New")] 
-        [HttpGet("New")]          
+        [HttpGet("/Payment/New")]
+        [HttpGet("New")]
         public async Task<IActionResult> New()
         {
             var user = await _userManager.GetUserAsync(User);
@@ -132,30 +162,44 @@ namespace AntAbstract.Web.Controllers
             var selectedConferenceId = GetSelectedConferenceId();
 
             if (selectedConferenceId == null)
-                return RedirectToConferencePicker(slug, "/Payment/New", "Ödeme yapmak için önce kongre seçiniz.");
+            {
+                return RedirectToConferencePicker(
+                    slug,
+                    "/Payment/New",
+                    _localizer["SelectConferenceBeforePayment"]);
+            }
 
             var registration = await _context.Registrations
                 .Include(r => r.Conference).ThenInclude(c => c.Tenant)
                 .FirstOrDefaultAsync(r => r.AppUserId == user.Id && r.ConferenceId == selectedConferenceId.Value);
 
-            var targetSlug = !string.IsNullOrEmpty(slug) ? slug : registration?.Conference?.Tenant?.Slug ?? registration?.Conference?.Slug;
+            var targetSlug = !string.IsNullOrEmpty(slug)
+                ? slug
+                : registration?.Conference?.Tenant?.Slug ?? registration?.Conference?.Slug;
 
             if (registration == null)
             {
-                TempData["InfoMessage"] = "Ödeme yapmadan önce kongreye kayıt olmalısınız.";
+                TempData["InfoMessage"] = _localizer["RegisterBeforePayment"];
 
-                if (string.IsNullOrEmpty(targetSlug)) return Redirect("/Dashboard");
+                if (string.IsNullOrEmpty(targetSlug))
+                    return Redirect("/Dashboard");
+
                 return Redirect($"/{targetSlug}/registration/join");
             }
 
             if (registration.IsPaid)
             {
-                TempData["SuccessMessage"] = "Bu kongre için ödemeniz zaten yapılmış.";
-                if (!string.IsNullOrEmpty(targetSlug)) return Redirect($"/{targetSlug}/Payment/My");
+                TempData["SuccessMessage"] = _localizer["PaymentAlreadyCompleted"];
+
+                if (!string.IsNullOrEmpty(targetSlug))
+                    return Redirect($"/{targetSlug}/Payment/My");
+
                 return RedirectToAction(nameof(My));
             }
 
-            if (!string.IsNullOrEmpty(targetSlug)) return Redirect($"/{targetSlug}/Payment/Index/{registration.Id}");
+            if (!string.IsNullOrEmpty(targetSlug))
+                return Redirect($"/{targetSlug}/Payment/Index/{registration.Id}");
+
             return RedirectToAction(nameof(Index), new { id = registration.Id });
         }
 
@@ -170,7 +214,8 @@ namespace AntAbstract.Web.Controllers
                 .Include(r => r.RegistrationType)
                 .FirstOrDefaultAsync(r => r.Id == id && r.AppUserId == user.Id);
 
-            if (registration == null) return NotFound("Kayıt bulunamadı.");
+            if (registration == null)
+                return NotFound(_localizer["RegistrationNotFound"]);
 
             var slug = GetSlug();
             if (!SlugMatches(registration.Conference, slug))
@@ -178,7 +223,8 @@ namespace AntAbstract.Web.Controllers
                 var canonicalSlug = registration.Conference?.Tenant?.Slug ?? registration.Conference?.Slug ?? slug;
                 if (!string.IsNullOrWhiteSpace(canonicalSlug))
                     return Redirect($"/{canonicalSlug}/Payment/Index/{id}");
-                return NotFound("Kayıt bulunamadı.");
+
+                return NotFound(_localizer["RegistrationNotFound"]);
             }
 
             if (registration.IsPaid)
@@ -214,7 +260,8 @@ namespace AntAbstract.Web.Controllers
                 .Include(r => r.RegistrationType)
                 .FirstOrDefaultAsync(r => r.Id == model.RelatedSubmissionId && r.AppUserId == user.Id);
 
-            if (registration == null) return NotFound("Ödeme yapılacak kayıt bulunamadı.");
+            if (registration == null)
+                return NotFound(_localizer["RegistrationForPaymentNotFound"]);
 
             var slug = GetSlug();
             if (!SlugMatches(registration.Conference, slug))
@@ -222,7 +269,8 @@ namespace AntAbstract.Web.Controllers
                 var canonicalSlug = registration.Conference?.Tenant?.Slug ?? registration.Conference?.Slug ?? slug;
                 if (!string.IsNullOrWhiteSpace(canonicalSlug))
                     return Redirect($"/{canonicalSlug}/Payment/Index/{registration.Id}");
-                return NotFound("Ödeme yapılacak kayıt bulunamadı.");
+
+                return NotFound(_localizer["RegistrationForPaymentNotFound"]);
             }
 
             if (registration.IsPaid)
@@ -255,8 +303,11 @@ namespace AntAbstract.Web.Controllers
 
             await _notificationService.CreateAsync(
                 userId: user.Id,
-                title: "Ödeme Başarılı! 💳",
-                message: $"{payment.Amount} {payment.Currency} tutarındaki kongre kayıt ödemeniz başarıyla alındı.",
+                title: _localizer["PaymentSuccessfulNotificationTitle"],
+                message: string.Format(
+                    _localizer["PaymentSuccessfulNotificationMessage"].Value,
+                    payment.Amount,
+                    payment.Currency),
                 icon: "fas fa-check-circle",
                 color: "success",
                 link: "/Payment/My"
@@ -275,7 +326,8 @@ namespace AntAbstract.Web.Controllers
                 .Include(p => p.Conference)
                 .FirstOrDefaultAsync(p => p.Id == id && p.AppUserId == user.Id);
 
-            if (payment == null) return RedirectToAction(nameof(My));
+            if (payment == null)
+                return RedirectToAction(nameof(My));
 
             return View(payment);
         }

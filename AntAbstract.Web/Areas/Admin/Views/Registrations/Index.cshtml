@@ -1,8 +1,9 @@
 ﻿@using AntAbstract.Web.Models.ViewModels
 @model AdminRegistrationsIndexModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Kayıtlar ve Ödemeler";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
     var slug = Model.Slug ?? "";
@@ -13,9 +14,9 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h3 class="fw-bold mb-1 text-dark">Kayıtlar ve Ödemeler</h3>
+            <h3 class="fw-bold mb-1 text-dark">@Localizer["PageTitle"]</h3>
             <div class="text-muted">
-                Kongre: <span class="badge bg-light text-dark border">@Model.ConferenceTitle</span>
+                @Localizer["ConferenceLabel"] <span class="badge bg-light text-dark border">@Model.ConferenceTitle</span>
             </div>
         </div>
     </div>
@@ -27,33 +28,73 @@
 
                 <div class="row g-2 align-items-end">
                     <div class="col-md-5">
-                        <label class="form-label small text-muted mb-1">Arama</label>
-                        <input class="form-control" name="search" value="@Model.Search" placeholder="Ad, soyad, e-posta, kayıt tipi" />
+                        <label class="form-label small text-muted mb-1">@Localizer["SearchLabel"]</label>
+                        <input class="form-control"
+                               name="search"
+                               value="@Model.Search"
+                               placeholder="@Localizer["SearchPlaceholder"]" />
                     </div>
 
                     <div class="col-md-3">
-                        <label class="form-label small text-muted mb-1">Ödeme</label>
+                        <label class="form-label small text-muted mb-1">@Localizer["PaymentLabel"]</label>
                         <select class="form-select" name="paid">
-                            <option value="" @@(string.IsNullOrWhiteSpace(Model.Paid) ? "selected" : "" )>Hepsi</option>
-                            <option value="Paid" @@(Model.Paid= ="Paid" ? "selected" : "" )>Ödendi</option>
-                            <option value="Unpaid" @@(Model.Paid= ="Unpaid" ? "selected" : "" )>Ödenmedi</option>
+                            @if (string.IsNullOrWhiteSpace(Model.Paid))
+                            {
+                                <option value="" selected="selected">@Localizer["AllOption"]</option>
+                            }
+                            else
+                            {
+                                <option value="">@Localizer["AllOption"]</option>
+                            }
+
+                            @if (Model.Paid == "Paid")
+                            {
+                                <option value="Paid" selected="selected">@Localizer["PaidText"]</option>
+                            }
+                            else
+                            {
+                                <option value="Paid">@Localizer["PaidText"]</option>
+                            }
+
+                            @if (Model.Paid == "Unpaid")
+                            {
+                                <option value="Unpaid" selected="selected">@Localizer["UnpaidText"]</option>
+                            }
+                            else
+                            {
+                                <option value="Unpaid">@Localizer["UnpaidText"]</option>
+                            }
                         </select>
                     </div>
 
                     <div class="col-md-3">
-                        <label class="form-label small text-muted mb-1">Kayıt Tipi</label>
+                        <label class="form-label small text-muted mb-1">@Localizer["RegistrationTypeLabel"]</label>
                         <select class="form-select" name="registrationTypeId">
-                            <option value="" @@(!Model.RegistrationTypeId.HasValue ? "selected" : "" )>Hepsi</option>
+                            @if (!Model.RegistrationTypeId.HasValue)
+                            {
+                                <option value="" selected="selected">@Localizer["AllOption"]</option>
+                            }
+                            else
+                            {
+                                <option value="">@Localizer["AllOption"]</option>
+                            }
+
                             @foreach (var t in Model.RegistrationTypes)
                             {
-                                var isSelected = Model.RegistrationTypeId.HasValue && Model.RegistrationTypeId.Value == t.Id;
-                                <option value="@t.Id" @@(isSelected ? "selected" : "" )>@t.Name</option>
+                                if (Model.RegistrationTypeId.HasValue && Model.RegistrationTypeId.Value == t.Id)
+                                {
+                                    <option value="@t.Id" selected="selected">@t.Name</option>
+                                }
+                                else
+                                {
+                                    <option value="@t.Id">@t.Name</option>
+                                }
                             }
                         </select>
                     </div>
 
                     <div class="col-md-1 d-grid">
-                        <button class="btn btn-primary" type="submit">
+                        <button class="btn btn-primary" type="submit" title="@Localizer["SearchButton"]">
                             <i class="fas fa-search"></i>
                         </button>
                     </div>
@@ -67,13 +108,13 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th style="width:140px;">Kayıt Tarihi</th>
-                        <th>Kullanıcı</th>
-                        <th style="width:260px;">E-posta</th>
-                        <th style="width:220px;">Kayıt Tipi</th>
-                        <th style="width:140px;" class="text-end">Tutar</th>
-                        <th style="width:120px;">Ödeme</th>
-                        <th style="width:180px;">İşlem</th>
+                        <th style="width:140px;">@Localizer["TableHeaderRegistrationDate"]</th>
+                        <th>@Localizer["TableHeaderUser"]</th>
+                        <th style="width:260px;">@Localizer["TableHeaderEmail"]</th>
+                        <th style="width:220px;">@Localizer["TableHeaderRegistrationType"]</th>
+                        <th style="width:140px;" class="text-end">@Localizer["TableHeaderAmount"]</th>
+                        <th style="width:120px;">@Localizer["TableHeaderPayment"]</th>
+                        <th style="width:180px;">@Localizer["TableHeaderAction"]</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -82,7 +123,7 @@
                         <tr>
                             <td colspan="7">
                                 <div class="alert alert-info border-0 m-3">
-                                    Bu kongrede kayıt bulunamadı.
+                                    @Localizer["EmptyMessage"]
                                 </div>
                             </td>
                         </tr>
@@ -102,22 +143,22 @@
                                 <td>
                                     @if (item.IsPaid)
                                     {
-                                        <span class="badge bg-success">Ödendi</span>
+                                        <span class="badge bg-success">@Localizer["PaidText"]</span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-secondary">Ödenmedi</span>
+                                        <span class="badge bg-secondary">@Localizer["UnpaidText"]</span>
                                     }
                                 </td>
                                 <td>
                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-dark dropdown-toggle" data-bs-toggle="dropdown">
-                                            İşlem
+                                        <button class="btn btn-sm btn-dark dropdown-toggle" data-bs-toggle="dropdown" type="button">
+                                            @Localizer["ActionButton"]
                                         </button>
 
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             <li>
-                                                <a class="dropdown-item" href="@detailsUrl">Detay</a>
+                                                <a class="dropdown-item" href="@detailsUrl">@Localizer["DetailsAction"]</a>
                                             </li>
 
                                             <li><hr class="dropdown-divider" /></li>
@@ -129,7 +170,7 @@
                                                         @Html.AntiForgeryToken()
                                                         <input type="hidden" name="id" value="@item.Id" />
                                                         <input type="hidden" name="returnUrl" value="@currentUrl" />
-                                                        <button type="submit" class="dropdown-item text-success">Ödendi yap</button>
+                                                        <button type="submit" class="dropdown-item text-success">@Localizer["MarkPaidAction"]</button>
                                                     </form>
                                                 </li>
                                             }
@@ -140,7 +181,7 @@
                                                         @Html.AntiForgeryToken()
                                                         <input type="hidden" name="id" value="@item.Id" />
                                                         <input type="hidden" name="returnUrl" value="@currentUrl" />
-                                                        <button type="submit" class="dropdown-item text-warning">Ödenmedi yap</button>
+                                                        <button type="submit" class="dropdown-item text-warning">@Localizer["MarkUnpaidAction"]</button>
                                                     </form>
                                                 </li>
                                             }

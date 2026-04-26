@@ -3,8 +3,8 @@ using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -13,11 +13,16 @@ namespace AntAbstract.Web.Controllers
     {
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IStringLocalizer<MessageController> _localizer;
 
-        public MessageController(AppDbContext context, UserManager<AppUser> userManager)
+        public MessageController(
+            AppDbContext context,
+            UserManager<AppUser> userManager,
+            IStringLocalizer<MessageController> localizer)
         {
             _context = context;
             _userManager = userManager;
+            _localizer = localizer;
         }
 
         public async Task<IActionResult> Index()
@@ -28,13 +33,13 @@ namespace AntAbstract.Web.Controllers
             var inbox = await _context.Messages
                 .Include(m => m.Sender)
                 .Where(m => m.ReceiverId == user.Id && !m.IsDeleted)
-                .OrderByDescending(m => m.SentDate) 
+                .OrderByDescending(m => m.SentDate)
                 .ToListAsync();
 
             var sent = await _context.Messages
                 .Include(m => m.Receiver)
-                .Where(m => m.SenderId == user.Id && !m.IsDeleted) 
-                .OrderByDescending(m => m.SentDate) 
+                .Where(m => m.SenderId == user.Id && !m.IsDeleted)
+                .OrderByDescending(m => m.SentDate)
                 .ToListAsync();
 
             ViewBag.Inbox = inbox;
@@ -43,7 +48,7 @@ namespace AntAbstract.Web.Controllers
             return View();
         }
 
-        public async Task<IActionResult> Details(Guid id) 
+        public async Task<IActionResult> Details(Guid id)
         {
             var message = await _context.Messages
                 .Include(m => m.Sender)
@@ -71,7 +76,6 @@ namespace AntAbstract.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-           
             var admins = await _userManager.GetUsersInRoleAsync("Admin");
             var adminUser = admins.FirstOrDefault();
 
@@ -81,7 +85,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             ViewBag.ReceiverId = adminUser?.Id;
-            ViewBag.ReceiverName = "Kongre Yönetimi"; 
+            ViewBag.ReceiverName = _localizer["ConferenceManagement"];
 
             return View();
         }
@@ -92,7 +96,7 @@ namespace AntAbstract.Web.Controllers
         {
             if (string.IsNullOrEmpty(receiverId) || string.IsNullOrEmpty(subject) || string.IsNullOrEmpty(content))
             {
-                TempData["ErrorMessage"] = "Lütfen alıcı, konu ve mesaj alanlarını doldurunuz.";
+                TempData["ErrorMessage"] = _localizer["FillRequiredFields"];
                 return RedirectToAction(nameof(Create));
             }
 
@@ -102,7 +106,7 @@ namespace AntAbstract.Web.Controllers
                 ReceiverId = receiverId,
                 Subject = subject,
                 Content = content,
-                SentDate = DateTime.UtcNow, 
+                SentDate = DateTime.UtcNow,
                 IsRead = false,
                 IsDeleted = false
             };
@@ -110,12 +114,13 @@ namespace AntAbstract.Web.Controllers
             _context.Messages.Add(newMessage);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Mesajınız başarıyla gönderildi.";
-            return RedirectToAction(nameof(Index)); 
+            TempData["SuccessMessage"] = _localizer["MessageSentSuccessfully"];
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
-        public async Task<IActionResult> Delete(Guid id) 
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(Guid id)
         {
             var message = await _context.Messages.FindAsync(id);
             var userId = _userManager.GetUserId(User);
@@ -128,6 +133,7 @@ namespace AntAbstract.Web.Controllers
                     await _context.SaveChangesAsync();
                 }
             }
+
             return RedirectToAction(nameof(Index));
         }
     }

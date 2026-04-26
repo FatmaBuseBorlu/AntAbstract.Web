@@ -1,46 +1,66 @@
 ﻿@using AntAbstract.Domain.Entities
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model List<Certificate>
 
 @{
-    ViewData["Title"] = "Sertifika Yönetimi";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     var slug = ViewContext.RouteData.Values["slug"]?.ToString();
+
+    var selectedType = Context.Request.Query["type"].ToString();
+    var onlyMissingFile = Context.Request.Query["onlyMissingFile"] == "true";
+    var onlyEmailNotSent = Context.Request.Query["onlyEmailNotSent"] == "true";
 }
 
 <h3 class="mb-3">@ViewData["Title"]</h3>
 
 <form method="get" class="row g-2 mb-3">
     <div class="col-md-3">
-        <input name="userEmail" class="form-control" placeholder="Kullanıcı email filtre" value="@Context.Request.Query["userEmail"]" />
+        <input name="userEmail"
+               class="form-control"
+               placeholder="@Localizer["UserEmailPlaceholder"]"
+               value="@Context.Request.Query["userEmail"]" />
     </div>
+
     <div class="col-md-2">
         <select name="type" class="form-select">
-            <option value="">Tür (Hepsi)</option>
-            <option value="Author">Author</option>
-            <option value="Reviewer">Reviewer</option>
+            <option value="">@Localizer["TypeAllOption"]</option>
+            <option value="Author" selected="@(selectedType == "Author")">@Localizer["TypeAuthor"]</option>
+            <option value="Reviewer" selected="@(selectedType == "Reviewer")">@Localizer["TypeReviewer"]</option>
         </select>
     </div>
+
     <div class="col-md-2 form-check mt-2">
-        <input class="form-check-input" type="checkbox" name="onlyMissingFile" value="true" />
-        <label class="form-check-label">Dosya yok</label>
+        <input class="form-check-input"
+               type="checkbox"
+               name="onlyMissingFile"
+               value="true"
+               @(onlyMissingFile ? "checked" : null) />
+        <label class="form-check-label">@Localizer["OnlyMissingFile"]</label>
     </div>
+
     <div class="col-md-2 form-check mt-2">
-        <input class="form-check-input" type="checkbox" name="onlyEmailNotSent" value="true" />
-        <label class="form-check-label">Mail gitmemiş</label>
+        <input class="form-check-input"
+               type="checkbox"
+               name="onlyEmailNotSent"
+               value="true"
+               @(onlyEmailNotSent ? "checked" : null) />
+        <label class="form-check-label">@Localizer["OnlyEmailNotSent"]</label>
     </div>
+
     <div class="col-md-3">
-        <button class="btn btn-primary">Filtrele</button>
+        <button class="btn btn-primary">@Localizer["FilterButton"]</button>
     </div>
 </form>
 
 <table class="table table-striped align-middle">
     <thead>
         <tr>
-            <th>Tür</th>
-            <th>Kullanıcı</th>
-            <th>Konferans</th>
-            <th>Dosya</th>
-            <th>Mail</th>
+            <th>@Localizer["TableHeaderType"]</th>
+            <th>@Localizer["TableHeaderUser"]</th>
+            <th>@Localizer["TableHeaderConference"]</th>
+            <th>@Localizer["TableHeaderFile"]</th>
+            <th>@Localizer["TableHeaderEmail"]</th>
             <th style="width:280px;"></th>
         </tr>
     </thead>
@@ -48,26 +68,45 @@
         @foreach (var c in Model)
         {
             <tr>
-                <td>@c.Type</td>
+                <td>
+                    @(c.Type == CertificateType.Author
+                                    ? Localizer["TypeAuthor"]
+                                    : Localizer["TypeReviewer"])
+                                                            </td>
+
                 <td>@(c.User?.Email ?? c.UserId)</td>
                 <td>@(c.Conference?.Title ?? c.ConferenceId.ToString())</td>
-                <td>@(string.IsNullOrWhiteSpace(c.FilePath) ? "Yok" : "Var")</td>
-                <td>@(c.EmailSentAt == null ? "Gönderilmemiş" : c.EmailSentAt.Value.ToString("dd.MM.yyyy HH:mm"))</td>
+
+                <td>
+                    @(string.IsNullOrWhiteSpace(c.FilePath)
+                                    ? Localizer["FileMissing"]
+                                    : Localizer["FileExists"])
+                                                          </td>
+
+                <td>
+                    @(c.EmailSentAt == null
+                                    ? Localizer["EmailNotSent"]
+                                    : c.EmailSentAt.Value.ToString("dd.MM.yyyy HH:mm"))
+            </td>
+
                 <td class="text-end">
                     <a class="btn btn-sm btn-outline-secondary"
-                       asp-action="Download" asp-route-id="@c.Id">İndir</a>
+                       asp-action="Download"
+                       asp-route-id="@c.Id">
+                        @Localizer["DownloadButton"]
+                    </a>
 
                     <form asp-action="Regenerate" asp-route-id="@c.Id" method="post" class="d-inline">
                         @Html.AntiForgeryToken()
-                        <button class="btn btn-sm btn-warning">Yeniden Üret</button>
+                        <button class="btn btn-sm btn-warning">@Localizer["RegenerateButton"]</button>
                     </form>
 
                     <form asp-action="ResendEmail" asp-route-id="@c.Id" method="post" class="d-inline">
                         @Html.AntiForgeryToken()
-                        <button class="btn btn-sm btn-success">Mail Tekrar</button>
+                        <button class="btn btn-sm btn-success">@Localizer["ResendEmailButton"]</button>
                     </form>
                 </td>
             </tr>
-        }
+                }
     </tbody>
 </table>

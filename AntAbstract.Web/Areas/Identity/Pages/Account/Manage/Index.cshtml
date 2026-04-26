@@ -1,7 +1,9 @@
 ﻿@page
 @model IndexModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
 @{
-    ViewData["Title"] = "Profil";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     ViewData["ActivePage"] = ManageNavPages.Index;
     Layout = "_LayoutDashboard";
 }
@@ -97,11 +99,11 @@
 
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h3 class="fw-bold text-dark mb-1">Hesap Ayarları</h3>
-                    <p class="text-muted mb-0">Profil bilgilerinizi buradan güncelleyebilir ve yönetebilirsiniz.</p>
+                    <h3 class="fw-bold text-dark mb-1">@Localizer["PageHeading"]</h3>
+                    <p class="text-muted mb-0">@Localizer["PageDescription"]</p>
                 </div>
                 <a href="/Dashboard" class="btn btn-light border fw-bold text-muted rounded-pill px-4 shadow-sm">
-                    <i class="fas fa-arrow-left me-2"></i> Panele Dön
+                    <i class="fas fa-arrow-left me-2"></i> @Localizer["BackToPanelButton"]
                 </a>
             </div>
 
@@ -109,6 +111,7 @@
 
             <div class="profile-card p-4 p-md-5">
                 <form id="profile-form" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3" role="alert"></div>
 
                     <div class="row align-items-center mb-5 border-bottom pb-5">
@@ -116,12 +119,12 @@
                             <div class="avatar-upload mx-auto">
                                 <div class="avatar-edit">
                                     <input asp-for="Input.ProfileImage" type="file" id="imageUpload" accept=".png, .jpg, .jpeg" class="d-none" onchange="previewProfileImage(this)" />
-                                    <label for="imageUpload"><i class="fas fa-camera"></i></label>
+                                    <label for="imageUpload" aria-label="@Localizer["ChangeProfilePhotoAriaLabel"]"><i class="fas fa-camera"></i></label>
                                 </div>
                                 <div class="avatar-preview shadow-sm">
                                     @if (ViewData["CurrentProfileImage"] != null)
                                     {
-                                        <img id="imagePreview" src="@ViewData["CurrentProfileImage"]" />
+                                        <img id="imagePreview" src="@ViewData["CurrentProfileImage"]" alt="@Localizer["ProfilePhotoAlt"]" />
                                     }
                                     else
                                     {
@@ -133,14 +136,14 @@
                             </div>
                         </div>
                         <div class="col-md">
-                            <h5 class="fw-bold text-dark mb-1">Profil Fotoğrafı</h5>
-                            <p class="text-muted small mb-0">Önerilen: 400x400px kare resim. JPG veya PNG formatında.</p>
+                            <h5 class="fw-bold text-dark mb-1">@Localizer["ProfilePhotoTitle"]</h5>
+                            <p class="text-muted small mb-0">@Localizer["ProfilePhotoDescription"]</p>
                         </div>
                     </div>
 
                     <div class="row g-4 mb-4">
                         <div class="col-12">
-                            <label class="form-label-custom">Kullanıcı Adı / E-Posta</label>
+                            <label class="form-label-custom">@Localizer["UsernameEmailLabel"]</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0 text-muted rounded-start-3"><i class="fas fa-envelope"></i></span>
                                 <input asp-for="Username" class="form-control form-control-modern border-start-0 ps-0 bg-light" disabled />
@@ -148,41 +151,41 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label asp-for="Input.FirstName" class="form-label-custom">Adınız</label>
-                            <input asp-for="Input.FirstName" class="form-control form-control-modern" placeholder="Ad" />
+                            <label asp-for="Input.FirstName" class="form-label-custom">@Localizer["FirstNameLabel"]</label>
+                            <input asp-for="Input.FirstName" class="form-control form-control-modern" placeholder="@Localizer["FirstNamePlaceholder"]" />
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="Input.LastName" class="form-label-custom">Soyadınız</label>
-                            <input asp-for="Input.LastName" class="form-control form-control-modern" placeholder="Soyad" />
+                            <label asp-for="Input.LastName" class="form-label-custom">@Localizer["LastNameLabel"]</label>
+                            <input asp-for="Input.LastName" class="form-control form-control-modern" placeholder="@Localizer["LastNamePlaceholder"]" />
                         </div>
 
                         <div class="col-md-4">
-                            <label asp-for="Input.Title" class="form-label-custom">Ünvan</label>
-                            <input asp-for="Input.Title" class="form-control form-control-modern" placeholder="Örn: Prof. Dr." />
+                            <label asp-for="Input.Title" class="form-label-custom">@Localizer["AcademicTitleLabel"]</label>
+                            <input asp-for="Input.Title" class="form-control form-control-modern" placeholder="@Localizer["AcademicTitlePlaceholder"]" />
                         </div>
                         <div class="col-md-8">
-                            <label asp-for="Input.University" class="form-label-custom">Üniversite / Kurum</label>
-                            <input asp-for="Input.University" class="form-control form-control-modern" placeholder="Kurum Adı" />
+                            <label asp-for="Input.University" class="form-label-custom">@Localizer["UniversityInstitutionLabel"]</label>
+                            <input asp-for="Input.University" class="form-control form-control-modern" placeholder="@Localizer["UniversityInstitutionPlaceholder"]" />
                         </div>
 
                         <div class="col-12">
-                            <label asp-for="Input.PhoneNumber" class="form-label-custom">Telefon Numarası</label>
-                            <input asp-for="Input.PhoneNumber" class="form-control form-control-modern" placeholder="05xx xxx xx xx" />
+                            <label asp-for="Input.PhoneNumber" class="form-label-custom">@Localizer["PhoneNumberLabel"]</label>
+                            <input asp-for="Input.PhoneNumber" class="form-control form-control-modern" placeholder="@Localizer["PhoneNumberPlaceholder"]" />
                             <span asp-validation-for="Input.PhoneNumber" class="text-danger small"></span>
                         </div>
 
                         <div class="col-12">
-                            <label asp-for="Input.ExpertiseAreas" class="form-label-custom">Uzmanlık Alanları</label>
-                            <textarea asp-for="Input.ExpertiseAreas" class="form-control form-control-modern" style="height: 100px" placeholder="Lütfen uzmanlık alanlarınızı aralarına virgül koyarak yazınız..."></textarea>
+                            <label asp-for="Input.ExpertiseAreas" class="form-label-custom">@Localizer["ExpertiseAreasLabel"]</label>
+                            <textarea asp-for="Input.ExpertiseAreas" class="form-control form-control-modern" style="height: 100px" placeholder="@Localizer["ExpertiseAreasPlaceholder"]"></textarea>
                             <div class="form-text small text-muted">
-                                <i class="fas fa-info-circle me-1"></i> Bu alanlar, hakem atamalarında doğru eşleştirme yapılması için kullanılır.
+                                <i class="fas fa-info-circle me-1"></i> @Localizer["ExpertiseAreasHelpText"]
                             </div>
                         </div>
                     </div>
 
                     <div class="pt-4 border-top mt-5">
                         <button id="update-profile-button" type="submit" class="btn btn-primary px-5 py-3 fw-bold rounded-pill shadow-lg transition-all" style="background-color: #00aeef; border: none;">
-                            <i class="fas fa-save me-2"></i> DEĞİŞİKLİKLERİ KAYDET
+                            <i class="fas fa-save me-2"></i> @Localizer["SaveChangesButton"]
                         </button>
                     </div>
 
@@ -191,8 +194,8 @@
                             <i class="fas fa-lightbulb"></i>
                         </div>
                         <div class="small text-primary">
-                            <h6 class="fw-bold mb-1">Önemli Hatırlatma</h6>
-                            Ad, Soyad ve Kurum bilgileriniz, kongre katılım belgelerinizde (Sertifika, Yaka Kartı, Bildiri Kitabı) otomatik olarak kullanılacaktır. Bu nedenle bu bilgilerin doğruluğundan emin olunuz.
+                            <h6 class="fw-bold mb-1">@Localizer["ImportantReminderTitle"]</h6>
+                            @Localizer["ImportantReminderText"]
                         </div>
                     </div>
 
@@ -214,6 +217,7 @@
                         var img = document.createElement('img');
                         img.id = 'imagePreview';
                         img.src = e.target.result;
+                        img.alt = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["ProfilePhotoAlt"].Value));
                         preview.parentNode.replaceChild(img, preview);
                     } else {
                         preview.src = e.target.result;

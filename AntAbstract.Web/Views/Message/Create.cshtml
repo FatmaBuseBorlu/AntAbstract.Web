@@ -1,13 +1,17 @@
-﻿@{
-    ViewData["Title"] = "Yeni Mesaj";
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
+@{
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 }
 
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold m-0"><i class="fas fa-pen-nib me-2 text-primary"></i>Yeni Mesaj Oluştur</h4>
+        <h4 class="fw-bold m-0">
+            <i class="fas fa-pen-nib me-2 text-primary"></i>@Localizer["PageHeading"]
+        </h4>
         <a href="/Message/Index" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-1"></i> Geri Dön
+            <i class="fas fa-arrow-left me-1"></i> @Localizer["BackButton"]
         </a>
     </div>
 
@@ -17,12 +21,15 @@
                 <div class="card-body p-4">
 
                     <form asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold text-muted small">Kime:</label>
+                            <label class="form-label fw-bold text-muted small">@Localizer["ToLabel"]</label>
 
                             <div class="input-group">
-                                <span class="input-group-text border-0 bg-light"><i class="fas fa-user-shield text-primary"></i></span>
+                                <span class="input-group-text border-0 bg-light">
+                                    <i class="fas fa-user-shield text-primary"></i>
+                                </span>
                                 <input type="text" class="form-control bg-light border-0 fw-bold" value="@ViewBag.ReceiverName" readonly />
                             </div>
 
@@ -30,18 +37,26 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold text-muted small">Konu:</label>
-                            <input type="text" name="subject" class="form-control bg-light border-0" placeholder="Örn: Bildiri Hakkında Soru" required />
+                            <label class="form-label fw-bold text-muted small">@Localizer["SubjectLabel"]</label>
+                            <input type="text"
+                                   name="subject"
+                                   class="form-control bg-light border-0"
+                                   placeholder="@Localizer["SubjectPlaceholder"]"
+                                   required />
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold text-muted small">Mesajınız:</label>
-                            <textarea name="content" class="form-control bg-light border-0" rows="8" placeholder="Mesajınızı buraya yazın..." required></textarea>
+                            <label class="form-label fw-bold text-muted small">@Localizer["MessageLabel"]</label>
+                            <textarea name="content"
+                                      class="form-control bg-light border-0"
+                                      rows="8"
+                                      placeholder="@Localizer["MessagePlaceholder"]"
+                                      required></textarea>
                         </div>
 
                         <div class="d-flex justify-content-end">
                             <button type="submit" class="btn btn-primary px-4 py-2 fw-bold">
-                                <i class="fas fa-paper-plane me-2"></i> GÖNDER
+                                <i class="fas fa-paper-plane me-2"></i> @Localizer["SendButton"]
                             </button>
                         </div>
 

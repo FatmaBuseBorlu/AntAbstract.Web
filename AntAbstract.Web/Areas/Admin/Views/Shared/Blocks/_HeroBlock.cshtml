@@ -1,5 +1,6 @@
 ﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
 @using System.Text.Json
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     string? buttonText = null;
@@ -80,7 +81,7 @@
             <div class="col-md-5 text-center">
                 @if (!string.IsNullOrWhiteSpace(img))
                 {
-                    <img src="@img" class="img-fluid rounded-4 shadow" alt="Hero" />
+                    <img src="@img" class="img-fluid rounded-4 shadow" alt="@Localizer["HeroImageAlt"]" />
                 }
             </div>
         </div>

@@ -1,9 +1,10 @@
 ﻿@using AntAbstract.Web.Models.ViewModels
 @using AntAbstract.Web.Models.ViewModels.Admin.Reports
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model ReportsIndexViewModel
 
 @{
-    ViewData["Title"] = "Raporlar";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
     var slug = Model.Slug ?? Context.GetRouteValue("slug")?.ToString() ?? "";
@@ -19,16 +20,16 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h3 class="fw-bold mb-1 text-dark">Raporlar ve İstatistikler</h3>
+            <h3 class="fw-bold mb-1 text-dark">@Localizer["PageHeading"]</h3>
             <p class="text-muted mb-0">
-                Kongre:
+                @Localizer["ConferenceLabel"]
                 <span class="badge bg-light text-dark border">@Model.ConferenceTitle</span>
             </p>
         </div>
 
         <div class="btn-group shadow-sm">
             <a href="@excelUrl" class="btn btn-success btn-sm">
-                <i class="fas fa-file-excel me-1"></i> Excel İndir
+                <i class="fas fa-file-excel me-1"></i> @Localizer["DownloadExcelButton"]
             </a>
         </div>
     </div>
@@ -51,7 +52,7 @@
         <div class="col-md-6 col-lg-3">
             <div class="card border-0 shadow-sm h-100 bg-primary text-white">
                 <div class="card-body p-4 text-center">
-                    <div class="small text-uppercase opacity-75 mb-2">Toplam Başvuru</div>
+                    <div class="small text-uppercase opacity-75 mb-2">@Localizer["TotalSubmissions"]</div>
                     <div class="display-5 fw-bold">@Model.TotalSubmissions</div>
                 </div>
             </div>
@@ -60,7 +61,7 @@
         <div class="col-md-6 col-lg-3">
             <div class="card border-0 shadow-sm h-100 bg-info text-white">
                 <div class="card-body p-4 text-center">
-                    <div class="small text-uppercase opacity-75 mb-2">Hakem Atanan</div>
+                    <div class="small text-uppercase opacity-75 mb-2">@Localizer["AssignedToReviewer"]</div>
                     <div class="display-5 fw-bold">@Model.AssignedSubmissions</div>
                 </div>
             </div>
@@ -69,7 +70,7 @@
         <div class="col-md-6 col-lg-3">
             <div class="card border-0 shadow-sm h-100 bg-success text-white">
                 <div class="card-body p-4 text-center">
-                    <div class="small text-uppercase opacity-75 mb-2">Karar Verilen</div>
+                    <div class="small text-uppercase opacity-75 mb-2">@Localizer["DecidedSubmissions"]</div>
                     <div class="display-5 fw-bold">@Model.DecidedSubmissions</div>
                 </div>
             </div>
@@ -78,7 +79,7 @@
         <div class="col-md-6 col-lg-3">
             <div class="card border-0 shadow-sm h-100 bg-warning text-dark">
                 <div class="card-body p-4 text-center">
-                    <div class="small text-uppercase opacity-75 mb-2">Toplam Atama</div>
+                    <div class="small text-uppercase opacity-75 mb-2">@Localizer["TotalAssignments"]</div>
                     <div class="display-5 fw-bold">@Model.TotalAssignments</div>
                 </div>
             </div>
@@ -89,7 +90,7 @@
         <div class="col-md-6 col-lg-3">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body p-4 text-center">
-                    <div class="small text-uppercase text-muted mb-2">Toplam Kayıt</div>
+                    <div class="small text-uppercase text-muted mb-2">@Localizer["TotalRegistrations"]</div>
                     <div class="display-6 fw-bold">@Model.TotalRegistrations</div>
                 </div>
             </div>
@@ -98,7 +99,7 @@
         <div class="col-md-6 col-lg-3">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body p-4 text-center">
-                    <div class="small text-uppercase text-muted mb-2">Toplam Gelir</div>
+                    <div class="small text-uppercase text-muted mb-2">@Localizer["TotalRevenue"]</div>
                     <div class="display-6 fw-bold">@Model.TotalRevenue.ToString("N2") ₺</div>
                 </div>
             </div>
@@ -110,7 +111,7 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white py-3 border-bottom-0">
                     <h6 class="fw-bold m-0">
-                        <i class="fas fa-chart-pie me-2 text-primary"></i> Başvuru Durum Dağılımı
+                        <i class="fas fa-chart-pie me-2 text-primary"></i> @Localizer["StatusDistributionHeader"]
                     </h6>
                 </div>
                 <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 360px;">
@@ -123,29 +124,29 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white py-3 border-bottom-0">
                     <h6 class="fw-bold m-0">
-                        <i class="fas fa-list me-2 text-primary"></i> Detaylı Durumlar
+                        <i class="fas fa-list me-2 text-primary"></i> @Localizer["DetailedStatusesHeader"]
                     </h6>
                 </div>
                 <div class="card-body p-0">
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
-                            <span><i class="fas fa-circle text-primary me-2 small"></i> Yeni Başvuru (New)</span>
+                            <span><i class="fas fa-circle text-primary me-2 small"></i> @Localizer["StatusNewLabel"]</span>
                             <span class="badge bg-primary rounded-pill">@Model.NewCount</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
-                            <span><i class="fas fa-circle text-warning me-2 small"></i> Değerlendirmede (Under Review)</span>
+                            <span><i class="fas fa-circle text-warning me-2 small"></i> @Localizer["StatusUnderReviewLabel"]</span>
                             <span class="badge bg-warning text-dark rounded-pill">@Model.UnderReviewCount</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
-                            <span><i class="fas fa-circle text-success me-2 small"></i> Kabul Edilen (Accepted)</span>
+                            <span><i class="fas fa-circle text-success me-2 small"></i> @Localizer["StatusAcceptedLabel"]</span>
                             <span class="badge bg-success rounded-pill">@Model.AcceptedCount</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
-                            <span><i class="fas fa-circle text-danger me-2 small"></i> Reddedilen (Rejected)</span>
+                            <span><i class="fas fa-circle text-danger me-2 small"></i> @Localizer["StatusRejectedLabel"]</span>
                             <span class="badge bg-danger rounded-pill">@Model.RejectedCount</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4 border-bottom-0">
-                            <span><i class="fas fa-circle text-secondary me-2 small"></i> Revizyon Bekleyen (Revision)</span>
+                            <span><i class="fas fa-circle text-secondary me-2 small"></i> @Localizer["StatusRevisionLabel"]</span>
                             <span class="badge bg-secondary rounded-pill">@Model.RevisionRequiredCount</span>
                         </li>
                     </ul>
@@ -167,7 +168,13 @@
             new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Yeni', 'İnceleniyor', 'Kabul', 'Red', 'Revizyon'],
+                    labels: [
+                        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["ChartLabelNew"].Value)),
+                        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["ChartLabelUnderReview"].Value)),
+                        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["ChartLabelAccepted"].Value)),
+                        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["ChartLabelRejected"].Value)),
+                        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["ChartLabelRevision"].Value))
+                    ],
                     datasets: [{
                         data: [@Model.NewCount, @Model.UnderReviewCount, @Model.AcceptedCount, @Model.RejectedCount, @Model.RevisionRequiredCount],
                         borderWidth: 0,
@@ -179,7 +186,10 @@
                     maintainAspectRatio: false,
                     cutout: '70%',
                     plugins: {
-                        legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true } }
+                        legend: {
+                            position: 'bottom',
+                            labels: { padding: 20, usePointStyle: true }
+                        }
                     }
                 }
             });

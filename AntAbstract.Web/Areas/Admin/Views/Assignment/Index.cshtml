@@ -1,7 +1,8 @@
 ﻿@model IEnumerable<AntAbstract.Domain.Entities.Submission>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Özet Atama";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
     var slug = ViewContext.RouteData.Values["slug"]?.ToString();
@@ -12,30 +13,28 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h4 class="fw-bold mb-1">Özet Atama</h4>
+            <h4 class="fw-bold mb-1">@Localizer["PageTitle"]</h4>
 
             @if (!string.IsNullOrWhiteSpace(conferenceTitle))
             {
                 <small class="text-muted d-block">
-                    Seçili Kongre: <strong>@conferenceTitle</strong> (@slug)
+                    @Localizer["SelectedConferenceLabel"] <strong>@conferenceTitle</strong> (@slug)
                 </small>
             }
             else
             {
                 <small class="text-muted d-block">
-                    Bu kongredeki bildirileri listeleyin ve hakem atayın.
+                    @Localizer["PageLead"]
                 </small>
             }
         </div>
-
-        @* If you want something on the right side (button, filter, etc.), put it here *@
-        @* <div>...</div> *@
     </div>
 
     @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success border-0">@TempData["SuccessMessage"]</div>
     }
+
     @if (TempData["ErrorMessage"] != null)
     {
         <div class="alert alert-danger border-0">@TempData["ErrorMessage"]</div>
@@ -44,7 +43,7 @@
     @if (Model == null || !Model.Any())
     {
         <div class="alert alert-info border-0">
-            Bu kongrede henüz bildiri yok.
+            @Localizer["EmptyMessage"]
         </div>
     }
     else
@@ -54,10 +53,10 @@
                 <table class="table table-hover mb-0 align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th>Başlık</th>
-                            <th>Yazar</th>
-                            <th>Tarih</th>
-                            <th style="width: 15%;">İşlem</th>
+                            <th>@Localizer["TableHeaderTitle"]</th>
+                            <th>@Localizer["TableHeaderAuthor"]</th>
+                            <th>@Localizer["TableHeaderDate"]</th>
+                            <th style="width: 15%;">@Localizer["TableHeaderAction"]</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -74,7 +73,7 @@
                                        asp-route-slug="@slug"
                                        asp-route-id="@item.SubmissionId"
                                        class="btn btn-primary btn-sm">
-                                        Hakem Ata
+                                        @Localizer["AssignReviewerButton"]
                                     </a>
                                 </td>
                             </tr>

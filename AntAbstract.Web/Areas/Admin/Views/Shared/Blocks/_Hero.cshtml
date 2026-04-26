@@ -1,6 +1,7 @@
 ﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
 @using System.Text.Json
 @using AntAbstract.Web.Models.ViewModels.Website
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     HeroBlockContentDto content = new();
@@ -23,7 +24,7 @@
     var title = Model.Title ?? "";
     var subtitle = Model.Subtitle ?? "";
 
-    var btnText = content.ButtonText ?? "Kayıt Ol";
+    var btnText = content.ButtonText ?? Localizer["DefaultButtonText"].Value;
     var btnUrl = content.ButtonUrl ?? "/register";
     var bg = content.BackgroundImageUrl;
 }

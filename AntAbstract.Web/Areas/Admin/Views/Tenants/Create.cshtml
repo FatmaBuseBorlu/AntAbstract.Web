@@ -1,18 +1,19 @@
 ﻿@model AntAbstract.Domain.Entities.Tenant
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Yeni Kurum Ekle";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 }
 
 <div class="container-fluid">
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
-            <h4 class="mb-0 fw-bold text-dark">🏢 Yeni Kurum Oluştur</h4>
-            <p class="text-muted small mb-0">Sisteme yeni bir kiracı (Tenant) tanımlayarak kendi özel alanını oluşturun.</p>
+            <h4 class="mb-0 fw-bold text-dark">@Localizer["PageHeading"]</h4>
+            <p class="text-muted small mb-0">@Localizer["PageLead"]</p>
         </div>
-        <a href="/Admin/Tenants" class="btn btn-light border shadow-sm px-3">
-            <i class="fas fa-arrow-left me-2"></i> Listeye Dön
+        <a asp-action="Index" class="btn btn-light border shadow-sm px-3">
+            <i class="fas fa-arrow-left me-2"></i> @Localizer["BackToListButton"]
         </a>
     </div>
 
@@ -20,30 +21,32 @@
         <div class="col-xl-6 col-lg-8">
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4 p-md-5">
-                    <form asp-action="Create">
+                    <form asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
+
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0 shadow-sm rounded-3 small"></div>
 
                         <div class="mb-4">
-                            <label asp-for="Name" class="form-label fw-bold text-dark small">KURUM ADI</label>
+                            <label asp-for="Name" class="form-label fw-bold text-dark small">@Localizer["NameLabel"]</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0 text-muted">
                                     <i class="fas fa-university"></i>
                                 </span>
-                                <input asp-for="Name" class="form-control bg-light border-start-0 ps-0" placeholder="Örn: Ege Üniversitesi" />
+                                <input asp-for="Name" class="form-control bg-light border-start-0 ps-0" placeholder="@Localizer["NamePlaceholder"]" />
                             </div>
                             <span asp-validation-for="Name" class="text-danger small mt-1"></span>
                         </div>
 
                         <div class="mb-4">
-                            <label asp-for="Slug" class="form-label fw-bold text-dark small">URL ADRESİ (SLUG)</label>
+                            <label asp-for="Slug" class="form-label fw-bold text-dark small">@Localizer["SlugLabel"]</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0 text-muted">
                                     <i class="fas fa-link"></i>
                                 </span>
-                                <input asp-for="Slug" class="form-control bg-light border-start-0 ps-0" placeholder="Örn: ege-uni" />
+                                <input asp-for="Slug" class="form-control bg-light border-start-0 ps-0" placeholder="@Localizer["SlugPlaceholder"]" />
                             </div>
                             <div class="form-text text-muted small">
-                                <i class="fas fa-info-circle me-1"></i> Bu alan kurumun giriş linkini belirler (örn: antabstract.com/<b>ege-uni</b>).
+                                <i class="fas fa-info-circle me-1"></i> @Localizer["SlugHelpText"]
                             </div>
                             <span asp-validation-for="Slug" class="text-danger small mt-1"></span>
                         </div>
@@ -52,7 +55,7 @@
 
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary btn-lg rounded-3 fw-bold shadow">
-                                <i class="fas fa-save me-2"></i> Kurumu Oluştur
+                                <i class="fas fa-save me-2"></i> @Localizer["CreateButton"]
                             </button>
                         </div>
                     </form>
@@ -63,10 +66,9 @@
         <div class="col-xl-4 col-lg-4">
             <div class="card border-0 bg-primary bg-opacity-10 rounded-4 p-3 border-start border-primary border-4">
                 <div class="card-body">
-                    <h6 class="fw-bold text-primary mb-3"><i class="fas fa-lightbulb me-2"></i> İpucu</h6>
+                    <h6 class="fw-bold text-primary mb-3"><i class="fas fa-lightbulb me-2"></i> @Localizer["TipHeader"]</h6>
                     <p class="small text-dark mb-0">
-                        Kurumu oluşturduktan sonra, bu kuruma ait <b>Kongreleri</b> ve <b>Yöneticileri</b> detay sayfasından tanımlayabilirsiniz.
-                        Slug alanında Türkçe karakter ve boşluk kullanmamaya özen gösterin.
+                        @Localizer["TipText"]
                     </p>
                 </div>
             </div>

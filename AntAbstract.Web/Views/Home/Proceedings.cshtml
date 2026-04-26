@@ -1,5 +1,7 @@
-﻿@{
-    ViewData["Title"] = "Bildiri Kitapları & Akademik Arşiv";
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
+@{
+    ViewData["Title"] = Localizer["PageTitle"].Value;
 }
 
 <style>
@@ -103,18 +105,20 @@
 
 <div class="archive-hero">
     <div class="container">
-        <h1 class="display-4 fw-bold mb-3">Akademik Arşiv & Bildiri Kitapları</h1>
+        <h1 class="display-4 fw-bold mb-3">@Localizer["HeroTitle"]</h1>
         <p class="lead text-white-50 mx-auto" style="max-width: 700px;">
-            Platformumuz üzerinden gerçekleştirilen kongrelere ait yayınlanmış özet ve tam metin bildiri kitaplarına buradan ulaşabilirsiniz.
+            @Localizer["HeroDescription"]
         </p>
     </div>
 </div>
 
 <div class="container">
     <div class="search-box">
-        <input type="text" class="form-control form-control-lg" placeholder="Kongre adı, ISBN veya yıl arayın...">
+        <input type="text"
+               class="form-control form-control-lg"
+               placeholder="@Localizer["SearchPlaceholder"]">
         <button class="btn btn-primary rounded-pill px-4 fw-bold">
-            <i class="fas fa-search"></i> Ara
+            <i class="fas fa-search"></i> @Localizer["SearchButton"]
         </button>
     </div>
 </div>
@@ -132,12 +136,12 @@
                     </div>
                 </div>
                 <div class="card-body p-4 d-flex flex-column">
-                    <h5 class="fw-bold text-dark mb-2 line-clamp-2">14. Ulusal Moleküler Biyoloji ve Biyoteknoloji Kongresi</h5>
-                    <p class="text-muted small mb-4">Editörler: Prof. Dr. Ahmet Yılmaz, Doç. Dr. Ayşe Kaya</p>
+                    <h5 class="fw-bold text-dark mb-2 line-clamp-2">@Localizer["Book1Title"]</h5>
+                    <p class="text-muted small mb-4">@Localizer["Book1Editors"]</p>
 
                     <div class="mt-auto d-grid gap-2">
                         <a href="#" class="btn btn-outline-danger fw-bold rounded-pill">
-                            <i class="fas fa-download me-2"></i> PDF Olarak İndir
+                            <i class="fas fa-download me-2"></i> @Localizer["DownloadPdfButton"]
                         </a>
                     </div>
                 </div>
@@ -154,12 +158,12 @@
                     </div>
                 </div>
                 <div class="card-body p-4 d-flex flex-column">
-                    <h5 class="fw-bold text-dark mb-2 line-clamp-2">International Summit on Artificial Intelligence (ISAI 2026)</h5>
-                    <p class="text-muted small mb-4">Editör: Dr. John Doe</p>
+                    <h5 class="fw-bold text-dark mb-2 line-clamp-2">@Localizer["Book2Title"]</h5>
+                    <p class="text-muted small mb-4">@Localizer["Book2Editors"]</p>
 
                     <div class="mt-auto d-grid gap-2">
                         <a href="#" class="btn btn-outline-danger fw-bold rounded-pill">
-                            <i class="fas fa-download me-2"></i> PDF Olarak İndir
+                            <i class="fas fa-download me-2"></i> @Localizer["DownloadPdfButton"]
                         </a>
                     </div>
                 </div>
@@ -170,18 +174,18 @@
             <div class="book-card">
                 <div class="book-cover">
                     <span class="year-badge">2025</span>
-                    <span class="isbn-badge">E-KİTAP</span>
+                    <span class="isbn-badge">@Localizer["EbookBadge"]</span>
                     <div class="pdf-icon-wrapper">
                         <i class="fas fa-file-pdf"></i>
                     </div>
                 </div>
                 <div class="card-body p-4 d-flex flex-column">
-                    <h5 class="fw-bold text-dark mb-2 line-clamp-2">3. Uluslararası Veteriner Farmakoloji ve Toksikoloji Kongresi</h5>
-                    <p class="text-muted small mb-4">Özet Bildiri Kitapçığı</p>
+                    <h5 class="fw-bold text-dark mb-2 line-clamp-2">@Localizer["Book3Title"]</h5>
+                    <p class="text-muted small mb-4">@Localizer["Book3Editors"]</p>
 
                     <div class="mt-auto d-grid gap-2">
                         <a href="#" class="btn btn-outline-danger fw-bold rounded-pill">
-                            <i class="fas fa-download me-2"></i> PDF Olarak İndir
+                            <i class="fas fa-download me-2"></i> @Localizer["DownloadPdfButton"]
                         </a>
                     </div>
                 </div>

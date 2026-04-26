@@ -1,9 +1,10 @@
 ﻿@using AntAbstract.Web.Models.ViewModels
 @using AntAbstract.Web.Models.ViewModels.Admin.Registrations
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model AdminRegistrationDetailsModel
 
 @{
-    ViewData["Title"] = "Kayıt Detayı";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     var slug = Model.Slug ?? "";
 }
@@ -11,63 +12,69 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h3 class="fw-bold mb-1 text-dark">Kayıt Detayı</h3>
+            <h3 class="fw-bold mb-1 text-dark">@Localizer["PageTitle"]</h3>
             <div class="text-muted">
-                Kongre: <span class="badge bg-light text-dark border">@Model.ConferenceTitle</span>
+                @Localizer["ConferenceLabel"] <span class="badge bg-light text-dark border">@Model.ConferenceTitle</span>
             </div>
         </div>
 
-        <a class="btn btn-outline-secondary btn-sm" href="@Model.ReturnUrl">Geri Dön</a>
+        <a class="btn btn-outline-secondary btn-sm" href="@Model.ReturnUrl">@Localizer["BackButton"]</a>
     </div>
 
     <div class="card border-0 shadow-sm">
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-6">
-                    <div class="text-muted small">Kullanıcı</div>
+                    <div class="text-muted small">@Localizer["UserLabel"]</div>
                     <div class="fw-semibold">@Model.UserFullName</div>
                     <div class="text-muted">@Model.UserEmail</div>
                 </div>
 
                 <div class="col-md-6">
-                    <div class="text-muted small">Kayıt Tipi</div>
+                    <div class="text-muted small">@Localizer["RegistrationTypeLabel"]</div>
                     <div class="fw-semibold">@Model.RegistrationTypeName</div>
                 </div>
 
                 <div class="col-md-3">
-                    <div class="text-muted small">Tutar</div>
+                    <div class="text-muted small">@Localizer["AmountLabel"]</div>
                     <div class="fw-semibold">@Model.Amount.ToString("N2")</div>
                 </div>
 
                 <div class="col-md-3">
-                    <div class="text-muted small">Kayıt Tarihi</div>
+                    <div class="text-muted small">@Localizer["RegistrationDateLabel"]</div>
                     <div class="fw-semibold">@Model.RegistrationDate.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</div>
                 </div>
 
                 <div class="col-md-3">
-                    <div class="text-muted small">Ödeme</div>
+                    <div class="text-muted small">@Localizer["PaymentLabel"]</div>
                     <div class="fw-semibold">
                         @if (Model.IsPaid)
                         {
-                            <span class="badge bg-success">Paid</span>
+                            <span class="badge bg-success">@Localizer["PaidText"]</span>
                         }
                         else
                         {
-                            <span class="badge bg-secondary">Unpaid</span>
+                            <span class="badge bg-secondary">@Localizer["UnpaidText"]</span>
                         }
                     </div>
                 </div>
 
                 <div class="col-md-3">
-                    <div class="text-muted small">Payment Date</div>
+                    <div class="text-muted small">@Localizer["PaymentDateLabel"]</div>
                     <div class="fw-semibold">
-                        @(Model.PaymentDate.HasValue? Model.PaymentDate.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm") : "-")
+                        @(Model.PaymentDate.HasValue
+                                                ? Model.PaymentDate.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                                                : Localizer["EmptyValue"].Value)
                     </div>
                 </div>
 
                 <div class="col-12">
-                    <div class="text-muted small">Transaction Id</div>
-                    <div class="fw-semibold">@(string.IsNullOrWhiteSpace(Model.PaymentTransactionId) ? "-" : Model.PaymentTransactionId)</div>
+                    <div class="text-muted small">@Localizer["TransactionIdLabel"]</div>
+                    <div class="fw-semibold">
+                        @(string.IsNullOrWhiteSpace(Model.PaymentTransactionId)
+                                                ? Localizer["EmptyValue"].Value
+                                                : Model.PaymentTransactionId)
+                    </div>
                 </div>
             </div>
 
@@ -79,20 +86,20 @@
                 <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
 
                 <div class="col-md-3">
-                    <label class="form-label small text-muted mb-1">Ödeme Durumu</label>
+                    <label class="form-label small text-muted mb-1">@Localizer["PaymentStatusLabel"]</label>
                     <select class="form-select" name="isPaid">
-                        <option value="false" selected="@(!Model.IsPaid)">Unpaid</option>
-                        <option value="true" selected="@(Model.IsPaid)">Paid</option>
+                        <option value="false" selected="@(!Model.IsPaid)">@Localizer["UnpaidText"]</option>
+                        <option value="true" selected="@(Model.IsPaid)">@Localizer["PaidText"]</option>
                     </select>
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label small text-muted mb-1">Transaction Id (opsiyonel)</label>
+                    <label class="form-label small text-muted mb-1">@Localizer["TransactionIdOptionalLabel"]</label>
                     <input class="form-control" name="transactionId" value="@Model.PaymentTransactionId" />
                 </div>
 
                 <div class="col-md-3 d-grid">
-                    <button class="btn btn-primary" type="submit">Kaydet</button>
+                    <button class="btn btn-primary" type="submit">@Localizer["SaveButton"]</button>
                 </div>
             </form>
         </div>

@@ -1,9 +1,10 @@
 ﻿@using AntAbstract.Web.Models.ViewModels
 @using AntAbstract.Web.Models.ViewModels.Admin.Users
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model UserWithRolesViewModel
 
 @{
-    ViewData["Title"] = "Rol Yönetimi";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 }
 
@@ -11,12 +12,12 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h4 class="fw-bold mb-0">Kullanıcı Rol Yönetimi</h4>
-            <small class="text-muted">Kullanıcı: <strong>@Model.UserEmail</strong></small>
+            <h4 class="fw-bold mb-0">@Localizer["PageHeading"]</h4>
+            <small class="text-muted">@Localizer["UserLabel"] <strong>@Model.UserEmail</strong></small>
         </div>
 
         <a asp-area="Admin" asp-controller="Users" asp-action="Index" class="btn btn-outline-secondary btn-sm">
-            Listeye Dön
+            @Localizer["BackToListButton"]
         </a>
     </div>
 
@@ -35,12 +36,21 @@
                 <div class="row row-cols-1 row-cols-md-2 g-2">
                     @for (int i = 0; i < Model.Roles.Count; i++)
                     {
+                        var localizedRole = Model.Roles[i].RoleName switch
+                        {
+                            "Admin" => Localizer["Role_Admin"].Value,
+                            "Organizator" => Localizer["Role_Organizer"].Value,
+                            "Author" => Localizer["Role_Author"].Value,
+                            "Referee" => Localizer["Role_Referee"].Value,
+                            _ => Model.Roles[i].RoleName
+                        };
+
                         <div class="col">
                             <div class="form-check">
                                 <input asp-for="Roles[i].RoleName" type="hidden" />
                                 <input asp-for="Roles[i].IsSelected" class="form-check-input" />
                                 <label class="form-check-label" asp-for="Roles[i].IsSelected">
-                                    @Model.Roles[i].RoleName
+                                    @localizedRole
                                 </label>
                             </div>
                         </div>
@@ -51,10 +61,10 @@
 
             <div class="card-footer bg-white border-0 d-flex gap-2 justify-content-end p-3">
                 <button type="submit" class="btn btn-primary">
-                    Kaydet
+                    @Localizer["SaveButton"]
                 </button>
                 <a asp-area="Admin" asp-controller="Users" asp-action="Index" class="btn btn-light">
-                    İptal
+                    @Localizer["CancelButton"]
                 </a>
             </div>
         </div>

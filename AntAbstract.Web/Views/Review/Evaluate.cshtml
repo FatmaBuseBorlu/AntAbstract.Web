@@ -1,7 +1,8 @@
 ﻿@model AntAbstract.Application.DTOs.Review.ReviewAssignmentDto
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Bildiri Değerlendir";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 }
 
@@ -92,11 +93,11 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h4 class="fw-bold text-dark mb-1">Bildiri Değerlendirme</h4>
-            <p class="text-muted small mb-0">Lütfen çalışmayı objektif kriterlere göre değerlendiriniz.</p>
+            <h4 class="fw-bold text-dark mb-1">@Localizer["PageHeading"]</h4>
+            <p class="text-muted small mb-0">@Localizer["PageLead"]</p>
         </div>
         <a href="@Url.Action("Index", "Review")" class="btn btn-outline-secondary rounded-pill px-4 btn-sm fw-bold">
-            <i class="fas fa-arrow-left me-2"></i> Listeye Dön
+            <i class="fas fa-arrow-left me-2"></i> @Localizer["BackToListButton"]
         </a>
     </div>
 
@@ -109,12 +110,12 @@
 
                 <h4 class="fw-bold text-dark mb-4">@Model.SubmissionTitle</h4>
 
-                <h6 class="text-uppercase text-muted small fw-bold mb-2 ls-1">Özet Metni</h6>
+                <h6 class="text-uppercase text-muted small fw-bold mb-2 ls-1">@Localizer["AbstractTitle"]</h6>
                 <div class="abstract-box mb-5">
                     @Model.SubmissionAbstract
                 </div>
 
-                <h6 class="text-uppercase text-muted small fw-bold mb-3 ls-1">Ekli Dosyalar</h6>
+                <h6 class="text-uppercase text-muted small fw-bold mb-3 ls-1">@Localizer["AttachedFilesTitle"]</h6>
                 @if (Model.Files != null && Model.Files.Any())
                 {
                     <div class="row g-3">
@@ -128,7 +129,7 @@
                                         </div>
                                         <div class="flex-grow-1 overflow-hidden">
                                             <div class="fw-bold text-dark text-truncate">@file.FileName</div>
-                                            <small class="text-muted">Görüntülemek için tıklayın</small>
+                                            <small class="text-muted">@Localizer["ClickToViewText"]</small>
                                         </div>
                                         <i class="fas fa-download text-muted ms-2"></i>
                                     </div>
@@ -140,7 +141,7 @@
                 else
                 {
                     <div class="alert alert-warning border-0 small bg-warning bg-opacity-10 text-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i> Bu bildiride indirilebilir dosya bulunmamaktadır.
+                        <i class="fas fa-exclamation-triangle me-2"></i> @Localizer["NoDownloadableFileText"]
                     </div>
                 }
             </div>
@@ -149,7 +150,7 @@
         <div class="col-lg-5">
             <div class="evaluation-card">
                 <div class="card-header bg-white border-bottom p-4">
-                    <h5 class="fw-bold m-0"><i class="fas fa-gavel text-primary me-2"></i> Hakem Kararı</h5>
+                    <h5 class="fw-bold m-0"><i class="fas fa-gavel text-primary me-2"></i> @Localizer["ReviewerDecisionTitle"]</h5>
                 </div>
 
                 <div class="card-body p-4">
@@ -161,60 +162,64 @@
                     }
 
                     <form asp-action="Evaluate" method="post">
+                        @Html.AntiForgeryToken()
                         <input type="hidden" name="ReviewAssignmentId" value="@Model.Id" />
 
                         <div class="mb-5 text-center">
-                            <label class="form-label fw-bold text-muted small text-uppercase mb-3">Genel Puan (0-100)</label>
+                            <label class="form-label fw-bold text-muted small text-uppercase mb-3">@Localizer["OverallScoreLabel"]</label>
 
                             <span id="scoreValue" class="score-display">85</span>
 
                             <input type="range" class="form-range range" name="Score" id="scoreRange" min="0" max="100" value="85" oninput="updateScore(this.value)">
                             <div class="d-flex justify-content-between text-muted small px-1">
-                                <span>0 (Zayıf)</span>
-                                <span>100 (Mükemmel)</span>
+                                <span>0 (@Localizer["WeakText"])</span>
+                                <span>100 (@Localizer["ExcellentText"])</span>
                             </div>
                         </div>
 
                         <div class="mb-5">
-                            <label class="form-label fw-bold text-muted small text-uppercase mb-3">Kararınız</label>
+                            <label class="form-label fw-bold text-muted small text-uppercase mb-3">@Localizer["DecisionLabel"]</label>
                             <div class="row g-2">
                                 <div class="col-6">
                                     <input type="radio" class="decision-option" name="Recommendation" id="rec_accept" value="Accept" required>
                                     <label class="decision-label" for="rec_accept">
-                                        <i class="fas fa-check-circle d-block fs-4 mb-2"></i> Kabul
+                                        <i class="fas fa-check-circle d-block fs-4 mb-2"></i> @Localizer["AcceptLabel"]
                                     </label>
                                 </div>
                                 <div class="col-6">
                                     <input type="radio" class="decision-option" name="Recommendation" id="rec_reject" value="Reject">
                                     <label class="decision-label" for="rec_reject">
-                                        <i class="fas fa-times-circle d-block fs-4 mb-2"></i> Red
+                                        <i class="fas fa-times-circle d-block fs-4 mb-2"></i> @Localizer["RejectLabel"]
                                     </label>
                                 </div>
                                 <div class="col-6">
                                     <input type="radio" class="decision-option" name="Recommendation" id="rec_minor" value="MinorRevision">
                                     <label class="decision-label" for="rec_minor">
-                                        <i class="fas fa-edit d-block fs-4 mb-2"></i> Küçük Düzeltme
+                                        <i class="fas fa-edit d-block fs-4 mb-2"></i> @Localizer["MinorRevisionLabel"]
                                     </label>
                                 </div>
                                 <div class="col-6">
                                     <input type="radio" class="decision-option" name="Recommendation" id="rec_major" value="MajorRevision">
                                     <label class="decision-label" for="rec_major">
-                                        <i class="fas fa-sync-alt d-block fs-4 mb-2"></i> Büyük Düzeltme
+                                        <i class="fas fa-sync-alt d-block fs-4 mb-2"></i> @Localizer["MajorRevisionLabel"]
                                     </label>
                                 </div>
                             </div>
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold text-muted small text-uppercase">Yazara Notlar</label>
-                            <textarea name="CommentsToAuthor" class="form-control bg-light" rows="6"
-                                      placeholder="Çalışmanın güçlü ve zayıf yönlerini, varsa düzeltme taleplerinizi buraya yazınız..."
-                                      style="border-radius: 12px; border: 1px solid #e2e8f0; resize: none;" required></textarea>
+                            <label class="form-label fw-bold text-muted small text-uppercase">@Localizer["NotesToAuthorLabel"]</label>
+                            <textarea name="CommentsToAuthor"
+                                      class="form-control bg-light"
+                                      rows="6"
+                                      placeholder="@Localizer["NotesPlaceholder"]"
+                                      style="border-radius: 12px; border: 1px solid #e2e8f0; resize: none;"
+                                      required></textarea>
                         </div>
 
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary py-3 fw-bold rounded-pill shadow-lg" onclick="return confirm('Bu değerlendirmeyi göndermek istediğinize emin misiniz?');">
-                                <i class="fas fa-paper-plane me-2"></i> Raporu Tamamla
+                            <button type="submit" class="btn btn-primary py-3 fw-bold rounded-pill shadow-lg" onclick="return confirmEvaluation();">
+                                <i class="fas fa-paper-plane me-2"></i> @Localizer["CompleteReportButton"]
                             </button>
                         </div>
 
@@ -227,12 +232,18 @@
 </div>
 
 <script>
+    const confirmSubmitMessage = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["ConfirmSubmitMessage"].Value));
+
     function updateScore(val) {
         document.getElementById('scoreValue').innerText = val;
 
         var scoreDisplay = document.getElementById('scoreValue');
-        if(val < 50) scoreDisplay.style.color = '#ef4444';
-        else if(val < 70) scoreDisplay.style.color = '#f59e0b';
+        if (val < 50) scoreDisplay.style.color = '#ef4444';
+        else if (val < 70) scoreDisplay.style.color = '#f59e0b';
         else scoreDisplay.style.color = '#00aeef';
+    }
+
+    function confirmEvaluation() {
+        return confirm(confirmSubmitMessage);
     }
 </script>

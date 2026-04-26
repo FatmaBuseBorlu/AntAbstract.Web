@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -26,6 +27,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly IReviewerRecommendationService _recommendationService;
         private readonly UserManager<AppUser> _userManager;
         private readonly ISelectedConferenceService _selectedConferenceService;
+        private readonly IStringLocalizer<AssignmentController> _localizer;
 
         public AssignmentController(
             AppDbContext context,
@@ -33,7 +35,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             IEmailService emailService,
             UserManager<AppUser> userManager,
             IReviewerRecommendationService recommendationService,
-            ISelectedConferenceService selectedConferenceService)
+            ISelectedConferenceService selectedConferenceService,
+            IStringLocalizer<AssignmentController> localizer)
         {
             _context = context;
             _tenantContext = tenantContext;
@@ -41,12 +44,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _userManager = userManager;
             _recommendationService = recommendationService;
             _selectedConferenceService = selectedConferenceService;
+            _localizer = localizer;
         }
 
         [HttpGet("/Admin/Assignment")]
         public async Task<IActionResult> SelectConference()
         {
             var selectedId = _selectedConferenceService.GetSelectedConferenceId();
+
             if (selectedId != null)
             {
                 var conf = await _context.Conferences
@@ -84,10 +89,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var vm = new SelectConferenceViewModel
             {
-                Title = "Kongre Seç",
-                Lead = "Özet ataması yapabilmek için önce kongre seçin.",
+                Title = _localizer["SelectConference_Title"].Value,
+                Lead = _localizer["SelectConference_Lead"].Value,
                 PostUrl = "/Admin/Assignment/Select",
-                SubmitText = "Devam Et",
+                SubmitText = _localizer["SelectConference_Submit"].Value,
                 Conferences = conferences
             };
 
@@ -104,21 +109,23 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                TempData["ErrorMessage"] = _localizer["Error_ConferenceNotFound"].Value;
                 return RedirectToAction(nameof(SelectConference));
             }
 
             _selectedConferenceService.SetSelectedConferenceId(conf.Id);
             HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
+
             return Redirect($"/{conf.Tenant.Slug}/Admin/Assignment?conferenceId={conf.Id}");
         }
 
         [HttpGet("/{slug}/Admin/Assignment")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId)
         {
-            if (_tenantContext.Current == null || !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            if (_tenantContext.Current == null ||
+                !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                TempData["ErrorMessage"] = "Lütfen önce geçerli bir kongre seçin.";
+                TempData["ErrorMessage"] = _localizer["Error_SelectValidConferenceFirst"].Value;
                 return RedirectToAction(nameof(SelectConference));
             }
 
@@ -126,17 +133,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conferenceId == null)
             {
-                TempData["ErrorMessage"] = "Lütfen bir kongre seçin.";
+                TempData["ErrorMessage"] = _localizer["Error_SelectConferenceFirst"].Value;
                 return RedirectToAction(nameof(SelectConference));
             }
 
             var conference = await _context.Conferences
                 .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.Id == conferenceId && c.TenantId == _tenantContext.Current.Id);
+                .FirstOrDefaultAsync(c =>
+                    c.Id == conferenceId.Value &&
+                    c.TenantId == _tenantContext.Current.Id);
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = "Seçilen kongre bu kuruma ait değil veya bulunamadı.";
+                TempData["ErrorMessage"] = _localizer["Error_ConferenceNotBelongOrNotFound"].Value;
                 return RedirectToAction(nameof(SelectConference));
             }
 
@@ -144,7 +153,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .AsNoTracking()
                 .Where(s => s.ConferenceId == conference.Id)
                 .Include(s => s.Author)
-                .Include(s => s.ReviewAssignments).ThenInclude(ra => ra.Reviewer)
+                .Include(s => s.ReviewAssignments)
+                    .ThenInclude(ra => ra.Reviewer)
                 .OrderByDescending(s => s.CreatedDate)
                 .ToListAsync();
 
@@ -157,9 +167,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpGet("/{slug}/Admin/Assignment/Assign/{id:guid}")]
         public async Task<IActionResult> Assign(string slug, Guid id)
         {
-            if (_tenantContext.Current == null || !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            if (_tenantContext.Current == null ||
+                !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
+                TempData["ErrorMessage"] = _localizer["Error_SelectConferenceBeforeProceed"].Value;
                 return RedirectToAction(nameof(SelectConference));
             }
 
@@ -169,9 +180,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .Include(s => s.Conference)
                 .FirstOrDefaultAsync(s => s.Id == id);
 
-            if (submission == null || submission.Conference.TenantId != _tenantContext.Current.Id)
+            if (submission == null ||
+                submission.Conference == null ||
+                submission.Conference.TenantId != _tenantContext.Current.Id)
             {
-                TempData["ErrorMessage"] = "Bildiri bulunamadı veya erişim yetkiniz yok.";
+                TempData["ErrorMessage"] = _localizer["Error_SubmissionNotFoundOrUnauthorized"].Value;
                 return Redirect($"/{slug}/Admin/Assignment");
             }
 
@@ -196,32 +209,46 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AssignPost(string slug, Guid submissionId, string reviewerId)
         {
-            if (_tenantContext.Current == null || !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            if (_tenantContext.Current == null ||
+                !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["ErrorMessage"] = _localizer["Error_SelectValidConferenceFirst"].Value;
                 return RedirectToAction(nameof(SelectConference));
+            }
 
             var submission = await _context.Submissions
                 .Include(s => s.Conference)
                 .FirstOrDefaultAsync(s => s.Id == submissionId);
 
-            if (submission == null || submission.Conference.TenantId != _tenantContext.Current.Id)
+            if (submission == null ||
+                submission.Conference == null ||
+                submission.Conference.TenantId != _tenantContext.Current.Id)
             {
-                return NotFound("Yetkisiz erişim veya geçersiz bildiri.");
+                return NotFound(_localizer["Error_InvalidSubmissionOrUnauthorized"].Value);
+            }
+
+            if (string.IsNullOrWhiteSpace(reviewerId))
+            {
+                TempData["ErrorMessage"] = _localizer["Error_InvalidReviewerSelection"].Value;
+                return Redirect($"/{slug}/Admin/Assignment/Assign/{submissionId}");
             }
 
             var reviewer = await _userManager.FindByIdAsync(reviewerId);
 
             if (reviewer == null)
             {
-                TempData["ErrorMessage"] = "Geçersiz hakem seçimi!";
+                TempData["ErrorMessage"] = _localizer["Error_InvalidReviewerSelection"].Value;
                 return Redirect($"/{slug}/Admin/Assignment/Assign/{submissionId}");
             }
 
             var alreadyAssigned = await _context.ReviewAssignments
-                .AnyAsync(ra => ra.SubmissionId == submissionId && ra.ReviewerId == reviewerId);
+                .AnyAsync(ra =>
+                    ra.SubmissionId == submissionId &&
+                    ra.ReviewerId == reviewerId);
 
             if (alreadyAssigned)
             {
-                TempData["ErrorMessage"] = "Bu hakem zaten bu bildiriye atanmış.";
+                TempData["ErrorMessage"] = _localizer["Error_ReviewerAlreadyAssigned"].Value;
                 return Redirect($"/{slug}/Admin/Assignment/Assign/{submissionId}");
             }
 
@@ -232,7 +259,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 AssignedDate = DateTime.UtcNow
             });
 
-            if (submission.Status == SubmissionStatus.New || submission.Status == SubmissionStatus.Pending)
+            if (submission.Status == SubmissionStatus.New ||
+                submission.Status == SubmissionStatus.Pending)
             {
                 submission.Status = SubmissionStatus.UnderReview;
             }
@@ -241,18 +269,30 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             try
             {
-                string mailSubject = $"Yeni Bildiri Ataması: İnceleme Bekleniyor";
-                string mailBody = $"Sayın {reviewer.FirstName} {reviewer.LastName},<br><br>" +
-                                  $"Kongre sistemimiz üzerinden size yeni bir bildiri değerlendirmesi atanmıştır.<br><br>" +
-                                  $"<strong>Bildiri Başlığı:</strong> {submission.Title}<br><br>" +
-                                  $"Lütfen en kısa sürede sisteme giriş yaparak değerlendirme formunu doldurunuz.<br><br>" +
-                                  $"İyi çalışmalar dileriz.";
+                var reviewerFullName = $"{reviewer.FirstName} {reviewer.LastName}".Trim();
 
-                await _emailService.SendAsync(reviewer.Email!, mailSubject, mailBody);
+                string mailSubject = _localizer["Mail_NewAssignmentSubject"].Value;
+
+                string mailBody =
+                    $"{_localizer["Mail_Greeting", reviewer.FirstName, reviewer.LastName].Value}<br><br>" +
+                    $"{_localizer["Mail_NewAssignmentIntro"].Value}<br><br>" +
+                    $"<strong>{_localizer["Mail_SubmissionTitleLabel"].Value}</strong> {submission.Title}<br><br>" +
+                    $"{_localizer["Mail_FillReviewForm"].Value}<br><br>" +
+                    $"{_localizer["Mail_BestRegards"].Value}";
+
+                if (!string.IsNullOrWhiteSpace(reviewer.Email))
+                {
+                    await _emailService.SendAsync(reviewer.Email, mailSubject, mailBody);
+                }
             }
-            catch { }
+            catch
+            {
+                // Mail gönderimi başarısız olsa bile hakem ataması tamamlanmış olur.
+                // İstersen buraya ileride loglama ekleyebiliriz.
+            }
 
-            TempData["SuccessMessage"] = "Harika! Sistem havuzundan hakem ataması başarıyla tamamlandı ve bildirinin durumu güncellendi.";
+            TempData["SuccessMessage"] = _localizer["Success_ReviewerAssigned"].Value;
+
             return Redirect($"/{slug}/Admin/Assignment?conferenceId={submission.ConferenceId}");
         }
     }

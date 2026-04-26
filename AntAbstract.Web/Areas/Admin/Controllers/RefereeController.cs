@@ -1,10 +1,9 @@
 ﻿using AntAbstract.Domain.Entities;
-using AntAbstract.Infrastructure.Context;
 using AntAbstract.Web.Models.ViewModels.Admin.Referee;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,11 +18,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IStringLocalizer<RefereeController> _localizer;
 
-        public RefereeController(UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager)
+        public RefereeController(
+            UserManager<AppUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            IStringLocalizer<RefereeController> localizer)
         {
             _userManager = userManager;
             _roleManager = roleManager;
+            _localizer = localizer;
         }
 
         public async Task<IActionResult> Index()
@@ -31,17 +35,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var currentUser = await _userManager.GetUserAsync(User);
             var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, "Admin");
 
-
             var referees = await _userManager.GetUsersInRoleAsync("Referee");
 
             if (!isAdmin && currentUser?.TenantId != null)
             {
-                
                 referees = referees.Where(r => r.TenantId == currentUser.TenantId).ToList();
             }
             else if (!isAdmin && currentUser?.TenantId == null)
             {
-
                 referees = new List<AppUser>();
             }
 
@@ -68,7 +69,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 var existingUser = await _userManager.FindByEmailAsync(model.Email);
                 if (existingUser != null)
                 {
-                    ModelState.AddModelError("", "Bu email adresiyle zaten bir kullanıcı kayıtlı.");
+                    ModelState.AddModelError("", _localizer["Error_EmailAlreadyExists"]);
                     return View(model);
                 }
 
@@ -96,7 +97,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 {
                     await _userManager.AddToRoleAsync(user, "Referee");
 
-                    TempData["SuccessMessage"] = "Hakem başarıyla sisteme eklendi.";
+                    TempData["SuccessMessage"] = _localizer["Success_RefereeCreated"];
                     return RedirectToAction(nameof(Index));
                 }
 
@@ -105,6 +106,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     ModelState.AddModelError("", error.Description);
                 }
             }
+
             return View(model);
         }
 
@@ -119,13 +121,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 if (!isAdmin && user.TenantId != currentUser?.TenantId)
                 {
-                    TempData["ErrorMessage"] = "Yetkisiz işlem! Başka bir kuruma ait hakemi silemezsiniz.";
+                    TempData["ErrorMessage"] = _localizer["Error_UnauthorizedDelete"];
                     return RedirectToAction(nameof(Index));
                 }
 
                 await _userManager.DeleteAsync(user);
-                TempData["SuccessMessage"] = "Hakem silindi.";
+                TempData["SuccessMessage"] = _localizer["Success_RefereeDeleted"];
             }
+
             return RedirectToAction(nameof(Index));
         }
     }

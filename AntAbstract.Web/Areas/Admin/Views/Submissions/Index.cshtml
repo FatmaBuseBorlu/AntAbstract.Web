@@ -1,9 +1,10 @@
 ﻿@using AntAbstract.Web.Models.ViewModels
 @using AntAbstract.Web.Models.ViewModels.Admin.Submissions
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model AdminSubmissionsIndexModel
 
 @{
-    ViewData["Title"] = "Tüm Başvurular";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
     var slug = Model.Slug ?? "";
@@ -14,9 +15,12 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h3 class="fw-bold mb-1 text-dark">Tüm Başvurular</h3>
+            <h3 class="fw-bold mb-1 text-dark">@Localizer["PageTitle"]</h3>
             <div class="text-muted">
-                Kongre: <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 fs-6 ms-1">@Model.ConferenceTitle</span>
+                @Localizer["ConferenceLabel"]
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 fs-6 ms-1">
+                    @Model.ConferenceTitle
+                </span>
             </div>
         </div>
     </div>
@@ -26,7 +30,7 @@
         <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
             <i class="fas fa-check-circle fs-5 me-2 align-middle"></i>
             <span class="fw-bold">@TempData["SuccessMessage"]</span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Kapat"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="@Localizer["CloseLabel"]"></button>
         </div>
     }
 
@@ -35,7 +39,7 @@
         <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
             <i class="fas fa-exclamation-circle fs-5 me-2 align-middle"></i>
             <span class="fw-bold">@TempData["ErrorMessage"]</span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Kapat"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="@Localizer["CloseLabel"]"></button>
         </div>
     }
 
@@ -43,29 +47,37 @@
         <div class="card-body p-4 bg-light bg-opacity-50">
             <form method="get" action="/@slug/Admin/Submissions">
                 <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
+
                 <div class="row g-3 align-items-end">
                     <div class="col-md-6">
-                        <label class="form-label small fw-bold text-muted mb-1">Arama Yap</label>
+                        <label class="form-label small fw-bold text-muted mb-1">@Localizer["SearchLabel"]</label>
                         <div class="input-group">
-                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                            <input class="form-control border-start-0 ps-0" name="search" value="@Model.Search" placeholder="Başlık, yazar adı, e-posta..." />
+                            <span class="input-group-text bg-white border-end-0">
+                                <i class="fas fa-search text-muted"></i>
+                            </span>
+                            <input class="form-control border-start-0 ps-0"
+                                   name="search"
+                                   value="@Model.Search"
+                                   placeholder="@Localizer["SearchPlaceholder"]" />
                         </div>
                     </div>
+
                     <div class="col-md-3">
-                        <label class="form-label small fw-bold text-muted mb-1">Bildiri Durumu</label>
+                        <label class="form-label small fw-bold text-muted mb-1">@Localizer["StatusLabel"]</label>
                         <select class="form-select fw-bold text-secondary" name="status">
-                            <option value="">Tüm Durumlar</option>
-                            <option value="New" selected="@(Model.Status == "New")">Yeni (New)</option>
-                            <option value="Pending" selected="@(Model.Status == "Pending")">Beklemede (Pending)</option>
-                            <option value="UnderReview" selected="@(Model.Status == "UnderReview")">Değerlendirmede (UnderReview)</option>
-                            <option value="Accepted" selected="@(Model.Status == "Accepted")">Kabul Edildi (Accepted)</option>
-                            <option value="Rejected" selected="@(Model.Status == "Rejected")">Reddedildi (Rejected)</option>
-                            <option value="RevisionRequired" selected="@(Model.Status == "RevisionRequired")">Revizyon (RevisionRequired)</option>
+                            <option value="">@Localizer["AllStatusesOption"]</option>
+                            <option value="New" selected="@(Model.Status == "New")">@Localizer["StatusOption_New"]</option>
+                            <option value="Pending" selected="@(Model.Status == "Pending")">@Localizer["StatusOption_Pending"]</option>
+                            <option value="UnderReview" selected="@(Model.Status == "UnderReview")">@Localizer["StatusOption_UnderReview"]</option>
+                            <option value="Accepted" selected="@(Model.Status == "Accepted")">@Localizer["StatusOption_Accepted"]</option>
+                            <option value="Rejected" selected="@(Model.Status == "Rejected")">@Localizer["StatusOption_Rejected"]</option>
+                            <option value="RevisionRequired" selected="@(Model.Status == "RevisionRequired")">@Localizer["StatusOption_RevisionRequired"]</option>
                         </select>
                     </div>
+
                     <div class="col-md-3 d-grid">
                         <button class="btn btn-primary fw-bold" type="submit">
-                            Sonuçları Filtrele
+                            @Localizer["FilterButton"]
                         </button>
                     </div>
                 </div>
@@ -78,11 +90,11 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th style="width:120px;" class="ps-4">Tarih</th>
-                        <th>Bildiri Başlığı</th>
-                        <th style="width:200px;">Yazar</th>
-                        <th style="width:140px;">Durum</th>
-                        <th style="width:180px;" class="text-end pe-4">İşlemler</th>
+                        <th style="width:120px;" class="ps-4">@Localizer["TableHeaderDate"]</th>
+                        <th>@Localizer["TableHeaderTitle"]</th>
+                        <th style="width:200px;">@Localizer["TableHeaderAuthor"]</th>
+                        <th style="width:140px;">@Localizer["TableHeaderStatus"]</th>
+                        <th style="width:180px;" class="text-end pe-4">@Localizer["TableHeaderActions"]</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -92,8 +104,8 @@
                             <td colspan="5">
                                 <div class="text-center py-5 text-muted">
                                     <i class="fas fa-inbox fa-3x mb-3 opacity-50"></i>
-                                    <h5 class="fw-bold">Henüz Başvuru Yok</h5>
-                                    <p class="mb-0">Bu kongre için listelenecek bir bildiri bulunamadı.</p>
+                                    <h5 class="fw-bold">@Localizer["EmptyTitle"]</h5>
+                                    <p class="mb-0">@Localizer["EmptyMessage"]</p>
                                 </div>
                             </td>
                         </tr>
@@ -102,11 +114,37 @@
                     {
                         foreach (var item in Model.Items)
                         {
+                            var badgeColor = item.Status switch
+                            {
+                                "New" => "bg-info text-dark",
+                                "Accepted" => "bg-success",
+                                "Rejected" => "bg-danger",
+                                "UnderReview" => "bg-warning text-dark",
+                                "RevisionRequired" => "bg-secondary",
+                                "Pending" => "bg-primary",
+                                _ => "bg-light text-dark border"
+                            };
+
+                            var localizedStatus = item.Status switch
+                            {
+                                "New" => Localizer["BadgeStatus_New"].Value,
+                                "Pending" => Localizer["BadgeStatus_Pending"].Value,
+                                "UnderReview" => Localizer["BadgeStatus_UnderReview"].Value,
+                                "Accepted" => Localizer["BadgeStatus_Accepted"].Value,
+                                "Rejected" => Localizer["BadgeStatus_Rejected"].Value,
+                                "RevisionRequired" => Localizer["BadgeStatus_RevisionRequired"].Value,
+                                _ => item.Status
+                            };
+
                             <tr>
                                 <td class="ps-4 text-muted small fw-bold">@item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")</td>
+
                                 <td>
-                                    <span class="fw-bold text-dark d-block text-truncate" style="max-width: 400px;" title="@item.Title">@item.Title</span>
+                                    <span class="fw-bold text-dark d-block text-truncate" style="max-width: 400px;" title="@item.Title">
+                                        @item.Title
+                                    </span>
                                 </td>
+
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 35px; height: 35px;">
@@ -115,31 +153,23 @@
                                         <span class="fw-semibold text-secondary">@item.AuthorName</span>
                                     </div>
                                 </td>
+
                                 <td>
-                                    @{
-                                        var badgeColor = item.Status switch
-                                        {
-                                            "New" => "bg-info text-dark",
-                                            "Accepted" => "bg-success",
-                                            "Rejected" => "bg-danger",
-                                            "UnderReview" => "bg-warning text-dark",
-                                            "RevisionRequired" => "bg-secondary",
-                                            _ => "bg-light text-dark border"
-                                        };
-                                    }
-                                    <span class="badge @badgeColor px-3 py-2 rounded-pill shadow-sm">@item.Status</span>
+                                    <span class="badge @badgeColor px-3 py-2 rounded-pill shadow-sm">@localizedStatus</span>
                                 </td>
+
                                 <td class="text-end pe-4">
                                     <div class="d-flex justify-content-end gap-2">
                                         <a class="btn btn-sm btn-outline-primary fw-bold px-3"
                                            href="/@slug/Admin/Submissions/Details/@item.Id?returnUrl=@Uri.EscapeDataString(currentUrl)">
-                                            İncele
+                                            @Localizer["ReviewButton"]
                                         </a>
 
                                         <div class="dropdown">
                                             <button class="btn btn-sm btn-dark dropdown-toggle fw-bold px-3" data-bs-toggle="dropdown">
-                                                Durum
+                                                @Localizer["StatusDropdownButton"]
                                             </button>
+
                                             <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
                                                 <li>
                                                     <form method="post" action="/@slug/Admin/Submissions/ChangeStatus">
@@ -147,7 +177,9 @@
                                                         <input type="hidden" name="id" value="@item.Id" />
                                                         <input type="hidden" name="status" value="UnderReview" />
                                                         <input type="hidden" name="returnUrl" value="@currentUrl" />
-                                                        <button class="dropdown-item fw-bold text-warning" type="submit"><i class="fas fa-clock me-2"></i> İncelemeye Al</button>
+                                                        <button class="dropdown-item fw-bold text-warning" type="submit">
+                                                            <i class="fas fa-clock me-2"></i> @Localizer["MoveToReviewAction"]
+                                                        </button>
                                                     </form>
                                                 </li>
                                                 <li>
@@ -156,7 +188,9 @@
                                                         <input type="hidden" name="id" value="@item.Id" />
                                                         <input type="hidden" name="status" value="Accepted" />
                                                         <input type="hidden" name="returnUrl" value="@currentUrl" />
-                                                        <button class="dropdown-item fw-bold text-success" type="submit"><i class="fas fa-check me-2"></i> Kabul Et</button>
+                                                        <button class="dropdown-item fw-bold text-success" type="submit">
+                                                            <i class="fas fa-check me-2"></i> @Localizer["AcceptAction"]
+                                                        </button>
                                                     </form>
                                                 </li>
                                                 <li>
@@ -165,16 +199,22 @@
                                                         <input type="hidden" name="id" value="@item.Id" />
                                                         <input type="hidden" name="status" value="Rejected" />
                                                         <input type="hidden" name="returnUrl" value="@currentUrl" />
-                                                        <button class="dropdown-item fw-bold text-danger" type="submit"><i class="fas fa-times me-2"></i> Reddet</button>
+                                                        <button class="dropdown-item fw-bold text-danger" type="submit">
+                                                            <i class="fas fa-times me-2"></i> @Localizer["RejectAction"]
+                                                        </button>
                                                     </form>
                                                 </li>
                                                 <li><hr class="dropdown-divider" /></li>
                                                 <li>
-                                                    <form method="post" action="/@slug/Admin/Submissions/Delete" onsubmit="return confirm('Bu bildiriyi kalıcı olarak silmek istediğinize emin misiniz?');">
+                                                    <form method="post"
+                                                          action="/@slug/Admin/Submissions/Delete"
+                                                          onsubmit="return confirm('@Localizer["DeleteConfirmMessage"]');">
                                                         @Html.AntiForgeryToken()
                                                         <input type="hidden" name="id" value="@item.Id" />
                                                         <input type="hidden" name="returnUrl" value="@currentUrl" />
-                                                        <button class="dropdown-item fw-bold text-danger" type="submit"><i class="fas fa-trash-alt me-2"></i> Sil</button>
+                                                        <button class="dropdown-item fw-bold text-danger" type="submit">
+                                                            <i class="fas fa-trash-alt me-2"></i> @Localizer["DeleteAction"]
+                                                        </button>
                                                     </form>
                                                 </li>
                                             </ul>

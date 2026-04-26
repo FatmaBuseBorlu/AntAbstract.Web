@@ -1,22 +1,24 @@
-﻿@model List<AntAbstract.Domain.Entities.Certificate>
+﻿@using AntAbstract.Domain.Entities
+@model List<AntAbstract.Domain.Entities.Certificate>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Sertifikalarım";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 }
 
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h4 class="mb-0 fw-bold">Sertifikalarım</h4>
-            <small class="text-muted">Kazanmış olduğunuz sertifikaları buradan indirebilirsiniz.</small>
+            <h4 class="mb-0 fw-bold">@Localizer["PageHeading"]</h4>
+            <small class="text-muted">@Localizer["PageDescription"]</small>
         </div>
     </div>
 
     @if (Model == null || !Model.Any())
     {
         <div class="alert alert-info border-0 shadow-sm rounded-3">
-            Henüz görüntülenecek sertifika bulunamadı.
+            @Localizer["NoCertificatesMessage"]
         </div>
     }
     else
@@ -26,27 +28,34 @@
                 <table class="table align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Tür</th>
-                            <th>Kongre</th>
-                            <th>Uygunluk</th>
-                            <th>Oluşturulma</th>
-                            <th class="text-end">İşlem</th>
+                            <th>@Localizer["TypeColumn"]</th>
+                            <th>@Localizer["ConferenceColumn"]</th>
+                            <th>@Localizer["EligibilityColumn"]</th>
+                            <th>@Localizer["GeneratedAtColumn"]</th>
+                            <th class="text-end">@Localizer["ActionColumn"]</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var c in Model)
                         {
+                            var typeText = c.Type switch
+                            {
+                                CertificateType.Author => Localizer["Type_Author"].Value,
+                                CertificateType.Reviewer => Localizer["Type_Reviewer"].Value,
+                                _ => c.Type.ToString()
+                            };
+
                             <tr>
                                 <td>
                                     <span class="badge bg-secondary">
-                                        @c.Type
+                                        @typeText
                                     </span>
                                 </td>
                                 <td>
                                     @c.ConferenceId
                                 </td>
                                 <td>
-                                    @(c.EligibleAt.ToString("dd.MM.yyyy"))
+                                    @c.EligibleAt.ToString("dd.MM.yyyy")
                                 </td>
                                 <td>
                                     @(c.GeneratedAt?.ToString("dd.MM.yyyy") ?? "-")
@@ -54,7 +63,7 @@
                                 <td class="text-end">
                                     <a class="btn btn-sm btn-outline-primary"
                                        href="@Url.Action("Download", "Certificates", new { id = c.Id, slug = (string?)ViewContext.RouteData.Values["slug"] })">
-                                        <i class="fas fa-download me-1"></i> İndir
+                                        <i class="fas fa-download me-1"></i> @Localizer["DownloadButton"]
                                     </a>
                                 </td>
                             </tr>

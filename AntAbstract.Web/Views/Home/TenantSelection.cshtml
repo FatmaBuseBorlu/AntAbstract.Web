@@ -1,13 +1,14 @@
 ﻿@model IEnumerable<AntAbstract.Domain.Entities.Conference>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Aktif Kongreler";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
 }
 
 <div class="container mt-5">
     <div class="text-center mb-5">
-        <h2 class="display-4 text-primary">Açık Kongreler</h2>
-        <p class="lead text-muted">Detaylı bilgi ve kayıt için ilgilendiğiniz kongreye tıklayınız.</p>
+        <h2 class="display-4 text-primary">@Localizer["PageHeading"]</h2>
+        <p class="lead text-muted">@Localizer["PageLead"]</p>
         <hr class="w-25 mx-auto border-primary">
     </div>
 
@@ -44,8 +45,8 @@
                         </a>
 
                         <div class="card-footer bg-white d-flex justify-content-between">
-                            <a href="/Register/@item.Id" class="btn btn-sm btn-outline-primary">Kayıt Ol</a>
-                            <a asp-controller="Home" asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-primary">İncele</a>
+                            <a href="/Register/@item.Id" class="btn btn-sm btn-outline-primary">@Localizer["RegisterButton"]</a>
+                            <a asp-controller="Home" asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-primary">@Localizer["ReviewButton"]</a>
                         </div>
                     </div>
                 </div>
@@ -54,7 +55,7 @@
         else
         {
             <div class="col-12 text-center">
-                <div class="alert alert-warning">Şu anda aktif bir kongre bulunmamaktadır.</div>
+                <div class="alert alert-warning">@Localizer["EmptyStateMessage"]</div>
             </div>
         }
     </div>

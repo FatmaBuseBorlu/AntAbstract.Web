@@ -1,20 +1,20 @@
 ﻿@using AntAbstract.Application.DTOs.Submission
 @using AntAbstract.Domain.Entities
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model List<SubmissionDto>
 
 @{
-    ViewData["Title"] = "Bildirilerim";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 }
 
 <style>
-
     .submission-card {
         background: #fff;
         border: 1px solid #f0f0f0;
         border-radius: 16px;
         transition: all 0.3s ease;
-        height: 100%; 
+        height: 100%;
         display: flex;
         flex-direction: column;
         position: relative;
@@ -60,6 +60,7 @@
         background-color: #ffebee;
         color: #c62828;
     }
+
     .status-revision {
         background-color: #f3e5f5;
         color: #7b1fa2;
@@ -84,7 +85,7 @@
     }
 
     .card-actions {
-        margin-top: auto; 
+        margin-top: auto;
         padding-top: 15px;
         border-top: 1px dashed #e2e8f0;
         display: flex;
@@ -112,8 +113,8 @@
 
     <div class="d-flex justify-content-between align-items-center mb-5">
         <div>
-            <h3 class="fw-bold text-dark mb-1">Bildirilerim</h3>
-            <p class="text-muted mb-0">Bilimsel çalışmalarınızı buradan yönetebilirsiniz.</p>
+            <h3 class="fw-bold text-dark mb-1">@Localizer["PageTitle"]</h3>
+            <p class="text-muted mb-0">@Localizer["PageLead"]</p>
         </div>
 
         @if (ViewBag.CurrentConferenceTitle != null)
@@ -122,12 +123,12 @@
                 <span class="badge bg-info bg-opacity-10 text-info border border-info px-3 py-2 rounded-pill">
                     <i class="fas fa-filter me-1"></i> @ViewBag.CurrentConferenceTitle
                 </span>
-                <a href="/Submission/Index" class="btn btn-link btn-sm text-decoration-none text-muted ms-1">Tümünü Gör</a>
+                <a href="/Submission/Index" class="btn btn-link btn-sm text-decoration-none text-muted ms-1">@Localizer["ViewAllButton"]</a>
             </div>
         }
 
         <a href="/Submission/Create" class="btn btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm hover-scale">
-            <i class="fas fa-plus-circle me-2"></i> Yeni Bildiri Gönder
+            <i class="fas fa-plus-circle me-2"></i> @Localizer["NewSubmissionButton"]
         </a>
     </div>
 
@@ -160,13 +161,13 @@
 
                 string statusText = statusEnum switch
                 {
-                    SubmissionStatus.New => "Yeni Taslak",
-                    SubmissionStatus.Pending => "İnceleme Bekliyor",
-                    SubmissionStatus.UnderReview => "Hakem Değerlendirmesinde",
-                    SubmissionStatus.Accepted => "Kabul Edildi",
-                    SubmissionStatus.Rejected => "Reddedildi",
-                    SubmissionStatus.RevisionRequired => "Revizyon Gerekli",
-                    SubmissionStatus.Presented => "Sunuldu",
+                    SubmissionStatus.New => Localizer["Status_NewDraft"].Value,
+                    SubmissionStatus.Pending => Localizer["Status_Pending"].Value,
+                    SubmissionStatus.UnderReview => Localizer["Status_UnderReview"].Value,
+                    SubmissionStatus.Accepted => Localizer["Status_Accepted"].Value,
+                    SubmissionStatus.Rejected => Localizer["Status_Rejected"].Value,
+                    SubmissionStatus.RevisionRequired => Localizer["Status_RevisionRequired"].Value,
+                    SubmissionStatus.Presented => Localizer["Status_Presented"].Value,
                     _ => item.Status
                 };
 
@@ -193,7 +194,7 @@
                                 </h6>
                                 <p class="mb-0 small text-muted text-truncate" style="max-width: 250px;">
                                     <i class="fas fa-globe me-1 text-secondary opacity-50"></i>
-                                    @(item.ConferenceTitle ?? "Kongre Belirtilmemiş")
+                                    @(item.ConferenceTitle ?? Localizer["ConferenceNotSpecified"].Value)
                                 </p>
                             </div>
                         </div>
@@ -201,7 +202,7 @@
                         <div class="mb-3">
                             <div class="d-flex flex-wrap gap-2">
                                 <span class="badge bg-light text-secondary border fw-normal">
-                                    <i class="fas fa-users me-1"></i> @(item.Authors?.Count ?? 0) Yazar
+                                    <i class="fas fa-users me-1"></i> @(item.Authors?.Count ?? 0) @Localizer["AuthorsLabel"]
                                 </span>
                                 @if (!string.IsNullOrEmpty(item.Keywords))
                                 {
@@ -215,22 +216,22 @@
 
                         <div class="card-actions">
                             <a href="@Url.Action("Details", "Submission", new { area = "", id = item.Id })" class="btn btn-light border btn-card-action text-dark">
-                                <i class="fas fa-eye me-1 text-primary"></i> Detay
+                                <i class="fas fa-eye me-1 text-primary"></i> @Localizer["DetailButton"]
                             </a>
 
                             @if (statusEnum == SubmissionStatus.New || statusEnum == SubmissionStatus.RevisionRequired)
                             {
                                 <a href="@Url.Action("Edit", "Submission", new { area = "", id = item.Id })" class="btn btn-light border btn-card-action text-dark">
-                                    <i class="fas fa-edit me-1 text-warning"></i> Düzenle
+                                    <i class="fas fa-edit me-1 text-warning"></i> @Localizer["EditButton"]
                                 </a>
                                 <a href="@Url.Action("Delete", "Submission", new { area = "", id = item.Id })" class="btn btn-light border btn-card-action text-dark">
-                                    <i class="fas fa-trash-alt me-1 text-danger"></i> Sil
+                                    <i class="fas fa-trash-alt me-1 text-danger"></i> @Localizer["DeleteButton"]
                                 </a>
                             }
                             else if (statusEnum == SubmissionStatus.Accepted)
                             {
                                 <a href="@Url.Action("DownloadAcceptanceLetter", "Submission", new { area = "", id = item.Id })" class="btn btn-success btn-card-action text-white" target="_blank">
-                                    <i class="fas fa-certificate me-1"></i> Belge
+                                    <i class="fas fa-certificate me-1"></i> @Localizer["DocumentButton"]
                                 </a>
                             }
                         </div>
@@ -247,12 +248,12 @@
                 <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 120px; height: 120px;">
                     <i class="fas fa-folder-open fa-4x text-muted opacity-25"></i>
                 </div>
-                <h4 class="fw-bold text-dark">Henüz Bildiri Yok</h4>
+                <h4 class="fw-bold text-dark">@Localizer["EmptyTitle"]</h4>
                 <p class="text-muted mb-4">
-                    Kongreye katılmak ve bilimsel çalışmalarınızı sunmak için ilk bildirinizi sisteme yükleyin.
+                    @Localizer["EmptyMessage"]
                 </p>
                 <a href="/Submission/Create" class="btn btn-primary px-5 py-3 rounded-pill fw-bold shadow-sm hover-scale">
-                    <i class="fas fa-paper-plane me-2"></i> İlk Bildirini Gönder
+                    <i class="fas fa-paper-plane me-2"></i> @Localizer["FirstSubmissionButton"]
                 </a>
             </div>
         </div>

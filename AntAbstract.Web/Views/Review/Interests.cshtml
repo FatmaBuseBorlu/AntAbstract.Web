@@ -1,5 +1,7 @@
-﻿@{
-    ViewData["Title"] = "Uzmanlık Alanlarım";
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
+@{
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 }
 
@@ -8,41 +10,49 @@
         <div class="col-md-8">
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-header bg-white py-3 px-4 border-bottom">
-                    <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-tags text-info me-2"></i> Uzmanlık Alanlarım</h5>
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="fas fa-tags text-info me-2"></i> @Localizer["HeaderTitle"]
+                    </h5>
                 </div>
+
                 <div class="card-body p-4">
                     <div class="alert alert-info bg-info bg-opacity-10 border-0 rounded-3 mb-4 d-flex align-items-center">
                         <i class="fas fa-info-circle fs-4 me-3 text-info"></i>
                         <div>
-                            <strong>Neden Önemli?</strong> Sistemin size uzmanlığınız dışındaki bildirileri atamaması için lütfen çalışma alanlarınızı giriniz.
+                            <strong>@Localizer["WhyImportantTitle"]</strong> @Localizer["WhyImportantText"]
                         </div>
                     </div>
 
-                    <label class="form-label fw-bold small text-muted">Yeni Uzmanlık Ekle</label>
+                    <label class="form-label fw-bold small text-muted">@Localizer["AddExpertiseLabel"]</label>
                     <div class="input-group mb-4 shadow-sm">
-                        <input type="text" class="form-control border-0 bg-light" placeholder="Örn: Yapay Zeka, Derin Öğrenme..." style="padding: 15px;">
-                        <button class="btn btn-primary px-4 fw-bold" type="button"><i class="fas fa-plus me-2"></i> Ekle</button>
+                        <input type="text"
+                               class="form-control border-0 bg-light"
+                               placeholder="@Localizer["AddExpertisePlaceholder"]"
+                               style="padding: 15px;">
+                        <button class="btn btn-primary px-4 fw-bold" type="button">
+                            <i class="fas fa-plus me-2"></i> @Localizer["AddButton"]
+                        </button>
                     </div>
 
                     <hr class="my-4 text-muted opacity-25">
 
-                    <h6 class="fw-bold text-dark small text-uppercase mb-3">Mevcut Anahtar Kelimeler</h6>
+                    <h6 class="fw-bold text-dark small text-uppercase mb-3">@Localizer["ExistingKeywordsTitle"]</h6>
                     <div class="d-flex flex-wrap gap-2">
                         <span class="badge bg-white text-dark border px-3 py-2 rounded-pill fs-6 shadow-sm d-flex align-items-center">
                             <span class="me-2 text-primary">#</span> Makine Öğrenmesi
-                            <i class="fas fa-times ms-2 cursor-pointer text-danger hover-scale" title="Sil"></i>
+                            <i class="fas fa-times ms-2 cursor-pointer text-danger hover-scale" title="@Localizer["DeleteTitle"]"></i>
                         </span>
                         <span class="badge bg-white text-dark border px-3 py-2 rounded-pill fs-6 shadow-sm d-flex align-items-center">
                             <span class="me-2 text-primary">#</span> Veri Madenciliği
-                            <i class="fas fa-times ms-2 cursor-pointer text-danger hover-scale" title="Sil"></i>
+                            <i class="fas fa-times ms-2 cursor-pointer text-danger hover-scale" title="@Localizer["DeleteTitle"]"></i>
                         </span>
                         <span class="badge bg-white text-dark border px-3 py-2 rounded-pill fs-6 shadow-sm d-flex align-items-center">
                             <span class="me-2 text-primary">#</span> Biyoistatistik
-                            <i class="fas fa-times ms-2 cursor-pointer text-danger hover-scale" title="Sil"></i>
+                            <i class="fas fa-times ms-2 cursor-pointer text-danger hover-scale" title="@Localizer["DeleteTitle"]"></i>
                         </span>
                         <span class="badge bg-white text-dark border px-3 py-2 rounded-pill fs-6 shadow-sm d-flex align-items-center">
                             <span class="me-2 text-primary">#</span> Doğal Dil İşleme
-                            <i class="fas fa-times ms-2 cursor-pointer text-danger hover-scale" title="Sil"></i>
+                            <i class="fas fa-times ms-2 cursor-pointer text-danger hover-scale" title="@Localizer["DeleteTitle"]"></i>
                         </span>
                     </div>
                 </div>

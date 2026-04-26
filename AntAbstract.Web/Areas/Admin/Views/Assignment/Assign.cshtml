@@ -3,52 +3,75 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"];
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
     var currentSlug = ViewContext.RouteData.Values["slug"]?.ToString();
+
+    if (string.IsNullOrWhiteSpace(currentSlug))
+    {
+        currentSlug = Context.Session.GetString("SelectedConferenceSlug");
+    }
+
+    var backUrl = !string.IsNullOrWhiteSpace(currentSlug)
+        ? $"/{currentSlug}/Admin/Assignment"
+        : "/Admin/Assignment";
 }
 
 <div class="container-fluid">
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h4 class="fw-bold mb-0">@Model.Submission.Title</h4>
+            <h4 class="fw-bold mb-0">
+                @Model.Submission.Title
+            </h4>
+
             <small class="text-muted">
-                @Localizer["PageLead", Model.Submission.Author?.DisplayName]
+                @Localizer["PageLead", Model.Submission.Author?.DisplayName ?? Localizer["EmptyValue"].Value]
             </small>
         </div>
 
-        <button type="button" class="btn btn-outline-secondary btn-sm"
-                onclick="if (history.length > 1) history.back(); else window.location.href='@($"/{currentSlug}/Admin/Assignment")'">
-            <i class="fas fa-arrow-left me-1"></i> Geri
+        <button type="button"
+                class="btn btn-outline-secondary btn-sm"
+                onclick="if (history.length > 1) history.back(); else window.location.href='@backUrl'">
+            <i class="fas fa-arrow-left me-1"></i>
+            @Localizer["BackButton"]
         </button>
     </div>
 
     <div class="mb-3">
         <div class="d-flex flex-wrap gap-2 align-items-center">
-            <span class="fw-bold text-muted">@Localizer["KeywordsLabel"]</span>
+            <span class="fw-bold text-muted">
+                @Localizer["KeywordsLabel"]
+            </span>
+
             @if (!string.IsNullOrWhiteSpace(Model.Submission.Keywords))
             {
-                <span class="badge bg-info">@Model.Submission.Keywords</span>
+                <span class="badge bg-info">
+                    @Model.Submission.Keywords
+                </span>
             }
             else
             {
-                <span class="badge bg-secondary">-</span>
+                <span class="badge bg-secondary">
+                    @Localizer["EmptyValue"]
+                </span>
             }
         </div>
     </div>
 
     <hr />
 
-    @* --- ÖNERİLEN HAKEMLER BÖLÜMÜ --- *@
     <h5 class="fw-bold mb-3">
-        <i class="fas fa-star text-warning me-2"></i>@Localizer["RecommendedHeader"]
+        <i class="fas fa-star text-warning me-2"></i>
+        @Localizer["RecommendedHeader"]
     </h5>
 
-    @if (!Model.RecommendedReviewers.Any())
+    @if (Model.RecommendedReviewers == null || !Model.RecommendedReviewers.Any())
     {
-        <div class="alert alert-secondary border-0">@Localizer["NoRecommendations"]</div>
+        <div class="alert alert-secondary border-0">
+            @Localizer["NoRecommendations"]
+        </div>
     }
     else
     {
@@ -63,26 +86,47 @@
                             <th style="width: 160px;"></th>
                         </tr>
                     </thead>
+
                     <tbody>
                         @foreach (var reviewer in Model.RecommendedReviewers)
                         {
                             <tr>
-                                <td>@reviewer.DisplayName</td>
-                                <td>@reviewer.Email</td>
                                 <td>
-                                    <span class="badge bg-light text-dark">@reviewer.ExpertiseAreas</span>
+                                    @reviewer.DisplayName
                                 </td>
-                                <td>
-                                    @* Formun tek seferde ve doğru isimle gönderilmesi *@
-                                    <form action="/@currentSlug/Admin/Assignment/Assign" method="post" class="m-0">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="submissionId" value="@Model.Submission.Id" />
-                                        <input type="hidden" name="reviewerId" value="@reviewer.Id" />
 
-                                        <button type="submit" class="btn btn-sm btn-warning w-100">
-                                            @Localizer["AssignRecommendedBtn"]
-                                        </button>
-                                    </form>
+                                <td>
+                                    @reviewer.Email
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-light text-dark">
+                                        @(string.IsNullOrWhiteSpace(reviewer.ExpertiseAreas)
+                                                                        ? Localizer["NoExpertise"].Value
+                                                                        : reviewer.ExpertiseAreas)
+                            </span>
+                        </td>
+
+                                <td>
+                            @if (!string.IsNullOrWhiteSpace(currentSlug))
+                                    {
+                                        <form action="/@currentSlug/Admin/Assignment/Assign" method="post" class="m-0">
+                                            @Html.AntiForgeryToken()
+
+                                            <input type="hidden" name="submissionId" value="@Model.Submission.Id" />
+                                            <input type="hidden" name="reviewerId" value="@reviewer.Id" />
+
+                                            <button type="submit" class="btn btn-sm btn-warning w-100">
+                                                @Localizer["AssignRecommendedBtn"]
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-danger small">
+                                            @Localizer["Error_SelectConferenceFirst"]
+                                        </span>
+                                    }
                                 </td>
                             </tr>
                         }
@@ -92,8 +136,9 @@
         </div>
     }
 
-    @* --- TÜM HAKEMLER BÖLÜMÜ --- *@
-    <h5 class="fw-bold mb-3">@Localizer["AllReviewersHeader"]</h5>
+    <h5 class="fw-bold mb-3">
+        @Localizer["AllReviewersHeader"]
+    </h5>
 
     <div class="card border-0 shadow-sm">
         <div class="table-responsive">
@@ -106,28 +151,60 @@
                         <th style="width: 160px;"></th>
                     </tr>
                 </thead>
+
                 <tbody>
-                    @foreach (var reviewer in Model.AllOtherReviewers)
+                    @if (Model.AllOtherReviewers == null || !Model.AllOtherReviewers.Any())
                     {
                         <tr>
-                            <td>@reviewer.DisplayName</td>
-                            <td>@reviewer.Email</td>
-                            <td>
-                                <span class="badge bg-light text-dark">@reviewer.ExpertiseAreas</span>
-                            </td>
-                            <td>
-                                <form action="/@currentSlug/Admin/Assignment/Assign" method="post" class="m-0">
-                                    @Html.AntiForgeryToken()
-                                    @* submissionId isimlendirmesi Controller parametresiyle (submissionId) eşleşmeli *@
-                                    <input type="hidden" name="submissionId" value="@Model.Submission.Id" />
-                                    <input type="hidden" name="reviewerId" value="@reviewer.Id" />
-
-                                    <button type="submit" class="btn btn-sm btn-outline-primary w-100">
-                                        @Localizer["AssignBtn"]
-                                    </button>
-                                </form>
+                            <td colspan="4" class="text-muted text-center py-4">
+                                @Localizer["NoReviewersFound"]
                             </td>
                         </tr>
+                    }
+                    else
+                    {
+                        @foreach (var reviewer in Model.AllOtherReviewers)
+                        {
+                            <tr>
+                                <td>
+                                    @reviewer.DisplayName
+                                </td>
+
+                                <td>
+                                    @reviewer.Email
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-light text-dark">
+                                        @(string.IsNullOrWhiteSpace(reviewer.ExpertiseAreas)
+                                                                        ? Localizer["NoExpertise"].Value
+                                                                        : reviewer.ExpertiseAreas)
+                            </span>
+                        </td>
+
+                                <td>
+                            @if (!string.IsNullOrWhiteSpace(currentSlug))
+                                    {
+                                        <form action="/@currentSlug/Admin/Assignment/Assign" method="post" class="m-0">
+                                            @Html.AntiForgeryToken()
+
+                                            <input type="hidden" name="submissionId" value="@Model.Submission.Id" />
+                                            <input type="hidden" name="reviewerId" value="@reviewer.Id" />
+
+                                            <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                                                @Localizer["AssignBtn"]
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-danger small">
+                                            @Localizer["Error_SelectConferenceFirst"]
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+                        }
                     }
                 </tbody>
             </table>

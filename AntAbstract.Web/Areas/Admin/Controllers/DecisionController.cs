@@ -7,28 +7,32 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Organizator")] 
+    [Authorize(Roles = "Admin,Organizator")]
     public class DecisionController : Controller
     {
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IStringLocalizer<DecisionController> _localizer;
 
         public DecisionController(
             AppDbContext context,
             TenantContext tenantContext,
             ISelectedConferenceService selectedConferenceService,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IStringLocalizer<DecisionController> localizer)
         {
             _context = context;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
             _userManager = userManager;
+            _localizer = localizer;
         }
 
         [HttpGet("/Admin/Decision")]
@@ -72,10 +76,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var vm = new SelectConferenceViewModel
             {
-                Title = "Kongre Seç",
-                Lead = "Karar ekranına geçmek için önce kongre seçin.",
+                Title = _localizer["SelectConference_Title"],
+                Lead = _localizer["SelectConference_Lead"],
                 PostUrl = "/Admin/Decision/Select",
-                SubmitText = "Devam Et",
+                SubmitText = _localizer["SelectConference_Submit"],
                 Conferences = conferences
             };
 
@@ -93,7 +97,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                TempData["ErrorMessage"] = _localizer["Error_ConferenceNotFound"];
                 return Redirect("/Admin/Decision");
             }
 
@@ -108,20 +112,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             if (_tenantContext.Current == null)
             {
-                TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
+                TempData["ErrorMessage"] = _localizer["Error_SelectConferenceFirst"];
                 return Redirect("/Admin/Decision");
             }
 
             if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                TempData["ErrorMessage"] = "Tenant uyuşmuyor. Lütfen tekrar kongre seçin.";
+                TempData["ErrorMessage"] = _localizer["Error_TenantMismatchSelectAgain"];
                 return Redirect("/Admin/Decision");
             }
 
             conferenceId ??= _selectedConferenceService.GetSelectedConferenceId();
             if (conferenceId == null)
             {
-                TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
+                TempData["ErrorMessage"] = _localizer["Error_SelectConferenceFirst"];
                 return Redirect("/Admin/Decision");
             }
 
@@ -131,7 +135,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = "Seçilen kongre bulunamadı veya bu tenant'a ait değil.";
+                TempData["ErrorMessage"] = _localizer["Error_ConferenceNotFoundForTenant"];
                 return Redirect("/Admin/Decision");
             }
 
@@ -179,13 +183,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             if (_tenantContext.Current == null)
             {
-                TempData["ErrorMessage"] = "Lütfen önce kongre seçin.";
+                TempData["ErrorMessage"] = _localizer["Error_SelectConferenceFirst"];
                 return Redirect("/Admin/Decision");
             }
 
             if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                TempData["ErrorMessage"] = "Tenant uyuşmuyor.";
+                TempData["ErrorMessage"] = _localizer["Error_TenantMismatch"];
                 return Redirect("/Admin/Decision");
             }
 
@@ -201,32 +205,32 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = "Bildiri bu tenant’a ait bir kongreye bağlı değil.";
+                TempData["ErrorMessage"] = _localizer["Error_SubmissionNotLinkedToTenantConference"];
                 return Redirect("/Admin/Decision");
             }
 
-            string kararMetni;
+            string decisionText;
 
             if (decision == "Accept")
             {
                 submission.Status = SubmissionStatus.Accepted;
-                kararMetni = "Kabul Edildi";
+                decisionText = _localizer["Decision_Accepted"];
             }
             else if (decision == "Reject")
             {
                 submission.Status = SubmissionStatus.Rejected;
-                kararMetni = "Reddedildi";
+                decisionText = _localizer["Decision_Rejected"];
             }
             else
             {
                 submission.Status = SubmissionStatus.RevisionRequired;
-                kararMetni = "Revizyon İstendi";
+                decisionText = _localizer["Decision_RevisionRequested"];
             }
 
             submission.DecisionDate = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"Bildiri başarıyla {kararMetni}.";
+            TempData["SuccessMessage"] = _localizer["Success_SubmissionDecisionSaved", decisionText];
             return Redirect($"/{slug}/Admin/Decision?conferenceId={submission.ConferenceId}");
         }
     }

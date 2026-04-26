@@ -1,29 +1,51 @@
 ﻿@using AntAbstract.Application.DTOs.Submission
 @using AntAbstract.Domain.Entities
 @using AntAbstract.Application.DTOs.Review
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model SubmissionDto
 
 @{
-    ViewData["Title"] = "Yönetici - Bildiri Detayı";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+
+    string localizedStatus = Model.Status switch
+    {
+        "New" => Localizer["Status_New"].Value,
+        "UnderReview" => Localizer["Status_UnderReview"].Value,
+        "Accepted" => Localizer["Status_Accepted"].Value,
+        "Rejected" => Localizer["Status_Rejected"].Value,
+        "RevisionRequired" => Localizer["Status_RevisionRequired"].Value,
+        "Pending" => Localizer["Status_Pending"].Value,
+        "Presented" => Localizer["Status_Presented"].Value,
+        _ => Model.Status
+    };
 }
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     var successMsg = '@Html.Raw(TempData["SuccessMessage"])';
     var errorMsg = '@Html.Raw(TempData["ErrorMessage"])';
-    if (successMsg) { Swal.fire('Başarılı!', successMsg, 'success'); }
-    if (errorMsg) { Swal.fire('Hata!', errorMsg, 'error'); }
+
+    if (successMsg) {
+        Swal.fire('@Localizer["AlertSuccessTitle"]', successMsg, 'success');
+    }
+
+    if (errorMsg) {
+        Swal.fire('@Localizer["AlertErrorTitle"]', errorMsg, 'error');
+    }
 </script>
 
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
         <div>
-            <h4 class="fw-bold text-primary mb-0"><i class="fas fa-search me-2"></i>Bildiri İnceleme</h4>
-            <small class="text-muted">Ref: #@Model.Id.ToString().Substring(0, 8).ToUpper()</small>
+            <h4 class="fw-bold text-primary mb-0">
+                <i class="fas fa-search me-2"></i>@Localizer["PageHeading"]
+            </h4>
+            <small class="text-muted">@Localizer["ReferenceLabel"] #@Model.Id.ToString().Substring(0, 8).ToUpper()</small>
         </div>
+
         <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-1"></i> Listeye Dön
+            <i class="fas fa-arrow-left me-1"></i> @Localizer["BackToListButton"]
         </a>
     </div>
 
@@ -32,23 +54,49 @@
             <div class="card shadow-sm border-0 mb-4">
                 <div class="card-header bg-white py-3">
                     <ul class="nav nav-tabs card-header-tabs" id="adminTabs" role="tablist">
-                        <li class="nav-item"><button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#ozet">Özet & İçerik</button></li>
-                        <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#yazar">Yazarlar</button></li>
-                        <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#dosya">Dosyalar</button></li>
+                        <li class="nav-item">
+                            <button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#ozet">
+                                @Localizer["TabSummary"]
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#yazar">
+                                @Localizer["TabAuthors"]
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#dosya">
+                                @Localizer["TabFiles"]
+                            </button>
+                        </li>
                     </ul>
                 </div>
+
                 <div class="card-body">
                     <div class="tab-content">
                         <div class="tab-pane fade show active" id="ozet">
                             <h5 class="fw-bold text-dark">@Model.Title</h5>
+
                             <div class="p-3 bg-light rounded border mt-3">
                                 <p class="mb-0" style="white-space: pre-wrap;">@Model.Abstract</p>
                             </div>
-                            <div class="mt-3"><span class="badge bg-secondary">Anahtar Kelimeler:</span> <span class="text-muted">@Model.Keywords</span></div>
+
+                            <div class="mt-3">
+                                <span class="badge bg-secondary">@Localizer["KeywordsLabel"]</span>
+                                <span class="text-muted">@Model.Keywords</span>
+                            </div>
                         </div>
+
                         <div class="tab-pane fade" id="yazar">
                             <table class="table table-hover align-middle">
-                                <thead class="table-light"><tr><th>Sıra</th><th>Ad Soyad</th><th>Kurum</th><th>Email</th></tr></thead>
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>@Localizer["AuthorsTableOrder"]</th>
+                                        <th>@Localizer["AuthorsTableFullName"]</th>
+                                        <th>@Localizer["AuthorsTableInstitution"]</th>
+                                        <th>@Localizer["AuthorsTableEmail"]</th>
+                                    </tr>
+                                </thead>
                                 <tbody>
                                     @if (Model.Authors != null)
                                     {
@@ -58,19 +106,29 @@
                                                 <td>@author.Order</td>
                                                 <td class="fw-bold">@author.FirstName @author.LastName</td>
                                                 <td>@author.Institution</td>
-                                                <td>@author.Email @if(author.IsCorrespondingAuthor){
-                                                <span class="badge bg-info text-dark">Sorumlu</span>
-                                            }
-    </td>
-                                        </tr>
+                                                <td>
+                                                    @author.Email
+                                                    @if (author.IsCorrespondingAuthor)
+                                                    {
+                                                        <span class="badge bg-info text-dark">@Localizer["CorrespondingAuthorBadge"]</span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
                                     }
-                                                                        }
                                 </tbody>
                             </table>
                         </div>
+
                         <div class="tab-pane fade" id="dosya">
                             <table class="table table-bordered align-middle">
-                                <thead class="table-light"><tr><th>Dosya Adı</th><th>Tarih</th><th>İşlem</th></tr></thead>
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>@Localizer["FilesTableFileName"]</th>
+                                        <th>@Localizer["FilesTableDate"]</th>
+                                        <th>@Localizer["FilesTableAction"]</th>
+                                    </tr>
+                                </thead>
                                 <tbody>
                                     @if (Model.Files != null && Model.Files.Any())
                                     {
@@ -79,13 +137,19 @@
                                             <tr>
                                                 <td>@file.FileName</td>
                                                 <td>@file.UploadedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
-                                                <td><a href="@file.FilePath" target="_blank" class="btn btn-sm btn-primary">İndir</a></td>
+                                                <td>
+                                                    <a href="@file.FilePath" target="_blank" class="btn btn-sm btn-primary">
+                                                        @Localizer["DownloadButton"]
+                                                    </a>
+                                                </td>
                                             </tr>
                                         }
                                     }
                                     else
                                     {
-                                        <tr><td colspan="3" class="text-center text-muted">Dosya yok.</td></tr>
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">@Localizer["NoFilesMessage"]</td>
+                                        </tr>
                                     }
                                 </tbody>
                             </table>
@@ -98,50 +162,43 @@
         <div class="col-lg-4">
             <div class="card shadow-sm border-0 mb-4 border-start border-5 border-primary">
                 <div class="card-body">
-                    <h6 class="fw-bold text-uppercase text-muted mb-3">Durum Yönetimi</h6>
+                    <h6 class="fw-bold text-uppercase text-muted mb-3">@Localizer["StatusManagementHeader"]</h6>
+
                     <div class="mb-3 text-center">
                         <h2 class="fw-bold
                             @(Model.Status == "Accepted" ? "text-success" :
                                                           Model.Status == "Rejected" ? "text-danger" :
                                                           Model.Status == "UnderReview" ? "text-warning" : "text-primary")">
-                            @if (Model.Status == "New")
-                            {
-                                <span>Yeni</span>
-                            }
-                            else if (Model.Status == "UnderReview")
-                            {
-
-                                <span>İnceleniyor</span>
-                            }
-                            else if (Model.Status == "Accepted")
-                            {
-
-                                <span>Kabul</span>
-                            }
-                            else if (Model.Status == "Rejected")
-                            {
-
-                                <span>Ret</span>
-                            }
-                            else
-                            {
-
-                                <span>@Model.Status</span>
-                            }
+                            @localizedStatus
                         </h2>
-                        <div class="text-muted small">Mevcut Durum</div>
+                        <div class="text-muted small">@Localizer["CurrentStatusLabel"]</div>
                     </div>
 
                     <form asp-action="ChangeStatus" method="post">
+                        @Html.AntiForgeryToken()
                         <input type="hidden" name="id" value="@Model.Id" />
+
                         <div class="d-grid">
                             <button type="button" class="btn btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown">
-                                Durumu Değiştir
+                                @Localizer["ChangeStatusButton"]
                             </button>
+
                             <ul class="dropdown-menu w-100">
-                                <li><button class="dropdown-item" type="submit" name="status" value="UnderReview">🟡 İncelemeye Al</button></li>
-                                <li><button class="dropdown-item text-success fw-bold" type="submit" name="status" value="Accepted">🟢 Kabul Et</button></li>
-                                <li><button class="dropdown-item text-danger fw-bold" type="submit" name="status" value="Rejected">🔴 Reddet</button></li>
+                                <li>
+                                    <button class="dropdown-item" type="submit" name="status" value="UnderReview">
+                                        🟡 @Localizer["MoveToReviewAction"]
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item text-success fw-bold" type="submit" name="status" value="Accepted">
+                                        🟢 @Localizer["AcceptAction"]
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item text-danger fw-bold" type="submit" name="status" value="Rejected">
+                                        🔴 @Localizer["RejectAction"]
+                                    </button>
+                                </li>
                             </ul>
                         </div>
                     </form>
@@ -150,7 +207,7 @@
 
             <div class="card shadow-sm border-0 mb-4">
                 <div class="card-body">
-                    <h6 class="fw-bold text-uppercase text-muted mb-3">Hakem Değerlendirmeleri</h6>
+                    <h6 class="fw-bold text-uppercase text-muted mb-3">@Localizer["ReviewerEvaluationsHeader"]</h6>
 
                     @if (ViewBag.Reviews != null)
                     {
@@ -162,9 +219,9 @@
                                 <table class="table table-sm table-bordered" style="font-size: 0.85rem;">
                                     <thead class="table-light">
                                         <tr>
-                                            <th>Hakem</th>
-                                            <th>Durum</th>
-                                            <th>Puan</th>
+                                            <th>@Localizer["ReviewsTableReviewer"]</th>
+                                            <th>@Localizer["ReviewsTableStatus"]</th>
+                                            <th>@Localizer["ReviewsTableScore"]</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -175,28 +232,35 @@
                                                 <td>
                                                     @if (rev.IsReviewed)
                                                     {
-                                                        <span class="badge bg-success">Tamam</span>
+                                                        <span class="badge bg-success">@Localizer["ReviewCompletedBadge"]</span>
                                                     }
                                                     else
                                                     {
-                                                        <span class="badge bg-warning text-dark">Bekliyor</span>
+                                                        <span class="badge bg-warning text-dark">@Localizer["ReviewPendingBadge"]</span>
                                                     }
                                                 </td>
                                                 <td class="fw-bold text-center">
                                                     @(rev.Score.HasValue? rev.Score.ToString() : "-")
                                                 </td>
                                             </tr>
+
                                             @if (rev.IsReviewed && (!string.IsNullOrEmpty(rev.Recommendation) || !string.IsNullOrEmpty(rev.CommentsToAuthor)))
                                             {
                                                 <tr>
                                                     <td colspan="3" class="bg-light text-muted fst-italic p-2">
                                                         @if (!string.IsNullOrEmpty(rev.Recommendation))
                                                         {
-                                                            <div class="mb-1"><strong class="text-dark">Karar:</strong> @rev.Recommendation</div>
+                                                            <div class="mb-1">
+                                                                <strong class="text-dark">@Localizer["ReviewDecisionLabel"]</strong> @rev.Recommendation
+                                                            </div>
                                                         }
+
                                                         @if (!string.IsNullOrEmpty(rev.CommentsToAuthor))
                                                         {
-                                                            <div><strong class="text-dark">Not:</strong> @(rev.CommentsToAuthor.Length > 60 ? rev.CommentsToAuthor.Substring(0, 60) + "..." : rev.CommentsToAuthor)</div>
+                                                            <div>
+                                                                <strong class="text-dark">@Localizer["ReviewNoteLabel"]</strong>
+                                                                @(rev.CommentsToAuthor.Length > 60 ? rev.CommentsToAuthor.Substring(0, 60) + "..." : rev.CommentsToAuthor)
+                                                            </div>
                                                         }
                                                     </td>
                                                 </tr>
@@ -209,13 +273,13 @@
                         else
                         {
                             <div class="alert alert-light border text-center small mb-3">
-                                Henüz atama yapılmamış.
+                                @Localizer["NoAssignmentsYetMessage"]
                             </div>
                         }
                     }
 
                     <button type="button" class="btn btn-outline-primary w-100 btn-sm" data-bs-toggle="modal" data-bs-target="#assignReviewerModal">
-                        <i class="fas fa-plus me-1"></i> Yeni Hakem Ata
+                        <i class="fas fa-plus me-1"></i> @Localizer["AssignNewReviewerButton"]
                     </button>
                 </div>
             </div>
@@ -226,21 +290,25 @@
 @{
     var currentSlug = (string?)ViewContext.RouteData.Values["slug"] ?? "";
 }
+
 <div class="modal fade" id="assignReviewerModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <form asp-area="Admin" asp-controller="Assignment" asp-action="AssignPost" asp-route-slug="@currentSlug" method="post">
+                @Html.AntiForgeryToken()
+
                 <div class="modal-header bg-light">
-                    <h5 class="modal-title fw-bold">Hakem Atama</h5>
+                    <h5 class="modal-title fw-bold">@Localizer["AssignReviewerModalTitle"]</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
+
                 <div class="modal-body">
                     <input type="hidden" name="submissionId" value="@Model.Id" />
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Listeden Hakem Seçiniz</label>
+                        <label class="form-label fw-bold">@Localizer["SelectReviewerLabel"]</label>
                         <select name="reviewerId" class="form-select" required>
-                            <option value="">-- Seçim Yapınız --</option>
+                            <option value="">@Localizer["SelectReviewerPlaceholder"]</option>
                             @if (ViewBag.Referees != null)
                             {
                                 foreach (var referee in (IList<AntAbstract.Domain.Entities.AppUser>)ViewBag.Referees)
@@ -251,14 +319,16 @@
                                 }
                             }
                         </select>
+
                         <div class="form-text small mt-1">
-                            Listede sadece <strong>"Referee"</strong> rolüne sahip kullanıcılar görünür.
+                            @Localizer["ReviewerRoleHelpText"]
                         </div>
                     </div>
                 </div>
+
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                    <button type="submit" class="btn btn-primary">Atamayı Tamamla</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@Localizer["CancelButton"]</button>
+                    <button type="submit" class="btn btn-primary">@Localizer["CompleteAssignmentButton"]</button>
                 </div>
             </form>
         </div>

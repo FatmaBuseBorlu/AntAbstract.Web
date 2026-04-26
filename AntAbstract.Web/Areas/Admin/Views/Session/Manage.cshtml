@@ -1,12 +1,13 @@
 ﻿@model AntAbstract.Domain.Entities.Session
 @using AntAbstract.Domain.Entities
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Oturum Planlama";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
     var slug = Context.GetRouteValue("slug")?.ToString() ?? "";
-    var conferenceId = ViewBag.ConferenceId; // Guid bekleniyor
+    var conferenceId = ViewBag.ConferenceId;
     var unassigned = ViewBag.UnassignedSubmissions as List<Submission>;
 
     var backUrl = string.IsNullOrWhiteSpace(slug)
@@ -20,11 +21,11 @@
 
 <div class="container-fluid">
     <div class="d-flex align-items-center mb-4">
-        <a href="@backUrl" class="btn btn-light border me-3">
+        <a href="@backUrl" class="btn btn-light border me-3" title="@Localizer["BackButton"]">
             <i class="fas fa-arrow-left"></i>
         </a>
         <div>
-            <h4 class="fw-bold mb-0">Oturum Planlama: @Model.Title</h4>
+            <h4 class="fw-bold mb-0">@Localizer["PageTitle"]: @Model.Title</h4>
             <small class="text-muted">@Model.SessionDate.ToString("dd MMMM yyyy HH:mm") - @Model.Location</small>
         </div>
     </div>
@@ -33,7 +34,9 @@
         <div class="col-md-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-success text-white py-3">
-                    <h6 class="mb-0 fw-bold"><i class="fas fa-check-circle me-2"></i> Bu Oturuma Atananlar</h6>
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fas fa-check-circle me-2"></i> @Localizer["AssignedSubmissionsHeader"]
+                    </h6>
                 </div>
                 <div class="card-body p-0">
                     <ul class="list-group list-group-flush">
@@ -57,7 +60,7 @@
                                         <input type="hidden" name="sessionId" value="@Model.Id" />
                                         <input type="hidden" name="submissionId" value="@sub.Id" />
 
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Oturumdan Çıkar">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="@Localizer["RemoveFromSessionTitle"]">
                                             <i class="fas fa-minus"></i>
                                         </button>
                                     </form>
@@ -67,7 +70,7 @@
                         else
                         {
                             <li class="list-group-item text-center text-muted py-5">
-                                Bu oturumda henüz bildiri yok. Sağ taraftan ekleyin.
+                                @Localizer["NoSubmissionInSession"]
                             </li>
                         }
                     </ul>
@@ -78,7 +81,9 @@
         <div class="col-md-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-secondary text-white py-3">
-                    <h6 class="mb-0 fw-bold"><i class="fas fa-inbox me-2"></i> Bekleyen Kabul Edilmiş Bildiriler</h6>
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fas fa-inbox me-2"></i> @Localizer["PendingAcceptedSubmissionsHeader"]
+                    </h6>
                 </div>
                 <div class="card-body p-0">
                     <ul class="list-group list-group-flush">
@@ -103,7 +108,7 @@
                                         <input type="hidden" name="submissionId" value="@sub.Id" />
 
                                         <button type="submit" class="btn btn-sm btn-success fw-bold">
-                                            Ekle <i class="fas fa-arrow-left ms-1"></i>
+                                            @Localizer["AddButton"] <i class="fas fa-arrow-left ms-1"></i>
                                         </button>
                                     </form>
                                 </li>
@@ -112,7 +117,7 @@
                         else
                         {
                             <li class="list-group-item text-center text-muted py-5">
-                                Atanacak boşta bildiri kalmadı.
+                                @Localizer["NoUnassignedSubmission"]
                             </li>
                         }
                     </ul>

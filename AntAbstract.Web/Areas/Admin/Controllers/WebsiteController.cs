@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using System.Text.Json;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
@@ -14,11 +15,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
     {
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
+        private readonly IStringLocalizer<WebsiteController> _localizer;
 
-        public WebsiteController(AppDbContext context, TenantContext tenantContext)
+        public WebsiteController(
+            AppDbContext context,
+            TenantContext tenantContext,
+            IStringLocalizer<WebsiteController> localizer)
         {
             _context = context;
             _tenantContext = tenantContext;
+            _localizer = localizer;
         }
 
         private string? CurrentSlug => RouteData.Values["slug"]?.ToString();
@@ -27,7 +33,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Index(string culture = "tr-TR", string page = "Home", Guid? conferenceId = null)
         {
             var tenant = _tenantContext.Current;
-            if (tenant == null) return BadRequest("Tenant bulunamadı.");
+            if (tenant == null)
+                return BadRequest(_localizer["Error_TenantNotFound"].Value);
 
             var conferences = await _context.Conferences
                 .Where(x => x.TenantId == tenant.Id)
@@ -62,10 +69,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Create(Guid conferenceId, string culture = "tr-TR", string page = "Home")
         {
             var tenant = _tenantContext.Current;
-            if (tenant == null) return BadRequest("Tenant bulunamadı.");
+            if (tenant == null)
+                return BadRequest(_localizer["Error_TenantNotFound"].Value);
 
             var exists = await _context.Conferences.AnyAsync(x => x.Id == conferenceId && x.TenantId == tenant.Id);
-            if (!exists) return NotFound("Geçerli bir konferans bulunamadı.");
+            if (!exists)
+                return NotFound(_localizer["Error_ValidConferenceNotFound"].Value);
 
             var model = new ConferencePageBlock
             {
@@ -76,7 +85,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 IsActive = true,
                 Order = 0,
                 BlockType = ConferencePageBlockType.Hero,
-                ContentJson = "{}" 
+                ContentJson = "{}"
             };
 
             return View(model);
@@ -87,7 +96,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Create(ConferencePageBlock model, string? btnText, string? btnUrl, string? bgImage, string? sideImage)
         {
             var tenant = _tenantContext.Current;
-            if (tenant == null) return BadRequest("Tenant bulunamadı.");
+            if (tenant == null)
+                return BadRequest(_localizer["Error_TenantNotFound"].Value);
 
             ModelState.Remove("TenantId");
             ModelState.Remove("Conference");
@@ -97,7 +107,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             model.TenantId = tenant.Id;
 
             var ok = await _context.Conferences.AnyAsync(x => x.Id == model.ConferenceId && x.TenantId == tenant.Id);
-            if (!ok) return NotFound("Konferans bulunamadı.");
+            if (!ok)
+                return NotFound(_localizer["Error_ConferenceNotFound"].Value);
 
             if (!ModelState.IsValid)
                 return View(model);
@@ -119,7 +130,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _context.ConferencePageBlocks.Add(model);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Blok başarıyla eklendi.";
+            TempData["SuccessMessage"] = _localizer["Success_BlockCreated"].Value;
 
             return RedirectToAction(nameof(Index), new
             {
@@ -134,12 +145,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Edit(int id)
         {
             var tenant = _tenantContext.Current;
-            if (tenant == null) return BadRequest("Tenant bulunamadı.");
+            if (tenant == null)
+                return BadRequest(_localizer["Error_TenantNotFound"].Value);
 
             var block = await _context.ConferencePageBlocks
                 .FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenant.Id);
 
-            if (block == null) return NotFound();
+            if (block == null)
+                return NotFound();
 
             return View(block);
         }
@@ -149,7 +162,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Edit(ConferencePageBlock model, string? btnText, string? btnUrl, string? bgImage, string? sideImage)
         {
             var tenant = _tenantContext.Current;
-            if (tenant == null) return BadRequest("Tenant bulunamadı.");
+            if (tenant == null)
+                return BadRequest(_localizer["Error_TenantNotFound"].Value);
 
             ModelState.Remove("TenantId");
             ModelState.Remove("Conference");
@@ -159,7 +173,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var block = await _context.ConferencePageBlocks
                 .FirstOrDefaultAsync(x => x.Id == model.Id && x.TenantId == tenant.Id);
 
-            if (block == null) return NotFound();
+            if (block == null)
+                return NotFound();
 
             if (!ModelState.IsValid)
                 return View(model);
@@ -175,10 +190,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 };
                 block.ContentJson = JsonSerializer.Serialize(heroContent);
             }
-
             else
             {
-
                 block.ContentJson = model.ContentJson;
             }
 
@@ -193,7 +206,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Blok başarıyla güncellendi.";
+            TempData["SuccessMessage"] = _localizer["Success_BlockUpdated"].Value;
 
             return RedirectToAction(nameof(Index), new
             {
@@ -209,19 +222,23 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Toggle(int id)
         {
             var tenant = _tenantContext.Current;
-            if (tenant == null) return BadRequest("Tenant bulunamadı.");
+            if (tenant == null)
+                return BadRequest(_localizer["Error_TenantNotFound"].Value);
 
             var block = await _context.ConferencePageBlocks
                 .FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenant.Id);
 
-            if (block == null) return NotFound();
+            if (block == null)
+                return NotFound();
 
             block.IsActive = !block.IsActive;
             block.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = block.IsActive ? "Blok aktif edildi." : "Blok pasif edildi.";
+            TempData["SuccessMessage"] = block.IsActive
+                ? _localizer["Success_BlockActivated"].Value
+                : _localizer["Success_BlockDeactivated"].Value;
 
             return RedirectToAction(nameof(Index), new
             {
@@ -237,17 +254,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var tenant = _tenantContext.Current;
-            if (tenant == null) return BadRequest("Tenant bulunamadı.");
+            if (tenant == null)
+                return BadRequest(_localizer["Error_TenantNotFound"].Value);
 
             var block = await _context.ConferencePageBlocks
                 .FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenant.Id);
 
-            if (block == null) return NotFound();
+            if (block == null)
+                return NotFound();
 
             _context.ConferencePageBlocks.Remove(block);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Blok silindi.";
+            TempData["SuccessMessage"] = _localizer["Success_BlockDeleted"].Value;
 
             return RedirectToAction(nameof(Index), new
             {

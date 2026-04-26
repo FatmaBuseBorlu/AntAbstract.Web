@@ -1,18 +1,22 @@
 ﻿@using AntAbstract.Application.DTOs.Submission
 @using System.Linq
+@using System.Globalization
 @using Microsoft.AspNetCore.Hosting
 @inject IWebHostEnvironment WebHostEnvironment
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model SubmissionDto
 
 @{
     Layout = null;
 
     var firstAuthor = Model.Authors?.OrderBy(a => a.Order).FirstOrDefault();
-    var authorFullName = firstAuthor != null ? $"{firstAuthor.FirstName} {firstAuthor.LastName}" : Model.CorrespondingAuthorName;
+    var authorFullName = firstAuthor != null
+        ? $"{firstAuthor.FirstName} {firstAuthor.LastName}"
+        : Model.CorrespondingAuthorName;
 
     var documentNumber = Model.Id.ToString().Substring(0, 8).ToUpper();
-
     var acceptanceDate = Model.DecisionDate ?? DateTime.Now;
+    var currentLang = CultureInfo.CurrentUICulture.Name;
 }
 
 @functions {
@@ -33,10 +37,10 @@
 }
 
 <!DOCTYPE html>
-<html>
+<html lang="@currentLang">
 <head>
     <meta charset="utf-8" />
-    <title>Certificate of Participation</title>
+    <title>@Localizer["DocumentTitle"]</title>
     <style>
         body {
             font-family: 'Times New Roman', Times, serif;
@@ -233,18 +237,30 @@
                     <div style="display:flex; align-items:center;">
                         <img src="@GetImage("dna.png")" width="40" style="margin-right: 10px;" />
                         <div>
-                            <div class="journal-title">International Journal of</div>
-                            <div class="journal-subtitle">Molecular Sciences</div>
+                            <div class="journal-title">@Localizer["JournalTitleLine1"]</div>
+                            <div class="journal-subtitle">@Localizer["JournalTitleLine2"]</div>
                         </div>
                     </div>
-                    <div class="open-access">an Open Access Journal by ANT ABSTRACT</div>
+                    <div class="open-access">@Localizer["OpenAccessText"]</div>
                 </td>
                 <td class="badge-container">
                     <table class="badge-table">
                         <tr>
-                            <td style="padding-left: 5px;"><div class="badge bg-yellow">IMPACT<br>FACTOR<span>4.9</span></div></td>
-                            <td style="padding-left: 5px;"><div class="badge bg-blue">Indexed in:<br><strong>PubMed</strong></div></td>
-                            <td style="padding-left: 5px;"><div class="badge bg-dark">CITESCORE<span>9.0</span></div></td>
+                            <td style="padding-left: 5px;">
+                                <div class="badge bg-yellow">
+                                    @Localizer["ImpactFactorLabel"]<span>4.9</span>
+                                </div>
+                            </td>
+                            <td style="padding-left: 5px;">
+                                <div class="badge bg-blue">
+                                    @Localizer["IndexedInLabel"]<br><strong>PubMed</strong>
+                                </div>
+                            </td>
+                            <td style="padding-left: 5px;">
+                                <div class="badge bg-dark">
+                                    @Localizer["CiteScoreLabel"]<span>9.0</span>
+                                </div>
+                            </td>
                         </tr>
                     </table>
                 </td>
@@ -254,10 +270,10 @@
         <div class="content-wrapper">
             <img src="@GetImage("wreath.png")" class="wreath" />
 
-            <h1>Certificate of Participation</h1>
+            <h1>@Localizer["CertificateTitle"]</h1>
 
             <div class="text-intro">
-                This is to certify that <strong>@authorFullName</strong> has successfully participated and presented the manuscript:
+                @Localizer["IntroLine1_Part1"] <strong>@authorFullName</strong> @Localizer["IntroLine1_Part2"]
             </div>
 
             <div class="paper-title">
@@ -265,12 +281,14 @@
             </div>
 
             <div class="text-intro">
-                (ID: <strong>@documentNumber</strong>)
+                (@Localizer["DocumentIdLabel"] <strong>@documentNumber</strong>)
             </div>
 
             <div class="date-info">
-                at <strong>@(Model.ConferenceTitle ?? "AntAbstract Conference")</strong> <br>
-                held on <strong>@acceptanceDate.ToString("dd MMMM yyyy")</strong>.
+                @Localizer["ConferenceLine_Part1"]
+                <strong>@(Model.ConferenceTitle ?? Localizer["DefaultConferenceTitle"].Value)</strong>
+                <br>
+                @Localizer["ConferenceLine_Part2"] <strong>@acceptanceDate.ToString("dd MMMM yyyy")</strong>.
             </div>
         </div>
 
@@ -278,13 +296,13 @@
             <tr>
                 <td style="vertical-align: bottom; width: 30%;">
                     <div class="mdpi-box">ANT</div>
-                    <div class="city-date">Antalya, @DateTime.Now.ToString("MMMM yyyy")</div>
+                    <div class="city-date">@Localizer["CityLabel"], @DateTime.Now.ToString("MMMM yyyy")</div>
                 </td>
                 <td style="text-align: right; vertical-align: bottom;">
                     <img src="@GetImage("signature.png")" class="signature-img">
                     <div class="signature-line">
-                        <strong>Prof. Dr. Kongre Başkanı</strong><br>
-                        Scientific Committee Chair
+                        <strong>@Localizer["SignatureName"]</strong><br>
+                        @Localizer["SignatureTitle"]
                     </div>
                 </td>
             </tr>
