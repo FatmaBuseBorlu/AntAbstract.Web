@@ -1,0 +1,305 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Localization
+@using Microsoft.AspNetCore.Mvc.Localization
+@using AntAbstract.Domain.Entities
+@using System.Globalization
+
+@inject UserManager<AppUser> UserManager
+@inject IViewLocalizer Localizer
+
+@{
+    Func<string, string, string> L = (key, fallback) =>
+    {
+        var text = Localizer[key].Value;
+        return string.Equals(text, key, StringComparison.OrdinalIgnoreCase) ? fallback : text;
+    };
+
+    var user = await UserManager.GetUserAsync(User);
+
+    var fullName = user != null
+        ? $"{user.FirstName} {user.LastName}"
+        : (User.Identity?.Name ?? L("DefaultUser", "Kullanıcı"));
+
+    var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
+        ? user.ProfileImagePath
+        : $"https://ui-avatars.com/api/?name={fullName}&background=00aeef&color=fff&size=128&bold=true";
+
+    var requestCulture = Context.Features.Get<IRequestCultureFeature>();
+    var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? "tr-TR";
+
+    var currentReturnUrl = string.IsNullOrEmpty(Context.Request.Path)
+        ? "/Dashboard/MyConferences"
+        : $"{Context.Request.Path}{Context.Request.QueryString}";
+}
+
+<!DOCTYPE html>
+<html lang="@CultureInfo.CurrentUICulture.Name">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>@ViewData["Title"] - AntAbstract</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-color: #00aeef;
+            --primary-dark: #0984e3;
+            --bg-color: #f8fafc;
+            --border-color: #e2e8f0;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .selection-navbar {
+            background-color: #fff;
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            height: 80px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand-logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+
+            .brand-logo:hover {
+                color: var(--text-dark);
+            }
+
+        .language-switcher {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px;
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+        }
+
+            .language-switcher form {
+                margin: 0;
+            }
+
+        .lang-btn {
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 8px 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+
+            .lang-btn:hover {
+                background: #f1f5f9;
+                color: var(--primary-color);
+            }
+
+            .lang-btn.active {
+                background: var(--primary-color);
+                color: white;
+                box-shadow: 0 4px 12px rgba(0, 174, 239, 0.25);
+            }
+
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 6px 6px 16px;
+            background: #f1f5f9;
+            border-radius: 50px;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: #334155;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+            .user-chip:hover {
+                background: #fff;
+                border-color: var(--border-color);
+                box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+                color: #334155;
+            }
+
+        .user-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            object-fit: cover;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+        }
+
+        .selection-main {
+            flex-grow: 1;
+            width: 100%;
+        }
+
+        @@media (max-width: 768px) {
+            .selection-navbar {
+                padding: 1rem;
+            }
+
+            .brand-logo {
+                font-size: 1.25rem;
+            }
+
+            .language-switcher {
+                display: none;
+            }
+
+            .user-chip {
+                padding: 4px;
+                gap: 0;
+            }
+
+                .user-chip span,
+                .user-chip i {
+                    display: none !important;
+                }
+        }
+    </style>
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+
+    <nav class="selection-navbar d-flex justify-content-between align-items-center">
+        <a href="/" class="brand-logo">
+            ANT<span style="color: var(--primary-color);">ABSTRACT</span>
+        </a>
+
+        <div class="d-flex align-items-center gap-3">
+            <div class="language-switcher">
+                <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                    <input type="hidden" name="culture" value="tr-TR" />
+                    <input type="hidden" name="returnUrl" value="@currentReturnUrl" />
+
+                    <button type="submit" class="lang-btn @(currentCulture == "tr-TR" ? "active" : "")">
+                        TR
+                    </button>
+                </form>
+
+                <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                    <input type="hidden" name="culture" value="en-US" />
+                    <input type="hidden" name="returnUrl" value="@currentReturnUrl" />
+
+                    <button type="submit" class="lang-btn @(currentCulture == "en-US" ? "active" : "")">
+                        EN
+                    </button>
+                </form>
+            </div>
+
+            <div class="dropdown">
+                <a href="#" class="user-chip" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="fw-bold small d-none d-sm-block">@fullName</span>
+                    <img src="@profileImg" class="user-avatar" alt="@fullName">
+                    <i class="fas fa-chevron-down small text-muted ms-1"></i>
+                </a>
+
+                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 rounded-4 p-2" style="width: 220px;">
+                    <li>
+                        <h6 class="dropdown-header small fw-bold">
+                            @L("MyAccount", "Hesabım")
+                        </h6>
+                    </li>
+
+                    <li>
+                        <a class="dropdown-item rounded-2 py-2" href="/Identity/Account/Manage">
+                            <i class="fas fa-user-cog me-2 text-muted"></i>
+                            @L("Settings", "Ayarlar")
+                        </a>
+                    </li>
+
+                    <li>
+                        <a class="dropdown-item rounded-2 py-2" href="/Dashboard/MyConferences">
+                            <i class="fas fa-exchange-alt me-2 text-muted"></i>
+                            @L("ConferenceSelection", "Kongre Seçimi")
+                        </a>
+                    </li>
+
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+
+                    <li>
+                        <form asp-controller="Dashboard" asp-action="CustomLogout" method="post">
+                            <button type="submit" class="dropdown-item rounded-2 text-danger fw-bold py-2">
+                                <i class="fas fa-sign-out-alt me-2"></i>
+                                @L("Logout", "Çıkış Yap")
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="selection-main">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="container mt-4">
+                <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3">
+                    <i class="fas fa-check-circle me-2"></i>
+                    @TempData["SuccessMessage"]
+
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            </div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="container mt-4">
+                <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3">
+                    <i class="fas fa-times-circle me-2"></i>
+                    @TempData["ErrorMessage"]
+
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            </div>
+        }
+
+        @if (TempData["InfoMessage"] != null)
+        {
+            <div class="container mt-4">
+                <div class="alert alert-info alert-dismissible fade show border-0 shadow-sm rounded-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    @TempData["InfoMessage"]
+
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            </div>
+        }
+
+        @RenderBody()
+    </main>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

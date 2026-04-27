@@ -1,152 +1,66 @@
-﻿@using Microsoft.AspNetCore.Identity
+﻿@using Microsoft.AspNetCore.Http
 @using Microsoft.AspNetCore.Mvc.Localization
-@using Microsoft.AspNetCore.Localization
 @using System.Globalization
+@using System.Linq
 @using AntAbstract.Domain.Entities
 
-@inject UserManager<AppUser> UserManager
 @inject IViewLocalizer Localizer
 
-@model IEnumerable<AntAbstract.Domain.Entities.Conference>
+@model IEnumerable<Conference>
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
-    Layout = null;
+    Layout = "~/Views/Shared/_LayoutConferenceSelection.cshtml";
 
-    var user = await UserManager.GetUserAsync(User);
-    var fullName = user != null ? $"{user.FirstName} {user.LastName}" : Localizer["DefaultUser"].Value;
-
-    var profileImg = !string.IsNullOrEmpty(user?.ProfileImagePath)
-        ? user.ProfileImagePath
-        : $"https://ui-avatars.com/api/?name={fullName}&background=00aeef&color=fff&size=128&bold=true";
+    Func<string, string, string> L = (key, fallback) =>
+    {
+        var text = Localizer[key].Value;
+        return string.Equals(text, key, StringComparison.OrdinalIgnoreCase) ? fallback : text;
+    };
 
     var returnUrl = Context.Request.Query["returnUrl"].ToString();
+
     var selectedIdStr = Context.Session.GetString("SelectedConferenceId");
     Guid? selectedConferenceId = Guid.TryParse(selectedIdStr, out var sid) ? sid : null;
 
-    var requestCulture = Context.Features.Get<IRequestCultureFeature>();
-    var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? "tr-TR";
-    var currentReturnUrl = string.IsNullOrEmpty(Context.Request.Path)
-        ? "/Dashboard/MyConferences"
-        : $"{Context.Request.Path}{Context.Request.QueryString}";
+    var registeredConferences = Model?.ToList() ?? new List<Conference>();
+
+    var availableConferences = ViewBag.AvailableConferences as IEnumerable<Conference>
+        ?? Enumerable.Empty<Conference>();
+
+    var availableConferenceList = availableConferences.ToList();
+
+    var hasRegisteredConferences = registeredConferences.Any();
+    var hasAvailableConferences = availableConferenceList.Any();
+    var hasAnyConference = hasRegisteredConferences || hasAvailableConferences;
 }
 
-<!DOCTYPE html>
-<html lang="@CultureInfo.CurrentUICulture.Name">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@Localizer["PageTitle"] - AntAbstract</title>
-
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
+@section Styles {
     <style>
-        :root {
-            --primary-color: #00aeef;
-            --primary-dark: #0984e3;
-            --bg-color: #f8fafc;
-            --card-border: #e2e8f0;
-        }
-
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg-color);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .navbar-custom {
-            background-color: #fff;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 1rem 2rem;
-            height: 80px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .brand-logo {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: #1e293b;
-            text-decoration: none;
-        }
-
-        .language-switcher {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px;
-            border: 1px solid #e2e8f0;
-            border-radius: 999px;
-            background: #fff;
-        }
-
-        .language-switcher form { margin: 0; }
-
-        .lang-btn {
-            border: none;
-            background: transparent;
-            color: #64748b;
-            font-size: 0.85rem;
-            font-weight: 700;
-            padding: 8px 14px;
-            border-radius: 999px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            line-height: 1;
-        }
-
-        .lang-btn:hover {
-            background: #f1f5f9;
-            color: var(--primary-color);
-        }
-
-        .lang-btn.active {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .user-chip {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 6px 6px 6px 16px;
-            background: #f1f5f9;
-            border-radius: 50px;
-            transition: all 0.2s;
-            text-decoration: none;
-            color: #334155;
-            cursor: pointer;
-            border: 1px solid transparent;
-        }
-
-        .user-chip:hover {
-            background: #fff;
-            border-color: #e2e8f0;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-
-        .user-avatar {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            border: 2px solid #fff;
-            object-fit: cover;
-        }
-
         .selection-container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 3rem 1.5rem;
-            flex-grow: 1;
             width: 100%;
         }
 
-        .search-wrapper { max-width: 600px; margin: 0 auto 3rem auto; position: relative; }
+        .page-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.7px;
+        }
+
+        .page-description {
+            color: #64748b;
+            font-size: 1.05rem;
+        }
+
+        .search-wrapper {
+            max-width: 600px;
+            margin: 0 auto 3rem auto;
+            position: relative;
+        }
 
         .search-input {
             width: 100%;
@@ -159,11 +73,11 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.03);
         }
 
-        .search-input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 8px 30px rgba(0, 174, 239, 0.15);
-        }
+            .search-input:focus {
+                outline: none;
+                border-color: #00aeef;
+                box-shadow: 0 8px 30px rgba(0, 174, 239, 0.15);
+            }
 
         .search-icon {
             position: absolute;
@@ -172,6 +86,64 @@
             transform: translateY(-50%);
             color: #94a3b8;
             font-size: 1.2rem;
+        }
+
+        .section-block {
+            margin-bottom: 3rem;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 0.25rem;
+        }
+
+        .section-subtitle {
+            color: #64748b;
+            font-size: 0.95rem;
+            margin-bottom: 0;
+        }
+
+        .section-count {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 0.55rem 0.9rem;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .empty-mini-state {
+            background: #fff;
+            border: 1px dashed #cbd5e1;
+            border-radius: 22px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .empty-mini-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: #f8fafc;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            color: #94a3b8;
+            font-size: 2rem;
         }
 
         .conf-card {
@@ -186,16 +158,24 @@
             flex-direction: column;
         }
 
-        .conf-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-            border-color: var(--primary-color);
-        }
+            .conf-card:hover {
+                transform: translateY(-8px);
+                box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+                border-color: #00aeef;
+            }
 
-        .conf-card.active {
-            border: 2px solid #10b981;
-            background-color: #fcfdfd;
-        }
+            .conf-card.active {
+                border: 2px solid #10b981;
+                background-color: #fcfdfd;
+            }
+
+            .conf-card.available {
+                border-color: #dbeafe;
+            }
+
+                .conf-card.available:hover {
+                    border-color: #2563eb;
+                }
 
         .active-badge {
             position: absolute;
@@ -208,6 +188,21 @@
             padding: 5px 12px;
             border-radius: 20px;
             box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+            z-index: 2;
+        }
+
+        .available-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #2563eb;
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 5px 12px;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.18);
+            z-index: 2;
         }
 
         .logo-wrapper {
@@ -220,20 +215,34 @@
             align-items: center;
             justify-content: center;
             margin-bottom: 1.5rem;
+            overflow: hidden;
         }
 
-        .logo-wrapper img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            padding: 10px;
-            border-radius: 20px;
-        }
+            .logo-wrapper img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                padding: 10px;
+                border-radius: 20px;
+            }
 
         .logo-placeholder {
             font-size: 1.5rem;
             font-weight: 800;
-            color: var(--primary-color);
+            color: #00aeef;
+        }
+
+        .tenant-badge {
+            max-width: 130px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .conf-title {
+            min-height: 3.5rem;
+            line-height: 1.4;
+            color: #0f172a;
         }
 
         .card-meta {
@@ -246,7 +255,10 @@
             font-weight: 500;
         }
 
-        .card-meta i { width: 20px; text-align: center; }
+            .card-meta i {
+                width: 20px;
+                text-align: center;
+            }
 
         .footer-actions {
             margin-top: auto;
@@ -270,25 +282,35 @@
             gap: 8px;
             font-size: 0.95rem;
             width: 100%;
+            text-decoration: none;
         }
 
-        .btn-select:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 174, 239, 0.4);
-            color: white;
+            .btn-select:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(0, 174, 239, 0.4);
+                color: white;
+            }
+
+            .btn-select.active-btn {
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+                cursor: pointer;
+                opacity: 1;
+            }
+
+                .btn-select.active-btn:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+                }
+
+        .btn-register {
+            background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.25);
         }
 
-        .btn-select.active-btn {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-            cursor: pointer;
-            opacity: 1;
-        }
-
-        .btn-select.active-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-        }
+            .btn-register:hover {
+                box-shadow: 0 8px 25px rgba(37, 99, 235, 0.35);
+            }
 
         .btn-secondary-custom {
             background-color: #f8fafc;
@@ -306,12 +328,12 @@
             gap: 8px;
         }
 
-        .btn-secondary-custom:hover {
-            background-color: #fff;
-            color: #334155;
-            border-color: #cbd5e1;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
+            .btn-secondary-custom:hover {
+                background-color: #fff;
+                color: #334155;
+                border-color: #cbd5e1;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            }
 
         .no-results {
             display: none;
@@ -319,192 +341,408 @@
             padding: 4rem;
             color: #94a3b8;
         }
+
+        .empty-state-icon {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            background: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+            margin-bottom: 1.5rem;
+        }
+
+        @@media (max-width: 768px) {
+            .selection-container {
+                padding: 2rem 1rem;
+            }
+
+            .page-title {
+                font-size: 1.6rem;
+            }
+
+            .search-wrapper {
+                margin-bottom: 2rem;
+            }
+
+            .section-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .conf-title {
+                min-height: auto;
+            }
+        }
     </style>
-</head>
-<body>
+}
 
-    <nav class="navbar-custom d-flex justify-content-between align-items-center">
-        <a href="/" class="brand-logo">
-            ANT<span style="color: var(--primary-color);">ABSTRACT</span>
-        </a>
+<div class="selection-container">
+    <div class="text-center mb-5">
+        <h2 class="page-title mb-2">
+            @L("Welcome", "Hoş Geldiniz")
+        </h2>
 
-        <div class="d-flex align-items-center gap-3">
-            <div class="language-switcher">
-                <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
-                    <input type="hidden" name="culture" value="tr-TR" />
-                    <input type="hidden" name="returnUrl" value="@currentReturnUrl" />
-                    <button type="submit" class="lang-btn @(currentCulture == "tr-TR" ? "active" : "")">TR</button>
-                </form>
+        <p class="page-description mb-0">
+            @L("SelectWorkspaceDescription", "İşlem yapmak istediğiniz çalışma alanını (kongreyi) aşağıdan seçiniz.")
+        </p>
+    </div>
 
-                <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
-                    <input type="hidden" name="culture" value="en-US" />
-                    <input type="hidden" name="returnUrl" value="@currentReturnUrl" />
-                    <button type="submit" class="lang-btn @(currentCulture == "en-US" ? "active" : "")">EN</button>
-                </form>
+    <div class="search-wrapper">
+        <i class="fas fa-search search-icon"></i>
+
+        <input type="text"
+               id="conferenceSearch"
+               class="search-input"
+               placeholder="@L("SearchPlaceholder", "Kongre adı ile arama yapın...")" />
+    </div>
+
+    @if (!hasAnyConference)
+    {
+        <div class="col-12 text-center py-5">
+            <div class="empty-state-icon">
+                <i class="far fa-folder-open fa-4x text-muted opacity-50"></i>
             </div>
 
-            <div class="dropdown">
-                <a href="#" class="user-chip" data-bs-toggle="dropdown">
-                    <span class="fw-bold small d-none d-sm-block">@fullName</span>
-                    <img src="@profileImg" class="user-avatar">
-                    <i class="fas fa-chevron-down small text-muted ms-1"></i>
-                </a>
-                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 rounded-4 p-2" style="width: 200px;">
-                    <li><h6 class="dropdown-header small fw-bold">@Localizer["MyAccount"]</h6></li>
-                    <li>
-                        <a class="dropdown-item rounded-2 py-2" href="/Identity/Account/Manage">
-                            <i class="fas fa-user-cog me-2 text-muted"></i> @Localizer["Settings"]
-                        </a>
-                    </li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                        <form asp-controller="Dashboard" asp-action="CustomLogout" method="post">
-                            <button type="submit" class="dropdown-item rounded-2 text-danger fw-bold py-2">
-                                <i class="fas fa-sign-out-alt me-2"></i> @Localizer["Logout"]
-                            </button>
-                        </form>
-                    </li>
-                </ul>
+            <h3 class="fw-bold text-dark">
+                @L("NoConferenceTitle", "Henüz görüntülenebilir kongre bulunamadı")
+            </h3>
+
+            <p class="text-muted mb-4">
+                @L("NoConferenceDescription", "Şu anda kayıtlı olduğunuz veya kayıt olabileceğiniz aktif bir kongre bulunmuyor.")
+            </p>
+
+            <a href="/Home/Index#congress-list" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
+                @L("DiscoverEvents", "Etkinlikleri Keşfet")
+            </a>
+        </div>
+    }
+    else
+    {
+        @if (!hasRegisteredConferences)
+        {
+            <div class="empty-mini-state">
+                <div class="empty-mini-icon">
+                    <i class="far fa-folder-open"></i>
+                </div>
+
+                <h4 class="fw-bold text-dark mb-2">
+                    @L("NoRegistrationTitle", "Henüz Bir Kaydınız Yok")
+                </h4>
+
+                <p class="text-muted mb-0">
+                    @L("NoRegistrationDescription", "Sistemi kullanmak için önce aşağıdaki etkinliklerden birine kayıt olmalısınız.")
+                </p>
             </div>
-        </div>
-    </nav>
+        }
 
-    <div class="selection-container">
-        <div class="text-center mb-5">
-            <h2 class="fw-bold text-dark mb-2">@Localizer["Welcome"]</h2>
-            <p class="text-muted" style="font-size: 1.1rem;">@Localizer["SelectWorkspaceDescription"]</p>
-        </div>
+        @if (hasRegisteredConferences)
+        {
+            <section class="section-block conference-section">
+                <div class="section-header">
+                    <div>
+                        <h3 class="section-title">
+                            @L("RegisteredConferencesTitle", "Kayıtlı Olduğum Kongreler")
+                        </h3>
 
-        <div class="search-wrapper">
-            <i class="fas fa-search search-icon"></i>
-            <input type="text" id="conferenceSearch" class="search-input" placeholder="@Localizer["SearchPlaceholder"]">
-        </div>
+                        <p class="section-subtitle">
+                            @L("RegisteredConferencesDescription", "Bu kongrelerde panelinize geçiş yapabilir ve işlemlerinize devam edebilirsiniz.")
+                        </p>
+                    </div>
 
-        <div class="row g-4 justify-content-center" id="conferenceGrid">
-            @if (Model != null && Model.Any())
-            {
-                foreach (var kongre in Model)
-                {
-                    var tenantSlug = kongre.Tenant?.Slug ?? kongre.Slug ?? "";
+                    <span class="section-count">
+                        @registeredConferences.Count @L("ConferenceCountText", "Kongre")
+                    </span>
+                </div>
 
-                    var fallbackReturnUrl = string.IsNullOrWhiteSpace(tenantSlug) ? "/Dashboard" : $"/{tenantSlug}/Dashboard";
-                    var effectiveReturnUrl = fallbackReturnUrl;
-
-                    if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                <div class="row g-4 justify-content-center conference-grid">
+                    @foreach (var kongre in registeredConferences)
                     {
-                        if (returnUrl.Contains("/Dashboard")) { effectiveReturnUrl = returnUrl; }
-                    }
+                        var tenantSlug = kongre.Tenant?.Slug ?? kongre.Slug ?? "";
 
-                    var isSelected = selectedConferenceId.HasValue && selectedConferenceId.Value == kongre.Id;
-                    var hasLogo = !string.IsNullOrEmpty(kongre.LogoPath);
+                        var fallbackReturnUrl = string.IsNullOrWhiteSpace(tenantSlug)
+                        ? "/Dashboard"
+                        : $"/{tenantSlug}/Dashboard";
 
-                    <div class="col-md-6 col-lg-4 col-xl-4 conf-item">
-                        <div class="conf-card p-4 @(isSelected ? "active" : "")">
+                        var effectiveReturnUrl = fallbackReturnUrl;
 
-                            @if (isSelected)
+                        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                        {
+                            if (returnUrl.Contains("/Dashboard"))
                             {
-                                <span class="active-badge">@Localizer["Active"]</span>
+                                effectiveReturnUrl = returnUrl;
                             }
+                        }
 
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="logo-wrapper">
-                                    @if (hasLogo)
-                                    {
-                                        <img src="@kongre.LogoPath" alt="@kongre.Title">
-                                    }
-                                    else
-                                    {
-                                        <span class="logo-placeholder">@kongre.Title?.Substring(0, 1).ToUpper()</span>
-                                    }
-                                </div>
+                        var isSelected = selectedConferenceId.HasValue && selectedConferenceId.Value == kongre.Id;
+                        var hasLogo = !string.IsNullOrWhiteSpace(kongre.LogoPath);
 
-                                @if (!string.IsNullOrWhiteSpace(tenantSlug))
+                        var firstLetter = !string.IsNullOrWhiteSpace(kongre.Title)
+                        ? kongre.Title.Substring(0, 1).ToUpper()
+                        : "A";
+
+                        var cityText = !string.IsNullOrWhiteSpace(kongre.City)
+                        ? kongre.City
+                        : L("OnlineVirtual", "Online / Sanal");
+
+                        var websiteUrl = string.IsNullOrWhiteSpace(tenantSlug)
+                        ? "/"
+                        : $"/{tenantSlug}";
+
+                        <div class="col-md-6 col-lg-4 col-xl-4 conf-item">
+                            <div class="conf-card p-4 @(isSelected ? "active" : "")">
+
+                                @if (isSelected)
                                 {
-                                    <span class="badge bg-light text-secondary border rounded-pill px-3">@tenantSlug</span>
+                                    <span class="active-badge">
+                                        @L("Active", "Aktif")
+                                    </span>
                                 }
-                            </div>
 
-                            <h5 class="fw-bold text-dark mb-3 conf-title" style="min-height: 3.5rem; line-height: 1.4;">
-                                @kongre.Title
-                            </h5>
-
-                            <div class="card-meta">
-                                <i class="far fa-calendar-alt text-primary"></i>
-                                <span class="fw-bold text-dark">@kongre.StartDate.ToString("dd MMMM yyyy", CultureInfo.CurrentUICulture)</span>
-                            </div>
-                            <div class="card-meta">
-                                <i class="fas fa-map-marker-alt text-danger"></i>
-                                <span>@(kongre.City ?? Localizer["OnlineVirtual"].Value)</span>
-                            </div>
-
-                            <div class="footer-actions">
-                                <form asp-controller="Dashboard" asp-action="SelectConferencePost" asp-route-slug="@tenantSlug" method="post" class="d-grid">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="conferenceId" value="@kongre.Id" />
-                                    <input type="hidden" name="returnUrl" value="@effectiveReturnUrl" />
-
-                                    <button type="submit" class="btn-select @(isSelected ? "active-btn" : "")">
-                                        @if (isSelected)
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="logo-wrapper">
+                                        @if (hasLogo)
                                         {
-                                            <span>@Localizer["ReturnToPanelActive"]</span> <i class="fas fa-sign-in-alt"></i>
+                                            <img src="@kongre.LogoPath" alt="@kongre.Title" />
                                         }
                                         else
                                         {
-                                            <span>@Localizer["SelectAndStart"]</span> <i class="fas fa-arrow-right"></i>
+                                            <span class="logo-placeholder">@firstLetter</span>
                                         }
-                                    </button>
-                                </form>
+                                    </div>
 
-                                <a href="/@tenantSlug" target="_blank" class="btn-secondary-custom">
-                                    <i class="fas fa-external-link-alt small"></i> <span>@Localizer["Website"]</span>
-                                </a>
+                                    @if (!string.IsNullOrWhiteSpace(tenantSlug))
+                                    {
+                                        <span class="badge bg-light text-secondary border rounded-pill px-3 tenant-badge">
+                                            @tenantSlug
+                                        </span>
+                                    }
+                                </div>
+
+                                <h5 class="fw-bold mb-3 conf-title">
+                                    @kongre.Title
+                                </h5>
+
+                                <div class="card-meta">
+                                    <i class="far fa-calendar-alt text-primary"></i>
+
+                                    <span class="fw-bold text-dark">
+                                        @kongre.StartDate.ToString("dd MMMM yyyy", CultureInfo.CurrentUICulture)
+                                    </span>
+                                </div>
+
+                                <div class="card-meta">
+                                    <i class="fas fa-map-marker-alt text-danger"></i>
+
+                                    <span>
+                                        @cityText
+                                    </span>
+                                </div>
+
+                                <div class="footer-actions">
+                                    <form asp-controller="Dashboard"
+                                          asp-action="SelectConferencePost"
+                                          asp-route-slug="@tenantSlug"
+                                          method="post"
+                                          class="d-grid">
+
+                                        @Html.AntiForgeryToken()
+
+                                        <input type="hidden" name="conferenceId" value="@kongre.Id" />
+                                        <input type="hidden" name="returnUrl" value="@effectiveReturnUrl" />
+
+                                        <button type="submit" class="btn-select @(isSelected ? "active-btn" : "")">
+                                            @if (isSelected)
+                                            {
+                                                <span>@L("ReturnToPanelActive", "Panele Dön (Aktif)")</span>
+                                                <i class="fas fa-sign-in-alt"></i>
+                                            }
+                                            else
+                                            {
+                                                <span>@L("SelectAndStart", "Seç ve Başla")</span>
+                                                <i class="fas fa-arrow-right"></i>
+                                            }
+                                        </button>
+                                    </form>
+
+                                    <a href="@websiteUrl" target="_blank" class="btn-secondary-custom">
+                                        <i class="fas fa-external-link-alt small"></i>
+                                        <span>@L("Website", "Web Sitesi")</span>
+                                    </a>
+                                </div>
                             </div>
-
                         </div>
-                    </div>
-                }
-            }
-            else
-            {
-                <div class="col-12 text-center py-5">
-                    <div class="bg-white d-inline-block p-5 rounded-circle shadow-sm mb-4">
-                        <i class="far fa-folder-open fa-4x text-muted opacity-50"></i>
-                    </div>
-                    <h3 class="fw-bold text-dark">@Localizer["NoRegistrationTitle"]</h3>
-                    <p class="text-muted mb-4">@Localizer["NoRegistrationDescription"]</p>
-                    <a href="/Home/Index#congress-list" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
-                        @Localizer["DiscoverEvents"]
-                    </a>
+                    }
                 </div>
-            }
-        </div>
+            </section>
+        }
+
+        @if (hasAvailableConferences)
+        {
+            <section class="section-block conference-section">
+                <div class="section-header">
+                    <div>
+                        <h3 class="section-title">
+                            @L("AvailableConferencesTitle", "Kayıt Olabileceğim Kongreler")
+                        </h3>
+
+                        <p class="section-subtitle">
+                            @L("AvailableConferencesDescription", "Bu kongrelerin web sitesine giderek kayıt sürecinizi başlatabilirsiniz.")
+                        </p>
+                    </div>
+
+                    <span class="section-count">
+                        @availableConferenceList.Count @L("ConferenceCountText", "Kongre")
+                    </span>
+                </div>
+
+                <div class="row g-4 justify-content-center conference-grid">
+                    @foreach (var kongre in availableConferenceList)
+                    {
+                        var tenantSlug = kongre.Tenant?.Slug ?? kongre.Slug ?? "";
+
+                        var hasLogo = !string.IsNullOrWhiteSpace(kongre.LogoPath);
+
+                        var firstLetter = !string.IsNullOrWhiteSpace(kongre.Title)
+                        ? kongre.Title.Substring(0, 1).ToUpper()
+                        : "A";
+
+                        var cityText = !string.IsNullOrWhiteSpace(kongre.City)
+                        ? kongre.City
+                        : L("OnlineVirtual", "Online / Sanal");
+
+                        var websiteUrl = string.IsNullOrWhiteSpace(tenantSlug)
+                        ? "/"
+                        : $"/{tenantSlug}";
+
+                        var registerUrl = websiteUrl;
+
+                        <div class="col-md-6 col-lg-4 col-xl-4 conf-item">
+                            <div class="conf-card available p-4">
+
+                                <span class="available-badge">
+                                    @L("Available", "Kayıt Açık")
+                                </span>
+
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="logo-wrapper">
+                                        @if (hasLogo)
+                                        {
+                                            <img src="@kongre.LogoPath" alt="@kongre.Title" />
+                                        }
+                                        else
+                                        {
+                                            <span class="logo-placeholder">@firstLetter</span>
+                                        }
+                                    </div>
+
+                                    @if (!string.IsNullOrWhiteSpace(tenantSlug))
+                                    {
+                                        <span class="badge bg-light text-secondary border rounded-pill px-3 tenant-badge">
+                                            @tenantSlug
+                                        </span>
+                                    }
+                                </div>
+
+                                <h5 class="fw-bold mb-3 conf-title">
+                                    @kongre.Title
+                                </h5>
+
+                                <div class="card-meta">
+                                    <i class="far fa-calendar-alt text-primary"></i>
+
+                                    <span class="fw-bold text-dark">
+                                        @kongre.StartDate.ToString("dd MMMM yyyy", CultureInfo.CurrentUICulture)
+                                    </span>
+                                </div>
+
+                                <div class="card-meta">
+                                    <i class="fas fa-map-marker-alt text-danger"></i>
+
+                                    <span>
+                                        @cityText
+                                    </span>
+                                </div>
+
+                                <div class="footer-actions">
+                                    <a href="@registerUrl" class="btn-select btn-register">
+                                        <span>@L("GoToRegistrationPage", "Kayıt Sayfasına Git")</span>
+                                        <i class="fas fa-arrow-right"></i>
+                                    </a>
+
+                                    <a href="@websiteUrl" target="_blank" class="btn-secondary-custom">
+                                        <i class="fas fa-external-link-alt small"></i>
+                                        <span>@L("Website", "Web Sitesi")</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </section>
+        }
 
         <div id="noResults" class="no-results">
             <i class="fas fa-search fa-3x mb-3 opacity-25"></i>
-            <h4>@Localizer["NoSearchResults"]</h4>
+
+            <h4>
+                @L("NoSearchResults", "Aramanıza uygun kongre bulunamadı.")
+            </h4>
         </div>
-    </div>
+    }
+</div>
 
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+@section Scripts {
     <script>
-        document.getElementById('conferenceSearch').addEventListener('keyup', function () {
-            var input = this.value.toLowerCase();
-            var items = document.querySelectorAll('.conf-item');
-            var noResults = document.getElementById('noResults');
-            var hasVisible = false;
+        document.addEventListener('DOMContentLoaded', function () {
+            const searchInput = document.getElementById('conferenceSearch');
+            const noResults = document.getElementById('noResults');
 
-            items.forEach(function (item) {
-                var title = item.querySelector('.conf-title').innerText.toLowerCase();
-                if (title.includes(input)) {
-                    item.style.display = 'block';
-                    hasVisible = true;
-                } else {
-                    item.style.display = 'none';
+            if (!searchInput) {
+                return;
+            }
+
+            searchInput.addEventListener('keyup', function () {
+                const input = this.value.toLowerCase().trim();
+                const items = document.querySelectorAll('.conf-item');
+                const sections = document.querySelectorAll('.conference-section');
+
+                let hasVisible = false;
+
+                items.forEach(function (item) {
+                    const titleElement = item.querySelector('.conf-title');
+
+                    if (!titleElement) {
+                        item.style.display = 'none';
+                        return;
+                    }
+
+                    const title = titleElement.innerText.toLowerCase();
+
+                    if (title.includes(input)) {
+                        item.style.display = '';
+                        hasVisible = true;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+
+                sections.forEach(function (section) {
+                    const visibleCards = section.querySelectorAll('.conf-item:not([style*="display: none"])');
+
+                    if (visibleCards.length > 0 || input === '') {
+                        section.style.display = '';
+                    } else {
+                        section.style.display = 'none';
+                    }
+                });
+
+                if (noResults) {
+                    noResults.style.display = hasVisible ? 'none' : 'block';
                 }
             });
-
-            noResults.style.display = hasVisible ? 'none' : 'block';
         });
     </script>
-</body>
-</html>
+}

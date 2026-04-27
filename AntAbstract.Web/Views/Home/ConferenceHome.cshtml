@@ -3,18 +3,31 @@
 @using AntAbstract.Domain.Entities
 @using AntAbstract.Web.Models.WebsiteBlocks
 @using System.Text.Json
+
 @inject SignInManager<AppUser> SignInManager
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = Model.Conference.Title;
+    ViewData["Title"] = Model.Conference?.Title ?? Localizer["DefaultPageTitle"].Value;
     Layout = "_Layout";
 
+    Func<string, string, string> L = (key, fallback) =>
+{
+    var text = Localizer[key].Value;
+    return string.Equals(text, key, StringComparison.OrdinalIgnoreCase) ? fallback : text;
+};
+
     var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
-    var activeBlocks = Model.Blocks?.Where(b => b.IsActive).OrderBy(b => b.Order).ToList() ?? new List<ConferencePageBlock>();
+
+    var activeBlocks = Model.Blocks?
+        .Where(b => b.IsActive)
+        .OrderBy(b => b.Order)
+        .ToList() ?? new List<ConferencePageBlock>();
 
     var heroBlock = activeBlocks.FirstOrDefault(b => b.BlockType == ConferencePageBlockType.Hero);
-    string? heroBtnText = null, heroBtnUrl = null;
+
+    string? heroBtnText = null;
+    string? heroBtnUrl = null;
 
     if (heroBlock != null && !string.IsNullOrWhiteSpace(heroBlock.ContentJson))
     {
@@ -22,13 +35,43 @@
         {
             using var doc = JsonDocument.Parse(heroBlock.ContentJson);
             var root = doc.RootElement;
-            if (root.TryGetProperty("buttonText", out var bt)) heroBtnText = bt.GetString();
-            if (root.TryGetProperty("buttonUrl", out var bu)) heroBtnUrl = bu.GetString();
+
+            if (root.TryGetProperty("buttonText", out var bt))
+            {
+                heroBtnText = bt.GetString();
+            }
+
+            if (root.TryGetProperty("buttonUrl", out var bu))
+            {
+                heroBtnUrl = bu.GetString();
+            }
         }
-        catch { }
+        catch
+        {
+        }
     }
 
-    var finalHeroBg = Model.Conference.BannerPath ?? "https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80";
+    var slug = Model.Conference?.Tenant?.Slug
+        ?? Model.Conference?.Slug
+        ?? ViewContext.RouteData.Values["slug"]?.ToString()
+        ?? "";
+
+    var registrationUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/registration"
+        : $"/{slug}/registration";
+
+    var finalHeroBg = !string.IsNullOrWhiteSpace(Model.Conference?.BannerPath)
+        ? Model.Conference.BannerPath
+        : "https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80";
+}
+
+@if (Model.Conference == null)
+{
+    <div class="alert alert-danger mt-5 container">
+        @Localizer["ConferenceNotFound"]
+    </div>
+
+    return;
 }
 
 <style>
@@ -79,7 +122,8 @@
         border: none !important;
     }
 
-        .modern-menu-item:hover, .modern-menu-item.active {
+        .modern-menu-item:hover,
+        .modern-menu-item.active {
             background-color: var(--theme-accent) !important;
             color: #fff !important;
             transform: translateX(5px);
@@ -228,16 +272,28 @@
 <div class="bg-white py-2 border-bottom d-none d-md-block shadow-sm position-relative" style="z-index: 100;">
     <div class="container d-flex justify-content-between align-items-center">
         <div class="fw-bold text-dark d-flex align-items-center">
-            <i class="fas fa-university text-primary me-2"></i> @Model.Conference.Title
+            <i class="fas fa-university text-primary me-2"></i>
+            @Model.Conference.Title
         </div>
+
         <div class="d-flex align-items-center gap-3">
             <div class="d-flex gap-2">
-                <a href="#" class="btn btn-sm btn-light rounded-circle text-primary"><i class="fab fa-facebook-f"></i></a>
-                <a href="#" class="btn btn-sm btn-light rounded-circle text-info"><i class="fab fa-twitter"></i></a>
-                <a href="#" class="btn btn-sm btn-light rounded-circle text-primary"><i class="fab fa-linkedin-in"></i></a>
+                <a href="#" class="btn btn-sm btn-light rounded-circle text-primary">
+                    <i class="fab fa-facebook-f"></i>
+                </a>
+
+                <a href="#" class="btn btn-sm btn-light rounded-circle text-info">
+                    <i class="fab fa-twitter"></i>
+                </a>
+
+                <a href="#" class="btn btn-sm btn-light rounded-circle text-primary">
+                    <i class="fab fa-linkedin-in"></i>
+                </a>
             </div>
-            <a href="/Submission/Create" class="btn btn-dark btn-sm rounded-pill px-4 fw-bold shadow-sm">
-                <i class="fas fa-paper-plane me-2 text-info"></i> @Localizer["SubmitAbstractButton"]
+
+            <a href="@registrationUrl" class="btn btn-dark btn-sm rounded-pill px-4 fw-bold shadow-sm">
+                <i class="fas fa-paper-plane me-2 text-info"></i>
+                @L("SubmitAbstractButton", "Özet Gönder")
             </a>
         </div>
     </div>
@@ -245,6 +301,7 @@
 
 <div class="conf-hero-modern" style="background-image: url('@finalHeroBg');">
     <div class="hero-glass-overlay"></div>
+
     <div class="container position-relative z-2">
         <div class="row align-items-center">
             <div class="col-lg-8">
@@ -252,10 +309,15 @@
                     <i class="fas fa-satellite-dish text-danger me-1 animate__animated animate__flash animate__infinite"></i>
                     @(Model.Conference.City ?? Localizer["OnlineConferenceText"].Value)
                 </span>
-                <h1 class="display-4 fw-extrabold mb-4 lh-sm">@(heroBlock?.Title ?? Model.Conference.Title)</h1>
+
+                <h1 class="display-4 fw-extrabold mb-4 lh-sm">
+                    @(heroBlock?.Title ?? Model.Conference.Title)
+                </h1>
+
                 <div class="d-flex flex-wrap gap-4 fs-5 text-white-50 fw-medium mb-4">
                     <div class="d-flex align-items-center">
-                        <i class="far fa-calendar-alt me-2 text-info"></i> @Model.Conference.StartDate.ToString("d MMMM yyyy")
+                        <i class="far fa-calendar-alt me-2 text-info"></i>
+                        @Model.Conference.StartDate.ToString("d MMMM yyyy")
                     </div>
                 </div>
             </div>
@@ -276,10 +338,12 @@
                             @Localizer["MenusWillBeAddedText"]
                         </div>
                     }
+
                     @foreach (var b in activeBlocks.Where(x => x.BlockType != ConferencePageBlockType.Hero))
                     {
                         <a href="#block-@b.Id" class="list-group-item modern-menu-item">
-                            <i class="fas fa-chevron-right me-2 opacity-50" style="font-size: 0.7rem;"></i> @b.Title
+                            <i class="fas fa-chevron-right me-2 opacity-50" style="font-size: 0.7rem;"></i>
+                            @b.Title
                         </a>
                     }
                 </div>
@@ -290,9 +354,17 @@
             @if (!activeBlocks.Any(b => b.BlockType != ConferencePageBlockType.Hero))
             {
                 <div class="content-card text-center py-5">
-                    <img src="https://illustrations.popsy.co/amber/web-design.svg" alt="@Localizer["UnderConstructionAlt"]" style="width: 200px; opacity: 0.5;">
-                    <h4 class="text-muted mt-4 fw-bold">@Localizer["ContentsPreparingTitle"]</h4>
-                    <p class="text-muted">@Localizer["ContentsPreparingText"]</p>
+                    <img src="https://illustrations.popsy.co/amber/web-design.svg"
+                         alt="@Localizer["UnderConstructionAlt"]"
+                         style="width: 200px; opacity: 0.5;">
+
+                    <h4 class="text-muted mt-4 fw-bold">
+                        @Localizer["ContentsPreparingTitle"]
+                    </h4>
+
+                    <p class="text-muted">
+                        @Localizer["ContentsPreparingText"]
+                    </p>
                 </div>
             }
 
@@ -304,7 +376,16 @@
                     @if (b.BlockType == ConferencePageBlockType.About && !string.IsNullOrWhiteSpace(b.ContentJson))
                     {
                         AboutBlockContent? aboutContent = null;
-                        try { aboutContent = JsonSerializer.Deserialize<AboutBlockContent>(b.ContentJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }); } catch { }
+
+                        try
+                        {
+                            aboutContent = JsonSerializer.Deserialize<AboutBlockContent>(
+                            b.ContentJson,
+                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        }
+                        catch
+                        {
+                        }
 
                         if (aboutContent != null)
                         {
@@ -345,18 +426,30 @@
             <div class="sticky-sidebar">
 
                 <div class="d-flex justify-content-center mb-5 mx-auto" style="max-width: 240px;">
-                    <a href="/Submission/Create" class="modern-red-pulse-btn">
+                    <a href="@registrationUrl" class="modern-red-pulse-btn">
                         <i class="fas fa-cloud-upload-alt fa-3x mb-2 opacity-75"></i>
-                        <span class="fs-6 fw-bold mb-1 opacity-75">@Localizer["OnlineLabel"]</span>
-                        <span class="fs-4 fw-bolder lh-1 text-center">@Localizer["RegisterAndSubmitText_Line1"]<br>@Localizer["RegisterAndSubmitText_Line2"]</span>
+
+                        <span class="fs-6 fw-bold mb-1 opacity-75">
+                            @L("OnlineLabel", "ÇEVRİMİÇİ")
+                        </span>
+
+                        <span class="fs-4 fw-bolder lh-1 text-center">
+                            @L("RegisterAndSubmitText_Line1", "KAYIT VE")<br />
+                            @L("RegisterAndSubmitText_Line2", "ÖZET GÖNDER")
+                        </span>
                     </a>
                 </div>
 
-                <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">@Localizer["DocumentsAndTemplatesTitle"]</h5>
+                <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+                    @Localizer["DocumentsAndTemplatesTitle"]
+                </h5>
 
                 <div class="d-flex flex-column gap-3 mb-5">
                     <a href="#" class="word-doc-card">
-                        <div class="word-icon-wrapper"><i class="fas fa-file-word"></i></div>
+                        <div class="word-icon-wrapper">
+                            <i class="fas fa-file-word"></i>
+                        </div>
+
                         <div class="word-text-wrapper">
                             <h6>@Localizer["WritingRulesTitle"]</h6>
                             <small>@Localizer["WritingRulesSubtitle"]</small>
@@ -364,7 +457,10 @@
                     </a>
 
                     <a href="#" class="word-doc-card">
-                        <div class="word-icon-wrapper"><i class="fas fa-file-word"></i></div>
+                        <div class="word-icon-wrapper">
+                            <i class="fas fa-file-word"></i>
+                        </div>
+
                         <div class="word-text-wrapper">
                             <h6>@Localizer["SampleAbstractFormatTitle"]</h6>
                             <small>@Localizer["DocxDownloadText"]</small>
@@ -372,7 +468,10 @@
                     </a>
 
                     <a href="#" class="word-doc-card">
-                        <div class="word-icon-wrapper"><i class="fas fa-file-word"></i></div>
+                        <div class="word-icon-wrapper">
+                            <i class="fas fa-file-word"></i>
+                        </div>
+
                         <div class="word-text-wrapper">
                             <h6>@Localizer["FullTextFormatTitle"]</h6>
                             <small>@Localizer["DocxDownloadText"]</small>
@@ -388,19 +487,29 @@
 
 <div class="modern-bottom-cta">
     <div class="container text-center position-relative z-2">
-        <h2 class="display-6 fw-bold mb-4">@Localizer["BottomCtaTitle"]</h2>
-        <p class="lead text-white-50 mb-5 mw-600 mx-auto">@Localizer["BottomCtaText"]</p>
+        <h2 class="display-6 fw-bold mb-4">
+            @Localizer["BottomCtaTitle"]
+        </h2>
+
+        <p class="lead text-white-50 mb-5 mw-600 mx-auto">
+            @Localizer["BottomCtaText"]
+        </p>
 
         @if (registeredIds.Contains(Model.Conference.Id))
         {
-            <a asp-route="PayForConferenceRoute" asp-route-slug="@Model.Conference.Slug" asp-route-conferenceId="@Model.Conference.Id" class="btn btn-light btn-lg rounded-pill px-5 py-3 fw-bold text-primary shadow-lg">
-                <i class="fas fa-credit-card me-2"></i> @Localizer["PaymentActionsButton"]
+            <a href="@registrationUrl"
+               class="btn btn-light btn-lg rounded-pill px-5 py-3 fw-bold text-primary shadow-lg">
+                <i class="fas fa-credit-card me-2"></i>
+                @Localizer["PaymentActionsButton"]
             </a>
         }
         else
         {
-            <a asp-controller="Registration" asp-action="Index" asp-route-slug="@Model.Conference.Tenant?.Slug" class="btn btn-info btn-lg rounded-pill px-5 py-3 fw-bold text-white shadow-lg border-0" style="background-color: var(--theme-accent);">
-                <i class="fas fa-user-plus me-2"></i> @Localizer["RegisterNowButton"]
+            <a href="@registrationUrl"
+               class="btn btn-info btn-lg rounded-pill px-5 py-3 fw-bold text-white shadow-lg border-0"
+               style="background-color: var(--theme-accent);">
+                <i class="fas fa-user-plus me-2"></i>
+                @Localizer["RegisterNowButton"]
             </a>
         }
     </div>
@@ -408,14 +517,23 @@
 
 <div class="bg-light py-5 border-top">
     <div class="container py-4">
-        <h3 class="text-center fw-bold text-dark mb-5">@Localizer["SuggestedConferencesTitle"]</h3>
+        <h3 class="text-center fw-bold text-dark mb-5">
+            @Localizer["SuggestedConferencesTitle"]
+        </h3>
+
         <div class="row g-4 justify-content-center">
             @for (int i = 1; i <= 4; i++)
             {
                 <div class="col-md-3 col-sm-6">
                     <a href="#" class="text-decoration-none">
-                        <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden transition-all" style="transition: transform 0.3s; cursor: pointer;" onmouseover="this.style.transform='translateY(-10px)'" onmouseout="this.style.transform='translateY(0)'">
-                            <img src="https://placehold.co/300x400/e2e8f0/64748b?text=Kongre+Afişi+@i" class="card-img-top" alt="@Localizer["ConferencePosterAlt"]">
+                        <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden transition-all"
+                             style="transition: transform 0.3s; cursor: pointer;"
+                             onmouseover="this.style.transform='translateY(-10px)'"
+                             onmouseout="this.style.transform='translateY(0)'">
+
+                            <img src="https://placehold.co/300x400/e2e8f0/64748b?text=Kongre+Afişi+@i"
+                                 class="card-img-top"
+                                 alt="@Localizer["ConferencePosterAlt"]">
                         </div>
                     </a>
                 </div>

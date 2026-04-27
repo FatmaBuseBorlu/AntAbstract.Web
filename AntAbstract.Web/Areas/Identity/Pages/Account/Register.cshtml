@@ -245,7 +245,7 @@
                 </div>
 
                 <form asp-route-returnUrl="@Model.ReturnUrl" method="post" enctype="multipart/form-data">
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0 rounded-3 small mb-4" role="alert"></div>
+                    <div asp-validation-summary="All" class="alert alert-danger border-0 rounded-3 small mb-4" role="alert"></div>
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-4">
@@ -274,10 +274,12 @@
                         <div class="col-md-4">
                             <label asp-for="Input.AlternativeEmail" class="form-label">@Localizer["AlternativeEmail"]</label>
                             <input asp-for="Input.AlternativeEmail" class="form-control" placeholder="@Localizer["Optional"]" />
+                            <span asp-validation-for="Input.AlternativeEmail" class="text-danger small"></span>
                         </div>
                         <div class="col-md-4">
                             <label asp-for="Input.PhoneNumber" class="form-label">@Localizer["Phone"]</label>
                             <input asp-for="Input.PhoneNumber" class="form-control" placeholder="@Localizer["PhonePlaceholder"]" />
+                            <span asp-validation-for="Input.PhoneNumber" class="text-danger small"></span>
                         </div>
                     </div>
 
@@ -333,14 +335,23 @@
                             <label asp-for="Input.ProfileImage" class="form-label">@Localizer["ProfileImage"]</label>
                             <input asp-for="Input.ProfileImage" type="file" class="form-control form-control-sm" />
                             <small class="text-muted" style="font-size: 0.7rem;">@Localizer["ProfileImageHint"]</small>
+                            <span asp-validation-for="Input.ProfileImage" class="text-danger small d-block mt-1"></span>
                         </div>
                         <div class="col-md-6">
                             <div class="form-check">
                                 <input asp-for="Input.TermsAccepted" class="form-check-input" type="checkbox" id="termsCheckbox" />
-                                <label class="form-check-label small text-muted">
-                                    <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal" class="text-decoration-none fw-bold" style="color: var(--primary-color);">@Localizer["TermsLink"]</a> @Localizer["TermsAcceptedText"]
+                                <label class="form-check-label small text-muted" for="termsCheckbox">
+                                    @Localizer["TermsAcceptedText"]
+                                    <a href="#"
+                                       data-bs-toggle="modal"
+                                       data-bs-target="#termsModal"
+                                       class="text-decoration-none fw-bold ms-1"
+                                       style="color: var(--primary-color);">
+                                        @Localizer["TermsLink"]
+                                    </a>
                                 </label>
                             </div>
+                            <span asp-validation-for="Input.TermsAccepted" class="text-danger small d-block mt-1"></span>
                         </div>
                     </div>
 
