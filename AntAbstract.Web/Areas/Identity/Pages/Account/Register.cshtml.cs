@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using AntAbstract.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -39,60 +37,60 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
         }
 
         [BindProperty]
-        public InputModel Input { get; set; }
+        public InputModel Input { get; set; } = new();
 
-        public string ReturnUrl { get; set; }
+        public string? ReturnUrl { get; set; }
 
-        public SelectList UniversityList { get; set; }
-        public SelectList TitleList { get; set; }
-        public SelectList FacultyList { get; set; }
-        public SelectList DepartmentList { get; set; }
+        public SelectList UniversityList { get; set; } = default!;
+        public SelectList TitleList { get; set; } = default!;
+        public SelectList FacultyList { get; set; } = default!;
+        public SelectList DepartmentList { get; set; } = default!;
 
         public class InputModel
         {
             [Required(ErrorMessage = "İsim zorunludur")]
-            public string FirstName { get; set; }
+            public string FirstName { get; set; } = string.Empty;
 
             [Required(ErrorMessage = "Soyisim zorunludur")]
-            public string LastName { get; set; }
+            public string LastName { get; set; } = string.Empty;
 
             [Required(ErrorMessage = "TC/Pasaport No zorunludur")]
-            public string IdentityNumber { get; set; }
+            public string IdentityNumber { get; set; } = string.Empty;
 
             [Required(ErrorMessage = "E-Posta zorunludur")]
             [EmailAddress(ErrorMessage = "Geçerli bir E-Posta giriniz")]
-            public string Email { get; set; }
+            public string Email { get; set; } = string.Empty;
 
-            [EmailAddress]
+            [EmailAddress(ErrorMessage = "Geçerli bir alternatif e-posta giriniz")]
             public string? AlternativeEmail { get; set; }
 
-            [Phone]
-            public string PhoneNumber { get; set; }
+            [Phone(ErrorMessage = "Geçerli bir telefon numarası giriniz")]
+            public string? PhoneNumber { get; set; }
 
             [Required(ErrorMessage = "Lütfen kurumunuzu seçiniz")]
-            public string University { get; set; }
+            public string University { get; set; } = string.Empty;
 
             [Required(ErrorMessage = "Lütfen ünvanınızı seçiniz")]
-            public string Title { get; set; }
+            public string Title { get; set; } = string.Empty;
 
             [Required(ErrorMessage = "Lütfen fakültenizi seçiniz")]
-            public string Faculty { get; set; }
+            public string Faculty { get; set; } = string.Empty;
 
             [Required(ErrorMessage = "Lütfen bölümünüzü seçiniz")]
-            public string Department { get; set; }
+            public string Department { get; set; } = string.Empty;
 
             [Required(ErrorMessage = "Şifre zorunludur")]
             [StringLength(100, ErrorMessage = "{0} en az {2} karakter olmalıdır.", MinimumLength = 6)]
             [DataType(DataType.Password)]
-            public string Password { get; set; }
+            public string Password { get; set; } = string.Empty;
 
+            [Required(ErrorMessage = "Şifre tekrarı zorunludur")]
             [DataType(DataType.Password)]
             [Compare("Password", ErrorMessage = "Şifreler eşleşmiyor.")]
-            public string ConfirmPassword { get; set; }
+            public string ConfirmPassword { get; set; } = string.Empty;
 
             public IFormFile? ProfileImage { get; set; }
 
-            [Range(typeof(bool), "true", "true", ErrorMessage = "Kullanım koşullarını kabul etmelisiniz.")]
             public bool TermsAccepted { get; set; }
         }
 
@@ -111,72 +109,96 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             DepartmentList = new SelectList(parameters.Where(p => p.Group == "Department"), "Name", "Name");
         }
 
-        public async Task OnGetAsync(string returnUrl = null)
+        public async Task OnGetAsync(string? returnUrl = null)
         {
             ReturnUrl = returnUrl;
             await LoadDropdownListsAsync();
         }
 
-        public async Task<IActionResult> OnPostAsync(string returnUrl = null)
+        public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
         {
+            ReturnUrl = returnUrl;
             returnUrl ??= Url.Content("~/");
 
-            if (ModelState.IsValid)
+            await LoadDropdownListsAsync();
+
+            // Checkbox kontrolü
+            if (!Input.TermsAccepted)
             {
-                var user = new AppUser
+                ModelState.AddModelError("Input.TermsAccepted", "Kullanım koşullarını kabul etmelisiniz.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return Page();
+            }
+
+            var existingUser = await _userManager.FindByEmailAsync(Input.Email);
+            if (existingUser != null)
+            {
+                ModelState.AddModelError(string.Empty, "Bu e-posta adresi ile zaten kayıtlı bir kullanıcı var.");
+                return Page();
+            }
+
+            var user = new AppUser
+            {
+                UserName = Input.Email,
+                Email = Input.Email,
+                FirstName = Input.FirstName,
+                LastName = Input.LastName,
+                IdentityNumber = Input.IdentityNumber,
+                AlternativeEmail = Input.AlternativeEmail,
+                PhoneNumber = Input.PhoneNumber,
+                University = Input.University,
+                Title = Input.Title,
+                Faculty = Input.Faculty,
+                Department = Input.Department,
+                EmailConfirmed = true
+            };
+
+            if (Input.ProfileImage != null && Input.ProfileImage.Length > 0)
+            {
+                try
                 {
-                    UserName = Input.Email,
-                    Email = Input.Email,
-                    FirstName = Input.FirstName,
-                    LastName = Input.LastName,
-                    IdentityNumber = Input.IdentityNumber,
-                    AlternativeEmail = Input.AlternativeEmail,
-                    PhoneNumber = Input.PhoneNumber,
-                    University = Input.University,
-                    Title = Input.Title,
-                    Faculty = Input.Faculty,
-                    Department = Input.Department
-                };
+                    var extension = Path.GetExtension(Input.ProfileImage.FileName);
+                    var newFileName = Guid.NewGuid() + extension;
+                    var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "users");
 
-                if (Input.ProfileImage != null)
-                {
-                    try
-                    {
-                        var extension = Path.GetExtension(Input.ProfileImage.FileName);
-                        var newFileName = Guid.NewGuid().ToString() + extension;
-                        var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "users");
-                        if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
+                    if (!Directory.Exists(folderPath))
+                        Directory.CreateDirectory(folderPath);
 
-                        var filePath = Path.Combine(folderPath, newFileName);
+                    var filePath = Path.Combine(folderPath, newFileName);
 
-                        using (var stream = new FileStream(filePath, FileMode.Create))
-                        {
-                            await Input.ProfileImage.CopyToAsync(stream);
-                        }
-                        user.ProfileImagePath = "/uploads/users/" + newFileName;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError("Resim yüklenirken hata oluştu: " + ex.Message);
-                    }
+                    using var stream = new FileStream(filePath, FileMode.Create);
+                    await Input.ProfileImage.CopyToAsync(stream);
+
+                    user.ProfileImagePath = "/uploads/users/" + newFileName;
                 }
-
-                var result = await _userManager.CreateAsync(user, Input.Password);
-
-                if (result.Succeeded)
+                catch
                 {
-                    _logger.LogInformation("Kullanıcı başarıyla oluşturuldu.");
-                    await _signInManager.SignInAsync(user, isPersistent: false);
-                    return LocalRedirect(returnUrl);
-                }
-
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError(string.Empty, error.Description);
+                    ModelState.AddModelError(string.Empty, "Profil resmi yüklenirken bir hata oluştu.");
+                    return Page();
                 }
             }
 
-            await LoadDropdownListsAsync();
+            var result = await _userManager.CreateAsync(user, Input.Password);
+
+            if (result.Succeeded)
+            {
+                if (!await _userManager.IsInRoleAsync(user, "Author"))
+                {
+                    await _userManager.AddToRoleAsync(user, "Author");
+                }
+
+                await _signInManager.SignInAsync(user, isPersistent: false);
+                return LocalRedirect(returnUrl);
+            }
+
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
             return Page();
         }
     }

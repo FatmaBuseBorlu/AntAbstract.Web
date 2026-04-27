@@ -6,10 +6,17 @@
     ViewData["Title"] = Model.Conference?.Title ?? Localizer["DefaultPageTitle"].Value;
 
     var hero = Model.Blocks?.FirstOrDefault(x => x.BlockType == ConferencePageBlockType.Hero);
+
     var others = Model.Blocks?
         .Where(x => x.BlockType != ConferencePageBlockType.Hero && x.IsActive)
         .OrderBy(x => x.Order)
         .ToList() ?? new List<ConferencePageBlock>();
+
+    var slug = Model.Conference?.Tenant?.Slug ?? Model.Conference?.Slug ?? "";
+
+    var registrationUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/registration"
+        : $"/{slug}/registration";
 }
 
 @if (Model.Conference == null)
@@ -203,9 +210,13 @@ else
             <div class="sticky-sidebar">
 
                 <div class="d-flex justify-content-center mb-5 mx-auto" style="max-width: 240px;">
-                    <a href="/Submission/Create" class="modern-red-pulse-btn">
+                    <a href="@registrationUrl" class="modern-red-pulse-btn">
                         <i class="fas fa-cloud-upload-alt fa-3x mb-2 opacity-75"></i>
-                        <span class="fs-6 fw-bold mb-1 opacity-75">@Localizer["OnlineLabel"]</span>
+
+                        <span class="fs-6 fw-bold mb-1 opacity-75">
+                            @Localizer["OnlineLabel"]
+                        </span>
+
                         <span class="fs-4 fw-bolder lh-1 text-center">
                             @Localizer["RegisterLabel"]<br>@Localizer["SubmitAbstractLabel"]
                         </span>

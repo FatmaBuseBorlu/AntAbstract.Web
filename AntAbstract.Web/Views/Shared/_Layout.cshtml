@@ -245,8 +245,16 @@
         var isHomeAboutPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "About", StringComparison.OrdinalIgnoreCase);
         var isHomeContactPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Contact", StringComparison.OrdinalIgnoreCase);
         var isHomeCongressesPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Congresses", StringComparison.OrdinalIgnoreCase);
+        var isRegistrationPage = string.Equals(controller, "Registration", StringComparison.OrdinalIgnoreCase);
 
-        var hideAdminNav = isAdminArea || isAdminAssignmentPath || isHomeIndexPage || isHomeAboutPage || isHomeContactPage || isHomeCongressesPage;
+        var hideAdminNav =
+        isAdminArea ||
+        isAdminAssignmentPath ||
+        isHomeIndexPage ||
+        isHomeAboutPage ||
+        isHomeContactPage ||
+        isHomeCongressesPage ||
+        isRegistrationPage;
 
         var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? Tc.Current?.Slug ?? Context.Session.GetString("SelectedConferenceSlug") ?? "";
         var selectedConferenceId = SelectedConferenceService.GetSelectedConferenceId();

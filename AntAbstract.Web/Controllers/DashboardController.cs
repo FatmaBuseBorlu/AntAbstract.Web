@@ -130,6 +130,26 @@ namespace AntAbstract.Web.Controllers
                 .ToListAsync();
         }
 
+        private async Task<bool> UserCanAccessConferenceAsync(AppUser user, Guid conferenceId)
+        {
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+            if (isAdmin)
+                return true;
+
+            var isOrganizator = await _userManager.IsInRoleAsync(user, "Organizator");
+            if (isOrganizator)
+            {
+                if (!user.TenantId.HasValue)
+                    return false;
+
+                return await _context.Conferences
+                    .AsNoTracking()
+                    .AnyAsync(c => c.Id == conferenceId && c.TenantId == user.TenantId.Value);
+            }
+
+            return await GetUserConferenceIds(user.Id).AnyAsync(id => id == conferenceId);
+        }
+
         private static bool IsAdminReturnUrl(string returnUrl)
         {
             var parts = returnUrl.Split('?', 2);
@@ -190,6 +210,7 @@ namespace AntAbstract.Web.Controllers
         public IActionResult SelectConference(Guid conferenceId, string? returnUrl = null)
         {
             var slug = GetSlug();
+
             var effectiveReturnUrl = string.IsNullOrWhiteSpace(returnUrl)
                 ? (string.IsNullOrWhiteSpace(slug) ? "/Dashboard" : $"/{slug}/Dashboard")
                 : returnUrl;
@@ -224,16 +245,11 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(MyConferences), new { slug = GetSlug() });
             }
 
-            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-            var isOrganizator = await _userManager.IsInRoleAsync(user, "Organizator");
-
-            if (!isAdmin && isOrganizator)
+            var canAccess = await UserCanAccessConferenceAsync(user, conferenceId);
+            if (!canAccess)
             {
-                if (conf.TenantId != user.TenantId)
-                {
-                    TempData["ErrorMessage"] = _localizer["UnauthorizedConferenceAccess"].Value;
-                    return RedirectToAction(nameof(MyConferences), new { slug = GetSlug() });
-                }
+                TempData["ErrorMessage"] = _localizer["UnauthorizedConferenceAccess"].Value;
+                return RedirectToAction(nameof(MyConferences), new { slug = GetSlug() });
             }
 
             var selectedSlug = conf.Tenant?.Slug ?? conf.Slug ?? GetSlug();
@@ -260,17 +276,15 @@ namespace AntAbstract.Web.Controllers
             if (user == null)
                 return Challenge();
 
-            var isAdminLike = await IsAdminLikeAsync(user);
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
             var selectedConferenceId = GetSelectedConferenceId();
             var slug = GetSlug();
 
-            if (selectedConferenceId.HasValue && !isAdmin && user.TenantId.HasValue)
+            if (selectedConferenceId.HasValue)
             {
-                var isAuthorizedForSessionConf = await _context.Conferences
-                    .AnyAsync(c => c.Id == selectedConferenceId.Value && c.TenantId == user.TenantId.Value);
+                var canAccessSelectedConference = await UserCanAccessConferenceAsync(user, selectedConferenceId.Value);
 
-                if (!isAuthorizedForSessionConf)
+                if (!canAccessSelectedConference)
                 {
                     ClearSelectedConference();
                     TempData["ErrorMessage"] = _localizer["UnauthorizedPreviousConferenceAccess"].Value;
@@ -364,8 +378,11 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> MyConferences()
         {
             var user = await _userManager.GetUserAsync(User);
+
             if (user == null)
+            {
                 return Challenge();
+            }
 
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
             var isOrganizator = await _userManager.IsInRoleAsync(user, "Organizator");
@@ -379,6 +396,7 @@ namespace AntAbstract.Web.Controllers
                 else
                 {
                     var autoConf = await _context.Conferences
+                        .AsNoTracking()
                         .Include(c => c.Tenant)
                         .Where(c => c.TenantId == user.TenantId.Value)
                         .OrderByDescending(c => c.StartDate)
@@ -386,45 +404,79 @@ namespace AntAbstract.Web.Controllers
 
                     if (autoConf != null)
                     {
-                        var selectedSlug = autoConf.Tenant?.Slug ?? _tenantContext.Current?.Slug;
+                        var selectedSlug = autoConf.Tenant?.Slug ?? _tenantContext.Current?.Slug ?? autoConf.Slug ?? "";
+
                         SaveSelectedConference(autoConf.TenantId, autoConf.Id, selectedSlug);
-                        return Redirect($"/{selectedSlug}/Dashboard");
+
+                        if (!string.IsNullOrWhiteSpace(selectedSlug))
+                        {
+                            return Redirect($"/{selectedSlug}/Dashboard");
+                        }
+
+                        return RedirectToAction(nameof(Index));
                     }
-                    else
-                    {
-                        TempData["InfoMessage"] = _localizer["NoConferenceAssignedToInstitution"].Value;
-                    }
+
+                    TempData["InfoMessage"] = _localizer["NoConferenceAssignedToInstitution"].Value;
                 }
             }
 
-            var query = _context.Conferences
-                .AsNoTracking()
-                .Include(c => c.Tenant)
-                .AsQueryable();
+            List<Conference> registeredConferences;
+            List<Conference> availableConferences;
 
             if (isAdmin)
             {
+                registeredConferences = await _context.Conferences
+                    .AsNoTracking()
+                    .Include(c => c.Tenant)
+                    .OrderByDescending(c => c.StartDate)
+                    .ToListAsync();
+
+                availableConferences = new List<Conference>();
             }
             else if (isOrganizator)
             {
                 if (user.TenantId.HasValue)
                 {
-                    query = query.Where(c => c.TenantId == user.TenantId.Value);
+                    registeredConferences = await _context.Conferences
+                        .AsNoTracking()
+                        .Include(c => c.Tenant)
+                        .Where(c => c.TenantId == user.TenantId.Value)
+                        .OrderByDescending(c => c.StartDate)
+                        .ToListAsync();
                 }
                 else
                 {
-                    query = query.Where(c => false);
+                    registeredConferences = new List<Conference>();
                 }
+
+                availableConferences = new List<Conference>();
             }
             else
             {
-                var myConfIds = GetUserConferenceIds(user.Id);
-                query = query.Where(c => myConfIds.Contains(c.Id));
+                var myConfIds = await GetUserConferenceIds(user.Id)
+                    .Distinct()
+                    .ToListAsync();
+
+                registeredConferences = await _context.Conferences
+                    .AsNoTracking()
+                    .Include(c => c.Tenant)
+                    .Where(c => myConfIds.Contains(c.Id))
+                    .OrderByDescending(c => c.StartDate)
+                    .ToListAsync();
+
+                availableConferences = await _context.Conferences
+                    .AsNoTracking()
+                    .Include(c => c.Tenant)
+                    .Where(c =>
+                        c.EndDate.Date >= DateTime.Today &&
+                        !myConfIds.Contains(c.Id))
+                    .OrderBy(c => c.StartDate)
+                    .ToListAsync();
             }
 
-            var conferences = await query.OrderByDescending(c => c.StartDate).ToListAsync();
+            ViewBag.AvailableConferences = availableConferences;
 
-            return View(conferences);
+            return View(registeredConferences);
         }
 
         [HttpPost]
