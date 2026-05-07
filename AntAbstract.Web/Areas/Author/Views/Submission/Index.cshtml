@@ -1,11 +1,38 @@
 ﻿@using AntAbstract.Application.DTOs.Submission
 @using AntAbstract.Domain.Entities
+@using Microsoft.AspNetCore.Http
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model List<SubmissionDto>
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
+
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString()
+        ?? Context.Session.GetString("SelectedConferenceSlug")
+        ?? "";
+
+    string BuildConferenceUrl(string cleanPath, string fallbackPath)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+        {
+            return fallbackPath;
+        }
+
+        return $"/{slug}{cleanPath}";
+    }
+
+    var allSubmissionsUrl = "/Submission/Index";
+
+    var indexUrl = BuildConferenceUrl(
+        "/my-submissions",
+        "/Submission/Index"
+    );
+
+    var createUrl = BuildConferenceUrl(
+        "/submit-abstract",
+        "/Submission/Create"
+    );
 }
 
 <style>
@@ -113,31 +140,36 @@
 
     <div class="d-flex justify-content-between align-items-center mb-5">
         <div>
-            <h3 class="fw-bold text-dark mb-1">@Localizer["PageTitle"]</h3>
-            <p class="text-muted mb-0">@Localizer["PageLead"]</p>
+            <h3 class="fw-bold text-dark mb-1">
+                @Localizer["PageTitle"]
+            </h3>
+
+            <p class="text-muted mb-0">
+                @Localizer["PageLead"]
+            </p>
         </div>
 
         @if (ViewBag.CurrentConferenceTitle != null)
         {
             <div class="d-none d-md-block ms-4 me-auto">
                 <span class="badge bg-info bg-opacity-10 text-info border border-info px-3 py-2 rounded-pill">
-                    <i class="fas fa-filter me-1"></i> @ViewBag.CurrentConferenceTitle
+                    <i class="fas fa-filter me-1"></i>
+                    @ViewBag.CurrentConferenceTitle
                 </span>
-                <a href="/Submission/Index" class="btn btn-link btn-sm text-decoration-none text-muted ms-1">@Localizer["ViewAllButton"]</a>
+
+                <a href="@allSubmissionsUrl"
+                   class="btn btn-link btn-sm text-decoration-none text-muted ms-1">
+                    @Localizer["ViewAllButton"]
+                </a>
             </div>
         }
 
-        <a href="/Submission/Create" class="btn btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm hover-scale">
-            <i class="fas fa-plus-circle me-2"></i> @Localizer["NewSubmissionButton"]
+        <a href="@createUrl"
+           class="btn btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm hover-scale">
+            <i class="fas fa-plus-circle me-2"></i>
+            @Localizer["NewSubmissionButton"]
         </a>
     </div>
-
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center">
-            <i class="fas fa-check-circle me-2 fs-5"></i> @TempData["SuccessMessage"]
-        </div>
-    }
 
     @if (Model != null && Model.Any())
     {
@@ -171,6 +203,26 @@
                     _ => item.Status
                 };
 
+                var detailsUrl = BuildConferenceUrl(
+                $"/my-submissions/{item.Id}",
+                $"/Submission/Details/{item.Id}"
+                );
+
+                var editUrl = BuildConferenceUrl(
+                $"/my-submissions/{item.Id}/edit",
+                $"/Submission/Edit/{item.Id}"
+                );
+
+                var deleteUrl = BuildConferenceUrl(
+                $"/my-submissions/{item.Id}/delete",
+                $"/Submission/Delete/{item.Id}"
+                );
+
+                var acceptanceLetterUrl = BuildConferenceUrl(
+                $"/my-submissions/{item.Id}/acceptance-letter",
+                $"/Submission/DownloadAcceptanceLetter/{item.Id}"
+                );
+
                 <div class="col-md-6 col-xl-4">
                     <div class="submission-card p-4">
 
@@ -179,6 +231,7 @@
                                 <i class="far fa-calendar-alt me-2 text-primary opacity-50"></i>
                                 @item.CreatedDate.ToLocalTime().ToString("dd MMM yyyy")
                             </div>
+
                             <span class="status-badge @statusClass">
                                 @statusText
                             </span>
@@ -188,11 +241,16 @@
                             <div class="card-icon-box me-3">
                                 <i class="fas fa-file-alt"></i>
                             </div>
+
                             <div>
-                                <h6 class="fw-bold text-dark mb-1 text-truncate" style="max-width: 250px;" title="@item.Title">
+                                <h6 class="fw-bold text-dark mb-1 text-truncate"
+                                    style="max-width: 250px;"
+                                    title="@item.Title">
                                     @item.Title
                                 </h6>
-                                <p class="mb-0 small text-muted text-truncate" style="max-width: 250px;">
+
+                                <p class="mb-0 small text-muted text-truncate"
+                                   style="max-width: 250px;">
                                     <i class="fas fa-globe me-1 text-secondary opacity-50"></i>
                                     @(item.ConferenceTitle ?? Localizer["ConferenceNotSpecified"].Value)
                                 </p>
@@ -202,36 +260,57 @@
                         <div class="mb-3">
                             <div class="d-flex flex-wrap gap-2">
                                 <span class="badge bg-light text-secondary border fw-normal">
-                                    <i class="fas fa-users me-1"></i> @(item.Authors?.Count ?? 0) @Localizer["AuthorsLabel"]
+                                    <i class="fas fa-users me-1"></i>
+                                    @(item.Authors?.Count ?? 0) @Localizer["AuthorsLabel"]
                                 </span>
-                                @if (!string.IsNullOrEmpty(item.Keywords))
+
+                                @if (!string.IsNullOrWhiteSpace(item.Topic))
+                                {
+                                    <span class="badge bg-light text-secondary border fw-normal">
+                                        <i class="fas fa-layer-group me-1"></i>
+                                        @item.Topic
+                                    </span>
+                                }
+                                else if (!string.IsNullOrWhiteSpace(item.Keywords))
                                 {
                                     var firstKey = item.Keywords.Split(',')[0];
+
                                     <span class="badge bg-light text-secondary border fw-normal">
-                                        <i class="fas fa-tag me-1"></i> @firstKey
+                                        <i class="fas fa-tag me-1"></i>
+                                        @firstKey
                                     </span>
                                 }
                             </div>
                         </div>
 
                         <div class="card-actions">
-                            <a href="@Url.Action("Details", "Submission", new { area = "", id = item.Id })" class="btn btn-light border btn-card-action text-dark">
-                                <i class="fas fa-eye me-1 text-primary"></i> @Localizer["DetailButton"]
+                            <a href="@detailsUrl"
+                               class="btn btn-light border btn-card-action text-dark">
+                                <i class="fas fa-eye me-1 text-primary"></i>
+                                @Localizer["DetailButton"]
                             </a>
 
                             @if (statusEnum == SubmissionStatus.New || statusEnum == SubmissionStatus.RevisionRequired)
                             {
-                                <a href="@Url.Action("Edit", "Submission", new { area = "", id = item.Id })" class="btn btn-light border btn-card-action text-dark">
-                                    <i class="fas fa-edit me-1 text-warning"></i> @Localizer["EditButton"]
+                                <a href="@editUrl"
+                                   class="btn btn-light border btn-card-action text-dark">
+                                    <i class="fas fa-edit me-1 text-warning"></i>
+                                    @Localizer["EditButton"]
                                 </a>
-                                <a href="@Url.Action("Delete", "Submission", new { area = "", id = item.Id })" class="btn btn-light border btn-card-action text-dark">
-                                    <i class="fas fa-trash-alt me-1 text-danger"></i> @Localizer["DeleteButton"]
+
+                                <a href="@deleteUrl"
+                                   class="btn btn-light border btn-card-action text-dark">
+                                    <i class="fas fa-trash-alt me-1 text-danger"></i>
+                                    @Localizer["DeleteButton"]
                                 </a>
                             }
-                            else if (statusEnum == SubmissionStatus.Accepted)
+                            else if (statusEnum == SubmissionStatus.Accepted || statusEnum == SubmissionStatus.Presented)
                             {
-                                <a href="@Url.Action("DownloadAcceptanceLetter", "Submission", new { area = "", id = item.Id })" class="btn btn-success btn-card-action text-white" target="_blank">
-                                    <i class="fas fa-certificate me-1"></i> @Localizer["DocumentButton"]
+                                <a href="@acceptanceLetterUrl"
+                                   class="btn btn-success btn-card-action text-white"
+                                   target="_blank">
+                                    <i class="fas fa-certificate me-1"></i>
+                                    @Localizer["DocumentButton"]
                                 </a>
                             }
                         </div>
@@ -245,15 +324,23 @@
     {
         <div class="row justify-content-center mt-5">
             <div class="col-md-6 text-center">
-                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 120px; height: 120px;">
+                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-4"
+                     style="width: 120px; height: 120px;">
                     <i class="fas fa-folder-open fa-4x text-muted opacity-25"></i>
                 </div>
-                <h4 class="fw-bold text-dark">@Localizer["EmptyTitle"]</h4>
+
+                <h4 class="fw-bold text-dark">
+                    @Localizer["EmptyTitle"]
+                </h4>
+
                 <p class="text-muted mb-4">
                     @Localizer["EmptyMessage"]
                 </p>
-                <a href="/Submission/Create" class="btn btn-primary px-5 py-3 rounded-pill fw-bold shadow-sm hover-scale">
-                    <i class="fas fa-paper-plane me-2"></i> @Localizer["FirstSubmissionButton"]
+
+                <a href="@createUrl"
+                   class="btn btn-primary px-5 py-3 rounded-pill fw-bold shadow-sm hover-scale">
+                    <i class="fas fa-paper-plane me-2"></i>
+                    @Localizer["FirstSubmissionButton"]
                 </a>
             </div>
         </div>

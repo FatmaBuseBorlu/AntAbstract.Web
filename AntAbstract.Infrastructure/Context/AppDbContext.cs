@@ -27,20 +27,27 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<Certificate> Certificates { get; set; }
         public DbSet<ConferenceAttendance> ConferenceAttendances { get; set; }
 
+        public DbSet<ConferenceTopic> ConferenceTopics { get; set; }
+
         public DbSet<Submission> Submissions { get; set; }
+        public DbSet<SubmissionAuthor> SubmissionAuthors { get; set; }
+        public DbSet<SubmissionFile> SubmissionFiles { get; set; }
+
         public DbSet<ReviewAssignment> ReviewAssignments { get; set; }
         public DbSet<Review> Reviews { get; set; }
+
         public DbSet<Message> Messages { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+
         public DbSet<Registration> Registrations { get; set; }
         public DbSet<RegistrationType> RegistrationTypes { get; set; }
         public DbSet<Payment> Payments { get; set; }
+
         public DbSet<Hotel> Hotels { get; set; }
         public DbSet<RoomType> RoomTypes { get; set; }
         public DbSet<TransferOption> TransferOptions { get; set; }
         public DbSet<AccommodationBooking> AccommodationBookings { get; set; }
-        public DbSet<SubmissionAuthor> SubmissionAuthors { get; set; }
-        public DbSet<SubmissionFile> SubmissionFiles { get; set; }
+
         public DbSet<SystemParameter> SystemParameters { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -61,11 +68,56 @@ namespace AntAbstract.Infrastructure.Context
                 }
             }
 
-            builder.Entity<Submission>()
-                .HasMany(s => s.ReviewAssignments)
-                .WithOne(ra => ra.Submission)
-                .HasForeignKey(ra => ra.SubmissionId)
-                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<Submission>(entity =>
+            {
+                entity.HasMany(s => s.ReviewAssignments)
+                    .WithOne(ra => ra.Submission)
+                    .HasForeignKey(ra => ra.SubmissionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(s => s.ConferenceTopic)
+                    .WithMany()
+                    .HasForeignKey(s => s.ConferenceTopicId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(s => s.Topic)
+                    .HasMaxLength(150);
+
+                entity.Property(s => s.PresentationType)
+                    .HasMaxLength(50);
+            });
+
+            builder.Entity<ConferenceTopic>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+
+                entity.Property(x => x.Name)
+                    .IsRequired()
+                    .HasMaxLength(150);
+
+                entity.Property(x => x.NameEn)
+                    .HasMaxLength(150);
+
+                entity.Property(x => x.Description)
+                    .HasMaxLength(500);
+
+                entity.Property(x => x.DescriptionEn)
+                    .HasMaxLength(500);
+
+                entity.Property(x => x.IsActive)
+                    .HasDefaultValue(true);
+
+                entity.Property(x => x.SortOrder)
+                    .HasDefaultValue(0);
+
+                entity.Property(x => x.CreatedDate)
+                    .HasDefaultValueSql("GETUTCDATE()");
+
+                entity.HasOne(x => x.Conference)
+                    .WithMany()
+                    .HasForeignKey(x => x.ConferenceId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
             builder.Entity<Certificate>()
                 .HasIndex(x => new { x.ConferenceId, x.UserId, x.Type })
@@ -78,7 +130,6 @@ namespace AntAbstract.Infrastructure.Context
             builder.Entity<ConferencePageBlock>()
                 .HasIndex(x => new { x.TenantId, x.ConferenceId, x.Page, x.Culture, x.Order });
 
-
             builder.Entity<ReviewAssignment>()
                 .HasOne(ra => ra.Reviewer)
                 .WithMany()
@@ -87,30 +138,46 @@ namespace AntAbstract.Infrastructure.Context
 
             builder.Entity<Message>(entity =>
             {
-                entity.HasOne(m => m.Sender).WithMany().HasForeignKey(m => m.SenderId).OnDelete(DeleteBehavior.Restrict);
-                entity.HasOne(m => m.Receiver).WithMany().HasForeignKey(m => m.ReceiverId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(m => m.Sender)
+                    .WithMany()
+                    .HasForeignKey(m => m.SenderId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(m => m.Receiver)
+                    .WithMany()
+                    .HasForeignKey(m => m.ReceiverId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             builder.Entity<Registration>()
-                .HasOne(r => r.Conference).WithMany(c => c.Registrations).HasForeignKey(r => r.ConferenceId).OnDelete(DeleteBehavior.Restrict);
+                .HasOne(r => r.Conference)
+                .WithMany(c => c.Registrations)
+                .HasForeignKey(r => r.ConferenceId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Entity<RegistrationType>().Property(x => x.Description).HasDefaultValue("");
+            builder.Entity<RegistrationType>()
+                .Property(x => x.Description)
+                .HasDefaultValue("");
 
             builder.Entity<AccommodationBooking>()
-                .HasOne(b => b.RoomType).WithMany().HasForeignKey(b => b.RoomTypeId).OnDelete(DeleteBehavior.Restrict);
+                .HasOne(b => b.RoomType)
+                .WithMany()
+                .HasForeignKey(b => b.RoomTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<ReviewAssignment>()
                 .HasOne(ra => ra.Review)
                 .WithOne(r => r.ReviewAssignment)
                 .HasForeignKey<Review>(r => r.ReviewAssignmentId)
-                .OnDelete(DeleteBehavior.Restrict); 
+                .OnDelete(DeleteBehavior.Restrict);
         }
 
         static readonly MethodInfo SetGlobalQueryMethod = typeof(AppDbContext)
             .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
             .Single(t => t.IsGenericMethod && t.Name == nameof(SetGlobalQuery));
 
-        private void SetGlobalQuery<T>(ModelBuilder builder, Guid tenantId) where T : class, IMustHaveTenant
+        private void SetGlobalQuery<T>(ModelBuilder builder, Guid tenantId)
+            where T : class, IMustHaveTenant
         {
             builder.Entity<T>().HasQueryFilter(e => e.TenantId == tenantId);
         }

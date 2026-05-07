@@ -245,7 +245,25 @@
                 </div>
 
                 <form asp-route-returnUrl="@Model.ReturnUrl" method="post" enctype="multipart/form-data">
-                    <div asp-validation-summary="All" class="alert alert-danger border-0 rounded-3 small mb-4" role="alert"></div>
+
+                    @{
+                        var hasValidationErrors =
+                        !ViewData.ModelState.IsValid &&
+                        ViewData.ModelState.Values.Any(v =>
+                        v.Errors.Any(e =>
+                        !string.IsNullOrWhiteSpace(e.ErrorMessage) ||
+                        e.Exception != null
+                        )
+                        );
+                    }
+
+                    @if (hasValidationErrors)
+                    {
+                        <div asp-validation-summary="All"
+                             class="alert alert-danger border-0 rounded-3 small mb-4"
+                             role="alert">
+                        </div>
+                    }
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-4">

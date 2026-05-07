@@ -1,7 +1,9 @@
 ﻿@using AntAbstract.Web.Models.ViewModels.Admin.Dashboard
 @using Microsoft.AspNetCore.Mvc.Localization
+@using Microsoft.AspNetCore.Routing
 @using System.Globalization
 @model DashboardViewModel
+
 @inject AntAbstract.Infrastructure.Context.TenantContext Tc
 @inject IViewLocalizer Localizer
 
@@ -9,12 +11,33 @@
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
+    Func<string, string, string> L = (key, fallback) =>
+    {
+        var text = Localizer[key].Value;
+        return string.Equals(text, key, StringComparison.OrdinalIgnoreCase) ? fallback : text;
+    };
+
     bool isReferee = ViewBag.IsReferee ?? false;
     bool isAuthor = ViewBag.IsAuthor ?? false;
     bool isAdmin = User.IsInRole("Admin");
 
     int pendingReviews = ViewBag.PendingReviews ?? 0;
     int completedReviews = ViewBag.CompletedReviews ?? 0;
+
+    string? selectedConferenceIdStr = null;
+
+    if (Tc.Current != null)
+    {
+        selectedConferenceIdStr = Context.Session.GetString($"SelectedConferenceId:{Tc.Current.Id}");
+    }
+
+    selectedConferenceIdStr ??= Context.Session.GetString("SelectedConferenceId");
+
+    Guid? selectedConferenceId = Guid.TryParse(selectedConferenceIdStr, out var parsedConferenceId)
+        ? parsedConferenceId
+        : null;
+
+    var hasSelectedConference = selectedConferenceId.HasValue;
 
     string mainColumnClass = isAdmin ? "col-12" : "col-xl-8 col-lg-8";
     string sideColumnClass = isAdmin ? "d-none" : "col-xl-4 col-lg-4";
@@ -27,9 +50,10 @@
     var submissionCreateUrl = $"{baseUrl}/Submission/Create";
     var submissionIndexUrl = $"{baseUrl}/Submission/Index";
     var reviewIndexUrl = $"{baseUrl}/Review/Index";
+    var messageIndexUrl = $"{baseUrl}/Message/Index";
 
-    var conferenceDisplayName = string.IsNullOrEmpty(Model.ConferenceName)
-        ? Localizer["GeneralManagementPanel"].Value
+    var conferenceDisplayName = string.IsNullOrWhiteSpace(Model.ConferenceName)
+        ? L("GeneralManagementPanel", "Genel Yönetim Paneli")
         : Model.ConferenceName;
 }
 
@@ -211,29 +235,56 @@
             <div class="col-lg-8">
                 <div class="d-flex align-items-center mb-2">
                     <span class="badge bg-white text-primary bg-opacity-25 border border-white border-opacity-25 rounded-pill me-2 px-3">
-                        <i class="fas fa-satellite-dish me-1"></i> @Localizer["WorkspaceBadge"]
+                        <i class="fas fa-satellite-dish me-1"></i>
+                        @L("WorkspaceBadge", "Çalışma Alanı")
                     </span>
                 </div>
+
                 <h2 class="fw-bold mb-1">@conferenceDisplayName</h2>
+
                 <p class="mb-0 opacity-75">
-                    <i class="far fa-calendar-alt me-1"></i> @DateTime.Now.ToString("dd MMMM yyyy, dddd", CultureInfo.CurrentUICulture)
+                    <i class="far fa-calendar-alt me-1"></i>
+                    @DateTime.Now.ToString("dd MMMM yyyy, dddd", CultureInfo.CurrentUICulture)
                 </p>
             </div>
+
             <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
                 <a href="@dashboardMyConferencesUrl" class="btn hero-btn rounded-pill px-4 py-2 fw-bold shadow-sm">
-                    <i class="fas fa-exchange-alt me-2"></i> @Localizer["ChangeConference"]
+                    <i class="fas fa-exchange-alt me-2"></i>
+                    @L("ChangeConference", "Kongre Değiştir")
                 </a>
             </div>
         </div>
     </div>
 
+    @if (!hasSelectedConference && !isAdmin)
+    {
+        <div class="alert alert-warning border-0 shadow-sm rounded-4 mb-4">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-exclamation-circle fs-3 me-3"></i>
+
+                <div>
+                    <h6 class="fw-bold mb-1">İşlem yapmak için önce kongre seçmelisiniz</h6>
+                    <small>
+                        Bildiri gönderme, ödeme ve program gibi işlemler seçili kongreye göre çalışır.
+                    </small>
+                </div>
+
+                <a href="@dashboardMyConferencesUrl" class="btn btn-warning rounded-pill fw-bold ms-auto px-4">
+                    Kongre Seç
+                </a>
+            </div>
+        </div>
+    }
+
     @if (isAdmin)
     {
         <div class="alert alert-primary bg-primary bg-opacity-10 border-primary border-opacity-25 text-primary d-flex align-items-center mb-4 rounded-4 shadow-sm">
             <i class="fas fa-user-shield fs-3 me-3"></i>
+
             <div>
-                <h6 class="fw-bold mb-0">@Localizer["AdminViewTitle"]</h6>
-                <small>@Localizer["AdminViewDescription"]</small>
+                <h6 class="fw-bold mb-0">@L("AdminViewTitle", "Admin Görünümü")</h6>
+                <small>@L("AdminViewDescription", "Sistem yönetimi ve kongre süreçlerini buradan takip edebilirsiniz.")</small>
             </div>
         </div>
     }
@@ -243,66 +294,94 @@
 
             @if (isReferee && !isAdmin)
             {
-                <h6 class="text-muted fw-bold small text-uppercase mb-3 ps-1">@Localizer["RefereeStatus"]</h6>
+                <h6 class="text-muted fw-bold small text-uppercase mb-3 ps-1">
+                    @L("RefereeStatus", "Hakemlik Durumu")
+                </h6>
+
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
                         <div class="stat-card border-start border-4 border-warning">
                             <div>
-                                <h6 class="text-muted small fw-bold mb-1">@Localizer["PendingReview"]</h6>
+                                <h6 class="text-muted small fw-bold mb-1">@L("PendingReview", "Bekleyen Değerlendirme")</h6>
                                 <h3 class="fw-bold text-dark mb-0">@pendingReviews</h3>
                             </div>
-                            <div class="icon-box theme-orange bg-opacity-25"><i class="fas fa-gavel"></i></div>
+
+                            <div class="icon-box theme-orange bg-opacity-25">
+                                <i class="fas fa-gavel"></i>
+                            </div>
                         </div>
                     </div>
+
                     <div class="col-md-6">
                         <div class="stat-card border-start border-4 border-success">
                             <div>
-                                <h6 class="text-muted small fw-bold mb-1">@Localizer["Completed"]</h6>
+                                <h6 class="text-muted small fw-bold mb-1">@L("Completed", "Tamamlanan")</h6>
                                 <h3 class="fw-bold text-dark mb-0">@completedReviews</h3>
                             </div>
-                            <div class="icon-box theme-green bg-opacity-25"><i class="fas fa-check-circle"></i></div>
+
+                            <div class="icon-box theme-green bg-opacity-25">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
             }
             else if (!isAdmin)
             {
-                <h6 class="text-muted fw-bold small text-uppercase mb-3 ps-1">@Localizer["SubmissionStatus"]</h6>
+                <h6 class="text-muted fw-bold small text-uppercase mb-3 ps-1">
+                    @L("SubmissionStatus", "Bildiri Durumu")
+                </h6>
+
                 <div class="row g-3 mb-5">
                     <div class="col-6 col-md-3">
                         <div class="stat-card">
                             <div>
-                                <h6 class="text-muted small fw-bold mb-1">@Localizer["Total"]</h6>
+                                <h6 class="text-muted small fw-bold mb-1">@L("Total", "Toplam")</h6>
                                 <h3 class="fw-bold text-dark mb-0">@Model.TotalSubmissions</h3>
                             </div>
-                            <div class="icon-box theme-blue"><i class="fas fa-file-alt"></i></div>
+
+                            <div class="icon-box theme-blue">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
                         </div>
                     </div>
+
                     <div class="col-6 col-md-3">
                         <div class="stat-card">
                             <div>
-                                <h6 class="text-muted small fw-bold mb-1">@Localizer["Awaiting"]</h6>
+                                <h6 class="text-muted small fw-bold mb-1">@L("Awaiting", "Bekleyen")</h6>
                                 <h3 class="fw-bold text-dark mb-0">@Model.AwaitingDecision</h3>
                             </div>
-                            <div class="icon-box theme-orange"><i class="fas fa-hourglass-half"></i></div>
+
+                            <div class="icon-box theme-orange">
+                                <i class="fas fa-hourglass-half"></i>
+                            </div>
                         </div>
                     </div>
+
                     <div class="col-6 col-md-3">
                         <div class="stat-card">
                             <div>
-                                <h6 class="text-muted small fw-bold mb-1">@Localizer["Accepted"]</h6>
+                                <h6 class="text-muted small fw-bold mb-1">@L("Accepted", "Kabul")</h6>
                                 <h3 class="fw-bold text-dark mb-0">@Model.AcceptedSubmissions</h3>
                             </div>
-                            <div class="icon-box theme-green"><i class="fas fa-check-circle"></i></div>
+
+                            <div class="icon-box theme-green">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
                         </div>
                     </div>
+
                     <div class="col-6 col-md-3">
                         <div class="stat-card">
                             <div>
-                                <h6 class="text-muted small fw-bold mb-1">@Localizer["Rejected"]</h6>
+                                <h6 class="text-muted small fw-bold mb-1">@L("Rejected", "Ret")</h6>
                                 <h3 class="fw-bold text-dark mb-0">@Model.RejectedSubmissions</h3>
                             </div>
-                            <div class="icon-box theme-red"><i class="fas fa-times-circle"></i></div>
+
+                            <div class="icon-box theme-red">
+                                <i class="fas fa-times-circle"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -310,17 +389,41 @@
 
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
                 <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold mb-0">@Localizer["QuickActions"]</h6>
-                    @if (!isAdmin && !isReferee)
+                    <h6 class="fw-bold mb-0">@L("QuickActions", "Hızlı İşlemler")</h6>
+
+                    @if (!isAdmin && !isReferee && hasSelectedConference)
                     {
                         <a href="@submissionIndexUrl" class="btn btn-sm btn-light text-primary fw-bold rounded-pill px-3">
-                            @Localizer["AllMySubmissions"] <i class="fas fa-arrow-right ms-1"></i>
+                            @L("AllMySubmissions", "Tüm Bildirilerim")
+                            <i class="fas fa-arrow-right ms-1"></i>
                         </a>
                     }
                 </div>
+
                 <div class="card-body p-4 text-center">
 
-                    @if (Model.TotalSubmissions == 0 && !isAdmin && !isReferee)
+                    @if (!hasSelectedConference && !isAdmin)
+                    {
+                        <div class="py-4">
+                            <div class="mb-3">
+                                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                    <i class="fas fa-hand-pointer fa-3x text-primary opacity-25"></i>
+                                </div>
+                            </div>
+
+                            <h5 class="fw-bold text-dark">Önce Kongre Seçmelisiniz</h5>
+
+                            <p class="text-muted small mb-4">
+                                Başvuru, ödeme, program ve sertifika işlemleri seçili kongre üzerinden ilerler.
+                            </p>
+
+                            <a href="@dashboardMyConferencesUrl" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm fw-bold">
+                                <i class="fas fa-calendar-check me-2"></i>
+                                Kongre Seç
+                            </a>
+                        </div>
+                    }
+                    else if (Model.TotalSubmissions == 0 && !isAdmin && !isReferee)
                     {
                         <div class="py-4">
                             <div class="mb-3">
@@ -328,10 +431,16 @@
                                     <i class="fas fa-paper-plane fa-3x text-primary opacity-25"></i>
                                 </div>
                             </div>
-                            <h5 class="fw-bold text-dark">@Localizer["NoSubmissionTitle"]</h5>
-                            <p class="text-muted small mb-4">@Localizer["NoSubmissionDescription"]</p>
+
+                            <h5 class="fw-bold text-dark">@L("NoSubmissionTitle", "Henüz başvurunuz yok")</h5>
+
+                            <p class="text-muted small mb-4">
+                                @L("NoSubmissionDescription", "Seçili kongre için yeni bir bildiri başvurusu oluşturabilirsiniz.")
+                            </p>
+
                             <a href="@submissionCreateUrl" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm fw-bold">
-                                <i class="fas fa-plus me-2"></i> @Localizer["CreateNewSubmission"]
+                                <i class="fas fa-plus me-2"></i>
+                                @L("CreateNewSubmission", "Yeni Bildiri Oluştur")
                             </a>
                         </div>
                     }
@@ -344,8 +453,10 @@
                                 <div class="col-md-4">
                                     <a href="@reviewIndexUrl" class="quick-btn" style="border-left: 4px solid #f59e0b;">
                                         <i class="fas fa-gavel text-warning"></i>
-                                        <span class="fw-bold text-dark">@Localizer["ReviewPanel"]</span>
-                                        <small class="text-muted" style="font-size: 0.7rem;">@Localizer["RefereeEntry"]</small>
+                                        <span class="fw-bold text-dark">@L("ReviewPanel", "Hakem Paneli")</span>
+                                        <small class="text-muted" style="font-size: 0.7rem;">
+                                            @L("RefereeEntry", "Değerlendirme ekranı")
+                                        </small>
                                     </a>
                                 </div>
                             }
@@ -355,21 +466,22 @@
                                 <div class="col-md-4">
                                     <a href="@submissionCreateUrl" class="quick-btn">
                                         <i class="fas fa-plus-circle text-primary"></i>
-                                        <span class="fw-bold">@Localizer["AddNewSubmission"]</span>
+                                        <span class="fw-bold">@L("AddNewSubmission", "Yeni Bildiri Ekle")</span>
                                     </a>
                                 </div>
+
                                 <div class="col-md-4">
                                     <a href="@submissionIndexUrl" class="quick-btn">
                                         <i class="fas fa-list text-dark"></i>
-                                        <span class="fw-bold">@Localizer["ViewMySubmissions"]</span>
+                                        <span class="fw-bold">@L("ViewMySubmissions", "Bildirilerimi Gör")</span>
                                     </a>
                                 </div>
                             }
 
                             <div class="col-md-4">
-                                <a href="/Message/Index" class="quick-btn">
+                                <a href="@messageIndexUrl" class="quick-btn">
                                     <i class="fas fa-envelope text-secondary"></i>
-                                    <span class="fw-bold">@Localizer["Messages"]</span>
+                                    <span class="fw-bold">@L("Messages", "Mesajlar")</span>
                                 </a>
                             </div>
                         </div>
@@ -377,40 +489,65 @@
                 </div>
             </div>
 
-            @if ((isReferee || isAdmin) && !isAdmin)
+            @if (isReferee && !isAdmin)
             {
                 <div class="row g-4 mt-1">
                     <div class="col-12">
                         <div class="card border-0 shadow-sm rounded-4 h-100">
                             <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
                                 <h6 class="fw-bold mb-0 text-dark">
-                                    <i class="far fa-clock text-danger me-2"></i>@Localizer["NeedsAttention"]
+                                    <i class="far fa-clock text-danger me-2"></i>
+                                    @L("NeedsAttention", "Dikkat Gerektirenler")
                                 </h6>
-                                <span class="badge bg-danger bg-opacity-10 text-danger">@Localizer["Urgent"]</span>
+
+                                <span class="badge bg-danger bg-opacity-10 text-danger">
+                                    @L("Urgent", "Acil")
+                                </span>
                             </div>
+
                             <div class="card-body p-4">
                                 <div class="d-flex align-items-center mb-3 pb-3 border-bottom border-light">
                                     <div class="bg-danger bg-opacity-10 text-danger rounded-3 p-2 me-3 text-center" style="width: 50px;">
-                                        <span class="d-block fw-bold small">@Localizer["JanShort"]</span>
+                                        <span class="d-block fw-bold small">@L("JanShort", "Oca")</span>
                                         <span class="d-block fw-bold fs-5">15</span>
                                     </div>
+
                                     <div class="flex-grow-1">
-                                        <h6 class="mb-1 text-truncate fw-bold text-dark" style="max-width: 300px;">@Localizer["SampleReviewTitle1"]</h6>
-                                        <small class="text-danger fw-bold"><i class="fas fa-exclamation-circle me-1"></i> @Localizer["Last2Days"]</small>
+                                        <h6 class="mb-1 text-truncate fw-bold text-dark" style="max-width: 300px;">
+                                            @L("SampleReviewTitle1", "Değerlendirme bekleyen bildiri")
+                                        </h6>
+
+                                        <small class="text-danger fw-bold">
+                                            <i class="fas fa-exclamation-circle me-1"></i>
+                                            @L("Last2Days", "Son 2 gün")
+                                        </small>
                                     </div>
-                                    <a href="@reviewIndexUrl" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-3">@Localizer["Review"]</a>
+
+                                    <a href="@reviewIndexUrl" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-3">
+                                        @L("Review", "İncele")
+                                    </a>
                                 </div>
 
                                 <div class="d-flex align-items-center">
                                     <div class="bg-warning bg-opacity-10 text-warning rounded-3 p-2 me-3 text-center" style="width: 50px;">
-                                        <span class="d-block fw-bold small">@Localizer["JanShort"]</span>
+                                        <span class="d-block fw-bold small">@L("JanShort", "Oca")</span>
                                         <span class="d-block fw-bold fs-5">20</span>
                                     </div>
+
                                     <div class="flex-grow-1">
-                                        <h6 class="mb-1 text-truncate fw-bold text-dark" style="max-width: 300px;">@Localizer["SampleReviewTitle2"]</h6>
-                                        <small class="text-muted"><i class="far fa-clock me-1"></i> @Localizer["OneWeekLeft"]</small>
+                                        <h6 class="mb-1 text-truncate fw-bold text-dark" style="max-width: 300px;">
+                                            @L("SampleReviewTitle2", "Yaklaşan değerlendirme")
+                                        </h6>
+
+                                        <small class="text-muted">
+                                            <i class="far fa-clock me-1"></i>
+                                            @L("OneWeekLeft", "1 hafta kaldı")
+                                        </small>
                                     </div>
-                                    <a href="@reviewIndexUrl" class="btn btn-sm btn-light text-muted border rounded-pill px-3">@Localizer["Detail"]</a>
+
+                                    <a href="@reviewIndexUrl" class="btn btn-sm btn-light text-muted border rounded-pill px-3">
+                                        @L("Detail", "Detay")
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -423,32 +560,60 @@
         <div class="@sideColumnClass">
             <div class="conf-list-card mb-4">
                 <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
-                    <h6 class="fw-bold mb-0 text-dark">@Localizer["MyRegisteredCongresses"]</h6>
-                    <a href="@dashboardMyConferencesUrl" class="text-decoration-none small fw-bold">@Localizer["AllCaps"]</a>
+                    <h6 class="fw-bold mb-0 text-dark">
+                        @L("MyRegisteredCongresses", "Kayıtlı Kongrelerim")
+                    </h6>
+
+                    <a href="@dashboardMyConferencesUrl" class="text-decoration-none small fw-bold">
+                        @L("AllCaps", "Tümü")
+                    </a>
                 </div>
+
                 <div class="list-group list-group-flush">
                     @if (Model.MyConferences != null && Model.MyConferences.Any())
                     {
                         @foreach (var conf in Model.MyConferences.Take(5))
                         {
                             var tenantSlug = conf.Tenant?.Slug ?? conf.Slug ?? "";
-                            var isActive = conf.Title == Model.ConferenceName;
-                            <form asp-controller="Dashboard" asp-action="SelectConferencePost" asp-route-slug="@tenantSlug" method="post">
+                            var isActive = selectedConferenceId.HasValue && selectedConferenceId.Value == conf.Id;
+
+                            var selectReturnUrl = string.IsNullOrWhiteSpace(tenantSlug)
+                            ? "/Dashboard"
+                            : $"/{tenantSlug}/Dashboard";
+
+                            <form asp-controller="Dashboard"
+                                  asp-action="SelectConferencePost"
+                                  asp-route-slug="@tenantSlug"
+                                  method="post">
+
                                 @Html.AntiForgeryToken()
+
                                 <input type="hidden" name="conferenceId" value="@conf.Id" />
-                                <input type="hidden" name="returnUrl" value="@dashboardUrl" />
+                                <input type="hidden" name="returnUrl" value="@selectReturnUrl" />
+
                                 <button type="submit" class="conf-item-btn">
                                     <div class="conf-item @(isActive ? "active" : "")">
                                         <div class="date-box">
-                                            <div class="date-month">@conf.StartDate.ToString("MMM", CultureInfo.CurrentUICulture).ToUpper()</div>
-                                            <div class="date-day">@conf.StartDate.Day</div>
+                                            <div class="date-month">
+                                                @conf.StartDate.ToString("MMM", CultureInfo.CurrentUICulture).ToUpper()
+                                            </div>
+
+                                            <div class="date-day">
+                                                @conf.StartDate.Day
+                                            </div>
                                         </div>
+
                                         <div class="flex-grow-1 overflow-hidden">
-                                            <h6 class="fw-bold text-dark mb-0 text-truncate small" title="@conf.Title">@conf.Title</h6>
+                                            <h6 class="fw-bold text-dark mb-0 text-truncate small" title="@conf.Title">
+                                                @conf.Title
+                                            </h6>
+
                                             <small class="text-muted d-block text-truncate" style="font-size: 0.7rem;">
-                                                <i class="fas fa-map-marker-alt me-1"></i> @(conf.City ?? Localizer["Online"].Value)
+                                                <i class="fas fa-map-marker-alt me-1"></i>
+                                                @(conf.City ?? L("Online", "Online"))
                                             </small>
                                         </div>
+
                                         @if (isActive)
                                         {
                                             <i class="fas fa-check-circle text-primary ms-2"></i>
@@ -462,21 +627,32 @@
                     {
                         <div class="p-5 text-center text-muted">
                             <i class="fas fa-calendar-times mb-2 fs-4"></i>
-                            <p class="small mb-0">@Localizer["NoRegisteredCongressYet"]</p>
+                            <p class="small mb-0">
+                                @L("NoRegisteredCongressYet", "Henüz kayıtlı kongreniz yok.")
+                            </p>
                         </div>
                     }
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden text-white position-relative" style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%);">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden text-white position-relative"
+                 style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%);">
+
                 <div class="card-body p-4 position-relative z-1">
-                    <h6 class="fw-bold mb-2">@Localizer["NeedHelp"]</h6>
-                    <p class="small opacity-75 mb-3">@Localizer["SupportDescription"]</p>
+                    <h6 class="fw-bold mb-2">@L("NeedHelp", "Yardıma mı ihtiyacınız var?")</h6>
+
+                    <p class="small opacity-75 mb-3">
+                        @L("SupportDescription", "Destek ekibimizden yardım alabilirsiniz.")
+                    </p>
+
                     <a href="/Home/Contact" class="btn btn-light text-dark fw-bold w-100 rounded-pill shadow-sm btn-sm">
-                        <i class="fas fa-headset me-2"></i> @Localizer["CreateSupportRequest"]
+                        <i class="fas fa-headset me-2"></i>
+                        @L("CreateSupportRequest", "Destek Talebi Oluştur")
                     </a>
                 </div>
-                <i class="fas fa-life-ring position-absolute text-white opacity-10" style="font-size: 5rem; right: -20px; bottom: -20px;"></i>
+
+                <i class="fas fa-life-ring position-absolute text-white opacity-10"
+                   style="font-size: 5rem; right: -20px; bottom: -20px;"></i>
             </div>
         </div>
     </div>

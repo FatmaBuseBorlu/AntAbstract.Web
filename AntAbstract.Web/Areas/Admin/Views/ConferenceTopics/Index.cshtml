@@ -1,0 +1,176 @@
+﻿@using System.Globalization
+@using AntAbstract.Web.Models.ViewModels.Admin.ConferenceTopics
+
+@model AdminConferenceTopicsIndexModel
+
+@{
+    ViewData["Title"] = "Bildiri Konuları";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+
+    var slug = Model.Slug ?? "";
+    var currentUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+    var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+
+    string T(string tr, string en)
+    {
+        return isEnglish ? en : tr;
+    }
+}
+
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="fw-bold mb-1 text-dark">
+                @T("Bildiri Konuları / Temalar", "Abstract Topics / Themes")
+            </h3>
+
+            <div class="text-muted">
+                @T("Kongre:", "Conference:")
+                <span class="badge bg-light text-dark border">
+                    @Model.ConferenceTitle
+                </span>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a class="btn btn-primary btn-sm"
+               href="/@slug/Admin/ConferenceTopics/Create?returnUrl=@Uri.EscapeDataString(currentUrl)">
+                <i class="fas fa-plus me-1"></i>
+                @T("Yeni Konu Ekle", "Add New Topic")
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:80px;">
+                                @T("Sıra", "Order")
+                            </th>
+
+                            <th>
+                                @T("Konu Adı", "Topic Name")
+                            </th>
+
+                            <th>
+                                @T("Açıklama", "Description")
+                            </th>
+
+                            <th style="width:110px;">
+                                @T("Durum", "Status")
+                            </th>
+
+                            <th style="width:120px;">
+                                @T("Bildiri", "Submissions")
+                            </th>
+
+                            <th style="width:220px;">
+                                @T("İşlem", "Action")
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @if (Model.Items == null || !Model.Items.Any())
+                        {
+                            <tr>
+                                <td colspan="6">
+                                    <div class="alert alert-info border-0 m-3">
+                                        @T(
+                                        "Bu kongre için henüz bildiri konusu eklenmemiş.",
+                                                                        "No abstract topics have been added for this conference yet."
+                                                                        )
+                                </div>
+                            </td>
+                        </tr>
+                                                }
+                        else
+                        {
+                            foreach (var item in Model.Items)
+                            {
+                                var topicName = isEnglish && !string.IsNullOrWhiteSpace(item.NameEn)
+                                ? item.NameEn
+                                : item.Name;
+
+                                var topicDescription = isEnglish && !string.IsNullOrWhiteSpace(item.DescriptionEn)
+                                ? item.DescriptionEn
+                                : item.Description;
+
+                                var shortDescription = string.IsNullOrWhiteSpace(topicDescription)
+                                ? ""
+                                : topicDescription.Length > 140
+                                ? topicDescription.Substring(0, 140) + "..."
+                                : topicDescription;
+
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">
+                                            @item.SortOrder
+                                        </span>
+                                    </td>
+
+                                    <td class="fw-semibold text-dark">
+                                        @topicName
+                                    </td>
+
+                                    <td class="text-muted">
+                                        @shortDescription
+                                    </td>
+
+                                    <td>
+                                        @if (item.IsActive)
+                                        {
+                                            <span class="badge bg-success">
+                                                @T("Aktif", "Active")
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">
+                                                @T("Pasif", "Passive")
+                                            </span>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        <span class="badge bg-light text-dark border">
+                                            @item.SubmissionCount
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <div class="d-flex gap-2">
+                                            <a class="btn btn-sm btn-outline-primary"
+                                               href="/@slug/Admin/ConferenceTopics/Edit/@item.Id?returnUrl=@Uri.EscapeDataString(currentUrl)">
+                                                @T("Düzenle", "Edit")
+                                            </a>
+
+                                            <form method="post"
+                                                  action="/@slug/Admin/ConferenceTopics/Delete"
+                                                  onsubmit="return confirm('@T("Bu konuyu silmek istediğinize emin misiniz?", "Are you sure you want to delete this topic?")');">
+
+                                                @Html.AntiForgeryToken()
+
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <input type="hidden" name="returnUrl" value="@currentUrl" />
+
+                                                <button class="btn btn-sm btn-outline-danger" type="submit">
+                                                    @T("Sil", "Delete")
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>

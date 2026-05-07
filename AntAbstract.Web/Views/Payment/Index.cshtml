@@ -1,12 +1,45 @@
-﻿@model AntAbstract.Domain.Entities.Payment
+﻿@using System.Globalization
+@model AntAbstract.Domain.Entities.Payment
+
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
-    Layout = "_LayoutDashboard";
+
+    /*
+        Kayıt akışı public taraftan başladığı için ödeme ekranında _Layout kullanmak daha tutarlı.
+        Eğer bu sayfayı özellikle dashboard içinde göstermek istersen bunu tekrar "_LayoutDashboard" yapabilirsin.
+    */
+    Layout = "_Layout";
+
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? "";
+
+    var amountText = Model.Amount.ToString("N2", CultureInfo.CurrentCulture);
 }
 
 <style>
+    .payment-page {
+        background: #f8fafc;
+        min-height: calc(100vh - 120px);
+        padding: 70px 0;
+    }
+
+    .payment-header {
+        text-align: center;
+        margin-bottom: 34px;
+    }
+
+    .payment-title {
+        font-weight: 800;
+        color: #0f172a;
+        letter-spacing: -0.5px;
+    }
+
+    .payment-description {
+        color: #64748b;
+        margin-bottom: 0;
+    }
+
     .credit-card-box {
         background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
         border-radius: 16px;
@@ -53,6 +86,7 @@
         justify-content: space-between;
         margin-bottom: 12px;
         font-size: 0.95rem;
+        gap: 16px;
     }
 
     .total-row {
@@ -60,153 +94,303 @@
         padding-top: 15px;
         margin-top: 15px;
     }
+
+    .payment-card {
+        border: none;
+        border-radius: 24px;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+    }
+
+    .payment-side-card {
+        border: none;
+        border-radius: 24px;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.05);
+    }
+
+    .secure-note {
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+
+    @@media (max-width: 768px) {
+        .payment-page {
+            padding: 40px 0;
+        }
+    }
 </style>
 
-<div class="container-fluid px-0">
+<div class="payment-page">
+    <div class="container">
 
-    <div class="mb-4">
-        <h3 class="fw-bold text-dark mb-1">@Localizer["PageHeading"]</h3>
-        <p class="text-muted">@Localizer["PageDescription"]</p>
-    </div>
+        <div class="payment-header">
+            <h2 class="payment-title mb-2">
+                @Localizer["PageHeading"]
+            </h2>
 
-    <div class="row g-4">
-
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4 p-4">
-                <form asp-action="ProcessPayment" method="post" id="paymentForm">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" asp-for="ConferenceId" />
-                    <input type="hidden" asp-for="RelatedSubmissionId" />
-
-                    <h5 class="fw-bold text-dark mb-4">
-                        <i class="far fa-address-card me-2 text-primary"></i> @Localizer["BillingInfoTitle"]
-                    </h5>
-
-                    <div class="row g-3 mb-5">
-                        <div class="col-md-6">
-                            <div class="form-floating">
-                                <input asp-for="BillingName" class="form-control" placeholder="@Localizer["BillingNamePlaceholder"]" required />
-                                <label>@Localizer["BillingNameLabel"]</label>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <div class="form-floating">
-                                <input asp-for="TaxNumber" class="form-control" placeholder="@Localizer["TaxNumberPlaceholder"]" />
-                                <label>@Localizer["TaxNumberLabel"]</label>
-                            </div>
-                        </div>
-
-                        <div class="col-12">
-                            <div class="form-floating">
-                                <textarea asp-for="BillingAddress" class="form-control" placeholder="@Localizer["BillingAddressPlaceholder"]" style="height: 80px" required></textarea>
-                                <label>@Localizer["BillingAddressLabel"]</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <h5 class="fw-bold text-dark mb-4">
-                        <i class="far fa-credit-card me-2 text-primary"></i> @Localizer["CardInfoTitle"]
-                    </h5>
-
-                    <div class="row g-4">
-                        <div class="col-md-5 d-none d-md-block">
-                            <div class="credit-card-box d-flex flex-column justify-content-between">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div class="card-chip"></div>
-                                    <i class="fab fa-cc-visa fa-2x opacity-50"></i>
-                                </div>
-                                <div>
-                                    <div class="fs-5" style="letter-spacing: 2px; font-family: monospace;">**** **** **** ****</div>
-                                </div>
-                                <div class="d-flex justify-content-between small opacity-75">
-                                    <span>@Localizer["CardHolderPreview"]</span>
-                                    <span>@Localizer["ExpiryPreview"]</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-7">
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" id="cc-name" placeholder="@Localizer["CardHolderNamePlaceholder"]" required />
-                                <label>@Localizer["CardHolderNameLabel"]</label>
-                            </div>
-
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" id="cc-number" placeholder="@Localizer["CardNumberPlaceholder"]" maxlength="19" required />
-                                <label>@Localizer["CardNumberLabel"]</label>
-                            </div>
-
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <div class="form-floating">
-                                        <input type="text" class="form-control" id="cc-expiry" placeholder="@Localizer["ExpiryPlaceholder"]" maxlength="5" required />
-                                        <label>@Localizer["ExpiryLabel"]</label>
-                                    </div>
-                                </div>
-
-                                <div class="col-6">
-                                    <div class="form-floating">
-                                        <input type="text" class="form-control" id="cc-cvc" placeholder="@Localizer["CvcPlaceholder"]" maxlength="3" required />
-                                        <label>@Localizer["CvcLabel"]</label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mt-5">
-                        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-sm" style="font-size: 1.1rem;">
-                            <i class="fas fa-lock me-2"></i> @Model.Amount.ToString("N2") @Model.Currency @Localizer["PayButtonSuffix"]
-                        </button>
-                        <p class="text-center text-muted small mt-3">
-                            <i class="fas fa-shield-alt text-success me-1"></i> @Localizer["SslInfoText"]
-                        </p>
-                    </div>
-                </form>
-            </div>
+            <p class="payment-description">
+                @Localizer["PageDescription"]
+            </p>
         </div>
 
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-light">
-                <h6 class="fw-bold text-dark mb-3">@Localizer["OrderSummaryTitle"]</h6>
+        <div class="row g-4">
 
-                <div class="d-flex align-items-center mb-3">
-                    <div class="bg-white p-2 rounded border me-3">
-                        <i class="fas fa-ticket-alt text-primary fa-lg"></i>
-                    </div>
-                    <div>
-                        <div class="fw-bold text-dark text-truncate" style="max-width: 200px;">@Model.Conference?.Title</div>
-                        <small class="text-muted">@Localizer["ConferenceRegistrationText"]</small>
-                    </div>
-                </div>
+            <div class="col-lg-8">
+                <div class="card payment-card p-4">
+                    <form asp-controller="Payment"
+                          asp-action="ProcessPayment"
+                          asp-route-slug="@slug"
+                          method="post"
+                          id="paymentForm">
 
-                <div class="summary-item">
-                    <span class="text-muted">@Localizer["ServiceFeeLabel"]</span>
-                    <span class="fw-bold text-dark">@Model.Amount.ToString("N2") @Model.Currency</span>
-                </div>
+                        @Html.AntiForgeryToken()
 
-                <div class="summary-item">
-                    <span class="text-muted">@Localizer["VatLabel"]</span>
-                    <span class="fw-bold text-dark">@Localizer["IncludedText"]</span>
-                </div>
+                        <input type="hidden" asp-for="ConferenceId" />
+                        <input type="hidden" asp-for="RelatedSubmissionId" />
 
-                <div class="summary-item total-row align-items-center">
-                    <span class="fw-bold text-dark fs-5">@Localizer["TotalLabel"]</span>
-                    <span class="fw-bold text-primary fs-4">@Model.Amount.ToString("N2") @Model.Currency</span>
+                        <h5 class="fw-bold text-dark mb-4">
+                            <i class="far fa-address-card me-2 text-primary"></i>
+                            @Localizer["BillingInfoTitle"]
+                        </h5>
+
+                        <div class="row g-3 mb-5">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input asp-for="BillingName"
+                                           class="form-control"
+                                           placeholder="@Localizer["BillingNamePlaceholder"]"
+                                           required />
+
+                                    <label>
+                                        @Localizer["BillingNameLabel"]
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input asp-for="TaxNumber"
+                                           class="form-control"
+                                           placeholder="@Localizer["TaxNumberPlaceholder"]" />
+
+                                    <label>
+                                        @Localizer["TaxNumberLabel"]
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input asp-for="TaxOffice"
+                                           class="form-control"
+                                           placeholder="@Localizer["TaxOfficePlaceholder"]" />
+
+                                    <label>
+                                        @Localizer["TaxOfficeLabel"]
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input class="form-control"
+                                           value="@Model.Currency"
+                                           readonly
+                                           placeholder="@Localizer["CurrencyLabel"]" />
+
+                                    <label>
+                                        @Localizer["CurrencyLabel"]
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <textarea asp-for="BillingAddress"
+                                              class="form-control"
+                                              placeholder="@Localizer["BillingAddressPlaceholder"]"
+                                              style="height: 90px"
+                                              required></textarea>
+
+                                    <label>
+                                        @Localizer["BillingAddressLabel"]
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h5 class="fw-bold text-dark mb-4">
+                            <i class="far fa-credit-card me-2 text-primary"></i>
+                            @Localizer["CardInfoTitle"]
+                        </h5>
+
+                        <div class="row g-4">
+                            <div class="col-md-5 d-none d-md-block">
+                                <div class="credit-card-box d-flex flex-column justify-content-between">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="card-chip"></div>
+                                        <i class="fab fa-cc-visa fa-2x opacity-50"></i>
+                                    </div>
+
+                                    <div>
+                                        <div class="fs-5" style="letter-spacing: 2px; font-family: monospace;">
+                                            **** **** **** ****
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between small opacity-75">
+                                        <span>@Localizer["CardHolderPreview"]</span>
+                                        <span>@Localizer["ExpiryPreview"]</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-7">
+                                <div class="form-floating mb-3">
+                                    <input type="text"
+                                           class="form-control"
+                                           id="cc-name"
+                                           placeholder="@Localizer["CardHolderNamePlaceholder"]"
+                                           required />
+
+                                    <label>
+                                        @Localizer["CardHolderNameLabel"]
+                                    </label>
+                                </div>
+
+                                <div class="form-floating mb-3">
+                                    <input type="text"
+                                           class="form-control"
+                                           id="cc-number"
+                                           placeholder="@Localizer["CardNumberPlaceholder"]"
+                                           maxlength="19"
+                                           required />
+
+                                    <label>
+                                        @Localizer["CardNumberLabel"]
+                                    </label>
+                                </div>
+
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <div class="form-floating">
+                                            <input type="text"
+                                                   class="form-control"
+                                                   id="cc-expiry"
+                                                   placeholder="@Localizer["ExpiryPlaceholder"]"
+                                                   maxlength="5"
+                                                   required />
+
+                                            <label>
+                                                @Localizer["ExpiryLabel"]
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-6">
+                                        <div class="form-floating">
+                                            <input type="text"
+                                                   class="form-control"
+                                                   id="cc-cvc"
+                                                   placeholder="@Localizer["CvcPlaceholder"]"
+                                                   maxlength="3"
+                                                   required />
+
+                                            <label>
+                                                @Localizer["CvcLabel"]
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-5">
+                            <button type="submit"
+                                    class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-sm"
+                                    style="font-size: 1.1rem; background-color: #00aeef; border: none;">
+
+                                <i class="fas fa-lock me-2"></i>
+                                @amountText @Model.Currency @Localizer["PayButtonSuffix"]
+                            </button>
+
+                            <p class="text-center secure-note mt-3">
+                                <i class="fas fa-shield-alt text-success me-1"></i>
+                                @Localizer["SslInfoText"]
+                            </p>
+                        </div>
+                    </form>
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm rounded-4 p-4 mt-3">
-                <h6 class="fw-bold text-dark mb-2">
-                    <i class="fas fa-university me-2"></i>@Localizer["BankTransferTitle"]
-                </h6>
-                <p class="small text-muted mb-2">@Localizer["BankTransferDescription"]</p>
-                <div class="bg-white p-2 rounded border small font-monospace text-muted">
-                    TR12 0006 1000 0000 0012 3456 78
+            <div class="col-lg-4">
+                <div class="card payment-side-card p-4 bg-light">
+                    <h6 class="fw-bold text-dark mb-3">
+                        @Localizer["OrderSummaryTitle"]
+                    </h6>
+
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-white p-2 rounded border me-3">
+                            <i class="fas fa-ticket-alt text-primary fa-lg"></i>
+                        </div>
+
+                        <div>
+                            <div class="fw-bold text-dark text-truncate" style="max-width: 220px;">
+                                @Model.Conference?.Title
+                            </div>
+
+                            <small class="text-muted">
+                                @Localizer["ConferenceRegistrationText"]
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="summary-item">
+                        <span class="text-muted">
+                            @Localizer["ServiceFeeLabel"]
+                        </span>
+
+                        <span class="fw-bold text-dark">
+                            @amountText @Model.Currency
+                        </span>
+                    </div>
+
+                    <div class="summary-item">
+                        <span class="text-muted">
+                            @Localizer["VatLabel"]
+                        </span>
+
+                        <span class="fw-bold text-dark">
+                            @Localizer["IncludedText"]
+                        </span>
+                    </div>
+
+                    <div class="summary-item total-row align-items-center">
+                        <span class="fw-bold text-dark fs-5">
+                            @Localizer["TotalLabel"]
+                        </span>
+
+                        <span class="fw-bold text-primary fs-4">
+                            @amountText @Model.Currency
+                        </span>
+                    </div>
+                </div>
+
+                <div class="card payment-side-card p-4 mt-3">
+                    <h6 class="fw-bold text-dark mb-2">
+                        <i class="fas fa-university me-2"></i>
+                        @Localizer["BankTransferTitle"]
+                    </h6>
+
+                    <p class="small text-muted mb-2">
+                        @Localizer["BankTransferDescription"]
+                    </p>
+
+                    <div class="bg-white p-2 rounded border small font-monospace text-muted">
+                        TR12 0006 1000 0000 0012 3456 78
+                    </div>
                 </div>
             </div>
+
         </div>
-
     </div>
 </div>

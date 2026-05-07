@@ -1,21 +1,32 @@
-﻿@using AntAbstract.Web.Models.ViewModels
+﻿@using System.Globalization
+@using AntAbstract.Web.Models.ViewModels
 @using AntAbstract.Web.Models.ViewModels.Admin.RegistrationTypes
+
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
 @model AdminRegistrationTypesIndexModel
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+
     var slug = Model.Slug ?? "";
     var currentUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+    var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 }
 
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h3 class="fw-bold mb-1 text-dark">@Localizer["PageTitle"]</h3>
+            <h3 class="fw-bold mb-1 text-dark">
+                @Localizer["PageTitle"]
+            </h3>
+
             <div class="text-muted">
-                @Localizer["ConferenceLabel"] <span class="badge bg-light text-dark border">@Model.ConferenceTitle</span>
+                @Localizer["ConferenceLabel"]
+                <span class="badge bg-light text-dark border">
+                    @Model.ConferenceTitle
+                </span>
             </div>
         </div>
 
@@ -29,11 +40,16 @@
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success border-0 shadow-sm">@TempData["SuccessMessage"]</div>
+        <div class="alert alert-success border-0 shadow-sm">
+            @TempData["SuccessMessage"]
+        </div>
     }
+
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger border-0 shadow-sm">@TempData["ErrorMessage"]</div>
+        <div class="alert alert-danger border-0 shadow-sm">
+            @TempData["ErrorMessage"]
+        </div>
     }
 
     <div class="card border-0 shadow-sm">
@@ -41,20 +57,40 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>@Localizer["TableHeaderName"]</th>
-                        <th>@Localizer["TableHeaderDescription"]</th>
-                        <th style="width:140px;">@Localizer["TableHeaderPrice"]</th>
-                        <th style="width:120px;">@Localizer["TableHeaderCurrency"]</th>
-                        <th style="width:120px;">@Localizer["TableHeaderUsage"]</th>
-                        <th style="width:220px;">@Localizer["TableHeaderAction"]</th>
+                        <th>
+                            @Localizer["TableHeaderName"]
+                        </th>
+
+                        <th>
+                            @Localizer["TableHeaderDescription"]
+                        </th>
+
+                        <th style="width:140px;">
+                            @Localizer["TableHeaderPrice"]
+                        </th>
+
+                        <th style="width:120px;">
+                            @Localizer["TableHeaderCurrency"]
+                        </th>
+
+                        <th style="width:120px;">
+                            @Localizer["TableHeaderUsage"]
+                        </th>
+
+                        <th style="width:220px;">
+                            @Localizer["TableHeaderAction"]
+                        </th>
                     </tr>
                 </thead>
+
                 <tbody>
                     @if (Model.Items == null || !Model.Items.Any())
                     {
                         <tr>
                             <td colspan="6">
-                                <div class="alert alert-info border-0 m-3">@Localizer["EmptyMessage"]</div>
+                                <div class="alert alert-info border-0 m-3">
+                                    @Localizer["EmptyMessage"]
+                                </div>
                             </td>
                         </tr>
                     }
@@ -62,31 +98,58 @@
                     {
                         foreach (var item in Model.Items)
                         {
+                            var itemName = isEnglish && !string.IsNullOrWhiteSpace(item.NameEn)
+                            ? item.NameEn
+                            : item.Name;
+
+                            var itemDescription = isEnglish && !string.IsNullOrWhiteSpace(item.DescriptionEn)
+                            ? item.DescriptionEn
+                            : item.Description;
+
+                            var shortDescription = string.IsNullOrWhiteSpace(itemDescription)
+                            ? ""
+                            : itemDescription.Length > 120
+                            ? itemDescription.Substring(0, 120) + "..."
+                            : itemDescription;
+
                             <tr>
-                                <td class="fw-semibold">@item.Name</td>
+                                <td class="fw-semibold">
+                                    @itemName
+                                </td>
+
                                 <td class="text-muted">
-                                    @((item.Description ?? "").Length > 120
-                                                                ? (item.Description!.Substring(0, 120) + "...")
-                                                                : (item.Description ?? ""))
-                        </td>
-                        <td>@item.Price.ToString("N2")</td>
-                        <td>@item.Currency</td>
-                        <td>
-                            <span class="badge bg-light text-dark border">@item.UsageCount</span>
-                        </td>
-                        <td>
-                            <div class="d-flex gap-2">
-                                <a class="btn btn-sm btn-outline-primary"
-                                   href="/@slug/Admin/RegistrationTypes/Edit/@item.Id?returnUrl=@Uri.EscapeDataString(currentUrl)">
-                                    @Localizer["EditButton"]
-                                </a>
+                                    @shortDescription
+                                </td>
+
+                                <td>
+                                    @item.Price.ToString("N2", CultureInfo.CurrentCulture)
+                                </td>
+
+                                <td>
+                                    @item.Currency
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        @item.UsageCount
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <div class="d-flex gap-2">
+                                        <a class="btn btn-sm btn-outline-primary"
+                                           href="/@slug/Admin/RegistrationTypes/Edit/@item.Id?returnUrl=@Uri.EscapeDataString(currentUrl)">
+                                            @Localizer["EditButton"]
+                                        </a>
 
                                         <form method="post"
                                               action="/@slug/Admin/RegistrationTypes/Delete"
                                               onsubmit="return confirm('@Localizer["DeleteConfirmMessage"]');">
                                             @Html.AntiForgeryToken()
+
                                             <input type="hidden" name="id" value="@item.Id" />
                                             <input type="hidden" name="returnUrl" value="@currentUrl" />
+
                                             <button class="btn btn-sm btn-outline-danger" type="submit">
                                                 @Localizer["DeleteButton"]
                                             </button>
@@ -94,7 +157,7 @@
                                     </div>
                                 </td>
                             </tr>
-                                        }
+                        }
                     }
                 </tbody>
             </table>

@@ -1,0 +1,250 @@
+﻿@using System.Globalization
+@model AntAbstract.Domain.Entities.Payment
+
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
+@{
+    ViewData["Title"] = Localizer["PageTitle"].Value;
+    Layout = "_Layout";
+
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? "";
+
+    var dashboardUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Dashboard"
+        : $"/{slug}/Dashboard";
+
+    var submissionCreateUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Submission/Create"
+        : $"/{slug}/Submission/Create";
+
+    var paymentHistoryUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Payment/My"
+        : $"/{slug}/Payment/My";
+
+    var conferenceHomeUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/"
+        : $"/{slug}";
+
+    var amountText = Model != null
+        ? Model.Amount.ToString("N2", CultureInfo.CurrentCulture)
+        : "0,00";
+}
+
+<style>
+    .payment-success-page {
+        background: #f8fafc;
+        min-height: calc(100vh - 120px);
+        padding: 70px 0;
+    }
+
+    .success-card {
+        border: none;
+        border-radius: 28px;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+        overflow: hidden;
+        position: relative;
+        background: #fff;
+    }
+
+        .success-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top, rgba(220, 252, 231, 0.55) 0%, rgba(255,255,255,0) 58%);
+            pointer-events: none;
+        }
+
+    .success-icon-wrapper {
+        width: 88px;
+        height: 88px;
+        background-color: #dcfce7;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        box-shadow: 0 14px 28px rgba(22, 101, 52, 0.12);
+    }
+
+    .success-title {
+        font-weight: 800;
+        color: #0f172a;
+        letter-spacing: -0.5px;
+    }
+
+    .payment-detail-box {
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        border-radius: 18px;
+        padding: 24px;
+    }
+
+    .payment-detail-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 12px;
+        font-size: 0.92rem;
+    }
+
+        .payment-detail-row:last-child {
+            margin-bottom: 0;
+        }
+
+    .success-main-btn {
+        background-color: #00aeef;
+        border: none;
+        color: white;
+        border-radius: 999px;
+        padding: 15px 22px;
+        font-weight: 800;
+        text-decoration: none;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 10px 24px rgba(0, 174, 239, 0.25);
+    }
+
+        .success-main-btn:hover {
+            color: white;
+            background-color: #009bd5;
+        }
+
+    .success-secondary-btn {
+        border-radius: 999px;
+        padding: 12px 18px;
+        font-weight: 700;
+    }
+
+    @@media print {
+        .no-print {
+            display: none !important;
+        }
+
+        .payment-success-page {
+            padding: 0;
+            background: #fff;
+        }
+
+        .success-card {
+            box-shadow: none;
+            border: 1px solid #e5e7eb;
+        }
+    }
+</style>
+
+<div class="payment-success-page">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6 text-center">
+
+                <div class="success-card p-4 p-md-5">
+                    <div class="position-relative">
+
+                        <div class="mb-4">
+                            <div class="success-icon-wrapper">
+                                <i class="fas fa-check fa-3x text-success"></i>
+                            </div>
+                        </div>
+
+                        <h2 class="success-title mb-2">
+                            @Localizer["SuccessHeading"]
+                        </h2>
+
+                        <p class="text-muted mb-4">
+                            @Localizer["SuccessDescription"]
+                        </p>
+
+                        @if (Model != null)
+                        {
+                            <div class="payment-detail-box mb-4 text-start">
+                                <div class="payment-detail-row">
+                                    <span class="text-muted small">
+                                        @Localizer["ReferenceNoLabel"]
+                                    </span>
+
+                                    <span class="fw-bold text-dark small">
+                                        #@Model.TransactionId
+                                    </span>
+                                </div>
+
+                                <div class="payment-detail-row">
+                                    <span class="text-muted small">
+                                        @Localizer["DateLabel"]
+                                    </span>
+
+                                    <span class="fw-bold text-dark small">
+                                        @Model.PaymentDate.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                                    </span>
+                                </div>
+
+                                <div class="payment-detail-row">
+                                    <span class="text-muted small">
+                                        @Localizer["PaymentMethodLabel"]
+                                    </span>
+
+                                    <span class="fw-bold text-dark small">
+                                        <i class="fas fa-credit-card me-1"></i>
+                                        @Localizer["CreditCardText"]
+                                    </span>
+                                </div>
+
+                                <hr class="my-3" style="opacity: 0.12;" />
+
+                                <div class="payment-detail-row align-items-center">
+                                    <span class="text-muted fw-bold">
+                                        @Localizer["TotalAmountLabel"]
+                                    </span>
+
+                                    <span class="fs-4 fw-bold text-primary">
+                                        @amountText @Model.Currency
+                                    </span>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="d-grid gap-2 no-print">
+                            <a href="@submissionCreateUrl" class="success-main-btn">
+                                <i class="fas fa-file-upload"></i>
+                                @Localizer["SubmitAbstractButton"]
+                            </a>
+
+                            <a href="@dashboardUrl" class="btn btn-outline-primary success-secondary-btn">
+                                <i class="fas fa-home me-2"></i>
+                                @Localizer["BackToDashboardButton"]
+                            </a>
+
+                            <div class="d-flex gap-2">
+                                <a href="@paymentHistoryUrl" class="btn btn-light w-100 py-2 border fw-bold text-muted">
+                                    <i class="fas fa-list me-2"></i>
+                                    @Localizer["HistoryButton"]
+                                </a>
+
+                                <button onclick="window.print()" class="btn btn-light w-100 py-2 border fw-bold text-muted">
+                                    <i class="fas fa-print me-2"></i>
+                                    @Localizer["PrintButton"]
+                                </button>
+                            </div>
+
+                            <a href="@conferenceHomeUrl" class="btn btn-link text-muted text-decoration-none mt-2">
+                                <i class="fas fa-arrow-left me-1"></i>
+                                @Localizer["BackToConferenceButton"]
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+
+                <p class="mt-4 small text-muted no-print">
+                    @Localizer["SupportText_Part1"]
+                    <a href="#" class="text-decoration-none fw-bold" style="color: #00aeef;">
+                        @Localizer["SupportTeamLinkText"]
+                    </a>
+                    @Localizer["SupportText_Part2"]
+                </p>
+
+            </div>
+        </div>
+    </div>
+</div>

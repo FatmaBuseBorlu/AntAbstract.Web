@@ -1,7 +1,7 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
-using AntAbstract.Web.Models.ViewModels.Admin.RegistrationTypes;
+using AntAbstract.Web.Models.ViewModels.Admin.ConferenceTopics;
 using AntAbstract.Web.Models.ViewModels.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -13,20 +13,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
     [Authorize(Roles = "Admin,Organizator")]
-    public class RegistrationTypesController : Controller
+    public class ConferenceTopicsController : Controller
     {
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly UserManager<AppUser> _userManager;
-        private readonly IStringLocalizer<RegistrationTypesController> _localizer;
+        private readonly IStringLocalizer<ConferenceTopicsController> _localizer;
 
-        public RegistrationTypesController(
+        public ConferenceTopicsController(
             AppDbContext context,
             TenantContext tenantContext,
             ISelectedConferenceService selectedConferenceService,
             UserManager<AppUser> userManager,
-            IStringLocalizer<RegistrationTypesController> localizer)
+            IStringLocalizer<ConferenceTopicsController> localizer)
         {
             _context = context;
             _tenantContext = tenantContext;
@@ -35,22 +35,31 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _localizer = localizer;
         }
 
-        [HttpGet("/Admin/RegistrationTypes")]
+        private string L(string key, string fallback)
+        {
+            var text = _localizer[key].Value;
+
+            return string.Equals(text, key, StringComparison.OrdinalIgnoreCase)
+                ? fallback
+                : text;
+        }
+
+        [HttpGet("/Admin/ConferenceTopics")]
         public async Task<IActionResult> SelectConference(string? returnUrl = null)
         {
             var selectedId = _selectedConferenceService.GetSelectedConferenceId();
 
             if (selectedId != null)
             {
-                var conf = await _context.Conferences
+                var selectedConference = await _context.Conferences
                     .AsNoTracking()
-                    .Include(x => x.Tenant)
-                    .FirstOrDefaultAsync(x => x.Id == selectedId.Value);
+                    .Include(c => c.Tenant)
+                    .FirstOrDefaultAsync(c => c.Id == selectedId.Value);
 
-                if (conf?.Tenant?.Slug != null)
+                if (selectedConference?.Tenant?.Slug != null)
                 {
-                    HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
-                    HttpContext.Session.SetString("SelectedConferenceTitle", conf.Title ?? "");
+                    HttpContext.Session.SetString("SelectedConferenceSlug", selectedConference.Tenant.Slug);
+                    HttpContext.Session.SetString("SelectedConferenceTitle", selectedConference.Title ?? "");
 
                     if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
                     {
@@ -61,8 +70,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         nameof(Index),
                         new
                         {
-                            slug = conf.Tenant.Slug,
-                            conferenceId = conf.Id
+                            slug = selectedConference.Tenant.Slug,
+                            conferenceId = selectedConference.Id
                         });
                 }
             }
@@ -88,37 +97,39 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
-            var vm = new SelectConferenceViewModel
+            var model = new SelectConferenceViewModel
             {
-                Title = _localizer["SelectConference_Title"],
-                Lead = _localizer["SelectConference_Lead"],
-                PostUrl = "/Admin/RegistrationTypes/Select",
-                SubmitText = _localizer["SelectConference_Submit"],
+                Title = L("SelectConference_Title", "Kongre Seç"),
+                Lead = L("SelectConference_Lead", "Bildiri konularını yönetmek için bir kongre seçiniz."),
+                PostUrl = "/Admin/ConferenceTopics/Select",
+                SubmitText = L("SelectConference_Submit", "Devam Et"),
                 Conferences = conferences,
                 ReturnUrl = returnUrl
             };
 
-            return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", vm);
+            return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", model);
         }
 
-        [HttpPost("/Admin/RegistrationTypes/Select")]
+        [HttpPost("/Admin/ConferenceTopics/Select")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SelectConferencePost(Guid conferenceId, string? returnUrl = null)
         {
-            var conf = await _context.Conferences
+            var conference = await _context.Conferences
                 .Include(c => c.Tenant)
                 .FirstOrDefaultAsync(c => c.Id == conferenceId);
 
-            if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
+            if (conference == null ||
+                conference.Tenant == null ||
+                string.IsNullOrWhiteSpace(conference.Tenant.Slug))
             {
-                TempData["ErrorMessage"] = _localizer["Error_ConferenceNotFound"];
+                TempData["ErrorMessage"] = L("Error_ConferenceNotFound", "Kongre bulunamadı.");
                 return RedirectToAction(nameof(SelectConference));
             }
 
-            _selectedConferenceService.SetSelectedConferenceId(conf.Id);
+            _selectedConferenceService.SetSelectedConferenceId(conference.Id);
 
-            HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
-            HttpContext.Session.SetString("SelectedConferenceTitle", conf.Title ?? "");
+            HttpContext.Session.SetString("SelectedConferenceSlug", conference.Tenant.Slug);
+            HttpContext.Session.SetString("SelectedConferenceTitle", conference.Title ?? "");
 
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
@@ -129,26 +140,26 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 nameof(Index),
                 new
                 {
-                    slug = conf.Tenant.Slug,
-                    conferenceId = conf.Id
+                    slug = conference.Tenant.Slug,
+                    conferenceId = conference.Id
                 });
         }
 
-        [HttpGet("/{slug}/Admin/RegistrationTypes")]
+        [HttpGet("/{slug}/Admin/ConferenceTopics")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId = null)
         {
             if (_tenantContext.Current == null)
             {
                 return RedirectToAction(
                     nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/RegistrationTypes" });
+                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
             }
 
             if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
                 return RedirectToAction(
                     nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/RegistrationTypes" });
+                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
             }
 
             if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
@@ -162,26 +173,28 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 return RedirectToAction(
                     nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/RegistrationTypes" });
+                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
             }
 
-            var conf = await _context.Conferences
+            var conference = await _context.Conferences
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c =>
                     c.Id == selectedConferenceId.Value &&
                     c.TenantId == _tenantContext.Current.Id);
 
-            if (conf == null)
+            if (conference == null)
             {
                 return RedirectToAction(
                     nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/RegistrationTypes" });
+                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
             }
 
-            var usageDict = await _context.Registrations
+            var usageDict = await _context.Submissions
                 .AsNoTracking()
-                .Where(r => r.ConferenceId == conf.Id)
-                .GroupBy(r => r.RegistrationTypeId)
+                .Where(s =>
+                    s.ConferenceId == conference.Id &&
+                    s.ConferenceTopicId.HasValue)
+                .GroupBy(s => s.ConferenceTopicId!.Value)
                 .Select(g => new
                 {
                     Id = g.Key,
@@ -189,41 +202,42 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 })
                 .ToDictionaryAsync(x => x.Id, x => x.Count);
 
-            var items = await _context.RegistrationTypes
+            var items = await _context.ConferenceTopics
                 .AsNoTracking()
-                .Where(t => t.ConferenceId == conf.Id)
-                .OrderBy(t => t.Name)
-                .Select(t => new AdminRegistrationTypeRowModel
+                .Where(t => t.ConferenceId == conference.Id)
+                .OrderBy(t => t.SortOrder)
+                .ThenBy(t => t.Name)
+                .Select(t => new AdminConferenceTopicRowModel
                 {
                     Id = t.Id,
                     Name = t.Name,
                     NameEn = t.NameEn,
                     Description = t.Description,
                     DescriptionEn = t.DescriptionEn,
-                    Price = t.Price,
-                    Currency = t.Currency
+                    IsActive = t.IsActive,
+                    SortOrder = t.SortOrder
                 })
                 .ToListAsync();
 
             foreach (var item in items)
             {
-                item.UsageCount = usageDict.TryGetValue(item.Id, out var count)
+                item.SubmissionCount = usageDict.TryGetValue(item.Id, out var count)
                     ? count
                     : 0;
             }
 
-            var model = new AdminRegistrationTypesIndexModel
+            var model = new AdminConferenceTopicsIndexModel
             {
                 Slug = slug,
-                ConferenceId = conf.Id,
-                ConferenceTitle = conf.Title ?? "",
+                ConferenceId = conference.Id,
+                ConferenceTitle = conference.Title ?? "",
                 Items = items
             };
 
-            return View("~/Areas/Admin/Views/RegistrationTypes/Index.cshtml", model);
+            return View("~/Areas/Admin/Views/ConferenceTopics/Index.cshtml", model);
         }
 
-        [HttpGet("/{slug}/Admin/RegistrationTypes/Create")]
+        [HttpGet("/{slug}/Admin/ConferenceTopics/Create")]
         public async Task<IActionResult> Create(string slug, string? returnUrl = null)
         {
             var model = await BuildFormModel(slug, null, returnUrl);
@@ -232,13 +246,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 return RedirectToAction(
                     nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/RegistrationTypes" });
+                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
             }
 
-            return View("~/Areas/Admin/Views/RegistrationTypes/Form.cshtml", model);
+            return View("~/Areas/Admin/Views/ConferenceTopics/Form.cshtml", model);
         }
 
-        [HttpGet("/{slug}/Admin/RegistrationTypes/Edit/{id}")]
+        [HttpGet("/{slug}/Admin/ConferenceTopics/Edit/{id:guid}")]
         public async Task<IActionResult> Edit(string slug, Guid id, string? returnUrl = null)
         {
             var model = await BuildFormModel(slug, id, returnUrl);
@@ -248,19 +262,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return NotFound();
             }
 
-            return View("~/Areas/Admin/Views/RegistrationTypes/Form.cshtml", model);
+            return View("~/Areas/Admin/Views/ConferenceTopics/Form.cshtml", model);
         }
 
-        [HttpPost("/{slug}/Admin/RegistrationTypes/Save")]
+        [HttpPost("/{slug}/Admin/ConferenceTopics/Save")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Save(string slug, AdminRegistrationTypeFormModel model)
+        public async Task<IActionResult> Save(string slug, AdminConferenceTopicFormModel model)
         {
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
                 return RedirectToAction(
                     nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/RegistrationTypes" });
+                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
             }
 
             var selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
@@ -269,35 +283,35 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 return RedirectToAction(
                     nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/RegistrationTypes" });
+                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
             }
 
-            var conf = await _context.Conferences
+            var conference = await _context.Conferences
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c =>
                     c.Id == selectedConferenceId.Value &&
                     c.TenantId == _tenantContext.Current.Id);
 
-            if (conf == null)
+            if (conference == null)
             {
                 return RedirectToAction(
                     nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/RegistrationTypes" });
+                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
             }
 
             if (!ModelState.IsValid)
             {
-                return View("~/Areas/Admin/Views/RegistrationTypes/Form.cshtml", model);
+                return View("~/Areas/Admin/Views/ConferenceTopics/Form.cshtml", model);
             }
 
-            RegistrationType entity;
+            ConferenceTopic entity;
 
             if (model.Id.HasValue)
             {
-                entity = await _context.RegistrationTypes
+                entity = await _context.ConferenceTopics
                     .FirstOrDefaultAsync(t =>
                         t.Id == model.Id.Value &&
-                        t.ConferenceId == conf.Id);
+                        t.ConferenceId == conference.Id);
 
                 if (entity == null)
                 {
@@ -306,20 +320,25 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
             else
             {
-                entity = new RegistrationType
+                entity = new ConferenceTopic
                 {
-                    ConferenceId = conf.Id
+                    Id = Guid.NewGuid(),
+                    ConferenceId = conference.Id,
+                    CreatedDate = DateTime.UtcNow
                 };
 
-                await _context.RegistrationTypes.AddAsync(entity);
+                await _context.ConferenceTopics.AddAsync(entity);
             }
 
             var name = (model.Name ?? "").Trim();
 
             if (string.IsNullOrWhiteSpace(name))
             {
-                ModelState.AddModelError(nameof(model.Name), _localizer["Error_NameRequired"]);
-                return View("~/Areas/Admin/Views/RegistrationTypes/Form.cshtml", model);
+                ModelState.AddModelError(
+                    nameof(model.Name),
+                    L("Error_NameRequired", "Konu adı zorunludur."));
+
+                return View("~/Areas/Admin/Views/ConferenceTopics/Form.cshtml", model);
             }
 
             entity.Name = name;
@@ -329,22 +348,23 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 : model.NameEn.Trim();
 
             entity.Description = string.IsNullOrWhiteSpace(model.Description)
-                ? ""
+                ? null
                 : model.Description.Trim();
 
             entity.DescriptionEn = string.IsNullOrWhiteSpace(model.DescriptionEn)
                 ? null
                 : model.DescriptionEn.Trim();
 
-            entity.Price = model.Price;
-
-            entity.Currency = string.IsNullOrWhiteSpace(model.Currency)
-                ? "TRY"
-                : model.Currency.Trim();
+            entity.IsActive = model.IsActive;
+            entity.SortOrder = model.SortOrder;
 
             await _context.SaveChangesAsync();
 
-            var fallback = $"/{slug}/Admin/RegistrationTypes";
+            TempData["SuccessMessage"] = model.Id.HasValue
+                ? L("Success_TopicUpdated", "Bildiri konusu başarıyla güncellendi.")
+                : L("Success_TopicCreated", "Bildiri konusu başarıyla oluşturuldu.");
+
+            var fallback = $"/{slug}/Admin/ConferenceTopics";
 
             var go = !string.IsNullOrWhiteSpace(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl)
                 ? model.ReturnUrl
@@ -353,7 +373,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return Redirect(go);
         }
 
-        [HttpPost("/{slug}/Admin/RegistrationTypes/Delete")]
+        [HttpPost("/{slug}/Admin/ConferenceTopics/Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(string slug, Guid id, string? returnUrl = null)
         {
@@ -362,7 +382,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 return RedirectToAction(
                     nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/RegistrationTypes" });
+                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
             }
 
             var selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
@@ -371,58 +391,57 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 return RedirectToAction(
                     nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/RegistrationTypes" });
+                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
             }
 
-            var conf = await _context.Conferences
+            var conference = await _context.Conferences
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c =>
                     c.Id == selectedConferenceId.Value &&
                     c.TenantId == _tenantContext.Current.Id);
 
-            if (conf == null)
+            if (conference == null)
             {
                 return RedirectToAction(
                     nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/RegistrationTypes" });
+                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
             }
 
-            var entity = await _context.RegistrationTypes
+            var entity = await _context.ConferenceTopics
                 .FirstOrDefaultAsync(t =>
                     t.Id == id &&
-                    t.ConferenceId == conf.Id);
+                    t.ConferenceId == conference.Id);
 
             if (entity == null)
             {
                 return NotFound();
             }
 
-            var usage = await _context.Registrations
-                .CountAsync(r => r.RegistrationTypeId == entity.Id);
+            var usage = await _context.Submissions
+                .CountAsync(s => s.ConferenceTopicId == entity.Id);
+
+            var back = !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
+                ? returnUrl
+                : $"/{slug}/Admin/ConferenceTopics";
 
             if (usage > 0)
             {
-                TempData["ErrorMessage"] = _localizer["Error_RegistrationTypeHasDependencies"];
-
-                var back = !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
-                    ? returnUrl
-                    : $"/{slug}/Admin/RegistrationTypes";
+                TempData["ErrorMessage"] = L(
+                    "Error_TopicHasSubmissions",
+                    "Bu konuya bağlı bildiri olduğu için silinemez. Pasif hale getirebilirsiniz.");
 
                 return Redirect(back);
             }
 
-            _context.RegistrationTypes.Remove(entity);
+            _context.ConferenceTopics.Remove(entity);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = _localizer["Success_RegistrationTypeDeleted"];
+            TempData["SuccessMessage"] = L("Success_TopicDeleted", "Bildiri konusu silindi.");
 
-            return Redirect(
-                !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
-                    ? returnUrl
-                    : $"/{slug}/Admin/RegistrationTypes");
+            return Redirect(back);
         }
 
-        private async Task<AdminRegistrationTypeFormModel?> BuildFormModel(
+        private async Task<AdminConferenceTopicFormModel?> BuildFormModel(
             string slug,
             Guid? id,
             string? returnUrl)
@@ -440,13 +459,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return null;
             }
 
-            var conf = await _context.Conferences
+            var conference = await _context.Conferences
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c =>
                     c.Id == selectedConferenceId.Value &&
                     c.TenantId == _tenantContext.Current.Id);
 
-            if (conf == null)
+            if (conference == null)
             {
                 return null;
             }
@@ -454,43 +473,44 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var effectiveReturnUrl =
                 !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
                     ? returnUrl
-                    : $"/{slug}/Admin/RegistrationTypes";
+                    : $"/{slug}/Admin/ConferenceTopics";
 
             if (!id.HasValue)
             {
-                return new AdminRegistrationTypeFormModel
+                return new AdminConferenceTopicFormModel
                 {
                     Slug = slug,
-                    ConferenceId = conf.Id,
-                    ConferenceTitle = conf.Title ?? "",
-                    Currency = "TRY",
+                    ConferenceId = conference.Id,
+                    ConferenceTitle = conference.Title ?? "",
+                    IsActive = true,
+                    SortOrder = 0,
                     ReturnUrl = effectiveReturnUrl
                 };
             }
 
-            var entity = await _context.RegistrationTypes
+            var entity = await _context.ConferenceTopics
                 .AsNoTracking()
                 .FirstOrDefaultAsync(t =>
                     t.Id == id.Value &&
-                    t.ConferenceId == conf.Id);
+                    t.ConferenceId == conference.Id);
 
             if (entity == null)
             {
                 return null;
             }
 
-            return new AdminRegistrationTypeFormModel
+            return new AdminConferenceTopicFormModel
             {
-                Slug = slug,
-                ConferenceId = conf.Id,
-                ConferenceTitle = conf.Title ?? "",
                 Id = entity.Id,
+                Slug = slug,
+                ConferenceId = conference.Id,
+                ConferenceTitle = conference.Title ?? "",
                 Name = entity.Name,
                 NameEn = entity.NameEn,
                 Description = entity.Description,
                 DescriptionEn = entity.DescriptionEn,
-                Price = entity.Price,
-                Currency = entity.Currency,
+                IsActive = entity.IsActive,
+                SortOrder = entity.SortOrder,
                 ReturnUrl = effectiveReturnUrl
             };
         }

@@ -183,15 +183,44 @@ namespace AntAbstract.Web.Controllers
 
         public async Task<IActionResult> Congresses()
         {
+            var user = await _userManager.GetUserAsync(User);
+
+            var registrationsByConference = new Dictionary<Guid, Registration>();
+            var submissionsByConference = new Dictionary<Guid, List<Submission>>();
+
+            if (user != null)
+            {
+                var registrations = await _context.Registrations
+                    .Include(r => r.RegistrationType)
+                    .AsNoTracking()
+                    .Where(r => r.AppUserId == user.Id)
+                    .ToListAsync();
+
+                registrationsByConference = registrations
+                    .GroupBy(r => r.ConferenceId)
+                    .ToDictionary(g => g.Key, g => g.First());
+
+                var submissions = await _context.Submissions
+                    .AsNoTracking()
+                    .Where(s => s.AuthorId == user.Id)
+                    .ToListAsync();
+
+                submissionsByConference = submissions
+                    .GroupBy(s => s.ConferenceId)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+            }
+
             var allCongresses = await _context.Conferences
                 .Include(c => c.Tenant)
-                .Include(c => c.Registrations)
                 .OrderBy(c => c.StartDate)
                 .ToListAsync();
 
+            ViewBag.IsSignedIn = user != null;
+            ViewBag.RegistrationsByConference = registrationsByConference;
+            ViewBag.SubmissionsByConference = submissionsByConference;
+
             return View(allCongresses);
         }
-
         public IActionResult About() => View();
         public IActionResult Contact() => View();
         public IActionResult Privacy() => View();

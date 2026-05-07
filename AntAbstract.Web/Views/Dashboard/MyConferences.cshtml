@@ -1,10 +1,12 @@
 ﻿@using Microsoft.AspNetCore.Http
 @using Microsoft.AspNetCore.Mvc.Localization
+@using Microsoft.AspNetCore.Routing
 @using System.Globalization
 @using System.Linq
 @using AntAbstract.Domain.Entities
 
 @inject IViewLocalizer Localizer
+@inject AntAbstract.Infrastructure.Context.TenantContext Tc
 
 @model IEnumerable<Conference>
 
@@ -20,8 +22,18 @@
 
     var returnUrl = Context.Request.Query["returnUrl"].ToString();
 
-    var selectedIdStr = Context.Session.GetString("SelectedConferenceId");
-    Guid? selectedConferenceId = Guid.TryParse(selectedIdStr, out var sid) ? sid : null;
+    string? selectedIdStr = null;
+
+    if (Tc.Current != null)
+    {
+        selectedIdStr = Context.Session.GetString($"SelectedConferenceId:{Tc.Current.Id}");
+    }
+
+    selectedIdStr ??= Context.Session.GetString("SelectedConferenceId");
+
+    Guid? selectedConferenceId = Guid.TryParse(selectedIdStr, out var sid)
+        ? sid
+        : null;
 
     var registeredConferences = Model?.ToList() ?? new List<Conference>();
 
@@ -386,7 +398,7 @@
         </h2>
 
         <p class="page-description mb-0">
-            @L("SelectWorkspaceDescription", "İşlem yapmak istediğiniz çalışma alanını (kongreyi) aşağıdan seçiniz.")
+            @L("SelectWorkspaceDescription", "İşlem yapmak istediğiniz çalışma alanını yani kongreyi aşağıdan seçiniz.")
         </p>
     </div>
 
@@ -433,7 +445,7 @@
                 </h4>
 
                 <p class="text-muted mb-0">
-                    @L("NoRegistrationDescription", "Sistemi kullanmak için önce aşağıdaki etkinliklerden birine kayıt olmalısınız.")
+                    @L("NoRegistrationDescription", "Yazar panelini kullanmak için önce aşağıdaki etkinliklerden birine kayıt olmalısınız.")
                 </p>
             </div>
         }
@@ -602,7 +614,6 @@
                     @foreach (var kongre in availableConferenceList)
                     {
                         var tenantSlug = kongre.Tenant?.Slug ?? kongre.Slug ?? "";
-
                         var hasLogo = !string.IsNullOrWhiteSpace(kongre.LogoPath);
 
                         var firstLetter = !string.IsNullOrWhiteSpace(kongre.Title)
@@ -706,7 +717,7 @@
 
             searchInput.addEventListener('keyup', function () {
                 const input = this.value.toLowerCase().trim();
-                const items = document.querySelectorAll('.conf-item');
+                const items = document.querySelectorAll('.conference-grid .conf-item');
                 const sections = document.querySelectorAll('.conference-section');
 
                 let hasVisible = false;
@@ -730,7 +741,7 @@
                 });
 
                 sections.forEach(function (section) {
-                    const visibleCards = section.querySelectorAll('.conf-item:not([style*="display: none"])');
+                    const visibleCards = section.querySelectorAll('.conference-grid .conf-item:not([style*="display: none"])');
 
                     if (visibleCards.length > 0 || input === '') {
                         section.style.display = '';
@@ -740,7 +751,7 @@
                 });
 
                 if (noResults) {
-                    noResults.style.display = hasVisible ? 'none' : 'block';
+                    noResults.style.display = hasVisible || input === '' ? 'none' : 'block';
                 }
             });
         });
