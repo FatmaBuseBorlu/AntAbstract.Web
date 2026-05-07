@@ -41,7 +41,9 @@ namespace AntAbstract.Web.Controllers
         private static string ToPlainText(string? html)
         {
             if (string.IsNullOrWhiteSpace(html))
+            {
                 return string.Empty;
+            }
 
             var text = Regex.Replace(html, "<.*?>", " ");
             text = WebUtility.HtmlDecode(text);
@@ -53,10 +55,14 @@ namespace AntAbstract.Web.Controllers
         private static string Shorten(string? text, int maxLength = 90)
         {
             if (string.IsNullOrWhiteSpace(text))
+            {
                 return string.Empty;
+            }
 
             if (text.Length <= maxLength)
+            {
                 return text;
+            }
 
             return text.Substring(0, maxLength).Trim() + "...";
         }
@@ -73,7 +79,23 @@ namespace AntAbstract.Web.Controllers
                     .FirstOrDefaultAsync();
 
                 if (currentConference == null)
+                {
                     return NotFound(_localizer["ConferenceNotActive"]);
+                }
+
+                var currentUser = await _userManager.GetUserAsync(User);
+                var registeredConferenceIds = new List<Guid>();
+
+                if (currentUser != null)
+                {
+                    registeredConferenceIds = await _context.Registrations
+                        .AsNoTracking()
+                        .Where(r => r.AppUserId == currentUser.Id)
+                        .Select(r => r.ConferenceId)
+                        .ToListAsync();
+                }
+
+                ViewBag.RegisteredConferenceIds = registeredConferenceIds;
 
                 var culture = HttpContext.Features.Get<IRequestCultureFeature>()?
                                   .RequestCulture.UICulture.Name
@@ -110,17 +132,20 @@ namespace AntAbstract.Web.Controllers
             }
 
             var user = await _userManager.GetUserAsync(User);
-            var registeredConferenceIds = new List<Guid>();
+            var registeredIds = new List<Guid>();
 
             if (user != null)
             {
-                registeredConferenceIds = await _context.Registrations
+                registeredIds = await _context.Registrations
+                    .AsNoTracking()
                     .Where(r => r.AppUserId == user.Id)
                     .Select(r => r.ConferenceId)
                     .ToListAsync();
             }
 
             var conferences = await _context.Conferences
+                .Include(c => c.Tenant)
+                .AsNoTracking()
                 .Where(c => c.EndDate > DateTime.Now)
                 .OrderBy(c => c.StartDate)
                 .ToListAsync();
@@ -141,13 +166,22 @@ namespace AntAbstract.Web.Controllers
                 .Select(s => new SubmissionCardDto
                 {
                     Title = s.Title,
-                    AbstractSnippet = (s.Abstract != null && s.Abstract.Length > 120)
+
+                    AbstractSnippet = s.Abstract != null && s.Abstract.Length > 120
                         ? s.Abstract.Substring(0, 120) + "..."
                         : s.Abstract ?? abstractNotFoundText,
-                    AuthorName = s.Author != null ? $"{s.Author.FirstName} {s.Author.LastName}" : guestUserText,
-                    University = s.Author != null ? (s.Author.Institution ?? institutionNotSpecifiedText) : "",
+
+                    AuthorName = s.Author != null
+                        ? $"{s.Author.FirstName} {s.Author.LastName}"
+                        : guestUserText,
+
+                    University = s.Author != null
+                        ? s.Author.Institution ?? institutionNotSpecifiedText
+                        : "",
+
                     ConferenceName = s.Conference.Title,
-                    AuthorImageUrl = (s.Author != null && !string.IsNullOrEmpty(s.Author.ProfileImagePath))
+
+                    AuthorImageUrl = s.Author != null && !string.IsNullOrEmpty(s.Author.ProfileImagePath)
                         ? s.Author.ProfileImagePath
                         : $"https://ui-avatars.com/api/?name={(s.Author != null ? s.Author.FirstName : "A")}+{(s.Author != null ? s.Author.LastName : "A")}&background=random&color=fff"
                 })
@@ -156,25 +190,34 @@ namespace AntAbstract.Web.Controllers
             var model = new LandingPageViewModel
             {
                 TotalUsers = await _userManager.Users.CountAsync(),
+
                 ActiveCongressesCount = conferences.Count,
+
                 ActiveCongresses = conferences.Select(c => new CongressCardDto
                 {
                     Id = c.Id,
                     Title = c.Title,
+
                     Description = Shorten(
                         ToPlainText(string.IsNullOrWhiteSpace(c.Description) ? reviewDetailsText : c.Description),
                         90
                     ),
+
                     StartDate = c.StartDate,
+
                     Location = string.IsNullOrEmpty(c.City)
                         ? onlineText
                         : $"{c.City}{(c.Country != null ? " / " + c.Country : "")}",
+
                     ImageUrl = string.IsNullOrEmpty(c.BannerPath)
                         ? "/abstract/upload/img/resimyok3.png"
                         : c.BannerPath,
-                    Slug = c.Slug ?? c.Id.ToString(),
-                    IsRegistered = registeredConferenceIds.Contains(c.Id)
+
+                    Slug = c.Tenant?.Slug ?? c.Slug ?? c.Id.ToString(),
+
+                    IsRegistered = registeredIds.Contains(c.Id)
                 }).ToList(),
+
                 LastSubmissions = lastSubmissions
             };
 
@@ -212,6 +255,7 @@ namespace AntAbstract.Web.Controllers
 
             var allCongresses = await _context.Conferences
                 .Include(c => c.Tenant)
+                .AsNoTracking()
                 .OrderBy(c => c.StartDate)
                 .ToListAsync();
 
@@ -221,9 +265,44 @@ namespace AntAbstract.Web.Controllers
 
             return View(allCongresses);
         }
-        public IActionResult About() => View();
-        public IActionResult Contact() => View();
-        public IActionResult Privacy() => View();
+
+        public IActionResult About()
+        {
+            return View();
+        }
+
+        public IActionResult Contact()
+        {
+            return View();
+        }
+
+        public IActionResult Privacy()
+        {
+            return View();
+        }
+
+        [HttpGet("/kvkk")]
+        public IActionResult Kvkk()
+        {
+            return View();
+        }
+
+        [HttpGet("/cookies")]
+        public IActionResult Cookies()
+        {
+            return View();
+        }
+
+        [HttpGet("/terms")]
+        public IActionResult Terms()
+        {
+            return View();
+        }
+
+        public IActionResult Proceedings()
+        {
+            return View();
+        }
 
         [HttpPost]
         public IActionResult SetLanguage(string culture, string returnUrl)
@@ -231,7 +310,10 @@ namespace AntAbstract.Web.Controllers
             Response.Cookies.Append(
                 CookieRequestCultureProvider.DefaultCookieName,
                 CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(culture)),
-                new CookieOptions { Expires = DateTimeOffset.UtcNow.AddYears(1) }
+                new CookieOptions
+                {
+                    Expires = DateTimeOffset.UtcNow.AddYears(1)
+                }
             );
 
             return LocalRedirect(returnUrl);
@@ -244,11 +326,6 @@ namespace AntAbstract.Web.Controllers
             {
                 RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
             });
-        }
-
-        public IActionResult Proceedings()
-        {
-            return View();
         }
     }
 }

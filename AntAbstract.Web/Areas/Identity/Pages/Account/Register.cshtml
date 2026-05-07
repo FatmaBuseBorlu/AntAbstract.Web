@@ -3,6 +3,7 @@
 @using Microsoft.AspNetCore.Localization
 @using Microsoft.AspNetCore.Mvc.Localization
 @using System.Globalization
+@using System.Linq
 @inject IViewLocalizer Localizer
 
 @{
@@ -13,7 +14,7 @@
     var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? "tr-TR";
 
     var currentReturnUrl = string.IsNullOrEmpty(HttpContext.Request.Path.Value)
-        ? "/Identity/Account/Register"
+        ? "/register"
         : $"{HttpContext.Request.Path.Value}{HttpContext.Request.QueryString}";
 }
 
@@ -35,6 +36,8 @@
             --primary-hover: #0095cd;
             --text-dark: #1e293b;
             --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --soft-bg: #f8fafc;
         }
 
         body {
@@ -51,14 +54,14 @@
         }
 
         .register-sidebar {
-            width: 40%;
+            width: 36%;
             background: url('https://images.unsplash.com/photo-1523580494863-6f3031224c94?q=80&w=2070&auto=format&fit=crop') no-repeat center center;
             background-size: cover;
             position: relative;
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            padding: 3rem;
+            padding: 2.5rem;
             color: white;
         }
 
@@ -74,11 +77,19 @@
             z-index: 2;
         }
 
+            .sidebar-content h1 {
+                font-size: 2.35rem;
+            }
+
+            .sidebar-content .lead {
+                font-size: 0.95rem !important;
+            }
+
         .register-form-container {
-            width: 60%;
+            width: 64%;
             display: flex;
             justify-content: center;
-            padding: 2rem;
+            padding: 1.4rem 2rem;
             background-color: #fff;
             position: relative;
             overflow-y: auto;
@@ -86,22 +97,27 @@
 
         .register-card {
             width: 100%;
-            max-width: 700px;
-            padding-top: 1rem;
-            padding-bottom: 2rem;
+            max-width: 620px;
+            padding-top: 0.5rem;
+            padding-bottom: 1.5rem;
         }
 
-        .form-control, .custom-select {
-            padding: 0.7rem 1rem;
-            border-radius: 0.5rem;
-            border: 1px solid #e2e8f0;
-            background-color: #f8fafc;
+        .form-control,
+        .custom-select,
+        .form-select {
+            padding: 0.55rem 0.85rem;
+            min-height: 42px;
+            border-radius: 0.45rem;
+            border: 1px solid var(--border-color);
+            background-color: var(--soft-bg);
             font-weight: 500;
             transition: all 0.3s ease;
-            font-size: 0.95rem;
+            font-size: 0.88rem;
         }
 
-            .form-control:focus, .custom-select:focus {
+            .form-control:focus,
+            .custom-select:focus,
+            .form-select:focus {
                 background-color: #fff;
                 border-color: var(--primary-color);
                 box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
@@ -109,10 +125,10 @@
             }
 
         .form-label {
-            font-size: 0.85rem;
+            font-size: 0.78rem;
             font-weight: 700;
             color: var(--text-muted);
-            margin-bottom: 0.4rem;
+            margin-bottom: 0.28rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -132,13 +148,41 @@
                 box-shadow: 0 10px 20px rgba(0, 174, 239, 0.2);
             }
 
+            .btn-primary.btn-lg {
+                padding: 0.65rem 1rem;
+                font-size: 1rem;
+                border-radius: 0.55rem;
+            }
+
         .brand-logo {
-            font-size: 1.5rem;
+            font-size: 1.35rem;
             font-weight: 800;
             color: var(--text-dark);
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
             display: inline-block;
             text-decoration: none;
+        }
+
+        .register-card h3 {
+            font-size: 1.55rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .register-card .text-muted.small {
+            font-size: 0.82rem;
+        }
+
+        .register-card .mb-3 {
+            margin-bottom: 0.75rem !important;
+        }
+
+        .register-card .mb-4 {
+            margin-bottom: 1rem !important;
+        }
+
+        .row.g-3 {
+            --bs-gutter-x: 0.85rem;
+            --bs-gutter-y: 0.75rem;
         }
 
         .language-switcher {
@@ -146,7 +190,7 @@
             align-items: center;
             gap: 4px;
             padding: 4px;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--border-color);
             border-radius: 999px;
             background: #fff;
             box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
@@ -180,6 +224,129 @@
                 box-shadow: 0 4px 12px rgba(0, 174, 239, 0.25);
             }
 
+        .legal-consent-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 14px;
+        }
+
+        .legal-consent-title {
+            font-size: 0.84rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legal-check-item {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+        }
+
+            .legal-check-item:last-child {
+                margin-bottom: 0;
+            }
+
+            .legal-check-item .form-check-input {
+                margin-top: 0.25rem;
+            }
+
+            .legal-check-item .form-check-label {
+                font-size: 0.8rem;
+                color: #475569;
+                line-height: 1.45;
+            }
+
+            .legal-check-item a {
+                color: var(--primary-color);
+                font-weight: 800;
+                text-decoration: none;
+            }
+
+                .legal-check-item a:hover {
+                    color: var(--primary-hover);
+                    text-decoration: underline;
+                }
+
+        .legal-consent-box .small {
+            font-size: 0.76rem;
+        }
+
+        /* LEGAL MODAL */
+        .legal-modal-link {
+            color: var(--primary-color);
+            font-weight: 800;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+            .legal-modal-link:hover {
+                color: var(--primary-hover);
+                text-decoration: underline;
+            }
+
+        .legal-modal-dialog {
+            max-width: 1100px;
+        }
+
+        .legal-modal-content {
+            border: none;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 30px 90px rgba(15, 23, 42, 0.25);
+        }
+
+        .legal-modal-header {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 18px 22px;
+            background: #fff;
+        }
+
+        .legal-modal-title {
+            font-weight: 800;
+            color: #0f172a;
+            font-size: 1.05rem;
+        }
+
+        .legal-modal-body {
+            padding: 0;
+            background: #f8fafc;
+        }
+
+        .legal-modal-iframe {
+            width: 100%;
+            height: 72vh;
+            border: none;
+            display: block;
+            background: #fff;
+        }
+
+        .legal-modal-footer {
+            border-top: 1px solid #e2e8f0;
+            background: #fff;
+            padding: 14px 22px;
+        }
+
+        .legal-modal-close-btn {
+            border: none;
+            background: var(--primary-color);
+            color: #fff;
+            font-weight: 800;
+            border-radius: 999px;
+            padding: 10px 22px;
+        }
+
+            .legal-modal-close-btn:hover {
+                background: var(--primary-hover);
+                color: #fff;
+            }
+
         @@media (max-width: 991px) {
             .register-sidebar {
                 display: none;
@@ -187,6 +354,34 @@
 
             .register-form-container {
                 width: 100%;
+                padding: 1.5rem 1rem;
+            }
+
+            .register-card {
+                max-width: 680px;
+            }
+        }
+
+        @@media (max-width: 768px) {
+            .legal-modal-dialog {
+                max-width: 96%;
+                margin: 12px auto;
+            }
+
+            .legal-modal-iframe {
+                height: 70vh;
+            }
+        }
+
+        @@media (max-width: 576px) {
+            .register-form-container {
+                padding: 1.5rem 1rem;
+            }
+
+            .position-absolute.top-0.end-0 {
+                position: static !important;
+                justify-content: flex-end;
+                margin: 1rem 0 1.5rem !important;
             }
         }
     </style>
@@ -201,11 +396,16 @@
                     <span class="badge bg-white text-primary px-3 py-2 rounded-pill fw-bold mb-3">
                         <i class="fas fa-users me-2"></i>@Localizer["AcademicNetwork"]
                     </span>
-                    <h1 class="display-5 fw-bold mb-3">@Localizer["HeroTitleLine1"] <br>@Localizer["HeroTitleLine2"]</h1>
+
+                    <h1 class="display-5 fw-bold mb-3">
+                        @Localizer["HeroTitleLine1"] <br>@Localizer["HeroTitleLine2"]
+                    </h1>
+
                     <p class="lead opacity-75 fs-6">
                         @Localizer["HeroDescription"]
                     </p>
                 </div>
+
                 <div class="d-flex gap-2 opacity-50 small">
                     <span>&copy; @DateTime.Now.Year AntAbstract</span>
                 </div>
@@ -267,17 +467,25 @@
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-4">
-                            <label asp-for="Input.FirstName" class="form-label">@Localizer["FirstName"] <span class="text-danger">*</span></label>
+                            <label asp-for="Input.FirstName" class="form-label">
+                                @Localizer["FirstName"] <span class="text-danger">*</span>
+                            </label>
                             <input asp-for="Input.FirstName" class="form-control" placeholder="@Localizer["FirstNamePlaceholder"]" />
                             <span asp-validation-for="Input.FirstName" class="text-danger small"></span>
                         </div>
+
                         <div class="col-md-4">
-                            <label asp-for="Input.LastName" class="form-label">@Localizer["LastName"] <span class="text-danger">*</span></label>
+                            <label asp-for="Input.LastName" class="form-label">
+                                @Localizer["LastName"] <span class="text-danger">*</span>
+                            </label>
                             <input asp-for="Input.LastName" class="form-control" placeholder="@Localizer["LastNamePlaceholder"]" />
                             <span asp-validation-for="Input.LastName" class="text-danger small"></span>
                         </div>
+
                         <div class="col-md-4">
-                            <label asp-for="Input.IdentityNumber" class="form-label">@Localizer["IdentityNumber"] <span class="text-danger">*</span></label>
+                            <label asp-for="Input.IdentityNumber" class="form-label">
+                                @Localizer["IdentityNumber"] <span class="text-danger">*</span>
+                            </label>
                             <input asp-for="Input.IdentityNumber" class="form-control" placeholder="@Localizer["IdentityNumberPlaceholder"]" />
                             <span asp-validation-for="Input.IdentityNumber" class="text-danger small"></span>
                         </div>
@@ -285,17 +493,25 @@
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-4">
-                            <label asp-for="Input.Email" class="form-label">@Localizer["Email"] <span class="text-danger">*</span></label>
+                            <label asp-for="Input.Email" class="form-label">
+                                @Localizer["Email"] <span class="text-danger">*</span>
+                            </label>
                             <input asp-for="Input.Email" class="form-control" placeholder="@Localizer["EmailPlaceholder"]" />
                             <span asp-validation-for="Input.Email" class="text-danger small"></span>
                         </div>
+
                         <div class="col-md-4">
-                            <label asp-for="Input.AlternativeEmail" class="form-label">@Localizer["AlternativeEmail"]</label>
+                            <label asp-for="Input.AlternativeEmail" class="form-label">
+                                @Localizer["AlternativeEmail"]
+                            </label>
                             <input asp-for="Input.AlternativeEmail" class="form-control" placeholder="@Localizer["Optional"]" />
                             <span asp-validation-for="Input.AlternativeEmail" class="text-danger small"></span>
                         </div>
+
                         <div class="col-md-4">
-                            <label asp-for="Input.PhoneNumber" class="form-label">@Localizer["Phone"]</label>
+                            <label asp-for="Input.PhoneNumber" class="form-label">
+                                @Localizer["Phone"]
+                            </label>
                             <input asp-for="Input.PhoneNumber" class="form-control" placeholder="@Localizer["PhonePlaceholder"]" />
                             <span asp-validation-for="Input.PhoneNumber" class="text-danger small"></span>
                         </div>
@@ -303,14 +519,19 @@
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
-                            <label asp-for="Input.University" class="form-label">@Localizer["University"] <span class="text-danger">*</span></label>
+                            <label asp-for="Input.University" class="form-label">
+                                @Localizer["University"] <span class="text-danger">*</span>
+                            </label>
                             <select asp-for="Input.University" asp-items="Model.UniversityList" class="form-select custom-select">
                                 <option value="">@Localizer["SelectOption"]</option>
                             </select>
                             <span asp-validation-for="Input.University" class="text-danger small"></span>
                         </div>
+
                         <div class="col-md-6">
-                            <label asp-for="Input.Title" class="form-label">@Localizer["AcademicTitle"] <span class="text-danger">*</span></label>
+                            <label asp-for="Input.Title" class="form-label">
+                                @Localizer["AcademicTitle"] <span class="text-danger">*</span>
+                            </label>
                             <select asp-for="Input.Title" asp-items="Model.TitleList" class="form-select custom-select">
                                 <option value="">@Localizer["SelectOption"]</option>
                             </select>
@@ -320,14 +541,19 @@
 
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label asp-for="Input.Faculty" class="form-label">@Localizer["Faculty"] <span class="text-danger">*</span></label>
+                            <label asp-for="Input.Faculty" class="form-label">
+                                @Localizer["Faculty"] <span class="text-danger">*</span>
+                            </label>
                             <select asp-for="Input.Faculty" asp-items="Model.FacultyList" class="form-select custom-select">
                                 <option value="">@Localizer["SelectOption"]</option>
                             </select>
                             <span asp-validation-for="Input.Faculty" class="text-danger small"></span>
                         </div>
+
                         <div class="col-md-6">
-                            <label asp-for="Input.Department" class="form-label">@Localizer["Department"] <span class="text-danger">*</span></label>
+                            <label asp-for="Input.Department" class="form-label">
+                                @Localizer["Department"] <span class="text-danger">*</span>
+                            </label>
                             <select asp-for="Input.Department" asp-items="Model.DepartmentList" class="form-select custom-select">
                                 <option value="">@Localizer["SelectOption"]</option>
                             </select>
@@ -337,12 +563,17 @@
 
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label asp-for="Input.Password" class="form-label">@Localizer["Password"] <span class="text-danger">*</span></label>
+                            <label asp-for="Input.Password" class="form-label">
+                                @Localizer["Password"] <span class="text-danger">*</span>
+                            </label>
                             <input asp-for="Input.Password" class="form-control" placeholder="••••••••" />
                             <span asp-validation-for="Input.Password" class="text-danger small"></span>
                         </div>
+
                         <div class="col-md-6">
-                            <label asp-for="Input.ConfirmPassword" class="form-label">@Localizer["ConfirmPassword"] <span class="text-danger">*</span></label>
+                            <label asp-for="Input.ConfirmPassword" class="form-label">
+                                @Localizer["ConfirmPassword"] <span class="text-danger">*</span>
+                            </label>
                             <input asp-for="Input.ConfirmPassword" class="form-control" placeholder="••••••••" />
                             <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
                         </div>
@@ -350,26 +581,99 @@
 
                     <div class="row g-3 align-items-center mb-4">
                         <div class="col-md-6">
-                            <label asp-for="Input.ProfileImage" class="form-label">@Localizer["ProfileImage"]</label>
+                            <label asp-for="Input.ProfileImage" class="form-label">
+                                @Localizer["ProfileImage"]
+                            </label>
                             <input asp-for="Input.ProfileImage" type="file" class="form-control form-control-sm" />
-                            <small class="text-muted" style="font-size: 0.7rem;">@Localizer["ProfileImageHint"]</small>
+                            <small class="text-muted" style="font-size: 0.7rem;">
+                                @Localizer["ProfileImageHint"]
+                            </small>
                             <span asp-validation-for="Input.ProfileImage" class="text-danger small d-block mt-1"></span>
                         </div>
-                        <div class="col-md-6">
+                    </div>
+
+                    <div class="legal-consent-box mb-4">
+                        <div class="legal-consent-title">
+                            <i class="fas fa-shield-alt text-primary"></i>
+                            @Localizer["LegalConsentsTitle"]
+                        </div>
+
+                        <div class="legal-check-item">
                             <div class="form-check">
-                                <input asp-for="Input.TermsAccepted" class="form-check-input" type="checkbox" id="termsCheckbox" />
-                                <label class="form-check-label small text-muted" for="termsCheckbox">
-                                    @Localizer["TermsAcceptedText"]
-                                    <a href="#"
-                                       data-bs-toggle="modal"
-                                       data-bs-target="#termsModal"
-                                       class="text-decoration-none fw-bold ms-1"
-                                       style="color: var(--primary-color);">
-                                        @Localizer["TermsLink"]
+                                <input asp-for="Input.TermsAccepted"
+                                       class="form-check-input"
+                                       type="checkbox"
+                                       id="termsCheckbox" />
+
+                                <label class="form-check-label" for="termsCheckbox">
+                                    <a href="/terms"
+                                       class="legal-modal-link"
+                                       data-legal-title='@Localizer["TermsOfUseLinkText"]'
+                                       data-legal-url="/terms?embed=true">
+                                        @Localizer["TermsOfUseLinkText"]
                                     </a>
+                                    @Localizer["TermsAcceptedText"]
+                                    <span class="text-danger">*</span>
                                 </label>
                             </div>
+
                             <span asp-validation-for="Input.TermsAccepted" class="text-danger small d-block mt-1"></span>
+                        </div>
+
+                        <div class="legal-check-item">
+                            <div class="form-check">
+                                <input asp-for="Input.KvkkAccepted"
+                                       class="form-check-input"
+                                       type="checkbox"
+                                       id="kvkkCheckbox" />
+
+                                <label class="form-check-label" for="kvkkCheckbox">
+                                    <a href="/kvkk"
+                                       class="legal-modal-link"
+                                       data-legal-title='@Localizer["KvkkLinkText"]'
+                                       data-legal-url="/kvkk?embed=true">
+                                        @Localizer["KvkkLinkText"]
+                                    </a>
+                                    @Localizer["AndText"]
+                                    <a href="/privacy"
+                                       class="legal-modal-link"
+                                       data-legal-title='@Localizer["PrivacyPolicyLinkText"]'
+                                       data-legal-url="/privacy?embed=true">
+                                        @Localizer["PrivacyPolicyLinkText"]
+                                    </a>
+                                    @Localizer["KvkkAcceptedText"]
+                                    <span class="text-danger">*</span>
+                                </label>
+                            </div>
+
+                            <span asp-validation-for="Input.KvkkAccepted" class="text-danger small d-block mt-1"></span>
+                        </div>
+
+                        <div class="legal-check-item">
+                            <div class="form-check">
+                                <input asp-for="Input.MarketingConsent"
+                                       class="form-check-input"
+                                       type="checkbox"
+                                       id="marketingCheckbox" />
+
+                                <label class="form-check-label" for="marketingCheckbox">
+                                    @Localizer["MarketingConsentText"]
+                                    <span class="text-muted">
+                                        @Localizer["OptionalText"]
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="small text-muted mt-3" style="line-height: 1.6;">
+                            @Localizer["LegalConsentInfoText"]
+                            <a href="/cookies"
+                               class="legal-modal-link text-decoration-none fw-bold"
+                               data-legal-title='@Localizer["CookiePolicyLinkText"]'
+                               data-legal-url="/cookies?embed=true">
+                                @Localizer["CookiePolicyLinkText"]
+                            </a>
+                            @Localizer["LegalConsentInfoTextEnd"]
                         </div>
                     </div>
 
@@ -382,7 +686,7 @@
                     <div class="text-center">
                         <p class="text-muted small mb-0">
                             @Localizer["AlreadyHaveAccount"]
-                            <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl" class="text-primary fw-bold text-decoration-none">
+                            <a href="/login" class="text-primary fw-bold text-decoration-none">
                                 @Localizer["LoginNow"]
                             </a>
                         </p>
@@ -392,58 +696,83 @@
         </div>
     </div>
 
-    <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content border-0 rounded-4 shadow-lg">
-                <div class="modal-header border-bottom-0 pb-0">
-                    <h5 class="modal-title fw-bold text-dark" id="termsModalLabel">@Localizer["TermsModalTitle"]</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@Localizer["Close"]"></button>
-                </div>
-                <div class="modal-body text-muted small" style="line-height: 1.8;">
-                    <p>
-                        <strong>@Localizer["TermsSection1Title"]</strong><br>
-                        @Localizer["TermsSection1Text"]
-                    </p>
+    <div class="modal fade"
+         id="legalTextModal"
+         tabindex="-1"
+         aria-labelledby="legalTextModalTitle"
+         aria-hidden="true">
 
-                    <p>
-                        <strong>@Localizer["TermsSection2Title"]</strong><br>
-                        @Localizer["TermsSection2Text"]
-                    </p>
+        <div class="modal-dialog modal-dialog-centered modal-xl legal-modal-dialog">
+            <div class="modal-content legal-modal-content">
 
-                    <p>
-                        <strong>@Localizer["TermsSection3Title"]</strong><br>
-                        @Localizer["TermsSection3Text"]
-                    </p>
+                <div class="modal-header legal-modal-header">
+                    <h5 class="modal-title legal-modal-title" id="legalTextModalTitle">
+                        @Localizer["LegalConsentsTitle"]
+                    </h5>
 
-                    <p>
-                        <strong>@Localizer["TermsSection4Title"]</strong><br>
-                        @Localizer["TermsSection4Text"]
-                    </p>
-                </div>
-                <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" id="btnAcceptTerms" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" data-bs-dismiss="modal">
-                        @Localizer["TermsAcceptButton"]
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label='@Localizer["Close"]'>
                     </button>
                 </div>
+
+                <div class="modal-body legal-modal-body">
+                    <iframe id="legalTextIframe"
+                            class="legal-modal-iframe"
+                            src="about:blank"
+                            title='@Localizer["LegalConsentsTitle"]'>
+                    </iframe>
+                </div>
+
+                <div class="modal-footer legal-modal-footer">
+                    <button type="button"
+                            class="legal-modal-close-btn"
+                            data-bs-dismiss="modal">
+                        @Localizer["Close"]
+                    </button>
+                </div>
+
             </div>
         </div>
     </div>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <partial name="_ValidationScriptsPartial" />
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            var acceptBtn = document.getElementById("btnAcceptTerms");
-            var termsCheckbox = document.getElementById("termsCheckbox");
+            const legalModalElement = document.getElementById("legalTextModal");
+            const legalModalTitle = document.getElementById("legalTextModalTitle");
+            const legalIframe = document.getElementById("legalTextIframe");
 
-            if (acceptBtn && termsCheckbox) {
-                acceptBtn.addEventListener("click", function () {
-                    termsCheckbox.checked = true;
-                });
+            if (!legalModalElement || !legalModalTitle || !legalIframe) {
+                return;
             }
+
+            const legalModal = new bootstrap.Modal(legalModalElement);
+
+            document.querySelectorAll(".legal-modal-link").forEach(function (link) {
+                link.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const title = this.getAttribute("data-legal-title") || this.textContent.trim();
+                    const url = this.getAttribute("data-legal-url") || this.getAttribute("href");
+
+                    legalModalTitle.textContent = title;
+                    legalIframe.setAttribute("src", url);
+
+                    legalModal.show();
+                });
+            });
+
+            legalModalElement.addEventListener("hidden.bs.modal", function () {
+                legalIframe.setAttribute("src", "about:blank");
+            });
         });
     </script>
+
+    <partial name="_ValidationScriptsPartial" />
 </body>
 </html>

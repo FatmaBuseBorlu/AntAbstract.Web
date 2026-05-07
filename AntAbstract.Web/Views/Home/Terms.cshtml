@@ -1,0 +1,1128 @@
+﻿@using System.Globalization
+@using System.Collections.Generic
+
+@{
+    var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+    var isEmbed = string.Equals(Context.Request.Query["embed"].ToString(), "true", StringComparison.OrdinalIgnoreCase);
+
+    ViewData["Title"] = isEnglish
+        ? "Terms of Use"
+        : "Kullanım Şartları";
+
+    Layout = isEmbed ? null : "_Layout";
+
+    var lastUpdated = DateTime.Now.ToString("dd.MM.yyyy");
+
+    var pageBadge = "AntAbstract";
+
+    var pageTitle = isEnglish
+        ? "Terms of Use"
+        : "Kullanım Şartları";
+
+    var pageLead = isEnglish
+        ? "These Terms of Use explain the basic rules that apply to visitors, members, authors, reviewers, organizers and administrators using the AntAbstract platform. By using the platform, you are deemed to have accepted these terms."
+        : "Bu Kullanım Şartları, AntAbstract platformunu kullanan ziyaretçiler, üyeler, yazarlar, hakemler, organizatörler ve yöneticiler için geçerli olan temel kullanım kurallarını açıklar. Platformu kullanarak bu şartları kabul etmiş sayılırsınız.";
+
+    var noticeText = isEnglish
+        ? "This page is a terms of use template prepared for the AntAbstract congress management system. Before going live, company/institution details, payment and refund procedures, organizer responsibilities and legal provisions should be reviewed according to the actual operation."
+        : "Bu sayfa AntAbstract kongre yönetim sistemi için hazırlanmış kullanım şartları taslağıdır. Canlı yayına alınmadan önce şirket/kurum bilgileri, ödeme ve iade süreçleri, organizatör sorumlulukları ve hukuki hükümler gerçek işleyişe göre kontrol edilmelidir.";
+
+    var sections = new List<(string Id, string Nav, string Title, string Html)>();
+
+    if (isEnglish)
+    {
+        sections.Add((
+            "intro",
+            "1. Introduction",
+            "1. Introduction",
+            @"
+<p>
+AntAbstract is a digital platform designed to support registration, abstract submission, peer review,
+payment, document and certificate processes for congresses, symposiums, workshops and similar academic events.
+</p>
+
+<p>
+These Terms of Use apply to all users who visit the AntAbstract website, create an account, register for a congress,
+submit an abstract, participate as a reviewer, make a payment or use the management panels.
+</p>"
+        ));
+
+        sections.Add((
+            "scope",
+            "2. Service Scope",
+            "2. Scope of Services",
+            @"
+<p>
+Services that may be offered through AntAbstract include:
+</p>
+
+<ul>
+    <li>Publishing congress and event pages.</li>
+    <li>User account creation and login processes.</li>
+    <li>Author, reviewer, organizer and admin panels.</li>
+    <li>Congress registration and participation workflows.</li>
+    <li>Abstract, full-text and file submission processes.</li>
+    <li>Reviewer assignment and scientific evaluation processes.</li>
+    <li>Payment, billing and payment history processes.</li>
+    <li>Acceptance letters, badges, participation documents and certificate generation.</li>
+    <li>Abstract books, congress programs and announcement processes.</li>
+</ul>
+
+<p>
+The scope of services may vary depending on the preferences of the congress organizer and the modules enabled in the system.
+</p>"
+        ));
+
+        sections.Add((
+            "account",
+            "3. User Account",
+            "3. User Account and Security",
+            @"
+<p>
+Some features of AntAbstract may require creating a user account. Users are responsible for providing accurate,
+current and personal information when creating an account.
+</p>
+
+<ul>
+    <li>You are responsible for the accuracy of your account information.</li>
+    <li>You must keep your password confidential and not share it with third parties.</li>
+    <li>You may be responsible for actions performed through your account.</li>
+    <li>If you notice unauthorized use, you should contact the platform administrators.</li>
+    <li>Creating accounts with false, misleading or third-party information is not allowed.</li>
+</ul>
+
+<div class='legal-warning-box'>
+For your security, use a strong password, do not share your account credentials and log out after using shared devices.
+</div>"
+        ));
+
+        sections.Add((
+            "roles",
+            "4. User Roles",
+            "4. User Roles",
+            @"
+<p>
+User permissions on the platform may vary depending on the role assigned to the user.
+</p>
+
+<table class='legal-table'>
+    <tbody>
+        <tr>
+            <th>Visitor</th>
+            <td>May view congress pages, general information and legal pages.</td>
+        </tr>
+        <tr>
+            <th>Author</th>
+            <td>May register for congresses, submit abstracts and follow submission statuses.</td>
+        </tr>
+        <tr>
+            <th>Reviewer</th>
+            <td>May evaluate assigned submissions and complete review forms.</td>
+        </tr>
+        <tr>
+            <th>Organizer</th>
+            <td>May manage congress-related registration, submission, reviewer and content processes.</td>
+        </tr>
+        <tr>
+            <th>Admin</th>
+            <td>May perform general platform management operations.</td>
+        </tr>
+    </tbody>
+</table>"
+        ));
+
+        sections.Add((
+            "registration",
+            "5. Congress Registration",
+            "5. Congress Registration",
+            @"
+<p>
+Users may register for congresses by selecting one of the registration types offered on the relevant congress page.
+Congress registration conditions, fees, deadlines and participation rules may be determined by the congress organizer.
+</p>
+
+<ul>
+    <li>Congress registrations may be specific to the selected congress.</li>
+    <li>Registration type, participation type and fee information may vary by congress.</li>
+    <li>Registrations made with incorrect or incomplete information may be reviewed by the organizer.</li>
+    <li>Submission or payment processes after registration may vary depending on the congress workflow.</li>
+</ul>
+
+<p>
+AntAbstract supports the technical execution of registration conditions determined by congress organizers.
+Congress content, scientific programs, registration rules and participation conditions may be the responsibility of the relevant organizer.
+</p>"
+        ));
+
+        sections.Add((
+            "submission",
+            "6. Abstract Submission",
+            "6. Abstract, Submission and File Upload",
+            @"
+<p>
+Users may submit abstracts or papers for congresses for which they are registered. Users are responsible for the accuracy
+of submission titles, abstract texts, keywords, author information, presentation type and uploaded files.
+</p>
+
+<ul>
+    <li>The submitted academic content must belong to the user or the necessary permissions must have been obtained.</li>
+    <li>Plagiarism, fabricated data, misleading information or unauthorized content sharing is prohibited.</li>
+    <li>Author information must be accurate and up to date.</li>
+    <li>If co-author information is entered, it is assumed that the necessary knowledge and consent of those persons exists.</li>
+    <li>File uploads must comply with the format and size limits set by the system.</li>
+    <li>Submissions that do not comply with congress formatting rules may be rejected by the organizer or scientific committee.</li>
+</ul>
+
+<p>
+Accepted submissions may be used in congress programs, abstract books, acceptance letters, participation documents or academic publication processes.
+</p>"
+        ));
+
+        sections.Add((
+            "review",
+            "7. Review Process",
+            "7. Peer Review and Scientific Evaluation",
+            @"
+<p>
+Reviewers are responsible for evaluating assigned submissions objectively, in accordance with academic ethics and confidentiality principles.
+</p>
+
+<ul>
+    <li>Reviewers should only access submissions assigned to them.</li>
+    <li>Review comments and recommendations must be kept confidential.</li>
+    <li>If there is a conflict of interest, the organizer or authorized person should be notified.</li>
+    <li>Review evaluations should be scientific and constructive.</li>
+    <li>Submission files should not be shared with unauthorized persons.</li>
+</ul>
+
+<p>
+Final decisions such as acceptance, rejection, revision or presentation type may be made by the scientific committee,
+editors or authorized congress organization team.
+</p>"
+        ));
+
+        sections.Add((
+            "payment",
+            "8. Payment and Refund",
+            "8. Payment, Billing and Refund Processes",
+            @"
+<p>
+Payment may be required for congress participation or certain services. Payment amount, currency, payment timing,
+billing information and refund conditions may be determined by the relevant congress organizer.
+</p>
+
+<ul>
+    <li>The payment screen may be opened after registration or after submission acceptance depending on the congress workflow.</li>
+    <li>Payment transactions may be carried out through third-party payment providers.</li>
+    <li>Billing information must be entered accurately by the user.</li>
+    <li>Refund and cancellation conditions are subject to the rules determined by the congress organizer.</li>
+    <li>After payment is completed, payment history and related records may be displayed in the system.</li>
+</ul>
+
+<div class='legal-warning-box'>
+In the live system, refund policy, cancellation conditions, payment provider details and billing processes should be clarified according to the actual organization rules.
+</div>"
+        ));
+
+        sections.Add((
+            "certificates",
+            "9. Documents",
+            "9. Documents, Certificates and Acceptance Letters",
+            @"
+<p>
+Acceptance letters, badges, participation documents, reviewer certificates or other certificates may be generated through the platform.
+</p>
+
+<ul>
+    <li>Document types and eligibility conditions may vary by congress.</li>
+    <li>Acceptance letters are generally generated after a submission is accepted.</li>
+    <li>Participation certificates may become available after participation requirements are met.</li>
+    <li>Reviewer certificates may become available after the relevant review task is completed.</li>
+    <li>Information on documents is prepared based on user records in the system.</li>
+</ul>
+
+<p>
+Users should contact the organizer or system administrator to correct document errors caused by incorrect or incomplete information.
+</p>"
+        ));
+
+        sections.Add((
+            "content",
+            "10. Content Responsibility",
+            "10. Content Responsibility and Intellectual Rights",
+            @"
+<p>
+Users are responsible for the accuracy and legality of submissions, abstracts, files, profile information,
+review comments or any other content uploaded to the platform.
+</p>
+
+<ul>
+    <li>The user confirms that uploaded content belongs to them or that they have the necessary permissions.</li>
+    <li>Academic works, images, files or texts belonging to others must not be uploaded without authorization.</li>
+    <li>Plagiarism, false authorship, misleading institutional information or inaccurate academic statements are not allowed.</li>
+    <li>Accepted submissions may be used in congress programs, abstract books and academic announcements.</li>
+</ul>
+
+<p>
+AntAbstract may not be responsible for academically verifying user-generated content.
+Scientific review and acceptance processes are carried out by the relevant congress scientific committees.
+</p>"
+        ));
+
+        sections.Add((
+            "prohibited",
+            "11. Prohibited Use",
+            "11. Prohibited Use",
+            @"
+<p>
+The platform must not be used for the following purposes:
+</p>
+
+<ul>
+    <li>Performing illegal activities.</li>
+    <li>Attempting unauthorized access to another user's account.</li>
+    <li>Uploading harmful software, code, files or links.</li>
+    <li>Creating spam, fake registrations or misleading applications.</li>
+    <li>Sharing another person's personal data without authorization.</li>
+    <li>Violating reviewer or scientific evaluation confidentiality.</li>
+    <li>Disrupting platform security, performance or availability.</li>
+    <li>Submitting plagiarized content, false academic information or misleading author information.</li>
+</ul>
+
+<p>
+If such use is detected, the user account may be suspended, the relevant submission may be rejected or the situation may be reported to authorized institutions.
+</p>"
+        ));
+
+        sections.Add((
+            "availability",
+            "12. Service Availability",
+            "12. Service Availability and Technical Responsibility",
+            @"
+<p>
+AntAbstract aims to take reasonable technical measures to keep the platform secure and available.
+However, temporary interruptions may occur due to maintenance, updates, infrastructure issues,
+third-party service interruptions or force majeure events.
+</p>
+
+<ul>
+    <li>Planned maintenance may be carried out.</li>
+    <li>Third-party payment, email, hosting or security services may experience interruptions.</li>
+    <li>User-side internet connection, device or browser settings may cause issues.</li>
+    <li>Some features may be temporarily unavailable until technical issues are resolved.</li>
+</ul>
+
+<p>
+The platform aims to provide the best possible service, but uninterrupted and error-free operation is not guaranteed.
+</p>"
+        ));
+
+        sections.Add((
+            "privacy",
+            "13. Privacy",
+            "13. Privacy and Personal Data",
+            @"
+<p>
+Personal data may be processed during the use of the platform. Details about data processing,
+purposes of use and user rights are explained on the following pages.
+</p>
+
+<div class='legal-footer-links'>
+    <a href='/privacy' class='legal-footer-link'>
+        <i class='fas fa-shield-alt'></i>
+        Privacy Policy
+    </a>
+
+    <a href='/kvkk' class='legal-footer-link'>
+        <i class='fas fa-file-signature'></i>
+        Personal Data Protection Notice
+    </a>
+
+    <a href='/cookies' class='legal-footer-link'>
+        <i class='fas fa-cookie-bite'></i>
+        Cookie Policy
+    </a>
+</div>"
+        ));
+
+        sections.Add((
+            "changes",
+            "14. Changes",
+            "14. Changes to Terms of Use",
+            @"
+<p>
+AntAbstract may update these Terms of Use due to changes in platform features, legislation,
+technical requirements or service processes.
+</p>
+
+<p>
+The current text becomes effective once published on the website. Continued use of the platform may mean that the user accepts the current terms.
+</p>"
+        ));
+
+        sections.Add((
+            "contact",
+            "15. Contact",
+            "15. Contact",
+            @"
+<p>
+For questions about these Terms of Use, account operations, congress applications, payment processes or technical support,
+you may contact us.
+</p>
+
+<table class='legal-table'>
+    <tbody>
+        <tr>
+            <th>Platform</th>
+            <td>AntAbstract</td>
+        </tr>
+
+        <tr>
+            <th>Email</th>
+            <td>destek@antabstract.com</td>
+        </tr>
+
+        <tr>
+            <th>Contact Page</th>
+            <td>
+                <a href='/contact' class='text-decoration-none fw-bold'>
+                    /contact
+                </a>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<div class='legal-warning-box'>
+Before going live, the real company/institution name, address, email, KEP address, payment provider information and refund policy should be aligned with this text.
+</div>"
+        ));
+    }
+    else
+    {
+        sections.Add((
+            "intro",
+            "1. Giriş",
+            "1. Giriş",
+            @"
+<p>
+AntAbstract; kongre, sempozyum, çalıştay ve benzeri akademik etkinlikler için kayıt,
+bildiri gönderimi, hakem değerlendirme, ödeme, belge ve sertifika süreçlerini yönetmeye yardımcı olan bir dijital platformdur.
+</p>
+
+<p>
+Bu Kullanım Şartları; AntAbstract web sitesini ziyaret eden, hesap oluşturan, kongreye kayıt olan,
+bildiri gönderen, hakemlik yapan, ödeme işlemi gerçekleştiren veya yönetim panelini kullanan tüm kullanıcılar için geçerlidir.
+</p>"
+        ));
+
+        sections.Add((
+            "scope",
+            "2. Hizmet Kapsamı",
+            "2. Hizmet Kapsamı",
+            @"
+<p>
+AntAbstract üzerinden sunulabilecek hizmetler şunları kapsayabilir:
+</p>
+
+<ul>
+    <li>Kongre ve etkinlik sayfalarının yayınlanması.</li>
+    <li>Kullanıcı hesabı oluşturma ve giriş işlemleri.</li>
+    <li>Yazar, hakem, organizatör ve admin panelleri.</li>
+    <li>Kongre kayıt ve katılım süreçleri.</li>
+    <li>Bildiri/özet gönderimi ve dosya yükleme işlemleri.</li>
+    <li>Hakem atama ve bilimsel değerlendirme süreçleri.</li>
+    <li>Ödeme, fatura ve ödeme geçmişi işlemleri.</li>
+    <li>Kabul mektubu, yaka kartı, katılım belgesi ve sertifika oluşturma.</li>
+    <li>Bildiri kitabı, kongre programı ve duyuru süreçleri.</li>
+</ul>
+
+<p>
+Platformda sunulan hizmetlerin kapsamı, kongre organizatörünün tercihine ve sistemde aktif edilen modüllere göre değişebilir.
+</p>"
+        ));
+
+        sections.Add((
+            "account",
+            "3. Kullanıcı Hesabı",
+            "3. Kullanıcı Hesabı ve Güvenlik",
+            @"
+<p>
+AntAbstract üzerinde bazı işlemleri yapabilmek için kullanıcı hesabı oluşturmanız gerekebilir.
+Kullanıcı, hesap oluştururken doğru, güncel ve kendisine ait bilgileri vermekle sorumludur.
+</p>
+
+<ul>
+    <li>Hesap bilgilerinizin doğruluğundan siz sorumlusunuz.</li>
+    <li>Şifrenizi gizli tutmalı ve üçüncü kişilerle paylaşmamalısınız.</li>
+    <li>Hesabınız üzerinden yapılan işlemlerden siz sorumlu olabilirsiniz.</li>
+    <li>Yetkisiz kullanım fark ederseniz platform yöneticileriyle iletişime geçmelisiniz.</li>
+    <li>Yanlış, yanıltıcı veya başkasına ait bilgilerle hesap oluşturulmamalıdır.</li>
+</ul>
+
+<div class='legal-warning-box'>
+Güvenliğiniz için güçlü parola kullanmanız, ortak cihazlarda işlem yaptıktan sonra hesabınızdan çıkış yapmanız ve hesabınızı başkalarıyla paylaşmamanız önerilir.
+</div>"
+        ));
+
+        sections.Add((
+            "roles",
+            "4. Kullanıcı Rolleri",
+            "4. Kullanıcı Rolleri",
+            @"
+<p>
+Platformda kullanıcıların yetkileri sahip oldukları role göre değişebilir.
+</p>
+
+<table class='legal-table'>
+    <tbody>
+        <tr>
+            <th>Ziyaretçi</th>
+            <td>Kongre sayfalarını, genel bilgileri, gizlilik ve kullanım metinlerini görüntüleyebilir.</td>
+        </tr>
+        <tr>
+            <th>Yazar</th>
+            <td>Kongreye kayıt olabilir, bildiri/özet gönderebilir, başvurularını takip edebilir.</td>
+        </tr>
+        <tr>
+            <th>Hakem</th>
+            <td>Kendisine atanmış bildirileri değerlendirebilir ve değerlendirme formlarını doldurabilir.</td>
+        </tr>
+        <tr>
+            <th>Organizatör</th>
+            <td>Kongreye ait yönetim, kayıt, bildiri, hakem ve içerik süreçlerini yönetebilir.</td>
+        </tr>
+        <tr>
+            <th>Admin</th>
+            <td>Platformun genel yönetim işlemlerini gerçekleştirebilir.</td>
+        </tr>
+    </tbody>
+</table>"
+        ));
+
+        sections.Add((
+            "registration",
+            "5. Kongre Kayıtları",
+            "5. Kongre Kayıtları",
+            @"
+<p>
+Kullanıcılar, ilgili kongre sayfasında sunulan kayıt türlerinden birini seçerek kongreye kayıt olabilir.
+Kongre kayıt şartları, ücretleri, son başvuru tarihleri ve katılım kuralları ilgili kongre organizatörü tarafından belirlenebilir.
+</p>
+
+<ul>
+    <li>Kongre kayıtları ilgili kongreye özel olabilir.</li>
+    <li>Kayıt türü, katılım şekli ve ücret bilgileri kongreye göre değişebilir.</li>
+    <li>Yanlış veya eksik bilgiyle yapılan kayıtlar organizatör tarafından incelenebilir.</li>
+    <li>Kayıt sonrası bildiri gönderimi veya ödeme süreçleri kongre işleyişine göre değişebilir.</li>
+</ul>
+
+<p>
+AntAbstract, kongre organizatörleri tarafından belirlenen kayıt koşullarının teknik olarak yürütülmesine yardımcı olur.
+Kongre içeriği, bilimsel program, kayıt kuralları ve katılım koşulları ilgili organizatörün sorumluluğunda olabilir.
+</p>"
+        ));
+
+        sections.Add((
+            "submission",
+            "6. Bildiri Gönderimi",
+            "6. Bildiri, Özet ve Dosya Gönderimi",
+            @"
+<p>
+Kullanıcılar, kayıtlı oldukları kongreler için bildiri veya özet gönderebilir.
+Gönderilen bildiri başlığı, özet metni, anahtar kelimeler, yazar bilgileri,
+sunum türü ve yüklenen dosyaların doğruluğundan kullanıcı sorumludur.
+</p>
+
+<ul>
+    <li>Gönderilen akademik içeriğin kullanıcıya ait olması veya gerekli izinlerin alınmış olması gerekir.</li>
+    <li>İntihal, sahte veri, yanıltıcı bilgi veya yetkisiz içerik paylaşımı yasaktır.</li>
+    <li>Yazar bilgileri doğru ve güncel olmalıdır.</li>
+    <li>Ek yazar bilgileri giriliyorsa, bu kişilerin bilgisinin ve gerekli onaylarının bulunduğu kabul edilir.</li>
+    <li>Dosya yüklemelerinde sistem tarafından belirlenen format ve boyut sınırlarına uyulmalıdır.</li>
+    <li>Kongre yazım kurallarına uygun olmayan başvurular organizatör veya bilim kurulu tarafından reddedilebilir.</li>
+</ul>
+
+<p>
+Kabul edilen bildiriler; kongre programı, bildiri kitabı, kabul mektubu, katılım belgesi veya akademik yayın süreçlerinde kullanılabilir.
+</p>"
+        ));
+
+        sections.Add((
+            "review",
+            "7. Hakemlik Süreci",
+            "7. Hakemlik ve Bilimsel Değerlendirme Süreci",
+            @"
+<p>
+Hakemler, kendilerine atanan bildirileri objektif, akademik etik ilkelerine uygun ve gizlilik çerçevesinde değerlendirmekle yükümlüdür.
+</p>
+
+<ul>
+    <li>Hakemler yalnızca kendilerine atanmış bildirileri görüntülemelidir.</li>
+    <li>Değerlendirme notları ve karar önerileri gizli tutulmalıdır.</li>
+    <li>Çıkar çatışması bulunması halinde organizatöre veya yetkili kişiye bildirilmelidir.</li>
+    <li>Hakem değerlendirmeleri bilimsel ve yapıcı bir dille yapılmalıdır.</li>
+    <li>Bildiri dosyaları yetkisiz kişilerle paylaşılmamalıdır.</li>
+</ul>
+
+<p>
+Nihai kabul, ret, revizyon veya sunum kararı ilgili kongrenin bilim kurulu, editörleri veya yetkili organizasyon ekibi tarafından verilebilir.
+</p>"
+        ));
+
+        sections.Add((
+            "payment",
+            "8. Ödeme ve İade",
+            "8. Ödeme, Fatura ve İade Süreçleri",
+            @"
+<p>
+Kongreye katılım veya belirli hizmetler için ödeme gerekebilir. Ödeme tutarı, para birimi,
+ödeme zamanı, fatura bilgileri ve iade koşulları ilgili kongrenin organizatörü tarafından belirlenebilir.
+</p>
+
+<ul>
+    <li>Ödeme ekranı, kongre işleyişine göre kayıt sonrası veya bildiri kabulünden sonra açılabilir.</li>
+    <li>Ödeme işlemleri üçüncü taraf ödeme sağlayıcıları üzerinden gerçekleştirilebilir.</li>
+    <li>Fatura bilgileri kullanıcı tarafından doğru girilmelidir.</li>
+    <li>İade ve iptal koşulları kongre organizatörü tarafından belirlenen kurallara tabidir.</li>
+    <li>Ödeme tamamlandığında ödeme geçmişi ve ilgili kayıtlar sistemde görüntülenebilir.</li>
+</ul>
+
+<div class='legal-warning-box'>
+Canlı sistemde iade politikası, iptal koşulları, ödeme sağlayıcı bilgileri ve fatura süreçleri gerçek organizasyon kurallarına göre ayrıca netleştirilmelidir.
+</div>"
+        ));
+
+        sections.Add((
+            "certificates",
+            "9. Belgeler",
+            "9. Belgeler, Sertifikalar ve Kabul Mektupları",
+            @"
+<p>
+Platform üzerinden kabul mektubu, yaka kartı, katılım belgesi, hakem belgesi veya sertifika gibi belgeler oluşturulabilir.
+</p>
+
+<ul>
+    <li>Belge türleri ve belge alma koşulları kongreye göre değişebilir.</li>
+    <li>Kabul mektubu genellikle bildirinin kabul edilmesi sonrasında oluşturulur.</li>
+    <li>Katılım belgesi, kongreye katılım koşullarının sağlanması sonrasında erişilebilir olabilir.</li>
+    <li>Hakem belgesi, ilgili hakemlik görevinin tamamlanması sonrasında oluşturulabilir.</li>
+    <li>Belge üzerindeki bilgiler kullanıcının sistemdeki kayıtlarına göre hazırlanır.</li>
+</ul>
+
+<p>
+Yanlış veya eksik bilgilerden kaynaklanan belge hatalarının düzeltilmesi için kullanıcı,
+organizatör veya sistem yöneticisiyle iletişime geçmelidir.
+</p>"
+        ));
+
+        sections.Add((
+            "content",
+            "10. İçerik Sorumluluğu",
+            "10. İçerik Sorumluluğu ve Fikri Haklar",
+            @"
+<p>
+Kullanıcı tarafından platforma yüklenen bildiri, özet, dosya, profil bilgisi, hakem yorumu
+veya diğer içeriklerin doğruluğu ve hukuka uygunluğu kullanıcıya aittir.
+</p>
+
+<ul>
+    <li>Kullanıcı, yüklediği içeriğin kendisine ait olduğunu veya gerekli izinlere sahip olduğunu kabul eder.</li>
+    <li>Başkasına ait akademik çalışma, görsel, dosya veya metin izinsiz şekilde yüklenmemelidir.</li>
+    <li>İntihal, sahte yazarlık, yanıltıcı kurum bilgisi veya yanlış akademik beyan kabul edilmez.</li>
+    <li>Kabul edilen bildiriler kongre programı, bildiri kitabı ve akademik duyurularda kullanılabilir.</li>
+</ul>
+
+<p>
+AntAbstract, kullanıcı içeriklerini doğrudan akademik olarak doğrulamakla yükümlü olmayabilir.
+Akademik değerlendirme ve kabul süreçleri ilgili kongre bilimsel kurulları tarafından yürütülür.
+</p>"
+        ));
+
+        sections.Add((
+            "prohibited",
+            "11. Yasaklı Kullanım",
+            "11. Yasaklı Kullanım",
+            @"
+<p>
+Platform aşağıdaki amaçlarla kullanılamaz:
+</p>
+
+<ul>
+    <li>Hukuka aykırı işlem yapmak.</li>
+    <li>Başkasının hesabına izinsiz erişmeye çalışmak.</li>
+    <li>Sisteme zarar verecek yazılım, kod, dosya veya bağlantı yüklemek.</li>
+    <li>Spam, sahte kayıt veya yanıltıcı başvuru oluşturmak.</li>
+    <li>Başkasına ait kişisel verileri izinsiz paylaşmak.</li>
+    <li>Hakemlik veya bilimsel değerlendirme gizliliğini ihlal etmek.</li>
+    <li>Platformun güvenliğini, performansını veya kullanılabilirliğini bozacak eylemlerde bulunmak.</li>
+    <li>İntihal, sahte akademik bilgi veya yanıltıcı yazar bilgisi sunmak.</li>
+</ul>
+
+<p>
+Bu tür kullanımlar tespit edildiğinde kullanıcı hesabı askıya alınabilir, ilgili başvuru reddedilebilir veya yetkili kurumlara bildirim yapılabilir.
+</p>"
+        ));
+
+        sections.Add((
+            "availability",
+            "12. Hizmet Sürekliliği",
+            "12. Hizmet Sürekliliği ve Teknik Sorumluluk",
+            @"
+<p>
+AntAbstract, platformun güvenli ve kesintisiz çalışması için makul teknik önlemleri almaya çalışır.
+Ancak bakım, güncelleme, altyapı sorunları, üçüncü taraf servis kesintileri veya mücbir sebepler nedeniyle hizmette geçici aksaklıklar yaşanabilir.
+</p>
+
+<ul>
+    <li>Planlı bakım çalışmaları yapılabilir.</li>
+    <li>Üçüncü taraf ödeme, e-posta, barındırma veya güvenlik servislerinde kesinti olabilir.</li>
+    <li>Kullanıcının internet bağlantısı, cihazı veya tarayıcı ayarları nedeniyle sorun yaşanabilir.</li>
+    <li>Teknik hatalar giderilene kadar bazı özellikler geçici olarak kullanılamayabilir.</li>
+</ul>
+
+<p>
+Platform, mümkün olan en iyi şekilde hizmet sunmayı hedefler; ancak kesintisiz ve hatasız çalışma garantisi verilmez.
+</p>"
+        ));
+
+        sections.Add((
+            "privacy",
+            "13. Gizlilik",
+            "13. Gizlilik ve Kişisel Veriler",
+            @"
+<p>
+Platformun kullanımı sırasında kişisel verileriniz işlenebilir. Bu verilerin nasıl işlendiği,
+hangi amaçlarla kullanıldığı ve kullanıcı hakları aşağıdaki sayfalarda açıklanmıştır.
+</p>
+
+<div class='legal-footer-links'>
+    <a href='/privacy' class='legal-footer-link'>
+        <i class='fas fa-shield-alt'></i>
+        Gizlilik Politikası
+    </a>
+
+    <a href='/kvkk' class='legal-footer-link'>
+        <i class='fas fa-file-signature'></i>
+        KVKK Aydınlatma Metni
+    </a>
+
+    <a href='/cookies' class='legal-footer-link'>
+        <i class='fas fa-cookie-bite'></i>
+        Çerez Politikası
+    </a>
+</div>"
+        ));
+
+        sections.Add((
+            "changes",
+            "14. Değişiklikler",
+            "14. Kullanım Şartlarında Değişiklik",
+            @"
+<p>
+AntAbstract, platform özellikleri, mevzuat değişiklikleri, teknik gereklilikler veya hizmet süreçlerindeki değişiklikler nedeniyle bu Kullanım Şartları’nı güncelleyebilir.
+</p>
+
+<p>
+Güncel metin web sitesinde yayımlandığı tarihten itibaren geçerli olur.
+Kullanıcıların platformu kullanmaya devam etmesi, güncel şartları kabul ettiği anlamına gelebilir.
+</p>"
+        ));
+
+        sections.Add((
+            "contact",
+            "15. İletişim",
+            "15. İletişim",
+            @"
+<p>
+Kullanım Şartları, hesap işlemleri, kongre başvuruları, ödeme süreçleri veya teknik destek talepleriniz için bizimle iletişime geçebilirsiniz.
+</p>
+
+<table class='legal-table'>
+    <tbody>
+        <tr>
+            <th>Platform</th>
+            <td>AntAbstract</td>
+        </tr>
+
+        <tr>
+            <th>E-posta</th>
+            <td>destek@antabstract.com</td>
+        </tr>
+
+        <tr>
+            <th>İletişim Sayfası</th>
+            <td>
+                <a href='/contact' class='text-decoration-none fw-bold'>
+                    /contact
+                </a>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<div class='legal-warning-box'>
+Canlıya çıkmadan önce gerçek şirket/kurum unvanı, adres, e-posta, KEP adresi,
+ödeme sağlayıcı bilgisi ve iade politikası bu metinle uyumlu hale getirilmelidir.
+</div>"
+        ));
+    }
+}
+
+<style>
+    .legal-hero {
+        padding: 150px 0 70px;
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 35%), linear-gradient(135deg, #f8fafc 0%, #eef4f8 100%);
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .legal-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #fff;
+        color: #00aeef;
+        border: 1px solid rgba(0, 174, 239, 0.2);
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+        margin-bottom: 20px;
+    }
+
+    .legal-title {
+        font-weight: 800;
+        color: #0f172a;
+        letter-spacing: -1px;
+        margin-bottom: 16px;
+    }
+
+    .legal-lead {
+        max-width: 820px;
+        color: #64748b;
+        font-size: 1.1rem;
+        line-height: 1.8;
+        margin: 0 auto;
+    }
+
+    .legal-wrapper {
+        padding: 60px 0;
+        background: #fff;
+    }
+
+    .legal-layout {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        gap: 32px;
+        align-items: flex-start;
+    }
+
+    .legal-sidebar {
+        position: sticky;
+        top: 110px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        padding: 18px;
+    }
+
+    .legal-sidebar-title {
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: #334155;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+    }
+
+    .legal-nav-link {
+        display: block;
+        color: #64748b;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.92rem;
+        padding: 10px 12px;
+        border-radius: 12px;
+        transition: all 0.2s ease;
+    }
+
+        .legal-nav-link:hover {
+            background: #fff;
+            color: #00aeef;
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+        }
+
+    .legal-content {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        padding: 44px;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.06);
+    }
+
+    .legal-section {
+        padding-bottom: 34px;
+        margin-bottom: 34px;
+        border-bottom: 1px solid #e2e8f0;
+        scroll-margin-top: 120px;
+    }
+
+        .legal-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .legal-section h2 {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 18px;
+            letter-spacing: -0.4px;
+        }
+
+        .legal-section p {
+            color: #475569;
+            line-height: 1.85;
+            margin-bottom: 14px;
+        }
+
+        .legal-section ul {
+            color: #475569;
+            line-height: 1.9;
+            margin-bottom: 0;
+            padding-left: 20px;
+        }
+
+        .legal-section li {
+            margin-bottom: 6px;
+        }
+
+    .legal-info-box {
+        background: #f1f9fd;
+        border: 1px solid rgba(0, 174, 239, 0.18);
+        border-radius: 18px;
+        padding: 18px 20px;
+        color: #075985;
+        line-height: 1.75;
+        margin-bottom: 28px;
+    }
+
+    .legal-warning-box {
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        border-radius: 18px;
+        padding: 18px 20px;
+        color: #9a3412;
+        line-height: 1.75;
+        margin-top: 18px;
+    }
+
+    .legal-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        margin-top: 18px;
+    }
+
+        .legal-table th,
+        .legal-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: top;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        .legal-table th {
+            background: #f8fafc;
+            color: #334155;
+            font-weight: 800;
+            width: 32%;
+        }
+
+        .legal-table tr:last-child th,
+        .legal-table tr:last-child td {
+            border-bottom: none;
+        }
+
+    .legal-footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .legal-footer-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #f8fafc;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+        border-radius: 999px;
+        padding: 10px 16px;
+        text-decoration: none;
+        font-weight: 700;
+        transition: all 0.2s ease;
+    }
+
+        .legal-footer-link:hover {
+            background: #00aeef;
+            border-color: #00aeef;
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+    @@media (max-width: 992px) {
+        .legal-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .legal-sidebar {
+            position: static;
+        }
+
+        .legal-content {
+            padding: 30px 22px;
+        }
+
+        .legal-hero {
+            padding-top: 120px;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .legal-title {
+            font-size: 2rem;
+        }
+
+        .legal-table th,
+        .legal-table td {
+            display: block;
+            width: 100%;
+        }
+
+        .legal-table th {
+            border-bottom: none;
+            padding-bottom: 6px;
+        }
+
+        .legal-table td {
+            padding-top: 6px;
+        }
+    }
+
+    .legal-wrapper-embed {
+        padding: 0 !important;
+        background: #fff !important;
+    }
+
+        .legal-wrapper-embed .container {
+            max-width: 100% !important;
+            padding: 0 !important;
+        }
+
+    .legal-layout-embed {
+        display: block !important;
+    }
+
+    .legal-content-embed {
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        padding: 24px 30px !important;
+    }
+
+        .legal-content-embed .legal-info-box {
+            margin-bottom: 22px !important;
+        }
+
+        .legal-content-embed .legal-section {
+            padding-bottom: 24px !important;
+            margin-bottom: 24px !important;
+            scroll-margin-top: 20px !important;
+        }
+
+            .legal-content-embed .legal-section h2 {
+                font-size: 1.25rem !important;
+            }
+
+        .legal-content-embed p,
+        .legal-content-embed li,
+        .legal-content-embed th,
+        .legal-content-embed td {
+            font-size: 0.92rem !important;
+        }
+
+    @@media (max-width: 576px) {
+        .legal-content-embed {
+            padding: 18px 16px !important;
+        }
+    }
+</style>
+
+@if (!isEmbed)
+{
+    <section class="legal-hero text-center">
+        <div class="container">
+            <div class="legal-badge">
+                <i class="fas fa-file-contract"></i>
+                @pageBadge
+            </div>
+
+            <h1 class="display-5 legal-title">
+                @pageTitle
+            </h1>
+
+            <p class="legal-lead">
+                @pageLead
+            </p>
+        </div>
+    </section>
+}
+
+<section class="legal-wrapper @(isEmbed ? "legal-wrapper-embed" : "")">
+    <div class="container">
+        <div class="legal-layout @(isEmbed ? "legal-layout-embed" : "")">
+
+            @if (!isEmbed)
+            {
+                <aside class="legal-sidebar">
+                    <div class="legal-sidebar-title">
+                        @(isEnglish ? "Contents" : "İçindekiler")
+                    </div>
+
+                    @foreach (var item in sections)
+                    {
+                        <a href="#@item.Id" class="legal-nav-link">
+                            @item.Nav
+                        </a>
+                    }
+                </aside>
+            }
+
+            <article class="legal-content @(isEmbed ? "legal-content-embed" : "")">
+
+                <div class="legal-info-box">
+                    <strong>@(isEnglish ? "Last updated:" : "Son güncelleme:")</strong> @lastUpdated
+                    <br />
+                    @noticeText
+                </div>
+
+                @foreach (var item in sections)
+                {
+                    <section id="@item.Id" class="legal-section">
+                        <h2>@item.Title</h2>
+                        @Html.Raw(item.Html)
+                    </section>
+                }
+
+            </article>
+        </div>
+    </div>
+</section>
