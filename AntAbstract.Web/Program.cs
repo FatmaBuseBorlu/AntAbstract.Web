@@ -5,10 +5,12 @@ using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services;
 using AntAbstract.Infrastructure.Services.DependencyInjection;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Rotativa.AspNetCore;
 using Stripe;
 using System.Globalization;
@@ -54,23 +56,64 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/access-denied";
 });
 
-builder.Services.AddAuthentication()
-    .AddOAuth("ORCID", options =>
+builder.Services
+    .AddAuthentication()
+    .AddOpenIdConnect("ORCID", "ORCID", options =>
     {
-        options.ClientId = builder.Configuration["ORCID:ClientId"]
-            ?? throw new InvalidOperationException("ORCID ClientId bulunamadý.");
+        var authority = builder.Configuration["Authentication:ORCID:Authority"];
+        var clientId = builder.Configuration["Authentication:ORCID:ClientId"];
+        var clientSecret = builder.Configuration["Authentication:ORCID:ClientSecret"];
 
-        options.ClientSecret = builder.Configuration["ORCID:ClientSecret"]
-            ?? throw new InvalidOperationException("ORCID ClientSecret bulunamadý.");
+        options.Authority = string.IsNullOrWhiteSpace(authority)
+            ? "https://orcid.org"
+            : authority;
 
-        options.AuthorizationEndpoint = "https://orcid.org/oauth/authorize";
-        options.TokenEndpoint = "https://orcid.org/oauth/token";
-        options.UserInformationEndpoint = "https://pub.orcid.org/v3.0/oauth/userinfo";
+        options.ClientId = clientId;
+        options.ClientSecret = clientSecret;
 
-        options.Scope.Add("/authenticate");
-        options.ClaimActions.MapJsonKey(ClaimTypes.NameIdentifier, "orcid");
-        options.SaveTokens = true;
         options.CallbackPath = "/signin-orcid";
+
+        options.ResponseType = OpenIdConnectResponseType.Code;
+        options.UsePkce = true;
+
+        options.SaveTokens = true;
+        options.GetClaimsFromUserInfoEndpoint = true;
+
+        options.SignInScheme = IdentityConstants.ExternalScheme;
+
+        options.Scope.Clear();
+        options.Scope.Add("openid");
+
+        options.TokenValidationParameters.NameClaimType = "name";
+
+        options.ClaimActions.MapUniqueJsonKey("orcid", "sub");
+        options.ClaimActions.MapUniqueJsonKey(ClaimTypes.Name, "name");
+        options.ClaimActions.MapUniqueJsonKey(ClaimTypes.GivenName, "given_name");
+        options.ClaimActions.MapUniqueJsonKey(ClaimTypes.Surname, "family_name");
+
+        options.Events = new OpenIdConnectEvents
+        {
+            OnTokenValidated = context =>
+            {
+                if (context.Principal?.Identity is ClaimsIdentity identity)
+                {
+                    var orcidId =
+                        context.Principal.FindFirst("sub")?.Value
+                        ?? context.Principal.FindFirst("orcid")?.Value
+                        ?? context.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                    if (!string.IsNullOrWhiteSpace(orcidId))
+                    {
+                        if (!identity.HasClaim(c => c.Type == "orcid"))
+                        {
+                            identity.AddClaim(new Claim("orcid", orcidId));
+                        }
+                    }
+                }
+
+                return Task.CompletedTask;
+            }
+        };
     });
 
 #endregion
@@ -85,7 +128,7 @@ builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();
 
 #endregion
 
-#region 4. Çoklu Dil (Localization) ve MVC Ayarlarý
+#region 4. Çoklu Dil ve MVC Ayarlarý
 
 builder.Services.AddLocalization(options =>
 {
@@ -133,7 +176,7 @@ builder.Services.AddRazorPages(options =>
 
 var app = builder.Build();
 
-#region 5. Veritabaný Baþlatma (Migration + Seeding) ve Ayarlar
+#region 5. Veritabaný Baþlatma ve Ayarlar
 
 using (var scope = app.Services.CreateScope())
 {
@@ -166,7 +209,7 @@ StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
 #endregion
 
-#region 6. HTTP Ýstek Hattý (Middleware Pipeline)
+#region 6. HTTP Ýstek Hattý
 
 if (app.Environment.IsDevelopment())
 {
@@ -210,25 +253,9 @@ app.UseRotativa();
 
 #endregion
 
-#region 7. Yönlendirmeler (Endpoints)
+#region 7. Yönlendirmeler
 
 app.MapRazorPages();
-
-/*
-    Public temiz URL'ler
-
-    Eski URL'ler:
-    /Home/Congresses
-    /Home/About
-    /Home/Contact
-    /Home/Proceedings
-
-    Yeni URL'ler:
-    /congresses
-    /about
-    /contact
-    /proceedings
-*/
 
 app.MapControllerRoute(
     name: "public_congresses",
@@ -273,6 +300,33 @@ app.MapControllerRoute(
     {
         controller = "Home",
         action = "Privacy"
+    });
+
+app.MapControllerRoute(
+    name: "public_kvkk",
+    pattern: "kvkk",
+    defaults: new
+    {
+        controller = "Home",
+        action = "Kvkk"
+    });
+
+app.MapControllerRoute(
+    name: "public_cookies",
+    pattern: "cookies",
+    defaults: new
+    {
+        controller = "Home",
+        action = "Cookies"
+    });
+
+app.MapControllerRoute(
+    name: "public_terms",
+    pattern: "terms",
+    defaults: new
+    {
+        controller = "Home",
+        action = "Terms"
     });
 
 app.MapControllerRoute(

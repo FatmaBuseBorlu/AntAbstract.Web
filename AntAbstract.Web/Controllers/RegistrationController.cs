@@ -134,16 +134,21 @@ namespace AntAbstract.Web.Controllers
                 return Redirect(BuildUrl(canonicalSlug, "/submit-abstract"));
             }
 
-            var ticketTypes = await _context.RegistrationTypes
+            var registrationTypes = await _context.RegistrationTypes
                 .AsNoTracking()
-                .Where(rt => rt.ConferenceId == conference.Id)
+                .Where(rt =>
+                    rt.ConferenceId == conference.Id &&
+                    rt.IsActive &&
+                    (!rt.Deadline.HasValue || rt.Deadline.Value >= DateTime.UtcNow))
                 .OrderBy(rt => rt.Price)
+                .ThenBy(rt => rt.Name)
                 .ToListAsync();
 
             ViewBag.ConferenceTitle = conference.Title;
+            ViewBag.ConferenceStartDate = conference.StartDate;
             ViewBag.Slug = canonicalSlug;
 
-            return View(ticketTypes);
+            return View(registrationTypes);
         }
 
         [HttpGet("/{slug}/register/join")]
@@ -169,7 +174,10 @@ namespace AntAbstract.Web.Controllers
             var ticketType = await _context.RegistrationTypes
                 .Include(rt => rt.Conference)
                     .ThenInclude(c => c.Tenant)
-                .FirstOrDefaultAsync(rt => rt.Id == typeId);
+                .FirstOrDefaultAsync(rt =>
+                    rt.Id == typeId &&
+                    rt.IsActive &&
+                    (!rt.Deadline.HasValue || rt.Deadline.Value >= DateTime.UtcNow));
 
             if (ticketType == null)
             {
@@ -177,7 +185,7 @@ namespace AntAbstract.Web.Controllers
                     "InvalidOrExpiredTicket",
                     "Geçersiz veya süresi dolmuş kayıt türü.");
 
-                return Redirect(BuildUrl(slug, "/register"));
+                return Redirect(BuildUrl(slug, "/registration"));
             }
 
             var conference = ticketType.Conference;
@@ -188,7 +196,7 @@ namespace AntAbstract.Web.Controllers
                     "ConferenceNotFound",
                     "Kongre bulunamadı.");
 
-                return Redirect(BuildUrl(slug, "/register"));
+                return Redirect(BuildUrl(slug, "/registration"));
             }
 
             var canonicalSlug = conference.Tenant?.Slug ?? conference.Slug ?? slug;
@@ -213,6 +221,8 @@ namespace AntAbstract.Web.Controllers
             ViewBag.Ticket = ticketType;
             ViewBag.User = user;
             ViewBag.Slug = canonicalSlug;
+            ViewBag.ConferenceTitle = conference.Title;
+            ViewBag.ConferenceStartDate = conference.StartDate;
 
             return View(new Registration
             {
@@ -230,10 +240,10 @@ namespace AntAbstract.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CheckoutPost(
             Guid typeId,
-            string BillingName,
-            string TaxOffice,
-            string TaxNumber,
-            string BillingAddress)
+            string? BillingName,
+            string? TaxOffice,
+            string? TaxNumber,
+            string? BillingAddress)
         {
             var user = await _userManager.GetUserAsync(User);
 
@@ -247,7 +257,10 @@ namespace AntAbstract.Web.Controllers
             var ticketType = await _context.RegistrationTypes
                 .Include(rt => rt.Conference)
                     .ThenInclude(c => c.Tenant)
-                .FirstOrDefaultAsync(rt => rt.Id == typeId);
+                .FirstOrDefaultAsync(rt =>
+                    rt.Id == typeId &&
+                    rt.IsActive &&
+                    (!rt.Deadline.HasValue || rt.Deadline.Value >= DateTime.UtcNow));
 
             if (ticketType == null)
             {
@@ -255,7 +268,7 @@ namespace AntAbstract.Web.Controllers
                     "InvalidOrExpiredTicket",
                     "Geçersiz veya süresi dolmuş kayıt türü.");
 
-                return Redirect(BuildUrl(slug, "/register"));
+                return Redirect(BuildUrl(slug, "/registration"));
             }
 
             var conference = ticketType.Conference;
@@ -266,7 +279,7 @@ namespace AntAbstract.Web.Controllers
                     "ConferenceNotFound",
                     "Kongre bulunamadı.");
 
-                return Redirect(BuildUrl(slug, "/register"));
+                return Redirect(BuildUrl(slug, "/registration"));
             }
 
             var canonicalSlug = conference.Tenant?.Slug ?? conference.Slug ?? slug;
@@ -296,10 +309,11 @@ namespace AntAbstract.Web.Controllers
                 RegistrationDate = DateTime.UtcNow,
                 IsPaid = false,
                 Amount = ticketType.Price,
-                BillingName = BillingName,
-                TaxOffice = TaxOffice,
-                TaxNumber = TaxNumber,
-                BillingAddress = BillingAddress
+
+                BillingName = string.IsNullOrWhiteSpace(BillingName) ? null : BillingName.Trim(),
+                TaxOffice = string.IsNullOrWhiteSpace(TaxOffice) ? null : TaxOffice.Trim(),
+                TaxNumber = string.IsNullOrWhiteSpace(TaxNumber) ? null : TaxNumber.Trim(),
+                BillingAddress = string.IsNullOrWhiteSpace(BillingAddress) ? null : BillingAddress.Trim()
             };
 
             _context.Registrations.Add(newRegistration);

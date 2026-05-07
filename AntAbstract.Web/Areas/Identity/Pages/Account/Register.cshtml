@@ -16,6 +16,8 @@
     var currentReturnUrl = string.IsNullOrEmpty(HttpContext.Request.Path.Value)
         ? "/register"
         : $"{HttpContext.Request.Path.Value}{HttpContext.Request.QueryString}";
+
+    var otherValue = "__OTHER__";
 }
 
 <!DOCTYPE html>
@@ -278,7 +280,6 @@
             font-size: 0.76rem;
         }
 
-        /* LEGAL MODAL */
         .legal-modal-link {
             color: var(--primary-color);
             font-weight: 800;
@@ -522,19 +523,34 @@
                             <label asp-for="Input.University" class="form-label">
                                 @Localizer["University"] <span class="text-danger">*</span>
                             </label>
-                            <select asp-for="Input.University" asp-items="Model.UniversityList" class="form-select custom-select">
+
+                            <select asp-for="Input.University"
+                                    asp-items="Model.UniversityList"
+                                    class="form-select custom-select"
+                                    id="universitySelect">
                                 <option value="">@Localizer["SelectOption"]</option>
                             </select>
+
+                            <input asp-for="Input.OtherUniversity"
+                                   class="form-control mt-2 @(Model.Input?.University == otherValue ? "" : "d-none")"
+                                   id="otherUniversityInput"
+                                   placeholder="@Localizer["OtherUniversityPlaceholder"]" />
+
                             <span asp-validation-for="Input.University" class="text-danger small"></span>
+                            <span asp-validation-for="Input.OtherUniversity" class="text-danger small d-block mt-1"></span>
                         </div>
 
                         <div class="col-md-6">
                             <label asp-for="Input.Title" class="form-label">
                                 @Localizer["AcademicTitle"] <span class="text-danger">*</span>
                             </label>
-                            <select asp-for="Input.Title" asp-items="Model.TitleList" class="form-select custom-select">
+
+                            <select asp-for="Input.Title"
+                                    asp-items="Model.TitleList"
+                                    class="form-select custom-select">
                                 <option value="">@Localizer["SelectOption"]</option>
                             </select>
+
                             <span asp-validation-for="Input.Title" class="text-danger small"></span>
                         </div>
                     </div>
@@ -544,20 +560,42 @@
                             <label asp-for="Input.Faculty" class="form-label">
                                 @Localizer["Faculty"] <span class="text-danger">*</span>
                             </label>
-                            <select asp-for="Input.Faculty" asp-items="Model.FacultyList" class="form-select custom-select">
+
+                            <select asp-for="Input.Faculty"
+                                    asp-items="Model.FacultyList"
+                                    class="form-select custom-select"
+                                    id="facultySelect">
                                 <option value="">@Localizer["SelectOption"]</option>
                             </select>
+
+                            <input asp-for="Input.OtherFaculty"
+                                   class="form-control mt-2 @(Model.Input?.Faculty == otherValue ? "" : "d-none")"
+                                   id="otherFacultyInput"
+                                   placeholder="@Localizer["OtherFacultyPlaceholder"]" />
+
                             <span asp-validation-for="Input.Faculty" class="text-danger small"></span>
+                            <span asp-validation-for="Input.OtherFaculty" class="text-danger small d-block mt-1"></span>
                         </div>
 
                         <div class="col-md-6">
                             <label asp-for="Input.Department" class="form-label">
                                 @Localizer["Department"] <span class="text-danger">*</span>
                             </label>
-                            <select asp-for="Input.Department" asp-items="Model.DepartmentList" class="form-select custom-select">
+
+                            <select asp-for="Input.Department"
+                                    asp-items="Model.DepartmentList"
+                                    class="form-select custom-select"
+                                    id="departmentSelect">
                                 <option value="">@Localizer["SelectOption"]</option>
                             </select>
+
+                            <input asp-for="Input.OtherDepartment"
+                                   class="form-control mt-2 @(Model.Input?.Department == otherValue ? "" : "d-none")"
+                                   id="otherDepartmentInput"
+                                   placeholder="@Localizer["OtherDepartmentPlaceholder"]" />
+
                             <span asp-validation-for="Input.Department" class="text-danger small"></span>
+                            <span asp-validation-for="Input.OtherDepartment" class="text-danger small d-block mt-1"></span>
                         </div>
                     </div>
 
@@ -582,7 +620,7 @@
                     <div class="row g-3 align-items-center mb-4">
                         <div class="col-md-6">
                             <label asp-for="Input.ProfileImage" class="form-label">
-                                @Localizer["ProfileImage"]
+                                @Localizer["ProfileImage"] <span class="text-danger">*</span>
                             </label>
                             <input asp-for="Input.ProfileImage" type="file" class="form-control form-control-sm" />
                             <small class="text-muted" style="font-size: 0.7rem;">
@@ -746,30 +784,57 @@
             const legalModalTitle = document.getElementById("legalTextModalTitle");
             const legalIframe = document.getElementById("legalTextIframe");
 
-            if (!legalModalElement || !legalModalTitle || !legalIframe) {
-                return;
+            if (legalModalElement && legalModalTitle && legalIframe) {
+                const legalModal = new bootstrap.Modal(legalModalElement);
+
+                document.querySelectorAll(".legal-modal-link").forEach(function (link) {
+                    link.addEventListener("click", function (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        const title = this.getAttribute("data-legal-title") || this.textContent.trim();
+                        const url = this.getAttribute("data-legal-url") || this.getAttribute("href");
+
+                        legalModalTitle.textContent = title;
+                        legalIframe.setAttribute("src", url);
+
+                        legalModal.show();
+                    });
+                });
+
+                legalModalElement.addEventListener("hidden.bs.modal", function () {
+                    legalIframe.setAttribute("src", "about:blank");
+                });
             }
 
-            const legalModal = new bootstrap.Modal(legalModalElement);
+            const OTHER_VALUE = "__OTHER__";
 
-            document.querySelectorAll(".legal-modal-link").forEach(function (link) {
-                link.addEventListener("click", function (event) {
-                    event.preventDefault();
-                    event.stopPropagation();
+            function bindOtherInput(selectId, inputId) {
+                const select = document.getElementById(selectId);
+                const input = document.getElementById(inputId);
 
-                    const title = this.getAttribute("data-legal-title") || this.textContent.trim();
-                    const url = this.getAttribute("data-legal-url") || this.getAttribute("href");
+                if (!select || !input) {
+                    return;
+                }
 
-                    legalModalTitle.textContent = title;
-                    legalIframe.setAttribute("src", url);
+                function toggleInput() {
+                    if (select.value === OTHER_VALUE) {
+                        input.classList.remove("d-none");
+                        input.setAttribute("required", "required");
+                    } else {
+                        input.classList.add("d-none");
+                        input.removeAttribute("required");
+                        input.value = "";
+                    }
+                }
 
-                    legalModal.show();
-                });
-            });
+                select.addEventListener("change", toggleInput);
+                toggleInput();
+            }
 
-            legalModalElement.addEventListener("hidden.bs.modal", function () {
-                legalIframe.setAttribute("src", "about:blank");
-            });
+            bindOtherInput("universitySelect", "otherUniversityInput");
+            bindOtherInput("facultySelect", "otherFacultyInput");
+            bindOtherInput("departmentSelect", "otherDepartmentInput");
         });
     </script>
 

@@ -138,9 +138,25 @@
         }
 
             .btn-orcid:hover {
-                background-color: #e2e8f0;
+                background-color: #eef6df;
+                border-color: #A6CE39;
                 transform: translateY(-1px);
+                box-shadow: 0 10px 20px rgba(166, 206, 57, 0.15);
             }
+
+        .orcid-icon-circle {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #A6CE39;
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.78rem;
+            font-weight: 800;
+            line-height: 1;
+        }
 
         .divider {
             display: flex;
@@ -151,7 +167,8 @@
             font-size: 0.85rem;
         }
 
-            .divider::before, .divider::after {
+            .divider::before,
+            .divider::after {
                 content: '';
                 flex: 1;
                 border-bottom: 1px solid #e2e8f0;
@@ -225,15 +242,22 @@
                     <span class="badge bg-white text-primary px-3 py-2 rounded-pill fw-bold mb-3">
                         <i class="fas fa-rocket me-2"></i>@Localizer["ScientificProcesses"]
                     </span>
-                    <h1 class="display-4 fw-bold mb-3">@Localizer["HeroTitleLine1"] <br> @Localizer["HeroTitleLine2"]</h1>
+
+                    <h1 class="display-4 fw-bold mb-3">
+                        @Localizer["HeroTitleLine1"] <br> @Localizer["HeroTitleLine2"]
+                    </h1>
+
                     <p class="lead opacity-75">
                         @Localizer["HeroDescription"]
                     </p>
                 </div>
+
                 <div class="d-flex gap-2 opacity-50 small">
                     <span>&copy; @DateTime.Now.Year AntAbstract</span>
                     <span>&bull;</span>
-                    <a href="#" class="text-white text-decoration-none">@Localizer["PrivacyPolicy"]</a>
+                    <a href="/privacy" class="text-white text-decoration-none">
+                        @Localizer["PrivacyPolicy"]
+                    </a>
                 </div>
             </div>
         </div>
@@ -271,35 +295,61 @@
                 </div>
 
                 <form id="account" method="post">
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0 rounded-3 small mb-4" role="alert"></div>
+                    <div asp-validation-summary="ModelOnly"
+                         class="alert alert-danger border-0 rounded-3 small mb-4"
+                         role="alert">
+                    </div>
 
                     <div class="mb-3">
-                        <label asp-for="Input.Email" class="form-label text-muted small fw-bold text-uppercase">@Localizer["EmailAddress"]</label>
+                        <label asp-for="Input.Email" class="form-label text-muted small fw-bold text-uppercase">
+                            @Localizer["EmailAddress"]
+                        </label>
+
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0 text-muted border border-secondary border-opacity-10 rounded-start-2">
                                 <i class="fas fa-envelope"></i>
                             </span>
-                            <input asp-for="Input.Email" class="form-control border-start-0 ps-0" placeholder="@Localizer["EmailPlaceholder"]" autocomplete="username" />
+
+                            <input asp-for="Input.Email"
+                                   class="form-control border-start-0 ps-0"
+                                   placeholder="@Localizer["EmailPlaceholder"]"
+                                   autocomplete="username" />
                         </div>
+
                         <span asp-validation-for="Input.Email" class="text-danger small mt-1 d-block"></span>
                     </div>
 
                     <div class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label asp-for="Input.Password" class="form-label text-muted small fw-bold text-uppercase mb-0">@Localizer["Password"]</label>
-                            <a id="forgot-password" asp-page="./ForgotPassword" class="text-primary text-decoration-none small fw-bold">@Localizer["ForgotPasswordShort"]</a>
+                            <label asp-for="Input.Password"
+                                   class="form-label text-muted small fw-bold text-uppercase mb-0">
+                                @Localizer["Password"]
+                            </label>
+
+                            <a id="forgot-password"
+                               asp-page="./ForgotPassword"
+                               class="text-primary text-decoration-none small fw-bold">
+                                @Localizer["ForgotPasswordShort"]
+                            </a>
                         </div>
+
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0 text-muted border border-secondary border-opacity-10 rounded-start-2">
                                 <i class="fas fa-lock"></i>
                             </span>
-                            <input asp-for="Input.Password" class="form-control border-start-0 ps-0" placeholder="••••••••" autocomplete="current-password" />
+
+                            <input asp-for="Input.Password"
+                                   class="form-control border-start-0 ps-0"
+                                   placeholder="••••••••"
+                                   autocomplete="current-password" />
                         </div>
+
                         <span asp-validation-for="Input.Password" class="text-danger small mt-1 d-block"></span>
                     </div>
 
                     <div class="mb-4 form-check">
                         <input class="form-check-input" asp-for="Input.RememberMe" />
+
                         <label class="form-check-label text-muted small" asp-for="Input.RememberMe">
                             @Localizer["RememberMe"]
                         </label>
@@ -314,44 +364,48 @@
                     <div class="text-center mb-4">
                         <p class="text-muted small mb-1">
                             @Localizer["NoAccount"]
-                            <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="text-primary fw-bold text-decoration-none">
+
+                            <a asp-page="./Register"
+                               asp-route-returnUrl="@Model.ReturnUrl"
+                               class="text-primary fw-bold text-decoration-none">
                                 @Localizer["RegisterNow"]
                             </a>
                         </p>
-                        <a asp-page="./ResendEmailConfirmation" class="text-muted text-decoration-none" style="font-size: 0.75rem;">
+
+                        <a asp-page="./ResendEmailConfirmation"
+                           class="text-muted text-decoration-none"
+                           style="font-size: 0.75rem;">
                             @Localizer["ResendConfirmationEmail"]
                         </a>
                     </div>
                 </form>
 
-                @if ((Model.ExternalLogins?.Count ?? 0) > 0)
-                {
-                    <div class="divider">@Localizer["OrContinueWith"]</div>
+                <div class="divider">
+                    @Localizer["OrContinueWith"]
+                </div>
 
-                    <form asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post">
-                        <div class="d-grid gap-2">
-                            @foreach (var provider in Model.ExternalLogins!)
-                            {
-                                <button type="submit"
-                                        class="btn btn-orcid fw-bold py-2 rounded-3 shadow-sm d-flex align-items-center justify-content-center"
-                                        name="provider"
-                                        value="@provider.Name"
-                                        title="@provider.DisplayName">
+                <form asp-page="./ExternalLogin"
+                      asp-route-returnUrl="@Model.ReturnUrl"
+                      method="post"
+                      class="w-100">
 
-                                    @if (provider.Name == "ORCID")
-                                    {
-                                        <i class="fab fa-orcid fa-lg me-2" style="color: #A6CE39;"></i>
-                                        <span>@Localizer["LoginWithOrcid"]</span>
-                                    }
-                                    else
-                                    {
-                                        @provider.DisplayName
-                                    }
-                                </button>
-                            }
-                        </div>
-                    </form>
-                }
+                    <div class="d-grid">
+                        <button type="submit"
+                                class="btn btn-orcid fw-bold py-2 rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2"
+                                name="provider"
+                                value="ORCID"
+                                title="ORCID">
+
+                            <span class="orcid-icon-circle">
+                                iD
+                            </span>
+
+                            <span>
+                                @Localizer["LoginWithOrcid"]
+                            </span>
+                        </button>
+                    </div>
+                </form>
 
             </div>
         </div>
@@ -359,6 +413,7 @@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
     <partial name="_ValidationScriptsPartial" />
 </body>
 </html>

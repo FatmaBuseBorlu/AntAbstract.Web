@@ -1,283 +1,290 @@
-﻿@using System.Globalization
-@using AntAbstract.Domain.Entities
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
-@model IEnumerable<RegistrationType>
+﻿@model List<AntAbstract.Domain.Entities.RegistrationType>
+@using System.Globalization
 
 @{
-    ViewData["Title"] = Localizer["RegistrationTitle"].Value;
-    Layout = "_Layout";
+    ViewData["Title"] = "Kongre Kaydı";
+
+    var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 
     var slug = ViewBag.Slug as string ?? "";
-    var conferenceTitle = ViewBag.ConferenceTitle as string ?? Localizer["ConferenceTitleDefault"].Value;
+    var conferenceTitle = ViewBag.ConferenceTitle as string ?? (isEnglish ? "Congress" : "Kongre");
 
-    var ticketTypes = Model?.ToList() ?? new List<RegistrationType>();
+    DateTime? conferenceStartDate = null;
+
+    if (ViewBag.ConferenceStartDate is DateTime startDate)
+    {
+        conferenceStartDate = startDate;
+    }
+
+    var titleText = isEnglish
+        ? "Welcome to the Congress Registration Page"
+        : "Kongre Kayıt Ekranına Hoş Geldiniz";
+
+    var descriptionText = isEnglish
+        ? "You can create your congress registration here and continue with the abstract submission process after registration."
+        : "Bu ekrandan kongre kaydınızı oluşturabilir ve kayıt sonrasında bildiri gönderim sürecine devam edebilirsiniz.";
+
+    var selectTypeText = isEnglish
+        ? "Select Registration Type"
+        : "Kayıt Türü Seçiniz";
+
+    var emptyTitle = isEnglish
+        ? "No active registration type found"
+        : "Aktif kayıt türü bulunamadı";
+
+    var emptyDescription = isEnglish
+        ? "There is currently no active registration type for this congress. Please contact the congress organization team."
+        : "Bu kongre için şu anda aktif bir kayıt türü bulunmuyor. Lütfen kongre organizasyon ekibiyle iletişime geçiniz.";
+
+    var continueText = isEnglish
+        ? "Continue"
+        : "Devam Et";
+
+    var backText = isEnglish
+        ? "Back to Congress Page"
+        : "Kongre Sayfasına Dön";
 }
 
 <style>
     .registration-page {
-        min-height: calc(100vh - 160px);
+        background: #f8fafc;
+        min-height: calc(100vh - 90px);
         padding: 60px 0;
     }
 
-    .registration-wrapper {
-        max-width: 560px;
-        margin: 0 auto;
-    }
-
-    .registration-steps {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 28px;
+    .registration-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.18), transparent 32%), linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        color: #fff;
+        border-radius: 28px;
+        padding: 46px;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
         margin-bottom: 34px;
     }
 
-    .registration-step-item {
-        display: flex;
-        flex-direction: column;
+    .registration-badge {
+        display: inline-flex;
         align-items: center;
-        min-width: 120px;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: 0.82rem;
+        margin-bottom: 18px;
     }
 
-    .registration-step-circle {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        font-size: 24px;
-        margin-bottom: 10px;
-    }
-
-        .registration-step-circle.active {
-            background-color: #19aaf8;
-            color: #fff;
-        }
-
-        .registration-step-circle.passive {
-            background-color: #eef2f6;
-            color: #6c757d;
-        }
-
-    .registration-step-line {
-        flex: 1;
-        max-width: 130px;
-        height: 3px;
-        background-color: #e8edf3;
-        border-radius: 10px;
-        margin-top: -28px;
-    }
-
-    .registration-step-label {
-        font-size: 15px;
-        font-weight: 600;
-        text-align: center;
-        line-height: 1.4;
-    }
-
-        .registration-step-label.active {
-            color: #0d6efd;
-        }
-
-        .registration-step-label.passive {
-            color: #495057;
-        }
-
-    .ticket-card {
-        width: 100%;
-        border: 1px solid #e8eef5;
-        border-radius: 24px;
-        overflow: hidden;
-        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.06);
-        background-color: #fff;
-    }
-
-        .ticket-card .card-body {
-            padding: 34px;
-        }
-
-    .ticket-icon-box {
-        width: 72px;
-        height: 72px;
-        border-radius: 20px;
-        background: #eaf7ff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #19aaf8;
-        font-size: 28px;
-        margin-bottom: 20px;
-    }
-
-    .ticket-title {
-        font-size: 24px;
-        font-weight: 700;
-        color: #0f172a;
+    .registration-title {
+        font-size: 2.4rem;
+        font-weight: 900;
+        letter-spacing: -1px;
         margin-bottom: 12px;
     }
 
-    .ticket-description {
-        font-size: 16px;
-        color: #5f6b7a;
-        line-height: 1.7;
-        margin-bottom: 26px;
+    .registration-conference-name {
+        color: #38bdf8;
+        font-weight: 900;
     }
 
-    .ticket-price-wrap {
-        padding: 26px 34px 18px 34px;
-        border-top: 1px solid #eef2f6;
+    .registration-description {
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 1.05rem;
+        line-height: 1.8;
+        max-width: 780px;
+        margin-bottom: 0;
+    }
+
+    .registration-section-title {
+        font-weight: 900;
+        color: #0f172a;
+        margin-bottom: 20px;
+    }
+
+    .ticket-card {
         background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        padding: 26px;
+        height: 100%;
+        box-shadow: 0 18px 48px rgba(15, 23, 42, 0.06);
+        transition: all 0.22s ease;
+    }
+
+        .ticket-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 28px 70px rgba(15, 23, 42, 0.1);
+            border-color: rgba(0, 174, 239, 0.35);
+        }
+
+    .ticket-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
+        background: rgba(0, 174, 239, 0.12);
+        color: #00aeef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        margin-bottom: 18px;
+    }
+
+    .ticket-name {
+        font-weight: 900;
+        color: #0f172a;
+        font-size: 1.15rem;
+        margin-bottom: 8px;
+    }
+
+    .ticket-description {
+        color: #64748b;
+        line-height: 1.65;
+        min-height: 54px;
+        margin-bottom: 18px;
     }
 
     .ticket-price {
-        font-size: 52px;
-        font-weight: 800;
-        color: #0f172a;
-        line-height: 1;
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin-bottom: 18px;
     }
 
-    .ticket-currency {
-        font-size: 20px;
-        font-weight: 700;
-        color: #5f6b7a;
-        margin-left: 8px;
-    }
+        .ticket-price strong {
+            font-size: 2rem;
+            color: #0f172a;
+            font-weight: 900;
+        }
+
+        .ticket-price span {
+            color: #64748b;
+            font-weight: 800;
+        }
 
     .deadline-box {
-        margin: 18px 34px 0 34px;
-        background: #f6f9fc;
-        border: 1px solid #e7edf3;
-        border-radius: 16px;
-        padding: 16px 18px;
-        color: #5f6b7a;
-        font-size: 16px;
-        display: flex;
-        align-items: center;
-    }
-
-    .ticket-action {
-        padding: 18px 34px 34px 34px;
-    }
-
-    .btn-ticket {
-        width: 100%;
-        border: none;
-        border-radius: 18px;
-        padding: 16px 20px;
-        font-size: 18px;
+        background: #fff7ed;
+        color: #9a3412;
+        border: 1px solid #fed7aa;
+        border-radius: 14px;
+        padding: 10px 12px;
+        font-size: 0.86rem;
         font-weight: 700;
-        background: linear-gradient(90deg, #19aaf8 0%, #1595ea 100%);
+        margin-bottom: 18px;
+    }
+
+    .btn-register-ticket {
+        background: #00aeef;
         color: #fff;
-        box-shadow: 0 10px 24px rgba(25, 170, 248, 0.22);
-    }
-
-        .btn-ticket:hover {
-            color: #fff;
-            opacity: 0.96;
-        }
-
-    .back-link-wrap {
-        text-align: center;
-        margin-top: 34px;
-    }
-
-    .back-link {
+        border: none;
+        border-radius: 999px;
+        padding: 12px 18px;
+        font-weight: 900;
+        width: 100%;
+        text-decoration: none;
         display: inline-flex;
         align-items: center;
-        gap: 10px;
-        font-size: 18px;
-        font-weight: 600;
-        color: #64748b;
-        text-decoration: none;
+        justify-content: center;
+        gap: 8px;
     }
 
-        .back-link:hover {
-            color: #0d6efd;
+        .btn-register-ticket:hover {
+            background: #0095cd;
+            color: #fff;
         }
+
+    .empty-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        padding: 36px;
+        text-align: center;
+        box-shadow: 0 18px 48px rgba(15, 23, 42, 0.06);
+    }
+
+    .empty-icon {
+        width: 62px;
+        height: 62px;
+        border-radius: 20px;
+        background: rgba(0, 174, 239, 0.12);
+        color: #00aeef;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+        margin-bottom: 18px;
+    }
 
     @@media (max-width: 768px) {
-        .registration-page {
-            padding: 36px 0;
+        .registration-hero {
+            padding: 30px 22px;
         }
 
-        .registration-wrapper {
-            max-width: 100%;
-            padding: 0 14px;
-        }
-
-        .registration-step-item {
-            min-width: 100px;
-        }
-
-        .registration-step-line {
-            max-width: 70px;
-        }
-
-        .ticket-card .card-body,
-        .ticket-price-wrap,
-        .ticket-action {
-            padding-left: 20px;
-            padding-right: 20px;
-        }
-
-        .deadline-box {
-            margin-left: 20px;
-            margin-right: 20px;
-        }
-
-        .ticket-price {
-            font-size: 40px;
+        .registration-title {
+            font-size: 1.8rem;
         }
     }
 </style>
 
-<div class="registration-page">
+<section class="registration-page">
     <div class="container">
-        <div class="registration-wrapper">
 
-            <div class="text-center mb-5">
-                <h1 class="fw-bold text-dark mb-2">
-                    @Localizer["RegistrationTitle"]
-                </h1>
+        <div class="registration-hero">
+            <div class="registration-badge">
+                <i class="fas fa-ticket-alt"></i>
+                @(isEnglish ? "Congress Registration" : "Kongre Kaydı")
+            </div>
 
-                <p class="text-muted mb-3">
-                    @Localizer["RegistrationLead"]
+            <h1 class="registration-title">
+                @titleText
+            </h1>
+
+            <h2 class="registration-conference-name mb-3">
+                @conferenceTitle
+            </h2>
+
+            @if (conferenceStartDate.HasValue)
+            {
+                <div class="mb-3 fw-bold text-white-50">
+                    <i class="far fa-calendar-alt me-2"></i>
+                    @conferenceStartDate.Value.ToLocalTime().ToString("dd MMMM yyyy", CultureInfo.CurrentUICulture)
+                </div>
+            }
+
+            <p class="registration-description">
+                @descriptionText
+            </p>
+        </div>
+
+        <h3 class="registration-section-title">
+            @selectTypeText
+        </h3>
+
+        @if (Model == null || !Model.Any())
+        {
+            <div class="empty-card">
+                <div class="empty-icon">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+
+                <h4 class="fw-bold text-dark mb-2">
+                    @emptyTitle
+                </h4>
+
+                <p class="text-muted mb-4">
+                    @emptyDescription
                 </p>
 
-                <div class="badge bg-white text-dark border rounded-pill px-4 py-2 shadow-sm">
-                    <i class="fas fa-university text-primary me-2"></i>
-                    @conferenceTitle
-                </div>
+                <a href="/@slug" class="btn btn-outline-primary rounded-pill px-4 fw-bold">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    @backText
+                </a>
             </div>
-
-            <div class="registration-steps">
-                <div class="registration-step-item">
-                    <div class="registration-step-circle active">1</div>
-
-                    <div class="registration-step-label active">
-                        @Localizer["Step1Label"]
-                    </div>
-                </div>
-
-                <div class="registration-step-line"></div>
-
-                <div class="registration-step-item">
-                    <div class="registration-step-circle passive">2</div>
-
-                    <div class="registration-step-label passive">
-                        @Localizer["Step2Label"]
-                    </div>
-                </div>
-            </div>
-
-            @if (ticketTypes.Any())
-            {
-                foreach (var ticket in ticketTypes)
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (var ticket in Model)
                 {
-                    var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
-
                     var ticketName = isEnglish && !string.IsNullOrWhiteSpace(ticket.NameEn)
                     ? ticket.NameEn
                     : ticket.Name;
@@ -286,69 +293,46 @@
                     ? ticket.DescriptionEn
                     : ticket.Description;
 
-                    <div class="ticket-card mb-4">
-                        <div class="card-body">
-                            <div class="ticket-icon-box">
-                                <i class="fas fa-ticket-alt"></i>
+                    var checkoutUrl = $"/{slug}/registration/checkout/{ticket.Id}";
+
+                    <div class="col-md-6 col-lg-4">
+                        <div class="ticket-card">
+                            <div class="ticket-icon">
+                                <i class="fas fa-receipt"></i>
                             </div>
 
-                            <div class="ticket-title">
+                            <h4 class="ticket-name">
                                 @ticketName
+                            </h4>
+
+                            <p class="ticket-description">
+                                @(string.IsNullOrWhiteSpace(ticketDescription)
+                                                        ? (isEnglish ? "Congress registration type" : "Kongre kayıt türü")
+                                                        : ticketDescription)
+                    </p>
+
+                            <div class="ticket-price">
+                                <strong>@ticket.Price.ToString("N2")</strong>
+                                <span>@ticket.Currency</span>
                             </div>
 
-                            <div class="ticket-description">
-                                @(string.IsNullOrWhiteSpace(ticketDescription)
-                                                        ? Localizer["DefaultTicketDescription"].Value
-                                                        : ticketDescription)
-                    </div>
-                </div>
+                    @if (ticket.Deadline.HasValue)
+                            {
+                                <div class="deadline-box">
+                                    <i class="far fa-clock me-2"></i>
+                                    @(isEnglish ? "Deadline" : "Son tarih"):
+                                    @ticket.Deadline.Value.ToLocalTime().ToString("dd.MM.yyyy")
+                                </div>
+                            }
 
-                        <div class="ticket-price-wrap">
-                            <span class="ticket-price">
-                                @ticket.Price.ToString("N2", CultureInfo.CurrentCulture)
-                            </span>
-
-                            <span class="ticket-currency">
-                                @ticket.Currency
-                            </span>
-                        </div>
-
-                        <div class="deadline-box">
-                            <i class="fas fa-check-circle me-2 text-success"></i>
-                            @Localizer["NoDeadlineText"]
-                        </div>
-
-                        <div class="ticket-action">
-                            <a href="/@slug/registration/checkout/@ticket.Id" class="btn btn-ticket">
-                                @Localizer["SelectAndContinueButton"]
-                                <i class="fas fa-arrow-right ms-2"></i>
+                            <a href="@checkoutUrl" class="btn-register-ticket">
+                                @continueText
+                                <i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
                     </div>
-                        }
-            }
-            else
-            {
-                <div class="ticket-card">
-                    <div class="card-body text-center py-5">
-                        <h3 class="mb-3">
-                            @Localizer["NoRegistrationTypeTitle"]
-                        </h3>
-
-                        <p class="text-muted mb-0">
-                            @Localizer["NoRegistrationTypeDescription"]
-                        </p>
-                    </div>
-                </div>
-            }
-
-            <div class="back-link-wrap">
-                <a href="/@slug" class="back-link">
-                    <i class="fas fa-arrow-left"></i>
-                    @Localizer["BackToConferenceButton"]
-                </a>
+                }
             </div>
-
-        </div>
+        }
     </div>
-</div>
+</section>
