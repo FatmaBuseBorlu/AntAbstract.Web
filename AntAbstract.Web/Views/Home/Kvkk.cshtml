@@ -1,5 +1,4 @@
-﻿@using System
-@using System.Globalization
+﻿@using System.Globalization
 @using System.Collections.Generic
 
 @{
@@ -7,10 +6,10 @@
     var isEmbed = string.Equals(Context.Request.Query["embed"].ToString(), "true", StringComparison.OrdinalIgnoreCase);
 
     ViewData["Title"] = isEnglish
-        ? "Personal Data Protection Notice"
-        : "KVKK Aydınlatma Metni";
+        ? "Terms of Use"
+        : "Kullanım Şartları";
 
-    Layout = isEmbed ? null : "_Layout";
+    Layout = "_Layout";
 
     var lastUpdated = DateTime.Now.ToString("dd.MM.yyyy");
 
@@ -919,48 +918,6 @@ Güncel metin, AntAbstract web sitesi üzerinde yayımlandığı tarihten itibar
             transform: translateY(-2px);
         }
 
-    .legal-wrapper-embed {
-        padding: 0 !important;
-        background: #fff !important;
-    }
-
-        .legal-wrapper-embed .container {
-            max-width: 100% !important;
-            padding: 0 !important;
-        }
-
-    .legal-layout-embed {
-        display: block !important;
-    }
-
-    .legal-content-embed {
-        border: none !important;
-        box-shadow: none !important;
-        border-radius: 0 !important;
-        padding: 24px 30px !important;
-    }
-
-        .legal-content-embed .legal-info-box {
-            margin-bottom: 22px !important;
-        }
-
-        .legal-content-embed .legal-section {
-            padding-bottom: 24px !important;
-            margin-bottom: 24px !important;
-            scroll-margin-top: 20px !important;
-        }
-
-            .legal-content-embed .legal-section h2 {
-                font-size: 1.25rem !important;
-            }
-
-        .legal-content-embed p,
-        .legal-content-embed li,
-        .legal-content-embed th,
-        .legal-content-embed td {
-            font-size: 0.92rem !important;
-        }
-
     @@media (max-width: 992px) {
         .legal-layout {
             grid-template-columns: 1fr;
@@ -999,49 +956,86 @@ Güncel metin, AntAbstract web sitesi üzerinde yayımlandığı tarihten itibar
             padding-top: 6px;
         }
     }
+
+    .embed-legal-page .legal-hero {
+        display: none !important;
+    }
+
+    .embed-legal-page .legal-wrapper {
+        padding: 0 !important;
+        background: #fff !important;
+    }
+
+    .embed-legal-page .legal-layout {
+        display: block !important;
+    }
+
+    .embed-legal-page .legal-sidebar {
+        display: none !important;
+    }
+
+    .embed-legal-page .legal-content {
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        padding: 24px 30px !important;
+    }
+
+    .embed-legal-page .legal-info-box {
+        margin-bottom: 24px !important;
+    }
+
+    .embed-legal-page .legal-section {
+        scroll-margin-top: 20px !important;
+    }
+
+        .embed-legal-page .legal-section h2 {
+            font-size: 1.25rem !important;
+        }
+
+        .embed-legal-page .legal-section p,
+        .embed-legal-page .legal-section li,
+        .embed-legal-page .legal-table th,
+        .embed-legal-page .legal-table td {
+            font-size: 0.92rem !important;
+        }
 </style>
 
-@if (!isEmbed)
-{
-    <section class="legal-hero text-center">
-        <div class="container">
-            <div class="legal-badge">
-                <i class="fas fa-file-signature"></i>
-                @pageBadge
-            </div>
-
-            <h1 class="display-5 legal-title">
-                @pageTitle
-            </h1>
-
-            <p class="legal-lead">
-                @pageLead
-            </p>
-        </div>
-    </section>
-}
-
-<section class="legal-wrapper @(isEmbed ? "legal-wrapper-embed" : "")">
+<section class="legal-hero text-center">
     <div class="container">
-        <div class="legal-layout @(isEmbed ? "legal-layout-embed" : "")">
+        <div class="legal-badge">
+            <i class="fas fa-file-signature"></i>
+            @pageBadge
+        </div>
 
-            @if (!isEmbed)
-            {
-                <aside class="legal-sidebar">
-                    <div class="legal-sidebar-title">
-                        @(isEnglish ? "Contents" : "İçindekiler")
-                    </div>
+        <h1 class="display-5 legal-title">
+            @pageTitle
+        </h1>
 
-                    @foreach (var item in sections)
-                    {
-                        <a href="#@item.Id" class="legal-nav-link">
-                            @item.Nav
-                        </a>
-                    }
-                </aside>
-            }
+        <p class="legal-lead">
+            @pageLead
+        </p>
+    </div>
+</section>
 
-            <article class="legal-content @(isEmbed ? "legal-content-embed" : "")">
+<section class="legal-wrapper">
+    <div class="container">
+        <div class="legal-layout">
+
+            <aside class="legal-sidebar">
+                <div class="legal-sidebar-title">
+                    @(isEnglish ? "Contents" : "İçindekiler")
+                </div>
+
+                @foreach (var item in sections)
+                {
+                    <a href="#@item.Id" class="legal-nav-link">
+                        @item.Nav
+                    </a>
+                }
+            </aside>
+
+            <article class="legal-content">
 
                 <div class="legal-info-box">
                     <strong>@(isEnglish ? "Last updated:" : "Son güncelleme:")</strong> @lastUpdated

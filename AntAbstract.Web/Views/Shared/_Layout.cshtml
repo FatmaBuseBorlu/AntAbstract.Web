@@ -150,7 +150,7 @@
             text-decoration: none;
             display: block;
             margin-bottom: 0.8rem;
-            transition: color 0.2s;
+            transition: color 0.2s, padding-left 0.2s;
         }
 
             .footer-link:hover {
@@ -224,7 +224,7 @@
         var area = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
         var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
         var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
-        var path = Context.Request.Path.Value ?? "";
+        var path = (Context.Request.Path.Value ?? "").TrimEnd('/');
 
         var isPaymentPage = string.Equals(controller, "Payment", StringComparison.OrdinalIgnoreCase);
 
@@ -270,6 +270,16 @@
         path.Equals("/proceedings", StringComparison.OrdinalIgnoreCase)
         || path.Equals("/Home/Proceedings", StringComparison.OrdinalIgnoreCase);
 
+        var isLegalPage =
+        path.Equals("/privacy", StringComparison.OrdinalIgnoreCase)
+        || path.Equals("/Home/Privacy", StringComparison.OrdinalIgnoreCase)
+        || path.Equals("/kvkk", StringComparison.OrdinalIgnoreCase)
+        || path.Equals("/Home/Kvkk", StringComparison.OrdinalIgnoreCase)
+        || path.Equals("/cookies", StringComparison.OrdinalIgnoreCase)
+        || path.Equals("/Home/Cookies", StringComparison.OrdinalIgnoreCase)
+        || path.Equals("/terms", StringComparison.OrdinalIgnoreCase)
+        || path.Equals("/Home/Terms", StringComparison.OrdinalIgnoreCase);
+
         var isRegistrationPage =
         string.Equals(controller, "Registration", StringComparison.OrdinalIgnoreCase);
 
@@ -285,6 +295,7 @@
         isHomeCongressesPage ||
         isHomeProceedingsPage ||
         isPublicProceedingsPath ||
+        isLegalPage ||
         isRegistrationPage ||
         isPaymentPage;
 
@@ -463,6 +474,7 @@
     <footer class="footer-modern pt-5 pb-4">
         <div class="container">
             <div class="row g-4">
+
                 <div class="col-lg-4 col-md-6">
                     <h5 class="text-white fw-bold mb-3">
                         <i class="fas fa-layer-group me-2 text-primary"></i>ANT ABSTRACT
@@ -473,42 +485,81 @@
                     </p>
 
                     <div class="d-flex">
-                        <a href="#" class="social-btn">
+                        <a href="#" class="social-btn" aria-label="Twitter">
                             <i class="fab fa-twitter"></i>
                         </a>
 
-                        <a href="#" class="social-btn">
+                        <a href="#" class="social-btn" aria-label="LinkedIn">
                             <i class="fab fa-linkedin-in"></i>
                         </a>
 
-                        <a href="#" class="social-btn">
+                        <a href="#" class="social-btn" aria-label="Instagram">
                             <i class="fab fa-instagram"></i>
                         </a>
 
-                        <a href="#" class="social-btn">
+                        <a href="#" class="social-btn" aria-label="YouTube">
                             <i class="fab fa-youtube"></i>
                         </a>
                     </div>
                 </div>
 
                 <div class="col-lg-2 col-md-6">
-                    <h6 class="footer-title">@Localizer["Footer_Platform"]</h6>
-                    <a href="/" class="footer-link">@Localizer["Menu_Home"]</a>
-                    <a href="/congresses" class="footer-link">@Localizer["Menu_Congresses"]</a>
-                    <a href="/about" class="footer-link">@Localizer["Menu_About"]</a>
-                    <a href="/login" class="footer-link">@Localizer["Menu_Login"]</a>
+                    <h6 class="footer-title">
+                        @Localizer["Footer_Platform"]
+                    </h6>
+
+                    <a href="/" class="footer-link">
+                        @Localizer["Menu_Home"]
+                    </a>
+
+                    <a href="/congresses" class="footer-link">
+                        @Localizer["Menu_Congresses"]
+                    </a>
+
+                    <a href="/about" class="footer-link">
+                        @Localizer["Menu_About"]
+                    </a>
+
+                    <a href="/login" class="footer-link">
+                        @Localizer["Menu_Login"]
+                    </a>
                 </div>
 
                 <div class="col-lg-3 col-md-6">
-                    <h6 class="footer-title">@Localizer["Footer_SupportLegal"]</h6>
-                    <a href="#" class="footer-link">@Localizer["Footer_FAQ"]</a>
-                    <a href="#" class="footer-link">@Localizer["Footer_PrivacyPolicy"]</a>
-                    <a href="#" class="footer-link">@Localizer["Footer_Terms"]</a>
-                    <a href="/contact" class="footer-link">@Localizer["Menu_Contact"]</a>
+                    <h6 class="footer-title">
+                        @Localizer["Footer_SupportLegal"]
+                    </h6>
+
+                    <a href="/privacy" class="footer-link">
+                        <i class="fas fa-shield-alt me-2 text-primary"></i>
+                        @Localizer["Footer_PrivacyPolicy"]
+                    </a>
+
+                    <a href="/kvkk" class="footer-link">
+                        <i class="fas fa-file-signature me-2 text-primary"></i>
+                        @Localizer["Footer_Kvkk"]
+                    </a>
+
+                    <a href="/cookies" class="footer-link">
+                        <i class="fas fa-cookie-bite me-2 text-primary"></i>
+                        @Localizer["Footer_CookiePolicy"]
+                    </a>
+
+                    <a href="/terms" class="footer-link">
+                        <i class="fas fa-file-contract me-2 text-primary"></i>
+                        @Localizer["Footer_Terms"]
+                    </a>
+
+                    <a href="/contact" class="footer-link">
+                        <i class="fas fa-envelope me-2 text-primary"></i>
+                        @Localizer["Menu_Contact"]
+                    </a>
                 </div>
 
                 <div class="col-lg-3 col-md-6">
-                    <h6 class="footer-title">@Localizer["Footer_ContactUs"]</h6>
+                    <h6 class="footer-title">
+                        @Localizer["Footer_ContactUs"]
+                    </h6>
 
                     <div class="d-flex mb-3">
                         <i class="fas fa-map-marker-alt text-primary mt-1 me-3"></i>
@@ -525,6 +576,7 @@
                         <span>destek@antabstract.com</span>
                     </div>
                 </div>
+
             </div>
 
             <hr class="my-4 border-secondary opacity-25">
