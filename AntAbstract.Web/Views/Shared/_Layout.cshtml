@@ -224,6 +224,9 @@
         var area = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
         var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
         var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+        var path = Context.Request.Path.Value ?? "";
+
+        var isPaymentPage = string.Equals(controller, "Payment", StringComparison.OrdinalIgnoreCase);
 
         var isAdminLike = User.Identity != null
         && User.Identity.IsAuthenticated
@@ -238,14 +241,40 @@
         && User.IsInRole("Author");
 
         var isAdminArea = string.Equals(area, "Admin", StringComparison.OrdinalIgnoreCase);
-        var path = Context.Request.Path.Value ?? "";
-        var isAdminAssignmentPath = path.StartsWith("/Admin/Assignment", StringComparison.OrdinalIgnoreCase) || path.Contains("/Admin/Assignment", StringComparison.OrdinalIgnoreCase);
 
-        var isHomeIndexPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Index", StringComparison.OrdinalIgnoreCase);
-        var isHomeAboutPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "About", StringComparison.OrdinalIgnoreCase);
-        var isHomeContactPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Contact", StringComparison.OrdinalIgnoreCase);
-        var isHomeCongressesPage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Congresses", StringComparison.OrdinalIgnoreCase);
-        var isRegistrationPage = string.Equals(controller, "Registration", StringComparison.OrdinalIgnoreCase);
+        var isAdminAssignmentPath =
+        path.StartsWith("/Admin/Assignment", StringComparison.OrdinalIgnoreCase)
+        || path.Contains("/Admin/Assignment", StringComparison.OrdinalIgnoreCase);
+
+        var isHomeIndexPage =
+        string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase)
+        && string.Equals(action, "Index", StringComparison.OrdinalIgnoreCase);
+
+        var isHomeAboutPage =
+        string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase)
+        && string.Equals(action, "About", StringComparison.OrdinalIgnoreCase);
+
+        var isHomeContactPage =
+        string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase)
+        && string.Equals(action, "Contact", StringComparison.OrdinalIgnoreCase);
+
+        var isHomeCongressesPage =
+        string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase)
+        && string.Equals(action, "Congresses", StringComparison.OrdinalIgnoreCase);
+
+        var isHomeProceedingsPage =
+        string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase)
+        && string.Equals(action, "Proceedings", StringComparison.OrdinalIgnoreCase);
+
+        var isPublicProceedingsPath =
+        path.Equals("/proceedings", StringComparison.OrdinalIgnoreCase)
+        || path.Equals("/Home/Proceedings", StringComparison.OrdinalIgnoreCase);
+
+        var isRegistrationPage =
+        string.Equals(controller, "Registration", StringComparison.OrdinalIgnoreCase);
+
+        var isTenantConferenceHomePage = Tc.Current != null && isHomeIndexPage;
+        var hideGlobalNavbar = isTenantConferenceHomePage;
 
         var hideAdminNav =
         isAdminArea ||
@@ -254,9 +283,17 @@
         isHomeAboutPage ||
         isHomeContactPage ||
         isHomeCongressesPage ||
-        isRegistrationPage;
+        isHomeProceedingsPage ||
+        isPublicProceedingsPath ||
+        isRegistrationPage ||
+        isPaymentPage;
 
-        var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? Tc.Current?.Slug ?? Context.Session.GetString("SelectedConferenceSlug") ?? "";
+        var slug =
+        ViewContext.RouteData.Values["slug"]?.ToString()
+        ?? Tc.Current?.Slug
+        ?? Context.Session.GetString("SelectedConferenceSlug")
+        ?? "";
+
         var selectedConferenceId = SelectedConferenceService.GetSelectedConferenceId();
         var hasSelectedConference = selectedConferenceId.HasValue;
 
@@ -270,107 +307,154 @@
 
         var requestCulture = Context.Features.Get<IRequestCultureFeature>();
         var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? "tr-TR";
+
         var returnUrl = string.IsNullOrEmpty(Context.Request.Path)
         ? "/"
         : $"{Context.Request.Path}{Context.Request.QueryString}";
     }
 
-    <header>
-        <nav class="navbar navbar-expand-lg fixed-top">
-            <div class="container">
-                <a class="navbar-brand" href="/">
-                    ANT<span style="color: var(--primary-color);">ABSTRACT</span>
-                </a>
+    @if (hideGlobalNavbar)
+    {
+        <style>
+            html,
+            body {
+                margin-top: 0 !important;
+                padding-top: 0 !important;
+            }
 
-                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
+            main[role="main"] {
+                margin-top: 0 !important;
+                padding-top: 0 !important;
+            }
 
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav mx-auto align-items-center">
-                        <li class="nav-item">
-                            <a class="nav-link" href="/">@Localizer["Menu_Home"]</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/Home/About">@Localizer["Menu_About"]</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/Home/Congresses">@Localizer["Menu_Congresses"]</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/Home/Proceedings">@Localizer["Menu_Proceedings"]</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/Home/Contact">@Localizer["Menu_Contact"]</a>
-                        </li>
+            .navbar,
+            header {
+                margin-top: 0 !important;
+                padding-top: 0 !important;
+            }
 
-                        @if (!hideAdminNav && isAdminLike && (Tc.Current != null || !string.IsNullOrWhiteSpace(slug)))
-                        {
-                            <li class="nav-item ms-lg-3">
-                                <a class="nav-link admin-link shadow-sm" href="@assignmentUrl">
-                                    @if (hasSelectedConference)
-                                    {
-                                        <i class="fas fa-tasks me-1"></i> 
-                                        @Localizer["AdminPanel"]
-                                    }
-                                    else
-                                    {
-                                        <i class="fas fa-hand-pointer me-1"></i> 
-                                        @Localizer["SelectConference"]
-                                    }
-                                </a>
+            .conference-topbar,
+            .conference-header,
+            .tenant-header,
+            .conference-page-header,
+            .conference-hero,
+            .hero-section,
+            .page-hero,
+            .site-hero {
+                margin-top: 0 !important;
+            }
+        </style>
+    }
+
+    @if (!hideGlobalNavbar)
+    {
+        <header>
+            <nav class="navbar navbar-expand-lg fixed-top">
+                <div class="container">
+                    <a class="navbar-brand" href="/">
+                        ANT<span style="color: var(--primary-color);">ABSTRACT</span>
+                    </a>
+
+                    <button class="navbar-toggler border-0"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#navbarNav">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <ul class="navbar-nav mx-auto align-items-center">
+                            <li class="nav-item">
+                                <a class="nav-link" href="/">@Localizer["Menu_Home"]</a>
                             </li>
 
-                            @if (hasSelectedConference)
+                            <li class="nav-item">
+                                <a class="nav-link" href="/about">@Localizer["Menu_About"]</a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link" href="/congresses">@Localizer["Menu_Congresses"]</a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link" href="/proceedings">@Localizer["Menu_Proceedings"]</a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link" href="/contact">@Localizer["Menu_Contact"]</a>
+                            </li>
+
+                            @if (!hideAdminNav && isAdminLike && (Tc.Current != null || !string.IsNullOrWhiteSpace(slug)))
                             {
-                                <li class="nav-item ms-lg-2">
-                                    <a class="nav-link website-link shadow-sm" href="@websiteUrl">
-                                        <i class="fas fa-pen-to-square me-1"></i> @Localizer["WebsiteManagement"]
+                                <li class="nav-item ms-lg-3">
+                                    <a class="nav-link admin-link shadow-sm" href="@assignmentUrl">
+                                        @if (hasSelectedConference)
+                                        {
+                                            <i class="fas fa-tasks me-1"></i>
+                                            @Localizer["AdminPanel"]
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-hand-pointer me-1"></i>
+                                            @Localizer["SelectConference"]
+                                        }
+                                    </a>
+                                </li>
+
+                                @if (hasSelectedConference)
+                                {
+                                    <li class="nav-item ms-lg-2">
+                                        <a class="nav-link website-link shadow-sm" href="@websiteUrl">
+                                            <i class="fas fa-pen-to-square me-1"></i>
+                                            @Localizer["WebsiteManagement"]
+                                        </a>
+                                    </li>
+                                }
+                            }
+
+                            @if (isReferee && !hideAdminNav)
+                            {
+                                <li class="nav-item ms-lg-3">
+                                    <a class="nav-link referee-link shadow-sm" href="/Dashboard">
+                                        <i class="fas fa-gavel me-1"></i>
+                                        @Localizer["RefereePanel"]
                                     </a>
                                 </li>
                             }
-                        }
 
-                        @if (isReferee && !hideAdminNav)
-                        {
-                            <li class="nav-item ms-lg-3">
-                                <a class="nav-link referee-link shadow-sm" href="/Dashboard">
-                                    <i class="fas fa-gavel me-1"></i> @Localizer["RefereePanel"]
-                                </a>
-                            </li>
-                        }
+                            @if (isAuthor && !hideAdminNav)
+                            {
+                                <li class="nav-item ms-lg-3">
+                                    <a class="nav-link author-link shadow-sm" href="/Dashboard">
+                                        <i class="fas fa-user-graduate me-1"></i>
+                                        @Localizer["AuthorPanel"]
+                                    </a>
+                                </li>
+                            }
+                        </ul>
 
-                        @if (isAuthor && !hideAdminNav)
-                        {
-                            <li class="nav-item ms-lg-3">
-                                <a class="nav-link author-link shadow-sm" href="/Dashboard">
-                                    <i class="fas fa-user-graduate me-1"></i> @Localizer["AuthorPanel"]
-                                </a>
-                            </li>
-                        }
-                    </ul>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="language-switcher">
+                                <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                                    <input type="hidden" name="culture" value="tr-TR" />
+                                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                    <button type="submit" class="lang-btn @(currentCulture == "tr-TR" ? "active" : "")">TR</button>
+                                </form>
 
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="language-switcher">
-                            <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
-                                <input type="hidden" name="culture" value="tr-TR" />
-                                <input type="hidden" name="returnUrl" value="@returnUrl" />
-                                <button type="submit" class="lang-btn @(currentCulture == "tr-TR" ? "active" : "")">TR</button>
-                            </form>
+                                <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                                    <input type="hidden" name="culture" value="en-US" />
+                                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                    <button type="submit" class="lang-btn @(currentCulture == "en-US" ? "active" : "")">EN</button>
+                                </form>
+                            </div>
 
-                            <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
-                                <input type="hidden" name="culture" value="en-US" />
-                                <input type="hidden" name="returnUrl" value="@returnUrl" />
-                                <button type="submit" class="lang-btn @(currentCulture == "en-US" ? "active" : "")">EN</button>
-                            </form>
+                            <partial name="_LoginPartial" />
                         </div>
-
-                        <partial name="_LoginPartial" />
                     </div>
                 </div>
-            </div>
-        </nav>
-    </header>
+            </nav>
+        </header>
+    }
 
     <main role="main" class="flex-grow-1">
         @RenderBody()
@@ -383,23 +467,36 @@
                     <h5 class="text-white fw-bold mb-3">
                         <i class="fas fa-layer-group me-2 text-primary"></i>ANT ABSTRACT
                     </h5>
+
                     <p class="mb-4" style="line-height: 1.8;">
                         @Localizer["Footer_Description"]
                     </p>
+
                     <div class="d-flex">
-                        <a href="#" class="social-btn"><i class="fab fa-twitter"></i></a>
-                        <a href="#" class="social-btn"><i class="fab fa-linkedin-in"></i></a>
-                        <a href="#" class="social-btn"><i class="fab fa-instagram"></i></a>
-                        <a href="#" class="social-btn"><i class="fab fa-youtube"></i></a>
+                        <a href="#" class="social-btn">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+
+                        <a href="#" class="social-btn">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+
+                        <a href="#" class="social-btn">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+
+                        <a href="#" class="social-btn">
+                            <i class="fab fa-youtube"></i>
+                        </a>
                     </div>
                 </div>
 
                 <div class="col-lg-2 col-md-6">
                     <h6 class="footer-title">@Localizer["Footer_Platform"]</h6>
                     <a href="/" class="footer-link">@Localizer["Menu_Home"]</a>
-                    <a href="/Home/Congresses" class="footer-link">@Localizer["Menu_Congresses"]</a>
-                    <a href="/Home/About" class="footer-link">@Localizer["Menu_About"]</a>
-                    <a href="/Identity/Account/Login" class="footer-link">@Localizer["Menu_Login"]</a>
+                    <a href="/congresses" class="footer-link">@Localizer["Menu_Congresses"]</a>
+                    <a href="/about" class="footer-link">@Localizer["Menu_About"]</a>
+                    <a href="/login" class="footer-link">@Localizer["Menu_Login"]</a>
                 </div>
 
                 <div class="col-lg-3 col-md-6">
@@ -407,19 +504,22 @@
                     <a href="#" class="footer-link">@Localizer["Footer_FAQ"]</a>
                     <a href="#" class="footer-link">@Localizer["Footer_PrivacyPolicy"]</a>
                     <a href="#" class="footer-link">@Localizer["Footer_Terms"]</a>
-                    <a href="/Home/Contact" class="footer-link">@Localizer["Menu_Contact"]</a>
+                    <a href="/contact" class="footer-link">@Localizer["Menu_Contact"]</a>
                 </div>
 
                 <div class="col-lg-3 col-md-6">
                     <h6 class="footer-title">@Localizer["Footer_ContactUs"]</h6>
+
                     <div class="d-flex mb-3">
                         <i class="fas fa-map-marker-alt text-primary mt-1 me-3"></i>
                         <span>@Localizer["Footer_Address"]</span>
                     </div>
+
                     <div class="d-flex mb-3">
                         <i class="fas fa-phone text-primary mt-1 me-3"></i>
                         <span>+90 850 123 45 67</span>
                     </div>
+
                     <div class="d-flex">
                         <i class="fas fa-envelope text-primary mt-1 me-3"></i>
                         <span>destek@antabstract.com</span>
@@ -433,8 +533,11 @@
                 <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
                     &copy; @DateTime.Now.Year <strong>AntAbstract</strong>. @Localizer["Footer_AllRightsReserved"]
                 </div>
+
                 <div class="col-md-6 text-center text-md-end">
-                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">v2.1.0 Stable</span>
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">
+                        v2.1.0 Stable
+                    </span>
                 </div>
             </div>
         </div>
@@ -443,6 +546,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

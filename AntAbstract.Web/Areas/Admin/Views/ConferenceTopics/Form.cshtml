@@ -1,10 +1,7 @@
 ﻿@using System.Globalization
-@using AntAbstract.Web.Models.ViewModels
-@using AntAbstract.Web.Models.ViewModels.Admin.RegistrationTypes
+@using AntAbstract.Web.Models.ViewModels.Admin.ConferenceTopics
 
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
-
-@model AdminRegistrationTypeFormModel
+@model AdminConferenceTopicFormModel
 
 @{
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
@@ -18,8 +15,8 @@
     }
 
     ViewData["Title"] = Model.Id.HasValue
-        ? T("Kayıt Tipi Düzenle", "Edit Registration Type")
-        : T("Yeni Kayıt Tipi", "Create Registration Type");
+        ? T("Bildiri Konusunu Düzenle", "Edit Abstract Topic")
+        : T("Yeni Bildiri Konusu", "Create Abstract Topic");
 }
 
 <style>
@@ -44,18 +41,18 @@
         margin-top: 6px;
     }
 
-    .language-info-box {
+    .required-star {
+        color: #dc3545;
+        font-weight: 700;
+    }
+
+    .info-box {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
         border-radius: 14px;
         padding: 14px 16px;
         color: #475569;
         font-size: 0.92rem;
-    }
-
-    .required-star {
-        color: #dc3545;
-        font-weight: 700;
     }
 </style>
 
@@ -84,21 +81,21 @@
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body p-4">
 
-            <div class="language-info-box mb-4">
+            <div class="info-box mb-4">
                 <i class="fas fa-info-circle me-2 text-primary"></i>
                 @T(
-                "Bu kayıt tipi kullanıcıların kayıt ekranında görünecektir. İngilizce alanlar boş bırakılırsa sistem Türkçe içerikleri gösterebilir.",
-                                "This registration type will be shown on the user registration page. If English fields are left empty, the system may display the Turkish content."
+                "Buraya eklenen konular, yazarın bildiri gönderme formunda seçenek olarak görünecektir.",
+                                "Topics added here will appear as selectable options in the author's abstract submission form."
                                 )
             </div>
 
-            <form method="post" action="/@slug/Admin/RegistrationTypes/Save">
+            <form method="post" action="/@slug/Admin/ConferenceTopics/Save">
                 @Html.AntiForgeryToken()
 
+                <input type="hidden" asp-for="Id" />
                 <input type="hidden" asp-for="Slug" />
                 <input type="hidden" asp-for="ConferenceId" />
                 <input type="hidden" asp-for="ConferenceTitle" />
-                <input type="hidden" asp-for="Id" />
                 <input type="hidden" asp-for="ReturnUrl" />
 
                 <div class="row g-4">
@@ -112,38 +109,38 @@
 
                     <div class="col-md-12">
                         <label class="form-label fw-semibold">
-                            @T("Kayıt Türü Adı (TR)", "Registration Type Name (TR)")
+                            @T("Konu Adı (TR)", "Topic Name (TR)")
                             <span class="required-star">*</span>
                         </label>
 
                         <input class="form-control"
                                asp-for="Name"
-                               placeholder="@T("Örn: Yazar Katılım Ücreti", "Example: Yazar Katılım Ücreti")" />
+                               placeholder="@T("Örn: Kırsal Turizm", "Example: Kırsal Turizm")" />
 
                         <div class="form-help-text">
                             @T(
-                                                        "Türkçe arayüzde görünecek kayıt tipi adıdır.",
-                                                        "This is the registration type name shown in the Turkish interface."
+                                                        "Türkçe arayüzde görünecek konu adıdır.",
+                                                        "This is the topic name shown in the Turkish interface."
                                                         )
                         </div>
 
                         <span class="text-danger small" asp-validation-for="Name"></span>
                     </div>
 
-                    <div class="col-12">
+                    <div class="col-md-12">
                         <label class="form-label fw-semibold">
                             @T("Açıklama (TR)", "Description (TR)")
                         </label>
 
                         <textarea class="form-control"
                                   asp-for="Description"
-                                  rows="4"
-                                  placeholder="@T("Örn: Bildiri gönderimi ve kongre katılımı için standart kayıt türüdür.", "Example: Bildiri gönderimi ve kongre katılımı için standart kayıt türüdür.")"></textarea>
+                                  rows="3"
+                                  placeholder="@T("Örn: Kırsal turizm ve yerel kalkınma üzerine bildiriler.", "Example: Kırsal turizm ve yerel kalkınma üzerine bildiriler.")"></textarea>
 
                         <div class="form-help-text">
                             @T(
-                                                        "Türkçe kayıt ekranında kart açıklaması olarak gösterilir.",
-                                                        "This is shown as the card description on the Turkish registration page."
+                                                        "İsteğe bağlıdır. Adminin konuyu açıklaması için kullanılabilir.",
+                                                        "Optional. It can be used to describe the topic for admins."
                                                         )
                         </div>
 
@@ -159,37 +156,37 @@
 
                     <div class="col-md-12">
                         <label class="form-label fw-semibold">
-                            @T("Kayıt Türü Adı (EN)", "Registration Type Name (EN)")
+                            @T("Konu Adı (EN)", "Topic Name (EN)")
                         </label>
 
                         <input class="form-control"
                                asp-for="NameEn"
-                               placeholder="@T("Örn: Author Participation Fee", "Example: Author Participation Fee")" />
+                               placeholder="@T("Örn: Rural Tourism", "Example: Rural Tourism")" />
 
                         <div class="form-help-text">
                             @T(
-                                                        "İngilizce arayüzde görünecek kayıt tipi adıdır.",
-                                                        "This is the registration type name shown in the English interface."
+                                                        "İngilizce arayüzde görünecek konu adıdır. Boş bırakılırsa Türkçe ad gösterilir.",
+                                                        "This is the topic name shown in the English interface. If left empty, the Turkish name will be shown."
                                                         )
                         </div>
 
                         <span class="text-danger small" asp-validation-for="NameEn"></span>
                     </div>
 
-                    <div class="col-12">
+                    <div class="col-md-12">
                         <label class="form-label fw-semibold">
                             @T("Açıklama (EN)", "Description (EN)")
                         </label>
 
                         <textarea class="form-control"
                                   asp-for="DescriptionEn"
-                                  rows="4"
-                                  placeholder="@T("Örn: Standard registration type for abstract submission and congress participation.", "Example: Standard registration type for abstract submission and congress participation.")"></textarea>
+                                  rows="3"
+                                  placeholder="@T("Örn: Abstracts on rural tourism and local development.", "Example: Abstracts on rural tourism and local development.")"></textarea>
 
                         <div class="form-help-text">
                             @T(
-                                                        "İngilizce kayıt ekranında kart açıklaması olarak gösterilir.",
-                                                        "This is shown as the card description on the English registration page."
+                                                        "İsteğe bağlıdır.",
+                                                        "Optional."
                                                         )
                         </div>
 
@@ -198,51 +195,50 @@
 
                     <div class="col-12 mt-2">
                         <div class="form-section-title">
-                            <i class="fas fa-credit-card"></i>
-                            <span>@T("Ücret Bilgisi", "Pricing Information")</span>
+                            <i class="fas fa-sliders-h"></i>
+                            <span>@T("Görünürlük ve Sıralama", "Visibility and Ordering")</span>
                         </div>
                     </div>
 
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">
-                            @T("Ücret", "Price")
-                            <span class="required-star">*</span>
+                            @T("Sıralama", "Sort Order")
                         </label>
 
                         <input class="form-control"
-                               asp-for="Price"
-                               placeholder="1500" />
+                               asp-for="SortOrder"
+                               type="number"
+                               min="0"
+                               max="9999" />
 
                         <div class="form-help-text">
                             @T(
-                                                        "Kullanıcıdan alınacak kayıt ücretidir. Örn: 1500,00",
-                                                        "The registration fee to be charged to the user. Example: 1500.00"
+                                                        "Küçük sayı daha üstte görünür. Örn: 0, 1, 2",
+                                                        "Lower numbers appear first. Example: 0, 1, 2"
                                                         )
                         </div>
 
-                        <span class="text-danger small" asp-validation-for="Price"></span>
+                        <span class="text-danger small" asp-validation-for="SortOrder"></span>
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">
-                            @T("Para Birimi", "Currency")
-                            <span class="required-star">*</span>
-                        </label>
+                    <div class="col-md-6 d-flex align-items-center">
+                        <div class="form-check form-switch mt-4">
+                            <input class="form-check-input"
+                                   asp-for="IsActive"
+                                   type="checkbox"
+                                   role="switch" />
 
-                        <select class="form-select" asp-for="Currency">
-                            <option value="TRY">TRY</option>
-                            <option value="USD">USD</option>
-                            <option value="EUR">EUR</option>
-                        </select>
+                            <label class="form-check-label fw-semibold" asp-for="IsActive">
+                                @T("Aktif olarak göster", "Show as active")
+                            </label>
 
-                        <div class="form-help-text">
-                            @T(
-                                                        "Kayıt ücretinin para birimidir.",
-                                                        "Currency of the registration fee."
-                                                        )
+                            <div class="form-help-text">
+                                @T(
+                                                                "Pasif yapılırsa yazar bildiri gönderirken bu konuyu seçemez.",
+                                                                "If passive, authors cannot select this topic when submitting an abstract."
+                                                                )
+                            </div>
                         </div>
-
-                        <span class="text-danger small" asp-validation-for="Currency"></span>
                     </div>
 
                 </div>
@@ -260,6 +256,7 @@
             </form>
         </div>
     </div>
+
 </div>
 
 @section Scripts {

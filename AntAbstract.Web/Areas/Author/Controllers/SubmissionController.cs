@@ -16,6 +16,7 @@ using Microsoft.Extensions.Localization;
 using Rotativa.AspNetCore;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -65,6 +66,25 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                    ?? conference.Slug
                    ?? fallbackSlug
                    ?? "";
+        }
+
+        private string T(string key, string fallback)
+        {
+            var value = _localizer[key];
+
+            return value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
+                ? fallback
+                : value.Value;
+        }
+
+        private static string BuildUrl(string? slug, string path)
+        {
+            if (string.IsNullOrWhiteSpace(slug))
+            {
+                return path;
+            }
+
+            return $"/{slug}{path}";
         }
 
         private void SetSelectedConferenceSession(Conference conference, string slug)
@@ -133,7 +153,10 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                     r.ConferenceId == conferenceId);
         }
 
-        private async Task<IActionResult?> EnsureUserCanCreateSubmissionAsync(AppUser user, Conference conference, string canonicalSlug)
+        private async Task<IActionResult?> EnsureUserCanCreateSubmissionAsync(
+            AppUser user,
+            Conference conference,
+            string canonicalSlug)
         {
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
 
@@ -146,30 +169,16 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             if (registration == null)
             {
-                TempData["InfoMessage"] = _localizer["RegisterBeforeSubmission"].Value;
+                TempData["InfoMessage"] = T(
+                    "RegisterBeforeSubmission",
+                    "Bildiri gönderebilmek için önce kongreye kayıt olmalısınız.");
 
                 if (!string.IsNullOrWhiteSpace(canonicalSlug))
                 {
-                    return Redirect($"/{canonicalSlug}/registration");
+                    return Redirect(BuildUrl(canonicalSlug, "/register"));
                 }
 
                 return Redirect("/Dashboard/MyConferences");
-            }
-
-            var payableAmount = registration.Amount > 0
-                ? registration.Amount
-                : registration.RegistrationType?.Price ?? 0;
-
-            if (!registration.IsPaid && payableAmount > 0)
-            {
-                TempData["InfoMessage"] = _localizer["CompletePaymentBeforeSubmission"].Value;
-
-                if (!string.IsNullOrWhiteSpace(canonicalSlug))
-                {
-                    return Redirect($"/{canonicalSlug}/Payment/Index/{registration.Id}");
-                }
-
-                return Redirect("/Payment/My");
             }
 
             return null;
@@ -190,7 +199,34 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             model.ConferenceId = conference.Id;
         }
 
-        private async Task<List<SelectListItem>> GetRegisteredConferenceSelectListAsync(AppUser user, Guid? selectedConferenceId = null)
+        private async Task<List<SelectListItem>> GetConferenceTopicSelectListAsync(
+            Conference conference,
+            Guid? selectedTopicId = null)
+        {
+            var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+
+            var topics = await _context.ConferenceTopics
+                .AsNoTracking()
+                .Where(t =>
+                    t.ConferenceId == conference.Id &&
+                    t.IsActive)
+                .OrderBy(t => t.SortOrder)
+                .ThenBy(t => t.Name)
+                .ToListAsync();
+
+            return topics.Select(t => new SelectListItem
+            {
+                Value = t.Id.ToString(),
+                Text = isEnglish && !string.IsNullOrWhiteSpace(t.NameEn)
+                    ? t.NameEn
+                    : t.Name,
+                Selected = selectedTopicId.HasValue && t.Id == selectedTopicId.Value
+            }).ToList();
+        }
+
+        private async Task<List<SelectListItem>> GetRegisteredConferenceSelectListAsync(
+            AppUser user,
+            Guid? selectedConferenceId = null)
         {
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
 
@@ -222,6 +258,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
         [HttpGet("/Submission/Index")]
         [HttpGet("/{slug}/Submission/Index")]
+        [HttpGet("/{slug}/my-submissions")]
         public async Task<IActionResult> Index(string? slug = null)
         {
             var user = await _userManager.GetUserAsync(User);
@@ -239,7 +276,12 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
                 if (conference != null)
                 {
+                    var canonicalSlug = GetCanonicalSlug(conference, slug);
+
+                    SetSelectedConferenceSession(conference, canonicalSlug);
+
                     ViewBag.CurrentConferenceTitle = conference.Title;
+
                     submissionDtos = submissionDtos
                         .Where(s => s.ConferenceId == conference.Id)
                         .ToList();
@@ -251,6 +293,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
         [HttpGet("/Submission/Details/{id:guid}")]
         [HttpGet("/{slug}/Submission/Details/{id:guid}")]
+        [HttpGet("/{slug}/my-submissions/{id:guid}")]
         public async Task<IActionResult> Details(Guid id, string? slug = null)
         {
             var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
@@ -265,6 +308,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
         [HttpGet("/Submission/Create")]
         [HttpGet("/{slug}/Submission/Create")]
+        [HttpGet("/{slug}/submit-abstract")]
         public async Task<IActionResult> Create(string? slug = null)
         {
             var user = await _userManager.GetUserAsync(User);
@@ -278,7 +322,10 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             if (conference == null)
             {
-                TempData["InfoMessage"] = _localizer["SelectConferenceBeforeSubmission"].Value;
+                TempData["InfoMessage"] = T(
+                    "SelectConferenceBeforeSubmission",
+                    "Bildiri göndermeden önce bir kongre seçmelisiniz.");
+
                 return Redirect("/Dashboard/MyConferences");
             }
 
@@ -294,13 +341,16 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             }
 
             var model = new SubmissionCreateViewModel();
+
             FillSingleConferenceList(model, conference);
+            model.AvailableTopics = await GetConferenceTopicSelectListAsync(conference);
 
             return View(model);
         }
 
         [HttpPost("/Submission/Create")]
         [HttpPost("/{slug}/Submission/Create")]
+        [HttpPost("/{slug}/submit-abstract")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(SubmissionCreateViewModel model, string? slug = null)
         {
@@ -315,8 +365,12 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             if (conference == null)
             {
-                ModelState.AddModelError("ConferenceId", _localizer["InvalidConferenceSelection"].Value);
+                ModelState.AddModelError(
+                    nameof(model.ConferenceId),
+                    T("InvalidConferenceSelection", "Geçersiz kongre seçimi."));
+
                 model.AvailableConferences = await GetRegisteredConferenceSelectListAsync(user, model.ConferenceId);
+
                 return View(model);
             }
 
@@ -332,11 +386,44 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             }
 
             model.ConferenceId = conference.Id;
+
             FillSingleConferenceList(model, conference);
+
+            model.AvailableTopics = await GetConferenceTopicSelectListAsync(
+                conference,
+                model.ConferenceTopicId
+            );
+
+            ConferenceTopic? selectedTopic = null;
+
+            if (!model.ConferenceTopicId.HasValue)
+            {
+                ModelState.AddModelError(
+                    nameof(model.ConferenceTopicId),
+                    T("TopicRequired", "Lütfen bildiri konusunu seçiniz."));
+            }
+            else
+            {
+                selectedTopic = await _context.ConferenceTopics
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(t =>
+                        t.Id == model.ConferenceTopicId.Value &&
+                        t.ConferenceId == conference.Id &&
+                        t.IsActive);
+
+                if (selectedTopic == null)
+                {
+                    ModelState.AddModelError(
+                        nameof(model.ConferenceTopicId),
+                        T("InvalidTopicSelection", "Geçersiz bildiri konusu seçimi."));
+                }
+            }
 
             if (model.SubmissionFile == null || model.SubmissionFile.Length == 0)
             {
-                ModelState.AddModelError("SubmissionFile", _localizer["SubmissionFileRequired"].Value);
+                ModelState.AddModelError(
+                    nameof(model.SubmissionFile),
+                    T("SubmissionFileRequired", "Bildiri dosyası zorunludur."));
             }
 
             if (!ModelState.IsValid)
@@ -346,16 +433,16 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             try
             {
-                var fileInfo = await UploadFileAsync(model.SubmissionFile);
+                var fileInfo = await UploadFileAsync(model.SubmissionFile!);
 
                 var allAuthors = new List<SubmissionAuthorDto>
                 {
                     new SubmissionAuthorDto
                     {
-                        FirstName = user.FirstName ?? _localizer["DefaultFirstName"].Value,
-                        LastName = user.LastName ?? _localizer["DefaultLastName"].Value,
+                        FirstName = user.FirstName ?? T("DefaultFirstName", "Ad"),
+                        LastName = user.LastName ?? T("DefaultLastName", "Soyad"),
                         Email = user.Email,
-                        Institution = user.Institution ?? _localizer["DefaultInstitution"].Value,
+                        Institution = user.Institution ?? T("DefaultInstitution", "Kurum belirtilmedi"),
                         IsCorrespondingAuthor = true,
                         Order = 1
                     }
@@ -383,40 +470,57 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 var createDto = new CreateSubmissionDto
                 {
                     ConferenceId = conference.Id,
+                    ConferenceTopicId = selectedTopic!.Id,
+
                     Title = model.Title,
                     Abstract = model.AbstractText,
                     Keywords = model.Keywords,
-                    Topic = model.Topic,
+
+                    Topic = selectedTopic.Name,
                     PresentationType = model.PresentationType,
+
                     FilePath = fileInfo.FilePathDb,
                     StoredFileName = fileInfo.StoredFileName,
                     OriginalFileName = fileInfo.OriginalFileName,
+
                     SubmissionAuthors = allAuthors
                 };
 
                 await _submissionService.CreateSubmissionAsync(createDto, user.Id);
 
-                TempData["SuccessMessage"] = _localizer["SubmissionCreateSuccess"].Value;
+                TempData["SuccessMessage"] = T(
+                    "SubmissionCreateSuccess",
+                    "Bildiriniz başarıyla gönderildi.");
 
-                if (!string.IsNullOrWhiteSpace(canonicalSlug))
-                {
-                    return RedirectToAction(nameof(Index), new { slug = canonicalSlug });
-                }
-
-                return RedirectToAction(nameof(Index));
+                return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError("SubmissionFile", ex.Message);
+                ModelState.AddModelError(nameof(model.SubmissionFile), ex.Message);
+
                 FillSingleConferenceList(model, conference);
+
+                model.AvailableTopics = await GetConferenceTopicSelectListAsync(
+                    conference,
+                    model.ConferenceTopicId
+                );
+
                 return View(model);
             }
         }
 
         [HttpGet("/Submission/Edit/{id:guid}")]
         [HttpGet("/{slug}/Submission/Edit/{id:guid}")]
+        [HttpGet("/{slug}/my-submissions/{id:guid}/edit")]
         public async Task<IActionResult> Edit(Guid id, string? slug = null)
         {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
             var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
 
             if (submissionDto == null)
@@ -424,25 +528,79 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 return NotFound();
             }
 
+            var submissionEntity = await _context.Submissions
+                .Include(s => s.Conference)
+                    .ThenInclude(c => c.Tenant)
+                .Include(s => s.Files)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.Id == id);
+
+            if (submissionEntity == null)
+            {
+                return NotFound();
+            }
+
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+
+            if (!isAdmin && submissionEntity.AuthorId != user.Id)
+            {
+                return Forbid();
+            }
+
+            var conference = submissionEntity.Conference
+                ?? await ResolveConferenceAsync(slug, submissionEntity.ConferenceId);
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = T(
+                    "InvalidConferenceSelection",
+                    "Geçersiz kongre seçimi.");
+
+                return Redirect(BuildUrl(slug, "/my-submissions"));
+            }
+
+            var canonicalSlug = GetCanonicalSlug(conference, slug);
+
+            SetSelectedConferenceSession(conference, canonicalSlug);
+
             if (submissionDto.Status == "Accepted" || submissionDto.Status == "Rejected")
             {
-                TempData["ErrorMessage"] = _localizer["CompletedSubmissionCannotBeEdited"].Value;
-                return RedirectToAction(nameof(Details), new { id, slug });
+                TempData["ErrorMessage"] = T(
+                    "CompletedSubmissionCannotBeEdited",
+                    "Kabul edilmiş veya reddedilmiş bildiriler düzenlenemez.");
+
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}"));
             }
+
+            string normalizedPresentationType = submissionDto.PresentationType switch
+            {
+                "0" => "Oral",
+                "1" => "Poster",
+                _ => string.IsNullOrWhiteSpace(submissionDto.PresentationType)
+                    ? "Oral"
+                    : submissionDto.PresentationType
+            };
 
             var model = new SubmissionEditViewModel
             {
                 Id = submissionDto.Id,
+
+                ConferenceId = submissionEntity.ConferenceId,
+                ConferenceTopicId = submissionEntity.ConferenceTopicId,
+
                 Title = submissionDto.Title,
                 AbstractText = submissionDto.Abstract,
                 Keywords = submissionDto.Keywords,
+
                 Topic = submissionDto.Topic,
-                PresentationType = submissionDto.PresentationType,
-                ExistingFilePath = submissionDto.Files?
+                PresentationType = normalizedPresentationType,
+
+                ExistingFilePath = submissionEntity.Files?
                     .OrderByDescending(f => f.UploadedAt)
                     .FirstOrDefault()
-                    ?.FilePath,
-                Authors = submissionDto.Authors.Select(a => new SubmissionAuthorViewModel
+                    ?.FilePath ?? "",
+
+                Authors = submissionDto.Authors?.Select(a => new SubmissionAuthorViewModel
                 {
                     FirstName = a.FirstName,
                     LastName = a.LastName,
@@ -451,14 +609,22 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                     ORCID = a.ORCID,
                     IsCorrespondingAuthor = a.IsCorrespondingAuthor,
                     Order = a.Order
-                }).ToList()
+                }).ToList() ?? new List<SubmissionAuthorViewModel>()
             };
+
+            FillSingleConferenceList(model, conference);
+
+            model.AvailableTopics = await GetConferenceTopicSelectListAsync(
+                conference,
+                submissionEntity.ConferenceTopicId
+            );
 
             return View(model);
         }
 
         [HttpPost("/Submission/Edit/{id:guid}")]
         [HttpPost("/{slug}/Submission/Edit/{id:guid}")]
+        [HttpPost("/{slug}/my-submissions/{id:guid}/edit")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, SubmissionEditViewModel model, string? slug = null)
         {
@@ -467,60 +633,186 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 return BadRequest();
             }
 
-            if (ModelState.IsValid)
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
             {
-                string? filePath = null;
-                string? storedFileName = null;
-                string? originalFileName = null;
+                return Challenge();
+            }
 
-                try
+            var submissionEntity = await _context.Submissions
+                .Include(s => s.Conference)
+                    .ThenInclude(c => c.Tenant)
+                .Include(s => s.Files)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.Id == id);
+
+            if (submissionEntity == null)
+            {
+                return NotFound();
+            }
+
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+
+            if (!isAdmin && submissionEntity.AuthorId != user.Id)
+            {
+                return Forbid();
+            }
+
+            var conference = submissionEntity.Conference
+                ?? await ResolveConferenceAsync(slug, submissionEntity.ConferenceId);
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = T(
+                    "InvalidConferenceSelection",
+                    "Geçersiz kongre seçimi.");
+
+                return Redirect(BuildUrl(slug, "/my-submissions"));
+            }
+
+            var canonicalSlug = GetCanonicalSlug(conference, slug);
+
+            SetSelectedConferenceSession(conference, canonicalSlug);
+
+            if (submissionEntity.Status == SubmissionStatus.Accepted ||
+                submissionEntity.Status == SubmissionStatus.Rejected)
+            {
+                TempData["ErrorMessage"] = T(
+                    "CompletedSubmissionCannotBeEdited",
+                    "Kabul edilmiş veya reddedilmiş bildiriler düzenlenemez.");
+
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}"));
+            }
+
+            model.ConferenceId = conference.Id;
+
+            FillSingleConferenceList(model, conference);
+
+            model.ExistingFilePath = submissionEntity.Files?
+                .OrderByDescending(f => f.UploadedAt)
+                .FirstOrDefault()
+                ?.FilePath ?? "";
+
+            model.AvailableTopics = await GetConferenceTopicSelectListAsync(
+                conference,
+                model.ConferenceTopicId
+            );
+
+            ConferenceTopic? selectedTopic = null;
+
+            if (!model.ConferenceTopicId.HasValue)
+            {
+                ModelState.AddModelError(
+                    nameof(model.ConferenceTopicId),
+                    T("TopicRequired", "Lütfen bildiri konusunu seçiniz."));
+            }
+            else
+            {
+                selectedTopic = await _context.ConferenceTopics
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(t =>
+                        t.Id == model.ConferenceTopicId.Value &&
+                        t.ConferenceId == conference.Id &&
+                        t.IsActive);
+
+                if (selectedTopic == null)
                 {
-                    if (model.SubmissionFile != null && model.SubmissionFile.Length > 0)
-                    {
-                        var fileInfo = await UploadFileAsync(model.SubmissionFile);
-                        filePath = fileInfo.FilePathDb;
-                        storedFileName = fileInfo.StoredFileName;
-                        originalFileName = fileInfo.OriginalFileName;
-                    }
-
-                    var updateDto = new CreateSubmissionDto
-                    {
-                        Title = model.Title,
-                        Abstract = model.AbstractText,
-                        Keywords = model.Keywords,
-                        Topic = model.Topic,
-                        PresentationType = model.PresentationType,
-                        FilePath = filePath,
-                        StoredFileName = storedFileName,
-                        OriginalFileName = originalFileName,
-                        SubmissionAuthors = model.Authors?.Select(a => new SubmissionAuthorDto
-                        {
-                            FirstName = a.FirstName,
-                            LastName = a.LastName,
-                            Email = a.Email,
-                            Institution = a.Institution,
-                            ORCID = a.ORCID,
-                            IsCorrespondingAuthor = a.IsCorrespondingAuthor,
-                            Order = a.Order
-                        }).ToList() ?? new List<SubmissionAuthorDto>()
-                    };
-
-                    await _submissionService.UpdateSubmissionAsync(id, updateDto);
-
-                    TempData["SuccessMessage"] = _localizer["SubmissionUpdateSuccess"].Value;
-                    return RedirectToAction(nameof(Index), new { slug });
-                }
-                catch (Exception ex)
-                {
-                    ModelState.AddModelError("SubmissionFile", ex.Message);
+                    ModelState.AddModelError(
+                        nameof(model.ConferenceTopicId),
+                        T("InvalidTopicSelection", "Geçersiz bildiri konusu seçimi."));
                 }
             }
 
-            return View(model);
+            var allowedPresentationTypes = new[] { "Oral", "Poster", "Online" };
+
+            if (string.IsNullOrWhiteSpace(model.PresentationType) ||
+                !allowedPresentationTypes.Contains(model.PresentationType))
+            {
+                ModelState.AddModelError(
+                    nameof(model.PresentationType),
+                    T("InvalidPresentationType", "Geçersiz sunum türü."));
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            string? filePath = null;
+            string? storedFileName = null;
+            string? originalFileName = null;
+
+            try
+            {
+                if (model.SubmissionFile != null && model.SubmissionFile.Length > 0)
+                {
+                    var fileInfo = await UploadFileAsync(model.SubmissionFile);
+
+                    filePath = fileInfo.FilePathDb;
+                    storedFileName = fileInfo.StoredFileName;
+                    originalFileName = fileInfo.OriginalFileName;
+                }
+
+                var updateDto = new CreateSubmissionDto
+                {
+                    ConferenceId = conference.Id,
+                    ConferenceTopicId = selectedTopic!.Id,
+
+                    Title = model.Title,
+                    Abstract = model.AbstractText,
+                    Keywords = model.Keywords,
+
+                    Topic = selectedTopic.Name,
+                    PresentationType = model.PresentationType,
+
+                    FilePath = filePath,
+                    StoredFileName = storedFileName,
+                    OriginalFileName = originalFileName,
+
+                    SubmissionAuthors = model.Authors?.Select(a => new SubmissionAuthorDto
+                    {
+                        FirstName = a.FirstName,
+                        LastName = a.LastName,
+                        Email = a.Email,
+                        Institution = a.Institution,
+                        ORCID = a.ORCID,
+                        IsCorrespondingAuthor = a.IsCorrespondingAuthor,
+                        Order = a.Order
+                    }).ToList() ?? new List<SubmissionAuthorDto>()
+                };
+
+                await _submissionService.UpdateSubmissionAsync(id, updateDto);
+
+                TempData["SuccessMessage"] = T(
+                    "SubmissionUpdateSuccess",
+                    "Bildiri başarıyla güncellendi.");
+
+                return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(nameof(model.SubmissionFile), ex.Message);
+
+                FillSingleConferenceList(model, conference);
+
+                model.AvailableTopics = await GetConferenceTopicSelectListAsync(
+                    conference,
+                    model.ConferenceTopicId
+                );
+
+                model.ExistingFilePath = submissionEntity.Files?
+                    .OrderByDescending(f => f.UploadedAt)
+                    .FirstOrDefault()
+                    ?.FilePath ?? "";
+
+                return View(model);
+            }
         }
 
         [HttpGet("/Submission/Delete/{id:guid}")]
         [HttpGet("/{slug}/Submission/Delete/{id:guid}")]
+        [HttpGet("/{slug}/my-submissions/{id:guid}/delete")]
         public async Task<IActionResult> Delete(Guid id, string? slug = null)
         {
             var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
@@ -532,8 +824,11 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             if (submissionDto.Status != "New")
             {
-                TempData["ErrorMessage"] = _localizer["ProcessedSubmissionCannotBeDeleted"].Value;
-                return RedirectToAction(nameof(Details), new { id, slug });
+                TempData["ErrorMessage"] = T(
+                    "ProcessedSubmissionCannotBeDeleted",
+                    "İşleme alınmış bildiriler silinemez.");
+
+                return Redirect(BuildUrl(slug, $"/my-submissions/{id}"));
             }
 
             return View(submissionDto);
@@ -541,17 +836,22 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
         [HttpPost("/Submission/Delete/{id:guid}")]
         [HttpPost("/{slug}/Submission/Delete/{id:guid}")]
+        [HttpPost("/{slug}/my-submissions/{id:guid}/delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id, string? slug = null)
         {
             await _submissionService.DeleteSubmissionAsync(id);
 
-            TempData["SuccessMessage"] = _localizer["SubmissionDeleteSuccess"].Value;
-            return RedirectToAction(nameof(Index), new { slug });
+            TempData["SuccessMessage"] = T(
+                "SubmissionDeleteSuccess",
+                "Bildiri başarıyla silindi.");
+
+            return Redirect(BuildUrl(slug, "/my-submissions"));
         }
 
         [HttpGet("/Submission/UploadRevision/{id:guid}")]
         [HttpGet("/{slug}/Submission/UploadRevision/{id:guid}")]
+        [HttpGet("/{slug}/my-submissions/{id:guid}/revision")]
         public async Task<IActionResult> UploadRevision(Guid id, string? slug = null)
         {
             var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
@@ -563,8 +863,11 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             if (submissionDto.Status != "RevisionRequired")
             {
-                TempData["ErrorMessage"] = _localizer["RevisionPeriodClosed"].Value;
-                return RedirectToAction(nameof(Index), new { slug });
+                TempData["ErrorMessage"] = T(
+                    "RevisionPeriodClosed",
+                    "Revizyon yükleme süresi kapalı.");
+
+                return Redirect(BuildUrl(slug, "/my-submissions"));
             }
 
             return View(submissionDto);
@@ -572,31 +875,40 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
         [HttpPost("/Submission/UploadRevision/{id:guid}")]
         [HttpPost("/{slug}/Submission/UploadRevision/{id:guid}")]
+        [HttpPost("/{slug}/my-submissions/{id:guid}/revision")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UploadRevision(Guid id, IFormFile revisionFile, string? slug = null)
         {
             if (revisionFile == null || revisionFile.Length == 0)
             {
-                TempData["ErrorMessage"] = _localizer["RevisionFileRequired"].Value;
-                return RedirectToAction(nameof(UploadRevision), new { id, slug });
+                TempData["ErrorMessage"] = T(
+                    "RevisionFileRequired",
+                    "Revizyon dosyası zorunludur.");
+
+                return Redirect(BuildUrl(slug, $"/my-submissions/{id}/revision"));
             }
 
             try
             {
                 await UploadFileAsync(revisionFile);
 
-                TempData["SuccessMessage"] = _localizer["RevisionUploadSuccess"].Value;
-                return RedirectToAction(nameof(Details), new { id, slug });
+                TempData["SuccessMessage"] = T(
+                    "RevisionUploadSuccess",
+                    "Revizyon dosyası başarıyla yüklendi.");
+
+                return Redirect(BuildUrl(slug, $"/my-submissions/{id}"));
             }
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = ex.Message;
-                return RedirectToAction(nameof(UploadRevision), new { id, slug });
+
+                return Redirect(BuildUrl(slug, $"/my-submissions/{id}/revision"));
             }
         }
 
         [HttpGet("/Submission/DownloadAcceptanceLetter/{id:guid}")]
         [HttpGet("/{slug}/Submission/DownloadAcceptanceLetter/{id:guid}")]
+        [HttpGet("/{slug}/my-submissions/{id:guid}/acceptance-letter")]
         public async Task<IActionResult> DownloadAcceptanceLetter(Guid id)
         {
             var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
@@ -608,7 +920,9 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             if (submissionDto.Status != "Accepted" && submissionDto.Status != "Presented")
             {
-                return BadRequest(_localizer["AcceptanceLetterNotReady"].Value);
+                return BadRequest(T(
+                    "AcceptanceLetterNotReady",
+                    "Kabul mektubu henüz hazır değil."));
             }
 
             return new ViewAsPdf("AcceptanceLetterPreview", submissionDto)
@@ -621,6 +935,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
         [HttpGet("/Submission/DownloadRejectionLetter/{id:guid}")]
         [HttpGet("/{slug}/Submission/DownloadRejectionLetter/{id:guid}")]
+        [HttpGet("/{slug}/my-submissions/{id:guid}/rejection-letter")]
         public async Task<IActionResult> DownloadRejectionLetter(Guid id)
         {
             var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
@@ -632,7 +947,9 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             if (submissionDto.Status != "Rejected")
             {
-                return BadRequest(_localizer["GenericError"].Value);
+                return BadRequest(T(
+                    "GenericError",
+                    "Bu işlem şu anda yapılamaz."));
             }
 
             return new ViewAsPdf("RejectionLetter", submissionDto)
@@ -644,6 +961,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
         [HttpGet("/Submission/DownloadBadge/{id:guid}")]
         [HttpGet("/{slug}/Submission/DownloadBadge/{id:guid}")]
+        [HttpGet("/{slug}/my-submissions/{id:guid}/badge")]
         public async Task<IActionResult> DownloadBadge(Guid id)
         {
             var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
@@ -655,7 +973,9 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             if (submissionDto.Status != "Accepted" && submissionDto.Status != "Presented")
             {
-                return BadRequest(_localizer["GenericError"].Value);
+                return BadRequest(T(
+                    "GenericError",
+                    "Bu işlem şu anda yapılamaz."));
             }
 
             return new ViewAsPdf("BadgePreview", submissionDto)
@@ -673,12 +993,16 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             if (!allowedExtensions.Contains(extension))
             {
-                throw new Exception(_localizer["InvalidFileExtension"].Value);
+                throw new Exception(T(
+                    "InvalidFileExtension",
+                    "Sadece PDF, DOC ve DOCX dosyaları yüklenebilir."));
             }
 
             if (file.Length > 10 * 1024 * 1024)
             {
-                throw new Exception(_localizer["FileTooLarge"].Value);
+                throw new Exception(T(
+                    "FileTooLarge",
+                    "Dosya boyutu en fazla 10 MB olabilir."));
             }
 
             string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "submissions");

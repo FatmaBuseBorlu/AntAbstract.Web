@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -13,11 +12,19 @@ namespace AntAbstract.Domain.Entities
         [Required(ErrorMessage = "Kayıt türü adı zorunludur.")]
         [StringLength(100, ErrorMessage = "Kayıt türü adı en fazla 100 karakter olabilir.")]
         [Display(Name = "Kayıt Türü Adı")]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
+
+        [StringLength(100, ErrorMessage = "İngilizce kayıt türü adı en fazla 100 karakter olabilir.")]
+        [Display(Name = "İngilizce Kayıt Türü Adı")]
+        public string? NameEn { get; set; }
 
         [StringLength(500)]
         [Display(Name = "Açıklama")]
-        public string Description { get; set; } = "";
+        public string Description { get; set; } = string.Empty;
+
+        [StringLength(500)]
+        [Display(Name = "İngilizce Açıklama")]
+        public string? DescriptionEn { get; set; }
 
         [Required(ErrorMessage = "Fiyat zorunludur.")]
         [Column(TypeName = "decimal(18,2)")]
@@ -28,20 +35,20 @@ namespace AntAbstract.Domain.Entities
         [Required]
         [StringLength(10)]
         [Display(Name = "Para Birimi")]
-        public string Currency { get; set; } = "TRY"; 
+        public string Currency { get; set; } = "TRY";
 
         [Display(Name = "Son Satış Tarihi")]
         [DataType(DataType.DateTime)]
-        public DateTime? Deadline { get; set; } 
+        public DateTime? Deadline { get; set; }
 
         [Display(Name = "Aktif mi?")]
-        public bool IsActive { get; set; } = true; 
+        public bool IsActive { get; set; } = true;
 
         [Required]
         [Display(Name = "Kongre")]
         public Guid ConferenceId { get; set; }
 
-        [ForeignKey("ConferenceId")]
-        public virtual Conference Conference { get; set; }
+        [ForeignKey(nameof(ConferenceId))]
+        public virtual Conference Conference { get; set; } = null!;
     }
 }

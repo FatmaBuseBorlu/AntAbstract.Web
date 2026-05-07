@@ -10,7 +10,6 @@ using Microsoft.Extensions.Localization;
 namespace AntAbstract.Web.Controllers
 {
     [Authorize]
-    [Route("{slug}/registration")]
     public class RegistrationController : Controller
     {
         private readonly AppDbContext _context;
@@ -36,6 +35,25 @@ namespace AntAbstract.Web.Controllers
                    ?? _tenantContext.Current?.Slug
                    ?? HttpContext.Session.GetString("SelectedConferenceSlug")
                    ?? "";
+        }
+
+        private string T(string key, string fallback)
+        {
+            var value = _localizer[key];
+
+            return value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
+                ? fallback
+                : value.Value;
+        }
+
+        private static string BuildUrl(string slug, string path)
+        {
+            if (string.IsNullOrWhiteSpace(slug))
+            {
+                return path;
+            }
+
+            return $"/{slug}{path}";
         }
 
         private void SetSelectedConferenceSession(Conference conference, string slug)
@@ -64,7 +82,8 @@ namespace AntAbstract.Web.Controllers
                     (c.Tenant != null && c.Tenant.Slug == slug));
         }
 
-        [HttpGet("")]
+        [HttpGet("/{slug}/register")]
+        [HttpGet("/{slug}/registration")]
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
@@ -80,7 +99,10 @@ namespace AntAbstract.Web.Controllers
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = _localizer["ConferenceNotFound"];
+                TempData["ErrorMessage"] = T(
+                    "ConferenceNotFound",
+                    "Kongre bulunamadı.");
+
                 return RedirectToAction("Index", "Home");
             }
 
@@ -98,28 +120,23 @@ namespace AntAbstract.Web.Controllers
             {
                 if (existingRegistration.IsPaid)
                 {
-                    TempData["SuccessMessage"] = _localizer["AlreadyRegisteredAndPaid"];
+                    TempData["SuccessMessage"] = T(
+                        "AlreadyRegisteredAndPaid",
+                        "Bu kongreye kaydınız ve ödemeniz zaten tamamlanmış.");
                 }
                 else
                 {
-                    TempData["InfoMessage"] = _localizer["ExistingRegistrationRedirectedToPayment"];
+                    TempData["InfoMessage"] = T(
+                        "AlreadyRegisteredCanSubmitAbstract",
+                        "Bu kongreye kaydınız zaten var. Şimdi bildirinizin özetini gönderebilirsiniz.");
                 }
 
-                return RedirectToAction(
-                    "Index",
-                    "Payment",
-                    new
-                    {
-                        slug = canonicalSlug,
-                        id = existingRegistration.Id
-                    });
+                return Redirect(BuildUrl(canonicalSlug, "/submit-abstract"));
             }
 
             var ticketTypes = await _context.RegistrationTypes
                 .AsNoTracking()
-                .Where(rt =>
-                    rt.ConferenceId == conference.Id &&
-                    rt.IsActive)
+                .Where(rt => rt.ConferenceId == conference.Id)
                 .OrderBy(rt => rt.Price)
                 .ToListAsync();
 
@@ -129,13 +146,15 @@ namespace AntAbstract.Web.Controllers
             return View(ticketTypes);
         }
 
-        [HttpGet("join")]
+        [HttpGet("/{slug}/register/join")]
+        [HttpGet("/{slug}/registration/join")]
         public async Task<IActionResult> Join()
         {
             return await Index();
         }
 
-        [HttpGet("checkout/{typeId:guid}")]
+        [HttpGet("/{slug}/register/checkout/{typeId:guid}")]
+        [HttpGet("/{slug}/registration/checkout/{typeId:guid}")]
         public async Task<IActionResult> Checkout(Guid typeId)
         {
             var user = await _userManager.GetUserAsync(User);
@@ -154,42 +173,41 @@ namespace AntAbstract.Web.Controllers
 
             if (ticketType == null)
             {
-                TempData["ErrorMessage"] = _localizer["InvalidOrExpiredTicket"];
-                return RedirectToAction(nameof(Index), new { slug });
-            }
+                TempData["ErrorMessage"] = T(
+                    "InvalidOrExpiredTicket",
+                    "Geçersiz veya süresi dolmuş kayıt türü.");
 
-            if (!ticketType.IsActive)
-            {
-                TempData["ErrorMessage"] = _localizer["InvalidOrExpiredTicket"];
-                return RedirectToAction(nameof(Index), new { slug });
-            }
-
-            if (ticketType.Deadline.HasValue && ticketType.Deadline.Value <= DateTime.UtcNow)
-            {
-                TempData["ErrorMessage"] = _localizer["InvalidOrExpiredTicket"];
-                return RedirectToAction(nameof(Index), new { slug });
+                return Redirect(BuildUrl(slug, "/register"));
             }
 
             var conference = ticketType.Conference;
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = _localizer["ConferenceNotFound"];
-                return RedirectToAction(nameof(Index), new { slug });
+                TempData["ErrorMessage"] = T(
+                    "ConferenceNotFound",
+                    "Kongre bulunamadı.");
+
+                return Redirect(BuildUrl(slug, "/register"));
             }
 
             var canonicalSlug = conference.Tenant?.Slug ?? conference.Slug ?? slug;
 
             SetSelectedConferenceSession(conference, canonicalSlug);
 
-            var exists = await _context.Registrations
-                .AnyAsync(r =>
+            var existingRegistration = await _context.Registrations
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r =>
                     r.ConferenceId == ticketType.ConferenceId &&
                     r.AppUserId == user.Id);
 
-            if (exists)
+            if (existingRegistration != null)
             {
-                return RedirectToAction(nameof(Index), new { slug = canonicalSlug });
+                TempData["InfoMessage"] = T(
+                    "AlreadyRegisteredCanSubmitAbstract",
+                    "Bu kongreye kaydınız zaten var. Şimdi bildirinizin özetini gönderebilirsiniz.");
+
+                return Redirect(BuildUrl(canonicalSlug, "/submit-abstract"));
             }
 
             ViewBag.Ticket = ticketType;
@@ -207,7 +225,8 @@ namespace AntAbstract.Web.Controllers
             });
         }
 
-        [HttpPost("checkout/{typeId:guid}")]
+        [HttpPost("/{slug}/register/checkout/{typeId:guid}")]
+        [HttpPost("/{slug}/registration/checkout/{typeId:guid}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CheckoutPost(
             Guid typeId,
@@ -232,28 +251,22 @@ namespace AntAbstract.Web.Controllers
 
             if (ticketType == null)
             {
-                TempData["ErrorMessage"] = _localizer["InvalidOrExpiredTicket"];
-                return RedirectToAction(nameof(Index), new { slug });
-            }
+                TempData["ErrorMessage"] = T(
+                    "InvalidOrExpiredTicket",
+                    "Geçersiz veya süresi dolmuş kayıt türü.");
 
-            if (!ticketType.IsActive)
-            {
-                TempData["ErrorMessage"] = _localizer["InvalidOrExpiredTicket"];
-                return RedirectToAction(nameof(Index), new { slug });
-            }
-
-            if (ticketType.Deadline.HasValue && ticketType.Deadline.Value <= DateTime.UtcNow)
-            {
-                TempData["ErrorMessage"] = _localizer["InvalidOrExpiredTicket"];
-                return RedirectToAction(nameof(Index), new { slug });
+                return Redirect(BuildUrl(slug, "/register"));
             }
 
             var conference = ticketType.Conference;
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = _localizer["ConferenceNotFound"];
-                return RedirectToAction(nameof(Index), new { slug });
+                TempData["ErrorMessage"] = T(
+                    "ConferenceNotFound",
+                    "Kongre bulunamadı.");
+
+                return Redirect(BuildUrl(slug, "/register"));
             }
 
             var canonicalSlug = conference.Tenant?.Slug ?? conference.Slug ?? slug;
@@ -267,14 +280,11 @@ namespace AntAbstract.Web.Controllers
 
             if (existingRegistration != null)
             {
-                return RedirectToAction(
-                    "Index",
-                    "Payment",
-                    new
-                    {
-                        slug = canonicalSlug,
-                        id = existingRegistration.Id
-                    });
+                TempData["InfoMessage"] = T(
+                    "AlreadyRegisteredCanSubmitAbstract",
+                    "Bu kongreye kaydınız zaten var. Şimdi bildirinizin özetini gönderebilirsiniz.");
+
+                return Redirect(BuildUrl(canonicalSlug, "/submit-abstract"));
             }
 
             var newRegistration = new Registration
@@ -295,16 +305,11 @@ namespace AntAbstract.Web.Controllers
             _context.Registrations.Add(newRegistration);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = _localizer["RegistrationSuccessCompletePayment"];
+            TempData["SuccessMessage"] = T(
+                "RegistrationSuccessSubmitAbstract",
+                "Kongre kaydınız başarıyla oluşturuldu. Şimdi bildirinizin özetini gönderebilirsiniz.");
 
-            return RedirectToAction(
-                "Index",
-                "Payment",
-                new
-                {
-                    slug = canonicalSlug,
-                    id = newRegistration.Id
-                });
+            return Redirect(BuildUrl(canonicalSlug, "/submit-abstract"));
         }
     }
 }

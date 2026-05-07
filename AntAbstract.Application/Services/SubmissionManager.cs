@@ -24,18 +24,33 @@ namespace AntAbstract.Application.Services
 
         public async Task<SubmissionDto> CreateSubmissionAsync(CreateSubmissionDto input, string userId)
         {
-            var submission = _mapper.Map<Submission>(input);
+            var submission = new Submission
+            {
+                Id = Guid.NewGuid(),
 
-            submission.AuthorId = userId;
-            submission.Status = SubmissionStatus.New;
-            submission.CreatedDate = DateTime.UtcNow;
+                ConferenceId = input.ConferenceId,
+                ConferenceTopicId = input.ConferenceTopicId,
 
-            if (!string.IsNullOrEmpty(input.FilePath))
+                AuthorId = userId,
+
+                Title = input.Title,
+                Abstract = input.Abstract,
+                Keywords = input.Keywords,
+                Topic = input.Topic,
+                PresentationType = input.PresentationType,
+
+                Status = SubmissionStatus.New,
+                CreatedDate = DateTime.UtcNow,
+                UpdatedDate = null
+            };
+
+            if (!string.IsNullOrWhiteSpace(input.FilePath))
             {
                 submission.Files = new List<SubmissionFile>
                 {
                     new SubmissionFile
                     {
+                        SubmissionId = submission.Id,
                         FileName = input.OriginalFileName,
                         StoredFileName = input.StoredFileName,
                         FilePath = input.FilePath,
@@ -49,17 +64,21 @@ namespace AntAbstract.Application.Services
             if (input.SubmissionAuthors != null && input.SubmissionAuthors.Any())
             {
                 submission.SubmissionAuthors = new List<SubmissionAuthor>();
-                foreach (var authorDto in input.SubmissionAuthors)
+
+                foreach (var authorDto in input.SubmissionAuthors.OrderBy(a => a.Order))
                 {
                     submission.SubmissionAuthors.Add(new SubmissionAuthor
                     {
+                        SubmissionId = submission.Id,
+
                         FirstName = authorDto.FirstName,
                         LastName = authorDto.LastName,
                         Email = authorDto.Email,
                         Institution = authorDto.Institution,
+                        ORCID = authorDto.ORCID,
+
                         Order = authorDto.Order,
-                        IsCorrespondingAuthor = authorDto.IsCorrespondingAuthor, 
-                        ORCID = authorDto.ORCID
+                        IsCorrespondingAuthor = authorDto.IsCorrespondingAuthor
                     });
                 }
             }
@@ -77,9 +96,13 @@ namespace AntAbstract.Application.Services
                 .Include(s => s.Author)
                 .Include(s => s.Files)
                 .Include(s => s.Conference)
+                .Include(s => s.ConferenceTopic)
                 .FirstOrDefaultAsync(s => s.Id == id);
 
-            if (submission == null) return null;
+            if (submission == null)
+            {
+                return null;
+            }
 
             return _mapper.Map<SubmissionDto>(submission);
         }
@@ -90,11 +113,25 @@ namespace AntAbstract.Application.Services
                 .Include(s => s.SubmissionAuthors)
                 .Include(s => s.Files)
                 .Include(s => s.Conference)
+                .Include(s => s.ConferenceTopic)
                 .Where(s => s.AuthorId == userId)
                 .OrderByDescending(s => s.CreatedDate)
                 .ToListAsync();
 
-            return _mapper.Map<List<SubmissionDto>>(list);
+            var dtoList = _mapper.Map<List<SubmissionDto>>(list);
+
+            foreach (var dto in dtoList)
+            {
+                var entity = list.FirstOrDefault(x => x.Id == dto.Id);
+
+                if (entity != null)
+                {
+                    dto.ConferenceId = entity.ConferenceId;
+                    dto.Topic = entity.Topic;
+                }
+            }
+
+            return dtoList;
         }
 
         public async Task<List<SubmissionDto>> GetAllSubmissionsAsync()
@@ -103,10 +140,24 @@ namespace AntAbstract.Application.Services
                 .Include(s => s.Author)
                 .Include(s => s.Files)
                 .Include(s => s.Conference)
+                .Include(s => s.ConferenceTopic)
                 .OrderByDescending(s => s.CreatedDate)
                 .ToListAsync();
 
-            return _mapper.Map<List<SubmissionDto>>(list);
+            var dtoList = _mapper.Map<List<SubmissionDto>>(list);
+
+            foreach (var dto in dtoList)
+            {
+                var entity = list.FirstOrDefault(x => x.Id == dto.Id);
+
+                if (entity != null)
+                {
+                    dto.ConferenceId = entity.ConferenceId;
+                    dto.Topic = entity.Topic;
+                }
+            }
+
+            return dtoList;
         }
 
         public async Task<List<ConferenceSelectDto>> GetActiveConferencesAsync()
@@ -129,18 +180,24 @@ namespace AntAbstract.Application.Services
                 .Include(s => s.Files)
                 .FirstOrDefaultAsync(s => s.Id == id);
 
-            if (submission == null) throw new Exception("Bildiri bulunamadı.");
+            if (submission == null)
+            {
+                throw new Exception("Bildiri bulunamadı.");
+            }
 
+            submission.ConferenceTopicId = input.ConferenceTopicId;
             submission.Title = input.Title;
             submission.Abstract = input.Abstract;
             submission.Keywords = input.Keywords;
-            submission.UpdatedDate = DateTime.UtcNow; 
+            submission.Topic = input.Topic;
+            submission.PresentationType = input.PresentationType;
+            submission.UpdatedDate = DateTime.UtcNow;
 
-            if (!string.IsNullOrEmpty(input.FilePath))
+            if (!string.IsNullOrWhiteSpace(input.FilePath))
             {
-                var newVersion = (submission.Files != null && submission.Files.Any())
-                                 ? submission.Files.Max(f => f.Version) + 1
-                                 : 1;
+                var newVersion = submission.Files != null && submission.Files.Any()
+                    ? submission.Files.Max(f => f.Version) + 1
+                    : 1;
 
                 var newFile = new SubmissionFile
                 {
@@ -167,15 +224,18 @@ namespace AntAbstract.Application.Services
 
             if (input.SubmissionAuthors != null)
             {
-                foreach (var authorDto in input.SubmissionAuthors)
+                foreach (var authorDto in input.SubmissionAuthors.OrderBy(a => a.Order))
                 {
                     submission.SubmissionAuthors.Add(new SubmissionAuthor
                     {
+                        SubmissionId = submission.Id,
+
                         FirstName = authorDto.FirstName,
                         LastName = authorDto.LastName,
                         Email = authorDto.Email,
                         Institution = authorDto.Institution,
                         ORCID = authorDto.ORCID,
+
                         IsCorrespondingAuthor = authorDto.IsCorrespondingAuthor,
                         Order = authorDto.Order
                     });
@@ -201,7 +261,8 @@ namespace AntAbstract.Application.Services
 
         public async Task UpdateStatusAsync(Guid id, SubmissionStatus newStatus)
         {
-            var submission = await _context.Submissions.FirstOrDefaultAsync(s => s.Id == id);
+            var submission = await _context.Submissions
+                .FirstOrDefaultAsync(s => s.Id == id);
 
             if (submission != null)
             {

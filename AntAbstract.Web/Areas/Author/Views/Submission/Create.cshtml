@@ -1,10 +1,43 @@
 ﻿@using AntAbstract.Web.Models.ViewModels.Admin.Submissions
+@using Microsoft.AspNetCore.Http
+@using System.Globalization
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model SubmissionCreateViewModel
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
+
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString()
+        ?? Context.Session.GetString("SelectedConferenceSlug")
+        ?? "";
+
+    var backUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Submission/Index"
+        : $"/{slug}/Submission/Index";
+
+    var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+
+    string L(string key, string tr, string en)
+    {
+        var value = Localizer[key].Value;
+
+        if (string.Equals(value, key, StringComparison.OrdinalIgnoreCase))
+        {
+            return isEnglish ? en : tr;
+        }
+
+        return value;
+    }
+
+    var hasValidationErrors =
+        !ViewData.ModelState.IsValid &&
+        ViewData.ModelState.Values.Any(v =>
+            v.Errors.Any(e =>
+                !string.IsNullOrWhiteSpace(e.ErrorMessage) ||
+                e.Exception != null
+            )
+        );
 }
 
 <style>
@@ -46,7 +79,8 @@
         margin: 0;
     }
 
-    .form-control-lg, .form-select-lg {
+    .form-control-lg,
+    .form-select-lg {
         border-radius: 12px;
         border: 1px solid #e2e8f0;
         padding: 15px 20px;
@@ -55,7 +89,8 @@
         background-color: #fcfcfc;
     }
 
-        .form-control-lg:focus, .form-select-lg:focus {
+        .form-control-lg:focus,
+        .form-select-lg:focus {
             background-color: #fff;
             border-color: #00aeef;
             box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
@@ -117,76 +152,161 @@
 
     <div class="row justify-content-center mb-5">
         <div class="col-lg-9 text-center">
-            <h2 class="fw-bold text-dark mb-2">@Localizer["PageHeading"]</h2>
-            <p class="text-muted">@Localizer["PageLead"]</p>
+            <h2 class="fw-bold text-dark mb-2">
+                @L("PageHeading", "Bilimsel Çalışmanızı Gönderin", "Submit Your Scientific Work")
+            </h2>
+
+            <p class="text-muted">
+                @L("PageLead", "Aşağıdaki adımları takip ederek bildirinizin detaylarını giriniz.", "Enter your abstract details by following the steps below.")
+            </p>
         </div>
     </div>
 
     <div class="row justify-content-center">
         <div class="col-lg-9">
 
-            <form asp-area="" asp-controller="Submission" asp-action="Create" enctype="multipart/form-data" method="post">
+            <form asp-area="Author"
+                  asp-controller="Submission"
+                  asp-action="Create"
+                  asp-route-slug="@slug"
+                  enctype="multipart/form-data"
+                  method="post">
+
                 @Html.AntiForgeryToken()
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-4 mb-4 border-0 shadow-sm"></div>
+
+                @if (hasValidationErrors)
+                {
+                    <div asp-validation-summary="All" class="alert alert-danger rounded-4 mb-4 border-0 shadow-sm"></div>
+                }
 
                 <div class="modern-card mb-5">
                     <div class="section-header">
                         <div class="section-number">1</div>
-                        <h5 class="section-title">@Localizer["Section1Title"]</h5>
+                        <h5 class="section-title">
+                            @L("Section1Title", "Çalışma Detayları", "Work Details")
+                        </h5>
                     </div>
+
                     <div class="p-4 p-md-5">
 
                         <div class="mb-4">
-                            <label class="form-label">@Localizer["ConferenceLabel"]</label>
+                            <label class="form-label">
+                                @L("ConferenceLabel", "Başvuru Yapılacak Kongre", "Conference")
+                            </label>
 
                             @if (Model.ConferenceId != Guid.Empty && Model.AvailableConferences.Any(c => c.Value == Model.ConferenceId.ToString()))
                             {
                                 var selectedConfName = Model.AvailableConferences.First(c => c.Value == Model.ConferenceId.ToString()).Text;
+
                                 <div class="p-3 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded-3 text-dark fw-bold d-flex align-items-center">
                                     <i class="fas fa-university text-primary fs-5 me-3"></i>
                                     <span class="fs-6">@selectedConfName</span>
                                 </div>
+
                                 <input type="hidden" asp-for="ConferenceId" />
                             }
                             else
                             {
                                 <div class="position-relative">
-                                    <select asp-for="ConferenceId" asp-items="Model.AvailableConferences" class="form-select form-select-lg">
-                                        <option value="">@Localizer["SelectConferenceOption"]</option>
+                                    <select asp-for="ConferenceId"
+                                            asp-items="Model.AvailableConferences"
+                                            class="form-select form-select-lg">
+
+                                        <option value="">
+                                            @L("SelectConferenceOption", "Kongre seçiniz", "Select conference")
+                                        </option>
                                     </select>
                                 </div>
+
                                 <span asp-validation-for="ConferenceId" class="text-danger small mt-1 d-block"></span>
                             }
                         </div>
 
                         <div class="mb-4">
-                            <label asp-for="Title" class="form-label">@Localizer["TitleLabel"] <span class="text-danger">*</span></label>
-                            <input asp-for="Title" class="form-control form-control-lg" placeholder="@Localizer["TitlePlaceholder"]" />
+                            <label asp-for="Title" class="form-label">
+                                @L("TitleLabel", "Bildiri Başlığı", "Abstract Title") <span class="text-danger">*</span>
+                            </label>
+
+                            <input asp-for="Title"
+                                   class="form-control form-control-lg"
+                                   placeholder="@L("TitlePlaceholder", "Örn: Kırsal Turizmde Yapay Zeka Kullanımı", "Example: The Use of Artificial Intelligence in Rural Tourism")" />
+
                             <span asp-validation-for="Title" class="text-danger small mt-1 d-block"></span>
                         </div>
 
                         <div class="row g-4">
                             <div class="col-md-6">
-                                <label class="form-label">@Localizer["PresentationTypeLabel"]</label>
+                                <label asp-for="PresentationType" class="form-label">
+                                    @L("PresentationTypeLabel", "Sunum Türü", "Presentation Type") <span class="text-danger">*</span>
+                                </label>
+
                                 <select asp-for="PresentationType" class="form-select form-select-lg">
-                                    <option value="0">@Localizer["PresentationTypeOral"]</option>
-                                    <option value="1">@Localizer["PresentationTypePoster"]</option>
+                                    <option value="Oral">
+                                        @L("PresentationTypeOral", "Sözlü Sunum", "Oral Presentation")
+                                    </option>
+
+                                    <option value="Poster">
+                                        @L("PresentationTypePoster", "Poster Sunum", "Poster Presentation")
+                                    </option>
+
+                                    <option value="Online">
+                                        @L("PresentationTypeOnline", "Çevrimiçi Sunum", "Online Presentation")
+                                    </option>
                                 </select>
+
+                                <span asp-validation-for="PresentationType" class="text-danger small mt-1 d-block"></span>
                             </div>
+
                             <div class="col-md-6">
-                                <label asp-for="Keywords" class="form-label">@Localizer["KeywordsLabel"]</label>
-                                <input asp-for="Keywords" class="form-control form-control-lg" placeholder="@Localizer["KeywordsPlaceholder"]" />
+                                <label asp-for="ConferenceTopicId" class="form-label">
+                                    @L("TopicLabel", "Bildiri Konusu / Tema", "Abstract Topic / Theme") <span class="text-danger">*</span>
+                                </label>
+
+                                @if (Model.AvailableTopics == null || !Model.AvailableTopics.Any())
+                                {
+                                    <div class="alert alert-warning rounded-3 mb-2">
+                                        @L("NoTopicsDefinedMessage", "Bu kongre için henüz bildiri konusu tanımlanmamış.", "No abstract topics have been defined for this congress yet.")
+                                    </div>
+                                }
+
+                                <select asp-for="ConferenceTopicId"
+                                        asp-items="Model.AvailableTopics"
+                                        class="form-select form-select-lg">
+                                </select>
+
+                                <span asp-validation-for="ConferenceTopicId" class="text-danger small mt-1 d-block"></span>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label asp-for="Keywords" class="form-label">
+                                    @L("KeywordsLabel", "Anahtar Kelimeler", "Keywords") <span class="text-danger">*</span>
+                                </label>
+
+                                <input asp-for="Keywords"
+                                       class="form-control form-control-lg"
+                                       placeholder="@L("KeywordsPlaceholder", "Örn: yapay zeka, kırsal turizm, sürdürülebilirlik", "Example: AI, rural tourism, sustainability")" />
+
                                 <span asp-validation-for="Keywords" class="text-danger small mt-1 d-block"></span>
                             </div>
                         </div>
 
                         <div class="mt-4 position-relative">
-                            <label asp-for="AbstractText" class="form-label">@Localizer["AbstractLabel"] <span class="text-danger">*</span></label>
-                            <textarea asp-for="AbstractText" id="AbstractText" class="form-control form-control-lg" rows="8" placeholder="@Localizer["AbstractPlaceholder"]"></textarea>
+                            <label asp-for="AbstractText" class="form-label">
+                                @L("AbstractLabel", "Özet Metni", "Abstract Text") <span class="text-danger">*</span>
+                            </label>
+
+                            <textarea asp-for="AbstractText"
+                                      id="AbstractText"
+                                      class="form-control form-control-lg"
+                                      rows="8"
+                                      placeholder="@L("AbstractPlaceholder", "Özetinizi buraya yazın veya yapıştırın...", "Write or paste your abstract here...")"></textarea>
+
                             <span asp-validation-for="AbstractText" class="text-danger small mt-1 d-block"></span>
 
                             <div class="d-flex justify-content-end mt-2">
-                                <span id="wordCountBadge" class="badge bg-light text-secondary border">@Localizer["WordCountInitial"]</span>
+                                <span id="wordCountBadge" class="badge bg-light text-secondary border">
+                                    @L("WordCountInitial", "0 Kelime", "0 Words")
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -195,21 +315,34 @@
                 <div class="modern-card mb-5">
                     <div class="section-header">
                         <div class="section-number">2</div>
-                        <h5 class="section-title">@Localizer["Section2Title"]</h5>
+                        <h5 class="section-title">
+                            @L("Section2Title", "Yazar Bilgileri", "Author Information")
+                        </h5>
                     </div>
+
                     <div class="p-4 p-md-5">
                         <div class="alert alert-primary bg-opacity-10 border-0 rounded-3 text-primary d-flex align-items-center mb-4">
                             <i class="fas fa-info-circle fa-lg me-3"></i>
                             <div>
-                                <small class="fw-bold">@Localizer["AutoAssignTitle"]</small>
-                                <small>@Localizer["AutoAssignText"]</small>
+                                <small class="fw-bold">
+                                    @L("AutoAssignTitle", "Sorumlu yazar otomatik atanır.", "The corresponding author is assigned automatically.")
+                                </small>
+
+                                <small>
+                                    @L("AutoAssignText", "Giriş yapan kullanıcı ilk yazar olarak eklenecektir. Ek yazarları aşağıdan ekleyebilirsiniz.", "The logged-in user will be added as the first author. You can add co-authors below.")
+                                </small>
                             </div>
                         </div>
 
                         <div id="author-list"></div>
 
-                        <button type="button" class="btn btn-outline-primary btn-action w-100 border-dashed" id="add-author-btn" style="border-style: dashed; border-width: 2px;">
-                            <i class="fas fa-plus-circle me-2"></i> @Localizer["AddCoAuthorButton"]
+                        <button type="button"
+                                class="btn btn-outline-primary btn-action w-100 border-dashed"
+                                id="add-author-btn"
+                                style="border-style: dashed; border-width: 2px;">
+
+                            <i class="fas fa-plus-circle me-2"></i>
+                            @L("AddCoAuthorButton", "Ek Yazar Ekle", "Add Co-Author")
                         </button>
                     </div>
                 </div>
@@ -217,26 +350,45 @@
                 <div class="modern-card mb-5">
                     <div class="section-header">
                         <div class="section-number">3</div>
-                        <h5 class="section-title">@Localizer["Section3Title"]</h5>
+                        <h5 class="section-title">
+                            @L("Section3Title", "Dosya Yükleme", "File Upload")
+                        </h5>
                     </div>
+
                     <div class="p-4 p-md-5 text-center">
-                        <label class="form-label d-block text-start mb-3">@Localizer["FileLabel"] <span class="text-danger">*</span></label>
+                        <label class="form-label d-block text-start mb-3">
+                            @L("FileLabel", "Bildiri Dosyası", "Abstract File") <span class="text-danger">*</span>
+                        </label>
 
                         <div class="upload-zone p-5 position-relative">
                             <div id="upload-placeholder">
                                 <div class="mb-3">
-                                    <div class="bg-white rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                    <div class="bg-white rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center"
+                                         style="width: 80px; height: 80px;">
+
                                         <i class="fas fa-cloud-upload-alt fa-2x text-primary"></i>
                                     </div>
                                 </div>
-                                <h6 class="fw-bold text-dark mb-1">@Localizer["UploadDragTitle"]</h6>
-                                <p class="text-muted small mb-0">@Localizer["UploadDragText"]</p>
+
+                                <h6 class="fw-bold text-dark mb-1">
+                                    @L("UploadDragTitle", "Dosyanızı buraya yükleyin", "Upload your file here")
+                                </h6>
+
+                                <p class="text-muted small mb-0">
+                                    @L("UploadDragText", "PDF, DOC veya DOCX dosyası yükleyebilirsiniz.", "You can upload a PDF, DOC, or DOCX file.")
+                                </p>
                             </div>
 
                             <div id="file-preview" class="d-none align-items-center justify-content-center flex-column">
                                 <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
-                                <h6 class="fw-bold text-dark mb-1" id="fileNameText">dosya_adi.pdf</h6>
-                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">@Localizer["ReadyToUploadLabel"]</span>
+
+                                <h6 class="fw-bold text-dark mb-1" id="fileNameText">
+                                    file.pdf
+                                </h6>
+
+                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">
+                                    @L("ReadyToUploadLabel", "Yüklemeye hazır", "Ready to upload")
+                                </span>
                             </div>
 
                             <input asp-for="SubmissionFile"
@@ -246,16 +398,20 @@
                                    onchange="fileSelected(this)"
                                    style="cursor: pointer;" />
                         </div>
+
                         <span asp-validation-for="SubmissionFile" class="text-danger small mt-2 d-block text-start"></span>
                     </div>
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center mb-5">
-                    <a href="/Dashboard" class="text-decoration-none text-muted fw-bold">
-                        <i class="fas fa-arrow-left me-2"></i> @Localizer["CancelButton"]
+                    <a href="@backUrl" class="text-decoration-none text-muted fw-bold">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        @L("CancelButton", "Vazgeç", "Cancel")
                     </a>
+
                     <button type="submit" class="btn btn-primary btn-action btn-primary-glow text-white px-5 py-3">
-                        @Localizer["SubmitButton"] <i class="fas fa-paper-plane ms-2"></i>
+                        @L("SubmitButton", "Bildiriyi Gönder", "Submit Abstract")
+                        <i class="fas fa-paper-plane ms-2"></i>
                     </button>
                 </div>
 
@@ -268,23 +424,26 @@
     <partial name="_ValidationScriptsPartial" />
 
     <script>
-        const wordLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["WordLabel"].Value));
-        const removeLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["RemoveLabel"].Value));
-        const coAuthorPrefix = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["CoAuthorPrefix"].Value));
-        const firstNameLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["AuthorFirstNameLabel"].Value));
-        const lastNameLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["AuthorLastNameLabel"].Value));
-        const emailLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["AuthorEmailLabel"].Value));
-        const institutionLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["AuthorInstitutionLabel"].Value));
-        const orcidLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["AuthorOrcidLabel"].Value));
-        const orcidPlaceholder = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["AuthorOrcidPlaceholder"].Value));
-        const correspondingAuthorLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["CorrespondingAuthorLabel"].Value));
+        const wordLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("WordLabel", "Kelime", "Words")));
+        const removeLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("RemoveLabel", "Kaldır", "Remove")));
+        const coAuthorPrefix = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("CoAuthorPrefix", "Ek Yazar", "Co-Author")));
+        const firstNameLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("AuthorFirstNameLabel", "Ad", "First Name")));
+        const lastNameLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("AuthorLastNameLabel", "Soyad", "Last Name")));
+        const emailLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("AuthorEmailLabel", "E-posta", "Email")));
+        const institutionLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("AuthorInstitutionLabel", "Kurum", "Institution")));
+        const orcidLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("AuthorOrcidLabel", "ORCID", "ORCID")));
+        const orcidPlaceholder = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("AuthorOrcidPlaceholder", "0000-0000-0000-0000", "0000-0000-0000-0000")));
+        const correspondingAuthorLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("CorrespondingAuthorLabel", "Sorumlu yazar", "Corresponding author")));
 
-        document.getElementById('AbstractText').addEventListener('input', function() {
+        document.getElementById('AbstractText').addEventListener('input', function () {
             var text = this.value.trim();
             var wordCount = text ? text.split(/\s+/).filter(str => str !== "").length : 0;
             var badge = document.getElementById('wordCountBadge');
+
             badge.innerText = wordCount + " " + wordLabel;
-            badge.className = wordCount > 500 ? "badge bg-danger text-white border" : "badge bg-light text-secondary border";
+            badge.className = wordCount > 500
+                ? "badge bg-danger text-white border"
+                : "badge bg-light text-secondary border";
         });
 
         function fileSelected(input) {
@@ -312,27 +471,33 @@
                                 <label class="form-label small">${firstNameLabel}</label>
                                 <input name="Authors[${index}].FirstName" class="form-control" required />
                             </div>
+
                             <div class="col-md-6">
                                 <label class="form-label small">${lastNameLabel}</label>
                                 <input name="Authors[${index}].LastName" class="form-control" required />
                             </div>
+
                             <div class="col-md-6">
                                 <label class="form-label small">${emailLabel}</label>
                                 <input name="Authors[${index}].Email" class="form-control" type="email" required />
                             </div>
+
                             <div class="col-md-6">
                                 <label class="form-label small">${institutionLabel}</label>
                                 <input name="Authors[${index}].Institution" class="form-control" required />
                             </div>
+
                             <div class="col-md-6">
                                 <label class="form-label small">${orcidLabel}</label>
                                 <input name="Authors[${index}].ORCID" class="form-control" placeholder="${orcidPlaceholder}" />
                             </div>
+
                             <div class="col-md-6 d-flex align-items-end">
                                 <div class="form-check mb-2">
                                     <input class="form-check-input" type="checkbox" name="Authors[${index}].IsCorrespondingAuthor" value="true">
                                     <label class="form-check-label small text-muted">${correspondingAuthorLabel}</label>
                                 </div>
+
                                 <input type="hidden" name="Authors[${index}].Order" value="${index + 2}" />
                             </div>
                         </div>
@@ -340,7 +505,7 @@
                 `;
             }
 
-            $('#add-author-btn').click(function() {
+            $('#add-author-btn').click(function () {
                 $('#author-list').append(getAuthorRowTemplate(authorIndex));
                 authorIndex++;
             });

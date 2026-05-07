@@ -4,6 +4,7 @@ using AntAbstract.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AntAbstract.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260428091958_AddEnglishFieldsToRegistrationType")]
+    partial class AddEnglishFieldsToRegistrationType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -442,54 +445,6 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.HasIndex("TenantId", "ConferenceId", "Page", "Culture", "Order");
 
                     b.ToTable("ConferencePageBlocks");
-                });
-
-            modelBuilder.Entity("AntAbstract.Domain.Entities.ConferenceTopic", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("ConferenceId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("DescriptionEn")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("NameEn")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<int>("SortOrder")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ConferenceId");
-
-                    b.ToTable("ConferenceTopics");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.CongressType", b =>
@@ -986,9 +941,6 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Property<Guid>("ConferenceId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("ConferenceTopicId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
@@ -1028,8 +980,8 @@ namespace AntAbstract.Infrastructure.Migrations
 
                     b.Property<string>("Topic")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
@@ -1039,8 +991,6 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.HasIndex("AuthorId");
 
                     b.HasIndex("ConferenceId");
-
-                    b.HasIndex("ConferenceTopicId");
 
                     b.HasIndex("SessionId");
 
@@ -1473,17 +1423,6 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Navigation("Conference");
                 });
 
-            modelBuilder.Entity("AntAbstract.Domain.Entities.ConferenceTopic", b =>
-                {
-                    b.HasOne("AntAbstract.Domain.Entities.Conference", "Conference")
-                        .WithMany()
-                        .HasForeignKey("ConferenceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Conference");
-                });
-
             modelBuilder.Entity("AntAbstract.Domain.Entities.Hotel", b =>
                 {
                     b.HasOne("AntAbstract.Domain.Entities.Conference", "Conference")
@@ -1648,11 +1587,6 @@ namespace AntAbstract.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("AntAbstract.Domain.Entities.ConferenceTopic", "ConferenceTopic")
-                        .WithMany()
-                        .HasForeignKey("ConferenceTopicId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("AntAbstract.Domain.Entities.Session", "Session")
                         .WithMany("Submissions")
                         .HasForeignKey("SessionId");
@@ -1660,8 +1594,6 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Navigation("Author");
 
                     b.Navigation("Conference");
-
-                    b.Navigation("ConferenceTopic");
 
                     b.Navigation("Session");
                 });

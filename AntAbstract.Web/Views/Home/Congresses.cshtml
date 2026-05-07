@@ -11,6 +11,25 @@
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_Layout";
+
+    var isSignedIn = (bool)(ViewBag.IsSignedIn ?? false);
+
+    var registrationsByConference =
+        ViewBag.RegistrationsByConference as Dictionary<Guid, Registration>
+        ?? new Dictionary<Guid, Registration>();
+
+    var submissionsByConference =
+        ViewBag.SubmissionsByConference as Dictionary<Guid, List<Submission>>
+        ?? new Dictionary<Guid, List<Submission>>();
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
 }
 
 <style>
@@ -177,8 +196,13 @@
 
 <div class="search-section text-center">
     <div class="container">
-        <h1 class="display-5 fw-bold text-dark mb-3">@Localizer["HeroTitle"]</h1>
-        <p class="lead text-muted mb-5">@Localizer["HeroDescription"]</p>
+        <h1 class="display-5 fw-bold text-dark mb-3">
+            @Localizer["HeroTitle"]
+        </h1>
+
+        <p class="lead text-muted mb-5">
+            @Localizer["HeroDescription"]
+        </p>
 
         <div class="search-container">
             <div class="search-input-group shadow-sm">
@@ -186,8 +210,12 @@
                        id="congressSearch"
                        placeholder="@Localizer["SearchPlaceholder"]"
                        aria-label="@Localizer["SearchAriaLabel"]">
-                <button type="button" class="btn btn-primary px-5 rounded-pill fw-bold" style="background-color: #00aeef; border:none;">
-                    <i class="fas fa-search me-2"></i> @Localizer["SearchButton"]
+
+                <button type="button"
+                        class="btn btn-primary px-5 rounded-pill fw-bold"
+                        style="background-color: #00aeef; border:none;">
+                    <i class="fas fa-search me-2"></i>
+                    @Localizer["SearchButton"]
                 </button>
             </div>
         </div>
@@ -198,42 +226,126 @@
     <div class="row g-4">
         @if (Model != null && Model.Any())
         {
-            @foreach (var kongre in Model)
+            foreach (var kongre in Model)
             {
-                var slug = !string.IsNullOrEmpty(kongre.Tenant?.Slug) ? kongre.Tenant.Slug : kongre.Slug;
+                var slug = !string.IsNullOrWhiteSpace(kongre.Tenant?.Slug)
+                ? kongre.Tenant.Slug
+                : kongre.Slug;
+
+                var hasRegistration = registrationsByConference.TryGetValue(
+                kongre.Id,
+                out Registration? registration
+                );
+
+                var userSubmissions = submissionsByConference.ContainsKey(kongre.Id)
+                ? submissionsByConference[kongre.Id]
+                : new List<Submission>();
+
+                var hasSubmission = userSubmissions.Any();
+
+                var hasAcceptedSubmission = userSubmissions.Any(s =>
+                s.Status == SubmissionStatus.Accepted ||
+                s.Status == SubmissionStatus.Presented
+                );
+
+                string actionText;
+                string actionUrl;
+                string actionIcon;
+
+                if (!isSignedIn)
+                {
+                    actionText = L("ViewDetailsButton", "Detayları Gör");
+                    actionUrl = $"/{slug}";
+                    actionIcon = "fas fa-search";
+                }
+                else if (!hasRegistration)
+                {
+                    actionText = L("RegisterForCongressButton", "Kongreye Kayıt Ol");
+                    actionUrl = $"/{slug}/registration";
+                    actionIcon = "fas fa-user-plus";
+                }
+                else if (hasAcceptedSubmission && registration != null && !registration.IsPaid)
+                {
+                    actionText = L("PayNowButton", "Ödeme Yap");
+                    actionUrl = $"/{slug}/Payment/New";
+                    actionIcon = "fas fa-credit-card";
+                }
+                else if (!hasSubmission)
+                {
+                    actionText = L("SubmitAbstractButton", "Bildiri Gönder");
+                    actionUrl = $"/{slug}/Submission/Create";
+                    actionIcon = "fas fa-paper-plane";
+                }
+                else if (registration != null && registration.IsPaid)
+                {
+                    actionText = L("GoToPanelButton", "Panelime Git");
+                    actionUrl = $"/{slug}/Dashboard";
+                    actionIcon = "fas fa-gauge-high";
+                }
+                else
+                {
+                    actionText = L("ViewMyApplicationButton", "Başvurumu Gör");
+                    actionUrl = $"/{slug}/Submission/Index";
+                    actionIcon = "fas fa-folder-open";
+                }
 
                 <div class="col-md-6 col-lg-4">
                     <div class="congress-card">
                         <div class="image-wrapper">
                             <div class="date-badge-floating">
-                                <span class="date-day">@kongre.StartDate.Day</span>
-                                <span class="date-month">@kongre.StartDate.ToString("MMM")</span>
+                                <span class="date-day">
+                                    @kongre.StartDate.Day
+                                </span>
+
+                                <span class="date-month">
+                                    @kongre.StartDate.ToString("MMM")
+                                </span>
                             </div>
 
-                            @if (!string.IsNullOrEmpty(kongre.LogoPath))
+                            @if (!string.IsNullOrWhiteSpace(kongre.LogoPath))
                             {
-                                <img src="@kongre.LogoPath" class="congress-img" alt="@kongre.Title">
+                                <img src="@kongre.LogoPath"
+                                     class="congress-img"
+                                     alt="@kongre.Title">
                             }
                             else
                             {
                                 <div class="text-muted text-center opacity-25">
                                     <i class="fa fa-university fa-4x mb-2"></i>
-                                    <div class="small fw-bold">@Localizer["NoImageText"]</div>
+
+                                    <div class="small fw-bold">
+                                        @Localizer["NoImageText"]
+                                    </div>
                                 </div>
                             }
                         </div>
 
                         <div class="card-body-custom">
-                            <span class="congress-slug-tag">#@slug</span>
-                            <a href="/@slug" class="congress-title" title="@kongre.Title">@kongre.Title</a>
+                            <span class="congress-slug-tag">
+                                #@slug
+                            </span>
+
+                            <a href="/@slug"
+                               class="congress-title"
+                               title="@kongre.Title">
+                                @kongre.Title
+                            </a>
 
                             <div class="meta-info">
-                                <span><i class="fas fa-map-marker-alt text-danger me-1"></i> @(kongre.City ?? Localizer["OnlineText"].Value)</span>
-                                <span><i class="fas fa-calendar-check text-primary me-1"></i> @kongre.StartDate.Year</span>
+                                <span>
+                                    <i class="fas fa-map-marker-alt text-danger me-1"></i>
+                                    @(kongre.City ?? Localizer["OnlineText"].Value)
+                                </span>
+
+                                <span>
+                                    <i class="fas fa-calendar-check text-primary me-1"></i>
+                                    @kongre.StartDate.Year
+                                </span>
                             </div>
 
-                            <a href="/@slug" class="btn-detail">
-                                @Localizer["ReviewSiteButton"] <i class="fas fa-external-link-alt"></i>
+                            <a href="@actionUrl" class="btn-detail">
+                                @actionText
+                                <i class="@actionIcon"></i>
                             </a>
                         </div>
                     </div>
@@ -245,8 +357,14 @@
             <div class="col-12 text-center py-5">
                 <div class="alert alert-light border shadow-sm d-inline-block px-5 py-4 rounded-4">
                     <i class="fas fa-search text-muted mb-3 fs-1 opacity-50"></i>
-                    <h5 class="text-dark fw-bold">@Localizer["EmptyStateTitle"]</h5>
-                    <p class="mb-0 text-muted">@Localizer["EmptyStateText"]</p>
+
+                    <h5 class="text-dark fw-bold">
+                        @Localizer["EmptyStateTitle"]
+                    </h5>
+
+                    <p class="mb-0 text-muted">
+                        @Localizer["EmptyStateText"]
+                    </p>
                 </div>
             </div>
         }

@@ -183,6 +183,10 @@
         ? "/Admin/RegistrationTypes"
         : $"/{slug}/Admin/RegistrationTypes";
 
+    var conferenceTopicsUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Admin/ConferenceTopics"
+        : $"/{slug}/Admin/ConferenceTopics";
+
     var websiteAdminUrl = string.IsNullOrWhiteSpace(slug)
         ? "/Admin/Website"
         : $"/{slug}/Admin/Website";
@@ -424,6 +428,44 @@
             flex-grow: 1;
         }
 
+        .selected-conference-banner {
+            border: 1px solid rgba(0, 174, 239, 0.18);
+            background: linear-gradient(135deg, rgba(0, 174, 239, 0.10), rgba(255, 255, 255, 0.95));
+            border-radius: 18px;
+            padding: 1rem 1.2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .selected-conference-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            background-color: var(--primary-color);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 8px 18px rgba(0, 174, 239, 0.25);
+        }
+
+        .selected-conference-title {
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 2px;
+        }
+
+        .selected-conference-subtitle {
+            font-size: 0.78rem;
+            color: #64748b;
+            font-weight: 600;
+        }
+
         .sidebar-overlay {
             display: none;
             position: fixed;
@@ -520,6 +562,11 @@
             .language-switcher {
                 display: none;
             }
+
+            .selected-conference-banner {
+                align-items: flex-start;
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -547,32 +594,38 @@
                 {
                     <div class="menu-label">@L("Section_Referee", "Hakem")</div>
 
-                    <a href="@reviewIndexUrl" class="nav-link">
+                    <a href="@reviewIndexUrl"
+                       class="nav-link @(currentController == "Review" && currentAction == "Index" ? "active" : "")">
                         <i class="fas fa-gavel text-warning"></i>
                         @L("Referee_MyTasks", "Görevlerim")
                     </a>
 
-                    <a href="@reviewInterestsUrl" class="nav-link">
+                    <a href="@reviewInterestsUrl"
+                       class="nav-link @(currentController == "Review" && currentAction == "Interests" ? "active" : "")">
                         <i class="fas fa-tags text-info"></i>
                         @L("Referee_Expertise", "Uzmanlık Alanlarım")
                     </a>
 
-                    <a href="@reviewAvailabilityUrl" class="nav-link">
+                    <a href="@reviewAvailabilityUrl"
+                       class="nav-link @(currentController == "Review" && currentAction == "Availability" ? "active" : "")">
                         <i class="fas fa-calendar-times text-danger"></i>
                         @L("Referee_Availability", "Müsaitlik Durumu")
                     </a>
 
-                    <a href="@reviewConflictsUrl" class="nav-link">
+                    <a href="@reviewConflictsUrl"
+                       class="nav-link @(currentController == "Review" && currentAction == "Conflicts" ? "active" : "")">
                         <i class="fas fa-handshake-slash text-secondary"></i>
                         @L("Referee_Conflicts", "Çıkar Çatışmaları")
                     </a>
 
-                    <a href="@reviewGuidelinesUrl" class="nav-link">
+                    <a href="@reviewGuidelinesUrl"
+                       class="nav-link @(currentController == "Review" && currentAction == "Guidelines" ? "active" : "")">
                         <i class="fas fa-book-open text-primary"></i>
                         @L("Referee_Guide", "Hakem Rehberi")
                     </a>
 
-                    <a href="@certificatesIndexUrl" class="nav-link">
+                    <a href="@certificatesIndexUrl"
+                       class="nav-link @(currentController == "Certificates" ? "active" : "")">
                         <i class="fas fa-certificate text-success"></i>
                         @L("Referee_Certificates", "Sertifikalarım")
                     </a>
@@ -617,22 +670,26 @@
                     }
                     else
                     {
-                        <a href="@programUrl" class="nav-link">
+                        <a href="@programUrl"
+                           class="nav-link @(currentController == "Program" ? "active" : "")">
                             <i class="fas fa-calendar-day text-danger"></i>
                             @L("Congress_Program", "Program")
                         </a>
 
-                        <a href="@proceedingsUrl" class="nav-link">
+                        <a href="@proceedingsUrl"
+                           class="nav-link @(currentController == "Proceedings" ? "active" : "")">
                             <i class="fas fa-book" style="color: #6f42c1;"></i>
                             @L("Congress_Proceedings", "Bildiri Kitabı")
                         </a>
 
-                        <a href="@paymentMyUrl" class="nav-link">
+                        <a href="@paymentMyUrl"
+                           class="nav-link @(currentController == "Payment" ? "active" : "")">
                             <i class="fas fa-file-invoice-dollar text-info"></i>
                             @L("Congress_MyPayments", "Ödemelerim")
                         </a>
 
-                        <a href="@accommodationUrl" class="nav-link">
+                        <a href="@accommodationUrl"
+                           class="nav-link @(currentController == "Accommodation" ? "active" : "")">
                             <i class="fas fa-hotel text-warning"></i>
                             @L("Congress_Accommodation", "Konaklama")
                         </a>
@@ -708,6 +765,12 @@
                        class="nav-link @(currentController == "RegistrationTypes" ? "active" : "")">
                         <i class="fas fa-tags text-primary"></i>
                         @L("System_RegistrationTypes", "Kayıt Türleri")
+                    </a>
+
+                    <a href="@conferenceTopicsUrl"
+                       class="nav-link @(currentController == "ConferenceTopics" ? "active" : "")">
+                        <i class="fas fa-layer-group text-success"></i>
+                        @L("System_ConferenceTopics", "Bildiri Konuları")
                     </a>
 
                     @if (isSuperAdmin)
@@ -884,6 +947,32 @@
         </header>
 
         <div class="content-wrapper">
+            @if (hasSelectedConference && !string.IsNullOrWhiteSpace(selectedConferenceTitle))
+            {
+                <div class="selected-conference-banner">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="selected-conference-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+
+                        <div>
+                            <div class="selected-conference-subtitle">
+                                @L("Common_SelectedConference", "Seçili Kongre")
+                            </div>
+
+                            <div class="selected-conference-title">
+                                @selectedConferenceTitle
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="@dashboardMyConferencesUrl" class="btn btn-sm btn-primary rounded-pill px-3">
+                        <i class="fas fa-exchange-alt me-1"></i>
+                        @L("Common_ChangeConference", "Kongre Değiştir")
+                    </a>
+                </div>
+            }
+
             @if (TempData["SuccessMessage"] != null)
             {
                 <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4 rounded-3">
@@ -931,12 +1020,17 @@
 
             const isClosed = localStorage.getItem("sidebar-closed") === "true";
 
-            if (isClosed) {
+            if (isClosed && window.innerWidth > 991) {
                 document.body.classList.add("sidebar-closed");
             }
         });
 
         function toggleSidebar() {
+            if (window.innerWidth <= 991) {
+                toggleMobileSidebar();
+                return;
+            }
+
             document.body.classList.toggle('sidebar-closed');
             localStorage.setItem("sidebar-closed", document.body.classList.contains("sidebar-closed"));
         }

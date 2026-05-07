@@ -5,7 +5,7 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Submissions
     public class SubmissionEditViewModel : SubmissionCreateViewModel
     {
         public Guid Id { get; set; }
-        public string PresentationType { get; set; } 
-        public string ExistingFilePath { get; set; }
+
+        public string ExistingFilePath { get; set; } = string.Empty;
     }
 }

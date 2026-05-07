@@ -1,10 +1,10 @@
-﻿@using AntAbstract.Domain.Entities
+﻿@using System.Globalization
+@using AntAbstract.Domain.Entities
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
-
 @model IEnumerable<RegistrationType>
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"].Value;
+    ViewData["Title"] = Localizer["RegistrationTitle"].Value;
     Layout = "_Layout";
 
     var slug = ViewBag.Slug as string ?? "";
@@ -15,331 +15,340 @@
 
 <style>
     .registration-page {
-        min-height: 80vh;
-        background: #f8fafc;
-        padding: 70px 0;
+        min-height: calc(100vh - 160px);
+        padding: 60px 0;
     }
 
-    .page-heading {
-        font-weight: 800;
-        color: #0f172a;
-        letter-spacing: -0.7px;
+    .registration-wrapper {
+        max-width: 560px;
+        margin: 0 auto;
     }
 
-    .page-lead {
-        color: #64748b;
-        font-size: 1.05rem;
-    }
-
-    .step-wrapper {
+    .registration-steps {
         display: flex;
         justify-content: center;
-        align-items: flex-start;
-        margin-bottom: 35px;
+        align-items: center;
+        gap: 28px;
+        margin-bottom: 34px;
     }
 
-    .step-box {
-        text-align: center;
+    .registration-step-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 120px;
     }
 
-    .step {
-        width: 42px;
-        height: 42px;
+    .registration-step-circle {
+        width: 48px;
+        height: 48px;
         border-radius: 50%;
-        background: #e9ecef;
-        color: #6c757d;
-        display: inline-flex;
+        display: flex;
         align-items: center;
         justify-content: center;
-        font-weight: 800;
-        position: relative;
-        z-index: 1;
+        font-weight: 700;
+        font-size: 24px;
+        margin-bottom: 10px;
     }
 
-        .step.active {
-            background: #00aeef;
-            color: white;
-            box-shadow: 0 8px 20px rgba(0, 174, 239, 0.25);
+        .registration-step-circle.active {
+            background-color: #19aaf8;
+            color: #fff;
         }
 
-    .step-line {
-        width: 110px;
-        height: 2px;
-        background: #e2e8f0;
-        margin: 21px 16px 0 16px;
+        .registration-step-circle.passive {
+            background-color: #eef2f6;
+            color: #6c757d;
+        }
+
+    .registration-step-line {
+        flex: 1;
+        max-width: 130px;
+        height: 3px;
+        background-color: #e8edf3;
+        border-radius: 10px;
+        margin-top: -28px;
     }
+
+    .registration-step-label {
+        font-size: 15px;
+        font-weight: 600;
+        text-align: center;
+        line-height: 1.4;
+    }
+
+        .registration-step-label.active {
+            color: #0d6efd;
+        }
+
+        .registration-step-label.passive {
+            color: #495057;
+        }
 
     .ticket-card {
-        background: white;
-        border: 1px solid #e2e8f0;
+        width: 100%;
+        border: 1px solid #e8eef5;
         border-radius: 24px;
         overflow: hidden;
-        box-shadow: 0 14px 35px rgba(15, 23, 42, 0.05);
-        transition: all 0.25s ease;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.06);
+        background-color: #fff;
     }
 
-        .ticket-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.09);
-            border-color: #00aeef;
+        .ticket-card .card-body {
+            padding: 34px;
         }
 
-    .ticket-header {
-        padding: 28px 28px 18px 28px;
-        border-bottom: 1px solid #f1f5f9;
-    }
-
-    .ticket-icon {
-        width: 58px;
-        height: 58px;
-        border-radius: 18px;
-        background: rgba(0, 174, 239, 0.1);
-        color: #00aeef;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.6rem;
-        margin-bottom: 18px;
-    }
-
-    .ticket-title {
-        font-weight: 800;
-        color: #0f172a;
-        font-size: 1.25rem;
-        margin-bottom: 6px;
-    }
-
-    .ticket-description {
-        color: #64748b;
-        font-size: 0.92rem;
-        min-height: 44px;
-    }
-
-    .ticket-body {
-        padding: 24px 28px 28px 28px;
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .price-text {
-        font-size: 2.1rem;
-        line-height: 1;
-        font-weight: 900;
-        color: #0f172a;
-        letter-spacing: -1px;
-    }
-
-    .currency-text {
-        font-weight: 800;
-        color: #64748b;
-        margin-left: 6px;
-    }
-
-    .deadline-box {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 14px;
-        padding: 12px 14px;
-        color: #64748b;
-        font-size: 0.9rem;
-        margin-top: 18px;
-    }
-
-    .btn-register-ticket {
-        background: linear-gradient(135deg, #00aeef 0%, #0984e3 100%);
-        border: none;
-        color: white;
-        font-weight: 800;
-        padding: 14px 18px;
-        border-radius: 16px;
-        text-decoration: none;
+    .ticket-icon-box {
+        width: 72px;
+        height: 72px;
+        border-radius: 20px;
+        background: #eaf7ff;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 9px;
-        margin-top: auto;
-        box-shadow: 0 8px 22px rgba(0, 174, 239, 0.25);
-        transition: all 0.25s ease;
-    }
-
-        .btn-register-ticket:hover {
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 12px 28px rgba(0, 174, 239, 0.34);
-        }
-
-    .empty-card {
-        background: white;
-        border: 1px dashed #cbd5e1;
-        border-radius: 24px;
-        padding: 50px 30px;
-        text-align: center;
-        color: #64748b;
-    }
-
-    .empty-icon {
-        width: 90px;
-        height: 90px;
-        border-radius: 50%;
-        background: #f8fafc;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2.6rem;
-        color: #94a3b8;
+        color: #19aaf8;
+        font-size: 28px;
         margin-bottom: 20px;
     }
 
+    .ticket-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 12px;
+    }
+
+    .ticket-description {
+        font-size: 16px;
+        color: #5f6b7a;
+        line-height: 1.7;
+        margin-bottom: 26px;
+    }
+
+    .ticket-price-wrap {
+        padding: 26px 34px 18px 34px;
+        border-top: 1px solid #eef2f6;
+        background: #fff;
+    }
+
+    .ticket-price {
+        font-size: 52px;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1;
+    }
+
+    .ticket-currency {
+        font-size: 20px;
+        font-weight: 700;
+        color: #5f6b7a;
+        margin-left: 8px;
+    }
+
+    .deadline-box {
+        margin: 18px 34px 0 34px;
+        background: #f6f9fc;
+        border: 1px solid #e7edf3;
+        border-radius: 16px;
+        padding: 16px 18px;
+        color: #5f6b7a;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+    }
+
+    .ticket-action {
+        padding: 18px 34px 34px 34px;
+    }
+
+    .btn-ticket {
+        width: 100%;
+        border: none;
+        border-radius: 18px;
+        padding: 16px 20px;
+        font-size: 18px;
+        font-weight: 700;
+        background: linear-gradient(90deg, #19aaf8 0%, #1595ea 100%);
+        color: #fff;
+        box-shadow: 0 10px 24px rgba(25, 170, 248, 0.22);
+    }
+
+        .btn-ticket:hover {
+            color: #fff;
+            opacity: 0.96;
+        }
+
+    .back-link-wrap {
+        text-align: center;
+        margin-top: 34px;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748b;
+        text-decoration: none;
+    }
+
+        .back-link:hover {
+            color: #0d6efd;
+        }
+
     @@media (max-width: 768px) {
         .registration-page {
-            padding: 40px 0;
+            padding: 36px 0;
         }
 
-        .step-line {
-            width: 60px;
+        .registration-wrapper {
+            max-width: 100%;
+            padding: 0 14px;
         }
 
-        .price-text {
-            font-size: 1.8rem;
+        .registration-step-item {
+            min-width: 100px;
+        }
+
+        .registration-step-line {
+            max-width: 70px;
+        }
+
+        .ticket-card .card-body,
+        .ticket-price-wrap,
+        .ticket-action {
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+
+        .deadline-box {
+            margin-left: 20px;
+            margin-right: 20px;
+        }
+
+        .ticket-price {
+            font-size: 40px;
         }
     }
 </style>
 
 <div class="registration-page">
     <div class="container">
+        <div class="registration-wrapper">
 
-        <div class="text-center mb-5">
-            <h1 class="page-heading mb-2">
-                @Localizer["RegistrationTitle"]
-            </h1>
+            <div class="text-center mb-5">
+                <h1 class="fw-bold text-dark mb-2">
+                    @Localizer["RegistrationTitle"]
+                </h1>
 
-            <p class="page-lead mb-2">
-                @Localizer["RegistrationLead"]
-            </p>
+                <p class="text-muted mb-3">
+                    @Localizer["RegistrationLead"]
+                </p>
 
-            <div class="badge bg-white text-dark border rounded-pill px-4 py-2 mt-2 shadow-sm">
-                <i class="fas fa-university text-primary me-2"></i>
-                @conferenceTitle
-            </div>
-        </div>
-
-        <div class="step-wrapper">
-            <div class="step-box">
-                <div class="step active">1</div>
-                <small class="fw-bold mt-2 d-block text-primary">
-                    @Localizer["Step1Label"]
-                </small>
+                <div class="badge bg-white text-dark border rounded-pill px-4 py-2 shadow-sm">
+                    <i class="fas fa-university text-primary me-2"></i>
+                    @conferenceTitle
+                </div>
             </div>
 
-            <div class="step-line"></div>
+            <div class="registration-steps">
+                <div class="registration-step-item">
+                    <div class="registration-step-circle active">1</div>
 
-            <div class="step-box">
-                <div class="step">2</div>
-                <small class="fw-bold mt-2 d-block text-muted">
-                    @Localizer["Step2Label"]
-                </small>
-            </div>
-        </div>
+                    <div class="registration-step-label active">
+                        @Localizer["Step1Label"]
+                    </div>
+                </div>
 
-        @if (!ticketTypes.Any())
-        {
-            <div class="row justify-content-center">
-                <div class="col-lg-7">
-                    <div class="empty-card">
-                        <div class="empty-icon">
-                            <i class="fas fa-ticket-alt"></i>
-                        </div>
+                <div class="registration-step-line"></div>
 
-                        <h4 class="fw-bold text-dark mb-2">
-                            @Localizer["NoRegistrationTypeTitle"]
-                        </h4>
+                <div class="registration-step-item">
+                    <div class="registration-step-circle passive">2</div>
 
-                        <p class="mb-4">
-                            @Localizer["NoRegistrationTypeDescription"]
-                        </p>
-
-                        <a href="/@slug" class="btn btn-outline-primary rounded-pill px-4">
-                            <i class="fas fa-arrow-left me-2"></i>
-                            @Localizer["BackToConferenceButton"]
-                        </a>
+                    <div class="registration-step-label passive">
+                        @Localizer["Step2Label"]
                     </div>
                 </div>
             </div>
-        }
-        else
-        {
-            <div class="row g-4 justify-content-center">
-                @foreach (var ticket in ticketTypes)
+
+            @if (ticketTypes.Any())
+            {
+                foreach (var ticket in ticketTypes)
                 {
-                    var checkoutUrl = $"/{slug}/registration/checkout/{ticket.Id}";
+                    var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 
-                    <div class="col-md-6 col-lg-4">
-                        <div class="ticket-card">
-                            <div class="ticket-header">
-                                <div class="ticket-icon">
-                                    <i class="fas fa-ticket-alt"></i>
-                                </div>
+                    var ticketName = isEnglish && !string.IsNullOrWhiteSpace(ticket.NameEn)
+                    ? ticket.NameEn
+                    : ticket.Name;
 
-                                <h3 class="ticket-title">
-                                    @ticket.Name
-                                </h3>
+                    var ticketDescription = isEnglish && !string.IsNullOrWhiteSpace(ticket.DescriptionEn)
+                    ? ticket.DescriptionEn
+                    : ticket.Description;
 
-                                <p class="ticket-description mb-0">
-                                    @(string.IsNullOrWhiteSpace(ticket.Description)
-                                                                ? Localizer["DefaultTicketDescription"].Value
-                                                                : ticket.Description)
-                        </p>
-                    </div>
-
-                            <div class="ticket-body">
-                                <div class="d-flex align-items-end mb-2">
-                                    <span class="price-text">
-                                        @ticket.Price.ToString("N2")
-                                    </span>
-
-                                    <span class="currency-text">
-                                        @ticket.Currency
-                                    </span>
-                                </div>
-
-                        @if (ticket.Deadline.HasValue)
-                                {
-                                    <div class="deadline-box">
-                                        <i class="far fa-clock me-2 text-warning"></i>
-                                        @Localizer["DeadlineLabel"]:
-                                        <strong>
-                                            @ticket.Deadline.Value.ToLocalTime().ToString("dd.MM.yyyy")
-                                        </strong>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="deadline-box">
-                                        <i class="fas fa-check-circle me-2 text-success"></i>
-                                        @Localizer["NoDeadlineText"]
-                                    </div>
-                                }
-
-                                <a href="@checkoutUrl" class="btn-register-ticket">
-                                    <span>@Localizer["SelectAndContinueButton"]</span>
-                                    <i class="fas fa-arrow-right"></i>
-                                </a>
+                    <div class="ticket-card mb-4">
+                        <div class="card-body">
+                            <div class="ticket-icon-box">
+                                <i class="fas fa-ticket-alt"></i>
                             </div>
+
+                            <div class="ticket-title">
+                                @ticketName
+                            </div>
+
+                            <div class="ticket-description">
+                                @(string.IsNullOrWhiteSpace(ticketDescription)
+                                                        ? Localizer["DefaultTicketDescription"].Value
+                                                        : ticketDescription)
+                    </div>
+                </div>
+
+                        <div class="ticket-price-wrap">
+                            <span class="ticket-price">
+                                @ticket.Price.ToString("N2", CultureInfo.CurrentCulture)
+                            </span>
+
+                            <span class="ticket-currency">
+                                @ticket.Currency
+                            </span>
+                        </div>
+
+                        <div class="deadline-box">
+                            <i class="fas fa-check-circle me-2 text-success"></i>
+                            @Localizer["NoDeadlineText"]
+                        </div>
+
+                        <div class="ticket-action">
+                            <a href="/@slug/registration/checkout/@ticket.Id" class="btn btn-ticket">
+                                @Localizer["SelectAndContinueButton"]
+                                <i class="fas fa-arrow-right ms-2"></i>
+                            </a>
                         </div>
                     </div>
-                }
-            </div>
+                        }
+            }
+            else
+            {
+                <div class="ticket-card">
+                    <div class="card-body text-center py-5">
+                        <h3 class="mb-3">
+                            @Localizer["NoRegistrationTypeTitle"]
+                        </h3>
 
-            <div class="text-center mt-5">
-                <a href="/@slug" class="text-decoration-none text-muted fw-bold">
-                    <i class="fas fa-arrow-left me-2"></i>
+                        <p class="text-muted mb-0">
+                            @Localizer["NoRegistrationTypeDescription"]
+                        </p>
+                    </div>
+                </div>
+            }
+
+            <div class="back-link-wrap">
+                <a href="/@slug" class="back-link">
+                    <i class="fas fa-arrow-left"></i>
                     @Localizer["BackToConferenceButton"]
                 </a>
             </div>
-        }
+
+        </div>
     </div>
 </div>
