@@ -234,6 +234,7 @@ var localizationOptions = new RequestLocalizationOptions()
 app.UseRequestLocalization(localizationOptions);
 
 app.UseRouting();
+
 app.UseSession();
 
 app.Use(async (ctx, next) =>

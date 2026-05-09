@@ -1,8 +1,9 @@
 ﻿@model List<AntAbstract.Domain.Entities.RegistrationType>
+@using System
 @using System.Globalization
 
 @{
-    ViewData["Title"] = "Kongre Kaydı";
+    ViewData["Title"] = "Kongre Ön Kaydı";
 
     var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 
@@ -16,33 +17,57 @@
         conferenceStartDate = startDate;
     }
 
+    var congressHomeUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/"
+        : $"/{slug}";
+
     var titleText = isEnglish
-        ? "Welcome to the Congress Registration Page"
-        : "Kongre Kayıt Ekranına Hoş Geldiniz";
+        ? "Welcome to the Congress Pre-Registration Page"
+        : "Kongre Ön Kayıt Ekranına Hoş Geldiniz";
 
     var descriptionText = isEnglish
-        ? "You can create your congress registration here and continue with the abstract submission process after registration."
-        : "Bu ekrandan kongre kaydınızı oluşturabilir ve kayıt sonrasında bildiri gönderim sürecine devam edebilirsiniz.";
+        ? "You can create your pre-registration here. After pre-registration, you will submit your abstract. Payment will be requested only after your abstract is accepted."
+        : "Bu ekrandan kongre ön kaydınızı oluşturabilirsiniz. Ön kayıt sonrasında bildirinizin özetini göndereceksiniz. Ödeme yalnızca bildiriniz kabul edildikten sonra istenecektir.";
 
     var selectTypeText = isEnglish
-        ? "Select Registration Type"
-        : "Kayıt Türü Seçiniz";
+        ? "Select Application Type"
+        : "Başvuru Türü Seçiniz";
 
     var emptyTitle = isEnglish
-        ? "No active registration type found"
-        : "Aktif kayıt türü bulunamadı";
+        ? "No active application type found"
+        : "Aktif başvuru türü bulunamadı";
 
     var emptyDescription = isEnglish
-        ? "There is currently no active registration type for this congress. Please contact the congress organization team."
-        : "Bu kongre için şu anda aktif bir kayıt türü bulunmuyor. Lütfen kongre organizasyon ekibiyle iletişime geçiniz.";
+        ? "There is currently no active application type for this congress. Please contact the congress organization team."
+        : "Bu kongre için şu anda aktif bir başvuru türü bulunmuyor. Lütfen kongre organizasyon ekibiyle iletişime geçiniz.";
 
     var continueText = isEnglish
-        ? "Continue"
-        : "Devam Et";
+        ? "Continue to Pre-Registration"
+        : "Ön Kayda Devam Et";
 
     var backText = isEnglish
         ? "Back to Congress Page"
         : "Kongre Sayfasına Dön";
+
+    var processTitleText = isEnglish
+        ? "Application Process"
+        : "Başvuru Süreci";
+
+    var step1Text = isEnglish
+        ? "Create pre-registration"
+        : "Ön kayıt oluştur";
+
+    var step2Text = isEnglish
+        ? "Submit abstract"
+        : "Bildiri gönder";
+
+    var step3Text = isEnglish
+        ? "Reviewer evaluation"
+        : "Hakem değerlendirmesi";
+
+    var step4Text = isEnglish
+        ? "Pay after acceptance"
+        : "Kabul sonrası ödeme yap";
 }
 
 <style>
@@ -87,10 +112,10 @@
     }
 
     .registration-description {
-        color: rgba(255, 255, 255, 0.78);
+        color: rgba(255, 255, 255, 0.82);
         font-size: 1.05rem;
         line-height: 1.8;
-        max-width: 780px;
+        max-width: 860px;
         margin-bottom: 0;
     }
 
@@ -98,6 +123,51 @@
         font-weight: 900;
         color: #0f172a;
         margin-bottom: 20px;
+    }
+
+    .process-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        padding: 24px;
+        box-shadow: 0 18px 48px rgba(15, 23, 42, 0.06);
+        margin-bottom: 34px;
+    }
+
+    .process-title {
+        font-weight: 900;
+        color: #0f172a;
+        margin-bottom: 18px;
+    }
+
+    .process-step {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        height: 100%;
+    }
+
+    .process-step-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        background: rgba(0, 174, 239, 0.12);
+        color: #00aeef;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .process-step-text {
+        color: #0f172a;
+        font-weight: 800;
+        font-size: 0.92rem;
+        line-height: 1.35;
     }
 
     .ticket-card {
@@ -143,23 +213,30 @@
         margin-bottom: 18px;
     }
 
-    .ticket-price {
-        display: flex;
-        align-items: baseline;
-        gap: 8px;
+    .payment-later-box {
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
+        color: #075985;
+        border-radius: 16px;
+        padding: 14px;
         margin-bottom: 18px;
     }
 
-        .ticket-price strong {
-            font-size: 2rem;
-            color: #0f172a;
-            font-weight: 900;
-        }
+    .payment-later-label {
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: #0369a1;
+        margin-bottom: 6px;
+    }
 
-        .ticket-price span {
-            color: #64748b;
-            font-weight: 800;
-        }
+    .payment-later-note {
+        font-size: 0.86rem;
+        font-weight: 700;
+        line-height: 1.5;
+        margin-bottom: 0;
+    }
 
     .deadline-box {
         background: #fff7ed;
@@ -228,10 +305,34 @@
 <section class="registration-page">
     <div class="container">
 
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success rounded-4 fw-bold mb-4">
+                <i class="fas fa-check-circle me-2"></i>
+                @TempData["SuccessMessage"]
+            </div>
+        }
+
+        @if (TempData["InfoMessage"] != null)
+        {
+            <div class="alert alert-info rounded-4 fw-bold mb-4">
+                <i class="fas fa-info-circle me-2"></i>
+                @TempData["InfoMessage"]
+            </div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger rounded-4 fw-bold mb-4">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                @TempData["ErrorMessage"]
+            </div>
+        }
+
         <div class="registration-hero">
             <div class="registration-badge">
-                <i class="fas fa-ticket-alt"></i>
-                @(isEnglish ? "Congress Registration" : "Kongre Kaydı")
+                <i class="fas fa-clipboard-check"></i>
+                @(isEnglish ? "Congress Pre-Registration" : "Kongre Ön Kaydı")
             </div>
 
             <h1 class="registration-title">
@@ -255,6 +356,62 @@
             </p>
         </div>
 
+        <div class="process-card">
+            <h4 class="process-title">
+                @processTitleText
+            </h4>
+
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="process-step">
+                        <div class="process-step-icon">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+
+                        <div class="process-step-text">
+                            @step1Text
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="process-step">
+                        <div class="process-step-icon">
+                            <i class="fas fa-file-upload"></i>
+                        </div>
+
+                        <div class="process-step-text">
+                            @step2Text
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="process-step">
+                        <div class="process-step-icon">
+                            <i class="fas fa-user-edit"></i>
+                        </div>
+
+                        <div class="process-step-text">
+                            @step3Text
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="process-step">
+                        <div class="process-step-icon">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+
+                        <div class="process-step-text">
+                            @step4Text
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <h3 class="registration-section-title">
             @selectTypeText
         </h3>
@@ -274,7 +431,7 @@
                     @emptyDescription
                 </p>
 
-                <a href="/@slug" class="btn btn-outline-primary rounded-pill px-4 fw-bold">
+                <a href="@congressHomeUrl" class="btn btn-outline-primary rounded-pill px-4 fw-bold">
                     <i class="fas fa-arrow-left me-2"></i>
                     @backText
                 </a>
@@ -293,42 +450,96 @@
                     ? ticket.DescriptionEn
                     : ticket.Description;
 
-                    var checkoutUrl = $"/{slug}/registration/checkout/{ticket.Id}";
+                    var checkoutUrl = string.IsNullOrWhiteSpace(slug)
+                    ? "#"
+                    : $"/{slug}/registration/checkout/{ticket.Id}";
 
-                    <div class="col-md-6 col-lg-4">
-                        <div class="ticket-card">
-                            <div class="ticket-icon">
-                                <i class="fas fa-receipt"></i>
+                    if (string.IsNullOrWhiteSpace(ticketName))
+                    {
+                        ticketName = isEnglish ? "Application Type" : "Başvuru Türü";
+                    }
+
+                    if (!isEnglish && ticketName.Contains("Yazar Katılım Ücreti", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ticketName = "Yazar Ön Başvurusu";
+                    }
+
+                    if (!isEnglish && ticketName.Contains("Ücreti", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ticketName = ticketName.Replace("Ücreti", "Başvurusu");
+                    }
+
+                    if (!isEnglish && ticketName.Contains("Ücret", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ticketName = ticketName.Replace("Ücret", "Başvuru");
+                    }
+
+                    if (isEnglish &&
+                    (ticketName.Contains("Author Participation Fee", StringComparison.OrdinalIgnoreCase) ||
+                    ticketName.Contains("Yazar Katılım Ücreti", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        ticketName = "Author Pre-Application";
+                    }
+
+                    if (string.IsNullOrWhiteSpace(ticketDescription) ||
+                    (!isEnglish && ticketDescription.Contains("katılım", StringComparison.OrdinalIgnoreCase)) ||
+                    (!isEnglish && ticketDescription.Contains("ücret", StringComparison.OrdinalIgnoreCase)) ||
+                    (isEnglish && ticketDescription.Contains("fee", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        ticketDescription = isEnglish
+                        ? "This option creates your pre-application for abstract submission and congress participation."
+                        : "Bildiri gönderimi ve kongre katılım süreci için ön başvuru türüdür.";
+                    }
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="ticket-card">
+                        <div class="ticket-icon">
+                            <i class="fas fa-file-signature"></i>
+                        </div>
+
+                        <h4 class="ticket-name">
+                            @ticketName
+                        </h4>
+
+                        <p class="ticket-description">
+                            @ticketDescription
+                        </p>
+
+                        <div class="payment-later-box">
+                            <div class="payment-later-label">
+                                @(isEnglish ? "Payment Information" : "Ödeme Bilgilendirmesi")
                             </div>
 
-                            <h4 class="ticket-name">
-                                @ticketName
-                            </h4>
-
-                            <p class="ticket-description">
-                                @(string.IsNullOrWhiteSpace(ticketDescription)
-                                                        ? (isEnglish ? "Congress registration type" : "Kongre kayıt türü")
-                                                        : ticketDescription)
-                    </p>
-
-                            <div class="ticket-price">
-                                <strong>@ticket.Price.ToString("N2")</strong>
-                                <span>@ticket.Currency</span>
-                            </div>
+                            <p class="payment-later-note">
+                                <i class="fas fa-info-circle me-1"></i>
+                                @(isEnglish
+                                                            ? "No payment is collected during pre-registration. If your abstract is accepted after reviewer evaluation, the payment step will be opened."
+                                                            : "Ön kayıt aşamasında ödeme alınmaz. Bildiriniz hakem değerlendirmesi sonrası kabul edilirse ödeme adımı açılacaktır.")
+                        </p>
+                    </div>
 
                     @if (ticket.Deadline.HasValue)
                             {
                                 <div class="deadline-box">
                                     <i class="far fa-clock me-2"></i>
-                                    @(isEnglish ? "Deadline" : "Son tarih"):
+                                    @(isEnglish ? "Application deadline" : "Başvuru son tarihi"):
                                     @ticket.Deadline.Value.ToLocalTime().ToString("dd.MM.yyyy")
                                 </div>
                             }
 
-                            <a href="@checkoutUrl" class="btn-register-ticket">
-                                @continueText
-                                <i class="fas fa-arrow-right"></i>
-                            </a>
+                            @if (string.IsNullOrWhiteSpace(slug))
+                            {
+                                <button type="button" class="btn-register-ticket" disabled>
+                                    @(isEnglish ? "Congress information is missing" : "Kongre bilgisi eksik")
+                                </button>
+                            }
+                            else
+                            {
+                                <a href="@checkoutUrl" class="btn-register-ticket">
+                                    @continueText
+                                    <i class="fas fa-arrow-right"></i>
+                                </a>
+                            }
                         </div>
                     </div>
                 }

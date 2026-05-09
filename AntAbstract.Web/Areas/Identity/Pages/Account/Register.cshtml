@@ -2,6 +2,7 @@
 @model RegisterModel
 @using Microsoft.AspNetCore.Localization
 @using Microsoft.AspNetCore.Mvc.Localization
+@using System
 @using System.Globalization
 @using System.Linq
 @inject IViewLocalizer Localizer
@@ -13,11 +14,60 @@
     var requestCulture = HttpContext.Features.Get<IRequestCultureFeature>();
     var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? "tr-TR";
 
+    var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+
     var currentReturnUrl = string.IsNullOrEmpty(HttpContext.Request.Path.Value)
         ? "/register"
         : $"{HttpContext.Request.Path.Value}{HttpContext.Request.QueryString}";
 
+    var incomingReturnUrl = Model.ReturnUrl ?? "";
+
+    var isCongressRegistrationFlow = Model.IsCongressRegistrationFlow;
+    var congressTitle = Model.CongressFlowTitle ?? "";
+    var congressSlug = Model.CongressFlowSlug ?? "";
+
+    var congressDateText = Model.CongressFlowStartDate.HasValue
+        ? Model.CongressFlowStartDate.Value.ToString("dd MMMM yyyy", CultureInfo.CurrentUICulture)
+        : "";
+
+    var isExternalLoginFlow = Model.IsExternalLoginFlow;
+    var externalLoginProviderName = string.IsNullOrWhiteSpace(Model.ExternalLoginProviderName)
+        ? "ORCID"
+        : Model.ExternalLoginProviderName;
+
+    var externalLoginInfoText = isEnglish
+        ? $"You are continuing with {externalLoginProviderName}. Please complete the missing profile information to finish your registration."
+        : $"{externalLoginProviderName} ile devam ediyorsunuz. Kaydınızı tamamlamak için eksik profil bilgilerinizi doldurunuz.";
+
+    var loginUrl = string.IsNullOrWhiteSpace(incomingReturnUrl)
+        ? "/login"
+        : $"/login?returnUrl={Uri.EscapeDataString(incomingReturnUrl)}";
+
+    var closeUrl = isCongressRegistrationFlow && !string.IsNullOrWhiteSpace(congressSlug)
+        ? $"/{congressSlug}/registration"
+        : "/";
+
     var otherValue = "__OTHER__";
+
+    var congressRegisterBadgeText = isEnglish
+        ? "Congress Pre-Registration"
+        : "Kongre Ön Kaydı";
+
+    var congressRegisterInfoText = isEnglish
+        ? "When you complete this form, your system account will be created, your pre-registration for this congress will be opened automatically, and you will be redirected to the abstract submission screen."
+        : "Bu formu tamamladığınızda sistem hesabınız oluşturulacak, ilgili kongre için ön kaydınız otomatik açılacak ve bildiri gönderim ekranına yönlendirileceksiniz.";
+
+    var congressFlowBoxText = isEnglish
+        ? "You are creating a registration for this congress. After completing the form, your congress pre-registration will be created automatically and you will be redirected to the abstract submission screen."
+        : "Bu kongre için kayıt oluşturuyorsunuz. Formu tamamladığınızda kongre ön kaydınız otomatik açılacak ve bildiri gönderim ekranına yönlendirileceksiniz.";
+
+    var externalPasswordHint = isEnglish
+        ? "You are continuing with ORCID. Please also set a password for your system account."
+        : "ORCID ile devam ediyorsunuz. Ayrıca sistem hesabınız için bir şifre belirleyiniz.";
+
+    var profileImageHintText = isEnglish
+        ? "Please upload a profile photo in JPG, JPEG, PNG or WEBP format. Maximum file size is 10 MB."
+        : "JPG, JPEG, PNG veya WEBP formatında profil resmi yükleyiniz. Maksimum dosya boyutu 10 MB olmalıdır.";
 }
 
 <!DOCTYPE html>
@@ -226,6 +276,104 @@
                 box-shadow: 0 4px 12px rgba(0, 174, 239, 0.25);
             }
 
+        .congress-register-header {
+            background: linear-gradient(135deg, rgba(0, 174, 239, 0.10), rgba(15, 23, 42, 0.04));
+            border: 1px solid rgba(0, 174, 239, 0.22);
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 18px;
+        }
+
+        .small-brand-logo {
+            font-size: 0.9rem;
+            font-weight: 900;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+        }
+
+        .congress-flow-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            font-weight: 900;
+            margin-bottom: 12px;
+        }
+
+        .congress-register-title {
+            color: #0f172a;
+            font-weight: 900;
+            font-size: 1.35rem;
+            line-height: 1.35;
+            margin-bottom: 8px;
+        }
+
+        .congress-register-date {
+            color: #64748b;
+            font-size: 0.82rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .congress-register-desc {
+            color: #475569;
+            font-size: 0.84rem;
+            line-height: 1.65;
+            margin-bottom: 0;
+        }
+
+        .flow-info-box {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            color: #075985;
+            border-radius: 16px;
+            padding: 14px 16px;
+            font-size: 0.84rem;
+            font-weight: 700;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+            .flow-info-box i {
+                color: var(--primary-color);
+            }
+
+        .external-login-info-box {
+            background: #ecfdf5;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            border-radius: 16px;
+            padding: 14px 16px;
+            font-size: 0.84rem;
+            font-weight: 700;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+            .external-login-info-box i {
+                color: #16a34a;
+            }
+
+        .external-login-provider-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+            border-radius: 999px;
+            padding: 5px 10px;
+            font-size: 0.75rem;
+            font-weight: 900;
+            margin-left: 6px;
+            white-space: nowrap;
+        }
+
         .legal-consent-box {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
@@ -384,6 +532,11 @@
                 justify-content: flex-end;
                 margin: 1rem 0 1.5rem !important;
             }
+
+            .external-login-provider-badge {
+                margin-left: 0;
+                margin-top: 8px;
+            }
         }
     </style>
 </head>
@@ -395,16 +548,30 @@
             <div class="sidebar-content">
                 <div class="mb-4">
                     <span class="badge bg-white text-primary px-3 py-2 rounded-pill fw-bold mb-3">
-                        <i class="fas fa-users me-2"></i>@Localizer["AcademicNetwork"]
+                        <i class="fas fa-users me-2"></i>
+                        @(isCongressRegistrationFlow? congressRegisterBadgeText : Localizer["AcademicNetwork"])
                     </span>
 
-                    <h1 class="display-5 fw-bold mb-3">
-                        @Localizer["HeroTitleLine1"] <br>@Localizer["HeroTitleLine2"]
-                    </h1>
+                    @if (isCongressRegistrationFlow && !string.IsNullOrWhiteSpace(congressTitle))
+                    {
+                        <h1 class="display-5 fw-bold mb-3">
+                            @congressRegisterBadgeText
+                        </h1>
 
-                    <p class="lead opacity-75 fs-6">
-                        @Localizer["HeroDescription"]
-                    </p>
+                        <p class="lead opacity-75 fs-6">
+                            @congressTitle
+                        </p>
+                    }
+                    else
+                    {
+                        <h1 class="display-5 fw-bold mb-3">
+                            @Localizer["HeroTitleLine1"] <br>@Localizer["HeroTitleLine2"]
+                        </h1>
+
+                        <p class="lead opacity-75 fs-6">
+                            @Localizer["HeroDescription"]
+                        </p>
+                    }
                 </div>
 
                 <div class="d-flex gap-2 opacity-50 small">
@@ -429,23 +596,77 @@
                     </form>
                 </div>
 
-                <a href="/" class="text-muted text-decoration-none small fw-bold">
+                <a href="@closeUrl" class="text-muted text-decoration-none small fw-bold">
                     <i class="fas fa-times me-1"></i> @Localizer["Close"]
                 </a>
             </div>
 
             <div class="register-card animate__animated animate__fadeInRight">
 
-                <a href="/" class="brand-logo">
-                    ANT<span style="color: var(--primary-color);">ABSTRACT</span>
-                </a>
+                @if (isCongressRegistrationFlow && !string.IsNullOrWhiteSpace(congressTitle))
+                {
+                    <div class="congress-register-header">
+                        <div class="small-brand-logo">
+                            ANT<span style="color: var(--primary-color);">ABSTRACT</span>
+                        </div>
 
-                <div class="mb-4">
-                    <h3 class="fw-bold text-dark">@Localizer["JoinUs"]</h3>
-                    <p class="text-muted small">@Localizer["RegisterIntro"]</p>
-                </div>
+                        <div class="congress-flow-badge">
+                            <i class="fas fa-clipboard-check"></i>
+                            @congressRegisterBadgeText
+                        </div>
+
+                        <h3 class="congress-register-title">
+                            @congressTitle
+                        </h3>
+
+                        @if (!string.IsNullOrWhiteSpace(congressDateText))
+                        {
+                            <div class="congress-register-date">
+                                <i class="far fa-calendar-alt me-1"></i>
+                                @congressDateText
+                            </div>
+                        }
+
+                        <p class="congress-register-desc">
+                            @congressRegisterInfoText
+                        </p>
+                    </div>
+                }
+                else
+                {
+                    <a href="/" class="brand-logo">
+                        ANT<span style="color: var(--primary-color);">ABSTRACT</span>
+                    </a>
+
+                    <div class="mb-4">
+                        <h3 class="fw-bold text-dark">@Localizer["JoinUs"]</h3>
+                        <p class="text-muted small">@Localizer["RegisterIntro"]</p>
+                    </div>
+                }
+
+                @if (isCongressRegistrationFlow && !string.IsNullOrWhiteSpace(congressTitle))
+                {
+                    <div class="flow-info-box">
+                        <i class="fas fa-circle-info me-2"></i>
+                        <strong>@congressTitle</strong> için kayıt oluşturuyorsunuz. @congressFlowBoxText
+                    </div>
+                }
+
+                @if (isExternalLoginFlow)
+                {
+                    <div class="external-login-info-box">
+                        <i class="fas fa-id-badge me-2"></i>
+                        @externalLoginInfoText
+
+                        <span class="external-login-provider-badge">
+                            <i class="fas fa-link"></i>
+                            @externalLoginProviderName
+                        </span>
+                    </div>
+                }
 
                 <form asp-route-returnUrl="@Model.ReturnUrl" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
 
                     @{
                         var hasValidationErrors =
@@ -497,7 +718,12 @@
                             <label asp-for="Input.Email" class="form-label">
                                 @Localizer["Email"] <span class="text-danger">*</span>
                             </label>
-                            <input asp-for="Input.Email" class="form-control" placeholder="@Localizer["EmailPlaceholder"]" />
+
+                            <input asp-for="Input.Email"
+                                   class="form-control"
+                                   placeholder="@Localizer["EmailPlaceholder"]"
+                                   readonly="@(isExternalLoginFlow && !string.IsNullOrWhiteSpace(Model.Input.Email) ? "readonly" : null)" />
+
                             <span asp-validation-for="Input.Email" class="text-danger small"></span>
                         </div>
 
@@ -604,7 +830,16 @@
                             <label asp-for="Input.Password" class="form-label">
                                 @Localizer["Password"] <span class="text-danger">*</span>
                             </label>
+
                             <input asp-for="Input.Password" class="form-control" placeholder="••••••••" />
+
+                            @if (isExternalLoginFlow)
+                            {
+                                <small class="text-muted d-block mt-1" style="font-size: 0.72rem;">
+                                    @externalPasswordHint
+                                </small>
+                            }
+
                             <span asp-validation-for="Input.Password" class="text-danger small"></span>
                         </div>
 
@@ -622,10 +857,16 @@
                             <label asp-for="Input.ProfileImage" class="form-label">
                                 @Localizer["ProfileImage"] <span class="text-danger">*</span>
                             </label>
-                            <input asp-for="Input.ProfileImage" type="file" class="form-control form-control-sm" />
+
+                            <input asp-for="Input.ProfileImage"
+                                   type="file"
+                                   class="form-control form-control-sm"
+                                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+
                             <small class="text-muted" style="font-size: 0.7rem;">
-                                @Localizer["ProfileImageHint"]
+                                @profileImageHintText
                             </small>
+
                             <span asp-validation-for="Input.ProfileImage" class="text-danger small d-block mt-1"></span>
                         </div>
                     </div>
@@ -724,7 +965,7 @@
                     <div class="text-center">
                         <p class="text-muted small mb-0">
                             @Localizer["AlreadyHaveAccount"]
-                            <a href="/login" class="text-primary fw-bold text-decoration-none">
+                            <a href="@loginUrl" class="text-primary fw-bold text-decoration-none">
                                 @Localizer["LoginNow"]
                             </a>
                         </p>

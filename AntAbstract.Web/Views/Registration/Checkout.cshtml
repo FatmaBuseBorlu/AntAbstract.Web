@@ -3,14 +3,17 @@
 @using System.Globalization
 
 @{
-    ViewData["Title"] = "Kongre Kaydı Onayı";
+    ViewData["Title"] = "Kongre Ön Kayıt Onayı";
 
     var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 
     var ticket = ViewBag.Ticket as RegistrationType;
     var user = ViewBag.User as AppUser;
     var slug = ViewBag.Slug as string ?? "";
-    var conferenceTitle = ViewBag.ConferenceTitle as string ?? ticket?.Conference?.Title ?? (isEnglish ? "Congress" : "Kongre");
+
+    var conferenceTitle = ViewBag.ConferenceTitle as string
+        ?? ticket?.Conference?.Title
+        ?? (isEnglish ? "Congress" : "Kongre");
 
     DateTime? conferenceStartDate = null;
 
@@ -19,25 +22,86 @@
         conferenceStartDate = startDate;
     }
 
+    var registrationBackUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/"
+        : $"/{slug}/registration";
+
+    var checkoutPostUrl = string.IsNullOrWhiteSpace(slug)
+        ? "#"
+        : $"/{slug}/registration/checkout/{Model.RegistrationTypeId}";
+
+    var ticketName = isEnglish && !string.IsNullOrWhiteSpace(ticket?.NameEn)
+        ? ticket.NameEn
+        : ticket?.Name;
+
+    if (string.IsNullOrWhiteSpace(ticketName))
+    {
+        ticketName = isEnglish ? "Application Type" : "Başvuru Türü";
+    }
+
+    var ticketCurrency = string.IsNullOrWhiteSpace(ticket?.Currency)
+        ? "TRY"
+        : ticket.Currency;
+
+    var amountText = ticket != null
+        ? ticket.Price.ToString("N2")
+        : Model.Amount.ToString("N2");
+
     var titleText = isEnglish
-        ? "Complete Your Congress Registration"
-        : "Kongre Kaydınızı Tamamlayın";
+        ? "Confirm Your Congress Pre-Registration"
+        : "Kongre Ön Kaydınızı Onaylayın";
 
     var welcomeText = isEnglish
-        ? "Welcome to the registration screen of"
-        : "Kayıt ekranına hoş geldiniz";
+        ? "You are creating a pre-registration for"
+        : "Aşağıdaki kongre için ön kayıt oluşturuyorsunuz";
 
     var descriptionText = isEnglish
-        ? "Please review your selected registration type and complete the billing information below."
-        : "Seçtiğiniz kayıt türünü kontrol edip aşağıdaki fatura bilgilerini tamamlayınız.";
+        ? "At this step, no payment will be collected. After your pre-registration, you will be redirected to the abstract submission screen. Payment will be requested only after your abstract is accepted."
+        : "Bu aşamada ödeme alınmayacaktır. Ön kayıt sonrası bildiri gönderim ekranına yönlendirileceksiniz. Ödeme yalnızca bildiriniz kabul edildikten sonra istenecektir.";
 
     var submitText = isEnglish
-        ? "Create My Congress Registration"
-        : "Kongre Kaydımı Oluştur";
+        ? "Create Pre-Registration and Continue to Abstract Submission"
+        : "Ön Kaydı Oluştur ve Bildiri Gönderimine Geç";
 
     var backText = isEnglish
-        ? "Back to Registration Types"
-        : "Kayıt Türlerine Dön";
+        ? "Back to Application Types"
+        : "Başvuru Türlerine Dön";
+
+    var selectedTypeText = isEnglish
+        ? "Selected Application Type"
+        : "Seçilen Başvuru Türü";
+
+    var feeLabelText = isEnglish
+        ? "Post-acceptance participation fee"
+        : "Kabul Sonrası Katılım Ücreti";
+
+    var paymentLaterText = isEnglish
+        ? "Payment will be requested only after your abstract is accepted."
+        : "Ödeme yalnızca bildiriniz kabul edildikten sonra istenecektir.";
+
+    var noImmediatePaymentText = isEnglish
+        ? "No payment or invoice information is required at this step."
+        : "Bu aşamada ödeme veya fatura bilgisi istenmez.";
+
+    var processTitleText = isEnglish
+        ? "What happens next?"
+        : "Sonraki Süreç Nasıl İlerleyecek?";
+
+    var step1Text = isEnglish
+        ? "Your pre-registration will be created."
+        : "Ön kaydınız oluşturulacak.";
+
+    var step2Text = isEnglish
+        ? "You will submit your abstract."
+        : "Bildirinizi sisteme yükleyeceksiniz.";
+
+    var step3Text = isEnglish
+        ? "Reviewers will evaluate your abstract."
+        : "Hakemler bildiriyi değerlendirecek.";
+
+    var step4Text = isEnglish
+        ? "If accepted, payment and participation steps will open."
+        : "Kabul edilirse ödeme ve katılım adımları açılacak.";
 }
 
 <style>
@@ -83,10 +147,10 @@
     }
 
     .checkout-description {
-        color: rgba(255, 255, 255, 0.78);
+        color: rgba(255, 255, 255, 0.82);
         font-size: 1.02rem;
         line-height: 1.8;
-        max-width: 760px;
+        max-width: 860px;
         margin-bottom: 0;
     }
 
@@ -127,27 +191,72 @@
         color: #38bdf8;
     }
 
-    .form-label {
-        font-size: 0.82rem;
-        font-weight: 800;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
+    .summary-note {
+        background: rgba(56, 189, 248, 0.12);
+        border: 1px solid rgba(56, 189, 248, 0.22);
+        border-radius: 16px;
+        padding: 14px;
+        color: #e0f2fe;
+        font-weight: 700;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        margin-top: 18px;
     }
 
-    .form-control {
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 12px 14px;
+    .process-box {
         background: #f8fafc;
-        font-weight: 600;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 24px;
     }
 
-        .form-control:focus {
-            background: #fff;
-            border-color: #00aeef;
-            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
+    .process-title {
+        color: #0f172a;
+        font-weight: 900;
+        margin-bottom: 18px;
+    }
+
+    .process-item {
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+        margin-bottom: 18px;
+    }
+
+        .process-item:last-child {
+            margin-bottom: 0;
         }
+
+    .process-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        background: rgba(0, 174, 239, 0.12);
+        color: #00aeef;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-weight: 900;
+    }
+
+    .process-text {
+        color: #334155;
+        font-weight: 700;
+        line-height: 1.6;
+        padding-top: 6px;
+    }
+
+    .info-box {
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
+        color: #075985;
+        border-radius: 18px;
+        padding: 18px;
+        font-weight: 700;
+        line-height: 1.7;
+        margin-bottom: 24px;
+    }
 
     .btn-create-registration {
         background: #00aeef;
@@ -177,10 +286,34 @@
 <section class="checkout-page">
     <div class="container">
 
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success rounded-4 fw-bold mb-4">
+                <i class="fas fa-check-circle me-2"></i>
+                @TempData["SuccessMessage"]
+            </div>
+        }
+
+        @if (TempData["InfoMessage"] != null)
+        {
+            <div class="alert alert-info rounded-4 fw-bold mb-4">
+                <i class="fas fa-info-circle me-2"></i>
+                @TempData["InfoMessage"]
+            </div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger rounded-4 fw-bold mb-4">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                @TempData["ErrorMessage"]
+            </div>
+        }
+
         <div class="checkout-hero">
             <div class="checkout-badge">
-                <i class="fas fa-check-circle"></i>
-                @(isEnglish ? "Registration Confirmation" : "Kayıt Onayı")
+                <i class="fas fa-clipboard-check"></i>
+                @(isEnglish ? "Pre-Registration Confirmation" : "Ön Kayıt Onayı")
             </div>
 
             <h1 class="checkout-title">
@@ -212,32 +345,42 @@
             <div class="col-lg-4">
                 <div class="summary-card">
                     <div class="summary-label">
-                        @(isEnglish ? "Selected Type" : "Seçilen Kayıt Türü")
+                        @(isEnglish ? "Congress" : "Kongre")
                     </div>
 
                     <div class="summary-value">
-                        @{
-                            var ticketName = isEnglish && !string.IsNullOrWhiteSpace(ticket?.NameEn)
-                            ? ticket.NameEn
-                            : ticket?.Name;
-                        }
+                        @conferenceTitle
+                    </div>
+
+                    <div class="summary-label">
+                        @selectedTypeText
+                    </div>
+
+                    <div class="summary-value">
                         @ticketName
                     </div>
 
                     <div class="summary-label">
-                        @(isEnglish ? "Amount" : "Tutar")
+                        @feeLabelText
                     </div>
 
                     <div class="summary-price">
-                        @(ticket?.Price.ToString("N2") ?? Model.Amount.ToString("N2"))
-                        <span style="font-size: 1rem;">@(ticket?.Currency ?? "TRY")</span>
+                        @amountText
+                        <span style="font-size: 1rem;">@ticketCurrency</span>
+                    </div>
+
+                    <div class="summary-note">
+                        <i class="fas fa-info-circle me-1"></i>
+                        @paymentLaterText
+                        <br />
+                        @noImmediatePaymentText
                     </div>
 
                     @if (ticket?.Deadline != null)
                     {
                         <div class="mt-4">
                             <div class="summary-label">
-                                @(isEnglish ? "Deadline" : "Son Tarih")
+                                @(isEnglish ? "Application Deadline" : "Başvuru Son Tarihi")
                             </div>
 
                             <div class="summary-value mb-0">
@@ -250,62 +393,65 @@
 
             <div class="col-lg-8">
                 <div class="checkout-card">
-                    <form method="post" action="/@slug/registration/checkout/@Model.RegistrationTypeId">
+
+                    <div class="info-box">
+                        <i class="fas fa-circle-info me-2"></i>
+                        @(isEnglish
+                                                ? "This screen only creates your congress pre-registration. You will not be charged now. After your abstract is accepted, the payment step will become available."
+                                                : "Bu ekran yalnızca kongre ön kaydınızı oluşturur. Şu anda ödeme alınmaz. Bildiriniz kabul edildikten sonra ödeme adımı aktif olacaktır.")
+                    </div>
+
+                    <div class="process-box mb-4">
+                        <h4 class="process-title">
+                            @processTitleText
+                        </h4>
+
+                        <div class="process-item">
+                            <div class="process-icon">
+                                1
+                            </div>
+
+                            <div class="process-text">
+                                @step1Text
+                            </div>
+                        </div>
+
+                        <div class="process-item">
+                            <div class="process-icon">
+                                2
+                            </div>
+
+                            <div class="process-text">
+                                @step2Text
+                            </div>
+                        </div>
+
+                        <div class="process-item">
+                            <div class="process-icon">
+                                3
+                            </div>
+
+                            <div class="process-text">
+                                @step3Text
+                            </div>
+                        </div>
+
+                        <div class="process-item">
+                            <div class="process-icon">
+                                4
+                            </div>
+
+                            <div class="process-text">
+                                @step4Text
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="post" action="@checkoutPostUrl">
                         @Html.AntiForgeryToken()
 
-                        <div class="mb-4">
-                            <h4 class="fw-bold text-dark mb-1">
-                                @(isEnglish ? "Billing Information" : "Fatura Bilgileri")
-                            </h4>
-
-                            <p class="text-muted mb-0">
-                                @(isEnglish
-                                                                ? "If you do not need an invoice, you may leave optional fields blank."
-                                                                : "Fatura gerekmiyorsa isteğe bağlı alanları boş bırakabilirsiniz.")
-                            </p>
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">
-                                    @(isEnglish ? "Billing Name / Institution" : "Fatura Adı / Kurum Adı")
-                                </label>
-                                <input name="BillingName"
-                                       class="form-control"
-                                       value="@(user != null ? $"{user.FirstName} {user.LastName}" : "")" />
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label">
-                                    @(isEnglish ? "Tax Office" : "Vergi Dairesi")
-                                </label>
-                                <input name="TaxOffice" class="form-control" />
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label">
-                                    @(isEnglish ? "Tax Number / ID Number" : "Vergi Numarası / T.C. Kimlik No")
-                                </label>
-                                <input name="TaxNumber" class="form-control" value="@user?.IdentityNumber" />
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label">
-                                    @(isEnglish ? "Email" : "E-Posta")
-                                </label>
-                                <input class="form-control" value="@user?.Email" disabled />
-                            </div>
-
-                            <div class="col-12">
-                                <label class="form-label">
-                                    @(isEnglish ? "Billing Address" : "Fatura Adresi")
-                                </label>
-                                <textarea name="BillingAddress" class="form-control" rows="4"></textarea>
-                            </div>
-                        </div>
-
                         <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mt-4">
-                            <a href="/@slug/registration" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
+                            <a href="@registrationBackUrl" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
                                 <i class="fas fa-arrow-left me-2"></i>
                                 @backText
                             </a>
@@ -316,6 +462,7 @@
                             </button>
                         </div>
                     </form>
+
                 </div>
             </div>
         </div>
