@@ -12,10 +12,10 @@
     Layout = "_Layout";
 
     Func<string, string, string> L = (key, fallback) =>
-{
-    var text = Localizer[key].Value;
-    return string.Equals(text, key, StringComparison.OrdinalIgnoreCase) ? fallback : text;
-};
+    {
+        var text = Localizer[key].Value;
+        return string.Equals(text, key, StringComparison.OrdinalIgnoreCase) ? fallback : text;
+    };
 
     var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
 
@@ -57,8 +57,39 @@
         ?? "";
 
     var registrationUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/registration"
+        ? "#"
         : $"/{slug}/registration";
+
+    var submitAbstractUrl = string.IsNullOrWhiteSpace(slug)
+        ? "#"
+        : $"/{slug}/submit-abstract";
+
+    var isRegisteredToThisConference = Model.Conference != null
+        && registeredIds.Contains(Model.Conference.Id);
+
+    var mainActionUrl = isRegisteredToThisConference
+        ? submitAbstractUrl
+        : registrationUrl;
+
+    var mainActionText = isRegisteredToThisConference
+        ? L("SubmitAbstractButton", "Bildiri Gönder")
+        : L("RegisterAndSubmitButton", "Kayıt Ol / Bildiri Gönder");
+
+    var mainActionIcon = isRegisteredToThisConference
+        ? "fa-paper-plane"
+        : "fa-user-plus";
+
+    var circleButtonIcon = isRegisteredToThisConference
+        ? "fa-paper-plane"
+        : "fa-cloud-upload-alt";
+
+    var circleLine1 = isRegisteredToThisConference
+        ? L("SubmitAbstractText_Line1", "BİLDİRİ")
+        : L("RegisterAndSubmitText_Line1", "KAYIT OL");
+
+    var circleLine2 = isRegisteredToThisConference
+        ? L("SubmitAbstractText_Line2", "GÖNDER")
+        : L("RegisterAndSubmitText_Line2", "BİLDİRİ GÖNDER");
 
     var finalHeroBg = !string.IsNullOrWhiteSpace(Model.Conference?.BannerPath)
         ? Model.Conference.BannerPath
@@ -291,9 +322,9 @@
                 </a>
             </div>
 
-            <a href="@registrationUrl" class="btn btn-dark btn-sm rounded-pill px-4 fw-bold shadow-sm">
-                <i class="fas fa-user-plus me-2 text-info"></i>
-                @L("RegisterAndSubmitButton", "Kayıt Ol / Bildiri Gönder")
+            <a href="@mainActionUrl" class="btn btn-dark btn-sm rounded-pill px-4 fw-bold shadow-sm">
+                <i class="fas @mainActionIcon me-2 text-info"></i>
+                @mainActionText
             </a>
         </div>
     </div>
@@ -426,16 +457,16 @@
             <div class="sticky-sidebar">
 
                 <div class="d-flex justify-content-center mb-5 mx-auto" style="max-width: 240px;">
-                    <a href="@registrationUrl" class="modern-red-pulse-btn">
-                        <i class="fas fa-cloud-upload-alt fa-3x mb-2 opacity-75"></i>
+                    <a href="@mainActionUrl" class="modern-red-pulse-btn">
+                        <i class="fas @circleButtonIcon fa-3x mb-2 opacity-75"></i>
 
                         <span class="fs-6 fw-bold mb-1 opacity-75">
                             @L("OnlineLabel", "ÇEVRİMİÇİ")
                         </span>
 
                         <span class="fs-4 fw-bolder lh-1 text-center">
-                            @L("RegisterAndSubmitText_Line1", "KAYIT OL")<br />
-                            @L("RegisterAndSubmitText_Line2", "BİLDİRİ GÖNDER")
+                            @circleLine1<br />
+                            @circleLine2
                         </span>
                     </a>
                 </div>
@@ -495,9 +526,9 @@
             @Localizer["BottomCtaText"]
         </p>
 
-        @if (registeredIds.Contains(Model.Conference.Id))
+        @if (isRegisteredToThisConference)
         {
-            <a href="@registrationUrl"
+            <a href="@submitAbstractUrl"
                class="btn btn-light btn-lg rounded-pill px-5 py-3 fw-bold text-primary shadow-lg">
                 <i class="fas fa-paper-plane me-2"></i>
                 @L("SubmitAbstractButton", "Bildiri Gönder")

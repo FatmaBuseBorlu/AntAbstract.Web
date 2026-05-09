@@ -1,4 +1,5 @@
-﻿using AntAbstract.Domain.Entities;
+﻿using System;
+using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -9,22 +10,27 @@ using Microsoft.Extensions.Localization;
 
 namespace AntAbstract.Web.Controllers
 {
-    [Authorize]
     public class RegistrationController : Controller
     {
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly SignInManager<AppUser> _signInManager;
         private readonly TenantContext _tenantContext;
         private readonly IStringLocalizer<RegistrationController> _localizer;
 
         public RegistrationController(
             AppDbContext context,
             UserManager<AppUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            SignInManager<AppUser> signInManager,
             TenantContext tenantContext,
             IStringLocalizer<RegistrationController> localizer)
         {
             _context = context;
             _userManager = userManager;
+            _roleManager = roleManager;
+            _signInManager = signInManager;
             _tenantContext = tenantContext;
             _localizer = localizer;
         }
@@ -56,6 +62,31 @@ namespace AntAbstract.Web.Controllers
             return $"/{slug}{path}";
         }
 
+        private async Task EnsureAuthorRoleAsync(AppUser user)
+        {
+            const string authorRoleName = "Author";
+
+            var roleExists = await _roleManager.RoleExistsAsync(authorRoleName);
+
+            if (!roleExists)
+            {
+                await _roleManager.CreateAsync(new IdentityRole(authorRoleName));
+            }
+
+            var userIsAuthor = await _userManager.IsInRoleAsync(user, authorRoleName);
+
+            if (!userIsAuthor)
+            {
+                await _userManager.AddToRoleAsync(user, authorRoleName);
+
+                /*
+                 * Kullanıcıya rol verdikten sonra giriş bilgisini yeniliyoruz.
+                 * Böylece kullanıcı hemen /submit-abstract sayfasına erişebilir.
+                 */
+                await _signInManager.RefreshSignInAsync(user);
+            }
+        }
+
         private void SetSelectedConferenceSession(Conference conference, string slug)
         {
             HttpContext.Session.SetString("SelectedConferenceId", conference.Id.ToString());
@@ -82,17 +113,11 @@ namespace AntAbstract.Web.Controllers
                     (c.Tenant != null && c.Tenant.Slug == slug));
         }
 
+        [AllowAnonymous]
         [HttpGet("/{slug}/register")]
         [HttpGet("/{slug}/registration")]
         public async Task<IActionResult> Index()
         {
-            var user = await _userManager.GetUserAsync(User);
-
-            if (user == null)
-            {
-                return Challenge();
-            }
-
             var slug = GetSlug();
 
             var conference = await GetConferenceBySlugAsync(slug);
@@ -110,28 +135,38 @@ namespace AntAbstract.Web.Controllers
 
             SetSelectedConferenceSession(conference, canonicalSlug);
 
-            var existingRegistration = await _context.Registrations
-                .AsNoTracking()
-                .FirstOrDefaultAsync(r =>
-                    r.ConferenceId == conference.Id &&
-                    r.AppUserId == user.Id);
-
-            if (existingRegistration != null)
+            if (User.Identity != null && User.Identity.IsAuthenticated)
             {
-                if (existingRegistration.IsPaid)
-                {
-                    TempData["SuccessMessage"] = T(
-                        "AlreadyRegisteredAndPaid",
-                        "Bu kongreye kaydınız ve ödemeniz zaten tamamlanmış.");
-                }
-                else
-                {
-                    TempData["InfoMessage"] = T(
-                        "AlreadyRegisteredCanSubmitAbstract",
-                        "Bu kongreye kaydınız zaten var. Şimdi bildirinizin özetini gönderebilirsiniz.");
-                }
+                var user = await _userManager.GetUserAsync(User);
 
-                return Redirect(BuildUrl(canonicalSlug, "/submit-abstract"));
+                if (user != null)
+                {
+                    var existingRegistration = await _context.Registrations
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(r =>
+                            r.ConferenceId == conference.Id &&
+                            r.AppUserId == user.Id);
+
+                    if (existingRegistration != null)
+                    {
+                        await EnsureAuthorRoleAsync(user);
+
+                        if (existingRegistration.IsPaid)
+                        {
+                            TempData["SuccessMessage"] = T(
+                                "AlreadyRegisteredAndPaid",
+                                "Bu kongreye kaydınız ve ödemeniz zaten tamamlanmış.");
+                        }
+                        else
+                        {
+                            TempData["InfoMessage"] = T(
+                                "AlreadyRegisteredCanSubmitAbstract",
+                                "Bu kongreye kaydınız zaten var. Şimdi bildirinizin özetini gönderebilirsiniz.");
+                        }
+
+                        return Redirect(BuildUrl(canonicalSlug, "/submit-abstract"));
+                    }
+                }
             }
 
             var registrationTypes = await _context.RegistrationTypes
@@ -151,6 +186,7 @@ namespace AntAbstract.Web.Controllers
             return View(registrationTypes);
         }
 
+        [AllowAnonymous]
         [HttpGet("/{slug}/register/join")]
         [HttpGet("/{slug}/registration/join")]
         public async Task<IActionResult> Join()
@@ -158,18 +194,31 @@ namespace AntAbstract.Web.Controllers
             return await Index();
         }
 
+        /*
+         * ÖNEMLİ:
+         * Bu GET action artık AllowAnonymous.
+         *
+         * Sebep:
+         * Kullanıcı giriş yapmadan "Ön Kayda Devam Et" dediğinde
+         * doğrudan login ekranına değil, register ekranına returnUrl ile gitsin.
+         *
+         * Böylece kullanıcı sisteme kayıt olurken aynı anda kongre ön kaydı da oluşturulabilir.
+         */
+        [AllowAnonymous]
         [HttpGet("/{slug}/register/checkout/{typeId:guid}")]
         [HttpGet("/{slug}/registration/checkout/{typeId:guid}")]
         public async Task<IActionResult> Checkout(Guid typeId)
         {
+            var slug = GetSlug();
+
+            var returnUrl = BuildUrl(slug, $"/registration/checkout/{typeId}");
+
             var user = await _userManager.GetUserAsync(User);
 
             if (user == null)
             {
-                return Challenge();
+                return Redirect($"/register?returnUrl={Uri.EscapeDataString(returnUrl)}");
             }
-
-            var slug = GetSlug();
 
             var ticketType = await _context.RegistrationTypes
                 .Include(rt => rt.Conference)
@@ -211,6 +260,8 @@ namespace AntAbstract.Web.Controllers
 
             if (existingRegistration != null)
             {
+                await EnsureAuthorRoleAsync(user);
+
                 TempData["InfoMessage"] = T(
                     "AlreadyRegisteredCanSubmitAbstract",
                     "Bu kongreye kaydınız zaten var. Şimdi bildirinizin özetini gönderebilirsiniz.");
@@ -235,6 +286,13 @@ namespace AntAbstract.Web.Controllers
             });
         }
 
+        /*
+         * POST tarafı Authorize kalmalı.
+         *
+         * Çünkü gerçek ön kayıt veritabanına yazılırken
+         * kullanıcının sisteme giriş yapmış olması gerekir.
+         */
+        [Authorize]
         [HttpPost("/{slug}/register/checkout/{typeId:guid}")]
         [HttpPost("/{slug}/registration/checkout/{typeId:guid}")]
         [ValidateAntiForgeryToken]
@@ -293,6 +351,8 @@ namespace AntAbstract.Web.Controllers
 
             if (existingRegistration != null)
             {
+                await EnsureAuthorRoleAsync(user);
+
                 TempData["InfoMessage"] = T(
                     "AlreadyRegisteredCanSubmitAbstract",
                     "Bu kongreye kaydınız zaten var. Şimdi bildirinizin özetini gönderebilirsiniz.");
@@ -318,6 +378,8 @@ namespace AntAbstract.Web.Controllers
 
             _context.Registrations.Add(newRegistration);
             await _context.SaveChangesAsync();
+
+            await EnsureAuthorRoleAsync(user);
 
             TempData["SuccessMessage"] = T(
                 "RegistrationSuccessSubmitAbstract",

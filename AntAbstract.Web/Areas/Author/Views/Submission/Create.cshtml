@@ -12,10 +12,6 @@
         ?? Context.Session.GetString("SelectedConferenceSlug")
         ?? "";
 
-    var backUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Submission/Index"
-        : $"/{slug}/Submission/Index";
-
     var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 
     string L(string key, string tr, string en)
@@ -28,6 +24,34 @@
         }
 
         return value;
+    }
+
+    var submitUrl = string.IsNullOrWhiteSpace(slug)
+        ? Url.Action("Create", "Submission", new { area = "Author" }) ?? "/Submission/Create"
+        : $"/{slug}/submit-abstract";
+
+    var backUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Submission/Index"
+        : $"/{slug}/my-submissions";
+
+    var registrationUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/registration"
+        : $"/{slug}/registration";
+
+    var selectedConferenceName = "";
+
+    if (Model.ConferenceId != Guid.Empty &&
+        Model.AvailableConferences != null &&
+        Model.AvailableConferences.Any(c => c.Value == Model.ConferenceId.ToString()))
+    {
+        selectedConferenceName = Model.AvailableConferences
+            .First(c => c.Value == Model.ConferenceId.ToString())
+            .Text;
+    }
+
+    if (string.IsNullOrWhiteSpace(selectedConferenceName))
+    {
+        selectedConferenceName = L("SelectedConferenceFallback", "Seçili Kongre", "Selected Congress");
     }
 
     var hasValidationErrors =
@@ -146,29 +170,99 @@
             border-color: #cbd5e0;
             box-shadow: 0 4px 12px rgba(0,0,0,0.03);
         }
+
+    .selected-conference-box {
+        background: linear-gradient(135deg, rgba(0, 174, 239, 0.12), rgba(15, 23, 42, 0.04));
+        border: 1px solid rgba(0, 174, 239, 0.22);
+        border-radius: 20px;
+        padding: 22px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+    }
+
+    .selected-conference-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        background: #00aeef;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 8px 22px rgba(0, 174, 239, 0.28);
+    }
 </style>
 
 <div class="container py-5">
 
-    <div class="row justify-content-center mb-5">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success rounded-4 fw-bold mb-4">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["InfoMessage"] != null)
+    {
+        <div class="alert alert-info rounded-4 fw-bold mb-4">
+            <i class="fas fa-info-circle me-2"></i>
+            @TempData["InfoMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger rounded-4 fw-bold mb-4">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="row justify-content-center mb-4">
         <div class="col-lg-9 text-center">
             <h2 class="fw-bold text-dark mb-2">
                 @L("PageHeading", "Bilimsel Çalışmanızı Gönderin", "Submit Your Scientific Work")
             </h2>
 
-            <p class="text-muted">
+            <p class="text-muted mb-0">
                 @L("PageLead", "Aşağıdaki adımları takip ederek bildirinizin detaylarını giriniz.", "Enter your abstract details by following the steps below.")
             </p>
+        </div>
+    </div>
+
+    <div class="row justify-content-center mb-5">
+        <div class="col-lg-9">
+            <div class="selected-conference-box d-flex align-items-center gap-3">
+                <div class="selected-conference-icon">
+                    <i class="fas fa-university fs-4"></i>
+                </div>
+
+                <div>
+                    <div class="text-muted small fw-bold text-uppercase mb-1">
+                        @L("SelectedConferenceLabel", "Bildiri Gönderilecek Kongre", "Congress for Submission")
+                    </div>
+
+                    <div class="fs-5 fw-bold text-dark">
+                        @selectedConferenceName
+                    </div>
+
+                    <div class="text-muted small mt-1">
+                        @L(
+                        "SelectedConferenceInfo",
+                                                "Bildiriniz bu kongre için gönderilecektir.",
+                                                "Your abstract will be submitted for this congress."
+                                                )
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="row justify-content-center">
         <div class="col-lg-9">
 
-            <form asp-area="Author"
-                  asp-controller="Submission"
-                  asp-action="Create"
-                  asp-route-slug="@slug"
+            <form action="@submitUrl"
                   enctype="multipart/form-data"
                   method="post">
 
@@ -194,13 +288,13 @@
                                 @L("ConferenceLabel", "Başvuru Yapılacak Kongre", "Conference")
                             </label>
 
-                            @if (Model.ConferenceId != Guid.Empty && Model.AvailableConferences.Any(c => c.Value == Model.ConferenceId.ToString()))
+                            @if (Model.ConferenceId != Guid.Empty &&
+                                                        Model.AvailableConferences != null &&
+                                                        Model.AvailableConferences.Any(c => c.Value == Model.ConferenceId.ToString()))
                             {
-                                var selectedConfName = Model.AvailableConferences.First(c => c.Value == Model.ConferenceId.ToString()).Text;
-
                                 <div class="p-3 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded-3 text-dark fw-bold d-flex align-items-center">
                                     <i class="fas fa-university text-primary fs-5 me-3"></i>
-                                    <span class="fs-6">@selectedConfName</span>
+                                    <span class="fs-6">@selectedConferenceName</span>
                                 </div>
 
                                 <input type="hidden" asp-for="ConferenceId" />
@@ -241,6 +335,10 @@
                                 </label>
 
                                 <select asp-for="PresentationType" class="form-select form-select-lg">
+                                    <option value="">
+                                        @L("SelectPresentationTypeOption", "Sunum türü seçiniz", "Select presentation type")
+                                    </option>
+
                                     <option value="Oral">
                                         @L("PresentationTypeOral", "Sözlü Sunum", "Oral Presentation")
                                     </option>
@@ -272,6 +370,10 @@
                                 <select asp-for="ConferenceTopicId"
                                         asp-items="Model.AvailableTopics"
                                         class="form-select form-select-lg">
+
+                                    <option value="">
+                                        @L("SelectTopicOption", "Bildiri konusu seçiniz", "Select abstract topic")
+                                    </option>
                                 </select>
 
                                 <span asp-validation-for="ConferenceTopicId" class="text-danger small mt-1 d-block"></span>
@@ -323,8 +425,9 @@
                     <div class="p-4 p-md-5">
                         <div class="alert alert-primary bg-opacity-10 border-0 rounded-3 text-primary d-flex align-items-center mb-4">
                             <i class="fas fa-info-circle fa-lg me-3"></i>
+
                             <div>
-                                <small class="fw-bold">
+                                <small class="fw-bold d-block">
                                     @L("AutoAssignTitle", "Sorumlu yazar otomatik atanır.", "The corresponding author is assigned automatically.")
                                 </small>
 

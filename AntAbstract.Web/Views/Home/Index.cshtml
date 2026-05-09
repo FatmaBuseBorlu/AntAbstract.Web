@@ -9,6 +9,15 @@
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_Layout";
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
 }
 
 <style>
@@ -161,6 +170,260 @@
         font-weight: 800;
         letter-spacing: -1px;
     }
+
+    .modern-congress-section {
+        background: radial-gradient(circle at top left, rgba(0, 174, 239, 0.08), transparent 34%), linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .modern-section-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #e0f2fe;
+        color: #0369a1;
+        border: 1px solid #bae6fd;
+        border-radius: 999px;
+        padding: 8px 16px;
+        font-size: 0.78rem;
+        font-weight: 900;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        margin-bottom: 14px;
+    }
+
+    .modern-section-title {
+        color: #0f172a;
+        font-weight: 900;
+        letter-spacing: -1px;
+        margin-bottom: 12px;
+    }
+
+    .modern-section-description {
+        color: #64748b;
+        max-width: 680px;
+        margin: 0 auto;
+        line-height: 1.75;
+    }
+
+    .modern-section-line {
+        width: 72px;
+        height: 5px;
+        background: linear-gradient(90deg, #00aeef, #38bdf8);
+        border-radius: 999px;
+        margin: 22px auto 0;
+    }
+
+    .modern-congress-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        overflow: hidden;
+        height: 100%;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+        transition: all 0.25s ease;
+        position: relative;
+    }
+
+        .modern-congress-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 28px 75px rgba(15, 23, 42, 0.12);
+            border-color: rgba(0, 174, 239, 0.35);
+        }
+
+    .modern-congress-image {
+        height: 205px;
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(135deg, #e0f2fe, #f8fafc);
+    }
+
+        .modern-congress-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.45s ease;
+        }
+
+    .modern-congress-card:hover .modern-congress-image img {
+        transform: scale(1.06);
+    }
+
+    .modern-congress-placeholder {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        text-align: center;
+        font-weight: 800;
+    }
+
+        .modern-congress-placeholder i {
+            display: block;
+            font-size: 2.4rem;
+            margin-bottom: 10px;
+            color: #00aeef;
+        }
+
+    .modern-date-badge {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        width: 64px;
+        min-height: 64px;
+        background: rgba(255, 255, 255, 0.94);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        border-radius: 18px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+        z-index: 2;
+    }
+
+    .modern-date-day {
+        color: #0284c7;
+        font-size: 1.45rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .modern-date-month {
+        color: #64748b;
+        font-size: 0.68rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        margin-top: 4px;
+    }
+
+    .modern-congress-body {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        min-height: 285px;
+    }
+
+    .modern-location-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        align-self: flex-start;
+        background: #f8fafc;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+        border-radius: 999px;
+        padding: 7px 12px;
+        font-size: 0.78rem;
+        font-weight: 800;
+        margin-bottom: 14px;
+    }
+
+        .modern-location-badge i {
+            color: #ef4444;
+        }
+
+    .modern-congress-title {
+        color: #0f172a;
+        font-size: 1.12rem;
+        font-weight: 900;
+        line-height: 1.4;
+        margin-bottom: 12px;
+        text-decoration: none;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+        .modern-congress-title:hover {
+            color: #00aeef;
+        }
+
+    .modern-congress-description {
+        color: #64748b;
+        font-size: 0.92rem;
+        line-height: 1.7;
+        margin-bottom: 22px;
+        flex-grow: 1;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .modern-congress-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: auto;
+    }
+
+    .modern-year-pill {
+        background: #f1f5f9;
+        color: #475569;
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 0.8rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .modern-detail-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: #00aeef;
+        color: #fff;
+        border-radius: 999px;
+        padding: 11px 18px;
+        font-weight: 900;
+        text-decoration: none;
+        box-shadow: 0 10px 24px rgba(0, 174, 239, 0.24);
+        transition: all 0.22s ease;
+        white-space: nowrap;
+    }
+
+        .modern-detail-btn:hover {
+            background: #0095cd;
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+    .modern-empty-state {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        padding: 42px;
+        text-align: center;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+    }
+
+        .modern-empty-state i {
+            font-size: 2.5rem;
+            color: #00aeef;
+            margin-bottom: 16px;
+        }
+
+    @@media (max-width: 576px) {
+        .modern-congress-body {
+            min-height: auto;
+        }
+
+        .modern-congress-footer {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .modern-detail-btn {
+            width: 100%;
+        }
+    }
 </style>
 
 <div class="page-content-wrapper">
@@ -226,80 +489,125 @@
         </div>
     </section>
 
-    <section id="congress-list" class="py-5 bg-white">
+    <section id="congress-list" class="modern-congress-section py-5">
         <div class="container py-5">
+
             <div class="text-center mb-5">
-                <h6 class="text-uppercase text-primary letter-spacing-2 fw-bold">@Localizer["UpcomingEventsLabel"]</h6>
-                <h2 class="fw-bold mb-3 display-6" style="color: #333;">@Localizer["CongressCalendarTitle"]</h2>
-                <p class="text-muted mw-600 mx-auto">@Localizer["CongressCalendarDescription"]</p>
-                <div style="width: 60px; height: 4px; background: var(--primary-color); margin: 20px auto 0; border-radius: 2px;"></div>
+                <div class="modern-section-kicker">
+                    <i class="fas fa-calendar-check"></i>
+                    @L("UpcomingEventsLabel", "Yaklaşan Etkinlikler")
+                </div>
+
+                <h2 class="modern-section-title display-6">
+                    @L("CongressCalendarTitle", "Güncel Kongre Takvimi")
+                </h2>
+
+                <p class="modern-section-description">
+                    @L("CongressCalendarDescription", "Başvurusu devam eden ve katılım sağlayabileceğiniz aktif organizasyonlar.")
+                </p>
+
+                <div class="modern-section-line"></div>
             </div>
 
-            <div class="row g-4">
+            <div class="row g-4 justify-content-center">
                 @if (Model.ActiveCongresses != null && Model.ActiveCongresses.Any())
                 {
                     @foreach (var item in Model.ActiveCongresses)
                     {
                         var vitrinUrl = $"/{item.Slug}";
 
+                        var detailText = L("ViewDetailsButton", "Detayları Gör");
+
+                        var locationText = string.IsNullOrWhiteSpace(item.Location)
+                        ? L("OnlineConferenceText", "Çevrimiçi")
+                        : item.Location;
+
+                        var descriptionText = string.IsNullOrWhiteSpace(item.Description)
+                        ? L("CongressDefaultDescription", "Kongre detaylarını inceleyebilir, kayıt ve bildiri gönderim sürecine devam edebilirsiniz.")
+                        : item.Description;
+
                         <div class="col-md-6 col-lg-4">
-                            <div class="card h-100 shadow-sm border-0 congress-card rounded-4 overflow-hidden">
-                                <div class="card-img-wrapper position-relative">
-                                    @if (item.ImageUrl != null && !item.ImageUrl.Contains("resimyok"))
+                            <article class="modern-congress-card">
+
+                                <div class="modern-congress-image">
+                                    @if (!string.IsNullOrWhiteSpace(item.ImageUrl) &&
+                                                                !item.ImageUrl.Contains("resimyok", StringComparison.OrdinalIgnoreCase))
                                     {
-                                        <img src="@item.ImageUrl" alt="@item.Title" class="w-100 h-100 object-fit-cover">
+                                        <img src="@item.ImageUrl"
+                                             alt="@item.Title">
                                     }
                                     else
                                     {
-                                        <div class="text-center text-muted opacity-50">
-                                            <i class="fas fa-university fa-3x mb-2"></i>
-                                            <div>@Localizer["NoImageUploadedText"]</div>
+                                        <div class="modern-congress-placeholder">
+                                            <div>
+                                                <i class="fas fa-university"></i>
+                                                <span>@L("NoImageUploadedText", "Görsel yüklenmedi")</span>
+                                            </div>
                                         </div>
                                     }
-                                    <div class="position-absolute top-0 end-0 m-3 bg-white rounded-3 shadow-sm p-2 text-center lh-1">
-                                        <span class="d-block fw-bold text-primary fs-4">@item.StartDate.Day</span>
-                                        <small class="text-uppercase text-muted fw-bold" style="font-size: 10px;">@item.StartDate.ToString("MMM")</small>
+
+                                    <div class="modern-date-badge">
+                                        <span class="modern-date-day">
+                                            @item.StartDate.Day
+                                        </span>
+
+                                        <span class="modern-date-month">
+                                            @item.StartDate.ToString("MMM", System.Globalization.CultureInfo.CurrentUICulture)
+                                        </span>
                                     </div>
                                 </div>
 
-                                <div class="card-body d-flex flex-column p-4">
-                                    <div class="mb-2">
-                                        <span class="badge bg-light text-secondary border">
-                                            <i class="fas fa-map-marker-alt text-danger me-1"></i> @item.Location
-                                        </span>
+                                <div class="modern-congress-body">
+                                    <div class="modern-location-badge">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        @locationText
                                     </div>
 
-                                    <h5 class="card-title fw-bold mb-3 text-dark">
-                                        <a href="@vitrinUrl" class="text-decoration-none text-dark stretched-link">@item.Title</a>
-                                    </h5>
+                                    <a href="@vitrinUrl"
+                                       class="modern-congress-title"
+                                       title="@item.Title">
+                                        @item.Title
+                                    </a>
 
-                                    <p class="card-text text-muted small mb-4 flex-grow-1">
-                                        @item.Description
+                                    <p class="modern-congress-description">
+                                        @descriptionText
                                     </p>
 
-                                    <div class="d-grid gap-2 position-relative" style="z-index: 2;">
-                                        <a href="@vitrinUrl"
-                                           class="btn btn-primary fw-bold text-white shadow-sm py-2"
-                                           style="border-radius: 12px; transition: all 0.3s;">
-                                            <i class="fas fa-search me-2"></i>
-                                            @Localizer["ViewDetailsButton"]
+                                    <div class="modern-congress-footer">
+                                        <span class="modern-year-pill">
+                                            <i class="far fa-calendar-alt me-1"></i>
+                                            @item.StartDate.Year
+                                        </span>
+
+                                        <a href="@vitrinUrl" class="modern-detail-btn">
+                                            <i class="fas fa-arrow-right"></i>
+                                            @detailText
                                         </a>
                                     </div>
                                 </div>
-                            </div>
+
+                            </article>
                         </div>
                     }
                 }
                 else
                 {
-                    <div class="col-12 text-center py-5">
-                        <div class="alert alert-light border shadow-sm d-inline-block px-5">
-                            <i class="fas fa-info-circle text-primary mb-3 fs-1"></i>
-                            <h5 class="text-muted">@Localizer["NoActiveCongressText"]</h5>
+                    <div class="col-lg-7">
+                        <div class="modern-empty-state">
+                            <i class="fas fa-info-circle"></i>
+
+                            <h5 class="fw-bold text-dark mb-2">
+                                @L("NoActiveCongressText", "Şu anda aktif kongre bulunmuyor.")
+                            </h5>
+
+                            <p class="text-muted mb-0">
+                                @L("NoActiveCongressDescription", "Yeni kongreler eklendiğinde bu alanda görüntülenecektir.")
+                            </p>
                         </div>
                     </div>
                 }
             </div>
+
         </div>
     </section>
 

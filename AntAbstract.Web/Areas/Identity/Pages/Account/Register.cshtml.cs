@@ -25,8 +25,16 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
     {
         private const string OtherValue = "__OTHER__";
 
+        private const string ExternalLoginProviderKey = "ExternalLoginProvider";
+        private const string ExternalProviderKeyKey = "ExternalProviderKey";
+        private const string ExternalProviderDisplayNameKey = "ExternalProviderDisplayName";
+        private const string ExternalEmailKey = "ExternalEmail";
+        private const string ExternalFirstNameKey = "ExternalFirstName";
+        private const string ExternalLastNameKey = "ExternalLastName";
+
         private readonly SignInManager<AppUser> _signInManager;
         private readonly UserManager<AppUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ILogger<RegisterModel> _logger;
         private readonly AppDbContext _context;
         private readonly IStringLocalizer<RegisterModel> _localizer;
@@ -34,12 +42,14 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
         public RegisterModel(
             UserManager<AppUser> userManager,
             SignInManager<AppUser> signInManager,
+            RoleManager<IdentityRole> roleManager,
             ILogger<RegisterModel> logger,
             AppDbContext context,
             IStringLocalizer<RegisterModel> localizer)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _roleManager = roleManager;
             _logger = logger;
             _context = context;
             _localizer = localizer;
@@ -50,9 +60,24 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
 
         public string? ReturnUrl { get; set; }
 
+        public bool IsCongressRegistrationFlow { get; set; }
+
+        public string? CongressFlowTitle { get; set; }
+
+        public string? CongressFlowSlug { get; set; }
+
+        public DateTime? CongressFlowStartDate { get; set; }
+
+        public bool IsExternalLoginFlow { get; set; }
+
+        public string? ExternalLoginProviderName { get; set; }
+
         public List<SelectListItem> UniversityList { get; set; } = new();
+
         public List<SelectListItem> TitleList { get; set; } = new();
+
         public List<SelectListItem> FacultyList { get; set; } = new();
+
         public List<SelectListItem> DepartmentList { get; set; } = new();
 
         public class InputModel
@@ -112,6 +137,293 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             public bool KvkkAccepted { get; set; }
 
             public bool MarketingConsent { get; set; }
+        }
+
+        private class ExternalLoginState
+        {
+            public string Provider { get; set; } = string.Empty;
+
+            public string ProviderKey { get; set; } = string.Empty;
+
+            public string? DisplayName { get; set; }
+
+            public string? Email { get; set; }
+
+            public string? FirstName { get; set; }
+
+            public string? LastName { get; set; }
+        }
+
+        public async Task OnGetAsync(string? returnUrl = null)
+        {
+            ReturnUrl = returnUrl;
+
+            var externalLoginState = GetExternalLoginStateFromTempData(keep: true);
+            ApplyExternalLoginStateToPage(externalLoginState);
+
+            if (externalLoginState != null)
+            {
+                if (string.IsNullOrWhiteSpace(Input.Email))
+                {
+                    Input.Email = externalLoginState.Email ?? Request.Query["email"].ToString();
+                }
+
+                if (string.IsNullOrWhiteSpace(Input.FirstName))
+                {
+                    Input.FirstName = externalLoginState.FirstName ?? "";
+                }
+
+                if (string.IsNullOrWhiteSpace(Input.LastName))
+                {
+                    Input.LastName = externalLoginState.LastName ?? "";
+                }
+            }
+            else
+            {
+                var emailFromQuery = Request.Query["email"].ToString();
+
+                if (!string.IsNullOrWhiteSpace(emailFromQuery))
+                {
+                    Input.Email = emailFromQuery;
+                }
+            }
+
+            await LoadDropdownListsAsync();
+            await LoadConferenceFlowInfoAsync(returnUrl);
+        }
+
+        public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
+        {
+            ReturnUrl = returnUrl;
+            returnUrl ??= Url.Content("~/");
+
+            var externalLoginState = GetExternalLoginStateFromTempData(keep: true);
+            ApplyExternalLoginStateToPage(externalLoginState);
+
+            await LoadDropdownListsAsync();
+            await LoadConferenceFlowInfoAsync(returnUrl);
+
+            ValidateLegalConsents();
+            ValidateOtherFields();
+
+            if (!ModelState.IsValid)
+            {
+                KeepExternalLoginTempData();
+                return Page();
+            }
+
+            var selectedUniversity = ResolveAcademicValue(Input.University, Input.OtherUniversity);
+            var selectedFaculty = ResolveAcademicValue(Input.Faculty, Input.OtherFaculty);
+            var selectedDepartment = ResolveAcademicValue(Input.Department, Input.OtherDepartment);
+
+            await EnsureAcademicValuesExistAsync(
+                selectedUniversity,
+                selectedFaculty,
+                selectedDepartment
+            );
+
+            var existingUser = await _userManager.FindByEmailAsync(Input.Email);
+
+            if (existingUser != null)
+            {
+                ModelState.AddModelError(
+                    string.Empty,
+                    "Bu e-posta adresi ile zaten kayıtlı bir kullanıcı var.");
+
+                KeepExternalLoginTempData();
+
+                return Page();
+            }
+
+            var user = new AppUser
+            {
+                UserName = Input.Email.Trim(),
+                Email = Input.Email.Trim(),
+
+                FirstName = NormalizeTitleCase(Input.FirstName),
+                LastName = NormalizeTitleCase(Input.LastName),
+                IdentityNumber = Input.IdentityNumber.Trim(),
+
+                AlternativeEmail = string.IsNullOrWhiteSpace(Input.AlternativeEmail)
+                    ? null
+                    : Input.AlternativeEmail.Trim(),
+
+                PhoneNumber = string.IsNullOrWhiteSpace(Input.PhoneNumber)
+                    ? null
+                    : Input.PhoneNumber.Trim(),
+
+                University = selectedUniversity,
+                Title = NormalizeTitleCase(Input.Title),
+                Faculty = selectedFaculty,
+                Department = selectedDepartment,
+
+                EmailConfirmed = true
+            };
+
+            if (Input.ProfileImage == null || Input.ProfileImage.Length == 0)
+            {
+                ModelState.AddModelError(
+                    "Input.ProfileImage",
+                    GetText("ProfileImageRequired", "Profil resmi zorunludur.")
+                );
+
+                KeepExternalLoginTempData();
+
+                return Page();
+            }
+
+            var uploadResult = await TryUploadProfileImageAsync(Input.ProfileImage);
+
+            if (!uploadResult.Success)
+            {
+                ModelState.AddModelError("Input.ProfileImage", uploadResult.ErrorMessage);
+
+                KeepExternalLoginTempData();
+
+                return Page();
+            }
+
+            user.ProfileImagePath = uploadResult.FilePath;
+
+            var result = await _userManager.CreateAsync(user, Input.Password);
+
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("Yeni kullanıcı kaydı oluşturuldu: {Email}", user.Email);
+
+                var externalLoginResult = await TryAddExternalLoginAsync(user, externalLoginState);
+
+                if (!externalLoginResult.Succeeded)
+                {
+                    await _userManager.DeleteAsync(user);
+
+                    foreach (var error in externalLoginResult.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+
+                    KeepExternalLoginTempData();
+
+                    return Page();
+                }
+
+                await EnsureAuthorRoleAsync(user);
+
+                var automaticRegistrationRedirectUrl =
+                    await TryCreateConferencePreRegistrationFromReturnUrlAsync(user, returnUrl);
+
+                if (externalLoginState != null)
+                {
+                    await _signInManager.SignInAsync(
+                        user,
+                        isPersistent: false,
+                        authenticationMethod: externalLoginState.Provider);
+                }
+                else
+                {
+                    await _signInManager.SignInAsync(user, isPersistent: false);
+                }
+
+                if (!string.IsNullOrWhiteSpace(automaticRegistrationRedirectUrl))
+                {
+                    return LocalRedirect(automaticRegistrationRedirectUrl);
+                }
+
+                return LocalRedirect(returnUrl);
+            }
+
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            KeepExternalLoginTempData();
+
+            return Page();
+        }
+
+        private ExternalLoginState? GetExternalLoginStateFromTempData(bool keep)
+        {
+            var provider = TempData.Peek(ExternalLoginProviderKey)?.ToString();
+            var providerKey = TempData.Peek(ExternalProviderKeyKey)?.ToString();
+
+            if (string.IsNullOrWhiteSpace(provider) || string.IsNullOrWhiteSpace(providerKey))
+            {
+                return null;
+            }
+
+            if (keep)
+            {
+                KeepExternalLoginTempData();
+            }
+
+            return new ExternalLoginState
+            {
+                Provider = provider,
+                ProviderKey = providerKey,
+                DisplayName = TempData.Peek(ExternalProviderDisplayNameKey)?.ToString(),
+                Email = TempData.Peek(ExternalEmailKey)?.ToString(),
+                FirstName = TempData.Peek(ExternalFirstNameKey)?.ToString(),
+                LastName = TempData.Peek(ExternalLastNameKey)?.ToString()
+            };
+        }
+
+        private void ApplyExternalLoginStateToPage(ExternalLoginState? externalLoginState)
+        {
+            IsExternalLoginFlow = externalLoginState != null;
+            ExternalLoginProviderName = externalLoginState?.DisplayName ?? externalLoginState?.Provider;
+        }
+
+        private void KeepExternalLoginTempData()
+        {
+            TempData.Keep(ExternalLoginProviderKey);
+            TempData.Keep(ExternalProviderKeyKey);
+            TempData.Keep(ExternalProviderDisplayNameKey);
+            TempData.Keep(ExternalEmailKey);
+            TempData.Keep(ExternalFirstNameKey);
+            TempData.Keep(ExternalLastNameKey);
+        }
+
+        private async Task<IdentityResult> TryAddExternalLoginAsync(
+            AppUser user,
+            ExternalLoginState? externalLoginState)
+        {
+            if (externalLoginState == null)
+            {
+                return IdentityResult.Success;
+            }
+
+            var existingUserWithExternalLogin = await _userManager.FindByLoginAsync(
+                externalLoginState.Provider,
+                externalLoginState.ProviderKey);
+
+            if (existingUserWithExternalLogin != null &&
+                existingUserWithExternalLogin.Id != user.Id)
+            {
+                return IdentityResult.Failed(new IdentityError
+                {
+                    Code = "ExternalLoginAlreadyLinked",
+                    Description = "Bu ORCID hesabı başka bir kullanıcı hesabına bağlı görünüyor."
+                });
+            }
+
+            var currentLogins = await _userManager.GetLoginsAsync(user);
+
+            var alreadyLinked = currentLogins.Any(login =>
+                login.LoginProvider == externalLoginState.Provider &&
+                login.ProviderKey == externalLoginState.ProviderKey);
+
+            if (alreadyLinked)
+            {
+                return IdentityResult.Success;
+            }
+
+            var loginInfo = new UserLoginInfo(
+                externalLoginState.Provider,
+                externalLoginState.ProviderKey,
+                externalLoginState.DisplayName ?? externalLoginState.Provider);
+
+            return await _userManager.AddLoginAsync(user, loginInfo);
         }
 
         private async Task LoadDropdownListsAsync()
@@ -181,115 +493,237 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             return list;
         }
 
-        public async Task OnGetAsync(string? returnUrl = null)
+        private async Task EnsureAuthorRoleAsync(AppUser user)
         {
-            ReturnUrl = returnUrl;
-            await LoadDropdownListsAsync();
+            const string authorRoleName = "Author";
+
+            var roleExists = await _roleManager.RoleExistsAsync(authorRoleName);
+
+            if (!roleExists)
+            {
+                await _roleManager.CreateAsync(new IdentityRole(authorRoleName));
+            }
+
+            var userIsAuthor = await _userManager.IsInRoleAsync(user, authorRoleName);
+
+            if (!userIsAuthor)
+            {
+                await _userManager.AddToRoleAsync(user, authorRoleName);
+            }
         }
 
-        public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
+        private async Task LoadConferenceFlowInfoAsync(string? returnUrl)
         {
-            ReturnUrl = returnUrl;
-            returnUrl ??= Url.Content("~/");
+            IsCongressRegistrationFlow = false;
+            CongressFlowTitle = null;
+            CongressFlowSlug = null;
+            CongressFlowStartDate = null;
 
-            await LoadDropdownListsAsync();
+            var returnPath = NormalizeReturnUrlPath(returnUrl);
 
-            ValidateLegalConsents();
-            ValidateOtherFields();
-
-            if (!ModelState.IsValid)
+            if (string.IsNullOrWhiteSpace(returnPath))
             {
-                return Page();
+                return;
             }
 
-            var selectedUniversity = ResolveAcademicValue(Input.University, Input.OtherUniversity);
-            var selectedFaculty = ResolveAcademicValue(Input.Faculty, Input.OtherFaculty);
-            var selectedDepartment = ResolveAcademicValue(Input.Department, Input.OtherDepartment);
+            var parts = returnPath
+                .Trim('/')
+                .Split('/', StringSplitOptions.RemoveEmptyEntries);
 
-            await EnsureAcademicValuesExistAsync(
-                selectedUniversity,
-                selectedFaculty,
-                selectedDepartment
-            );
-
-            var existingUser = await _userManager.FindByEmailAsync(Input.Email);
-
-            if (existingUser != null)
+            if (parts.Length < 4)
             {
-                ModelState.AddModelError(
-                    string.Empty,
-                    "Bu e-posta adresi ile zaten kayıtlı bir kullanıcı var.");
-
-                return Page();
+                return;
             }
 
-            var user = new AppUser
+            var slug = parts[0];
+            var registrationSegment = parts[1];
+            var checkoutSegment = parts[2];
+            var typeIdSegment = parts[3];
+
+            var isRegistrationRoute =
+                registrationSegment.Equals("registration", StringComparison.OrdinalIgnoreCase) ||
+                registrationSegment.Equals("register", StringComparison.OrdinalIgnoreCase);
+
+            var isCheckoutRoute =
+                checkoutSegment.Equals("checkout", StringComparison.OrdinalIgnoreCase);
+
+            if (!isRegistrationRoute || !isCheckoutRoute)
             {
-                UserName = Input.Email.Trim(),
-                Email = Input.Email.Trim(),
-
-                FirstName = NormalizeTitleCase(Input.FirstName),
-                LastName = NormalizeTitleCase(Input.LastName),
-                IdentityNumber = Input.IdentityNumber.Trim(),
-
-                AlternativeEmail = string.IsNullOrWhiteSpace(Input.AlternativeEmail)
-                    ? null
-                    : Input.AlternativeEmail.Trim(),
-
-                PhoneNumber = string.IsNullOrWhiteSpace(Input.PhoneNumber)
-                    ? null
-                    : Input.PhoneNumber.Trim(),
-
-                University = selectedUniversity,
-                Title = NormalizeTitleCase(Input.Title),
-                Faculty = selectedFaculty,
-                Department = selectedDepartment,
-
-                EmailConfirmed = true
-            };
-
-            if (Input.ProfileImage == null || Input.ProfileImage.Length == 0)
-            {
-                ModelState.AddModelError(
-                    "Input.ProfileImage",
-                    GetText("ProfileImageRequired", "Profil resmi zorunludur.")
-                );
-
-                return Page();
+                return;
             }
 
-            var uploadResult = await TryUploadProfileImageAsync(Input.ProfileImage);
-
-            if (!uploadResult.Success)
+            if (!Guid.TryParse(typeIdSegment, out var registrationTypeId))
             {
-                ModelState.AddModelError("Input.ProfileImage", uploadResult.ErrorMessage);
-                return Page();
+                return;
             }
 
-            user.ProfileImagePath = uploadResult.FilePath;
+            var ticketType = await _context.RegistrationTypes
+                .Include(rt => rt.Conference)
+                    .ThenInclude(c => c.Tenant)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(rt =>
+                    rt.Id == registrationTypeId &&
+                    rt.IsActive &&
+                    (!rt.Deadline.HasValue || rt.Deadline.Value >= DateTime.UtcNow));
 
-            var result = await _userManager.CreateAsync(user, Input.Password);
-
-            if (result.Succeeded)
+            if (ticketType == null || ticketType.Conference == null)
             {
-                _logger.LogInformation("Yeni kullanıcı kaydı oluşturuldu: {Email}", user.Email);
+                return;
+            }
 
-                if (!await _userManager.IsInRoleAsync(user, "Author"))
+            var conference = ticketType.Conference;
+
+            var slugMatchesConference =
+                string.Equals(conference.Slug, slug, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(conference.Tenant?.Slug, slug, StringComparison.OrdinalIgnoreCase);
+
+            if (!slugMatchesConference)
+            {
+                return;
+            }
+
+            IsCongressRegistrationFlow = true;
+            CongressFlowTitle = conference.Title;
+            CongressFlowSlug = conference.Tenant?.Slug ?? conference.Slug ?? slug;
+            CongressFlowStartDate = conference.StartDate;
+        }
+
+        private async Task<string?> TryCreateConferencePreRegistrationFromReturnUrlAsync(
+            AppUser user,
+            string? returnUrl)
+        {
+            var returnPath = NormalizeReturnUrlPath(returnUrl);
+
+            if (string.IsNullOrWhiteSpace(returnPath))
+            {
+                return null;
+            }
+
+            var parts = returnPath
+                .Trim('/')
+                .Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+            if (parts.Length < 4)
+            {
+                return null;
+            }
+
+            var slug = parts[0];
+            var registrationSegment = parts[1];
+            var checkoutSegment = parts[2];
+            var typeIdSegment = parts[3];
+
+            var isRegistrationRoute =
+                registrationSegment.Equals("registration", StringComparison.OrdinalIgnoreCase) ||
+                registrationSegment.Equals("register", StringComparison.OrdinalIgnoreCase);
+
+            var isCheckoutRoute =
+                checkoutSegment.Equals("checkout", StringComparison.OrdinalIgnoreCase);
+
+            if (!isRegistrationRoute || !isCheckoutRoute)
+            {
+                return null;
+            }
+
+            if (!Guid.TryParse(typeIdSegment, out var registrationTypeId))
+            {
+                return null;
+            }
+
+            var ticketType = await _context.RegistrationTypes
+                .Include(rt => rt.Conference)
+                    .ThenInclude(c => c.Tenant)
+                .FirstOrDefaultAsync(rt =>
+                    rt.Id == registrationTypeId &&
+                    rt.IsActive &&
+                    (!rt.Deadline.HasValue || rt.Deadline.Value >= DateTime.UtcNow));
+
+            if (ticketType == null || ticketType.Conference == null)
+            {
+                return null;
+            }
+
+            var conference = ticketType.Conference;
+
+            var slugMatchesConference =
+                string.Equals(conference.Slug, slug, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(conference.Tenant?.Slug, slug, StringComparison.OrdinalIgnoreCase);
+
+            if (!slugMatchesConference)
+            {
+                return null;
+            }
+
+            var existingRegistration = await _context.Registrations
+                .FirstOrDefaultAsync(r =>
+                    r.AppUserId == user.Id &&
+                    r.ConferenceId == conference.Id);
+
+            if (existingRegistration == null)
+            {
+                var newRegistration = new Registration
                 {
-                    await _userManager.AddToRoleAsync(user, "Author");
-                }
+                    Id = Guid.NewGuid(),
+                    AppUserId = user.Id,
+                    ConferenceId = conference.Id,
+                    RegistrationTypeId = ticketType.Id,
+                    RegistrationDate = DateTime.UtcNow,
+                    IsPaid = false,
+                    Amount = ticketType.Price
+                };
 
-                await _signInManager.SignInAsync(user, isPersistent: false);
-
-                return LocalRedirect(returnUrl);
+                _context.Registrations.Add(newRegistration);
+                await _context.SaveChangesAsync();
             }
 
-            foreach (var error in result.Errors)
+            var canonicalSlug = conference.Tenant?.Slug ?? conference.Slug ?? slug;
+
+            SetSelectedConferenceSession(conference, canonicalSlug);
+
+            TempData["SuccessMessage"] =
+                "Sistem kaydınız ve kongre ön kaydınız başarıyla oluşturuldu. Şimdi bildirinizin özetini gönderebilirsiniz.";
+
+            return $"/{canonicalSlug}/submit-abstract";
+        }
+
+        private static string NormalizeReturnUrlPath(string? returnUrl)
+        {
+            if (string.IsNullOrWhiteSpace(returnUrl))
             {
-                ModelState.AddModelError(string.Empty, error.Description);
+                return string.Empty;
             }
 
-            return Page();
+            var decodedReturnUrl = Uri.UnescapeDataString(returnUrl);
+
+            if (Uri.TryCreate(decodedReturnUrl, UriKind.Absolute, out var absoluteUri))
+            {
+                return absoluteUri.AbsolutePath;
+            }
+
+            if (decodedReturnUrl.StartsWith("~/", StringComparison.Ordinal))
+            {
+                decodedReturnUrl = decodedReturnUrl[1..];
+            }
+
+            var queryIndex = decodedReturnUrl.IndexOf('?');
+
+            if (queryIndex >= 0)
+            {
+                decodedReturnUrl = decodedReturnUrl[..queryIndex];
+            }
+
+            return decodedReturnUrl;
+        }
+
+        private void SetSelectedConferenceSession(Conference conference, string slug)
+        {
+            HttpContext.Session.SetString("SelectedConferenceId", conference.Id.ToString());
+            HttpContext.Session.SetString("SelectedConferenceSlug", slug);
+            HttpContext.Session.SetString("SelectedConferenceTitle", conference.Title ?? "");
+
+            HttpContext.Session.SetString($"SelectedConferenceId:{conference.TenantId}", conference.Id.ToString());
+            HttpContext.Session.SetString($"SelectedConferenceSlug:{conference.TenantId}", slug);
+            HttpContext.Session.SetString($"SelectedConferenceTitle:{conference.TenantId}", conference.Title ?? "");
         }
 
         private void ValidateLegalConsents()
@@ -437,12 +871,12 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 );
             }
 
-            if (file.Length > 2 * 1024 * 1024)
+            if (file.Length > 10 * 1024 * 1024)
             {
                 return (
                     false,
                     null,
-                    "Profil resmi en fazla 2 MB olabilir."
+                    "Profil resmi en fazla 10 MB olabilir."
                 );
             }
 
