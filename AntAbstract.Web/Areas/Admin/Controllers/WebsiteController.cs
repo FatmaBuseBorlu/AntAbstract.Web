@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -17,6 +18,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
     [Authorize(Roles = "Admin,Organizator,Editor")]
     public class WebsiteController : Controller
     {
+        private const int MaxContentJsonLength = 10000;
+        private const int MaxUrlLength = 500;
+
+        private static readonly HashSet<string> SupportedCultures = new HashSet<string>(
+            new[] { "tr-TR", "en-US" },
+            StringComparer.OrdinalIgnoreCase);
+
+        private static readonly HashSet<string> SupportedPages = new HashSet<string>(
+            new[] { "Home", "About", "Contact" },
+            StringComparer.OrdinalIgnoreCase);
+
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly UserManager<AppUser> _userManager;
@@ -34,18 +46,50 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _localizer = localizer;
         }
 
-        private string? CurrentSlug => RouteData.Values["slug"]?.ToString();
+        private string CurrentSlug =>
+            RouteData.Values["slug"]?.ToString()
+            ?? _tenantContext.Current?.Slug
+            ?? "";
 
         private string T(string key, string fallback)
         {
             var value = _localizer[key];
 
-            return value.ResourceNotFound
+            return value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
                 ? fallback
                 : value.Value;
         }
 
-        private async Task<bool> CanAccessCurrentTenantAsync()
+        private static string NormalizeCulture(string? culture)
+        {
+            if (string.IsNullOrWhiteSpace(culture))
+            {
+                return "tr-TR";
+            }
+
+            return SupportedCultures.Contains(culture)
+                ? culture
+                : "tr-TR";
+        }
+
+        private static string NormalizePage(string? page)
+        {
+            if (string.IsNullOrWhiteSpace(page))
+            {
+                return "Home";
+            }
+
+            return SupportedPages.Contains(page)
+                ? page
+                : "Home";
+        }
+
+        private async Task<AppUser?> GetCurrentUserAsync()
+        {
+            return await _userManager.GetUserAsync(User);
+        }
+
+        private async Task<bool> CanAccessCurrentTenantAsync(string? slug = null)
         {
             var tenant = _tenantContext.Current;
 
@@ -54,7 +98,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return false;
             }
 
-            var user = await _userManager.GetUserAsync(User);
+            if (!string.IsNullOrWhiteSpace(slug) &&
+                !string.Equals(tenant.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var user = await GetCurrentUserAsync();
 
             if (user == null)
             {
@@ -76,7 +126,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             var tenant = _tenantContext.Current;
 
-            if (tenant == null)
+            if (tenant == null || conferenceId == Guid.Empty)
             {
                 return false;
             }
@@ -86,6 +136,49 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .AnyAsync(x =>
                     x.Id == conferenceId &&
                     x.TenantId == tenant.Id);
+        }
+
+        private async Task<List<Conference>> GetCurrentTenantConferencesAsync()
+        {
+            var tenant = _tenantContext.Current;
+
+            if (tenant == null)
+            {
+                return new List<Conference>();
+            }
+
+            return await _context.Conferences
+                .AsNoTracking()
+                .Where(x => x.TenantId == tenant.Id)
+                .OrderByDescending(x => x.StartDate)
+                .ToListAsync();
+        }
+
+        private async Task FillViewBagsAsync(
+            string culture,
+            string page,
+            Guid? selectedConferenceId)
+        {
+            var conferences = await GetCurrentTenantConferencesAsync();
+
+            ViewBag.CultureList = new SelectList(
+                SupportedCultures.OrderByDescending(x => x),
+                culture);
+
+            ViewBag.PageList = new SelectList(
+                SupportedPages,
+                page);
+
+            ViewBag.ConferenceList = new SelectList(
+                conferences,
+                "Id",
+                "Title",
+                selectedConferenceId);
+
+            ViewBag.Culture = culture;
+            ViewBag.Page = page;
+            ViewBag.ConferenceId = selectedConferenceId;
+            ViewBag.Slug = CurrentSlug;
         }
 
         private IActionResult RedirectToSafePage()
@@ -100,12 +193,164 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return Redirect("/Dashboard/MyConferences");
         }
 
-        [HttpGet]
+        private IActionResult RedirectToWebsiteIndex(
+            string culture,
+            string page,
+            Guid? conferenceId)
+        {
+            var slug = CurrentSlug;
+
+            var query =
+                $"culture={Uri.EscapeDataString(culture)}" +
+                $"&page={Uri.EscapeDataString(page)}";
+
+            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
+            {
+                query += $"&conferenceId={conferenceId.Value}";
+            }
+
+            if (!string.IsNullOrWhiteSpace(slug))
+            {
+                return Redirect($"/{slug}/Admin/Website?{query}");
+            }
+
+            return Redirect($"/Admin/Website?{query}");
+        }
+
+        private bool IsSafeContentUrl(string? url, bool allowMailto = false)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return true;
+            }
+
+            url = url.Trim();
+
+            if (url.Length > MaxUrlLength)
+            {
+                return false;
+            }
+
+            if (Url.IsLocalUrl(url))
+            {
+                return true;
+            }
+
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
+                return false;
+            }
+
+            if (uri.Scheme == Uri.UriSchemeHttp ||
+                uri.Scheme == Uri.UriSchemeHttps)
+            {
+                return true;
+            }
+
+            return allowMailto &&
+                   string.Equals(uri.Scheme, "mailto", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void ValidateHeroUrls(
+            string? btnUrl,
+            string? bgImage,
+            string? sideImage)
+        {
+            if (!IsSafeContentUrl(btnUrl, allowMailto: true))
+            {
+                ModelState.AddModelError(
+                    nameof(btnUrl),
+                    T("Error_InvalidButtonUrl", "Buton bağlantısı geçersiz."));
+            }
+
+            if (!IsSafeContentUrl(bgImage))
+            {
+                ModelState.AddModelError(
+                    nameof(bgImage),
+                    T("Error_InvalidBackgroundImageUrl", "Arka plan görsel bağlantısı geçersiz."));
+            }
+
+            if (!IsSafeContentUrl(sideImage))
+            {
+                ModelState.AddModelError(
+                    nameof(sideImage),
+                    T("Error_InvalidSideImageUrl", "Yan görsel bağlantısı geçersiz."));
+            }
+        }
+
+        private void ValidateContentJson(string? contentJson)
+        {
+            if (string.IsNullOrWhiteSpace(contentJson))
+            {
+                return;
+            }
+
+            if (contentJson.Length > MaxContentJsonLength)
+            {
+                ModelState.AddModelError(
+                    nameof(ConferencePageBlock.ContentJson),
+                    T("Error_ContentJsonTooLong", "İçerik JSON alanı çok uzun."));
+                return;
+            }
+
+            try
+            {
+                using var _ = JsonDocument.Parse(contentJson);
+            }
+            catch
+            {
+                ModelState.AddModelError(
+                    nameof(ConferencePageBlock.ContentJson),
+                    T("Error_InvalidContentJson", "İçerik JSON formatı geçersiz."));
+            }
+        }
+
+        private string BuildContentJson(
+            ConferencePageBlockType blockType,
+            string? rawContentJson,
+            string? btnText,
+            string? btnUrl,
+            string? bgImage,
+            string? sideImage)
+        {
+            if (blockType == ConferencePageBlockType.Hero)
+            {
+                var heroContent = new
+                {
+                    buttonText = btnText?.Trim(),
+                    buttonUrl = btnUrl?.Trim(),
+                    backgroundImageUrl = bgImage?.Trim(),
+                    imageUrl = sideImage?.Trim()
+                };
+
+                return JsonSerializer.Serialize(heroContent);
+            }
+
+            return string.IsNullOrWhiteSpace(rawContentJson)
+                ? "{}"
+                : rawContentJson.Trim();
+        }
+
+        private void RemoveNavigationModelState()
+        {
+            ModelState.Remove("TenantId");
+            ModelState.Remove("Tenant");
+            ModelState.Remove("Conference");
+            ModelState.Remove("CreatedAt");
+            ModelState.Remove("UpdatedAt");
+        }
+
+        [HttpGet("/Admin/Website")]
+        [HttpGet("/{slug}/Admin/Website")]
         public async Task<IActionResult> Index(
+            string? slug = null,
             string culture = "tr-TR",
             string page = "Home",
             Guid? conferenceId = null)
         {
+            culture = NormalizeCulture(culture);
+            page = NormalizePage(page);
+
             var tenant = _tenantContext.Current;
 
             if (tenant == null)
@@ -113,7 +358,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
             }
 
-            if (!await CanAccessCurrentTenantAsync())
+            if (!await CanAccessCurrentTenantAsync(slug))
             {
                 TempData["ErrorMessage"] = T(
                     "Error_UnauthorizedTenant",
@@ -122,23 +367,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return RedirectToSafePage();
             }
 
-            var conferences = await _context.Conferences
-                .AsNoTracking()
-                .Where(x => x.TenantId == tenant.Id)
-                .OrderByDescending(x => x.StartDate)
-                .ToListAsync();
+            var conferences = await GetCurrentTenantConferencesAsync();
 
-            var selectedConferenceId = conferenceId ?? conferences.FirstOrDefault()?.Id;
+            var selectedConferenceId = conferenceId;
 
-            ViewBag.CultureList = new SelectList(new[] { "tr-TR", "en-US" }, culture);
-            ViewBag.PageList = new SelectList(new[] { "Home", "About", "Contact" }, page);
-            ViewBag.ConferenceList = new SelectList(conferences, "Id", "Title", selectedConferenceId);
+            if (!selectedConferenceId.HasValue || selectedConferenceId.Value == Guid.Empty)
+            {
+                selectedConferenceId = conferences.FirstOrDefault()?.Id;
+            }
 
-            ViewBag.Culture = culture;
-            ViewBag.Page = page;
-            ViewBag.ConferenceId = selectedConferenceId;
+            await FillViewBagsAsync(culture, page, selectedConferenceId);
 
-            if (selectedConferenceId == null)
+            if (!selectedConferenceId.HasValue || selectedConferenceId.Value == Guid.Empty)
             {
                 return View(new List<ConferencePageBlock>());
             }
@@ -158,7 +398,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .AsNoTracking()
                 .Where(x =>
                     x.TenantId == tenant.Id &&
-                    x.ConferenceId == selectedConferenceId &&
+                    x.ConferenceId == selectedConferenceId.Value &&
                     x.Page == page &&
                     x.Culture == culture)
                 .OrderBy(x => x.Order)
@@ -167,12 +407,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return View(blocks);
         }
 
-        [HttpGet]
+        [HttpGet("/Admin/Website/Create")]
+        [HttpGet("/{slug}/Admin/Website/Create")]
         public async Task<IActionResult> Create(
-            Guid conferenceId,
+            string? slug = null,
+            Guid conferenceId = default,
             string culture = "tr-TR",
             string page = "Home")
         {
+            culture = NormalizeCulture(culture);
+            page = NormalizePage(page);
+
             var tenant = _tenantContext.Current;
 
             if (tenant == null)
@@ -180,7 +425,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
             }
 
-            if (!await CanAccessCurrentTenantAsync())
+            if (!await CanAccessCurrentTenantAsync(slug))
             {
                 TempData["ErrorMessage"] = T(
                     "Error_UnauthorizedTenant",
@@ -193,10 +438,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (!exists)
             {
-                return NotFound(T(
+                TempData["ErrorMessage"] = T(
                     "Error_ValidConferenceNotFound",
-                    "Geçerli kongre bulunamadı veya bu kongreye erişim yetkiniz yok."));
+                    "Geçerli kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+
+                return RedirectToWebsiteIndex(culture, page, null);
             }
+
+            await FillViewBagsAsync(culture, page, conferenceId);
 
             var model = new ConferencePageBlock
             {
@@ -207,15 +456,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 IsActive = true,
                 Order = 0,
                 BlockType = ConferencePageBlockType.Hero,
-                ContentJson = "{}"
+                ContentJson = "{}",
+                CreatedAt = DateTime.UtcNow
             };
 
             return View(model);
         }
 
-        [HttpPost]
+        [HttpPost("/Admin/Website/Create")]
+        [HttpPost("/{slug}/Admin/Website/Create")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
+            string? slug,
             ConferencePageBlock model,
             string? btnText,
             string? btnUrl,
@@ -229,7 +481,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
             }
 
-            if (!await CanAccessCurrentTenantAsync())
+            if (!await CanAccessCurrentTenantAsync(slug))
             {
                 TempData["ErrorMessage"] = T(
                     "Error_UnauthorizedTenant",
@@ -238,41 +490,46 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return RedirectToSafePage();
             }
 
-            ModelState.Remove("TenantId");
-            ModelState.Remove("Conference");
-            ModelState.Remove("CreatedAt");
-            ModelState.Remove("UpdatedAt");
+            RemoveNavigationModelState();
 
             model.TenantId = tenant.Id;
+            model.Culture = NormalizeCulture(model.Culture);
+            model.Page = NormalizePage(model.Page);
 
-            var ok = await ConferenceBelongsToCurrentTenantAsync(model.ConferenceId);
+            var conferenceExists = await ConferenceBelongsToCurrentTenantAsync(model.ConferenceId);
 
-            if (!ok)
+            if (!conferenceExists)
             {
-                return NotFound(T(
-                    "Error_ConferenceNotFound",
-                    "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok."));
-            }
-
-            if (!ModelState.IsValid)
-            {
-                return View(model);
+                ModelState.AddModelError(
+                    nameof(model.ConferenceId),
+                    T("Error_ConferenceNotFound", "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok."));
             }
 
             if (model.BlockType == ConferencePageBlockType.Hero)
             {
-                var heroContent = new
-                {
-                    buttonText = btnText,
-                    buttonUrl = btnUrl,
-                    backgroundImageUrl = bgImage,
-                    imageUrl = sideImage
-                };
-
-                model.ContentJson = JsonSerializer.Serialize(heroContent);
+                ValidateHeroUrls(btnUrl, bgImage, sideImage);
+            }
+            else
+            {
+                ValidateContentJson(model.ContentJson);
             }
 
+            if (!ModelState.IsValid)
+            {
+                await FillViewBagsAsync(model.Culture, model.Page, model.ConferenceId);
+                return View(model);
+            }
+
+            model.ContentJson = BuildContentJson(
+                model.BlockType,
+                model.ContentJson,
+                btnText,
+                btnUrl,
+                bgImage,
+                sideImage);
+
             model.CreatedAt = DateTime.UtcNow;
+            model.UpdatedAt = null;
 
             _context.ConferencePageBlocks.Add(model);
             await _context.SaveChangesAsync();
@@ -281,17 +538,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "Success_BlockCreated",
                 "Blok başarıyla oluşturuldu.");
 
-            return RedirectToAction(nameof(Index), new
-            {
-                slug = CurrentSlug,
-                culture = model.Culture,
-                page = model.Page,
-                conferenceId = model.ConferenceId
-            });
+            return RedirectToWebsiteIndex(
+                model.Culture,
+                model.Page,
+                model.ConferenceId);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Edit(int id)
+        [HttpGet("/Admin/Website/Edit/{id:int}")]
+        [HttpGet("/{slug}/Admin/Website/Edit/{id:int}")]
+        public async Task<IActionResult> Edit(
+            string? slug,
+            int id)
         {
             var tenant = _tenantContext.Current;
 
@@ -300,7 +557,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
             }
 
-            if (!await CanAccessCurrentTenantAsync())
+            if (!await CanAccessCurrentTenantAsync(slug))
             {
                 TempData["ErrorMessage"] = T(
                     "Error_UnauthorizedTenant",
@@ -310,6 +567,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             var block = await _context.ConferencePageBlocks
+                .AsNoTracking()
                 .FirstOrDefaultAsync(x =>
                     x.Id == id &&
                     x.TenantId == tenant.Id);
@@ -330,12 +588,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Geçerli kongre bulunamadı veya bu kongreye erişim yetkiniz yok."));
             }
 
+            await FillViewBagsAsync(block.Culture, block.Page, block.ConferenceId);
+
             return View(block);
         }
 
-        [HttpPost]
+        [HttpPost("/Admin/Website/Edit")]
+        [HttpPost("/Admin/Website/Edit/{id:int}")]
+        [HttpPost("/{slug}/Admin/Website/Edit")]
+        [HttpPost("/{slug}/Admin/Website/Edit/{id:int}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
+            string? slug,
+            int? id,
             ConferencePageBlock model,
             string? btnText,
             string? btnUrl,
@@ -349,7 +614,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
             }
 
-            if (!await CanAccessCurrentTenantAsync())
+            if (!await CanAccessCurrentTenantAsync(slug))
             {
                 TempData["ErrorMessage"] = T(
                     "Error_UnauthorizedTenant",
@@ -358,10 +623,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return RedirectToSafePage();
             }
 
-            ModelState.Remove("TenantId");
-            ModelState.Remove("Conference");
-            ModelState.Remove("CreatedAt");
-            ModelState.Remove("UpdatedAt");
+            if (id.HasValue && id.Value != model.Id)
+            {
+                return NotFound();
+            }
+
+            RemoveNavigationModelState();
+
+            model.Culture = NormalizeCulture(model.Culture);
+            model.Page = NormalizePage(model.Page);
 
             var block = await _context.ConferencePageBlocks
                 .FirstOrDefaultAsync(x =>
@@ -384,26 +654,25 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Geçerli kongre bulunamadı veya bu kongreye erişim yetkiniz yok."));
             }
 
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
             if (model.BlockType == ConferencePageBlockType.Hero)
             {
-                var heroContent = new
-                {
-                    buttonText = btnText,
-                    buttonUrl = btnUrl,
-                    backgroundImageUrl = bgImage,
-                    imageUrl = sideImage
-                };
-
-                block.ContentJson = JsonSerializer.Serialize(heroContent);
+                ValidateHeroUrls(btnUrl, bgImage, sideImage);
             }
             else
             {
-                block.ContentJson = model.ContentJson;
+                ValidateContentJson(model.ContentJson);
+            }
+
+            if (!ModelState.IsValid)
+            {
+                model.TenantId = block.TenantId;
+                model.ConferenceId = block.ConferenceId;
+                model.CreatedAt = block.CreatedAt;
+                model.UpdatedAt = block.UpdatedAt;
+
+                await FillViewBagsAsync(model.Culture, model.Page, block.ConferenceId);
+
+                return View(model);
             }
 
             block.Page = model.Page;
@@ -415,24 +684,32 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             block.IsActive = model.IsActive;
             block.UpdatedAt = DateTime.UtcNow;
 
+            block.ContentJson = BuildContentJson(
+                model.BlockType,
+                model.ContentJson,
+                btnText,
+                btnUrl,
+                bgImage,
+                sideImage);
+
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = T(
                 "Success_BlockUpdated",
                 "Blok başarıyla güncellendi.");
 
-            return RedirectToAction(nameof(Index), new
-            {
-                slug = CurrentSlug,
-                culture = block.Culture,
-                page = block.Page,
-                conferenceId = block.ConferenceId
-            });
+            return RedirectToWebsiteIndex(
+                block.Culture,
+                block.Page,
+                block.ConferenceId);
         }
 
-        [HttpPost]
+        [HttpPost("/Admin/Website/Toggle")]
+        [HttpPost("/{slug}/Admin/Website/Toggle")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Toggle(int id)
+        public async Task<IActionResult> Toggle(
+            string? slug,
+            int id)
         {
             var tenant = _tenantContext.Current;
 
@@ -441,7 +718,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
             }
 
-            if (!await CanAccessCurrentTenantAsync())
+            if (!await CanAccessCurrentTenantAsync(slug))
             {
                 TempData["ErrorMessage"] = T(
                     "Error_UnauthorizedTenant",
@@ -480,18 +757,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 ? T("Success_BlockActivated", "Blok aktif hale getirildi.")
                 : T("Success_BlockDeactivated", "Blok pasif hale getirildi.");
 
-            return RedirectToAction(nameof(Index), new
-            {
-                slug = CurrentSlug,
-                culture = block.Culture,
-                page = block.Page,
-                conferenceId = block.ConferenceId
-            });
+            return RedirectToWebsiteIndex(
+                block.Culture,
+                block.Page,
+                block.ConferenceId);
         }
 
-        [HttpPost]
+        [HttpPost("/Admin/Website/Delete")]
+        [HttpPost("/{slug}/Admin/Website/Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(
+            string? slug,
+            int id)
         {
             var tenant = _tenantContext.Current;
 
@@ -500,7 +777,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
             }
 
-            if (!await CanAccessCurrentTenantAsync())
+            if (!await CanAccessCurrentTenantAsync(slug))
             {
                 TempData["ErrorMessage"] = T(
                     "Error_UnauthorizedTenant",
@@ -530,6 +807,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Geçerli kongre bulunamadı veya bu kongreye erişim yetkiniz yok."));
             }
 
+            var culture = block.Culture;
+            var page = block.Page;
+            var conferenceId = block.ConferenceId;
+
             _context.ConferencePageBlocks.Remove(block);
             await _context.SaveChangesAsync();
 
@@ -537,13 +818,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "Success_BlockDeleted",
                 "Blok başarıyla silindi.");
 
-            return RedirectToAction(nameof(Index), new
-            {
-                slug = CurrentSlug,
-                culture = block.Culture,
-                page = block.Page,
-                conferenceId = block.ConferenceId
-            });
+            return RedirectToWebsiteIndex(
+                culture,
+                page,
+                conferenceId);
         }
     }
 }

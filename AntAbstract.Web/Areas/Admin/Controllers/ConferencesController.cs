@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -18,9 +19,16 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Organizator")]
+    [Authorize(Roles = "Admin")]
     public class ConferencesController : Controller
     {
+        private const long MaxTemplateFileSize = 10 * 1024 * 1024;
+
+        private static readonly HashSet<string> AllowedTemplateExtensions = new(
+            new[] { ".pdf", ".doc", ".docx" },
+            StringComparer.OrdinalIgnoreCase
+        );
+
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
@@ -48,17 +56,26 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             var value = _localizer[key];
 
-            return value.ResourceNotFound
+            return value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
                 ? fallback
                 : value.Value;
         }
 
-        private async Task<bool> IsCurrentUserAdminAsync()
+        private async Task<AppUser?> GetCurrentUserAsync()
         {
-            var user = await _userManager.GetUserAsync(User);
+            return await _userManager.GetUserAsync(User);
+        }
 
-            return user != null &&
-                   await _userManager.IsInRoleAsync(user, "Admin");
+        private async Task<Guid?> GetCurrentAdminTenantIdAsync()
+        {
+            var user = await GetCurrentUserAsync();
+
+            if (user == null || !user.TenantId.HasValue)
+            {
+                return null;
+            }
+
+            return user.TenantId.Value;
         }
 
         private async Task<bool> CanAccessCurrentTenantAsync()
@@ -68,27 +85,47 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return false;
             }
 
-            var user = await _userManager.GetUserAsync(User);
+            var tenantId = await GetCurrentAdminTenantIdAsync();
 
-            if (user == null)
+            if (!tenantId.HasValue)
             {
                 return false;
             }
 
-            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+            return tenantId.Value == _tenantContext.Current.Id;
+        }
 
-            if (isAdmin)
+        private async Task FillTenantViewBagAsync(Guid? selectedTenantId = null)
+        {
+            var tenantId = await GetCurrentAdminTenantIdAsync();
+
+            if (!tenantId.HasValue)
             {
-                return true;
+                ViewBag.Tenants = new SelectList(new List<Tenant>(), "Id", "Name");
+                return;
             }
 
-            return user.TenantId.HasValue &&
-                   user.TenantId.Value == _tenantContext.Current.Id;
+            var tenants = await _context.Tenants
+                .AsNoTracking()
+                .Where(x => x.Id == tenantId.Value)
+                .OrderBy(x => x.Name)
+                .ToListAsync();
+
+            ViewBag.Tenants = new SelectList(
+                tenants,
+                "Id",
+                "Name",
+                selectedTenantId ?? tenantId.Value);
         }
 
         private static string GenerateSlug(string title)
         {
-            var text = title.ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return "conference";
+            }
+
+            var text = title.Trim().ToLowerInvariant();
 
             text = text
                 .Replace("ş", "s")
@@ -101,59 +138,138 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             text = Regex.Replace(text, @"[^a-z0-9\s-]", "");
             text = Regex.Replace(text, @"\s+", "-").Trim('-');
 
-            return text;
+            return string.IsNullOrWhiteSpace(text)
+                ? "conference"
+                : text;
+        }
+
+        private async Task<string> GenerateUniqueConferenceSlugAsync(
+            string title,
+            Guid? ignoreConferenceId = null)
+        {
+            var baseSlug = GenerateSlug(title);
+            var candidate = baseSlug;
+            var counter = 2;
+
+            while (await _context.Conferences
+                       .AsNoTracking()
+                       .AnyAsync(c =>
+                           c.Slug == candidate &&
+                           (!ignoreConferenceId.HasValue || c.Id != ignoreConferenceId.Value)))
+            {
+                candidate = $"{baseSlug}-{counter}";
+                counter++;
+            }
+
+            return candidate;
+        }
+
+        private void RemoveConferenceNavigationModelState()
+        {
+            ModelState.Remove("Tenant");
+            ModelState.Remove("Slug");
+            ModelState.Remove("Registrations");
+            ModelState.Remove("ConferencePageBlocks");
+            ModelState.Remove("Submissions");
+            ModelState.Remove("ReviewAssignments");
+            ModelState.Remove("Sessions");
+        }
+
+        private void ValidateConferenceDates(Conference conference)
+        {
+            if (conference.StartDate != default &&
+                conference.EndDate != default &&
+                conference.EndDate < conference.StartDate)
+            {
+                ModelState.AddModelError(
+                    nameof(conference.EndDate),
+                    T("Error_EndDateBeforeStartDate", "Bitiş tarihi başlangıç tarihinden önce olamaz."));
+            }
+        }
+
+        private async Task<string> UploadTemplateFileAsync(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                throw new InvalidOperationException(
+                    T("Error_FileRequired", "Dosya seçilmedi."));
+            }
+
+            if (file.Length > MaxTemplateFileSize)
+            {
+                throw new InvalidOperationException(
+                    T("Error_FileTooLarge", "Dosya boyutu en fazla 10 MB olabilir."));
+            }
+
+            var extension = Path.GetExtension(file.FileName);
+
+            if (string.IsNullOrWhiteSpace(extension) ||
+                !AllowedTemplateExtensions.Contains(extension))
+            {
+                throw new InvalidOperationException(
+                    T("Error_InvalidTemplateFileExtension", "Sadece PDF, DOC ve DOCX dosyaları yüklenebilir."));
+            }
+
+            var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "templates");
+
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            var uniqueFileName = $"{Guid.NewGuid()}{extension.ToLowerInvariant()}";
+            var absolutePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            await using var fileStream = new FileStream(absolutePath, FileMode.Create);
+            await file.CopyToAsync(fileStream);
+
+            return "/uploads/templates/" + uniqueFileName;
+        }
+
+        private void SetSelectedConferenceSession(Conference conference)
+        {
+            var slug = conference.Tenant?.Slug ?? _tenantContext.Current?.Slug ?? "";
+            var tenantId = conference.TenantId;
+
+            _selectedConferenceService.SetSelectedConferenceId(conference.Id);
+
+            HttpContext.Session.SetString("SelectedConferenceId", conference.Id.ToString());
+            HttpContext.Session.SetString("SelectedConferenceSlug", slug);
+            HttpContext.Session.SetString("SelectedConferenceTitle", conference.Title ?? "");
+
+            HttpContext.Session.SetString($"SelectedConferenceId:{tenantId}", conference.Id.ToString());
+            HttpContext.Session.SetString($"SelectedConferenceSlug:{tenantId}", slug);
+            HttpContext.Session.SetString($"SelectedConferenceTitle:{tenantId}", conference.Title ?? "");
         }
 
         [HttpGet("/Admin/Conferences")]
         public async Task<IActionResult> RootIndex()
         {
-            var user = await _userManager.GetUserAsync(User);
-            var isAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
+            var tenantId = await GetCurrentAdminTenantIdAsync();
 
-            if (!isAdmin && user?.TenantId != null)
+            if (!tenantId.HasValue)
             {
-                var tenant = await _context.Tenants
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(x => x.Id == user.TenantId.Value);
+                TempData["ErrorMessage"] = T(
+                    "Error_AdminTenantNotFound",
+                    "Admin hesabınıza bağlı kurum bulunamadı.");
 
-                if (tenant != null && !string.IsNullOrWhiteSpace(tenant.Slug))
-                {
-                    return Redirect($"/{tenant.Slug}/Admin/Conferences");
-                }
+                return Redirect("/Dashboard/MyConferences");
             }
 
-            var selectedId = _selectedConferenceService.GetSelectedConferenceId();
+            var tenant = await _context.Tenants
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == tenantId.Value);
 
-            if (selectedId != null)
+            if (tenant != null && !string.IsNullOrWhiteSpace(tenant.Slug))
             {
-                var query = _context.Conferences
-                    .AsNoTracking()
-                    .Include(x => x.Tenant)
-                    .AsQueryable();
-
-                if (!isAdmin && user?.TenantId != null)
-                {
-                    query = query.Where(x => x.TenantId == user.TenantId.Value);
-                }
-                else if (!isAdmin && user?.TenantId == null)
-                {
-                    query = query.Where(x => false);
-                }
-
-                var conf = await query
-                    .FirstOrDefaultAsync(x => x.Id == selectedId.Value);
-
-                if (conf?.Tenant?.Slug != null)
-                {
-                    return Redirect($"/{conf.Tenant.Slug}/Admin/Conferences");
-                }
+                return Redirect($"/{tenant.Slug}/Admin/Conferences");
             }
 
             TempData["ErrorMessage"] = T(
-                "Error_SelectConferenceFromDashboard",
-                "Lütfen önce dashboard üzerinden geçerli bir kongre seçiniz.");
+                "Error_TenantNotFound",
+                "Hesabınıza bağlı kurum bulunamadı.");
 
-            return Redirect("/Admin/Dashboard");
+            return Redirect("/Dashboard/MyConferences");
         }
 
         [HttpGet("/{slug}/Admin/Conferences")]
@@ -162,7 +278,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                return Redirect("/Admin/Dashboard");
+                return Redirect("/Dashboard/MyConferences");
             }
 
             if (!await CanAccessCurrentTenantAsync())
@@ -171,7 +287,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_UnauthorizedTenant",
                     "Bu kongreleri görüntüleme yetkiniz yok.");
 
-                return Redirect("/Admin/Dashboard");
+                return Redirect("/Dashboard/MyConferences");
             }
 
             var conferences = await _context.Conferences
@@ -180,7 +296,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
-            ViewBag.IsSuperAdmin = await IsCurrentUserAdminAsync();
+            ViewBag.IsSuperAdmin = false;
+            ViewBag.IsAdmin = true;
 
             return View(conferences);
         }
@@ -191,32 +308,26 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                return Redirect("/Admin/Dashboard");
+                return Redirect("/Dashboard/MyConferences");
             }
 
-            var isAdmin = await IsCurrentUserAdminAsync();
-
-            if (!isAdmin)
+            if (!await CanAccessCurrentTenantAsync())
             {
                 TempData["ErrorMessage"] = T(
-                    "Error_CreatePermissionWithSupport",
-                    "Kongre oluşturma yetkiniz yok. Lütfen süper admin ile iletişime geçiniz.");
+                    "Error_CreatePermission",
+                    "Bu kurum için kongre oluşturma yetkiniz yok.");
 
-                return Redirect($"/{slug}/Admin/Conferences");
+                return Redirect("/Dashboard/MyConferences");
             }
 
-            var tenants = await _context.Tenants
-                .AsNoTracking()
-                .OrderBy(x => x.Name)
-                .ToListAsync();
+            await FillTenantViewBagAsync(_tenantContext.Current.Id);
 
-            ViewBag.Tenants = new SelectList(
-                tenants,
-                "Id",
-                "Name",
-                _tenantContext.Current.Id);
-
-            return View();
+            return View(new Conference
+            {
+                TenantId = _tenantContext.Current.Id,
+                StartDate = DateTime.Today,
+                EndDate = DateTime.Today
+            });
         }
 
         [HttpPost("/{slug}/Admin/Conferences/Create")]
@@ -226,88 +337,51 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                return Redirect("/Admin/Dashboard");
+                return Redirect("/Dashboard/MyConferences");
             }
 
-            var isAdmin = await IsCurrentUserAdminAsync();
-
-            if (!isAdmin)
+            if (!await CanAccessCurrentTenantAsync())
             {
                 TempData["ErrorMessage"] = T(
                     "Error_CreatePermission",
-                    "Kongre oluşturma yetkiniz yok.");
+                    "Bu kurum için kongre oluşturma yetkiniz yok.");
 
-                return Redirect($"/{slug}/Admin/Conferences");
+                return Redirect("/Dashboard/MyConferences");
             }
 
-            ModelState.Remove("Tenant");
-            ModelState.Remove("Slug");
-            ModelState.Remove("Registrations");
-            ModelState.Remove("ConferencePageBlocks");
-            ModelState.Remove("Submissions");
-            ModelState.Remove("ReviewAssignments");
-            ModelState.Remove("Sessions");
+            RemoveConferenceNavigationModelState();
 
-            if (conference.TenantId == Guid.Empty)
-            {
-                conference.TenantId = _tenantContext.Current.Id;
-            }
+            conference.TenantId = _tenantContext.Current.Id;
 
-            var tenantExists = await _context.Tenants
-                .AsNoTracking()
-                .AnyAsync(x => x.Id == conference.TenantId);
-
-            if (!tenantExists)
-            {
-                ModelState.AddModelError(
-                    nameof(conference.TenantId),
-                    T("Error_TenantNotFound", "Seçilen kurum bulunamadı."));
-            }
+            ValidateConferenceDates(conference);
 
             if (!ModelState.IsValid)
             {
-                var tenants = await _context.Tenants
-                    .AsNoTracking()
-                    .OrderBy(x => x.Name)
-                    .ToListAsync();
-
-                ViewBag.Tenants = new SelectList(
-                    tenants,
-                    "Id",
-                    "Name",
-                    conference.TenantId);
-
+                await FillTenantViewBagAsync(conference.TenantId);
                 return View(conference);
             }
 
             conference.Id = Guid.NewGuid();
-
-            if (string.IsNullOrWhiteSpace(conference.Slug) &&
-                !string.IsNullOrWhiteSpace(conference.Title))
-            {
-                conference.Slug = GenerateSlug(conference.Title);
-            }
+            conference.Slug = await GenerateUniqueConferenceSlugAsync(conference.Title);
 
             _context.Conferences.Add(conference);
             await _context.SaveChangesAsync();
 
-            var assignedTenant = await _context.Tenants
+            var savedConference = await _context.Conferences
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == conference.TenantId);
+                .Include(x => x.Tenant)
+                .FirstOrDefaultAsync(x => x.Id == conference.Id);
 
-            var redirectSlug = assignedTenant?.Slug ?? slug;
-
-            _selectedConferenceService.SetSelectedConferenceId(conference.Id);
-
-            HttpContext.Session.SetString("SelectedConferenceId", conference.Id.ToString());
-            HttpContext.Session.SetString("SelectedConferenceSlug", redirectSlug);
-            HttpContext.Session.SetString("SelectedConferenceTitle", conference.Title ?? "");
+            if (savedConference != null)
+            {
+                SetSelectedConferenceSession(savedConference);
+            }
 
             TempData["SuccessMessage"] = T(
                 "Success_ConferenceCreated",
                 "Kongre başarıyla oluşturuldu.");
 
-            return Redirect($"/{redirectSlug}/Admin/Conferences");
+            return Redirect($"/{slug}/Admin/Conferences");
         }
 
         [HttpGet("/{slug}/Admin/Conferences/Edit/{id:guid}")]
@@ -316,7 +390,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                return Redirect("/Admin/Dashboard");
+                return Redirect("/Dashboard/MyConferences");
             }
 
             if (!await CanAccessCurrentTenantAsync())
@@ -325,10 +399,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_UnauthorizedTenant",
                     "Bu kongreyi düzenleme yetkiniz yok.");
 
-                return Redirect("/Admin/Dashboard");
+                return Redirect("/Dashboard/MyConferences");
             }
 
             var conference = await _context.Conferences
+                .AsNoTracking()
                 .FirstOrDefaultAsync(c =>
                     c.Id == id &&
                     c.TenantId == _tenantContext.Current.Id);
@@ -337,6 +412,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 return NotFound();
             }
+
+            await FillTenantViewBagAsync(conference.TenantId);
 
             return View(conference);
         }
@@ -354,7 +431,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                return Redirect("/Admin/Dashboard");
+                return Redirect("/Dashboard/MyConferences");
             }
 
             if (!await CanAccessCurrentTenantAsync())
@@ -363,7 +440,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_UnauthorizedTenant",
                     "Bu kongreyi güncelleme yetkiniz yok.");
 
-                return Redirect("/Admin/Dashboard");
+                return Redirect("/Dashboard/MyConferences");
             }
 
             if (id != conference.Id)
@@ -371,76 +448,81 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return NotFound();
             }
 
-            ModelState.Remove("Tenant");
-            ModelState.Remove("Slug");
-            ModelState.Remove("Registrations");
-            ModelState.Remove("ConferencePageBlocks");
-            ModelState.Remove("Submissions");
-            ModelState.Remove("ReviewAssignments");
-            ModelState.Remove("Sessions");
+            RemoveConferenceNavigationModelState();
+            ValidateConferenceDates(conference);
 
             if (!ModelState.IsValid)
             {
+                conference.TenantId = _tenantContext.Current.Id;
+                await FillTenantViewBagAsync(conference.TenantId);
                 return View(conference);
             }
 
-            var existingConf = await _context.Conferences
+            var existingConference = await _context.Conferences
                 .FirstOrDefaultAsync(c =>
                     c.Id == id &&
                     c.TenantId == _tenantContext.Current.Id);
 
-            if (existingConf == null)
+            if (existingConference == null)
             {
                 return NotFound();
             }
 
-            var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "templates");
-
-            if (!Directory.Exists(uploadsFolder))
+            try
             {
-                Directory.CreateDirectory(uploadsFolder);
+                if (WritingRulesFile != null && WritingRulesFile.Length > 0)
+                {
+                    existingConference.WritingRulesPath = await UploadTemplateFileAsync(WritingRulesFile);
+                }
+
+                if (AbstractTemplateFile != null && AbstractTemplateFile.Length > 0)
+                {
+                    existingConference.AbstractTemplatePath = await UploadTemplateFileAsync(AbstractTemplateFile);
+                }
+
+                if (FullTextTemplateFile != null && FullTextTemplateFile.Length > 0)
+                {
+                    existingConference.FullTextTemplatePath = await UploadTemplateFileAsync(FullTextTemplateFile);
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+
+                conference.TenantId = existingConference.TenantId;
+                conference.WritingRulesPath = existingConference.WritingRulesPath;
+                conference.AbstractTemplatePath = existingConference.AbstractTemplatePath;
+                conference.FullTextTemplatePath = existingConference.FullTextTemplatePath;
+
+                await FillTenantViewBagAsync(conference.TenantId);
+                return View(conference);
             }
 
-            if (WritingRulesFile != null && WritingRulesFile.Length > 0)
+            existingConference.Title = conference.Title;
+            existingConference.StartDate = conference.StartDate;
+            existingConference.EndDate = conference.EndDate;
+            existingConference.Description = conference.Description;
+            existingConference.Venue = conference.Venue;
+            existingConference.TenantId = _tenantContext.Current.Id;
+
+            if (!string.IsNullOrWhiteSpace(existingConference.Title))
             {
-                var uniqueFileName = Guid.NewGuid() + "_" + Path.GetFileName(WritingRulesFile.FileName);
-                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                await using var fileStream = new FileStream(filePath, FileMode.Create);
-                await WritingRulesFile.CopyToAsync(fileStream);
-
-                existingConf.WritingRulesPath = "/uploads/templates/" + uniqueFileName;
+                existingConference.Slug = await GenerateUniqueConferenceSlugAsync(
+                    existingConference.Title,
+                    existingConference.Id);
             }
-
-            if (AbstractTemplateFile != null && AbstractTemplateFile.Length > 0)
-            {
-                var uniqueFileName = Guid.NewGuid() + "_" + Path.GetFileName(AbstractTemplateFile.FileName);
-                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                await using var fileStream = new FileStream(filePath, FileMode.Create);
-                await AbstractTemplateFile.CopyToAsync(fileStream);
-
-                existingConf.AbstractTemplatePath = "/uploads/templates/" + uniqueFileName;
-            }
-
-            if (FullTextTemplateFile != null && FullTextTemplateFile.Length > 0)
-            {
-                var uniqueFileName = Guid.NewGuid() + "_" + Path.GetFileName(FullTextTemplateFile.FileName);
-                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                await using var fileStream = new FileStream(filePath, FileMode.Create);
-                await FullTextTemplateFile.CopyToAsync(fileStream);
-
-                existingConf.FullTextTemplatePath = "/uploads/templates/" + uniqueFileName;
-            }
-
-            existingConf.Title = conference.Title;
-            existingConf.StartDate = conference.StartDate;
-            existingConf.EndDate = conference.EndDate;
-            existingConf.Description = conference.Description;
-            existingConf.Venue = conference.Venue;
 
             await _context.SaveChangesAsync();
+
+            var savedConference = await _context.Conferences
+                .AsNoTracking()
+                .Include(x => x.Tenant)
+                .FirstOrDefaultAsync(x => x.Id == existingConference.Id);
+
+            if (savedConference != null)
+            {
+                SetSelectedConferenceSession(savedConference);
+            }
 
             TempData["SuccessMessage"] = T(
                 "Success_ConferenceUpdated",
@@ -456,18 +538,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                return Redirect("/Admin/Dashboard");
+                return Redirect("/Dashboard/MyConferences");
             }
 
-            var isAdmin = await IsCurrentUserAdminAsync();
-
-            if (!isAdmin)
+            if (!await CanAccessCurrentTenantAsync())
             {
                 TempData["ErrorMessage"] = T(
                     "Error_DeletePermission",
-                    "Kongre silme yetkiniz yok.");
+                    "Bu kongreyi silme yetkiniz yok.");
 
-                return Redirect($"/{slug}/Admin/Conferences");
+                return Redirect("/Dashboard/MyConferences");
             }
 
             var conference = await _context.Conferences
@@ -475,15 +555,39 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     c.Id == id &&
                     c.TenantId == _tenantContext.Current.Id);
 
-            if (conference != null)
+            if (conference == null)
             {
-                _context.Conferences.Remove(conference);
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = T(
-                    "Success_ConferenceDeleted",
-                    "Kongre başarıyla silindi.");
+                return Redirect($"/{slug}/Admin/Conferences");
             }
+
+            var hasRelatedData =
+                await _context.Registrations.AnyAsync(x => x.ConferenceId == conference.Id) ||
+                await _context.Submissions.AnyAsync(x => x.ConferenceId == conference.Id) ||
+                await _context.Sessions.AnyAsync(x => x.ConferenceId == conference.Id) ||
+                await _context.ConferencePageBlocks.AnyAsync(x => x.ConferenceId == conference.Id) ||
+                await _context.ReviewAssignments
+                    .Include(x => x.Submission)
+                    .AnyAsync(x =>
+                        x.Submission != null &&
+                        x.Submission.ConferenceId == conference.Id);
+
+            if (hasRelatedData)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_ConferenceHasRelatedData",
+                    "Bu kongreye bağlı kayıt, bildiri, oturum, website bloğu veya hakem değerlendirmesi olduğu için silinemez.");
+
+                return Redirect($"/{slug}/Admin/Conferences");
+            }
+
+            _context.Conferences.Remove(conference);
+            await _context.SaveChangesAsync();
+
+            _selectedConferenceService.ClearSelectedConferenceId();
+
+            TempData["SuccessMessage"] = T(
+                "Success_ConferenceDeleted",
+                "Kongre başarıyla silindi.");
 
             return Redirect($"/{slug}/Admin/Conferences");
         }

@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,8 +11,7 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Organizator")]
-    [Route("Referee/{action=Index}/{id?}")]
+    [Authorize(Roles = "Admin")]
     [Route("Admin/Referee/{action=Index}/{id?}")]
     public class RefereeController : Controller
     {
@@ -35,49 +33,62 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             var value = _localizer[key];
 
-            return value.ResourceNotFound
+            return value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
                 ? fallback
                 : value.Value;
         }
 
-        private async Task<bool> IsCurrentUserAdminAsync(AppUser? currentUser)
+        private async Task<AppUser?> GetCurrentUserAsync()
         {
-            return currentUser != null &&
-                   await _userManager.IsInRoleAsync(currentUser, "Admin");
+            return await _userManager.GetUserAsync(User);
+        }
+
+        private async Task<bool> CurrentAdminHasTenantAsync()
+        {
+            var currentUser = await GetCurrentUserAsync();
+
+            return currentUser != null && currentUser.TenantId.HasValue;
         }
 
         public async Task<IActionResult> Index()
         {
-            var currentUser = await _userManager.GetUserAsync(User);
-            var isAdmin = await IsCurrentUserAdminAsync(currentUser);
+            var currentUser = await GetCurrentUserAsync();
+
+            if (currentUser == null)
+            {
+                return Challenge();
+            }
+
+            if (!currentUser.TenantId.HasValue)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_AdminTenantNotFound",
+                    "Admin hesabınıza bağlı kurum bulunamadı.");
+
+                return View(new List<AppUser>());
+            }
 
             var referees = await _userManager.GetUsersInRoleAsync("Referee");
 
-            if (!isAdmin && currentUser?.TenantId != null)
-            {
-                referees = referees
-                    .Where(r => r.TenantId == currentUser.TenantId)
-                    .ToList();
-            }
-            else if (!isAdmin && currentUser?.TenantId == null)
-            {
-                referees = new List<AppUser>();
-            }
+            var filteredReferees = referees
+                .Where(r =>
+                    r.TenantId.HasValue &&
+                    r.TenantId.Value == currentUser.TenantId.Value)
+                .OrderBy(r => r.FirstName)
+                .ThenBy(r => r.LastName)
+                .ToList();
 
-            return View(referees);
+            return View(filteredReferees);
         }
 
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            var currentUser = await _userManager.GetUserAsync(User);
-            var isAdmin = await IsCurrentUserAdminAsync(currentUser);
-
-            if (!isAdmin && currentUser?.TenantId == null)
+            if (!await CurrentAdminHasTenantAsync())
             {
                 TempData["ErrorMessage"] = T(
-                    "Error_UnauthorizedCreate",
-                    "Hakem oluşturmak için bir kuruma bağlı olmanız gerekir.");
+                    "Error_AdminTenantNotFound",
+                    "Hakem oluşturmak için admin hesabınıza bağlı bir kurum bulunmalıdır.");
 
                 return RedirectToAction(nameof(Index));
             }
@@ -89,14 +100,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(RefereeCreateViewModel model)
         {
-            var currentUser = await _userManager.GetUserAsync(User);
-            var isAdmin = await IsCurrentUserAdminAsync(currentUser);
+            var currentUser = await GetCurrentUserAsync();
 
-            if (!isAdmin && currentUser?.TenantId == null)
+            if (currentUser == null)
+            {
+                return Challenge();
+            }
+
+            if (!currentUser.TenantId.HasValue)
             {
                 TempData["ErrorMessage"] = T(
-                    "Error_UnauthorizedCreate",
-                    "Hakem oluşturmak için bir kuruma bağlı olmanız gerekir.");
+                    "Error_AdminTenantNotFound",
+                    "Hakem oluşturmak için admin hesabınıza bağlı bir kurum bulunmalıdır.");
 
                 return RedirectToAction(nameof(Index));
             }
@@ -122,40 +137,46 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return View(model);
             }
 
-            var user = new AppUser
+            var refereeUser = new AppUser
             {
                 UserName = model.Email,
                 Email = model.Email,
                 FirstName = model.FirstName,
                 LastName = model.LastName,
                 Institution = model.Institution,
+                TenantId = currentUser.TenantId.Value,
                 EmailConfirmed = true
             };
 
-            if (!isAdmin)
+            var createResult = await _userManager.CreateAsync(refereeUser, model.Password);
+
+            if (!createResult.Succeeded)
             {
-                user.TenantId = currentUser!.TenantId;
+                foreach (var error in createResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+
+                return View(model);
             }
 
-            var result = await _userManager.CreateAsync(user, model.Password);
+            var roleResult = await _userManager.AddToRoleAsync(refereeUser, "Referee");
 
-            if (result.Succeeded)
+            if (!roleResult.Succeeded)
             {
-                await _userManager.AddToRoleAsync(user, "Referee");
+                foreach (var error in roleResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
 
-                TempData["SuccessMessage"] = T(
-                    "Success_RefereeCreated",
-                    "Hakem başarıyla oluşturuldu.");
-
-                return RedirectToAction(nameof(Index));
+                return View(model);
             }
 
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error.Description);
-            }
+            TempData["SuccessMessage"] = T(
+                "Success_RefereeCreated",
+                "Hakem başarıyla oluşturuldu.");
 
-            return View(model);
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
@@ -171,12 +192,25 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var currentUser = await _userManager.GetUserAsync(User);
-            var isAdmin = await IsCurrentUserAdminAsync(currentUser);
+            var currentUser = await GetCurrentUserAsync();
 
-            var user = await _userManager.FindByIdAsync(id);
+            if (currentUser == null)
+            {
+                return Challenge();
+            }
 
-            if (user == null)
+            if (!currentUser.TenantId.HasValue)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_AdminTenantNotFound",
+                    "Admin hesabınıza bağlı kurum bulunamadı.");
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            var refereeUser = await _userManager.FindByIdAsync(id);
+
+            if (refereeUser == null)
             {
                 TempData["ErrorMessage"] = T(
                     "Error_UserNotFound",
@@ -185,7 +219,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            if (currentUser != null && user.Id == currentUser.Id)
+            if (refereeUser.Id == currentUser.Id)
             {
                 TempData["ErrorMessage"] = T(
                     "Error_CannotDeleteOwnAccount",
@@ -194,7 +228,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var isReferee = await _userManager.IsInRoleAsync(user, "Referee");
+            if (!refereeUser.TenantId.HasValue ||
+                refereeUser.TenantId.Value != currentUser.TenantId.Value)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_UnauthorizedDelete",
+                    "Bu hakemi silme yetkiniz yok.");
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            var isReferee = await _userManager.IsInRoleAsync(refereeUser, "Referee");
 
             if (!isReferee)
             {
@@ -205,31 +249,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            if (!isAdmin)
+            var targetIsSuperAdmin = await _userManager.IsInRoleAsync(refereeUser, "SuperAdmin");
+            var targetIsAdmin = await _userManager.IsInRoleAsync(refereeUser, "Admin");
+
+            if (targetIsSuperAdmin || targetIsAdmin)
             {
-                if (currentUser?.TenantId == null || user.TenantId != currentUser.TenantId)
-                {
-                    TempData["ErrorMessage"] = T(
-                        "Error_UnauthorizedDelete",
-                        "Bu hakemi silme yetkiniz yok.");
+                TempData["ErrorMessage"] = T(
+                    "Error_CannotDeleteManagementUser",
+                    "Yönetici rolündeki kullanıcıları bu ekrandan silemezsiniz.");
 
-                    return RedirectToAction(nameof(Index));
-                }
-
-                var targetIsAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-                var targetIsOrganizator = await _userManager.IsInRoleAsync(user, "Organizator");
-
-                if (targetIsAdmin || targetIsOrganizator)
-                {
-                    TempData["ErrorMessage"] = T(
-                        "Error_CannotDeleteManagementUser",
-                        "Yönetici rolündeki kullanıcıları silme yetkiniz yok.");
-
-                    return RedirectToAction(nameof(Index));
-                }
+                return RedirectToAction(nameof(Index));
             }
 
-            var deleteResult = await _userManager.DeleteAsync(user);
+            var deleteResult = await _userManager.DeleteAsync(refereeUser);
 
             if (!deleteResult.Succeeded)
             {
