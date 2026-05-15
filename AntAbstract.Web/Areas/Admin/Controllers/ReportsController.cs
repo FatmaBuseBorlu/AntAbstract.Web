@@ -5,10 +5,15 @@ using AntAbstract.Web.Models.ViewModels.Admin.Reports;
 using AntAbstract.Web.Models.ViewModels.Shared;
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -36,28 +41,42 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _localizer = localizer;
         }
 
-        [HttpGet("/Admin/Reports")]
-        public async Task<IActionResult> SelectConference(string? returnUrl = null)
+        private string T(string key, string fallback)
         {
-            var selectedId = _selectedConferenceService.GetSelectedConferenceId();
-            if (selectedId != null)
+            var value = _localizer[key];
+
+            return value.ResourceNotFound
+                ? fallback
+                : value.Value;
+        }
+
+        private async Task<bool> CanAccessCurrentTenantAsync()
+        {
+            if (_tenantContext.Current == null)
             {
-                var conf = await _context.Conferences
-                    .AsNoTracking()
-                    .Include(x => x.Tenant)
-                    .FirstOrDefaultAsync(x => x.Id == selectedId.Value);
-
-                if (conf?.Tenant?.Slug != null)
-                {
-                    HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
-
-                    if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
-                        return LocalRedirect(returnUrl);
-
-                    return RedirectToAction(nameof(Index), new { slug = conf.Tenant.Slug, conferenceId = conf.Id });
-                }
+                return false;
             }
 
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+
+            if (isAdmin)
+            {
+                return true;
+            }
+
+            return user.TenantId.HasValue &&
+                   user.TenantId.Value == _tenantContext.Current.Id;
+        }
+
+        private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync()
+        {
             var user = await _userManager.GetUserAsync(User);
             var isAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
 
@@ -75,16 +94,93 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 query = query.Where(c => false);
             }
 
+            return query;
+        }
+
+        private async Task<Conference?> GetAccessibleConferenceAsync(string slug, Guid? conferenceId)
+        {
+            if (_tenantContext.Current == null)
+            {
+                return null;
+            }
+
+            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            if (!await CanAccessCurrentTenantAsync())
+            {
+                return null;
+            }
+
+            Guid? selectedConferenceId = null;
+
+            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
+            {
+                selectedConferenceId = conferenceId.Value;
+            }
+            else
+            {
+                selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
+            }
+
+            if (selectedConferenceId == null || selectedConferenceId.Value == Guid.Empty)
+            {
+                return null;
+            }
+
+            return await _context.Conferences
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c =>
+                    c.Id == selectedConferenceId.Value &&
+                    c.TenantId == _tenantContext.Current.Id);
+        }
+
+        [HttpGet("/Admin/Reports")]
+        public async Task<IActionResult> SelectConference(string? returnUrl = null)
+        {
+            var selectedId = _selectedConferenceService.GetSelectedConferenceId();
+
+            if (selectedId != null)
+            {
+                var selectedQuery = await GetAccessibleConferenceQueryAsync();
+
+                var conf = await selectedQuery
+                    .FirstOrDefaultAsync(x => x.Id == selectedId.Value);
+
+                if (conf?.Tenant?.Slug != null)
+                {
+                    HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
+                    HttpContext.Session.SetString("SelectedConferenceTitle", conf.Title ?? "");
+
+                    if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    {
+                        return LocalRedirect(returnUrl);
+                    }
+
+                    return RedirectToAction(
+                        nameof(Index),
+                        new
+                        {
+                            slug = conf.Tenant.Slug,
+                            conferenceId = conf.Id
+                        });
+                }
+            }
+
+            var query = await GetAccessibleConferenceQueryAsync();
+
             var conferences = await query
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
             var vm = new SelectConferenceViewModel
             {
-                Title = _localizer["SelectConference_Title"],
-                Lead = _localizer["SelectConference_Lead"],
+                Title = T("SelectConference_Title", "Kongre Seç"),
+                Lead = T("SelectConference_Lead", "Raporları görüntülemek için önce kongre seçiniz."),
                 PostUrl = "/Admin/Reports/Select",
-                SubmitText = _localizer["SelectConference_Submit"],
+                SubmitText = T("SelectConference_Submit", "Devam Et"),
                 Conferences = conferences,
                 ReturnUrl = returnUrl
             };
@@ -96,49 +192,57 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SelectConferencePost(Guid conferenceId, string? returnUrl = null)
         {
-            var conf = await _context.Conferences
-                .Include(c => c.Tenant)
+            var query = await GetAccessibleConferenceQueryAsync();
+
+            var conf = await query
                 .FirstOrDefaultAsync(c => c.Id == conferenceId);
 
             if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
             {
-                TempData["ErrorMessage"] = _localizer["Error_ConferenceNotFound"];
+                TempData["ErrorMessage"] = T(
+                    "Error_ConferenceNotFound",
+                    "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+
                 return RedirectToAction(nameof(SelectConference));
             }
 
             _selectedConferenceService.SetSelectedConferenceId(conf.Id);
+
             HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
+            HttpContext.Session.SetString("SelectedConferenceTitle", conf.Title ?? "");
 
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
                 return LocalRedirect(returnUrl);
+            }
 
-            return RedirectToAction(nameof(Index), new { slug = conf.Tenant.Slug, conferenceId = conf.Id });
+            return RedirectToAction(
+                nameof(Index),
+                new
+                {
+                    slug = conf.Tenant.Slug,
+                    conferenceId = conf.Id
+                });
         }
 
         [HttpGet("/{slug}/Admin/Reports")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId = null)
         {
-            if (_tenantContext.Current == null)
-                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports" });
-
-            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
-                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports" });
-
-            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
-                _selectedConferenceService.SetSelectedConferenceId(conferenceId.Value);
-
-            var selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
-            if (selectedConferenceId == null)
-                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports" });
-
-            var conference = await _context.Conferences
-                .AsNoTracking()
-                .FirstOrDefaultAsync(c =>
-                    c.Id == selectedConferenceId.Value &&
-                    c.TenantId == _tenantContext.Current.Id);
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
 
             if (conference == null)
-                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports" });
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_SelectConferenceFirst",
+                    "Lütfen yetkili olduğunuz geçerli bir kongre seçiniz.");
+
+                return RedirectToAction(nameof(SelectConference));
+            }
+
+            _selectedConferenceService.SetSelectedConferenceId(conference.Id);
+
+            HttpContext.Session.SetString("SelectedConferenceSlug", slug);
+            HttpContext.Session.SetString("SelectedConferenceTitle", conference.Title ?? "");
 
             var confId = conference.Id;
 
@@ -149,19 +253,23 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var decidedSubmissions = await _context.Submissions
                 .AsNoTracking()
-                .Where(s => s.ConferenceId == confId && s.DecisionDate != null)
+                .Where(s =>
+                    s.ConferenceId == confId &&
+                    s.DecisionDate != null)
                 .CountAsync();
 
             var totalAssignments = await (
                 from ra in _context.ReviewAssignments.AsNoTracking()
-                join s in _context.Submissions.AsNoTracking() on ra.SubmissionId equals s.Id
+                join s in _context.Submissions.AsNoTracking()
+                    on ra.SubmissionId equals s.Id
                 where s.ConferenceId == confId
                 select ra
             ).CountAsync();
 
             var assignedSubmissions = await (
                 from ra in _context.ReviewAssignments.AsNoTracking()
-                join s in _context.Submissions.AsNoTracking() on ra.SubmissionId equals s.Id
+                join s in _context.Submissions.AsNoTracking()
+                    on ra.SubmissionId equals s.Id
                 where s.ConferenceId == confId
                 select ra.SubmissionId
             ).Distinct().CountAsync();
@@ -169,23 +277,34 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var registrations = await _context.Registrations
                 .AsNoTracking()
                 .Where(r => r.ConferenceId == confId)
-                .Select(r => new { r.Amount, r.IsPaid })
+                .Select(r => new
+                {
+                    r.Amount,
+                    r.IsPaid
+                })
                 .ToListAsync();
 
             var statusCounts = await _context.Submissions
                 .AsNoTracking()
                 .Where(s => s.ConferenceId == confId)
                 .GroupBy(s => s.Status)
-                .Select(g => new { Status = g.Key, Count = g.Count() })
+                .Select(g => new
+                {
+                    Status = g.Key,
+                    Count = g.Count()
+                })
                 .ToListAsync();
 
-            int CountOf(SubmissionStatus st) => statusCounts.FirstOrDefault(x => x.Status == st)?.Count ?? 0;
+            int CountOf(SubmissionStatus status)
+            {
+                return statusCounts.FirstOrDefault(x => x.Status == status)?.Count ?? 0;
+            }
 
             var vm = new ReportsIndexViewModel
             {
                 ConferenceId = conference.Id,
-                ConferenceTitle = conference.Title,
-                ConferenceName = conference.Title,
+                ConferenceTitle = conference.Title ?? "",
+                ConferenceName = conference.Title ?? "",
                 Slug = slug,
 
                 TotalSubmissions = totalSubmissions,
@@ -194,7 +313,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 TotalAssignments = totalAssignments,
 
                 TotalRegistrations = registrations.Count,
-                TotalRevenue = registrations.Where(x => x.IsPaid).Sum(x => x.Amount),
+                TotalRevenue = registrations
+                    .Where(x => x.IsPaid)
+                    .Sum(x => x.Amount),
 
                 NewCount = CountOf(SubmissionStatus.New),
                 PendingCount = CountOf(SubmissionStatus.Pending),
@@ -210,27 +331,23 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpGet("/{slug}/Admin/Reports/Excel")]
         public async Task<IActionResult> ExportExcel(string slug, Guid? conferenceId = null)
         {
-            if (_tenantContext.Current == null)
-                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports" });
-
-            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
-                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports" });
-
-            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
-                _selectedConferenceService.SetSelectedConferenceId(conferenceId.Value);
-
-            var selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
-            if (selectedConferenceId == null)
-                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports" });
-
-            var conference = await _context.Conferences
-                .AsNoTracking()
-                .FirstOrDefaultAsync(c =>
-                    c.Id == selectedConferenceId.Value &&
-                    c.TenantId == _tenantContext.Current.Id);
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
 
             if (conference == null)
-                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports" });
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_SelectConferenceFirst",
+                    "Lütfen yetkili olduğunuz geçerli bir kongre seçiniz.");
+
+                return RedirectToAction(
+                    nameof(SelectConference),
+                    new { returnUrl = $"/{slug}/Admin/Reports" });
+            }
+
+            _selectedConferenceService.SetSelectedConferenceId(conference.Id);
+
+            HttpContext.Session.SetString("SelectedConferenceSlug", slug);
+            HttpContext.Session.SetString("SelectedConferenceTitle", conference.Title ?? "");
 
             var confId = conference.Id;
 
@@ -265,52 +382,58 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             using var wb = new XLWorkbook();
 
-            var ws1 = wb.Worksheets.Add(_localizer["Excel_SubmissionsSheet"].Value);
-            ws1.Cell(1, 1).Value = _localizer["Excel_Id"].Value;
-            ws1.Cell(1, 2).Value = _localizer["Excel_Title"].Value;
-            ws1.Cell(1, 3).Value = _localizer["Excel_AuthorEmail"].Value;
-            ws1.Cell(1, 4).Value = _localizer["Excel_Status"].Value;
-            ws1.Cell(1, 5).Value = _localizer["Excel_CreatedAt"].Value;
-            ws1.Cell(1, 6).Value = _localizer["Excel_DecisionDate"].Value;
+            var ws1 = wb.Worksheets.Add(T("Excel_SubmissionsSheet", "Submissions"));
+            ws1.Cell(1, 1).Value = T("Excel_Id", "Id");
+            ws1.Cell(1, 2).Value = T("Excel_Title", "Title");
+            ws1.Cell(1, 3).Value = T("Excel_AuthorEmail", "Author Email");
+            ws1.Cell(1, 4).Value = T("Excel_Status", "Status");
+            ws1.Cell(1, 5).Value = T("Excel_CreatedAt", "Created At");
+            ws1.Cell(1, 6).Value = T("Excel_DecisionDate", "Decision Date");
 
             for (int i = 0; i < submissions.Count; i++)
             {
-                var r = i + 2;
-                ws1.Cell(r, 1).Value = submissions[i].Id.ToString();
-                ws1.Cell(r, 2).Value = submissions[i].Title;
-                ws1.Cell(r, 3).Value = submissions[i].AuthorEmail;
-                ws1.Cell(r, 4).Value = submissions[i].Status;
-                ws1.Cell(r, 5).Value = submissions[i].CreatedAt;
-                ws1.Cell(r, 6).Value = submissions[i].DecisionDate;
+                var row = i + 2;
+
+                ws1.Cell(row, 1).Value = submissions[i].Id.ToString();
+                ws1.Cell(row, 2).Value = submissions[i].Title;
+                ws1.Cell(row, 3).Value = submissions[i].AuthorEmail;
+                ws1.Cell(row, 4).Value = submissions[i].Status;
+                ws1.Cell(row, 5).Value = submissions[i].CreatedAt;
+                ws1.Cell(row, 6).Value = submissions[i].DecisionDate;
             }
+
             ws1.Columns().AdjustToContents();
 
-            var ws2 = wb.Worksheets.Add(_localizer["Excel_RegistrationsSheet"].Value);
-            ws2.Cell(1, 1).Value = _localizer["Excel_Id"].Value;
-            ws2.Cell(1, 2).Value = _localizer["Excel_Amount"].Value;
-            ws2.Cell(1, 3).Value = _localizer["Excel_IsPaid"].Value;
-            ws2.Cell(1, 4).Value = _localizer["Excel_RegistrationDate"].Value;
-            ws2.Cell(1, 5).Value = _localizer["Excel_PaymentDate"].Value;
-            ws2.Cell(1, 6).Value = _localizer["Excel_PaymentTransactionId"].Value;
+            var ws2 = wb.Worksheets.Add(T("Excel_RegistrationsSheet", "Registrations"));
+            ws2.Cell(1, 1).Value = T("Excel_Id", "Id");
+            ws2.Cell(1, 2).Value = T("Excel_Amount", "Amount");
+            ws2.Cell(1, 3).Value = T("Excel_IsPaid", "Is Paid");
+            ws2.Cell(1, 4).Value = T("Excel_RegistrationDate", "Registration Date");
+            ws2.Cell(1, 5).Value = T("Excel_PaymentDate", "Payment Date");
+            ws2.Cell(1, 6).Value = T("Excel_PaymentTransactionId", "Payment Transaction Id");
 
             for (int i = 0; i < registrationsData.Count; i++)
             {
-                var r = i + 2;
-                ws2.Cell(r, 1).Value = registrationsData[i].Id.ToString();
-                ws2.Cell(r, 2).Value = registrationsData[i].Amount;
-                ws2.Cell(r, 3).Value = registrationsData[i].IsPaid
-                    ? _localizer["Excel_Paid"].Value
-                    : _localizer["Excel_Unpaid"].Value;
-                ws2.Cell(r, 4).Value = registrationsData[i].RegistrationDate;
-                ws2.Cell(r, 5).Value = registrationsData[i].PaymentDate;
-                ws2.Cell(r, 6).Value = registrationsData[i].PaymentTransactionId;
+                var row = i + 2;
+
+                ws2.Cell(row, 1).Value = registrationsData[i].Id.ToString();
+                ws2.Cell(row, 2).Value = registrationsData[i].Amount;
+                ws2.Cell(row, 3).Value = registrationsData[i].IsPaid
+                    ? T("Excel_Paid", "Paid")
+                    : T("Excel_Unpaid", "Unpaid");
+                ws2.Cell(row, 4).Value = registrationsData[i].RegistrationDate;
+                ws2.Cell(row, 5).Value = registrationsData[i].PaymentDate;
+                ws2.Cell(row, 6).Value = registrationsData[i].PaymentTransactionId;
             }
+
             ws2.Columns().AdjustToContents();
 
             using var ms = new MemoryStream();
+
             wb.SaveAs(ms);
 
-            var safeTitle = string.Join("_",
+            var safeTitle = string.Join(
+                "_",
                 (conference.Title ?? "conference")
                     .Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
 
@@ -324,9 +447,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         [HttpGet("/Reports/Index")]
-        public IActionResult LegacyRoot() => Redirect("/Admin/Reports");
+        public IActionResult LegacyRoot()
+        {
+            return Redirect("/Admin/Reports");
+        }
 
         [HttpGet("/{slug}/Reports/Index")]
-        public IActionResult LegacyTenant(string slug) => Redirect($"/{slug}/Admin/Reports");
+        public IActionResult LegacyTenant(string slug)
+        {
+            return Redirect($"/{slug}/Admin/Reports");
+        }
     }
 }

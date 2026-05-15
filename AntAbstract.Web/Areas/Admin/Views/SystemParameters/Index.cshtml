@@ -5,6 +5,8 @@
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
+    var activeGroup = ViewBag.ActiveGroup?.ToString() ?? "University";
+
     var tabData = new[]
     {
         new
@@ -44,30 +46,34 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h3 class="fw-bold text-dark mb-0">@Localizer["PageTitle"]</h3>
-        <p class="text-muted small">@Localizer["PageLead"]</p>
+        <h3 class="fw-bold text-dark mb-0">
+            @Localizer["PageTitle"]
+        </h3>
+
+        <p class="text-muted small mb-0">
+            @Localizer["PageLead"]
+        </p>
     </div>
 </div>
-
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success border-0 shadow-sm rounded-3">
-        <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
-    </div>
-}
 
 <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
     <div class="card-header bg-white p-0 border-bottom">
         <ul class="nav nav-tabs nav-justified" id="paramTabs" role="tablist">
             @foreach (var tab in tabData)
             {
+                var isActiveTab = string.Equals(tab.Group, activeGroup, StringComparison.OrdinalIgnoreCase);
+
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-bold py-3 @(tab.Id == "university" ? "active" : "")"
+                    <button class="nav-link fw-bold py-3 @(isActiveTab ? "active" : "")"
+                            id="@tab.Id-tab"
                             data-bs-toggle="tab"
                             data-bs-target="#@tab.Id"
                             type="button"
-                            role="tab">
-                        <i class="fas @tab.Icon me-2"></i> @tab.Title
+                            role="tab"
+                            aria-controls="@tab.Id"
+                            aria-selected="@(isActiveTab ? "true" : "false")">
+                        <i class="fas @tab.Icon me-2"></i>
+                        @tab.Title
                     </button>
                 </li>
             }
@@ -79,14 +85,29 @@
 
             @foreach (var tab in tabData)
             {
-                var items = Model.Where(x => x.Group == tab.Group).ToList();
+                var isActiveTab = string.Equals(tab.Group, activeGroup, StringComparison.OrdinalIgnoreCase);
 
-                <div class="tab-pane fade @(tab.Id == "university" ? "show active" : "")" id="@tab.Id" role="tabpanel">
+                var items = Model
+                .Where(x => x.Group == tab.Group)
+                .OrderBy(x => x.Order)
+                .ThenBy(x => x.Name)
+                .ToList();
+
+                <div class="tab-pane fade @(isActiveTab ? "show active" : "")"
+                     id="@tab.Id"
+                     role="tabpanel"
+                     aria-labelledby="@tab.Id-tab">
 
                     <div class="p-4 bg-light border-bottom d-flex justify-content-between align-items-center">
-                        <span class="fw-bold text-muted">@Localizer["TotalCountLabel", items.Count]</span>
-                        <a asp-action="Create" asp-route-group="@tab.Group" class="btn btn-primary btn-sm rounded-pill fw-bold px-3">
-                            <i class="fas fa-plus me-1"></i> @Localizer["AddNewButton"]
+                        <span class="fw-bold text-muted">
+                            @Localizer["TotalCountLabel", items.Count]
+                        </span>
+
+                        <a asp-action="Create"
+                           asp-route-group="@tab.Group"
+                           class="btn btn-primary btn-sm rounded-pill fw-bold px-3">
+                            <i class="fas fa-plus me-1"></i>
+                            @Localizer["AddNewButton"]
                         </a>
                     </div>
 
@@ -94,7 +115,7 @@
                     {
                         <div class="text-center p-5 text-muted">
                             <i class="fas fa-folder-open fa-3x mb-3 opacity-25"></i>
-                            <p>@tab.EmptyMsg</p>
+                            <p class="mb-0">@tab.EmptyMsg</p>
                         </div>
                     }
                     else
@@ -103,18 +124,55 @@
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light text-muted small">
                                     <tr>
-                                        <th class="ps-4">@Localizer["TableHeaderOrder"]</th>
-                                        <th>@Localizer["TableHeaderName"]</th>
-                                        <th>@Localizer["TableHeaderStatus"]</th>
-                                        <th class="text-end pe-4">@Localizer["TableHeaderActions"]</th>
+                                        <th class="ps-4" style="width: 90px;">
+                                            @Localizer["TableHeaderOrder"]
+                                        </th>
+
+                                        <th>
+                                            Name TR
+                                        </th>
+
+                                        <th>
+                                            Name EN
+                                        </th>
+
+                                        <th style="width: 130px;">
+                                            @Localizer["TableHeaderStatus"]
+                                        </th>
+
+                                        <th class="text-end pe-4" style="width: 180px;">
+                                            @Localizer["TableHeaderActions"]
+                                        </th>
                                     </tr>
                                 </thead>
+
                                 <tbody>
                                     @foreach (var item in items)
                                     {
                                         <tr>
-                                            <td class="ps-4 fw-bold text-muted">@item.Order</td>
-                                            <td class="fw-bold text-dark">@item.Name</td>
+                                            <td class="ps-4 fw-bold text-muted">
+                                                @item.Order
+                                            </td>
+
+                                            <td class="fw-bold text-dark">
+                                                @item.Name
+                                            </td>
+
+                                            <td>
+                                                @if (!string.IsNullOrWhiteSpace(item.NameEn))
+                                                {
+                                                    <span class="text-dark">
+                                                        @item.NameEn
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted fst-italic small">
+                                                        İngilizce karşılık girilmedi
+                                                    </span>
+                                                }
+                                            </td>
+
                                             <td>
                                                 @if (item.IsActive)
                                                 {
@@ -129,9 +187,21 @@
                                                     </span>
                                                 }
                                             </td>
+
                                             <td class="text-end pe-4">
-                                                <form asp-action="Toggle" asp-route-id="@item.Id" method="post" class="d-inline">
+                                                <a asp-action="Edit"
+                                                   asp-route-id="@item.Id"
+                                                   class="btn btn-sm btn-light text-warning me-1"
+                                                   title="Düzenle">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+
+                                                <form asp-action="Toggle"
+                                                      asp-route-id="@item.Id"
+                                                      method="post"
+                                                      class="d-inline">
                                                     @Html.AntiForgeryToken()
+
                                                     <button type="submit"
                                                             class="btn btn-sm btn-light text-primary me-1"
                                                             title="@Localizer["ToggleTitle"]">
@@ -145,6 +215,7 @@
                                                       class="d-inline"
                                                       onsubmit="return confirm('@Localizer["DeleteConfirmMessage"]');">
                                                     @Html.AntiForgeryToken()
+
                                                     <button type="submit"
                                                             class="btn btn-sm btn-light text-danger"
                                                             title="@Localizer["DeleteTitle"]">

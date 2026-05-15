@@ -30,13 +30,17 @@ namespace AntAbstract.Web.Controllers
             _localizer = localizer;
         }
 
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> WhoAmI()
         {
             var user = await _userManager.GetUserAsync(User);
 
             var roles = new List<string>();
+
             if (user != null)
+            {
                 roles = (await _userManager.GetRolesAsync(user)).ToList();
+            }
 
             return Json(new
             {
@@ -48,10 +52,13 @@ namespace AntAbstract.Web.Controllers
             });
         }
 
-        private async Task<bool> IsAdminLikeAsync(AppUser user)
+        private string T(string key, string fallback)
         {
-            return await _userManager.IsInRoleAsync(user, "Admin")
-                || await _userManager.IsInRoleAsync(user, "Organizator");
+            var value = _localizer[key];
+
+            return value.ResourceNotFound
+                ? fallback
+                : value.Value;
         }
 
         private string GetSlug()
@@ -64,43 +71,53 @@ namespace AntAbstract.Web.Controllers
 
         private Guid? GetSelectedConferenceId()
         {
-            string? confIdStr = null;
+            string? conferenceIdText = null;
 
             if (_tenantContext.Current != null)
             {
                 var tenantKey = $"SelectedConferenceId:{_tenantContext.Current.Id}";
-                confIdStr = HttpContext.Session.GetString(tenantKey);
+                conferenceIdText = HttpContext.Session.GetString(tenantKey);
             }
 
-            confIdStr ??= HttpContext.Session.GetString("SelectedConferenceId");
+            conferenceIdText ??= HttpContext.Session.GetString("SelectedConferenceId");
 
-            return Guid.TryParse(confIdStr, out var parsedId) ? parsedId : null;
+            return Guid.TryParse(conferenceIdText, out var parsedId)
+                ? parsedId
+                : null;
         }
 
-        private void SaveSelectedConference(Guid tenantId, Guid conferenceId, string selectedSlug)
+        private void SaveSelectedConference(
+            Guid tenantId,
+            Guid conferenceId,
+            string selectedSlug,
+            string? conferenceTitle = null)
         {
-            var tenantKey = $"SelectedConferenceId:{tenantId}";
-            HttpContext.Session.SetString(tenantKey, conferenceId.ToString());
-
             HttpContext.Session.SetString("SelectedConferenceId", conferenceId.ToString());
             HttpContext.Session.SetString("SelectedConferenceSlug", selectedSlug ?? "");
+            HttpContext.Session.SetString("SelectedConferenceTitle", conferenceTitle ?? "");
+
+            HttpContext.Session.SetString($"SelectedConferenceId:{tenantId}", conferenceId.ToString());
+            HttpContext.Session.SetString($"SelectedConferenceSlug:{tenantId}", selectedSlug ?? "");
+            HttpContext.Session.SetString($"SelectedConferenceTitle:{tenantId}", conferenceTitle ?? "");
         }
 
         private void ClearSelectedConference()
         {
             if (_tenantContext.Current != null)
             {
-                var tenantKey = $"SelectedConferenceId:{_tenantContext.Current.Id}";
-                HttpContext.Session.Remove(tenantKey);
+                HttpContext.Session.Remove($"SelectedConferenceId:{_tenantContext.Current.Id}");
+                HttpContext.Session.Remove($"SelectedConferenceSlug:{_tenantContext.Current.Id}");
+                HttpContext.Session.Remove($"SelectedConferenceTitle:{_tenantContext.Current.Id}");
             }
 
             HttpContext.Session.Remove("SelectedConferenceId");
             HttpContext.Session.Remove("SelectedConferenceSlug");
+            HttpContext.Session.Remove("SelectedConferenceTitle");
         }
 
         private IQueryable<Guid> GetUserConferenceIds(string userId)
         {
-            var regIds = _context.Registrations
+            var registrationIds = _context.Registrations
                 .AsNoTracking()
                 .Where(r => r.AppUserId == userId)
                 .Select(r => r.ConferenceId);
@@ -110,12 +127,16 @@ namespace AntAbstract.Web.Controllers
                 .Where(s => s.AuthorId == userId)
                 .Select(s => s.ConferenceId);
 
-            var reviewIds = _context.ReviewAssignments
-                .AsNoTracking()
-                .Where(ra => ra.ReviewerId == userId)
-                .Select(ra => ra.Submission.ConferenceId);
+            var reviewIds =
+                from reviewAssignment in _context.ReviewAssignments.AsNoTracking()
+                join submission in _context.Submissions.AsNoTracking()
+                    on reviewAssignment.SubmissionId equals submission.Id
+                where reviewAssignment.ReviewerId == userId
+                select submission.ConferenceId;
 
-            return regIds.Union(submissionIds).Union(reviewIds);
+            return registrationIds
+                .Union(submissionIds)
+                .Union(reviewIds);
         }
 
         private Task<List<Conference>> GetUserConferencesAsync(string userId)
@@ -124,8 +145,8 @@ namespace AntAbstract.Web.Controllers
 
             return _context.Conferences
                 .AsNoTracking()
-                .Where(c => ids.Contains(c.Id))
                 .Include(c => c.Tenant)
+                .Where(c => ids.Contains(c.Id))
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
         }
@@ -133,21 +154,54 @@ namespace AntAbstract.Web.Controllers
         private async Task<bool> UserCanAccessConferenceAsync(AppUser user, Guid conferenceId)
         {
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+
             if (isAdmin)
+            {
                 return true;
+            }
 
             var isOrganizator = await _userManager.IsInRoleAsync(user, "Organizator");
+
             if (isOrganizator)
             {
                 if (!user.TenantId.HasValue)
+                {
                     return false;
+                }
 
                 return await _context.Conferences
                     .AsNoTracking()
-                    .AnyAsync(c => c.Id == conferenceId && c.TenantId == user.TenantId.Value);
+                    .AnyAsync(c =>
+                        c.Id == conferenceId &&
+                        c.TenantId == user.TenantId.Value);
             }
 
-            return await GetUserConferenceIds(user.Id).AnyAsync(id => id == conferenceId);
+            return await GetUserConferenceIds(user.Id)
+                .AnyAsync(id => id == conferenceId);
+        }
+
+        private async Task<Conference?> GetSelectedConferenceForCurrentContextAsync(
+            AppUser user,
+            Guid conferenceId)
+        {
+            var canAccess = await UserCanAccessConferenceAsync(user, conferenceId);
+
+            if (!canAccess)
+            {
+                return null;
+            }
+
+            var query = _context.Conferences
+                .AsNoTracking()
+                .Include(c => c.Tenant)
+                .Where(c => c.Id == conferenceId);
+
+            if (_tenantContext.Current != null)
+            {
+                query = query.Where(c => c.TenantId == _tenantContext.Current.Id);
+            }
+
+            return await query.FirstOrDefaultAsync();
         }
 
         private static bool IsAdminReturnUrl(string returnUrl)
@@ -155,39 +209,62 @@ namespace AntAbstract.Web.Controllers
             var parts = returnUrl.Split('?', 2);
             var path = parts[0];
 
-            var segs = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-            if (segs.Length == 0) return false;
+            var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
-            if (string.Equals(segs[0], "Admin", StringComparison.OrdinalIgnoreCase))
-                return true;
+            if (segments.Length == 0)
+            {
+                return false;
+            }
 
-            if (segs.Length > 1 && string.Equals(segs[1], "Admin", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(segments[0], "Admin", StringComparison.OrdinalIgnoreCase))
+            {
                 return true;
+            }
+
+            if (segments.Length > 1 &&
+                string.Equals(segments[1], "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
 
             return path.Contains("/Admin/", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string BuildAdminReturnUrl(string returnUrl, string newSlug, Guid conferenceId)
+        private static string BuildAdminReturnUrl(
+            string returnUrl,
+            string newSlug,
+            Guid conferenceId)
         {
             var parts = returnUrl.Split('?', 2);
             var path = parts[0];
-            var qs = parts.Length > 1 ? parts[1] : "";
+            var queryString = parts.Length > 1 ? parts[1] : "";
 
-            var segs = path.Split('/', StringSplitOptions.RemoveEmptyEntries).ToList();
+            var segments = path
+                .Split('/', StringSplitOptions.RemoveEmptyEntries)
+                .ToList();
 
-            if (segs.Count > 0 && string.Equals(segs[0], "Admin", StringComparison.OrdinalIgnoreCase))
+            if (segments.Count > 0 &&
+                string.Equals(segments[0], "Admin", StringComparison.OrdinalIgnoreCase))
             {
-                segs.Insert(0, newSlug);
+                segments.Insert(0, newSlug);
             }
-            else if (segs.Count > 1 && string.Equals(segs[1], "Admin", StringComparison.OrdinalIgnoreCase))
+            else if (segments.Count > 1 &&
+                     string.Equals(segments[1], "Admin", StringComparison.OrdinalIgnoreCase))
             {
-                segs[0] = newSlug;
+                segments[0] = newSlug;
             }
 
-            var newPath = "/" + string.Join("/", segs);
+            var newPath = "/" + string.Join("/", segments);
 
-            var parsed = QueryHelpers.ParseQuery(string.IsNullOrWhiteSpace(qs) ? "" : "?" + qs);
-            var dict = parsed.ToDictionary(x => x.Key, x => x.Value.ToString());
+            var parsedQuery = QueryHelpers.ParseQuery(
+                string.IsNullOrWhiteSpace(queryString)
+                    ? ""
+                    : "?" + queryString);
+
+            var dict = parsedQuery.ToDictionary(
+                x => x.Key,
+                x => x.Value.ToString());
+
             dict["conferenceId"] = conferenceId.ToString();
 
             return QueryHelpers.AddQueryString(newPath, dict);
@@ -201,7 +278,9 @@ namespace AntAbstract.Web.Controllers
             var slug = GetSlug();
 
             if (string.IsNullOrWhiteSpace(slug))
+            {
                 return RedirectToAction(nameof(MyConferences));
+            }
 
             return Redirect($"/{slug}/Dashboard/MyConferences");
         }
@@ -212,11 +291,21 @@ namespace AntAbstract.Web.Controllers
             var slug = GetSlug();
 
             var effectiveReturnUrl = string.IsNullOrWhiteSpace(returnUrl)
-                ? (string.IsNullOrWhiteSpace(slug) ? "/Dashboard" : $"/{slug}/Dashboard")
+                ? string.IsNullOrWhiteSpace(slug)
+                    ? "/Dashboard"
+                    : $"/{slug}/Dashboard"
                 : returnUrl;
+
+            if (!Url.IsLocalUrl(effectiveReturnUrl))
+            {
+                effectiveReturnUrl = string.IsNullOrWhiteSpace(slug)
+                    ? "/Dashboard"
+                    : $"/{slug}/Dashboard";
+            }
 
             ViewBag.ConferenceId = conferenceId;
             ViewBag.ReturnUrl = effectiveReturnUrl;
+
             return View();
         }
 
@@ -226,13 +315,19 @@ namespace AntAbstract.Web.Controllers
         {
             if (conferenceId == Guid.Empty)
             {
-                TempData["ErrorMessage"] = _localizer["InvalidConferenceSelection"].Value;
-                return RedirectToAction(nameof(MyConferences), new { slug = GetSlug() });
+                TempData["ErrorMessage"] = T(
+                    "InvalidConferenceSelection",
+                    "Geçersiz kongre seçimi.");
+
+                return RedirectToAction(nameof(MyConferences));
             }
 
             var user = await _userManager.GetUserAsync(User);
+
             if (user == null)
+            {
                 return Challenge();
+            }
 
             var conf = await _context.Conferences
                 .AsNoTracking()
@@ -241,31 +336,46 @@ namespace AntAbstract.Web.Controllers
 
             if (conf == null)
             {
-                TempData["ErrorMessage"] = _localizer["ConferenceNotFound"].Value;
-                return RedirectToAction(nameof(MyConferences), new { slug = GetSlug() });
+                TempData["ErrorMessage"] = T(
+                    "ConferenceNotFound",
+                    "Kongre bulunamadı.");
+
+                return RedirectToAction(nameof(MyConferences));
             }
 
             var canAccess = await UserCanAccessConferenceAsync(user, conferenceId);
+
             if (!canAccess)
             {
-                TempData["ErrorMessage"] = _localizer["UnauthorizedConferenceAccess"].Value;
-                return RedirectToAction(nameof(MyConferences), new { slug = GetSlug() });
+                TempData["ErrorMessage"] = T(
+                    "UnauthorizedConferenceAccess",
+                    "Bu kongreye erişim yetkiniz yok.");
+
+                return RedirectToAction(nameof(MyConferences));
             }
 
             var selectedSlug = conf.Tenant?.Slug ?? conf.Slug ?? GetSlug();
 
-            SaveSelectedConference(conf.TenantId, conf.Id, selectedSlug);
+            SaveSelectedConference(
+                conf.TenantId,
+                conf.Id,
+                selectedSlug,
+                conf.Title);
 
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 if (IsAdminReturnUrl(returnUrl))
+                {
                     return Redirect(BuildAdminReturnUrl(returnUrl, selectedSlug, conferenceId));
+                }
 
                 return Redirect(returnUrl);
             }
 
             if (!string.IsNullOrWhiteSpace(selectedSlug))
+            {
                 return Redirect($"/{selectedSlug}/Dashboard");
+            }
 
             return RedirectToAction(nameof(Index));
         }
@@ -273,89 +383,119 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
+
             if (user == null)
+            {
                 return Challenge();
+            }
 
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+            var isOrganizator = await _userManager.IsInRoleAsync(user, "Organizator");
+
             var selectedConferenceId = GetSelectedConferenceId();
             var slug = GetSlug();
 
+            Conference? selectedConference = null;
+
             if (selectedConferenceId.HasValue)
             {
-                var canAccessSelectedConference = await UserCanAccessConferenceAsync(user, selectedConferenceId.Value);
+                selectedConference = await GetSelectedConferenceForCurrentContextAsync(
+                    user,
+                    selectedConferenceId.Value);
 
-                if (!canAccessSelectedConference)
+                if (selectedConference == null)
                 {
                     ClearSelectedConference();
-                    TempData["ErrorMessage"] = _localizer["UnauthorizedPreviousConferenceAccess"].Value;
-                    return RedirectToAction(nameof(MyConferences), new { slug = _tenantContext.Current?.Slug });
+
+                    TempData["ErrorMessage"] = T(
+                        "UnauthorizedPreviousConferenceAccess",
+                        "Önceki seçili kongreye erişim yetkiniz yok veya kongre geçerli kurumla eşleşmiyor.");
+
+                    return RedirectToAction(nameof(MyConferences));
                 }
+
+                SaveSelectedConference(
+                    selectedConference.TenantId,
+                    selectedConference.Id,
+                    selectedConference.Tenant?.Slug ?? slug,
+                    selectedConference.Title);
             }
 
             if (!selectedConferenceId.HasValue)
             {
-                var isOrganizator = await _userManager.IsInRoleAsync(user, "Organizator");
-
                 if (isOrganizator && !isAdmin && user.TenantId.HasValue)
                 {
-                    var autoConf = await _context.Conferences
+                    var autoConference = await _context.Conferences
                         .Include(c => c.Tenant)
                         .Where(c => c.TenantId == user.TenantId.Value)
                         .OrderByDescending(c => c.StartDate)
                         .FirstOrDefaultAsync();
 
-                    if (autoConf != null)
+                    if (autoConference != null)
                     {
-                        var selectedSlug = autoConf.Tenant?.Slug ?? slug;
-                        SaveSelectedConference(autoConf.TenantId, autoConf.Id, selectedSlug);
+                        var selectedSlug = autoConference.Tenant?.Slug ?? slug;
+
+                        SaveSelectedConference(
+                            autoConference.TenantId,
+                            autoConference.Id,
+                            selectedSlug,
+                            autoConference.Title);
+
                         return Redirect($"/{selectedSlug}/Dashboard");
                     }
                 }
 
-                return RedirectToAction(nameof(MyConferences), new { slug });
+                return RedirectToAction(nameof(MyConferences));
             }
 
-            var submissionsQuery = _context.Submissions.AsQueryable()
+            var submissionsQuery = _context.Submissions
+                .AsQueryable()
                 .Where(s => s.AuthorId == user.Id);
 
             if (selectedConferenceId.HasValue)
-                submissionsQuery = submissionsQuery.Where(s => s.ConferenceId == selectedConferenceId.Value);
+            {
+                submissionsQuery = submissionsQuery
+                    .Where(s => s.ConferenceId == selectedConferenceId.Value);
+            }
 
-            var reviewAssignmentsQuery = _context.ReviewAssignments.AsQueryable()
+            var reviewAssignmentsQuery = _context.ReviewAssignments
+                .AsQueryable()
                 .Where(ra => ra.ReviewerId == user.Id);
 
             if (selectedConferenceId.HasValue)
-                reviewAssignmentsQuery = reviewAssignmentsQuery.Where(ra => ra.Submission.ConferenceId == selectedConferenceId.Value);
+            {
+                reviewAssignmentsQuery = reviewAssignmentsQuery
+                    .Where(ra => ra.Submission.ConferenceId == selectedConferenceId.Value);
+            }
 
-            var pendingReviews = await reviewAssignmentsQuery.CountAsync(ra => ra.Review == null);
-            var completedReviews = await reviewAssignmentsQuery.CountAsync(ra => ra.Review != null);
+            var pendingReviews = await reviewAssignmentsQuery
+                .CountAsync(ra => ra.Review == null);
 
-            var isReferee = (await _userManager.IsInRoleAsync(user, "Referee"))
-                            || (await _userManager.IsInRoleAsync(user, "Admin"))
-                            || (await reviewAssignmentsQuery.AnyAsync());
+            var completedReviews = await reviewAssignmentsQuery
+                .CountAsync(ra => ra.Review != null);
+
+            var isReferee =
+                await _userManager.IsInRoleAsync(user, "Referee") ||
+                await _userManager.IsInRoleAsync(user, "Admin") ||
+                await reviewAssignmentsQuery.AnyAsync();
 
             ViewBag.IsReferee = isReferee;
             ViewBag.PendingReviews = pendingReviews;
             ViewBag.CompletedReviews = completedReviews;
 
-            ViewBag.IsAuthor = (await _userManager.IsInRoleAsync(user, "Author")) || (await submissionsQuery.AnyAsync());
+            ViewBag.IsAuthor =
+                await _userManager.IsInRoleAsync(user, "Author") ||
+                await submissionsQuery.AnyAsync();
 
             var myConferences = await GetUserConferencesAsync(user.Id);
 
-            var currentConferenceName = _localizer["GeneralManagementPanel"].Value;
+            var currentConferenceName = T(
+                "GeneralManagementPanel",
+                "Genel Yönetim Paneli");
 
-            if (selectedConferenceId.HasValue)
+            if (selectedConference != null)
             {
-                var selectedTitle = await _context.Conferences
-                    .AsNoTracking()
-                    .Where(x => x.Id == selectedConferenceId.Value)
-                    .Select(x => x.Title)
-                    .FirstOrDefaultAsync();
-
-                if (!string.IsNullOrWhiteSpace(selectedTitle))
-                    currentConferenceName = selectedTitle;
-                else if (_tenantContext.Current != null)
-                    currentConferenceName = _tenantContext.Current.Name;
+                currentConferenceName = selectedConference.Title ?? currentConferenceName;
             }
             else if (_tenantContext.Current != null)
             {
@@ -365,9 +505,21 @@ namespace AntAbstract.Web.Controllers
             var viewModel = new DashboardViewModel
             {
                 TotalSubmissions = await submissionsQuery.CountAsync(),
-                AcceptedSubmissions = await submissionsQuery.CountAsync(s => s.Status == SubmissionStatus.Accepted || s.Status == SubmissionStatus.Presented),
-                AwaitingDecision = await submissionsQuery.CountAsync(s => s.Status == SubmissionStatus.New || s.Status == SubmissionStatus.UnderReview || s.Status == SubmissionStatus.RevisionRequired),
-                RejectedSubmissions = await submissionsQuery.CountAsync(s => s.Status == SubmissionStatus.Rejected),
+
+                AcceptedSubmissions = await submissionsQuery
+                    .CountAsync(s =>
+                        s.Status == SubmissionStatus.Accepted ||
+                        s.Status == SubmissionStatus.Presented),
+
+                AwaitingDecision = await submissionsQuery
+                    .CountAsync(s =>
+                        s.Status == SubmissionStatus.New ||
+                        s.Status == SubmissionStatus.UnderReview ||
+                        s.Status == SubmissionStatus.RevisionRequired),
+
+                RejectedSubmissions = await submissionsQuery
+                    .CountAsync(s => s.Status == SubmissionStatus.Rejected),
+
                 ConferenceName = currentConferenceName,
                 MyConferences = myConferences
             };
@@ -391,22 +543,32 @@ namespace AntAbstract.Web.Controllers
             {
                 if (!user.TenantId.HasValue)
                 {
-                    TempData["ErrorMessage"] = _localizer["NoInstitutionAssigned"].Value;
+                    TempData["ErrorMessage"] = T(
+                        "NoInstitutionAssigned",
+                        "Hesabınıza bağlı kurum bulunamadı.");
                 }
                 else
                 {
-                    var autoConf = await _context.Conferences
+                    var autoConference = await _context.Conferences
                         .AsNoTracking()
                         .Include(c => c.Tenant)
                         .Where(c => c.TenantId == user.TenantId.Value)
                         .OrderByDescending(c => c.StartDate)
                         .FirstOrDefaultAsync();
 
-                    if (autoConf != null)
+                    if (autoConference != null)
                     {
-                        var selectedSlug = autoConf.Tenant?.Slug ?? _tenantContext.Current?.Slug ?? autoConf.Slug ?? "";
+                        var selectedSlug =
+                            autoConference.Tenant?.Slug ??
+                            _tenantContext.Current?.Slug ??
+                            autoConference.Slug ??
+                            "";
 
-                        SaveSelectedConference(autoConf.TenantId, autoConf.Id, selectedSlug);
+                        SaveSelectedConference(
+                            autoConference.TenantId,
+                            autoConference.Id,
+                            selectedSlug,
+                            autoConference.Title);
 
                         if (!string.IsNullOrWhiteSpace(selectedSlug))
                         {
@@ -416,7 +578,9 @@ namespace AntAbstract.Web.Controllers
                         return RedirectToAction(nameof(Index));
                     }
 
-                    TempData["InfoMessage"] = _localizer["NoConferenceAssignedToInstitution"].Value;
+                    TempData["InfoMessage"] = T(
+                        "NoConferenceAssignedToInstitution",
+                        "Kurumunuza bağlı kongre bulunamadı.");
                 }
             }
 
@@ -453,14 +617,14 @@ namespace AntAbstract.Web.Controllers
             }
             else
             {
-                var myConfIds = await GetUserConferenceIds(user.Id)
+                var myConferenceIds = await GetUserConferenceIds(user.Id)
                     .Distinct()
                     .ToListAsync();
 
                 registeredConferences = await _context.Conferences
                     .AsNoTracking()
                     .Include(c => c.Tenant)
-                    .Where(c => myConfIds.Contains(c.Id))
+                    .Where(c => myConferenceIds.Contains(c.Id))
                     .OrderByDescending(c => c.StartDate)
                     .ToListAsync();
 
@@ -469,7 +633,7 @@ namespace AntAbstract.Web.Controllers
                     .Include(c => c.Tenant)
                     .Where(c =>
                         c.EndDate.Date >= DateTime.Today &&
-                        !myConfIds.Contains(c.Id))
+                        !myConferenceIds.Contains(c.Id))
                     .OrderBy(c => c.StartDate)
                     .ToListAsync();
             }
@@ -480,10 +644,14 @@ namespace AntAbstract.Web.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CustomLogout([FromServices] SignInManager<AppUser> signInManager)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CustomLogout(
+            [FromServices] SignInManager<AppUser> signInManager)
         {
             HttpContext.Session.Clear();
+
             await signInManager.SignOutAsync();
+
             return Redirect("/");
         }
     }

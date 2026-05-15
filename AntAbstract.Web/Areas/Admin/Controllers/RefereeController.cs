@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -30,16 +31,33 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _localizer = localizer;
         }
 
+        private string T(string key, string fallback)
+        {
+            var value = _localizer[key];
+
+            return value.ResourceNotFound
+                ? fallback
+                : value.Value;
+        }
+
+        private async Task<bool> IsCurrentUserAdminAsync(AppUser? currentUser)
+        {
+            return currentUser != null &&
+                   await _userManager.IsInRoleAsync(currentUser, "Admin");
+        }
+
         public async Task<IActionResult> Index()
         {
             var currentUser = await _userManager.GetUserAsync(User);
-            var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, "Admin");
+            var isAdmin = await IsCurrentUserAdminAsync(currentUser);
 
             var referees = await _userManager.GetUsersInRoleAsync("Referee");
 
             if (!isAdmin && currentUser?.TenantId != null)
             {
-                referees = referees.Where(r => r.TenantId == currentUser.TenantId).ToList();
+                referees = referees
+                    .Where(r => r.TenantId == currentUser.TenantId)
+                    .ToList();
             }
             else if (!isAdmin && currentUser?.TenantId == null)
             {
@@ -50,8 +68,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         [HttpGet]
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = await IsCurrentUserAdminAsync(currentUser);
+
+            if (!isAdmin && currentUser?.TenantId == null)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_UnauthorizedCreate",
+                    "Hakem oluşturmak için bir kuruma bağlı olmanız gerekir.");
+
+                return RedirectToAction(nameof(Index));
+            }
+
             return View();
         }
 
@@ -59,75 +89,160 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(RefereeCreateViewModel model)
         {
-            if (ModelState.IsValid)
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = await IsCurrentUserAdminAsync(currentUser);
+
+            if (!isAdmin && currentUser?.TenantId == null)
             {
-                if (!await _roleManager.RoleExistsAsync("Referee"))
-                {
-                    await _roleManager.CreateAsync(new IdentityRole("Referee"));
-                }
+                TempData["ErrorMessage"] = T(
+                    "Error_UnauthorizedCreate",
+                    "Hakem oluşturmak için bir kuruma bağlı olmanız gerekir.");
 
-                var existingUser = await _userManager.FindByEmailAsync(model.Email);
-                if (existingUser != null)
-                {
-                    ModelState.AddModelError("", _localizer["Error_EmailAlreadyExists"]);
-                    return View(model);
-                }
+                return RedirectToAction(nameof(Index));
+            }
 
-                var currentUser = await _userManager.GetUserAsync(User);
-                var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, "Admin");
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
 
-                var user = new AppUser
-                {
-                    UserName = model.Email,
-                    Email = model.Email,
-                    FirstName = model.FirstName,
-                    LastName = model.LastName,
-                    Institution = model.Institution,
-                    EmailConfirmed = true
-                };
+            if (!await _roleManager.RoleExistsAsync("Referee"))
+            {
+                await _roleManager.CreateAsync(new IdentityRole("Referee"));
+            }
 
-                if (!isAdmin && currentUser?.TenantId != null)
-                {
-                    user.TenantId = currentUser.TenantId;
-                }
+            var existingUser = await _userManager.FindByEmailAsync(model.Email);
 
-                var result = await _userManager.CreateAsync(user, model.Password);
+            if (existingUser != null)
+            {
+                ModelState.AddModelError(
+                    string.Empty,
+                    T("Error_EmailAlreadyExists", "Bu e-posta adresiyle kayıtlı bir kullanıcı zaten var."));
 
-                if (result.Succeeded)
-                {
-                    await _userManager.AddToRoleAsync(user, "Referee");
+                return View(model);
+            }
 
-                    TempData["SuccessMessage"] = _localizer["Success_RefereeCreated"];
-                    return RedirectToAction(nameof(Index));
-                }
+            var user = new AppUser
+            {
+                UserName = model.Email,
+                Email = model.Email,
+                FirstName = model.FirstName,
+                LastName = model.LastName,
+                Institution = model.Institution,
+                EmailConfirmed = true
+            };
 
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError("", error.Description);
-                }
+            if (!isAdmin)
+            {
+                user.TenantId = currentUser!.TenantId;
+            }
+
+            var result = await _userManager.CreateAsync(user, model.Password);
+
+            if (result.Succeeded)
+            {
+                await _userManager.AddToRoleAsync(user, "Referee");
+
+                TempData["SuccessMessage"] = T(
+                    "Success_RefereeCreated",
+                    "Hakem başarıyla oluşturuldu.");
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
             }
 
             return View(model);
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(string id)
         {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_InvalidUser",
+                    "Geçersiz kullanıcı.");
+
+                return RedirectToAction(nameof(Index));
+            }
+
             var currentUser = await _userManager.GetUserAsync(User);
-            var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, "Admin");
+            var isAdmin = await IsCurrentUserAdminAsync(currentUser);
 
             var user = await _userManager.FindByIdAsync(id);
-            if (user != null)
+
+            if (user == null)
             {
-                if (!isAdmin && user.TenantId != currentUser?.TenantId)
+                TempData["ErrorMessage"] = T(
+                    "Error_UserNotFound",
+                    "Kullanıcı bulunamadı.");
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (currentUser != null && user.Id == currentUser.Id)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_CannotDeleteOwnAccount",
+                    "Kendi hesabınızı bu ekrandan silemezsiniz.");
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            var isReferee = await _userManager.IsInRoleAsync(user, "Referee");
+
+            if (!isReferee)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_UserIsNotReferee",
+                    "Bu kullanıcı hakem rolüne sahip değil.");
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (!isAdmin)
+            {
+                if (currentUser?.TenantId == null || user.TenantId != currentUser.TenantId)
                 {
-                    TempData["ErrorMessage"] = _localizer["Error_UnauthorizedDelete"];
+                    TempData["ErrorMessage"] = T(
+                        "Error_UnauthorizedDelete",
+                        "Bu hakemi silme yetkiniz yok.");
+
                     return RedirectToAction(nameof(Index));
                 }
 
-                await _userManager.DeleteAsync(user);
-                TempData["SuccessMessage"] = _localizer["Success_RefereeDeleted"];
+                var targetIsAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+                var targetIsOrganizator = await _userManager.IsInRoleAsync(user, "Organizator");
+
+                if (targetIsAdmin || targetIsOrganizator)
+                {
+                    TempData["ErrorMessage"] = T(
+                        "Error_CannotDeleteManagementUser",
+                        "Yönetici rolündeki kullanıcıları silme yetkiniz yok.");
+
+                    return RedirectToAction(nameof(Index));
+                }
             }
+
+            var deleteResult = await _userManager.DeleteAsync(user);
+
+            if (!deleteResult.Succeeded)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_RefereeDeleteFailed",
+                    "Hakem silinirken bir hata oluştu.");
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            TempData["SuccessMessage"] = T(
+                "Success_RefereeDeleted",
+                "Hakem başarıyla silindi.");
 
             return RedirectToAction(nameof(Index));
         }

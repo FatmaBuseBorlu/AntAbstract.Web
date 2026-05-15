@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -38,6 +39,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
         private readonly ILogger<RegisterModel> _logger;
         private readonly AppDbContext _context;
         private readonly IStringLocalizer<RegisterModel> _localizer;
+        private readonly IWebHostEnvironment _environment;
 
         public RegisterModel(
             UserManager<AppUser> userManager,
@@ -45,7 +47,8 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             RoleManager<IdentityRole> roleManager,
             ILogger<RegisterModel> logger,
             AppDbContext context,
-            IStringLocalizer<RegisterModel> localizer)
+            IStringLocalizer<RegisterModel> localizer,
+            IWebHostEnvironment environment)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -53,6 +56,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             _logger = logger;
             _context = context;
             _localizer = localizer;
+            _environment = environment;
         }
 
         [BindProperty]
@@ -215,12 +219,6 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             var selectedUniversity = ResolveAcademicValue(Input.University, Input.OtherUniversity);
             var selectedFaculty = ResolveAcademicValue(Input.Faculty, Input.OtherFaculty);
             var selectedDepartment = ResolveAcademicValue(Input.Department, Input.OtherDepartment);
-
-            await EnsureAcademicValuesExistAsync(
-                selectedUniversity,
-                selectedFaculty,
-                selectedDepartment
-            );
 
             var existingUser = await _userManager.FindByEmailAsync(Input.Email);
 
@@ -470,13 +468,28 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             string? selectedValue,
             bool includeOther)
         {
+            var isEnglish =
+                CultureInfo.CurrentUICulture.Name.StartsWith(
+                    "en",
+                    StringComparison.OrdinalIgnoreCase);
+
             var list = parameters
                 .Where(p => p.Group == group)
-                .Select(p => new SelectListItem
+                .Select(p =>
                 {
-                    Value = p.Name,
-                    Text = p.Name,
-                    Selected = string.Equals(p.Name, selectedValue, StringComparison.OrdinalIgnoreCase)
+                    var displayName = isEnglish && !string.IsNullOrWhiteSpace(p.NameEn)
+                        ? p.NameEn
+                        : p.Name;
+
+                    return new SelectListItem
+                    {
+                        Value = p.Name,
+                        Text = displayName,
+                        Selected = string.Equals(
+                            p.Name,
+                            selectedValue,
+                            StringComparison.OrdinalIgnoreCase)
+                    };
                 })
                 .ToList();
 
@@ -485,14 +498,13 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 list.Add(new SelectListItem
                 {
                     Value = OtherValue,
-                    Text = GetText("OtherOption", "Diğer / Other"),
+                    Text = isEnglish ? "Other" : GetText("OtherOption", "Diğer / Other"),
                     Selected = selectedValue == OtherValue
                 });
             }
 
             return list;
         }
-
         private async Task EnsureAuthorRoleAsync(AppUser user)
         {
             const string authorRoleName = "Author";
@@ -777,63 +789,6 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             return NormalizeTitleCase(selectedValue);
         }
 
-        private async Task EnsureAcademicValuesExistAsync(
-            string university,
-            string faculty,
-            string department)
-        {
-            var hasChanges = false;
-
-            if (!string.IsNullOrWhiteSpace(university))
-            {
-                hasChanges |= await EnsureSystemParameterExistsAsync("University", university);
-            }
-
-            if (!string.IsNullOrWhiteSpace(faculty))
-            {
-                hasChanges |= await EnsureSystemParameterExistsAsync("Faculty", faculty);
-            }
-
-            if (!string.IsNullOrWhiteSpace(department))
-            {
-                hasChanges |= await EnsureSystemParameterExistsAsync("Department", department);
-            }
-
-            if (hasChanges)
-            {
-                await _context.SaveChangesAsync();
-            }
-        }
-
-        private async Task<bool> EnsureSystemParameterExistsAsync(string group, string name)
-        {
-            var normalizedName = NormalizeTitleCase(name);
-
-            var exists = await _context.SystemParameters
-                .AnyAsync(x =>
-                    x.Group == group &&
-                    x.Name.ToLower() == normalizedName.ToLower());
-
-            if (exists)
-            {
-                return false;
-            }
-
-            var maxOrder = await _context.SystemParameters
-                .Where(x => x.Group == group)
-                .MaxAsync(x => (int?)x.Order) ?? 0;
-
-            _context.SystemParameters.Add(new SystemParameter
-            {
-                Group = group,
-                Name = normalizedName,
-                IsActive = true,
-                Order = maxOrder + 1
-            });
-
-            return true;
-        }
-
         private static string NormalizeTitleCase(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -880,25 +835,25 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 );
             }
 
+            var folderPath = string.Empty;
+
             try
             {
-                var newFileName = $"{Guid.NewGuid()}{extension}";
+                var webRootPath = _environment.WebRootPath;
 
-                var folderPath = Path.Combine(
-                    Directory.GetCurrentDirectory(),
-                    "wwwroot",
-                    "uploads",
-                    "users"
-                );
-
-                if (!Directory.Exists(folderPath))
+                if (string.IsNullOrWhiteSpace(webRootPath))
                 {
-                    Directory.CreateDirectory(folderPath);
+                    webRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
                 }
 
-                var filePath = Path.Combine(folderPath, newFileName);
+                folderPath = Path.Combine(webRootPath, "uploads", "users");
 
-                await using var stream = new FileStream(filePath, FileMode.Create);
+                Directory.CreateDirectory(folderPath);
+
+                var newFileName = $"{Guid.NewGuid()}{extension}";
+                var physicalFilePath = Path.Combine(folderPath, newFileName);
+
+                await using var stream = new FileStream(physicalFilePath, FileMode.Create);
                 await file.CopyToAsync(stream);
 
                 return (
@@ -907,12 +862,20 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                     string.Empty
                 );
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(
+                    ex,
+                    "Profil resmi yüklenirken hata oluştu. FolderPath: {FolderPath}, FileName: {FileName}, FileLength: {FileLength}",
+                    folderPath,
+                    file.FileName,
+                    file.Length
+                );
+
                 return (
                     false,
                     null,
-                    "Profil resmi yüklenirken bir hata oluştu."
+                    "Profil resmi yüklenirken bir hata oluştu. Lütfen dosya formatını kontrol ediniz veya daha küçük bir dosya deneyiniz."
                 );
             }
         }

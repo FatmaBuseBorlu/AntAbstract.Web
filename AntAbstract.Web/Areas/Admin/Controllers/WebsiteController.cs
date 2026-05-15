@@ -1,11 +1,15 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using System;
+using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -15,28 +19,111 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
     {
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
+        private readonly UserManager<AppUser> _userManager;
         private readonly IStringLocalizer<WebsiteController> _localizer;
 
         public WebsiteController(
             AppDbContext context,
             TenantContext tenantContext,
+            UserManager<AppUser> userManager,
             IStringLocalizer<WebsiteController> localizer)
         {
             _context = context;
             _tenantContext = tenantContext;
+            _userManager = userManager;
             _localizer = localizer;
         }
 
         private string? CurrentSlug => RouteData.Values["slug"]?.ToString();
 
-        [HttpGet]
-        public async Task<IActionResult> Index(string culture = "tr-TR", string page = "Home", Guid? conferenceId = null)
+        private string T(string key, string fallback)
+        {
+            var value = _localizer[key];
+
+            return value.ResourceNotFound
+                ? fallback
+                : value.Value;
+        }
+
+        private async Task<bool> CanAccessCurrentTenantAsync()
         {
             var tenant = _tenantContext.Current;
+
             if (tenant == null)
-                return BadRequest(_localizer["Error_TenantNotFound"].Value);
+            {
+                return false;
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+
+            if (isAdmin)
+            {
+                return true;
+            }
+
+            return user.TenantId.HasValue &&
+                   user.TenantId.Value == tenant.Id;
+        }
+
+        private async Task<bool> ConferenceBelongsToCurrentTenantAsync(Guid conferenceId)
+        {
+            var tenant = _tenantContext.Current;
+
+            if (tenant == null)
+            {
+                return false;
+            }
+
+            return await _context.Conferences
+                .AsNoTracking()
+                .AnyAsync(x =>
+                    x.Id == conferenceId &&
+                    x.TenantId == tenant.Id);
+        }
+
+        private IActionResult RedirectToSafePage()
+        {
+            var slug = CurrentSlug;
+
+            if (!string.IsNullOrWhiteSpace(slug))
+            {
+                return Redirect($"/{slug}/Admin/Conferences");
+            }
+
+            return Redirect("/Dashboard/MyConferences");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Index(
+            string culture = "tr-TR",
+            string page = "Home",
+            Guid? conferenceId = null)
+        {
+            var tenant = _tenantContext.Current;
+
+            if (tenant == null)
+            {
+                return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
+            }
+
+            if (!await CanAccessCurrentTenantAsync())
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_UnauthorizedTenant",
+                    "Bu website içeriklerini yönetme yetkiniz yok.");
+
+                return RedirectToSafePage();
+            }
 
             var conferences = await _context.Conferences
+                .AsNoTracking()
                 .Where(x => x.TenantId == tenant.Id)
                 .OrderByDescending(x => x.StartDate)
                 .ToListAsync();
@@ -52,13 +139,28 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ViewBag.ConferenceId = selectedConferenceId;
 
             if (selectedConferenceId == null)
+            {
                 return View(new List<ConferencePageBlock>());
+            }
+
+            var conferenceExists = await ConferenceBelongsToCurrentTenantAsync(selectedConferenceId.Value);
+
+            if (!conferenceExists)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_ValidConferenceNotFound",
+                    "Geçerli kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+
+                return RedirectToSafePage();
+            }
 
             var blocks = await _context.ConferencePageBlocks
-                .Where(x => x.TenantId == tenant.Id
-                         && x.ConferenceId == selectedConferenceId
-                         && x.Page == page
-                         && x.Culture == culture)
+                .AsNoTracking()
+                .Where(x =>
+                    x.TenantId == tenant.Id &&
+                    x.ConferenceId == selectedConferenceId &&
+                    x.Page == page &&
+                    x.Culture == culture)
                 .OrderBy(x => x.Order)
                 .ToListAsync();
 
@@ -66,15 +168,35 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Create(Guid conferenceId, string culture = "tr-TR", string page = "Home")
+        public async Task<IActionResult> Create(
+            Guid conferenceId,
+            string culture = "tr-TR",
+            string page = "Home")
         {
             var tenant = _tenantContext.Current;
-            if (tenant == null)
-                return BadRequest(_localizer["Error_TenantNotFound"].Value);
 
-            var exists = await _context.Conferences.AnyAsync(x => x.Id == conferenceId && x.TenantId == tenant.Id);
+            if (tenant == null)
+            {
+                return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
+            }
+
+            if (!await CanAccessCurrentTenantAsync())
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_UnauthorizedTenant",
+                    "Bu website içeriklerini oluşturma yetkiniz yok.");
+
+                return RedirectToSafePage();
+            }
+
+            var exists = await ConferenceBelongsToCurrentTenantAsync(conferenceId);
+
             if (!exists)
-                return NotFound(_localizer["Error_ValidConferenceNotFound"].Value);
+            {
+                return NotFound(T(
+                    "Error_ValidConferenceNotFound",
+                    "Geçerli kongre bulunamadı veya bu kongreye erişim yetkiniz yok."));
+            }
 
             var model = new ConferencePageBlock
             {
@@ -93,11 +215,28 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(ConferencePageBlock model, string? btnText, string? btnUrl, string? bgImage, string? sideImage)
+        public async Task<IActionResult> Create(
+            ConferencePageBlock model,
+            string? btnText,
+            string? btnUrl,
+            string? bgImage,
+            string? sideImage)
         {
             var tenant = _tenantContext.Current;
+
             if (tenant == null)
-                return BadRequest(_localizer["Error_TenantNotFound"].Value);
+            {
+                return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
+            }
+
+            if (!await CanAccessCurrentTenantAsync())
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_UnauthorizedTenant",
+                    "Bu website içeriklerini oluşturma yetkiniz yok.");
+
+                return RedirectToSafePage();
+            }
 
             ModelState.Remove("TenantId");
             ModelState.Remove("Conference");
@@ -106,12 +245,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             model.TenantId = tenant.Id;
 
-            var ok = await _context.Conferences.AnyAsync(x => x.Id == model.ConferenceId && x.TenantId == tenant.Id);
+            var ok = await ConferenceBelongsToCurrentTenantAsync(model.ConferenceId);
+
             if (!ok)
-                return NotFound(_localizer["Error_ConferenceNotFound"].Value);
+            {
+                return NotFound(T(
+                    "Error_ConferenceNotFound",
+                    "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok."));
+            }
 
             if (!ModelState.IsValid)
+            {
                 return View(model);
+            }
 
             if (model.BlockType == ConferencePageBlockType.Hero)
             {
@@ -122,6 +268,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     backgroundImageUrl = bgImage,
                     imageUrl = sideImage
                 };
+
                 model.ContentJson = JsonSerializer.Serialize(heroContent);
             }
 
@@ -130,7 +277,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _context.ConferencePageBlocks.Add(model);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = _localizer["Success_BlockCreated"].Value;
+            TempData["SuccessMessage"] = T(
+                "Success_BlockCreated",
+                "Blok başarıyla oluşturuldu.");
 
             return RedirectToAction(nameof(Index), new
             {
@@ -145,25 +294,69 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Edit(int id)
         {
             var tenant = _tenantContext.Current;
+
             if (tenant == null)
-                return BadRequest(_localizer["Error_TenantNotFound"].Value);
+            {
+                return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
+            }
+
+            if (!await CanAccessCurrentTenantAsync())
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_UnauthorizedTenant",
+                    "Bu website içeriklerini düzenleme yetkiniz yok.");
+
+                return RedirectToSafePage();
+            }
 
             var block = await _context.ConferencePageBlocks
-                .FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenant.Id);
+                .FirstOrDefaultAsync(x =>
+                    x.Id == id &&
+                    x.TenantId == tenant.Id);
 
             if (block == null)
-                return NotFound();
+            {
+                return NotFound(T(
+                    "Error_BlockNotFound",
+                    "Blok bulunamadı veya bu bloğa erişim yetkiniz yok."));
+            }
+
+            var conferenceExists = await ConferenceBelongsToCurrentTenantAsync(block.ConferenceId);
+
+            if (!conferenceExists)
+            {
+                return NotFound(T(
+                    "Error_ValidConferenceNotFound",
+                    "Geçerli kongre bulunamadı veya bu kongreye erişim yetkiniz yok."));
+            }
 
             return View(block);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(ConferencePageBlock model, string? btnText, string? btnUrl, string? bgImage, string? sideImage)
+        public async Task<IActionResult> Edit(
+            ConferencePageBlock model,
+            string? btnText,
+            string? btnUrl,
+            string? bgImage,
+            string? sideImage)
         {
             var tenant = _tenantContext.Current;
+
             if (tenant == null)
-                return BadRequest(_localizer["Error_TenantNotFound"].Value);
+            {
+                return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
+            }
+
+            if (!await CanAccessCurrentTenantAsync())
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_UnauthorizedTenant",
+                    "Bu website içeriklerini düzenleme yetkiniz yok.");
+
+                return RedirectToSafePage();
+            }
 
             ModelState.Remove("TenantId");
             ModelState.Remove("Conference");
@@ -171,13 +364,30 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ModelState.Remove("UpdatedAt");
 
             var block = await _context.ConferencePageBlocks
-                .FirstOrDefaultAsync(x => x.Id == model.Id && x.TenantId == tenant.Id);
+                .FirstOrDefaultAsync(x =>
+                    x.Id == model.Id &&
+                    x.TenantId == tenant.Id);
 
             if (block == null)
-                return NotFound();
+            {
+                return NotFound(T(
+                    "Error_BlockNotFound",
+                    "Blok bulunamadı veya bu bloğa erişim yetkiniz yok."));
+            }
+
+            var conferenceExists = await ConferenceBelongsToCurrentTenantAsync(block.ConferenceId);
+
+            if (!conferenceExists)
+            {
+                return NotFound(T(
+                    "Error_ValidConferenceNotFound",
+                    "Geçerli kongre bulunamadı veya bu kongreye erişim yetkiniz yok."));
+            }
 
             if (!ModelState.IsValid)
+            {
                 return View(model);
+            }
 
             if (model.BlockType == ConferencePageBlockType.Hero)
             {
@@ -188,6 +398,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     backgroundImageUrl = bgImage,
                     imageUrl = sideImage
                 };
+
                 block.ContentJson = JsonSerializer.Serialize(heroContent);
             }
             else
@@ -206,7 +417,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = _localizer["Success_BlockUpdated"].Value;
+            TempData["SuccessMessage"] = T(
+                "Success_BlockUpdated",
+                "Blok başarıyla güncellendi.");
 
             return RedirectToAction(nameof(Index), new
             {
@@ -222,14 +435,41 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Toggle(int id)
         {
             var tenant = _tenantContext.Current;
+
             if (tenant == null)
-                return BadRequest(_localizer["Error_TenantNotFound"].Value);
+            {
+                return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
+            }
+
+            if (!await CanAccessCurrentTenantAsync())
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_UnauthorizedTenant",
+                    "Bu website içeriklerini değiştirme yetkiniz yok.");
+
+                return RedirectToSafePage();
+            }
 
             var block = await _context.ConferencePageBlocks
-                .FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenant.Id);
+                .FirstOrDefaultAsync(x =>
+                    x.Id == id &&
+                    x.TenantId == tenant.Id);
 
             if (block == null)
-                return NotFound();
+            {
+                return NotFound(T(
+                    "Error_BlockNotFound",
+                    "Blok bulunamadı veya bu bloğa erişim yetkiniz yok."));
+            }
+
+            var conferenceExists = await ConferenceBelongsToCurrentTenantAsync(block.ConferenceId);
+
+            if (!conferenceExists)
+            {
+                return NotFound(T(
+                    "Error_ValidConferenceNotFound",
+                    "Geçerli kongre bulunamadı veya bu kongreye erişim yetkiniz yok."));
+            }
 
             block.IsActive = !block.IsActive;
             block.UpdatedAt = DateTime.UtcNow;
@@ -237,8 +477,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = block.IsActive
-                ? _localizer["Success_BlockActivated"].Value
-                : _localizer["Success_BlockDeactivated"].Value;
+                ? T("Success_BlockActivated", "Blok aktif hale getirildi.")
+                : T("Success_BlockDeactivated", "Blok pasif hale getirildi.");
 
             return RedirectToAction(nameof(Index), new
             {
@@ -254,19 +494,48 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var tenant = _tenantContext.Current;
+
             if (tenant == null)
-                return BadRequest(_localizer["Error_TenantNotFound"].Value);
+            {
+                return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
+            }
+
+            if (!await CanAccessCurrentTenantAsync())
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_UnauthorizedTenant",
+                    "Bu website içeriklerini silme yetkiniz yok.");
+
+                return RedirectToSafePage();
+            }
 
             var block = await _context.ConferencePageBlocks
-                .FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenant.Id);
+                .FirstOrDefaultAsync(x =>
+                    x.Id == id &&
+                    x.TenantId == tenant.Id);
 
             if (block == null)
-                return NotFound();
+            {
+                return NotFound(T(
+                    "Error_BlockNotFound",
+                    "Blok bulunamadı veya bu bloğa erişim yetkiniz yok."));
+            }
+
+            var conferenceExists = await ConferenceBelongsToCurrentTenantAsync(block.ConferenceId);
+
+            if (!conferenceExists)
+            {
+                return NotFound(T(
+                    "Error_ValidConferenceNotFound",
+                    "Geçerli kongre bulunamadı veya bu kongreye erişim yetkiniz yok."));
+            }
 
             _context.ConferencePageBlocks.Remove(block);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = _localizer["Success_BlockDeleted"].Value;
+            TempData["SuccessMessage"] = T(
+                "Success_BlockDeleted",
+                "Blok başarıyla silindi.");
 
             return RedirectToAction(nameof(Index), new
             {

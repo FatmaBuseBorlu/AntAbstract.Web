@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -47,25 +48,50 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _localizer = localizer;
         }
 
-        [HttpGet("/Admin/Assignment")]
-        public async Task<IActionResult> SelectConference()
+        private string T(string key, string fallback)
         {
-            var selectedId = _selectedConferenceService.GetSelectedConferenceId();
+            var value = _localizer[key];
 
-            if (selectedId != null)
+            return value.ResourceNotFound
+                ? fallback
+                : value.Value;
+        }
+
+        private async Task<bool> IsCurrentUserAdminAsync()
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            return user != null &&
+                   await _userManager.IsInRoleAsync(user, "Admin");
+        }
+
+        private async Task<bool> CanAccessCurrentTenantAsync()
+        {
+            if (_tenantContext.Current == null)
             {
-                var conf = await _context.Conferences
-                    .AsNoTracking()
-                    .Include(x => x.Tenant)
-                    .FirstOrDefaultAsync(x => x.Id == selectedId.Value);
-
-                if (conf?.Tenant?.Slug != null)
-                {
-                    HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
-                    return Redirect($"/{conf.Tenant.Slug}/Admin/Assignment?conferenceId={conf.Id}");
-                }
+                return false;
             }
 
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+
+            if (isAdmin)
+            {
+                return true;
+            }
+
+            return user.TenantId.HasValue &&
+                   user.TenantId.Value == _tenantContext.Current.Id;
+        }
+
+        private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync()
+        {
             var user = await _userManager.GetUserAsync(User);
             var isAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
 
@@ -83,17 +109,142 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 query = query.Where(c => false);
             }
 
+            return query;
+        }
+
+        private async Task<Conference?> GetAccessibleConferenceAsync(string slug, Guid? conferenceId)
+        {
+            if (_tenantContext.Current == null)
+            {
+                return null;
+            }
+
+            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            if (!await CanAccessCurrentTenantAsync())
+            {
+                return null;
+            }
+
+            Guid? selectedConferenceId = null;
+
+            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
+            {
+                selectedConferenceId = conferenceId.Value;
+            }
+            else
+            {
+                selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
+            }
+
+            if (selectedConferenceId == null || selectedConferenceId.Value == Guid.Empty)
+            {
+                return null;
+            }
+
+            return await _context.Conferences
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c =>
+                    c.Id == selectedConferenceId.Value &&
+                    c.TenantId == _tenantContext.Current.Id);
+        }
+
+        private async Task<bool> CanAccessSubmissionAsync(Guid submissionId)
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+
+            if (isAdmin)
+            {
+                return true;
+            }
+
+            if (!user.TenantId.HasValue)
+            {
+                return false;
+            }
+
+            return await _context.Submissions
+                .AsNoTracking()
+                .Include(s => s.Conference)
+                .AnyAsync(s =>
+                    s.Id == submissionId &&
+                    s.Conference != null &&
+                    s.Conference.TenantId == user.TenantId.Value);
+        }
+
+        private async Task<List<AppUser>> GetAccessibleRefereesAsync()
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = currentUser != null &&
+                          await _userManager.IsInRoleAsync(currentUser, "Admin");
+
+            var referees = await _userManager.GetUsersInRoleAsync("Referee");
+
+            if (!isAdmin)
+            {
+                if (currentUser?.TenantId == null)
+                {
+                    return new List<AppUser>();
+                }
+
+                referees = referees
+                    .Where(r => r.TenantId == currentUser.TenantId.Value)
+                    .ToList();
+            }
+
+            return referees.ToList();
+        }
+
+        [HttpGet("/Admin/Assignment")]
+        public async Task<IActionResult> SelectConference(string? returnUrl = null)
+        {
+            var selectedId = _selectedConferenceService.GetSelectedConferenceId();
+
+            if (selectedId != null)
+            {
+                var selectedQuery = await GetAccessibleConferenceQueryAsync();
+
+                var conf = await selectedQuery
+                    .FirstOrDefaultAsync(x => x.Id == selectedId.Value);
+
+                if (conf?.Tenant?.Slug != null)
+                {
+                    HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
+                    HttpContext.Session.SetString("SelectedConferenceTitle", conf.Title ?? "");
+
+                    if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    {
+                        return LocalRedirect(returnUrl);
+                    }
+
+                    return Redirect($"/{conf.Tenant.Slug}/Admin/Assignment?conferenceId={conf.Id}");
+                }
+            }
+
+            var query = await GetAccessibleConferenceQueryAsync();
+
             var conferences = await query
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
             var vm = new SelectConferenceViewModel
             {
-                Title = _localizer["SelectConference_Title"].Value,
-                Lead = _localizer["SelectConference_Lead"].Value,
+                Title = T("SelectConference_Title", "Kongre Seç"),
+                Lead = T("SelectConference_Lead", "Hakem ataması yapmak için önce kongre seçiniz."),
                 PostUrl = "/Admin/Assignment/Select",
-                SubmitText = _localizer["SelectConference_Submit"].Value,
-                Conferences = conferences
+                SubmitText = T("SelectConference_Submit", "Devam Et"),
+                Conferences = conferences,
+                ReturnUrl = returnUrl
             };
 
             return View("~/Areas/Admin/Views/Shared/SelectConference.cshtml", vm);
@@ -101,20 +252,31 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         [HttpPost("/Admin/Assignment/Select")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SelectConferencePost(Guid conferenceId)
+        public async Task<IActionResult> SelectConferencePost(Guid conferenceId, string? returnUrl = null)
         {
-            var conf = await _context.Conferences
-                .Include(c => c.Tenant)
+            var query = await GetAccessibleConferenceQueryAsync();
+
+            var conf = await query
                 .FirstOrDefaultAsync(c => c.Id == conferenceId);
 
             if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
             {
-                TempData["ErrorMessage"] = _localizer["Error_ConferenceNotFound"].Value;
+                TempData["ErrorMessage"] = T(
+                    "Error_ConferenceNotFound",
+                    "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+
                 return RedirectToAction(nameof(SelectConference));
             }
 
             _selectedConferenceService.SetSelectedConferenceId(conf.Id);
+
             HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
+            HttpContext.Session.SetString("SelectedConferenceTitle", conf.Title ?? "");
+
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return LocalRedirect(returnUrl);
+            }
 
             return Redirect($"/{conf.Tenant.Slug}/Admin/Assignment?conferenceId={conf.Id}");
         }
@@ -122,32 +284,21 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpGet("/{slug}/Admin/Assignment")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId)
         {
-            if (_tenantContext.Current == null ||
-                !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
-            {
-                TempData["ErrorMessage"] = _localizer["Error_SelectValidConferenceFirst"].Value;
-                return RedirectToAction(nameof(SelectConference));
-            }
-
-            conferenceId ??= _selectedConferenceService.GetSelectedConferenceId();
-
-            if (conferenceId == null)
-            {
-                TempData["ErrorMessage"] = _localizer["Error_SelectConferenceFirst"].Value;
-                return RedirectToAction(nameof(SelectConference));
-            }
-
-            var conference = await _context.Conferences
-                .AsNoTracking()
-                .FirstOrDefaultAsync(c =>
-                    c.Id == conferenceId.Value &&
-                    c.TenantId == _tenantContext.Current.Id);
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = _localizer["Error_ConferenceNotBelongOrNotFound"].Value;
+                TempData["ErrorMessage"] = T(
+                    "Error_SelectValidConferenceFirst",
+                    "Lütfen yetkili olduğunuz geçerli bir kongre seçiniz.");
+
                 return RedirectToAction(nameof(SelectConference));
             }
+
+            _selectedConferenceService.SetSelectedConferenceId(conference.Id);
+
+            HttpContext.Session.SetString("SelectedConferenceSlug", slug);
+            HttpContext.Session.SetString("SelectedConferenceTitle", conference.Title ?? "");
 
             var submissions = await _context.Submissions
                 .AsNoTracking()
@@ -168,37 +319,63 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Assign(string slug, Guid id)
         {
             if (_tenantContext.Current == null ||
-                !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+                !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase) ||
+                !await CanAccessCurrentTenantAsync())
             {
-                TempData["ErrorMessage"] = _localizer["Error_SelectConferenceBeforeProceed"].Value;
+                TempData["ErrorMessage"] = T(
+                    "Error_SelectConferenceBeforeProceed",
+                    "İşleme devam etmek için yetkili olduğunuz bir kongre seçiniz.");
+
                 return RedirectToAction(nameof(SelectConference));
+            }
+
+            if (!await CanAccessSubmissionAsync(id))
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_SubmissionNotFoundOrUnauthorized",
+                    "Bildiri bulunamadı veya bu bildiriye erişim yetkiniz yok.");
+
+                return Redirect($"/{slug}/Admin/Assignment");
             }
 
             var submission = await _context.Submissions
                 .AsNoTracking()
                 .Include(s => s.Author)
                 .Include(s => s.Conference)
-                .FirstOrDefaultAsync(s => s.Id == id);
+                .FirstOrDefaultAsync(s =>
+                    s.Id == id &&
+                    s.Conference != null &&
+                    s.Conference.TenantId == _tenantContext.Current.Id);
 
-            if (submission == null ||
-                submission.Conference == null ||
-                submission.Conference.TenantId != _tenantContext.Current.Id)
+            if (submission == null)
             {
-                TempData["ErrorMessage"] = _localizer["Error_SubmissionNotFoundOrUnauthorized"].Value;
+                TempData["ErrorMessage"] = T(
+                    "Error_SubmissionNotFoundOrUnauthorized",
+                    "Bildiri bulunamadı veya bu bildiriye erişim yetkiniz yok.");
+
                 return Redirect($"/{slug}/Admin/Assignment");
             }
 
-            var recommended = await _recommendationService.GetRecommendationsAsync(id);
-            var allReferees = await _userManager.GetUsersInRoleAsync("Referee");
+            var accessibleReferees = await GetAccessibleRefereesAsync();
 
-            var others = allReferees
-                .Where(x => !recommended.Any(r => r.Id == x.Id))
+            var accessibleReviewerIds = accessibleReferees
+                .Select(r => r.Id)
+                .ToHashSet();
+
+            var recommended = await _recommendationService.GetRecommendationsAsync(id);
+
+            var recommendedList = recommended
+                .Where(r => accessibleReviewerIds.Contains(r.Id))
+                .ToList();
+
+            var others = accessibleReferees
+                .Where(x => !recommendedList.Any(r => r.Id == x.Id))
                 .ToList();
 
             var vm = new AssignReviewerViewModel
             {
                 Submission = submission,
-                RecommendedReviewers = recommended.ToList(),
+                RecommendedReviewers = recommendedList,
                 AllOtherReviewers = others
             };
 
@@ -210,26 +387,47 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> AssignPost(string slug, Guid submissionId, string reviewerId)
         {
             if (_tenantContext.Current == null ||
-                !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+                !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase) ||
+                !await CanAccessCurrentTenantAsync())
             {
-                TempData["ErrorMessage"] = _localizer["Error_SelectValidConferenceFirst"].Value;
+                TempData["ErrorMessage"] = T(
+                    "Error_SelectValidConferenceFirst",
+                    "Lütfen yetkili olduğunuz geçerli bir kongre seçiniz.");
+
                 return RedirectToAction(nameof(SelectConference));
+            }
+
+            if (!await CanAccessSubmissionAsync(submissionId))
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_InvalidSubmissionOrUnauthorized",
+                    "Geçersiz bildiri veya bu bildiriye erişim yetkiniz yok.");
+
+                return Redirect($"/{slug}/Admin/Assignment");
             }
 
             var submission = await _context.Submissions
                 .Include(s => s.Conference)
-                .FirstOrDefaultAsync(s => s.Id == submissionId);
+                .FirstOrDefaultAsync(s =>
+                    s.Id == submissionId &&
+                    s.Conference != null &&
+                    s.Conference.TenantId == _tenantContext.Current.Id);
 
-            if (submission == null ||
-                submission.Conference == null ||
-                submission.Conference.TenantId != _tenantContext.Current.Id)
+            if (submission == null)
             {
-                return NotFound(_localizer["Error_InvalidSubmissionOrUnauthorized"].Value);
+                TempData["ErrorMessage"] = T(
+                    "Error_InvalidSubmissionOrUnauthorized",
+                    "Geçersiz bildiri veya bu bildiriye erişim yetkiniz yok.");
+
+                return Redirect($"/{slug}/Admin/Assignment");
             }
 
             if (string.IsNullOrWhiteSpace(reviewerId))
             {
-                TempData["ErrorMessage"] = _localizer["Error_InvalidReviewerSelection"].Value;
+                TempData["ErrorMessage"] = T(
+                    "Error_InvalidReviewerSelection",
+                    "Geçersiz hakem seçimi.");
+
                 return Redirect($"/{slug}/Admin/Assignment/Assign/{submissionId}");
             }
 
@@ -237,8 +435,39 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (reviewer == null)
             {
-                TempData["ErrorMessage"] = _localizer["Error_InvalidReviewerSelection"].Value;
+                TempData["ErrorMessage"] = T(
+                    "Error_InvalidReviewerSelection",
+                    "Geçersiz hakem seçimi.");
+
                 return Redirect($"/{slug}/Admin/Assignment/Assign/{submissionId}");
+            }
+
+            var reviewerIsReferee = await _userManager.IsInRoleAsync(reviewer, "Referee");
+
+            if (!reviewerIsReferee)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_InvalidReviewerSelection",
+                    "Seçilen kullanıcı hakem rolüne sahip değil.");
+
+                return Redirect($"/{slug}/Admin/Assignment/Assign/{submissionId}");
+            }
+
+            var isAdmin = await IsCurrentUserAdminAsync();
+
+            if (!isAdmin)
+            {
+                var currentUser = await _userManager.GetUserAsync(User);
+
+                if (currentUser?.TenantId == null ||
+                    reviewer.TenantId != currentUser.TenantId.Value)
+                {
+                    TempData["ErrorMessage"] = T(
+                        "Error_ReviewerUnauthorized",
+                        "Bu hakemi bu kongreye atama yetkiniz yok.");
+
+                    return Redirect($"/{slug}/Admin/Assignment/Assign/{submissionId}");
+                }
             }
 
             var alreadyAssigned = await _context.ReviewAssignments
@@ -248,7 +477,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (alreadyAssigned)
             {
-                TempData["ErrorMessage"] = _localizer["Error_ReviewerAlreadyAssigned"].Value;
+                TempData["ErrorMessage"] = T(
+                    "Error_ReviewerAlreadyAssigned",
+                    "Bu hakem zaten bu bildiriye atanmış.");
+
                 return Redirect($"/{slug}/Admin/Assignment/Assign/{submissionId}");
             }
 
@@ -271,14 +503,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 var reviewerFullName = $"{reviewer.FirstName} {reviewer.LastName}".Trim();
 
-                string mailSubject = _localizer["Mail_NewAssignmentSubject"].Value;
+                var mailSubject = T(
+                    "Mail_NewAssignmentSubject",
+                    "Yeni Hakem Ataması");
 
-                string mailBody =
-                    $"{_localizer["Mail_Greeting", reviewer.FirstName, reviewer.LastName].Value}<br><br>" +
-                    $"{_localizer["Mail_NewAssignmentIntro"].Value}<br><br>" +
-                    $"<strong>{_localizer["Mail_SubmissionTitleLabel"].Value}</strong> {submission.Title}<br><br>" +
-                    $"{_localizer["Mail_FillReviewForm"].Value}<br><br>" +
-                    $"{_localizer["Mail_BestRegards"].Value}";
+                var mailBody =
+                    $"{T("Mail_Greeting", $"Sayın {reviewerFullName},")}<br><br>" +
+                    $"{T("Mail_NewAssignmentIntro", "Yeni bir bildiri değerlendirme göreviniz bulunmaktadır.")}<br><br>" +
+                    $"<strong>{T("Mail_SubmissionTitleLabel", "Bildiri Başlığı:")}</strong> {submission.Title}<br><br>" +
+                    $"{T("Mail_FillReviewForm", "Lütfen sisteme giriş yaparak değerlendirme formunu doldurunuz.")}<br><br>" +
+                    $"{T("Mail_BestRegards", "Saygılarımızla.")}";
 
                 if (!string.IsNullOrWhiteSpace(reviewer.Email))
                 {
@@ -288,10 +522,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             catch
             {
                 // Mail gönderimi başarısız olsa bile hakem ataması tamamlanmış olur.
-                // İstersen buraya ileride loglama ekleyebiliriz.
             }
 
-            TempData["SuccessMessage"] = _localizer["Success_ReviewerAssigned"].Value;
+            TempData["SuccessMessage"] = T(
+                "Success_ReviewerAssigned",
+                "Hakem başarıyla atandı.");
 
             return Redirect($"/{slug}/Admin/Assignment?conferenceId={submission.ConferenceId}");
         }

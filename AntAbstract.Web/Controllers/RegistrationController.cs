@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Authorization;
@@ -12,6 +14,11 @@ namespace AntAbstract.Web.Controllers
 {
     public class RegistrationController : Controller
     {
+        private const int MaxBillingNameLength = 200;
+        private const int MaxTaxOfficeLength = 100;
+        private const int MaxTaxNumberLength = 50;
+        private const int MaxBillingAddressLength = 500;
+
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
@@ -62,6 +69,53 @@ namespace AntAbstract.Web.Controllers
             return $"/{slug}{path}";
         }
 
+        private static string GetCanonicalSlug(Conference conference, string fallbackSlug)
+        {
+            return conference.Tenant?.Slug
+                   ?? conference.Slug
+                   ?? fallbackSlug;
+        }
+
+        private static bool SlugMatches(Conference? conference, string slug)
+        {
+            if (conference == null || string.IsNullOrWhiteSpace(slug))
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(conference.Slug) &&
+                string.Equals(conference.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (conference.Tenant != null &&
+                !string.IsNullOrWhiteSpace(conference.Tenant.Slug) &&
+                string.Equals(conference.Tenant.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static string? NormalizeNullable(string? value, int maxLength)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            value = value.Trim();
+
+            if (value.Length > maxLength)
+            {
+                value = value.Substring(0, maxLength);
+            }
+
+            return value;
+        }
+
         private async Task EnsureAuthorRoleAsync(AppUser user)
         {
             const string authorRoleName = "Author";
@@ -79,10 +133,6 @@ namespace AntAbstract.Web.Controllers
             {
                 await _userManager.AddToRoleAsync(user, authorRoleName);
 
-                /*
-                 * Kullanıcıya rol verdikten sonra giriş bilgisini yeniliyoruz.
-                 * Böylece kullanıcı hemen /submit-abstract sayfasına erişebilir.
-                 */
                 await _signInManager.RefreshSignInAsync(user);
             }
         }
@@ -106,11 +156,16 @@ namespace AntAbstract.Web.Controllers
             }
 
             return await _context.Conferences
-                .Include(c => c.Tenant)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(c =>
+                .Include(c => c.Tenant)
+                .Where(c =>
                     c.Slug == slug ||
-                    (c.Tenant != null && c.Tenant.Slug == slug));
+                    (
+                        c.Tenant != null &&
+                        c.Tenant.Slug == slug
+                    ))
+                .OrderByDescending(c => c.StartDate)
+                .FirstOrDefaultAsync();
         }
 
         [AllowAnonymous]
@@ -131,9 +186,14 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
-            var canonicalSlug = conference.Tenant?.Slug ?? conference.Slug ?? slug;
+            var canonicalSlug = GetCanonicalSlug(conference, slug);
 
             SetSelectedConferenceSession(conference, canonicalSlug);
+
+            if (!string.Equals(canonicalSlug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return Redirect(BuildUrl(canonicalSlug, "/registration"));
+            }
 
             if (User.Identity != null && User.Identity.IsAuthenticated)
             {
@@ -194,16 +254,6 @@ namespace AntAbstract.Web.Controllers
             return await Index();
         }
 
-        /*
-         * ÖNEMLİ:
-         * Bu GET action artık AllowAnonymous.
-         *
-         * Sebep:
-         * Kullanıcı giriş yapmadan "Ön Kayda Devam Et" dediğinde
-         * doğrudan login ekranına değil, register ekranına returnUrl ile gitsin.
-         *
-         * Böylece kullanıcı sisteme kayıt olurken aynı anda kongre ön kaydı da oluşturulabilir.
-         */
         [AllowAnonymous]
         [HttpGet("/{slug}/register/checkout/{typeId:guid}")]
         [HttpGet("/{slug}/registration/checkout/{typeId:guid}")]
@@ -221,6 +271,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             var ticketType = await _context.RegistrationTypes
+                .AsNoTracking()
                 .Include(rt => rt.Conference)
                     .ThenInclude(c => c.Tenant)
                 .FirstOrDefaultAsync(rt =>
@@ -248,7 +299,12 @@ namespace AntAbstract.Web.Controllers
                 return Redirect(BuildUrl(slug, "/registration"));
             }
 
-            var canonicalSlug = conference.Tenant?.Slug ?? conference.Slug ?? slug;
+            var canonicalSlug = GetCanonicalSlug(conference, slug);
+
+            if (!SlugMatches(conference, slug))
+            {
+                return Redirect(BuildUrl(canonicalSlug, $"/registration/checkout/{typeId}"));
+            }
 
             SetSelectedConferenceSession(conference, canonicalSlug);
 
@@ -286,12 +342,6 @@ namespace AntAbstract.Web.Controllers
             });
         }
 
-        /*
-         * POST tarafı Authorize kalmalı.
-         *
-         * Çünkü gerçek ön kayıt veritabanına yazılırken
-         * kullanıcının sisteme giriş yapmış olması gerekir.
-         */
         [Authorize]
         [HttpPost("/{slug}/register/checkout/{typeId:guid}")]
         [HttpPost("/{slug}/registration/checkout/{typeId:guid}")]
@@ -340,7 +390,16 @@ namespace AntAbstract.Web.Controllers
                 return Redirect(BuildUrl(slug, "/registration"));
             }
 
-            var canonicalSlug = conference.Tenant?.Slug ?? conference.Slug ?? slug;
+            var canonicalSlug = GetCanonicalSlug(conference, slug);
+
+            if (!SlugMatches(conference, slug))
+            {
+                TempData["ErrorMessage"] = T(
+                    "InvalidConferenceSelection",
+                    "Seçilen kayıt türü bu kongreye ait değil.");
+
+                return Redirect(BuildUrl(canonicalSlug, $"/registration/checkout/{typeId}"));
+            }
 
             SetSelectedConferenceSession(conference, canonicalSlug);
 
@@ -370,10 +429,10 @@ namespace AntAbstract.Web.Controllers
                 IsPaid = false,
                 Amount = ticketType.Price,
 
-                BillingName = string.IsNullOrWhiteSpace(BillingName) ? null : BillingName.Trim(),
-                TaxOffice = string.IsNullOrWhiteSpace(TaxOffice) ? null : TaxOffice.Trim(),
-                TaxNumber = string.IsNullOrWhiteSpace(TaxNumber) ? null : TaxNumber.Trim(),
-                BillingAddress = string.IsNullOrWhiteSpace(BillingAddress) ? null : BillingAddress.Trim()
+                BillingName = NormalizeNullable(BillingName, MaxBillingNameLength),
+                TaxOffice = NormalizeNullable(TaxOffice, MaxTaxOfficeLength),
+                TaxNumber = NormalizeNullable(TaxNumber, MaxTaxNumberLength),
+                BillingAddress = NormalizeNullable(BillingAddress, MaxBillingAddressLength)
             };
 
             _context.Registrations.Add(newRegistration);

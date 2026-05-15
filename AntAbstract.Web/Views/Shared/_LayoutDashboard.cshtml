@@ -883,6 +883,8 @@
 
                 <div class="language-switcher d-none d-sm-inline-flex">
                     <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                        @Html.AntiForgeryToken()
+
                         <input type="hidden" name="culture" value="tr-TR" />
                         <input type="hidden" name="returnUrl" value="@returnUrl" />
 
@@ -892,6 +894,8 @@
                     </form>
 
                     <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                        @Html.AntiForgeryToken()
+
                         <input type="hidden" name="culture" value="en-US" />
                         <input type="hidden" name="returnUrl" value="@returnUrl" />
 
@@ -934,7 +938,9 @@
                         </li>
 
                         <li>
-                            <form asp-controller="Dashboard" asp-action="CustomLogout" method="post">
+                            <form asp-area="" asp-controller="Dashboard" asp-action="CustomLogout" method="post">
+                                @Html.AntiForgeryToken()
+
                                 <button type="submit" class="dropdown-item rounded-2 py-2 text-danger fw-bold">
                                     <i class="fas fa-sign-out-alt me-2"></i>
                                     @L("Dropdown_Logout", "Çıkış Yap")

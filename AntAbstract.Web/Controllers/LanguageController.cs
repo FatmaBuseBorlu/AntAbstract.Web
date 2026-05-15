@@ -5,12 +5,19 @@ namespace AntAbstract.Web.Controllers
 {
     public class LanguageController : Controller
     {
-        [HttpPost]
+        private static readonly string[] SupportedCultures =
+        {
+            "tr-TR",
+            "en-US"
+        };
+
+        [HttpPost("/Language/ChangeLanguage")]
+        [ValidateAntiForgeryToken]
         public IActionResult ChangeLanguage(string culture, string returnUrl)
         {
-            if (string.IsNullOrWhiteSpace(returnUrl))
+            if (!SupportedCultures.Contains(culture))
             {
-                returnUrl = "/";
+                culture = "tr-TR";
             }
 
             Response.Cookies.Append(
@@ -18,10 +25,18 @@ namespace AntAbstract.Web.Controllers
                 CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(culture)),
                 new CookieOptions
                 {
-                    Expires = DateTimeOffset.UtcNow.AddYears(1)
+                    Expires = DateTimeOffset.UtcNow.AddYears(1),
+                    IsEssential = true,
+                    SameSite = SameSiteMode.Lax,
+                    Secure = Request.IsHttps
                 });
 
-            return LocalRedirect(returnUrl);
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return LocalRedirect(returnUrl);
+            }
+
+            return Redirect("/");
         }
     }
 }
