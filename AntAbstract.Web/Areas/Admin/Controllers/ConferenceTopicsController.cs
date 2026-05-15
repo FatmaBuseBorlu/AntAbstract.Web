@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Organizator")]
+    [Authorize(Roles = "Admin")]
     public class ConferenceTopicsController : Controller
     {
         private readonly AppDbContext _context;
@@ -41,11 +41,28 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private string L(string key, string fallback)
         {
-            var text = _localizer[key].Value;
+            var value = _localizer[key];
 
-            return string.Equals(text, key, StringComparison.OrdinalIgnoreCase)
+            return value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
                 ? fallback
-                : text;
+                : value.Value;
+        }
+
+        private async Task<AppUser?> GetCurrentUserAsync()
+        {
+            return await _userManager.GetUserAsync(User);
+        }
+
+        private async Task<Guid?> GetCurrentAdminTenantIdAsync()
+        {
+            var user = await GetCurrentUserAsync();
+
+            if (user == null || !user.TenantId.HasValue)
+            {
+                return null;
+            }
+
+            return user.TenantId.Value;
         }
 
         private async Task<bool> CanAccessCurrentTenantAsync()
@@ -55,87 +72,129 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return false;
             }
 
-            var user = await _userManager.GetUserAsync(User);
+            var tenantId = await GetCurrentAdminTenantIdAsync();
 
-            if (user == null)
+            if (!tenantId.HasValue)
             {
                 return false;
             }
 
-            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-
-            if (isAdmin)
-            {
-                return true;
-            }
-
-            return user.TenantId.HasValue &&
-                   user.TenantId.Value == _tenantContext.Current.Id;
+            return tenantId.Value == _tenantContext.Current.Id;
         }
 
-        [HttpGet("/Admin/ConferenceTopics")]
-        public async Task<IActionResult> SelectConference(string? returnUrl = null)
+        private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync()
         {
-            var user = await _userManager.GetUserAsync(User);
-            var isAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
-
-            var selectedId = _selectedConferenceService.GetSelectedConferenceId();
-
-            if (selectedId != null)
-            {
-                var selectedConferenceQuery = _context.Conferences
-                    .AsNoTracking()
-                    .Include(c => c.Tenant)
-                    .AsQueryable();
-
-                if (!isAdmin)
-                {
-                    if (user?.TenantId == null)
-                    {
-                        selectedConferenceQuery = selectedConferenceQuery.Where(c => false);
-                    }
-                    else
-                    {
-                        selectedConferenceQuery = selectedConferenceQuery.Where(c => c.TenantId == user.TenantId.Value);
-                    }
-                }
-
-                var selectedConference = await selectedConferenceQuery
-                    .FirstOrDefaultAsync(c => c.Id == selectedId.Value);
-
-                if (selectedConference?.Tenant?.Slug != null)
-                {
-                    HttpContext.Session.SetString("SelectedConferenceSlug", selectedConference.Tenant.Slug);
-                    HttpContext.Session.SetString("SelectedConferenceTitle", selectedConference.Title ?? "");
-
-                    if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
-                    {
-                        return LocalRedirect(returnUrl);
-                    }
-
-                    return RedirectToAction(
-                        nameof(Index),
-                        new
-                        {
-                            slug = selectedConference.Tenant.Slug,
-                            conferenceId = selectedConference.Id
-                        });
-                }
-            }
+            var tenantId = await GetCurrentAdminTenantIdAsync();
 
             var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .AsQueryable();
 
-            if (!isAdmin && user?.TenantId != null)
+            if (!tenantId.HasValue)
             {
-                query = query.Where(c => c.TenantId == user.TenantId.Value);
+                return query.Where(c => false);
             }
-            else if (!isAdmin && user?.TenantId == null)
+
+            return query.Where(c => c.TenantId == tenantId.Value);
+        }
+
+        private void SetSelectedConferenceSession(Conference conference)
+        {
+            var slug = conference.Tenant?.Slug ?? _tenantContext.Current?.Slug ?? "";
+            var tenantId = conference.TenantId;
+
+            _selectedConferenceService.SetSelectedConferenceId(conference.Id);
+
+            HttpContext.Session.SetString("SelectedConferenceId", conference.Id.ToString());
+            HttpContext.Session.SetString("SelectedConferenceSlug", slug);
+            HttpContext.Session.SetString("SelectedConferenceTitle", conference.Title ?? "");
+
+            HttpContext.Session.SetString($"SelectedConferenceId:{tenantId}", conference.Id.ToString());
+            HttpContext.Session.SetString($"SelectedConferenceSlug:{tenantId}", slug);
+            HttpContext.Session.SetString($"SelectedConferenceTitle:{tenantId}", conference.Title ?? "");
+        }
+
+        private async Task<Conference?> GetAccessibleConferenceAsync(
+            string slug,
+            Guid? conferenceId)
+        {
+            if (_tenantContext.Current == null)
             {
-                query = query.Where(c => false);
+                return null;
             }
+
+            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            if (!await CanAccessCurrentTenantAsync())
+            {
+                return null;
+            }
+
+            Guid? selectedConferenceId = null;
+
+            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
+            {
+                selectedConferenceId = conferenceId.Value;
+            }
+            else
+            {
+                selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
+            }
+
+            if (!selectedConferenceId.HasValue || selectedConferenceId.Value == Guid.Empty)
+            {
+                return null;
+            }
+
+            return await _context.Conferences
+                .AsNoTracking()
+                .Include(c => c.Tenant)
+                .FirstOrDefaultAsync(c =>
+                    c.Id == selectedConferenceId.Value &&
+                    c.TenantId == _tenantContext.Current.Id);
+        }
+
+        [HttpGet("/Admin/ConferenceTopics")]
+        public async Task<IActionResult> SelectConference(string? returnUrl = null)
+        {
+            var tenantId = await GetCurrentAdminTenantIdAsync();
+
+            if (!tenantId.HasValue)
+            {
+                TempData["ErrorMessage"] = L(
+                    "Error_AdminTenantNotFound",
+                    "Admin hesabınıza bağlı kurum bulunamadı.");
+
+                return Redirect("/Dashboard/MyConferences");
+            }
+
+            var selectedId = _selectedConferenceService.GetSelectedConferenceId();
+
+            if (selectedId.HasValue && selectedId.Value != Guid.Empty)
+            {
+                var selectedConferenceQuery = await GetAccessibleConferenceQueryAsync();
+
+                var selectedConference = await selectedConferenceQuery
+                    .FirstOrDefaultAsync(c => c.Id == selectedId.Value);
+
+                if (selectedConference?.Tenant?.Slug != null)
+                {
+                    SetSelectedConferenceSession(selectedConference);
+
+                    if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    {
+                        return LocalRedirect(returnUrl);
+                    }
+
+                    return Redirect($"/{selectedConference.Tenant.Slug}/Admin/ConferenceTopics?conferenceId={selectedConference.Id}");
+                }
+            }
+
+            var query = await GetAccessibleConferenceQueryAsync();
 
             var conferences = await query
                 .OrderByDescending(c => c.StartDate)
@@ -158,23 +217,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SelectConferencePost(Guid conferenceId, string? returnUrl = null)
         {
-            var user = await _userManager.GetUserAsync(User);
-            var isAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
-
-            var conferenceQuery = _context.Conferences
-                .Include(c => c.Tenant)
-                .AsQueryable();
-
-            if (!isAdmin)
+            if (conferenceId == Guid.Empty)
             {
-                if (user?.TenantId == null)
-                {
-                    TempData["ErrorMessage"] = L("Error_SelectConferenceUnauthorized", "Kongre seçme yetkiniz yok.");
-                    return RedirectToAction(nameof(SelectConference));
-                }
+                TempData["ErrorMessage"] = L(
+                    "Error_ConferenceNotFound",
+                    "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
 
-                conferenceQuery = conferenceQuery.Where(c => c.TenantId == user.TenantId.Value);
+                return RedirectToAction(nameof(SelectConference));
             }
+
+            var conferenceQuery = await GetAccessibleConferenceQueryAsync();
 
             var conference = await conferenceQuery
                 .FirstOrDefaultAsync(c => c.Id == conferenceId);
@@ -183,89 +235,38 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 conference.Tenant == null ||
                 string.IsNullOrWhiteSpace(conference.Tenant.Slug))
             {
-                TempData["ErrorMessage"] = L("Error_ConferenceNotFound", "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+                TempData["ErrorMessage"] = L(
+                    "Error_ConferenceNotFound",
+                    "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+
                 return RedirectToAction(nameof(SelectConference));
             }
 
-            _selectedConferenceService.SetSelectedConferenceId(conference.Id);
-
-            HttpContext.Session.SetString("SelectedConferenceSlug", conference.Tenant.Slug);
-            HttpContext.Session.SetString("SelectedConferenceTitle", conference.Title ?? "");
+            SetSelectedConferenceSession(conference);
 
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 return LocalRedirect(returnUrl);
             }
 
-            return RedirectToAction(
-                nameof(Index),
-                new
-                {
-                    slug = conference.Tenant.Slug,
-                    conferenceId = conference.Id
-                });
+            return Redirect($"/{conference.Tenant.Slug}/Admin/ConferenceTopics?conferenceId={conference.Id}");
         }
 
         [HttpGet("/{slug}/Admin/ConferenceTopics")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId = null)
         {
-            if (_tenantContext.Current == null)
-            {
-                return RedirectToAction(
-                    nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
-            }
-
-            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
-            {
-                return RedirectToAction(
-                    nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
-            }
-
-            if (!await CanAccessCurrentTenantAsync())
-            {
-                TempData["ErrorMessage"] = L("Error_UnauthorizedTenant", "Bu kongrenin bildiri konularını görüntüleme yetkiniz yok.");
-                return RedirectToAction(nameof(SelectConference));
-            }
-
-            Guid? selectedConferenceId = null;
-
-            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
-            {
-                selectedConferenceId = conferenceId.Value;
-            }
-            else
-            {
-                selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
-            }
-
-            if (selectedConferenceId == null || selectedConferenceId.Value == Guid.Empty)
-            {
-                return RedirectToAction(
-                    nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
-            }
-
-            var conference = await _context.Conferences
-                .AsNoTracking()
-                .FirstOrDefaultAsync(c =>
-                    c.Id == selectedConferenceId.Value &&
-                    c.TenantId == _tenantContext.Current.Id);
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = L("Error_ConferenceNotFound", "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+                TempData["ErrorMessage"] = L(
+                    "Error_ConferenceNotFound",
+                    "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
 
-                return RedirectToAction(
-                    nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
+                return RedirectToAction(nameof(SelectConference));
             }
 
-            _selectedConferenceService.SetSelectedConferenceId(conference.Id);
-
-            HttpContext.Session.SetString("SelectedConferenceSlug", slug);
-            HttpContext.Session.SetString("SelectedConferenceTitle", conference.Title ?? "");
+            SetSelectedConferenceSession(conference);
 
             var usageDict = await _context.Submissions
                 .AsNoTracking()
@@ -322,7 +323,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (model == null)
             {
-                TempData["ErrorMessage"] = L("Error_UnauthorizedTenant", "Bu kongrenin bildiri konularını yönetme yetkiniz yok.");
+                TempData["ErrorMessage"] = L(
+                    "Error_UnauthorizedTenant",
+                    "Bu kongrenin bildiri konularını yönetme yetkiniz yok.");
 
                 return RedirectToAction(
                     nameof(SelectConference),
@@ -349,56 +352,33 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Save(string slug, AdminConferenceTopicFormModel model)
         {
-            if (_tenantContext.Current == null ||
-                !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
-            {
-                return RedirectToAction(
-                    nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
-            }
-
-            if (!await CanAccessCurrentTenantAsync())
-            {
-                TempData["ErrorMessage"] = L("Error_UnauthorizedTenant", "Bu kongrenin bildiri konularını yönetme yetkiniz yok.");
-                return RedirectToAction(nameof(SelectConference));
-            }
-
-            Guid? selectedConferenceId = null;
-
-            if (model.ConferenceId != Guid.Empty)
-            {
-                selectedConferenceId = model.ConferenceId;
-            }
-            else
-            {
-                selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
-            }
-
-            if (selectedConferenceId == null || selectedConferenceId.Value == Guid.Empty)
-            {
-                return RedirectToAction(
-                    nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
-            }
-
-            var conference = await _context.Conferences
-                .AsNoTracking()
-                .FirstOrDefaultAsync(c =>
-                    c.Id == selectedConferenceId.Value &&
-                    c.TenantId == _tenantContext.Current.Id);
+            var conference = await GetAccessibleConferenceAsync(slug, model.ConferenceId);
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = L("Error_ConferenceNotFound", "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+                TempData["ErrorMessage"] = L(
+                    "Error_ConferenceNotFound",
+                    "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
 
                 return RedirectToAction(
                     nameof(SelectConference),
                     new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
             }
+
+            SetSelectedConferenceSession(conference);
 
             model.Slug = slug;
             model.ConferenceId = conference.Id;
             model.ConferenceTitle = conference.Title ?? "";
+
+            var name = (model.Name ?? "").Trim();
+
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                ModelState.AddModelError(
+                    nameof(model.Name),
+                    L("Error_NameRequired", "Konu adı zorunludur."));
+            }
 
             if (!ModelState.IsValid)
             {
@@ -429,17 +409,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 };
 
                 await _context.ConferenceTopics.AddAsync(entity);
-            }
-
-            var name = (model.Name ?? "").Trim();
-
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                ModelState.AddModelError(
-                    nameof(model.Name),
-                    L("Error_NameRequired", "Konu adı zorunludur."));
-
-                return View("~/Areas/Admin/Views/ConferenceTopics/Form.cshtml", model);
             }
 
             entity.Name = name;
@@ -478,43 +447,22 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(string slug, Guid id, string? returnUrl = null)
         {
-            if (_tenantContext.Current == null ||
-                !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
-            {
-                return RedirectToAction(
-                    nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
-            }
-
-            if (!await CanAccessCurrentTenantAsync())
-            {
-                TempData["ErrorMessage"] = L("Error_UnauthorizedTenant", "Bu kongrenin bildiri konularını silme yetkiniz yok.");
-                return RedirectToAction(nameof(SelectConference));
-            }
-
             var selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
 
-            if (selectedConferenceId == null || selectedConferenceId.Value == Guid.Empty)
-            {
-                return RedirectToAction(
-                    nameof(SelectConference),
-                    new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
-            }
-
-            var conference = await _context.Conferences
-                .AsNoTracking()
-                .FirstOrDefaultAsync(c =>
-                    c.Id == selectedConferenceId.Value &&
-                    c.TenantId == _tenantContext.Current.Id);
+            var conference = await GetAccessibleConferenceAsync(slug, selectedConferenceId);
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = L("Error_ConferenceNotFound", "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+                TempData["ErrorMessage"] = L(
+                    "Error_ConferenceNotFound",
+                    "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
 
                 return RedirectToAction(
                     nameof(SelectConference),
                     new { returnUrl = $"/{slug}/Admin/ConferenceTopics" });
             }
+
+            SetSelectedConferenceSession(conference);
 
             var entity = await _context.ConferenceTopics
                 .FirstOrDefaultAsync(t =>
@@ -545,7 +493,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _context.ConferenceTopics.Remove(entity);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = L("Success_TopicDeleted", "Bildiri konusu silindi.");
+            TempData["SuccessMessage"] = L(
+                "Success_TopicDeleted",
+                "Bildiri konusu silindi.");
 
             return Redirect(back);
         }
@@ -568,7 +518,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
 
-            if (selectedConferenceId == null || selectedConferenceId.Value == Guid.Empty)
+            if (!selectedConferenceId.HasValue || selectedConferenceId.Value == Guid.Empty)
             {
                 return null;
             }

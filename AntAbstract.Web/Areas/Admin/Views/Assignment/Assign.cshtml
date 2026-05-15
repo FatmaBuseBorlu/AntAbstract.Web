@@ -1,4 +1,5 @@
 ﻿@using AntAbstract.Web.Models.ViewModels.Admin.Assignment
+@using Microsoft.AspNetCore.Http
 @model AssignReviewerViewModel
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
@@ -6,93 +7,389 @@
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
-    var currentSlug = ViewContext.RouteData.Values["slug"]?.ToString();
+    var currentSlug = ViewBag.Slug as string
+                      ?? ViewContext.RouteData.Values["slug"]?.ToString()
+                      ?? Context.Session.GetString("SelectedConferenceSlug")
+                      ?? "";
 
-    if (string.IsNullOrWhiteSpace(currentSlug))
-    {
-        currentSlug = Context.Session.GetString("SelectedConferenceSlug");
-    }
+    var conferenceId = ViewBag.ConferenceId is Guid selectedConferenceId
+        ? selectedConferenceId
+        : Model.Submission.ConferenceId;
+
+    var conferenceTitle = ViewBag.ConferenceTitle as string
+                          ?? Model.Submission.Conference?.Title
+                          ?? "";
 
     var backUrl = !string.IsNullOrWhiteSpace(currentSlug)
-        ? $"/{currentSlug}/Admin/Assignment"
+        ? $"/{currentSlug}/Admin/Assignment?conferenceId={conferenceId}"
         : "/Admin/Assignment";
+
+    var authorName = Model.Submission.Author != null
+        ? $"{Model.Submission.Author.FirstName} {Model.Submission.Author.LastName}".Trim()
+        : "";
+
+    if (string.IsNullOrWhiteSpace(authorName))
+    {
+        authorName = Model.Submission.Author?.Email ?? Localizer["EmptyValue"].Value;
+    }
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
+
+    bool IsAlreadyAssigned(string reviewerId)
+    {
+        return Model.Submission.ReviewAssignments != null &&
+               Model.Submission.ReviewAssignments.Any(x => x.ReviewerId == reviewerId);
+    }
 }
+
+<style>
+    .assign-page-header {
+        background: linear-gradient(135deg, #ffffff, #f8fafc);
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        padding: 26px;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+        margin-bottom: 24px;
+    }
+
+    .assign-title {
+        color: #0f172a;
+        font-weight: 900;
+        margin-bottom: 8px;
+        line-height: 1.35;
+    }
+
+    .assign-subtitle {
+        color: #64748b;
+        line-height: 1.65;
+    }
+
+    .info-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        padding: 8px 13px;
+        font-size: 0.84rem;
+        font-weight: 800;
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+    }
+
+    .keyword-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: rgba(0, 174, 239, 0.1);
+        color: #0284c7;
+        border: 1px solid rgba(0, 174, 239, 0.18);
+        border-radius: 999px;
+        padding: 8px 13px;
+        font-size: 0.84rem;
+        font-weight: 800;
+    }
+
+    .section-heading {
+        color: #0f172a;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .reviewer-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+        background: #ffffff;
+        margin-bottom: 28px;
+    }
+
+    .reviewer-table thead th {
+        background: #f8fafc;
+        color: #475569;
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        padding: 16px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .reviewer-table tbody td {
+        padding: 16px;
+        vertical-align: middle;
+        border-color: #f1f5f9;
+    }
+
+    .reviewer-profile {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .reviewer-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #00aeef, #0284c7);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        flex-shrink: 0;
+    }
+
+    .reviewer-name {
+        color: #0f172a;
+        font-weight: 900;
+        margin-bottom: 2px;
+    }
+
+    .reviewer-email {
+        color: #64748b;
+        font-size: 0.84rem;
+    }
+
+    .expertise-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: #f8fafc;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 0.82rem;
+        font-weight: 800;
+    }
+
+    .assign-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        width: 100%;
+        border-radius: 999px;
+        padding: 10px 16px;
+        font-weight: 900;
+        border: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+        .assign-action-btn.recommended {
+            background: linear-gradient(135deg, #f59e0b, #f97316);
+            color: #ffffff;
+            box-shadow: 0 8px 18px rgba(249, 115, 22, 0.22);
+        }
+
+        .assign-action-btn.normal {
+            background: linear-gradient(135deg, #00aeef, #0284c7);
+            color: #ffffff;
+            box-shadow: 0 8px 18px rgba(0, 174, 239, 0.22);
+        }
+
+        .assign-action-btn:hover {
+            transform: translateY(-1px);
+            color: #ffffff;
+        }
+
+    .already-assigned-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        width: 100%;
+        border-radius: 999px;
+        padding: 10px 14px;
+        background: rgba(34, 197, 94, 0.12);
+        color: #15803d;
+        border: 1px solid rgba(34, 197, 94, 0.22);
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .empty-box {
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 28px;
+        color: #64748b;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.05);
+    }
+
+    @@media (max-width: 768px) {
+        .assign-page-header {
+            padding: 20px;
+        }
+
+        .reviewer-table tbody td {
+            min-width: 180px;
+        }
+    }
+</style>
 
 <div class="container-fluid">
 
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h4 class="fw-bold mb-0">
-                @Model.Submission.Title
-            </h4>
+    <div class="assign-page-header">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-start gap-3">
+            <div>
+                <h4 class="assign-title">
+                    <i class="fas fa-user-plus text-primary me-2"></i>
+                    @Model.Submission.Title
+                </h4>
 
-            <small class="text-muted">
-                @Localizer["PageLead", Model.Submission.Author?.DisplayName ?? Localizer["EmptyValue"].Value]
-            </small>
+                <div class="assign-subtitle">
+                    @L("PageLead", "Bu bildiriye uygun hakemleri seçip değerlendirme sürecini başlatabilirsiniz.")
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <span class="info-chip">
+                        <i class="fas fa-user"></i>
+                        @authorName
+                    </span>
+
+                    @if (!string.IsNullOrWhiteSpace(conferenceTitle))
+                    {
+                        <span class="info-chip">
+                            <i class="fas fa-calendar-check"></i>
+                            @conferenceTitle
+                        </span>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(currentSlug))
+                    {
+                        <span class="info-chip">
+                            <i class="fas fa-link"></i>
+                            /@currentSlug
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <a href="@backUrl"
+               class="btn btn-outline-secondary rounded-pill fw-bold px-4">
+                <i class="fas fa-arrow-left me-2"></i>
+                @L("BackButton", "Geri Dön")
+            </a>
         </div>
-
-        <button type="button"
-                class="btn btn-outline-secondary btn-sm"
-                onclick="if (history.length > 1) history.back(); else window.location.href='@backUrl'">
-            <i class="fas fa-arrow-left me-1"></i>
-            @Localizer["BackButton"]
-        </button>
     </div>
 
-    <div class="mb-3">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 rounded-4 shadow-sm">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 rounded-4 shadow-sm">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="mb-4">
         <div class="d-flex flex-wrap gap-2 align-items-center">
             <span class="fw-bold text-muted">
-                @Localizer["KeywordsLabel"]
+                @L("KeywordsLabel", "Anahtar Kelimeler:")
             </span>
 
             @if (!string.IsNullOrWhiteSpace(Model.Submission.Keywords))
             {
-                <span class="badge bg-info">
-                    @Model.Submission.Keywords
-                </span>
+                var keywords = Model.Submission.Keywords
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+                foreach (var keyword in keywords)
+                {
+                    <span class="keyword-chip">
+                        <i class="fas fa-tag"></i>
+                        @keyword
+                    </span>
+                }
             }
             else
             {
-                <span class="badge bg-secondary">
-                    @Localizer["EmptyValue"]
+                <span class="keyword-chip">
+                    <i class="fas fa-minus-circle"></i>
+                    @L("EmptyValue", "Belirtilmedi")
                 </span>
             }
         </div>
     </div>
 
-    <hr />
-
-    <h5 class="fw-bold mb-3">
-        <i class="fas fa-star text-warning me-2"></i>
-        @Localizer["RecommendedHeader"]
+    <h5 class="section-heading">
+        <i class="fas fa-star text-warning"></i>
+        @L("RecommendedHeader", "Önerilen Hakemler")
     </h5>
 
     @if (Model.RecommendedReviewers == null || !Model.RecommendedReviewers.Any())
     {
-        <div class="alert alert-secondary border-0">
-            @Localizer["NoRecommendations"]
+        <div class="empty-box mb-4">
+            <i class="fas fa-info-circle me-2 text-primary"></i>
+            @L("NoRecommendations", "Bu bildiri için önerilen hakem bulunamadı.")
         </div>
     }
     else
     {
-        <div class="card border-0 shadow-sm mb-4">
+        <div class="reviewer-card">
             <div class="table-responsive">
-                <table class="table table-sm table-striped mb-0">
-                    <thead class="table-light">
+                <table class="table table-hover mb-0 reviewer-table">
+                    <thead>
                         <tr>
-                            <th>@Localizer["TableHeaderName"]</th>
-                            <th>@Localizer["TableHeaderEmail"]</th>
-                            <th>@Localizer["TableHeaderExpertise"]</th>
-                            <th style="width: 160px;"></th>
+                            <th>@L("TableHeaderName", "Hakem")</th>
+                            <th>@L("TableHeaderEmail", "E-posta")</th>
+                            <th>@L("TableHeaderExpertise", "Uzmanlık Alanı")</th>
+                            <th class="text-end" style="width: 190px;">
+                                @L("TableHeaderAction", "İşlem")
+                            </th>
                         </tr>
                     </thead>
 
                     <tbody>
                         @foreach (var reviewer in Model.RecommendedReviewers)
                         {
+                            var reviewerName = !string.IsNullOrWhiteSpace(reviewer.DisplayName)
+                            ? reviewer.DisplayName
+                            : reviewer.Email;
+
+                            var firstLetter = !string.IsNullOrWhiteSpace(reviewerName)
+                            ? reviewerName.Substring(0, 1).ToUpper()
+                            : "H";
+
+                            var alreadyAssigned = IsAlreadyAssigned(reviewer.Id);
+
                             <tr>
                                 <td>
-                                    @reviewer.DisplayName
+                                    <div class="reviewer-profile">
+                                        <span class="reviewer-avatar">
+                                            @firstLetter
+                                        </span>
+
+                                        <div>
+                                            <div class="reviewer-name">
+                                                @reviewerName
+                                            </div>
+
+                                            <div class="reviewer-email">
+                                                @reviewer.Email
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
 
                                 <td>
@@ -100,31 +397,41 @@
                                 </td>
 
                                 <td>
-                                    <span class="badge bg-light text-dark">
+                                    <span class="expertise-badge">
+                                        <i class="fas fa-brain"></i>
                                         @(string.IsNullOrWhiteSpace(reviewer.ExpertiseAreas)
-                                                                        ? Localizer["NoExpertise"].Value
+                                                                        ? L("NoExpertise", "Uzmanlık alanı belirtilmedi")
                                                                         : reviewer.ExpertiseAreas)
                             </span>
                         </td>
 
-                                <td>
-                            @if (!string.IsNullOrWhiteSpace(currentSlug))
+                                <td class="text-end">
+                            @if (alreadyAssigned)
+                                    {
+                                        <span class="already-assigned-badge">
+                                            <i class="fas fa-check"></i>
+                                            @L("AlreadyAssignedText", "Atanmış")
+                                        </span>
+                                    }
+                                    else if (!string.IsNullOrWhiteSpace(currentSlug))
                                     {
                                         <form action="/@currentSlug/Admin/Assignment/Assign" method="post" class="m-0">
                                             @Html.AntiForgeryToken()
 
                                             <input type="hidden" name="submissionId" value="@Model.Submission.Id" />
                                             <input type="hidden" name="reviewerId" value="@reviewer.Id" />
+                                            <input type="hidden" name="conferenceId" value="@conferenceId" />
 
-                                            <button type="submit" class="btn btn-sm btn-warning w-100">
-                                                @Localizer["AssignRecommendedBtn"]
+                                            <button type="submit" class="assign-action-btn recommended">
+                                                <i class="fas fa-star"></i>
+                                                @L("AssignRecommendedBtn", "Önerileni Ata")
                                             </button>
                                         </form>
                                     }
                                     else
                                     {
                                         <span class="text-danger small">
-                                            @Localizer["Error_SelectConferenceFirst"]
+                                            @L("Error_SelectConferenceFirst", "Önce kongre seçmelisiniz.")
                                         </span>
                                     }
                                 </td>
@@ -136,19 +443,22 @@
         </div>
     }
 
-    <h5 class="fw-bold mb-3">
-        @Localizer["AllReviewersHeader"]
+    <h5 class="section-heading">
+        <i class="fas fa-users text-primary"></i>
+        @L("AllReviewersHeader", "Tüm Hakemler")
     </h5>
 
-    <div class="card border-0 shadow-sm">
+    <div class="reviewer-card">
         <div class="table-responsive">
-            <table class="table table-sm table-hover mb-0">
-                <thead class="table-light">
+            <table class="table table-hover mb-0 reviewer-table">
+                <thead>
                     <tr>
-                        <th>@Localizer["TableHeaderName"]</th>
-                        <th>@Localizer["TableHeaderEmail"]</th>
-                        <th>@Localizer["TableHeaderExpertise"]</th>
-                        <th style="width: 160px;"></th>
+                        <th>@L("TableHeaderName", "Hakem")</th>
+                        <th>@L("TableHeaderEmail", "E-posta")</th>
+                        <th>@L("TableHeaderExpertise", "Uzmanlık Alanı")</th>
+                        <th class="text-end" style="width: 190px;">
+                            @L("TableHeaderAction", "İşlem")
+                        </th>
                     </tr>
                 </thead>
 
@@ -156,8 +466,9 @@
                     @if (Model.AllOtherReviewers == null || !Model.AllOtherReviewers.Any())
                     {
                         <tr>
-                            <td colspan="4" class="text-muted text-center py-4">
-                                @Localizer["NoReviewersFound"]
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                <i class="fas fa-user-slash d-block mb-2 fs-3 text-primary"></i>
+                                @L("NoReviewersFound", "Hakem bulunamadı.")
                             </td>
                         </tr>
                     }
@@ -165,9 +476,33 @@
                     {
                         @foreach (var reviewer in Model.AllOtherReviewers)
                         {
+                            var reviewerName = !string.IsNullOrWhiteSpace(reviewer.DisplayName)
+                            ? reviewer.DisplayName
+                            : reviewer.Email;
+
+                            var firstLetter = !string.IsNullOrWhiteSpace(reviewerName)
+                            ? reviewerName.Substring(0, 1).ToUpper()
+                            : "H";
+
+                            var alreadyAssigned = IsAlreadyAssigned(reviewer.Id);
+
                             <tr>
                                 <td>
-                                    @reviewer.DisplayName
+                                    <div class="reviewer-profile">
+                                        <span class="reviewer-avatar">
+                                            @firstLetter
+                                        </span>
+
+                                        <div>
+                                            <div class="reviewer-name">
+                                                @reviewerName
+                                            </div>
+
+                                            <div class="reviewer-email">
+                                                @reviewer.Email
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
 
                                 <td>
@@ -175,31 +510,41 @@
                                 </td>
 
                                 <td>
-                                    <span class="badge bg-light text-dark">
+                                    <span class="expertise-badge">
+                                        <i class="fas fa-brain"></i>
                                         @(string.IsNullOrWhiteSpace(reviewer.ExpertiseAreas)
-                                                                        ? Localizer["NoExpertise"].Value
+                                                                        ? L("NoExpertise", "Uzmanlık alanı belirtilmedi")
                                                                         : reviewer.ExpertiseAreas)
                             </span>
                         </td>
 
-                                <td>
-                            @if (!string.IsNullOrWhiteSpace(currentSlug))
+                                <td class="text-end">
+                            @if (alreadyAssigned)
+                                    {
+                                        <span class="already-assigned-badge">
+                                            <i class="fas fa-check"></i>
+                                            @L("AlreadyAssignedText", "Atanmış")
+                                        </span>
+                                    }
+                                    else if (!string.IsNullOrWhiteSpace(currentSlug))
                                     {
                                         <form action="/@currentSlug/Admin/Assignment/Assign" method="post" class="m-0">
                                             @Html.AntiForgeryToken()
 
                                             <input type="hidden" name="submissionId" value="@Model.Submission.Id" />
                                             <input type="hidden" name="reviewerId" value="@reviewer.Id" />
+                                            <input type="hidden" name="conferenceId" value="@conferenceId" />
 
-                                            <button type="submit" class="btn btn-sm btn-outline-primary w-100">
-                                                @Localizer["AssignBtn"]
+                                            <button type="submit" class="assign-action-btn normal">
+                                                <i class="fas fa-user-plus"></i>
+                                                @L("AssignBtn", "Hakem Ata")
                                             </button>
                                         </form>
                                     }
                                     else
                                     {
                                         <span class="text-danger small">
-                                            @Localizer["Error_SelectConferenceFirst"]
+                                            @L("Error_SelectConferenceFirst", "Önce kongre seçmelisiniz.")
                                         </span>
                                     }
                                 </td>

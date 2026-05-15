@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Organizator")]
+    [Authorize(Roles = "Admin")]
     public class CertificatesController : Controller
     {
         private readonly AppDbContext _context;
@@ -37,40 +37,44 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             var value = _localizer[key];
 
-            return value.ResourceNotFound
+            return value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
                 ? fallback
                 : value.Value;
         }
 
+        private async Task<AppUser?> GetCurrentUserAsync()
+        {
+            return await _userManager.GetUserAsync(User);
+        }
+
+        private async Task<Guid?> GetCurrentAdminTenantIdAsync()
+        {
+            var user = await GetCurrentUserAsync();
+
+            if (user == null || !user.TenantId.HasValue)
+            {
+                return null;
+            }
+
+            return user.TenantId.Value;
+        }
+
         private async Task<bool> CanAccessCertificateAsync(Guid certificateId)
         {
-            var user = await _userManager.GetUserAsync(User);
+            var tenantId = await GetCurrentAdminTenantIdAsync();
 
-            if (user == null)
+            if (!tenantId.HasValue)
             {
                 return false;
             }
 
-            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-
-            if (isAdmin)
-            {
-                return true;
-            }
-
-            if (!user.TenantId.HasValue)
-            {
-                return false;
-            }
-
-            var certificate = await _context.Certificates
+            return await _context.Certificates
                 .AsNoTracking()
                 .Include(c => c.Conference)
-                .FirstOrDefaultAsync(c => c.Id == certificateId);
-
-            return certificate != null &&
-                   certificate.Conference != null &&
-                   certificate.Conference.TenantId == user.TenantId.Value;
+                .AnyAsync(c =>
+                    c.Id == certificateId &&
+                    c.Conference != null &&
+                    c.Conference.TenantId == tenantId.Value);
         }
 
         public async Task<IActionResult> Index(
@@ -80,37 +84,43 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             bool onlyMissingFile = false,
             bool onlyEmailNotSent = false)
         {
-            var currentUser = await _userManager.GetUserAsync(User);
+            var tenantId = await GetCurrentAdminTenantIdAsync();
 
-            if (currentUser == null)
+            if (!tenantId.HasValue)
             {
-                return Challenge();
-            }
+                TempData["ErrorMessage"] = T(
+                    "Error_AdminTenantNotFound",
+                    "Admin hesabınıza bağlı kurum bulunamadı.");
 
-            var isAdmin = await _userManager.IsInRoleAsync(currentUser, "Admin");
+                return View(Enumerable.Empty<Certificate>().ToList());
+            }
 
             var query = _context.Certificates
                 .AsNoTracking()
                 .Include(x => x.Conference)
                 .Include(x => x.User)
+                .Where(x =>
+                    x.Conference != null &&
+                    x.Conference.TenantId == tenantId.Value)
                 .AsQueryable();
-
-            if (!isAdmin)
-            {
-                if (currentUser.TenantId.HasValue)
-                {
-                    query = query.Where(x =>
-                        x.Conference != null &&
-                        x.Conference.TenantId == currentUser.TenantId.Value);
-                }
-                else
-                {
-                    query = query.Where(x => false);
-                }
-            }
 
             if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
             {
+                var canAccessConference = await _context.Conferences
+                    .AsNoTracking()
+                    .AnyAsync(x =>
+                        x.Id == conferenceId.Value &&
+                        x.TenantId == tenantId.Value);
+
+                if (!canAccessConference)
+                {
+                    TempData["ErrorMessage"] = T(
+                        "Error_ConferenceUnauthorized",
+                        "Bu kongreye ait sertifikaları görüntüleme yetkiniz yok.");
+
+                    return View(Enumerable.Empty<Certificate>().ToList());
+                }
+
                 query = query.Where(x => x.ConferenceId == conferenceId.Value);
             }
 

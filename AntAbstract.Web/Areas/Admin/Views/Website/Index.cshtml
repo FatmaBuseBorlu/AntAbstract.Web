@@ -6,35 +6,426 @@
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
-    var slug = ViewContext.RouteData.Values["slug"]?.ToString();
-    var culture = (string?)ViewBag.Culture ?? "tr-TR";
-    var pageKey = (string?)ViewBag.Page ?? "Home";
-    Guid? selectedConferenceId = ViewBag.ConferenceId as Guid?;
+    var slug = ViewBag.Slug as string
+               ?? ViewContext.RouteData.Values["slug"]?.ToString()
+               ?? "";
+
+    var culture = ViewBag.Culture as string ?? "tr-TR";
+    var pageKey = ViewBag.Page as string ?? "Home";
+
+    Guid? selectedConferenceId = null;
+
+    if (ViewBag.ConferenceId is Guid conferenceGuid)
+    {
+        selectedConferenceId = conferenceGuid;
+    }
+    else if (ViewBag.ConferenceId != null)
+    {
+        Guid parsedConferenceId;
+
+        if (Guid.TryParse(ViewBag.ConferenceId.ToString(), out parsedConferenceId))
+        {
+            selectedConferenceId = parsedConferenceId;
+        }
+    }
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
+
+    string GetPageName(string page)
+    {
+        return page switch
+        {
+            "Home" => L("Page_Home", "Ana Sayfa"),
+            "About" => L("Page_About", "Hakkında"),
+            "Contact" => L("Page_Contact", "İletişim"),
+            _ => page
+        };
+    }
+
+    string GetCultureName(string selectedCulture)
+    {
+        return selectedCulture switch
+        {
+            "tr-TR" => "Türkçe",
+            "en-US" => "English",
+            _ => selectedCulture
+        };
+    }
+
+    string GetBlockTypeText(ConferencePageBlockType blockType)
+    {
+        return blockType switch
+        {
+            ConferencePageBlockType.Hero => L("BlockType_Hero", "Hero Alanı"),
+            ConferencePageBlockType.About => L("BlockType_About", "Hakkında"),
+            ConferencePageBlockType.CallForPapers => L("BlockType_CallForPapers", "Bildiri Çağrısı"),
+            ConferencePageBlockType.Topics => L("BlockType_Topics", "Konular"),
+            ConferencePageBlockType.Committees => L("BlockType_Committees", "Kurullar"),
+            ConferencePageBlockType.Fees => L("BlockType_Fees", "Ücretler"),
+            _ => blockType.ToString()
+        };
+    }
+
+    string GetBlockIcon(ConferencePageBlockType blockType)
+    {
+        return blockType switch
+        {
+            ConferencePageBlockType.Hero => "fas fa-layer-group",
+            ConferencePageBlockType.About => "fas fa-circle-info",
+            ConferencePageBlockType.CallForPapers => "fas fa-bullhorn",
+            ConferencePageBlockType.Topics => "fas fa-tags",
+            ConferencePageBlockType.Committees => "fas fa-users",
+            ConferencePageBlockType.Fees => "fas fa-credit-card",
+            _ => "fas fa-cube"
+        };
+    }
 }
+
+<style>
+    .website-page-header {
+        background: linear-gradient(135deg, #ffffff, #f8fafc);
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        padding: 26px;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+        margin-bottom: 24px;
+    }
+
+    .website-title {
+        color: #0f172a;
+        font-weight: 900;
+        margin-bottom: 6px;
+    }
+
+    .website-lead {
+        color: #64748b;
+        line-height: 1.65;
+    }
+
+    .website-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        padding: 8px 14px;
+        font-size: 0.84rem;
+        font-weight: 800;
+        background: rgba(0, 174, 239, 0.10);
+        color: #0284c7;
+        border: 1px solid rgba(0, 174, 239, 0.18);
+    }
+
+    .website-add-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        border-radius: 999px;
+        padding: 12px 22px;
+        font-weight: 900;
+        color: #ffffff;
+        text-decoration: none;
+        background: linear-gradient(135deg, #00aeef, #0284c7);
+        box-shadow: 0 12px 24px rgba(0, 174, 239, 0.24);
+        transition: all 0.22s ease;
+        white-space: nowrap;
+    }
+
+        .website-add-btn:hover {
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 16px 32px rgba(0, 174, 239, 0.32);
+        }
+
+    .filter-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        background: #ffffff;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.05);
+        margin-bottom: 24px;
+    }
+
+        .filter-card .form-label {
+            color: #475569;
+            font-size: 0.78rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .filter-card .form-select {
+            height: 46px;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            box-shadow: none;
+            font-weight: 700;
+            color: #334155;
+        }
+
+            .filter-card .form-select:focus {
+                border-color: rgba(0, 174, 239, 0.55);
+                box-shadow: 0 0 0 0.2rem rgba(0, 174, 239, 0.10);
+            }
+
+    .filter-btn {
+        height: 46px;
+        border-radius: 14px;
+        font-weight: 900;
+    }
+
+    .blocks-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+    }
+
+    .blocks-card-header {
+        background: #ffffff;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 18px 22px;
+    }
+
+    .blocks-card-title {
+        color: #0f172a;
+        font-weight: 900;
+        margin: 0;
+    }
+
+    .website-table thead th {
+        background: #f8fafc;
+        color: #475569;
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        padding: 16px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .website-table tbody td {
+        padding: 16px;
+        vertical-align: middle;
+        border-color: #f1f5f9;
+    }
+
+    .website-table tbody tr {
+        transition: all 0.2s ease;
+    }
+
+        .website-table tbody tr:hover {
+            background: #fbfcfe;
+        }
+
+    .order-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 48px;
+        border-radius: 999px;
+        padding: 7px 12px;
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+        font-weight: 900;
+    }
+
+    .block-type-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: rgba(0, 174, 239, 0.10);
+        color: #0284c7;
+        border: 1px solid rgba(0, 174, 239, 0.18);
+        font-weight: 900;
+        font-size: 0.84rem;
+        white-space: nowrap;
+    }
+
+    .block-title {
+        color: #0f172a;
+        font-weight: 900;
+        margin-bottom: 3px;
+    }
+
+    .block-subtitle {
+        color: #64748b;
+        font-size: 0.84rem;
+        max-width: 480px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        border-radius: 999px;
+        padding: 8px 13px;
+        font-size: 0.78rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+        .status-pill.active {
+            background: rgba(34, 197, 94, 0.12);
+            color: #15803d;
+            border: 1px solid rgba(34, 197, 94, 0.22);
+        }
+
+        .status-pill.passive {
+            background: rgba(220, 38, 38, 0.10);
+            color: #b91c1c;
+            border: 1px solid rgba(220, 38, 38, 0.18);
+        }
+
+    .toggle-btn {
+        border-radius: 999px;
+        padding: 8px 13px;
+        font-weight: 900;
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+
+    .icon-action-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+        .icon-action-btn.edit {
+            color: #0284c7;
+        }
+
+        .icon-action-btn.delete {
+            color: #dc2626;
+        }
+
+        .icon-action-btn:hover {
+            background: #f8fafc;
+            transform: translateY(-1px);
+        }
+
+    .empty-state {
+        padding: 48px 24px;
+        text-align: center;
+    }
+
+    .empty-state-icon {
+        width: 72px;
+        height: 72px;
+        border-radius: 24px;
+        background: rgba(0, 174, 239, 0.10);
+        color: #0284c7;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin-bottom: 18px;
+    }
+
+    @@media (max-width: 768px) {
+        .website-page-header {
+            padding: 20px;
+        }
+
+        .website-table tbody td {
+            min-width: 160px;
+        }
+
+        .block-subtitle {
+            max-width: 260px;
+        }
+    }
+</style>
 
 <div class="container-fluid">
 
-    <div class="d-flex align-items-center justify-content-between mb-4">
-        <div>
-            <h4 class="mb-0 fw-bold text-dark">@Localizer["PageHeading"]</h4>
-            <p class="text-muted small mb-0">@Localizer["PageLead"]</p>
+    <div class="website-page-header">
+        <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
+            <div>
+                <h4 class="website-title">
+                    <i class="fas fa-globe text-primary me-2"></i>
+                    @L("PageHeading", "Website İçerik Yönetimi")
+                </h4>
+
+                <div class="website-lead">
+                    @L("PageLead", "Seçili kongreye ait sayfa bloklarını, dil seçeneklerini ve içerik sıralamasını buradan yönetebilirsiniz.")
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <span class="website-chip">
+                        <i class="fas fa-language"></i>
+                        @GetCultureName(culture)
+                    </span>
+
+                    <span class="website-chip">
+                        <i class="fas fa-file-lines"></i>
+                        @GetPageName(pageKey)
+                    </span>
+
+                    @if (!string.IsNullOrWhiteSpace(slug))
+                    {
+                        <span class="website-chip">
+                            <i class="fas fa-link"></i>
+                            /@slug
+                        </span>
+                    }
+                </div>
+            </div>
+
+            @if (selectedConferenceId.HasValue && selectedConferenceId.Value != Guid.Empty)
+            {
+                <a class="website-add-btn"
+                   asp-area="Admin"
+                   asp-controller="Website"
+                   asp-action="Create"
+                   asp-route-slug="@slug"
+                   asp-route-conferenceId="@selectedConferenceId"
+                   asp-route-culture="@culture"
+                   asp-route-page="@pageKey">
+                    <i class="fas fa-plus-circle"></i>
+                    @L("AddNewBlockButton", "Yeni Blok Ekle")
+                </a>
+            }
         </div>
-        @if (selectedConferenceId.HasValue)
-        {
-            <a class="btn btn-primary shadow-sm px-4 fw-bold rounded-pill"
-               asp-area="Admin"
-               asp-controller="Website"
-               asp-action="Create"
-               asp-route-slug="@slug"
-               asp-route-conferenceId="@selectedConferenceId"
-               asp-route-culture="@culture"
-               asp-route-page="@pageKey">
-                <i class="fas fa-plus-circle me-2"></i> @Localizer["AddNewBlockButton"]
-            </a>
-        }
     </div>
 
-    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-light">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 rounded-4 shadow-sm">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 rounded-4 shadow-sm">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="filter-card">
         <div class="card-body p-4">
             <form method="get"
                   asp-area="Admin"
@@ -44,62 +435,104 @@
                   class="row g-3 align-items-end">
 
                 <div class="col-md-3">
-                    <label class="form-label fw-bold text-muted small mb-1">@Localizer["CultureLabel"]</label>
-                    <select class="form-select border-0 shadow-sm" name="culture" asp-items="ViewBag.CultureList"></select>
+                    <label class="form-label mb-1">
+                        @L("CultureLabel", "Dil")
+                    </label>
+
+                    <select class="form-select"
+                            name="culture"
+                            asp-items="ViewBag.CultureList">
+                    </select>
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label fw-bold text-muted small mb-1">@Localizer["PageLabel"]</label>
-                    <select class="form-select border-0 shadow-sm" name="page" asp-items="ViewBag.PageList"></select>
+                    <label class="form-label mb-1">
+                        @L("PageLabel", "Sayfa")
+                    </label>
+
+                    <select class="form-select"
+                            name="page"
+                            asp-items="ViewBag.PageList">
+                    </select>
                 </div>
 
                 <div class="col-md-4">
-                    <label class="form-label fw-bold text-muted small mb-1">@Localizer["ConferenceLabel"]</label>
-                    <select class="form-select border-0 shadow-sm" name="conferenceId" asp-items="ViewBag.ConferenceList"></select>
+                    <label class="form-label mb-1">
+                        @L("ConferenceLabel", "Kongre")
+                    </label>
+
+                    <select class="form-select"
+                            name="conferenceId"
+                            asp-items="ViewBag.ConferenceList">
+                    </select>
                 </div>
 
                 <div class="col-md-2 d-grid">
-                    <button type="submit" class="btn btn-dark fw-bold shadow-sm rounded-3">
-                        <i class="fas fa-filter me-2"></i> @Localizer["FilterButton"]
+                    <button type="submit" class="btn btn-dark filter-btn">
+                        <i class="fas fa-filter me-2"></i>
+                        @L("FilterButton", "Filtrele")
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
-            <h6 class="mb-0 fw-bold text-dark">
-                <i class="fas fa-layer-group me-2 text-primary"></i> @Localizer["ActiveBlocksHeader"]
-            </h6>
-            @if (!selectedConferenceId.HasValue)
-            {
-                <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill small">
-                    <i class="fas fa-exclamation-triangle me-1"></i> @Localizer["ConferenceNotSelected"]
-                </span>
-            }
+    <div class="blocks-card">
+        <div class="blocks-card-header">
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+                <h6 class="blocks-card-title">
+                    <i class="fas fa-layer-group me-2 text-primary"></i>
+                    @L("ActiveBlocksHeader", "Sayfa Blokları")
+                </h6>
+
+                @if (!selectedConferenceId.HasValue || selectedConferenceId.Value == Guid.Empty)
+                {
+                    <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        @L("ConferenceNotSelected", "Kongre seçilmedi")
+                    </span>
+                }
+                else
+                {
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">
+                        <i class="fas fa-cubes me-1"></i>
+                        @(Model?.Count ?? 0) @L("BlockCountText", "blok")
+                    </span>
+                }
+            </div>
         </div>
 
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light">
+                <table class="table table-hover align-middle mb-0 website-table">
+                    <thead>
                         <tr>
-                            <th class="ps-4 py-3 text-muted fw-bold small" style="width: 80px;">@Localizer["TableHeaderOrder"]</th>
-                            <th class="py-3 text-muted fw-bold small" style="width: 150px;">@Localizer["TableHeaderBlockType"]</th>
-                            <th class="py-3 text-muted fw-bold small">@Localizer["TableHeaderTitle"]</th>
-                            <th class="py-3 text-muted fw-bold small text-center" style="width: 120px;">@Localizer["TableHeaderStatus"]</th>
-                            <th class="pe-4 py-3 text-muted fw-bold small text-end" style="width: 250px;">@Localizer["TableHeaderActions"]</th>
+                            <th style="width: 90px;">@L("TableHeaderOrder", "Sıra")</th>
+                            <th style="width: 190px;">@L("TableHeaderBlockType", "Blok Türü")</th>
+                            <th>@L("TableHeaderTitle", "Başlık")</th>
+                            <th class="text-center" style="width: 130px;">@L("TableHeaderStatus", "Durum")</th>
+                            <th class="text-end" style="width: 280px;">@L("TableHeaderActions", "İşlemler")</th>
                         </tr>
                     </thead>
+
                     <tbody>
                         @if (Model == null || !Model.Any())
                         {
                             <tr>
-                                <td colspan="5" class="text-center py-5">
-                                    <div class="text-muted mb-2"><i class="fas fa-cubes fa-3x opacity-25"></i></div>
-                                    <h6 class="fw-bold text-dark">@Localizer["EmptyTitle"]</h6>
-                                    <p class="small text-muted mb-0">@Localizer["EmptyMessage"]</p>
+                                <td colspan="5">
+                                    <div class="empty-state">
+                                        <div class="empty-state-icon">
+                                            <i class="fas fa-cubes"></i>
+                                        </div>
+
+                                        <h5 class="fw-bold text-dark mb-2">
+                                            @L("EmptyTitle", "Henüz blok eklenmedi")
+                                        </h5>
+
+                                        <p class="text-muted mb-0">
+                                            @L("EmptyMessage", "Seçili sayfa ve dil için henüz içerik bloğu bulunmuyor.")
+                                        </p>
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -107,117 +540,112 @@
                         {
                             foreach (var b in Model)
                             {
-                                var localizedBlockType = b.BlockType switch
-                                {
-                                    ConferencePageBlockType.Hero => Localizer["BlockType_Hero"].Value,
-                                    ConferencePageBlockType.About => Localizer["BlockType_About"].Value,
-                                    ConferencePageBlockType.CallForPapers => Localizer["BlockType_CallForPapers"].Value,
-                                    ConferencePageBlockType.Topics => Localizer["BlockType_Topics"].Value,
-                                    ConferencePageBlockType.Committees => Localizer["BlockType_Committees"].Value,
-                                    ConferencePageBlockType.Fees => Localizer["BlockType_Fees"].Value,
-                                    _ => b.BlockType.ToString()
-                                };
+                                var localizedBlockType = GetBlockTypeText(b.BlockType);
+                                var blockIcon = GetBlockIcon(b.BlockType);
 
                                 <tr>
-                                    <td class="ps-4">
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary px-2 py-1">#@b.Order</span>
-                                    </td>
                                     <td>
-                                        <span class="fw-bold text-dark small">
-                                            <i class="fas fa-cube me-1 text-primary opacity-75"></i> @localizedBlockType
+                                        <span class="order-badge">
+                                            #@b.Order
                                         </span>
                                     </td>
+
                                     <td>
-                                        <span class="fw-bold text-dark">@b.Title</span>
+                                        <span class="block-type-badge">
+                                            <i class="@blockIcon"></i>
+                                            @localizedBlockType
+                                        </span>
                                     </td>
+
+                                    <td>
+                                        <div class="block-title">
+                                            @(string.IsNullOrWhiteSpace(b.Title)
+                                                                                ? L("UntitledBlock", "Başlıksız Blok")
+                                                                                : b.Title)
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(b.Subtitle))
+                                        {
+                                            <div class="block-subtitle">
+                                                @b.Subtitle
+                                            </div>
+                                        }
+                                    </td>
+
                                     <td class="text-center">
                                         @if (b.IsActive)
                                         {
-                                            <span class="badge rounded-pill bg-success bg-opacity-10 text-success px-3 py-2 border border-success" style="font-size: 0.75rem;">
-                                                <i class="fas fa-check-circle me-1"></i> @Localizer["StatusActive"]
+                                            <span class="status-pill active">
+                                                <i class="fas fa-check-circle"></i>
+                                                @L("StatusActive", "Aktif")
                                             </span>
                                         }
                                         else
                                         {
-                                            <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger px-3 py-2 border border-danger" style="font-size: 0.75rem;">
-                                                <i class="fas fa-times-circle me-1"></i> @Localizer["StatusPassive"]
+                                            <span class="status-pill passive">
+                                                <i class="fas fa-times-circle"></i>
+                                                @L("StatusPassive", "Pasif")
                                             </span>
                                         }
-                                    </td>
-                                    <td class="pe-4 text-end">
-                                        <div class="d-flex justify-content-end gap-2">
+                            </td>
 
-                                            <form asp-area="Admin" asp-controller="Website" asp-action="Toggle" asp-route-slug="@slug" asp-route-id="@b.Id" method="post">
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end align-items-center gap-2">
+
+                                    <form asp-area="Admin"
+                                          asp-controller="Website"
+                                          asp-action="Toggle"
+                                          asp-route-slug="@slug"
+                                          asp-route-id="@b.Id"
+                                          method="post"
+                                          class="m-0">
+                                        @Html.AntiForgeryToken()
+
+                                        <button class="btn btn-sm @(b.IsActive ? "btn-outline-warning" : "btn-outline-success") toggle-btn"
+                                                type="submit"
+                                                title="@L("ToggleStatusTitle", "Durumu değiştir")">
+                                            @(b.IsActive
+                                                                                        ? L("DeactivateButton", "Pasifleştir")
+                                                                                        : L("ActivateButton", "Aktifleştir"))
+                                        </button>
+                                    </form>
+
+                                            <a asp-area="Admin"
+                                               asp-controller="Website"
+                                               asp-action="Edit"
+                                               asp-route-slug="@slug"
+                                               asp-route-id="@b.Id"
+                                               class="icon-action-btn edit"
+                                               title="@L("EditTitle", "Düzenle")">
+                                                <i class="fas fa-pen"></i>
+                                            </a>
+
+                                            <form asp-area="Admin"
+                                                  asp-controller="Website"
+                                                  asp-action="Delete"
+                                                  asp-route-slug="@slug"
+                                                  asp-route-id="@b.Id"
+                                                  method="post"
+                                                  class="m-0"
+                                                  onsubmit="return confirm('@L("DeleteConfirmMessage", "Bu bloğu silmek istediğinize emin misiniz?")');">
                                                 @Html.AntiForgeryToken()
-                                                <button class="btn btn-sm @(b.IsActive ? "btn-outline-warning" : "btn-outline-success") rounded-3 fw-bold"
-                                                        type="submit"
-                                                        title="@Localizer["ToggleStatusTitle"]">
-                                                    @(b.IsActive? Localizer["DeactivateButton"].Value : Localizer["ActivateButton"].Value)
+
+                                                <button type="submit"
+                                                        class="icon-action-btn delete"
+                                                        title="@L("DeleteTitle", "Sil")">
+                                                    <i class="fas fa-trash-alt"></i>
                                                 </button>
                                             </form>
-
-                                            <div class="btn-group btn-group-sm shadow-sm rounded-3">
-                                                <a asp-area="Admin"
-                                                   asp-controller="Website"
-                                                   asp-action="Edit"
-                                                   asp-route-slug="@slug"
-                                                   asp-route-id="@b.Id"
-                                                   class="btn btn-white text-primary border-end"
-                                                   title="@Localizer["EditTitle"]">
-                                                    <i class="fas fa-pen"></i>
-                                                </a>
-
-                                                <form asp-area="Admin"
-                                                      asp-controller="Website"
-                                                      asp-action="Delete"
-                                                      asp-route-slug="@slug"
-                                                      asp-route-id="@b.Id"
-                                                      method="post"
-                                                      onsubmit="return confirm('@Localizer["DeleteConfirmMessage"]');"
-                                                      style="display: inline;">
-                                                    @Html.AntiForgeryToken()
-                                                    <button type="submit" class="btn btn-white text-danger" title="@Localizer["DeleteTitle"]">
-                                                        <i class="fas fa-trash-alt"></i>
-                                                    </button>
-                                                </form>
-                                            </div>
 
                                         </div>
                                     </td>
                                 </tr>
-                            }
+                                                }
                         }
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+
 </div>
-
-<style>
-    .btn-white {
-        background-color: #fff;
-        border: 1px solid #f1f5f9;
-        padding: 0.5rem 0.7rem;
-    }
-
-        .btn-white:hover {
-            background-color: #f8fafc;
-            border-color: #cbd5e1;
-            z-index: 2;
-        }
-
-    .table thead th {
-        letter-spacing: 0.5px;
-        border-bottom: none;
-    }
-
-    .table tbody tr {
-        transition: all 0.2s ease;
-        border-bottom: 1px solid #f8fafc;
-    }
-
-        .table tbody tr:hover {
-            background-color: #fbfcfe !important;
-        }
-</style>

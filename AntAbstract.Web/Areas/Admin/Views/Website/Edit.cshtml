@@ -1,5 +1,6 @@
 ﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
 @using AntAbstract.Domain.Entities
+@using Microsoft.AspNetCore.Http
 @using Microsoft.AspNetCore.Mvc.Rendering
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
@@ -7,171 +8,622 @@
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
-    var slug = ViewContext.RouteData.Values["slug"]?.ToString();
+    var slug = ViewBag.Slug as string
+               ?? ViewContext.RouteData.Values["slug"]?.ToString()
+               ?? Context.Session.GetString("SelectedConferenceSlug")
+               ?? "";
 
-    string? btnText = null, btnUrl = null, bgImage = null, sideImage = null;
-    if (Model.BlockType == ConferencePageBlockType.Hero && !string.IsNullOrWhiteSpace(Model.ContentJson))
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
+
+    string? btnText = null;
+    string? btnUrl = null;
+    string? bgImage = null;
+    string? sideImage = null;
+
+    if (Model.BlockType == ConferencePageBlockType.Hero &&
+        !string.IsNullOrWhiteSpace(Model.ContentJson))
     {
         try
         {
             using var doc = System.Text.Json.JsonDocument.Parse(Model.ContentJson);
             var root = doc.RootElement;
-            if (root.TryGetProperty("buttonText", out var bt)) btnText = bt.GetString();
-            if (root.TryGetProperty("buttonUrl", out var bu)) btnUrl = bu.GetString();
-            if (root.TryGetProperty("backgroundImageUrl", out var bgi)) bgImage = bgi.GetString();
-            if (root.TryGetProperty("imageUrl", out var img)) sideImage = img.GetString();
+
+            if (root.TryGetProperty("buttonText", out var bt))
+            {
+                btnText = bt.GetString();
+            }
+
+            if (root.TryGetProperty("buttonUrl", out var bu))
+            {
+                btnUrl = bu.GetString();
+            }
+
+            if (root.TryGetProperty("backgroundImageUrl", out var bgi))
+            {
+                bgImage = bgi.GetString();
+            }
+
+            if (root.TryGetProperty("imageUrl", out var img))
+            {
+                sideImage = img.GetString();
+            }
         }
-        catch { }
+        catch
+        {
+            // Geçersiz JSON varsa form yine açılır, kullanıcı düzeltebilir.
+        }
     }
 
     var cultureOptions = new List<SelectListItem>
     {
-        new SelectListItem { Text = Localizer["Culture_TR"].Value, Value = "tr-TR" },
-        new SelectListItem { Text = Localizer["Culture_EN"].Value, Value = "en-US" }
+        new SelectListItem
+        {
+            Text = L("Culture_TR", "Türkçe"),
+            Value = "tr-TR",
+            Selected = string.Equals(Model.Culture, "tr-TR", StringComparison.OrdinalIgnoreCase)
+        },
+        new SelectListItem
+        {
+            Text = L("Culture_EN", "English"),
+            Value = "en-US",
+            Selected = string.Equals(Model.Culture, "en-US", StringComparison.OrdinalIgnoreCase)
+        }
+    };
+
+    var pageOptions = new List<SelectListItem>
+    {
+        new SelectListItem
+        {
+            Text = L("Page_Home", "Ana Sayfa"),
+            Value = "Home",
+            Selected = string.Equals(Model.Page, "Home", StringComparison.OrdinalIgnoreCase)
+        },
+        new SelectListItem
+        {
+            Text = L("Page_About", "Hakkında"),
+            Value = "About",
+            Selected = string.Equals(Model.Page, "About", StringComparison.OrdinalIgnoreCase)
+        },
+        new SelectListItem
+        {
+            Text = L("Page_Contact", "İletişim"),
+            Value = "Contact",
+            Selected = string.Equals(Model.Page, "Contact", StringComparison.OrdinalIgnoreCase)
+        }
     };
 
     var blockTypeOptions = new List<SelectListItem>
     {
-        new SelectListItem { Text = Localizer["BlockType_Hero"].Value, Value = nameof(ConferencePageBlockType.Hero) },
-        new SelectListItem { Text = Localizer["BlockType_About"].Value, Value = nameof(ConferencePageBlockType.About) },
-        new SelectListItem { Text = Localizer["BlockType_CallForPapers"].Value, Value = nameof(ConferencePageBlockType.CallForPapers) },
-        new SelectListItem { Text = Localizer["BlockType_Topics"].Value, Value = nameof(ConferencePageBlockType.Topics) },
-        new SelectListItem { Text = Localizer["BlockType_Committees"].Value, Value = nameof(ConferencePageBlockType.Committees) },
-        new SelectListItem { Text = Localizer["BlockType_Fees"].Value, Value = nameof(ConferencePageBlockType.Fees) }
+        new SelectListItem
+        {
+            Text = L("BlockType_Hero", "Hero Alanı"),
+            Value = nameof(ConferencePageBlockType.Hero),
+            Selected = Model.BlockType == ConferencePageBlockType.Hero
+        },
+        new SelectListItem
+        {
+            Text = L("BlockType_About", "Hakkında"),
+            Value = nameof(ConferencePageBlockType.About),
+            Selected = Model.BlockType == ConferencePageBlockType.About
+        },
+        new SelectListItem
+        {
+            Text = L("BlockType_CallForPapers", "Bildiri Çağrısı"),
+            Value = nameof(ConferencePageBlockType.CallForPapers),
+            Selected = Model.BlockType == ConferencePageBlockType.CallForPapers
+        },
+        new SelectListItem
+        {
+            Text = L("BlockType_Topics", "Konular"),
+            Value = nameof(ConferencePageBlockType.Topics),
+            Selected = Model.BlockType == ConferencePageBlockType.Topics
+        },
+        new SelectListItem
+        {
+            Text = L("BlockType_Committees", "Kurullar"),
+            Value = nameof(ConferencePageBlockType.Committees),
+            Selected = Model.BlockType == ConferencePageBlockType.Committees
+        },
+        new SelectListItem
+        {
+            Text = L("BlockType_Fees", "Ücretler"),
+            Value = nameof(ConferencePageBlockType.Fees),
+            Selected = Model.BlockType == ConferencePageBlockType.Fees
+        }
     };
+
+    var backUrl = !string.IsNullOrWhiteSpace(slug)
+        ? $"/{slug}/Admin/Website?culture={Model.Culture}&page={Model.Page}&conferenceId={Model.ConferenceId}"
+        : $"/Admin/Website?culture={Model.Culture}&page={Model.Page}&conferenceId={Model.ConferenceId}";
 }
 
+<style>
+    .website-edit-header {
+        background: linear-gradient(135deg, #ffffff, #f8fafc);
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        padding: 26px;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+        margin-bottom: 24px;
+    }
+
+    .website-edit-title {
+        color: #0f172a;
+        font-weight: 900;
+        margin-bottom: 6px;
+    }
+
+    .website-edit-lead {
+        color: #64748b;
+        line-height: 1.65;
+    }
+
+    .info-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        padding: 8px 13px;
+        font-size: 0.84rem;
+        font-weight: 800;
+        background: rgba(245, 158, 11, 0.12);
+        color: #b45309;
+        border: 1px solid rgba(245, 158, 11, 0.20);
+    }
+
+    .website-form-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+        border-top: 4px solid #f59e0b !important;
+    }
+
+    .website-form-section-title {
+        color: #0f172a;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 18px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+        .website-form-section-title i {
+            color: #f59e0b;
+        }
+
+    .modern-label {
+        color: #475569;
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-bottom: 7px;
+    }
+
+    .modern-control,
+    .modern-select,
+    .modern-textarea {
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        min-height: 46px;
+        box-shadow: none;
+        font-weight: 700;
+        color: #334155;
+    }
+
+        .modern-control:focus,
+        .modern-select:focus,
+        .modern-textarea:focus {
+            border-color: rgba(245, 158, 11, 0.55);
+            box-shadow: 0 0 0 0.2rem rgba(245, 158, 11, 0.12);
+        }
+
+    .modern-textarea {
+        min-height: 180px;
+        font-family: Consolas, Monaco, monospace;
+        font-size: 0.88rem;
+        line-height: 1.65;
+    }
+
+    .hero-settings-box {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(249, 115, 22, 0.06));
+        border: 1px solid rgba(245, 158, 11, 0.20);
+        border-radius: 22px;
+        padding: 22px;
+    }
+
+    .json-settings-box {
+        background: #0f172a;
+        color: #ffffff;
+        border-radius: 22px;
+        padding: 22px;
+    }
+
+        .json-settings-box .modern-label {
+            color: #cbd5e1;
+        }
+
+        .json-settings-box .form-text {
+            color: #94a3b8 !important;
+        }
+
+    .switch-box {
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 18px;
+        background: #f8fafc;
+        height: 100%;
+        display: flex;
+        align-items: center;
+    }
+
+    .form-switch .form-check-input {
+        width: 2.8em;
+        height: 1.4em;
+        cursor: pointer;
+    }
+
+    .side-edit-card {
+        border-radius: 24px;
+        border: 1px solid rgba(245, 158, 11, 0.24);
+        background: linear-gradient(135deg, #0f172a, #1e293b);
+        color: #ffffff;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.10);
+        position: sticky;
+        top: 100px;
+    }
+
+    .edit-help-icon {
+        width: 58px;
+        height: 58px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.10);
+        color: #f59e0b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+    }
+
+    .warning-box {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        border-radius: 18px;
+        padding: 18px;
+    }
+
+        .warning-box li {
+            line-height: 1.6;
+        }
+
+    .update-btn {
+        border: none;
+        border-radius: 999px;
+        padding: 13px 32px;
+        font-weight: 900;
+        color: #ffffff;
+        background: linear-gradient(135deg, #f59e0b, #f97316);
+        box-shadow: 0 12px 24px rgba(249, 115, 22, 0.24);
+        transition: all 0.22s ease;
+    }
+
+        .update-btn:hover {
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 16px 32px rgba(249, 115, 22, 0.34);
+        }
+
+    .cancel-btn {
+        border-radius: 999px;
+        padding: 13px 24px;
+        font-weight: 900;
+    }
+
+    @@media (max-width: 991.98px) {
+        .side-edit-card {
+            position: static;
+        }
+    }
+</style>
+
 <div class="container-fluid">
-    <div class="d-flex align-items-center justify-content-between mb-4">
-        <div>
-            <h4 class="mb-0 fw-bold text-dark">@Localizer["PageHeading"]</h4>
-            <p class="text-muted small mb-0">
-                <strong>@Model.Title</strong> @Localizer["PageLead"]
-            </p>
+
+    <div class="website-edit-header">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+            <div>
+                <h4 class="website-edit-title">
+                    <i class="fas fa-pen-to-square text-warning me-2"></i>
+                    @L("PageHeading", "Website Bloğunu Düzenle")
+                </h4>
+
+                <div class="website-edit-lead">
+                    <strong>@(string.IsNullOrWhiteSpace(Model.Title) ? L("UntitledBlock", "Başlıksız Blok") : Model.Title)</strong>
+                    @L("PageLead", "bloğunun içerik ve görünüm ayarlarını buradan güncelleyebilirsiniz.")
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <span class="info-chip">
+                        <i class="fas fa-file-lines"></i>
+                        @Model.Page
+                    </span>
+
+                    <span class="info-chip">
+                        <i class="fas fa-language"></i>
+                        @Model.Culture
+                    </span>
+
+                    <span class="info-chip">
+                        <i class="fas fa-hashtag"></i>
+                        ID: @Model.Id
+                    </span>
+
+                    @if (!string.IsNullOrWhiteSpace(slug))
+                    {
+                        <span class="info-chip">
+                            <i class="fas fa-link"></i>
+                            /@slug
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <a class="btn btn-outline-secondary rounded-pill fw-bold px-4"
+               href="@backUrl">
+                <i class="fas fa-arrow-left me-2"></i>
+                @L("BackToListButton", "Listeye Dön")
+            </a>
         </div>
-        <a class="btn btn-light border shadow-sm px-3"
-           asp-area="Admin" asp-controller="Website" asp-action="Index"
-           asp-route-slug="@slug" asp-route-culture="@Model.Culture"
-           asp-route-page="@Model.Page" asp-route-conferenceId="@Model.ConferenceId">
-            <i class="fas fa-arrow-left me-2"></i> @Localizer["BackToListButton"]
-        </a>
     </div>
 
     <div class="row">
         <div class="col-xl-8 col-lg-7 mb-4">
-            <div class="card border-0 shadow-sm rounded-4 border-top border-warning border-4">
+            <div class="card website-form-card border-0">
                 <div class="card-body p-4 p-md-5">
 
-                    @Html.ValidationSummary(true, "", new { @class = "alert alert-danger border-0 shadow-sm rounded-3 small" })
+                    @Html.ValidationSummary(true, "", new { @class = "alert alert-danger border-0 shadow-sm rounded-4 small" })
 
-                    <form asp-area="Admin" asp-controller="Website" asp-action="Edit" asp-route-slug="@slug" method="post">
+                    <form asp-area="Admin"
+                          asp-controller="Website"
+                          asp-action="Edit"
+                          asp-route-slug="@slug"
+                          asp-route-id="@Model.Id"
+                          method="post">
+
                         @Html.AntiForgeryToken()
 
                         <input type="hidden" asp-for="Id" />
                         <input type="hidden" asp-for="ConferenceId" />
-                        <input type="hidden" asp-for="ContentJson" />
+
+                        <div class="website-form-section-title">
+                            <i class="fas fa-sliders"></i>
+                            @L("GeneralSettingsHeader", "Genel Ayarlar")
+                        </div>
 
                         <div class="row g-4">
                             <div class="col-md-4">
-                                <label class="form-label fw-bold text-dark small" asp-for="Page">@Localizer["PageLabel"]</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-file-alt"></i></span>
-                                    <input class="form-control bg-light border-start-0 ps-0 text-muted" asp-for="Page" readonly />
-                                </div>
-                                <span class="text-danger small mt-1" asp-validation-for="Page"></span>
+                                <label class="modern-label" asp-for="Page">
+                                    @L("PageLabel", "Sayfa")
+                                </label>
+
+                                <select class="form-select modern-select"
+                                        asp-for="Page"
+                                        asp-items="pageOptions">
+                                </select>
+
+                                <span class="text-danger small mt-1 d-block" asp-validation-for="Page"></span>
                             </div>
 
                             <div class="col-md-4">
-                                <label class="form-label fw-bold text-dark small" asp-for="Culture">@Localizer["CultureLabel"]</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-globe"></i></span>
-                                    <select class="form-select bg-light border-start-0 ps-0 text-muted" asp-for="Culture" asp-items="cultureOptions" disabled></select>
-                                    <input type="hidden" asp-for="Culture" />
-                                </div>
+                                <label class="modern-label" asp-for="Culture">
+                                    @L("CultureLabel", "Dil")
+                                </label>
+
+                                <select class="form-select modern-select"
+                                        asp-for="Culture"
+                                        asp-items="cultureOptions">
+                                </select>
+
+                                <span class="text-danger small mt-1 d-block" asp-validation-for="Culture"></span>
                             </div>
 
                             <div class="col-md-4">
-                                <label class="form-label fw-bold text-dark small" asp-for="BlockType">@Localizer["BlockTypeLabel"]</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0 text-warning"><i class="fas fa-cubes"></i></span>
-                                    <select class="form-select bg-light border-start-0 ps-0 fw-bold" id="BlockType" asp-for="BlockType" asp-items="blockTypeOptions"></select>
-                                </div>
-                                <span class="text-danger small mt-1" asp-validation-for="BlockType"></span>
+                                <label class="modern-label" asp-for="BlockType">
+                                    @L("BlockTypeLabel", "Blok Türü")
+                                    <span class="text-danger">*</span>
+                                </label>
+
+                                <select class="form-select modern-select"
+                                        id="BlockType"
+                                        asp-for="BlockType"
+                                        asp-items="blockTypeOptions">
+                                </select>
+
+                                <span class="text-danger small mt-1 d-block" asp-validation-for="BlockType"></span>
                             </div>
 
                             <div class="col-md-12 mt-4">
-                                <h6 class="fw-bold border-bottom pb-2 mb-3 text-secondary">@Localizer["TextContentHeader"]</h6>
+                                <div class="website-form-section-title mb-0">
+                                    <i class="fas fa-align-left"></i>
+                                    @L("TextContentHeader", "Metin İçeriği")
+                                </div>
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-dark small" asp-for="Title">@Localizer["TitleLabel"] <span class="text-danger">*</span></label>
-                                <input class="form-control" asp-for="Title" />
-                                <span class="text-danger small mt-1" asp-validation-for="Title"></span>
+                                <label class="modern-label" asp-for="Title">
+                                    @L("TitleLabel", "Başlık")
+                                    <span class="text-danger">*</span>
+                                </label>
+
+                                <input class="form-control modern-control"
+                                       asp-for="Title"
+                                       placeholder="@L("TitlePlaceholder", "Örn: Kongreye Hoş Geldiniz")" />
+
+                                <span class="text-danger small mt-1 d-block" asp-validation-for="Title"></span>
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-dark small" asp-for="Subtitle">@Localizer["SubtitleLabel"]</label>
-                                <input class="form-control" asp-for="Subtitle" />
-                                <span class="text-danger small mt-1" asp-validation-for="Subtitle"></span>
+                                <label class="modern-label" asp-for="Subtitle">
+                                    @L("SubtitleLabel", "Alt Başlık")
+                                </label>
+
+                                <input class="form-control modern-control"
+                                       asp-for="Subtitle"
+                                       placeholder="@L("SubtitlePlaceholder", "Kısa açıklama metni")" />
+
+                                <span class="text-danger small mt-1 d-block" asp-validation-for="Subtitle"></span>
                             </div>
 
                             <div class="col-12 hero-fields" style="display: none;">
-                                <div class="card bg-warning bg-opacity-10 border-0 rounded-3 p-3 mt-2">
-                                    <h6 class="fw-bold text-warning mb-3"><i class="fas fa-star me-2"></i> @Localizer["HeroSettingsHeader"]</h6>
+                                <div class="hero-settings-box mt-2">
+                                    <h6 class="fw-bold text-warning mb-3">
+                                        <i class="fas fa-star me-2"></i>
+                                        @L("HeroSettingsHeader", "Hero Alanı Ayarları")
+                                    </h6>
+
                                     <div class="row g-3">
                                         <div class="col-md-6">
-                                            <label class="form-label fw-bold text-dark small">@Localizer["HeroButtonTextLabel"]</label>
-                                            <input class="form-control bg-white" name="btnText" value="@btnText" placeholder="@Localizer["HeroButtonTextPlaceholder"]" />
+                                            <label class="modern-label">
+                                                @L("HeroButtonTextLabel", "Buton Metni")
+                                            </label>
+
+                                            <input class="form-control modern-control bg-white"
+                                                   name="btnText"
+                                                   value="@btnText"
+                                                   placeholder="@L("HeroButtonTextPlaceholder", "Örn: Kayıt Ol")" />
                                         </div>
+
                                         <div class="col-md-6">
-                                            <label class="form-label fw-bold text-dark small">@Localizer["HeroButtonUrlLabel"]</label>
-                                            <input class="form-control bg-white" name="btnUrl" value="@btnUrl" placeholder="@Localizer["HeroButtonUrlPlaceholder"]" />
+                                            <label class="modern-label">
+                                                @L("HeroButtonUrlLabel", "Buton Bağlantısı")
+                                            </label>
+
+                                            <input class="form-control modern-control bg-white"
+                                                   name="btnUrl"
+                                                   value="@btnUrl"
+                                                   placeholder="@L("HeroButtonUrlPlaceholder", "Örn: /registration veya https://...")" />
+
+                                            @Html.ValidationMessage("btnUrl", "", new { @class = "text-danger small mt-1 d-block" })
                                         </div>
+
                                         <div class="col-md-6">
-                                            <label class="form-label fw-bold text-dark small">@Localizer["HeroBackgroundImageLabel"]</label>
-                                            <input class="form-control bg-white" name="bgImage" value="@bgImage" placeholder="@Localizer["HeroBackgroundImagePlaceholder"]" />
+                                            <label class="modern-label">
+                                                @L("HeroBackgroundImageLabel", "Arka Plan Görsel URL")
+                                            </label>
+
+                                            <input class="form-control modern-control bg-white"
+                                                   name="bgImage"
+                                                   value="@bgImage"
+                                                   placeholder="@L("HeroBackgroundImagePlaceholder", "https://...")" />
+
+                                            @Html.ValidationMessage("bgImage", "", new { @class = "text-danger small mt-1 d-block" })
                                         </div>
+
                                         <div class="col-md-6">
-                                            <label class="form-label fw-bold text-dark small">@Localizer["HeroSideImageLabel"]</label>
-                                            <input class="form-control bg-white" name="sideImage" value="@sideImage" placeholder="@Localizer["HeroSideImagePlaceholder"]" />
+                                            <label class="modern-label">
+                                                @L("HeroSideImageLabel", "Yan Görsel URL")
+                                            </label>
+
+                                            <input class="form-control modern-control bg-white"
+                                                   name="sideImage"
+                                                   value="@sideImage"
+                                                   placeholder="@L("HeroSideImagePlaceholder", "https://...")" />
+
+                                            @Html.ValidationMessage("sideImage", "", new { @class = "text-danger small mt-1 d-block" })
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
+                            <div class="col-12 json-fields" style="display: none;">
+                                <div class="json-settings-box mt-2">
+                                    <h6 class="fw-bold text-white mb-3">
+                                        <i class="fas fa-code me-2 text-warning"></i>
+                                        @L("JsonContentHeader", "JSON İçerik")
+                                    </h6>
+
+                                    <label class="modern-label" asp-for="ContentJson">
+                                        @L("ContentJsonLabel", "Content JSON")
+                                    </label>
+
+                                    <textarea class="form-control modern-textarea"
+                                              asp-for="ContentJson"
+                                              placeholder='{"items":[]}'></textarea>
+
+                                    <div class="form-text mt-2">
+                                        @L("ContentJsonHelpText", "Hero dışındaki bloklar için geçerli JSON formatında içerik girebilirsiniz. Boş bırakırsanız sistem {} olarak kaydeder.")
+                                    </div>
+
+                                    <span class="text-danger small mt-1 d-block" asp-validation-for="ContentJson"></span>
+                                </div>
+                            </div>
+
                             <div class="col-md-12 mt-4">
-                                <h6 class="fw-bold border-bottom pb-2 mb-3 text-secondary">@Localizer["AppearanceHeader"]</h6>
+                                <div class="website-form-section-title mb-0">
+                                    <i class="fas fa-palette"></i>
+                                    @L("AppearanceHeader", "Görünüm")
+                                </div>
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-dark small" asp-for="Order">@Localizer["OrderLabel"]</label>
-                                <div class="input-group w-50">
-                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-sort-numeric-down"></i></span>
-                                    <input class="form-control bg-light border-start-0 ps-0 fw-bold" asp-for="Order" type="number" />
+                                <label class="modern-label" asp-for="Order">
+                                    @L("OrderLabel", "Sıra")
+                                </label>
+
+                                <input class="form-control modern-control"
+                                       asp-for="Order"
+                                       type="number"
+                                       min="0" />
+
+                                <div class="form-text text-muted small mt-1">
+                                    @L("CurrentOrderLabel", "Mevcut sıra:")
+                                    <strong>@Model.Order</strong>
                                 </div>
-                                <div class="form-text text-muted small mt-1">@Localizer["CurrentOrderLabel"] @Model.Order</div>
-                                <span class="text-danger small mt-1" asp-validation-for="Order"></span>
+
+                                <span class="text-danger small mt-1 d-block" asp-validation-for="Order"></span>
                             </div>
 
-                            <div class="col-md-6 d-flex align-items-center">
-                                <div class="form-check form-switch mt-3">
-                                    <input class="form-check-input" type="checkbox" asp-for="IsActive" id="flexSwitchCheckChecked">
-                                    <label class="form-check-label fw-bold ms-2" for="flexSwitchCheckChecked">@Localizer["IsActiveLabel"]</label>
+                            <div class="col-md-6">
+                                <div class="switch-box">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               asp-for="IsActive"
+                                               id="IsActiveSwitch">
+
+                                        <label class="form-check-label fw-bold ms-2"
+                                               for="IsActiveSwitch">
+                                            @L("IsActiveLabel", "Aktif olarak yayınla")
+                                        </label>
+
+                                        <div class="form-text text-muted small mt-1">
+                                            @L("IsActiveHelpText", "Pasif bloklar ziyaretçilere gösterilmez.")
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <hr class="my-5 opacity-50">
+                        <hr class="my-5 opacity-25">
 
-                        <div class="d-flex justify-content-end gap-3">
-                            <a class="btn btn-light btn-lg rounded-3 fw-bold border px-4"
-                               asp-area="Admin" asp-controller="Website" asp-action="Index"
-                               asp-route-slug="@slug" asp-route-culture="@Model.Culture"
-                               asp-route-page="@Model.Page" asp-route-conferenceId="@Model.ConferenceId">
-                                @Localizer["CancelButton"]
+                        <div class="d-flex flex-column flex-md-row justify-content-end gap-3">
+                            <a class="btn btn-light border cancel-btn"
+                               href="@backUrl">
+                                @L("CancelButton", "Vazgeç")
                             </a>
-                            <button class="btn btn-warning btn-lg rounded-3 fw-bold shadow-sm px-5 text-white" type="submit">
-                                <i class="fas fa-sync-alt me-2"></i> @Localizer["UpdateButton"]
+
+                            <button class="update-btn" type="submit">
+                                <i class="fas fa-sync-alt me-2"></i>
+                                @L("UpdateButton", "Güncelle")
                             </button>
                         </div>
                     </form>
@@ -181,31 +633,52 @@
         </div>
 
         <div class="col-xl-4 col-lg-5 mb-4">
-            <div class="card border-0 bg-dark rounded-4 p-2 h-100 text-white shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex align-items-center mb-4">
-                        <div class="bg-white bg-opacity-10 p-3 rounded-circle me-3">
-                            <i class="fas fa-shield-alt fa-2x text-warning"></i>
-                        </div>
-                        <h5 class="fw-bold mb-0">@Localizer["EditModeTitle"]</h5>
+            <div class="side-edit-card p-4 h-100">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="edit-help-icon me-3">
+                        <i class="fas fa-shield-alt"></i>
                     </div>
 
-                    <p class="text-light opacity-75 mb-4" style="line-height: 1.8;">
-                        @Localizer["EditModeLead_Part1"] <strong>@Model.Page</strong> @Localizer["EditModeLead_Part2"]
-                    </p>
+                    <h5 class="fw-bold text-warning mb-0">
+                        @L("EditModeTitle", "Düzenleme Modu")
+                    </h5>
+                </div>
 
-                    <div class="bg-white bg-opacity-10 rounded-3 p-3 mb-3">
-                        <small class="d-block text-warning fw-bold mb-1">@Localizer["WarningsHeader"]</small>
-                        <ul class="list-unstyled mb-0 small opacity-75">
-                            <li class="mb-2"><i class="fas fa-exclamation-circle text-warning me-2"></i> @Localizer["WarningImageUrl"]</li>
-                            <li class="mb-2"><i class="fas fa-exclamation-circle text-warning me-2"></i> @Localizer["WarningLockedFields"]</li>
-                        </ul>
-                    </div>
+                <p class="text-light opacity-75 mb-4" style="line-height: 1.8;">
+                    @L("EditModeLead", "Bu alanda seçili bloğun sayfa, dil, tür, metin ve görünürlük bilgilerini güncelleyebilirsiniz.")
+                </p>
 
-                    <div class="mt-auto pt-3 border-top border-secondary">
-                        <small class="text-muted d-block">@Localizer["SystemIdLabel"]</small>
-                        <code class="text-warning">@Model.Id</code>
-                    </div>
+                <div class="warning-box mb-3">
+                    <small class="d-block text-warning fw-bold mb-2">
+                        @L("WarningsHeader", "Dikkat Edilmesi Gerekenler")
+                    </small>
+
+                    <ul class="list-unstyled mb-0 small text-light opacity-75">
+                        <li class="mb-2">
+                            <i class="fas fa-exclamation-circle text-warning me-2"></i>
+                            @L("WarningImageUrl", "Görsel URL alanlarında yalnızca güvenli bağlantılar kullanılmalıdır.")
+                        </li>
+
+                        <li class="mb-2">
+                            <i class="fas fa-exclamation-circle text-warning me-2"></i>
+                            @L("WarningJson", "Hero dışındaki bloklarda Content JSON geçerli JSON formatında olmalıdır.")
+                        </li>
+
+                        <li class="mb-0">
+                            <i class="fas fa-exclamation-circle text-warning me-2"></i>
+                            @L("WarningVisibility", "Pasif bloklar ziyaretçi tarafında görüntülenmez.")
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="mt-auto pt-3 border-top border-secondary">
+                    <small class="text-secondary d-block">
+                        @L("SystemIdLabel", "Sistem ID")
+                    </small>
+
+                    <code class="text-warning">
+                        @Model.Id
+                    </code>
                 </div>
             </div>
         </div>
@@ -214,54 +687,42 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <style>
-        .form-control:focus, .form-select:focus {
-            background-color: #fff !important;
-            border-color: #ffc107;
-            box-shadow: none;
-        }
 
-        .input-group-text {
-            border: 1px solid #dee2e6;
-        }
-
-        .btn-warning {
-            transition: all 0.3s ease;
-        }
-
-            .btn-warning:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4) !important;
-                color: #fff !important;
-            }
-
-        .form-switch .form-check-input {
-            width: 2.5em;
-            height: 1.25em;
-            cursor: pointer;
-        }
-    </style>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            var typeSelect = document.getElementById("BlockType");
-            var heroFields = document.querySelectorAll(".hero-fields");
+            const typeSelect = document.getElementById("BlockType");
+            const heroFields = document.querySelectorAll(".hero-fields");
+            const jsonFields = document.querySelectorAll(".json-fields");
 
             function toggleFields() {
-                var selectedValue = typeSelect.value;
-                var isHero = selectedValue === "Hero";
+                if (!typeSelect) {
+                    return;
+                }
 
-                heroFields.forEach(f => {
+                const selectedValue = typeSelect.value;
+                const isHero = selectedValue === "Hero";
+
+                heroFields.forEach(function (field) {
+                    field.style.display = isHero ? "block" : "none";
+
                     if (isHero) {
-                        f.style.display = "block";
-                        f.classList.add("animate__animated", "animate__fadeIn");
-                    } else {
-                        f.style.display = "none";
+                        field.classList.add("animate__animated", "animate__fadeIn");
+                    }
+                });
+
+                jsonFields.forEach(function (field) {
+                    field.style.display = isHero ? "none" : "block";
+
+                    if (!isHero) {
+                        field.classList.add("animate__animated", "animate__fadeIn");
                     }
                 });
             }
 
-            typeSelect.addEventListener("change", toggleFields);
-            toggleFields();
+            if (typeSelect) {
+                typeSelect.addEventListener("change", toggleFields);
+                toggleFields();
+            }
         });
     </script>
 }

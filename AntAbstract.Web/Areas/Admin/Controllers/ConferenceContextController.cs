@@ -3,6 +3,7 @@ using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.ViewModels.Shared;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +15,7 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Organizator")]
+    [Authorize(Roles = "Admin")]
     public class ConferenceContextController : Controller
     {
         private readonly AppDbContext _context;
@@ -38,34 +39,43 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             var value = _localizer[key];
 
-            return value.ResourceNotFound
+            return value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
                 ? fallback
                 : value.Value;
         }
 
+        private async Task<AppUser?> GetCurrentUserAsync()
+        {
+            return await _userManager.GetUserAsync(User);
+        }
+
+        private async Task<Guid?> GetCurrentAdminTenantIdAsync()
+        {
+            var user = await GetCurrentUserAsync();
+
+            if (user == null || !user.TenantId.HasValue)
+            {
+                return null;
+            }
+
+            return user.TenantId.Value;
+        }
+
         private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync()
         {
-            var user = await _userManager.GetUserAsync(User);
-            var isAdmin = user != null && await _userManager.IsInRoleAsync(user, "Admin");
+            var tenantId = await GetCurrentAdminTenantIdAsync();
 
             var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .AsQueryable();
 
-            if (!isAdmin)
+            if (!tenantId.HasValue)
             {
-                if (user?.TenantId == null)
-                {
-                    query = query.Where(c => false);
-                }
-                else
-                {
-                    query = query.Where(c => c.TenantId == user.TenantId.Value);
-                }
+                return query.Where(c => false);
             }
 
-            return query;
+            return query.Where(c => c.TenantId == tenantId.Value);
         }
 
         [HttpGet("/Admin/SelectConference")]
@@ -74,6 +84,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             string? title = null,
             string? lead = null)
         {
+            var tenantId = await GetCurrentAdminTenantIdAsync();
+
+            if (!tenantId.HasValue)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_AdminTenantNotFound",
+                    "Admin hesabınıza bağlı kurum bulunamadı.");
+
+                return Redirect("/Dashboard/MyConferences");
+            }
+
             var selectedId = _selectedConferenceService.GetSelectedConferenceId();
 
             if (selectedId.HasValue && selectedId.Value != Guid.Empty)
@@ -129,6 +150,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             string? title = null,
             string? lead = null)
         {
+            if (conferenceId == Guid.Empty)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_ConferenceNotFound",
+                    "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+
+                return RedirectToAction(nameof(SelectConference), new
+                {
+                    returnUrl,
+                    title,
+                    lead
+                });
+            }
+
             var query = await GetAccessibleConferenceQueryAsync();
 
             var conf = await query
@@ -175,12 +210,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private string BuildTargetUrl(string? returnUrl, string tenantSlug, Guid conferenceId)
         {
             var target = string.IsNullOrWhiteSpace(returnUrl)
-                ? "/Admin/Dashboard"
+                ? "/Dashboard"
                 : returnUrl;
 
             if (!Url.IsLocalUrl(target))
             {
-                target = "/Admin/Dashboard";
+                target = "/Dashboard";
             }
 
             var parts = target.Split('?', 2);
