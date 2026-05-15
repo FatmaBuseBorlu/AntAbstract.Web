@@ -3,6 +3,7 @@ using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services;
+using AntAbstract.Infrastructure.Services.Certficates;
 using AntAbstract.Infrastructure.Services.DependencyInjection;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -15,6 +16,7 @@ using Rotativa.AspNetCore;
 using Stripe;
 using System.Globalization;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Localization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -123,6 +125,8 @@ builder.Services
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration, builder.Environment);
 
+builder.Services.AddScoped<PdfCertificateService>();
+
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();
 
@@ -227,9 +231,16 @@ app.UseStaticFiles();
 var supportedCultures = new[] { "tr-TR", "en-US" };
 
 var localizationOptions = new RequestLocalizationOptions()
-    .SetDefaultCulture(supportedCultures[0])
+    .SetDefaultCulture("tr-TR")
     .AddSupportedCultures(supportedCultures)
     .AddSupportedUICultures(supportedCultures);
+
+localizationOptions.RequestCultureProviders = new List<IRequestCultureProvider>
+{
+    new CookieRequestCultureProvider(),
+    new QueryStringRequestCultureProvider(),
+    new AcceptLanguageHeaderRequestCultureProvider()
+};
 
 app.UseRequestLocalization(localizationOptions);
 
@@ -240,9 +251,9 @@ app.UseSession();
 app.Use(async (ctx, next) =>
 {
     var resolver = ctx.RequestServices.GetRequiredService<ITenantResolver>();
-    var tc = ctx.RequestServices.GetRequiredService<TenantContext>();
+    var tenantContext = ctx.RequestServices.GetRequiredService<TenantContext>();
 
-    tc.Current = await resolver.ResolveAsync(ctx);
+    tenantContext.Current = await resolver.ResolveAsync(ctx);
 
     await next();
 });

@@ -24,6 +24,12 @@ namespace AntAbstract.Web.Controllers
         private readonly IConferencePageBlockService _pageBlockService;
         private readonly IStringLocalizer<HomeController> _localizer;
 
+        private static readonly string[] SupportedCultures =
+        {
+            "tr-TR",
+            "en-US"
+        };
+
         public HomeController(
             AppDbContext context,
             TenantContext tenantContext,
@@ -36,6 +42,15 @@ namespace AntAbstract.Web.Controllers
             _userManager = userManager;
             _pageBlockService = pageBlockService;
             _localizer = localizer;
+        }
+
+        private string T(string key, string fallback)
+        {
+            var value = _localizer[key];
+
+            return value.ResourceNotFound
+                ? fallback
+                : value.Value;
         }
 
         private static string ToPlainText(string? html)
@@ -72,6 +87,7 @@ namespace AntAbstract.Web.Controllers
             if (_tenantContext.Current != null)
             {
                 var currentConference = await _context.Conferences
+                    .AsNoTracking()
                     .Include(c => c.Tenant)
                     .Include(c => c.Registrations)
                     .Where(c => c.TenantId == _tenantContext.Current.Id)
@@ -80,10 +96,13 @@ namespace AntAbstract.Web.Controllers
 
                 if (currentConference == null)
                 {
-                    return NotFound(_localizer["ConferenceNotActive"]);
+                    return NotFound(T(
+                        "ConferenceNotActive",
+                        "Aktif kongre bulunamadý."));
                 }
 
                 var currentUser = await _userManager.GetUserAsync(User);
+
                 var registeredConferenceIds = new List<Guid>();
 
                 if (currentUser != null)
@@ -102,6 +121,11 @@ namespace AntAbstract.Web.Controllers
                               ?? CultureInfo.CurrentUICulture.Name
                               ?? "tr-TR";
 
+                if (!SupportedCultures.Contains(culture))
+                {
+                    culture = "tr-TR";
+                }
+
                 var page = "Home";
 
                 var blocks = await _pageBlockService.GetBlocksAsync(
@@ -112,11 +136,13 @@ namespace AntAbstract.Web.Controllers
                 );
 
                 var suggestedConferences = await _context.Conferences
+                    .AsNoTracking()
                     .Include(c => c.Tenant)
-                    .Where(c => c.Id != currentConference.Id && c.EndDate > DateTime.Now)
+                    .Where(c =>
+                        c.Id != currentConference.Id &&
+                        c.EndDate > DateTime.Now)
                     .OrderBy(c => c.StartDate)
                     .Take(4)
-                    .AsNoTracking()
                     .ToListAsync();
 
                 var vm = new ConferenceHomePageViewModel
@@ -132,6 +158,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             var user = await _userManager.GetUserAsync(User);
+
             var registeredIds = new List<Guid>();
 
             if (user != null)
@@ -144,17 +171,17 @@ namespace AntAbstract.Web.Controllers
             }
 
             var conferences = await _context.Conferences
-                .Include(c => c.Tenant)
                 .AsNoTracking()
+                .Include(c => c.Tenant)
                 .Where(c => c.EndDate > DateTime.Now)
                 .OrderBy(c => c.StartDate)
                 .ToListAsync();
 
-            var abstractNotFoundText = _localizer["AbstractNotFound"].Value;
-            var guestUserText = _localizer["GuestUser"].Value;
-            var institutionNotSpecifiedText = _localizer["InstitutionNotSpecified"].Value;
-            var reviewDetailsText = _localizer["ReviewForDetails"].Value;
-            var onlineText = _localizer["Online"].Value;
+            var abstractNotFoundText = T("AbstractNotFound", "Özet bulunamadý.");
+            var guestUserText = T("GuestUser", "Misafir kullanýcý");
+            var institutionNotSpecifiedText = T("InstitutionNotSpecified", "Kurum belirtilmedi");
+            var reviewDetailsText = T("ReviewForDetails", "Detaylar için inceleyiniz.");
+            var onlineText = T("Online", "Online");
 
             var lastSubmissions = await _context.Submissions
                 .AsNoTracking()
@@ -199,7 +226,9 @@ namespace AntAbstract.Web.Controllers
                     Title = c.Title,
 
                     Description = Shorten(
-                        ToPlainText(string.IsNullOrWhiteSpace(c.Description) ? reviewDetailsText : c.Description),
+                        ToPlainText(string.IsNullOrWhiteSpace(c.Description)
+                            ? reviewDetailsText
+                            : c.Description),
                         90
                     ),
 
@@ -234,8 +263,8 @@ namespace AntAbstract.Web.Controllers
             if (user != null)
             {
                 var registrations = await _context.Registrations
-                    .Include(r => r.RegistrationType)
                     .AsNoTracking()
+                    .Include(r => r.RegistrationType)
                     .Where(r => r.AppUserId == user.Id)
                     .ToListAsync();
 
@@ -254,8 +283,8 @@ namespace AntAbstract.Web.Controllers
             }
 
             var allCongresses = await _context.Conferences
-                .Include(c => c.Tenant)
                 .AsNoTracking()
+                .Include(c => c.Tenant)
                 .OrderBy(c => c.StartDate)
                 .ToListAsync();
 
@@ -305,18 +334,33 @@ namespace AntAbstract.Web.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult SetLanguage(string culture, string returnUrl)
         {
+            if (!SupportedCultures.Contains(culture))
+            {
+                culture = "tr-TR";
+            }
+
             Response.Cookies.Append(
                 CookieRequestCultureProvider.DefaultCookieName,
                 CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(culture)),
                 new CookieOptions
                 {
-                    Expires = DateTimeOffset.UtcNow.AddYears(1)
+                    Expires = DateTimeOffset.UtcNow.AddYears(1),
+                    HttpOnly = false,
+                    IsEssential = true,
+                    SameSite = SameSiteMode.Lax,
+                    Secure = Request.IsHttps
                 }
             );
 
-            return LocalRedirect(returnUrl);
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return LocalRedirect(returnUrl);
+            }
+
+            return RedirectToAction(nameof(Index));
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

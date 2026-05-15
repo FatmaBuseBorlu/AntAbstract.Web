@@ -18,205 +18,418 @@
             ? fallback
             : value;
     }
+
+    var activeCongresses = Model.ActiveCongresses ?? new List<CongressCardDto>();
+    var lastSubmissions = Model.LastSubmissions ?? new List<SubmissionCardDto>();
 }
 
 <style>
-    .page-content-wrapper {
-        padding-top: 0;
-    }
-
-    .hero-section {
-        padding-top: 140px;
-        padding-bottom: 80px;
-        background: radial-gradient(circle at top right, #f8f9fa 0%, #e9ecef 100%);
+    .home-page {
+        background: #ffffff;
         overflow: hidden;
     }
 
-    .dashboard-preview-card {
-        transform: perspective(1000px) rotateY(-10deg) rotateX(5deg);
-        transition: transform 0.5s ease;
-        box-shadow: -20px 20px 60px rgba(0,0,0,0.15);
-        border: 8px solid #fff;
-        border-radius: 12px;
-    }
-
-        .dashboard-preview-card:hover {
-            transform: perspective(1000px) rotateY(-5deg) rotateX(2deg) translateY(-10px);
-            box-shadow: -10px 10px 40px rgba(0,0,0,0.2);
-        }
-
-    .feature-card, .pricing-card {
-        background: #fff;
-        transition: all 0.3s ease;
-        height: 100%;
-        border: 1px solid rgba(0,0,0,0.05);
-    }
-
-    .feature-card {
-        padding: 2rem;
-        border-radius: 1rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-    }
-
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            border-color: var(--primary-color);
-        }
-
-    .feature-icon {
-        width: 60px;
-        height: 60px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 12px;
-        font-size: 1.5rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .pricing-card {
-        border: 1px solid #e2e8f0;
-        border-radius: 1rem;
-        position: relative;
-        overflow: hidden;
-    }
-
-        .pricing-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            border-color: var(--primary-color);
-        }
-
-        .pricing-card.popular {
-            border: 2px solid var(--primary-color);
-            box-shadow: 0 10px 30px rgba(0, 174, 239, 0.1);
-        }
-
-    .popular-badge {
-        background: var(--primary-color);
-        color: #fff;
-        padding: 5px 30px;
-        position: absolute;
-        top: 20px;
-        right: -30px;
-        transform: rotate(45deg);
-        font-size: 0.8rem;
-        font-weight: bold;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    .congress-card {
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        border: 1px solid rgba(0,0,0,0.05);
-    }
-
-        .congress-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 15px 30px rgba(0,174,239, 0.15) !important;
-            border-color: var(--primary-color);
-        }
-
-    .card-img-wrapper {
-        height: 200px;
-        background-color: #f8f9fa;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        position: relative;
-    }
-
-    .submission-card {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-        .submission-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
-            background: #fff !important;
-        }
-
-    .line-clamp-2 {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    .line-clamp-3 {
-        display: -webkit-box;
-        -webkit-line-clamp: 3;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    .hover-color {
-        transition: all 0.3s ease;
-    }
-
-        .hover-color:hover {
-            color: var(--primary-color) !important;
-            transform: scale(1.1);
-        }
-
-    .stats-section {
-        background: linear-gradient(135deg, #00aeef 0%, #007bb5 100%);
-        color: white;
-    }
-
-    .stat-number {
-        font-size: 3rem;
-        font-weight: 800;
-        letter-spacing: -1px;
-    }
-
-    .modern-congress-section {
-        background: radial-gradient(circle at top left, rgba(0, 174, 239, 0.08), transparent 34%), linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .modern-section-kicker {
+    .section-kicker {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        background: #e0f2fe;
-        color: #0369a1;
-        border: 1px solid #bae6fd;
+        padding: 8px 15px;
         border-radius: 999px;
-        padding: 8px 16px;
+        background: rgba(0, 174, 239, 0.10);
+        color: #0284c7;
+        border: 1px solid rgba(0, 174, 239, 0.18);
         font-size: 0.78rem;
         font-weight: 900;
         letter-spacing: 0.6px;
         text-transform: uppercase;
-        margin-bottom: 14px;
     }
 
-    .modern-section-title {
+    .section-title {
         color: #0f172a;
         font-weight: 900;
         letter-spacing: -1px;
+    }
+
+    .section-description {
+        color: #64748b;
+        line-height: 1.75;
+        max-width: 720px;
+    }
+
+    .hero-modern {
+        position: relative;
+        padding: 155px 0 95px;
+        background: radial-gradient(circle at 12% 20%, rgba(0, 174, 239, 0.14), transparent 28%), radial-gradient(circle at 85% 25%, rgba(14, 165, 233, 0.18), transparent 30%), linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    }
+
+        .hero-modern::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(rgba(15, 23, 42, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(15, 23, 42, 0.035) 1px, transparent 1px);
+            background-size: 42px 42px;
+            mask-image: linear-gradient(to bottom, black, transparent 72%);
+            pointer-events: none;
+        }
+
+    .hero-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 16px;
+        border-radius: 999px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+        font-weight: 800;
+        font-size: 0.86rem;
+        margin-bottom: 24px;
+    }
+
+        .hero-badge span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 9px;
+            border-radius: 999px;
+            background: #00aeef;
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 900;
+        }
+
+    .hero-title {
+        color: #0f172a;
+        font-size: clamp(2.5rem, 5vw, 4.65rem);
+        line-height: 1.04;
+        letter-spacing: -2.5px;
+        font-weight: 950;
+        margin-bottom: 24px;
+    }
+
+        .hero-title .gradient-text {
+            background: linear-gradient(135deg, #00aeef, #0284c7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+    .hero-description {
+        color: #64748b;
+        font-size: 1.13rem;
+        line-height: 1.85;
+        max-width: 620px;
+        margin-bottom: 34px;
+    }
+
+    .hero-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-bottom: 34px;
+    }
+
+    .primary-pill-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 15px 26px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #00aeef, #0284c7);
+        color: #ffffff;
+        text-decoration: none;
+        font-weight: 900;
+        box-shadow: 0 18px 35px rgba(0, 174, 239, 0.24);
+        transition: all 0.22s ease;
+    }
+
+        .primary-pill-btn:hover {
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 22px 45px rgba(0, 174, 239, 0.32);
+        }
+
+    .secondary-pill-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 14px 24px;
+        border-radius: 999px;
+        background: #ffffff;
+        color: #0f172a;
+        text-decoration: none;
+        font-weight: 900;
+        border: 1px solid #cbd5e1;
+        transition: all 0.22s ease;
+    }
+
+        .secondary-pill-btn:hover {
+            color: #0284c7;
+            border-color: rgba(0, 174, 239, 0.45);
+            transform: translateY(-2px);
+        }
+
+    .hero-trust-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 14px;
+        color: #64748b;
+        font-size: 0.93rem;
+        font-weight: 700;
+    }
+
+    .hero-trust-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .hero-trust-item i {
+            color: #16a34a;
+        }
+
+    .dashboard-shell {
+        position: relative;
+        z-index: 2;
+        border-radius: 32px;
+        background: #0f172a;
+        padding: 16px;
+        box-shadow: 0 35px 90px rgba(15, 23, 42, 0.26);
+        transform: perspective(1100px) rotateY(-7deg) rotateX(4deg);
+        transition: all 0.3s ease;
+    }
+
+        .dashboard-shell:hover {
+            transform: perspective(1100px) rotateY(-3deg) rotateX(2deg) translateY(-8px);
+        }
+
+    .dashboard-window {
+        overflow: hidden;
+        border-radius: 22px;
+        background: #f8fafc;
+    }
+
+    .dashboard-topbar {
+        height: 48px;
+        background: #ffffff;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 18px;
+    }
+
+    .window-dots {
+        display: flex;
+        gap: 7px;
+    }
+
+        .window-dots span {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            background: #cbd5e1;
+        }
+
+            .window-dots span:nth-child(1) {
+                background: #ef4444;
+            }
+
+            .window-dots span:nth-child(2) {
+                background: #f59e0b;
+            }
+
+            .window-dots span:nth-child(3) {
+                background: #22c55e;
+            }
+
+    .dashboard-body {
+        padding: 22px;
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 16px;
+    }
+
+    .mock-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 18px;
+        box-shadow: 0 14px 35px rgba(15, 23, 42, 0.06);
+    }
+
+    .mock-card-title {
+        color: #0f172a;
+        font-weight: 900;
+        margin-bottom: 14px;
+    }
+
+    .mock-stat-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .mock-stat {
+        border-radius: 16px;
+        padding: 14px;
+        background: #f1f5f9;
+    }
+
+        .mock-stat strong {
+            display: block;
+            color: #0f172a;
+            font-size: 1.4rem;
+            line-height: 1;
+        }
+
+        .mock-stat span {
+            color: #64748b;
+            font-size: 0.76rem;
+            font-weight: 800;
+        }
+
+    .mock-progress {
+        height: 10px;
+        background: #e2e8f0;
+        border-radius: 999px;
+        overflow: hidden;
         margin-bottom: 12px;
     }
 
-    .modern-section-description {
-        color: #64748b;
-        max-width: 680px;
-        margin: 0 auto;
-        line-height: 1.75;
+        .mock-progress span {
+            display: block;
+            height: 100%;
+            width: 72%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #00aeef, #22c55e);
+        }
+
+    .mock-list {
+        display: grid;
+        gap: 10px;
     }
 
-    .modern-section-line {
-        width: 72px;
-        height: 5px;
-        background: linear-gradient(90deg, #00aeef, #38bdf8);
+    .mock-list-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px;
+        background: #f8fafc;
+        border-radius: 14px;
+    }
+
+    .mock-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #00aeef, #0284c7);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+
+    .mock-pill {
+        padding: 6px 9px;
         border-radius: 999px;
-        margin: 22px auto 0;
+        background: rgba(34, 197, 94, 0.12);
+        color: #15803d;
+        font-size: 0.72rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .floating-note {
+        position: absolute;
+        left: -22px;
+        bottom: 34px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 16px;
+        min-width: 205px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.16);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .floating-note-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 15px;
+        background: rgba(34, 197, 94, 0.12);
+        color: #16a34a;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+
+    .role-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        padding: 28px;
+        height: 100%;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+        transition: all 0.24s ease;
+    }
+
+        .role-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(0, 174, 239, 0.35);
+            box-shadow: 0 28px 70px rgba(15, 23, 42, 0.11);
+        }
+
+    .role-icon {
+        width: 62px;
+        height: 62px;
+        border-radius: 22px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.55rem;
+        margin-bottom: 22px;
+        background: rgba(0, 174, 239, 0.1);
+        color: #0284c7;
+    }
+
+    .role-card h4 {
+        color: #0f172a;
+        font-weight: 900;
+        margin-bottom: 12px;
+    }
+
+    .role-card p {
+        color: #64748b;
+        line-height: 1.7;
+        margin-bottom: 0;
+    }
+
+    .modern-congress-section {
+        background: radial-gradient(circle at top left, rgba(0, 174, 239, 0.09), transparent 34%), linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        position: relative;
+        overflow: hidden;
     }
 
     .modern-congress-card {
-        background: #fff;
+        background: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 28px;
         overflow: hidden;
@@ -395,6 +608,184 @@
             transform: translateY(-2px);
         }
 
+    .workflow-section {
+        background: #0f172a;
+        color: #ffffff;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .workflow-section::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 20% 20%, rgba(0, 174, 239, 0.22), transparent 28%), radial-gradient(circle at 80% 70%, rgba(56, 189, 248, 0.12), transparent 32%);
+            pointer-events: none;
+        }
+
+    .workflow-card {
+        position: relative;
+        z-index: 2;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 24px;
+        padding: 24px;
+        height: 100%;
+        backdrop-filter: blur(12px);
+    }
+
+    .workflow-number {
+        width: 44px;
+        height: 44px;
+        border-radius: 16px;
+        background: #00aeef;
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        margin-bottom: 16px;
+    }
+
+    .workflow-card h5 {
+        font-weight: 900;
+        margin-bottom: 10px;
+    }
+
+    .workflow-card p {
+        color: #cbd5e1;
+        margin-bottom: 0;
+        line-height: 1.65;
+        font-size: 0.93rem;
+    }
+
+    .feature-card-modern {
+        height: 100%;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        padding: 26px;
+        box-shadow: 0 15px 42px rgba(15, 23, 42, 0.05);
+        transition: all 0.24s ease;
+    }
+
+        .feature-card-modern:hover {
+            transform: translateY(-7px);
+            box-shadow: 0 24px 64px rgba(15, 23, 42, 0.1);
+            border-color: rgba(0,174,239,0.35);
+        }
+
+    .feature-icon-modern {
+        width: 56px;
+        height: 56px;
+        border-radius: 20px;
+        background: rgba(0, 174, 239, 0.10);
+        color: #0284c7;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        margin-bottom: 18px;
+    }
+
+    .feature-card-modern h5 {
+        color: #0f172a;
+        font-weight: 900;
+        margin-bottom: 10px;
+    }
+
+    .feature-card-modern p {
+        color: #64748b;
+        line-height: 1.68;
+        margin-bottom: 0;
+    }
+
+    .submission-card-modern {
+        height: 100%;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        padding: 22px;
+        background: #ffffff;
+        box-shadow: 0 15px 42px rgba(15,23,42,0.05);
+        transition: all 0.24s ease;
+    }
+
+        .submission-card-modern:hover {
+            transform: translateY(-7px);
+            box-shadow: 0 24px 64px rgba(15,23,42,0.10);
+        }
+
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .stats-modern {
+        background: linear-gradient(135deg, #00aeef 0%, #0284c7 100%);
+        color: #ffffff;
+    }
+
+    .stat-box {
+        text-align: center;
+        padding: 22px;
+    }
+
+    .stat-number {
+        font-size: clamp(2.1rem, 4vw, 3.2rem);
+        font-weight: 950;
+        line-height: 1;
+        margin-bottom: 10px;
+    }
+
+    .stat-label {
+        opacity: 0.86;
+        text-transform: uppercase;
+        font-weight: 900;
+        font-size: 0.78rem;
+        letter-spacing: 0.7px;
+    }
+
+    .cta-section {
+        background: radial-gradient(circle at top left, rgba(0, 174, 239, 0.16), transparent 30%), linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    }
+
+    .cta-box {
+        background: #0f172a;
+        color: #ffffff;
+        border-radius: 34px;
+        padding: clamp(34px, 5vw, 62px);
+        box-shadow: 0 32px 80px rgba(15,23,42,0.18);
+        position: relative;
+        overflow: hidden;
+    }
+
+        .cta-box::after {
+            content: "";
+            position: absolute;
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            right: -70px;
+            top: -80px;
+            background: rgba(0,174,239,0.22);
+        }
+
+        .cta-box h2,
+        .cta-box p,
+        .cta-box a {
+            position: relative;
+            z-index: 2;
+        }
+
     .modern-empty-state {
         background: #fff;
         border: 1px solid #e2e8f0;
@@ -410,7 +801,36 @@
             margin-bottom: 16px;
         }
 
+    @@media (max-width: 991.98px) {
+        .hero-modern {
+            padding-top: 130px;
+        }
+
+        .dashboard-shell {
+            transform: none;
+            margin-top: 28px;
+        }
+
+        .floating-note {
+            position: static;
+            margin-top: 16px;
+        }
+
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
     @@media (max-width: 576px) {
+        .hero-actions {
+            align-items: stretch;
+        }
+
+        .primary-pill-btn,
+        .secondary-pill-btn {
+            width: 100%;
+        }
+
         .modern-congress-body {
             min-height: auto;
         }
@@ -426,63 +846,244 @@
     }
 </style>
 
-<div class="page-content-wrapper">
+<div class="home-page">
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="container mt-5 pt-5">
-            <div class="alert alert-success border-0 shadow-sm rounded-3">
-                <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+        <div class="container" style="padding-top: 120px;">
+            <div class="alert alert-success border-0 shadow-sm rounded-4">
+                <i class="fas fa-check-circle me-2"></i>
+                @TempData["SuccessMessage"]
             </div>
         </div>
     }
 
-    <section class="hero-section">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-6 mb-5 mb-lg-0 pe-lg-5">
-                    <div class="d-inline-flex align-items-center bg-white shadow-sm rounded-pill px-3 py-2 mb-4 border">
-                        <span class="badge bg-primary rounded-pill me-2">@Localizer["NewBadge"]</span>
-                        <span class="text-muted small fw-bold">@Localizer["HeroMiniBadgeText"]</span>
+    <section class="hero-modern">
+        <div class="container hero-content">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-6">
+                    <div class="hero-badge">
+                        <span>@L("NewBadge", "Yeni")</span>
+                        <i class="fas fa-sparkles"></i>
+                        @L("HeroMiniBadgeText", "Bilimsel etkinlikler için dijital yönetim platformu")
                     </div>
 
-                    <h1 class="display-4 fw-bold lh-sm mb-4 text-dark">
-                        @Localizer["HeroTitleLine1"] <br>
-                        <span style="color: var(--primary-color);">@Localizer["HeroTitleLine2"]</span>
+                    <h1 class="hero-title">
+                        @L("HeroTitleMain", "Bilimsel Etkinliklerinizi")
+                        <span class="gradient-text d-block">
+                            @L("HeroTitleHighlight", "Tek Platformdan Yönetin")
+                        </span>
                     </h1>
 
-                    <p class="lead text-muted mb-5">
-                        @Localizer["HeroDescription"]
+                    <p class="hero-description">
+                        @L("HeroModernDescription", "Bildiri toplama, hakem değerlendirme, kayıt, ödeme, program oluşturma ve sertifika süreçlerini AntAbstract ile kolayca yönetin.")
                     </p>
 
-                    <div class="d-flex gap-3">
-                        <a href="#congress-list" class="btn btn-primary btn-lg px-5 shadow-sm rounded-pill fw-bold border-0">
-                            @Localizer["DiscoverCongressesButton"]
+                    <div class="hero-actions">
+                        <a href="#congress-list" class="primary-pill-btn">
+                            <i class="fas fa-calendar-check"></i>
+                            @L("DiscoverCongressesButton", "Kongreleri Keşfet")
                         </a>
-                        <a href="#pricing" class="btn btn-outline-dark btn-lg px-4 rounded-pill">
-                            <i class="fas fa-tags me-2"></i>@Localizer["PackagesButton"]
+
+                        <a href="#how-it-works" class="secondary-pill-btn">
+                            <i class="fas fa-play-circle"></i>
+                            @L("HowItWorksButton", "Nasıl Çalışır?")
                         </a>
+                    </div>
+
+                    <div class="hero-trust-row">
+                        <div class="hero-trust-item">
+                            <i class="fas fa-check-circle"></i>
+                            @L("TrustItem1", "Çok dilli kullanım")
+                        </div>
+
+                        <div class="hero-trust-item">
+                            <i class="fas fa-check-circle"></i>
+                            @L("TrustItem2", "Rol bazlı yönetim")
+                        </div>
+
+                        <div class="hero-trust-item">
+                            <i class="fas fa-check-circle"></i>
+                            @L("TrustItem3", "Dinamik kongre sayfaları")
+                        </div>
                     </div>
                 </div>
 
-                <div class="col-lg-6 text-center">
-                    <div class="position-relative" style="z-index: 10;">
-                        <img src="https://ui-avatars.com/api/?name=Admin+Panel&background=00aeef&color=fff&size=800&font-size=0.1"
-                             class="img-fluid dashboard-preview-card"
-                             alt="@Localizer["AdminPanelAlt"]">
-
-                        <div class="position-absolute bg-white p-3 rounded-3 shadow-lg text-start animate__animated animate__fadeInUp"
-                             style="bottom: 30px; left: -20px; z-index: 20; max-width: 200px;">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="bg-success bg-opacity-10 p-2 rounded-circle text-success">
-                                    <i class="fas fa-check-circle fa-2x"></i>
+                <div class="col-lg-6">
+                    <div class="dashboard-shell">
+                        <div class="dashboard-window">
+                            <div class="dashboard-topbar">
+                                <div class="window-dots">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
                                 </div>
-                                <div>
-                                    <h5 class="mb-0 fw-bold">100%</h5>
-                                    <small class="text-muted">@Localizer["DigitalTransformationText"]</small>
+
+                                <small class="fw-bold text-muted">
+                                    AntAbstract Dashboard
+                                </small>
+                            </div>
+
+                            <div class="dashboard-body">
+                                <div class="mock-stat-row">
+                                    <div class="mock-stat">
+                                        <strong>@Model.ActiveCongressesCount</strong>
+                                        <span>@L("ActiveCongressesStat", "Aktif Kongre")</span>
+                                    </div>
+
+                                    <div class="mock-stat">
+                                        <strong>@Model.TotalUsers.ToString("N0")</strong>
+                                        <span>@L("ActiveUsersStat", "Kullanıcı")</span>
+                                    </div>
+
+                                    <div class="mock-stat">
+                                        <strong>500+</strong>
+                                        <span>@L("SubmissionsStat", "Bildiri")</span>
+                                    </div>
+                                </div>
+
+                                <div class="dashboard-grid">
+                                    <div class="mock-card">
+                                        <div class="mock-card-title">
+                                            @L("MockReviewProgressTitle", "Hakem Değerlendirme Süreci")
+                                        </div>
+
+                                        <div class="mock-progress">
+                                            <span></span>
+                                        </div>
+
+                                        <div class="mock-list">
+                                            <div class="mock-list-item">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="mock-avatar">
+                                                        <i class="fas fa-file-alt"></i>
+                                                    </span>
+                                                    <div>
+                                                        <div class="fw-bold text-dark small">@L("MockSubmission1", "Yeni bildiri")</div>
+                                                        <small class="text-muted">@L("MockSubmissionStatus1", "Hakeme atandı")</small>
+                                                    </div>
+                                                </div>
+                                                <span class="mock-pill">@L("MockStatusActive", "Aktif")</span>
+                                            </div>
+
+                                            <div class="mock-list-item">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="mock-avatar">
+                                                        <i class="fas fa-award"></i>
+                                                    </span>
+                                                    <div>
+                                                        <div class="fw-bold text-dark small">@L("MockCertificate", "Sertifika")</div>
+                                                        <small class="text-muted">@L("MockCertificateStatus", "Hazırlandı")</small>
+                                                    </div>
+                                                </div>
+                                                <span class="mock-pill">@L("MockStatusReady", "Hazır")</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mock-card">
+                                        <div class="mock-card-title">
+                                            @L("MockPanelTitle", "Panel Özeti")
+                                        </div>
+
+                                        <div class="d-grid gap-3">
+                                            <div>
+                                                <small class="text-muted fw-bold">@L("MockPaymentText", "Ödeme")</small>
+                                                <div class="mock-progress mt-2">
+                                                    <span style="width: 88%;"></span>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <small class="text-muted fw-bold">@L("MockProgramText", "Program")</small>
+                                                <div class="mock-progress mt-2">
+                                                    <span style="width: 64%;"></span>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <small class="text-muted fw-bold">@L("MockWebsiteText", "Web sayfası")</small>
+                                                <div class="mock-progress mt-2">
+                                                    <span style="width: 92%;"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
+                        <div class="floating-note">
+                            <div class="floating-note-icon">
+                                <i class="fas fa-check"></i>
+                            </div>
+
+                            <div>
+                                <div class="fw-bold text-dark">
+                                    @L("DigitalTransformationText", "Dijital dönüşüm")
+                                </div>
+                                <small class="text-muted">
+                                    @L("DigitalTransformationSubText", "Süreçler tek panelde")
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5 bg-white">
+        <div class="container py-5">
+            <div class="text-center mb-5">
+                <div class="section-kicker mb-3">
+                    <i class="fas fa-users"></i>
+                    @L("ForWhoLabel", "Kimler İçin?")
+                </div>
+
+                <h2 class="section-title display-6">
+                    @L("ForWhoTitle", "Her rol için sade ve güçlü bir deneyim")
+                </h2>
+
+                <p class="section-description mx-auto">
+                    @L("ForWhoDescription", "Yazar, hakem ve organizasyon ekibi süreçleri aynı sistemde ama farklı ihtiyaçlara göre düzenlenmiş panellerle yönetilir.")
+                </p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="role-card">
+                        <div class="role-icon">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        <h4>@L("AuthorRoleTitle", "Yazarlar")</h4>
+                        <p>
+                            @L("AuthorRoleDescription", "Kongreye kayıt olur, bildiri gönderir, durumunu takip eder ve kabul/red belgelerine kolayca ulaşır.")
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="role-card">
+                        <div class="role-icon">
+                            <i class="fas fa-gavel"></i>
+                        </div>
+                        <h4>@L("ReviewerRoleTitle", "Hakemler")</h4>
+                        <p>
+                            @L("ReviewerRoleDescription", "Kendisine atanan bildirileri inceler, değerlendirme formunu doldurur ve hakemlik sürecini tamamlar.")
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="role-card">
+                        <div class="role-icon">
+                            <i class="fas fa-sitemap"></i>
+                        </div>
+                        <h4>@L("OrganizerRoleTitle", "Organizasyon Ekibi")</h4>
+                        <p>
+                            @L("OrganizerRoleDescription", "Kongre web sitesi, kayıtlar, ödemeler, hakem atamaları, program ve sertifika süreçlerini yönetir.")
+                        </p>
                     </div>
                 </div>
             </div>
@@ -493,29 +1094,26 @@
         <div class="container py-5">
 
             <div class="text-center mb-5">
-                <div class="modern-section-kicker">
+                <div class="section-kicker mb-3">
                     <i class="fas fa-calendar-check"></i>
                     @L("UpcomingEventsLabel", "Yaklaşan Etkinlikler")
                 </div>
 
-                <h2 class="modern-section-title display-6">
+                <h2 class="section-title display-6">
                     @L("CongressCalendarTitle", "Güncel Kongre Takvimi")
                 </h2>
 
-                <p class="modern-section-description">
-                    @L("CongressCalendarDescription", "Başvurusu devam eden ve katılım sağlayabileceğiniz aktif organizasyonlar.")
+                <p class="section-description mx-auto">
+                    @L("CongressCalendarDescription", "Başvurusu devam eden ve katılım sağlayabileceğiniz aktif organizasyonları inceleyin.")
                 </p>
-
-                <div class="modern-section-line"></div>
             </div>
 
             <div class="row g-4 justify-content-center">
-                @if (Model.ActiveCongresses != null && Model.ActiveCongresses.Any())
+                @if (activeCongresses.Any())
                 {
-                    @foreach (var item in Model.ActiveCongresses)
+                    @foreach (var item in activeCongresses)
                     {
                         var vitrinUrl = $"/{item.Slug}";
-
                         var detailText = L("ViewDetailsButton", "Detayları Gör");
 
                         var locationText = string.IsNullOrWhiteSpace(item.Location)
@@ -528,13 +1126,11 @@
 
                         <div class="col-md-6 col-lg-4">
                             <article class="modern-congress-card">
-
                                 <div class="modern-congress-image">
                                     @if (!string.IsNullOrWhiteSpace(item.ImageUrl) &&
                                                                 !item.ImageUrl.Contains("resimyok", StringComparison.OrdinalIgnoreCase))
                                     {
-                                        <img src="@item.ImageUrl"
-                                             alt="@item.Title">
+                                        <img src="@item.ImageUrl" alt="@item.Title">
                                     }
                                     else
                                     {
@@ -580,12 +1176,11 @@
                                         </span>
 
                                         <a href="@vitrinUrl" class="modern-detail-btn">
-                                            <i class="fas fa-arrow-right"></i>
                                             @detailText
+                                            <i class="fas fa-arrow-right"></i>
                                         </a>
                                     </div>
                                 </div>
-
                             </article>
                         </div>
                     }
@@ -607,306 +1202,274 @@
                     </div>
                 }
             </div>
+        </div>
+    </section>
 
+    <section id="how-it-works" class="workflow-section py-5">
+        <div class="container py-5 position-relative">
+            <div class="text-center mb-5">
+                <div class="section-kicker mb-3 bg-white text-primary border-0">
+                    <i class="fas fa-route"></i>
+                    @L("HowItWorksLabel", "Süreç Akışı")
+                </div>
+
+                <h2 class="display-6 fw-bold text-white">
+                    @L("HowItWorksTitle", "Kongre süreci baştan sona düzenli ilerler")
+                </h2>
+
+                <p class="mx-auto text-white-50" style="max-width: 720px; line-height: 1.75;">
+                    @L("HowItWorksDescription", "Katılımcı kayıtlarından hakem değerlendirmesine, programdan sertifikaya kadar tüm akış tek platformdan takip edilir.")
+                </p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3">
+                    <div class="workflow-card">
+                        <div class="workflow-number">1</div>
+                        <h5>@L("Workflow1Title", "Kongre Seç")</h5>
+                        <p>@L("Workflow1Text", "Kullanıcı aktif kongreleri inceler ve ilgili etkinlik sayfasına gider.")</p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="workflow-card">
+                        <div class="workflow-number">2</div>
+                        <h5>@L("Workflow2Title", "Kayıt Ol")</h5>
+                        <p>@L("Workflow2Text", "Katılımcı kayıt türünü seçer, bilgilerini girer ve süreci başlatır.")</p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="workflow-card">
+                        <div class="workflow-number">3</div>
+                        <h5>@L("Workflow3Title", "Bildiri Gönder")</h5>
+                        <p>@L("Workflow3Text", "Yazar bildirisini yükler, konu ve yazar bilgilerini sisteme ekler.")</p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="workflow-card">
+                        <div class="workflow-number">4</div>
+                        <h5>@L("Workflow4Title", "Değerlendirme")</h5>
+                        <p>@L("Workflow4Text", "Hakemler bildirileri inceler, sonuçlar ve sertifikalar sistemden takip edilir.")</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5 bg-white">
+        <div class="container py-5">
+            <div class="text-center mb-5">
+                <div class="section-kicker mb-3">
+                    <i class="fas fa-layer-group"></i>
+                    @L("FeaturesLabel", "Özellikler")
+                </div>
+
+                <h2 class="section-title display-6">
+                    @L("FeaturesTitle", "Bilimsel organizasyonlar için güçlü araçlar")
+                </h2>
+
+                <p class="section-description mx-auto">
+                    @L("FeaturesDescription", "AntAbstract yalnızca bir kayıt sistemi değil; kongre yönetimini dijitalleştiren kapsamlı bir yönetim platformudur.")
+                </p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card-modern">
+                        <div class="feature-icon-modern">
+                            <i class="fas fa-file-signature"></i>
+                        </div>
+                        <h5>@L("FeatureSubmissionTitle", "Bildiri Yönetimi")</h5>
+                        <p>@L("FeatureSubmissionDescription", "Bildiri gönderimi, yazar bilgileri, dosya yükleme ve revizyon süreçleri düzenli şekilde yönetilir.")</p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card-modern">
+                        <div class="feature-icon-modern">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <h5>@L("FeatureReviewerTitle", "Hakem Atama")</h5>
+                        <p>@L("FeatureReviewerDescription", "Hakem atamaları, değerlendirme formları ve karar süreçleri panel üzerinden takip edilir.")</p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card-modern">
+                        <div class="feature-icon-modern">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <h5>@L("FeaturePaymentTitle", "Ödeme Takibi")</h5>
+                        <p>@L("FeaturePaymentDescription", "Katılımcı kayıtları ve ödeme durumları yönetim panelinden kolayca kontrol edilir.")</p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card-modern">
+                        <div class="feature-icon-modern">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <h5>@L("FeatureWebsiteTitle", "Dinamik Web Sitesi")</h5>
+                        <p>@L("FeatureWebsiteDescription", "Her kongre için özel sayfa, içerik blokları, görseller ve çok dilli yapı desteklenir.")</p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card-modern">
+                        <div class="feature-icon-modern">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <h5>@L("FeatureProgramTitle", "Program Yönetimi")</h5>
+                        <p>@L("FeatureProgramDescription", "Oturumlar, sunumlar ve kongre programı düzenli şekilde oluşturulabilir.")</p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card-modern">
+                        <div class="feature-icon-modern">
+                            <i class="fas fa-award"></i>
+                        </div>
+                        <h5>@L("FeatureCertificateTitle", "Sertifika Sistemi")</h5>
+                        <p>@L("FeatureCertificateDescription", "Yazar ve hakem sertifikaları uygun koşullar sağlandığında sistem tarafından oluşturulur.")</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
     <section class="py-5 bg-light">
         <div class="container py-5">
-            <div class="text-center mb-5">
-                <h6 class="text-uppercase text-primary letter-spacing-2 fw-bold">@Localizer["ProcessesLabel"]</h6>
-                <h2 class="fw-bold display-6">@Localizer["EndToEndManagementTitle"]</h2>
-                <p class="text-muted mw-600 mx-auto">@Localizer["EndToEndManagementDescription"]</p>
-            </div>
-
-            <div class="row g-4">
-                <div class="col-md-4">
-                    <div class="feature-card">
-                        <div class="feature-icon bg-primary bg-opacity-10 text-primary">
-                            <i class="fas fa-laptop-code"></i>
-                        </div>
-                        <h4 class="fw-bold mb-3">@Localizer["Feature1Title"]</h4>
-                        <p class="text-muted">@Localizer["Feature1Description"]</p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="feature-card">
-                        <div class="feature-icon bg-success bg-opacity-10 text-success">
-                            <i class="fas fa-user-check"></i>
-                        </div>
-                        <h4 class="fw-bold mb-3">@Localizer["Feature2Title"]</h4>
-                        <p class="text-muted">@Localizer["Feature2Description"]</p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="feature-card">
-                        <div class="feature-icon bg-warning bg-opacity-10 text-warning">
-                            <i class="fas fa-book-open"></i>
-                        </div>
-                        <h4 class="fw-bold mb-3">@Localizer["Feature3Title"]</h4>
-                        <p class="text-muted">@Localizer["Feature3Description"]</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="py-5 bg-white overflow-hidden">
-        <div class="container py-5">
-            <div class="row align-items-center gy-5">
-                <div class="col-lg-6 order-2 order-lg-1">
-                    <span class="badge bg-primary bg-opacity-10 text-primary mb-3 px-3 py-2 rounded-pill">@Localizer["ExperienceBadge"]</span>
-                    <h2 class="display-5 fw-bold mb-4">@Localizer["WhatIsAntAbstractTitle"]</h2>
-                    <p class="lead text-dark opacity-75 mb-4">
-                        @Localizer["WhatIsAntAbstractParagraph1"]
-                    </p>
-                    <p class="text-muted mb-5">
-                        @Localizer["WhatIsAntAbstractParagraph2"]
-                    </p>
-
-                    <div class="row g-3 mb-4">
-                        <div class="col-sm-6">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-check-circle text-success me-2"></i>
-                                <span class="fw-bold">@Localizer["ExperienceFeatureText"]</span>
-                            </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-check-circle text-success me-2"></i>
-                                <span class="fw-bold">@Localizer["SupportFeatureText"]</span>
-                            </div>
-                        </div>
-                    </div>
-                    <a href="/about" class="btn btn-primary rounded-pill px-4 py-2 fw-bold">
-                        @Localizer["MoreInfoButton"]
-                    </a>
-                </div>
-
-                <div class="col-lg-6 order-1 order-lg-2">
-                    <div class="position-relative ms-lg-5">
-                        <img src="https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                             alt="@Localizer["ConferenceMeetingAlt"]"
-                             class="img-fluid rounded-4 shadow-lg"
-                             style="transform: rotate(2deg);">
-                        <div class="position-absolute bg-primary opacity-10 rounded-4"
-                             style="width: 100%; height: 100%; top: -20px; left: -20px; z-index: -1; transform: rotate(-2deg);"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="py-4 border-bottom border-top bg-light">
-        <div class="container">
-            <p class="text-center text-muted small fw-bold letter-spacing-2 mb-4">@Localizer["PartnersLabel"]</p>
-            <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-4 justify-content-center align-items-center opacity-75">
-                <div class="col text-center"><i class="fas fa-university fa-2x text-secondary hover-color"></i><div class="small mt-2 text-muted">Ankara Üni.</div></div>
-                <div class="col text-center"><i class="fas fa-graduation-cap fa-2x text-secondary hover-color"></i><div class="small mt-2 text-muted">Hacettepe</div></div>
-                <div class="col text-center"><i class="fas fa-microscope fa-2x text-secondary hover-color"></i><div class="small mt-2 text-muted">TÜBİTAK</div></div>
-                <div class="col text-center"><i class="fas fa-globe-europe fa-2x text-secondary hover-color"></i><div class="small mt-2 text-muted">Erasmus+</div></div>
-                <div class="col text-center"><i class="fas fa-atom fa-2x text-secondary hover-color"></i><div class="small mt-2 text-muted">ASELSAN</div></div>
-                <div class="col text-center"><i class="fas fa-landmark fa-2x text-secondary hover-color"></i><div class="small mt-2 text-muted">Kültür Bak.</div></div>
-            </div>
-        </div>
-    </section>
-
-    <section id="pricing" class="py-5 bg-white">
-        <div class="container py-5">
-            <div class="text-center mb-5">
-                <h6 class="text-uppercase text-primary letter-spacing-2 fw-bold">@Localizer["PackagesLabel"]</h6>
-                <h2 class="fw-bold mb-3 display-6">@Localizer["ChoosePlanTitle"]</h2>
-                <p class="text-muted mw-600 mx-auto">@Localizer["ChoosePlanDescription"]</p>
-            </div>
-
-            <div class="row align-items-center g-4">
-                <div class="col-lg-4">
-                    <div class="pricing-card p-4">
-                        <h5 class="fw-bold text-dark">@Localizer["BasicPackageTitle"]</h5>
-                        <p class="text-muted small">@Localizer["BasicPackageSubtitle"]</p>
-                        <div class="my-4">
-                            <span class="display-6 fw-bold text-dark">10.000 ₺</span>
-                            <span class="text-muted">@Localizer["OneTimeText"]</span>
-                        </div>
-                        <ul class="list-unstyled mb-4 text-muted small">
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> @Localizer["BasicFeature1"]</li>
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> @Localizer["BasicFeature2"]</li>
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> @Localizer["BasicFeature3"]</li>
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> @Localizer["BasicFeature4"]</li>
-                        </ul>
-                        <div class="d-grid">
-                            <a href="/contact" class="btn btn-outline-dark fw-bold rounded-pill">@Localizer["BuyButton"]</a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-lg-4">
-                    <div class="pricing-card popular p-5 shadow-lg">
-                        <div class="popular-badge">@Localizer["PopularBadge"]</div>
-                        <h5 class="fw-bold text-primary">@Localizer["StandardPackageTitle"]</h5>
-                        <p class="text-muted small">@Localizer["StandardPackageSubtitle"]</p>
-                        <div class="my-4">
-                            <span class="display-5 fw-bold text-dark">20.000 ₺</span>
-                            <span class="text-muted">@Localizer["PerYearText"]</span>
-                        </div>
-                        <ul class="list-unstyled mb-4 text-secondary">
-                            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> <strong>@Localizer["StandardFeature1"]</strong></li>
-                            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> @Localizer["StandardFeature2"]</li>
-                            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> @Localizer["StandardFeature3"]</li>
-                            <li class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i> @Localizer["StandardFeature4"]</li>
-                        </ul>
-                        <div class="d-grid">
-                            <a href="/contact" class="btn btn-primary fw-bold rounded-pill py-3">@Localizer["StartNowButton"]</a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-lg-4">
-                    <div class="pricing-card p-4">
-                        <h5 class="fw-bold text-dark">@Localizer["AdvancedPackageTitle"]</h5>
-                        <p class="text-muted small">@Localizer["AdvancedPackageSubtitle"]</p>
-                        <div class="my-4">
-                            <span class="display-6 fw-bold text-dark">40.000 ₺</span>
-                            <span class="text-muted">@Localizer["PerYearText"]</span>
-                        </div>
-                        <ul class="list-unstyled mb-4 text-muted small">
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>@Localizer["AdvancedFeature1"]</strong></li>
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> @Localizer["AdvancedFeature2"]</li>
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> @Localizer["AdvancedFeature3"]</li>
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> @Localizer["AdvancedFeature4"]</li>
-                        </ul>
-                        <div class="d-grid">
-                            <a href="/contact" class="btn btn-outline-dark fw-bold rounded-pill">@Localizer["ContactUsButton"]</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="py-5 bg-white border-top">
-        <div class="container py-4">
-            <div class="d-flex justify-content-between align-items-end mb-5">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-5">
                 <div>
-                    <h6 class="text-uppercase text-primary letter-spacing-2 fw-bold">@Localizer["AcademicFlowLabel"]</h6>
-                    <h2 class="fw-bold mb-0 display-6">@Localizer["LatestSubmissionsTitle"]</h2>
+                    <div class="section-kicker mb-3">
+                        <i class="fas fa-book-open"></i>
+                        @L("AcademicFlowLabel", "Akademik Akış")
+                    </div>
+
+                    <h2 class="section-title display-6 mb-0">
+                        @L("LatestSubmissionsTitle", "Son Kabul Edilen Bildiriler")
+                    </h2>
                 </div>
-                <a href="#" class="btn btn-outline-light text-muted border-0 d-none d-md-block">
-                    @Localizer["ViewAllButton"] <i class="fas fa-arrow-right ms-2"></i>
+
+                <a href="/congresses" class="secondary-pill-btn">
+                    @L("ViewCongressesButton", "Kongreleri Gör")
+                    <i class="fas fa-arrow-right"></i>
                 </a>
             </div>
 
             <div class="row g-4">
-                @if (Model.LastSubmissions != null && Model.LastSubmissions.Any())
+                @if (lastSubmissions.Any())
                 {
-                    @foreach (var sub in Model.LastSubmissions)
+                    @foreach (var sub in lastSubmissions)
                     {
                         <div class="col-md-6 col-lg-3">
-                            <div class="card h-100 border-0 shadow-sm submission-card bg-light">
-                                <div class="card-body p-4">
-                                    <div class="d-flex align-items-center mb-3">
-                                        <img src="@sub.AuthorImageUrl" alt="@sub.AuthorName" class="rounded-circle me-3 shadow-sm" width="45" height="45">
-                                        <div class="overflow-hidden">
-                                            <h6 class="fw-bold mb-0 text-truncate" style="font-size: 0.95rem;">@sub.AuthorName</h6>
-                                            <small class="text-muted text-truncate d-block" style="font-size: 0.75rem;">@sub.University</small>
-                                        </div>
+                            <article class="submission-card-modern">
+                                <div class="d-flex align-items-center mb-3">
+                                    <img src="@sub.AuthorImageUrl"
+                                         alt="@sub.AuthorName"
+                                         class="rounded-circle me-3 shadow-sm"
+                                         width="48"
+                                         height="48">
+
+                                    <div class="overflow-hidden">
+                                        <h6 class="fw-bold mb-0 text-truncate text-dark">
+                                            @sub.AuthorName
+                                        </h6>
+                                        <small class="text-muted text-truncate d-block">
+                                            @sub.University
+                                        </small>
                                     </div>
-                                    <span class="badge bg-white text-primary border mb-3">
-                                        <i class="fas fa-hashtag me-1"></i>@sub.ConferenceName
-                                    </span>
-                                    <h6 class="fw-bold text-dark mb-2 line-clamp-2" style="min-height: 40px;">
-                                        @sub.Title
-                                    </h6>
-                                    <p class="text-muted small line-clamp-3 mb-0">
-                                        @sub.AbstractSnippet
-                                    </p>
                                 </div>
-                            </div>
+
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-10 mb-3">
+                                    <i class="fas fa-hashtag me-1"></i>
+                                    @sub.ConferenceName
+                                </span>
+
+                                <h6 class="fw-bold text-dark mb-2 line-clamp-2" style="min-height: 42px;">
+                                    @sub.Title
+                                </h6>
+
+                                <p class="text-muted small line-clamp-3 mb-0">
+                                    @sub.AbstractSnippet
+                                </p>
+                            </article>
                         </div>
                     }
                 }
                 else
                 {
-                    <div class="col-12 text-center py-4 text-muted">@Localizer["NoPublishedSubmissionsText"]</div>
+                    <div class="col-12">
+                        <div class="modern-empty-state">
+                            <i class="fas fa-file-alt"></i>
+                            <h5 class="fw-bold text-dark mb-2">
+                                @L("NoPublishedSubmissionsText", "Henüz yayınlanan bildiri bulunmuyor.")
+                            </h5>
+                            <p class="text-muted mb-0">
+                                @L("NoPublishedSubmissionsDescription", "Kabul edilen bildiriler bu alanda görüntülenecektir.")
+                            </p>
+                        </div>
+                    </div>
                 }
             </div>
         </div>
     </section>
 
-    <section class="py-5 bg-light">
-        <div class="container py-5">
-            <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <div class="text-center mb-5">
-                        <h6 class="text-uppercase text-primary fw-bold">@Localizer["FaqLabel"]</h6>
-                        <h2 class="fw-bold mb-3">@Localizer["FaqTitle"]</h2>
-                        <p class="text-muted">@Localizer["FaqDescription"]</p>
-                    </div>
-
-                    <div class="accordion shadow-sm rounded-3 overflow-hidden" id="faqAccordion">
-                        <div class="accordion-item border-0 border-bottom">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button fw-bold collapsed bg-white py-4" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-                                    @Localizer["Faq1Question"]
-                                </button>
-                            </h2>
-                            <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                <div class="accordion-body text-muted pb-4">
-                                    @Localizer["Faq1AnswerPart1"] <strong>@Localizer["Faq1AnswerHighlight"]</strong> @Localizer["Faq1AnswerPart2"]
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="accordion-item border-0 border-bottom">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button fw-bold collapsed bg-white py-4" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
-                                    @Localizer["Faq2Question"]
-                                </button>
-                            </h2>
-                            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                <div class="accordion-body text-muted pb-4">
-                                    @Localizer["Faq2Answer"]
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="accordion-item border-0 border-bottom">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button fw-bold collapsed bg-white py-4" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
-                                    @Localizer["Faq3Question"]
-                                </button>
-                            </h2>
-                            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                <div class="accordion-body text-muted pb-4">
-                                    @Localizer["Faq3Answer"]
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="stats-section py-5">
+    <section class="stats-modern py-5">
         <div class="container py-4">
             <div class="row text-center">
-                <div class="col-md-4 stat-item">
-                    <i class="fas fa-users mb-3 display-4 text-white-50"></i>
-                    <div class="stat-number">@Model.TotalUsers.ToString("N0")</div>
-                    <div class="text-uppercase letter-spacing-1 opacity-75">@Localizer["ActiveUsersStat"]</div>
+                <div class="col-md-4">
+                    <div class="stat-box">
+                        <i class="fas fa-users mb-3 display-5 text-white-50"></i>
+                        <div class="stat-number">@Model.TotalUsers.ToString("N0")</div>
+                        <div class="stat-label">@L("ActiveUsersStat", "Kayıtlı Kullanıcı")</div>
+                    </div>
                 </div>
-                <div class="col-md-4 stat-item">
-                    <i class="fas fa-globe-americas mb-3 display-4 text-white-50"></i>
-                    <div class="stat-number">@Model.ActiveCongressesCount</div>
-                    <div class="text-uppercase letter-spacing-1 opacity-75">@Localizer["ActiveCongressesStat"]</div>
+
+                <div class="col-md-4">
+                    <div class="stat-box">
+                        <i class="fas fa-globe-americas mb-3 display-5 text-white-50"></i>
+                        <div class="stat-number">@Model.ActiveCongressesCount</div>
+                        <div class="stat-label">@L("ActiveCongressesStat", "Aktif Kongre")</div>
+                    </div>
                 </div>
-                <div class="col-md-4 stat-item">
-                    <i class="fas fa-file-alt mb-3 display-4 text-white-50"></i>
-                    <div class="stat-number">500+</div>
-                    <div class="text-uppercase letter-spacing-1 opacity-75">@Localizer["CompletedOrganizationsStat"]</div>
+
+                <div class="col-md-4">
+                    <div class="stat-box">
+                        <i class="fas fa-file-alt mb-3 display-5 text-white-50"></i>
+                        <div class="stat-number">500+</div>
+                        <div class="stat-label">@L("CompletedOrganizationsStat", "Tamamlanan Süreç")</div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
+
+    <section class="cta-section py-5">
+        <div class="container py-5">
+            <div class="cta-box">
+                <div class="row align-items-center g-4">
+                    <div class="col-lg-8">
+                        <h2 class="fw-bold display-6 mb-3">
+                            @L("CtaTitle", "Kongre yönetimini daha düzenli hale getirmeye hazır mısınız?")
+                        </h2>
+
+                        <p class="text-white-50 mb-0" style="line-height: 1.8; max-width: 760px;">
+                            @L("CtaDescription", "AntAbstract ile kayıt, bildiri, hakem değerlendirme, program ve sertifika süreçlerini tek panelden yönetin.")
+                        </p>
+                    </div>
+
+                    <div class="col-lg-4 text-lg-end">
+                        <a href="/contact" class="primary-pill-btn">
+                            <i class="fas fa-envelope"></i>
+                            @L("ContactUsButton", "İletişime Geç")
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
 </div>

@@ -87,6 +87,29 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             return $"/{slug}{path}";
         }
 
+        private static bool SlugMatches(Conference? conference, string? slug)
+        {
+            if (conference == null || string.IsNullOrWhiteSpace(slug))
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(conference.Slug) &&
+                string.Equals(conference.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (conference.Tenant != null &&
+                !string.IsNullOrWhiteSpace(conference.Tenant.Slug) &&
+                string.Equals(conference.Tenant.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         private void SetSelectedConferenceSession(Conference conference, string slug)
         {
             _selectedConferenceService.SetSelectedConferenceId(conference.Id);
@@ -104,10 +127,17 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         {
             if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
             {
-                return await _context.Conferences
+                var conference = await _context.Conferences
                     .Include(c => c.Tenant)
                     .AsNoTracking()
                     .FirstOrDefaultAsync(c => c.Id == conferenceId.Value);
+
+                if (conference != null && !SlugMatches(conference, slug))
+                {
+                    return null;
+                }
+
+                return conference;
             }
 
             if (!string.IsNullOrWhiteSpace(slug))
@@ -141,6 +171,39 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             }
 
             return null;
+        }
+
+        private async Task<Submission?> GetAuthorizedSubmissionAsync(
+            Guid id,
+            AppUser user,
+            bool asNoTracking = true)
+        {
+            var query = _context.Submissions
+                .Include(s => s.Conference)
+                    .ThenInclude(c => c.Tenant)
+                .Include(s => s.Files)
+                .AsQueryable();
+
+            if (asNoTracking)
+            {
+                query = query.AsNoTracking();
+            }
+
+            var submission = await query.FirstOrDefaultAsync(s => s.Id == id);
+
+            if (submission == null)
+            {
+                return null;
+            }
+
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+
+            if (!isAdmin && submission.AuthorId != user.Id)
+            {
+                return null;
+            }
+
+            return submission;
         }
 
         private async Task<Registration?> GetUserRegistrationAsync(string userId, Guid conferenceId)
@@ -296,6 +359,30 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [HttpGet("/{slug}/my-submissions/{id:guid}")]
         public async Task<IActionResult> Details(Guid id, string? slug = null)
         {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            var submissionEntity = await GetAuthorizedSubmissionAsync(id, user);
+
+            if (submissionEntity == null)
+            {
+                return Forbid();
+            }
+
+            if (!SlugMatches(submissionEntity.Conference, slug))
+            {
+                var canonicalSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
+
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}"));
+            }
+
+            var canonical = GetCanonicalSlug(submissionEntity.Conference!, slug);
+            SetSelectedConferenceSession(submissionEntity.Conference!, canonical);
+
             var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
 
             if (submissionDto == null)
@@ -815,20 +902,43 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [HttpGet("/{slug}/my-submissions/{id:guid}/delete")]
         public async Task<IActionResult> Delete(Guid id, string? slug = null)
         {
-            var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
+            var user = await _userManager.GetUserAsync(User);
 
-            if (submissionDto == null)
+            if (user == null)
             {
-                return NotFound();
+                return Challenge();
             }
 
-            if (submissionDto.Status != "New")
+            var submissionEntity = await GetAuthorizedSubmissionAsync(id, user);
+
+            if (submissionEntity == null)
+            {
+                return Forbid();
+            }
+
+            if (!SlugMatches(submissionEntity.Conference, slug))
+            {
+                var canonicalSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
+
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/delete"));
+            }
+
+            if (submissionEntity.Status != SubmissionStatus.New)
             {
                 TempData["ErrorMessage"] = T(
                     "ProcessedSubmissionCannotBeDeleted",
                     "İşleme alınmış bildiriler silinemez.");
 
-                return Redirect(BuildUrl(slug, $"/my-submissions/{id}"));
+                var canonicalSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
+
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}"));
+            }
+
+            var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
+
+            if (submissionDto == null)
+            {
+                return NotFound();
             }
 
             return View(submissionDto);
@@ -840,13 +950,40 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id, string? slug = null)
         {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            var submissionEntity = await GetAuthorizedSubmissionAsync(id, user);
+
+            if (submissionEntity == null)
+            {
+                return Forbid();
+            }
+
+            if (submissionEntity.Status != SubmissionStatus.New)
+            {
+                TempData["ErrorMessage"] = T(
+                    "ProcessedSubmissionCannotBeDeleted",
+                    "İşleme alınmış bildiriler silinemez.");
+
+                var canonicalSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
+
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}"));
+            }
+
+            var currentSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
+
             await _submissionService.DeleteSubmissionAsync(id);
 
             TempData["SuccessMessage"] = T(
                 "SubmissionDeleteSuccess",
                 "Bildiri başarıyla silindi.");
 
-            return Redirect(BuildUrl(slug, "/my-submissions"));
+            return Redirect(BuildUrl(currentSlug, "/my-submissions"));
         }
 
         [HttpGet("/Submission/UploadRevision/{id:guid}")]
@@ -854,20 +991,43 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [HttpGet("/{slug}/my-submissions/{id:guid}/revision")]
         public async Task<IActionResult> UploadRevision(Guid id, string? slug = null)
         {
-            var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
+            var user = await _userManager.GetUserAsync(User);
 
-            if (submissionDto == null)
+            if (user == null)
             {
-                return NotFound();
+                return Challenge();
             }
 
-            if (submissionDto.Status != "RevisionRequired")
+            var submissionEntity = await GetAuthorizedSubmissionAsync(id, user);
+
+            if (submissionEntity == null)
+            {
+                return Forbid();
+            }
+
+            if (!SlugMatches(submissionEntity.Conference, slug))
+            {
+                var canonicalSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
+
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/revision"));
+            }
+
+            if (submissionEntity.Status != SubmissionStatus.RevisionRequired)
             {
                 TempData["ErrorMessage"] = T(
                     "RevisionPeriodClosed",
                     "Revizyon yükleme süresi kapalı.");
 
-                return Redirect(BuildUrl(slug, "/my-submissions"));
+                var canonicalSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
+
+                return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
+            }
+
+            var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
+
+            if (submissionDto == null)
+            {
+                return NotFound();
             }
 
             return View(submissionDto);
@@ -877,52 +1037,114 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [HttpPost("/{slug}/Submission/UploadRevision/{id:guid}")]
         [HttpPost("/{slug}/my-submissions/{id:guid}/revision")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UploadRevision(Guid id, IFormFile revisionFile, string? slug = null)
+        public async Task<IActionResult> UploadRevision(Guid id, IFormFile? revisionFile, string? slug = null)
         {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            var submission = await GetAuthorizedSubmissionAsync(id, user, asNoTracking: false);
+
+            if (submission == null)
+            {
+                return Forbid();
+            }
+
+            var canonicalSlug = GetCanonicalSlug(submission.Conference!, slug);
+
+            if (submission.Status != SubmissionStatus.RevisionRequired)
+            {
+                TempData["ErrorMessage"] = T(
+                    "RevisionPeriodClosed",
+                    "Revizyon yükleme süresi kapalı.");
+
+                return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
+            }
+
             if (revisionFile == null || revisionFile.Length == 0)
             {
                 TempData["ErrorMessage"] = T(
                     "RevisionFileRequired",
                     "Revizyon dosyası zorunludur.");
 
-                return Redirect(BuildUrl(slug, $"/my-submissions/{id}/revision"));
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/revision"));
             }
 
             try
             {
-                await UploadFileAsync(revisionFile);
+                var fileInfo = await UploadFileAsync(revisionFile);
+
+                var newVersion = submission.Files != null && submission.Files.Any()
+                    ? submission.Files.Max(f => f.Version) + 1
+                    : 1;
+
+                submission.Files ??= new List<SubmissionFile>();
+
+                submission.Files.Add(new SubmissionFile
+                {
+                    SubmissionId = submission.Id,
+                    FileName = fileInfo.OriginalFileName,
+                    StoredFileName = fileInfo.StoredFileName,
+                    FilePath = fileInfo.FilePathDb,
+                    Type = SubmissionFileType.FullText,
+                    UploadedAt = DateTime.UtcNow,
+                    Version = newVersion
+                });
+
+                submission.Status = SubmissionStatus.UnderReview;
+                submission.UpdatedDate = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
 
                 TempData["SuccessMessage"] = T(
                     "RevisionUploadSuccess",
                     "Revizyon dosyası başarıyla yüklendi.");
 
-                return Redirect(BuildUrl(slug, $"/my-submissions/{id}"));
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}"));
             }
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = ex.Message;
 
-                return Redirect(BuildUrl(slug, $"/my-submissions/{id}/revision"));
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/revision"));
             }
         }
 
         [HttpGet("/Submission/DownloadAcceptanceLetter/{id:guid}")]
         [HttpGet("/{slug}/Submission/DownloadAcceptanceLetter/{id:guid}")]
         [HttpGet("/{slug}/my-submissions/{id:guid}/acceptance-letter")]
-        public async Task<IActionResult> DownloadAcceptanceLetter(Guid id)
+        public async Task<IActionResult> DownloadAcceptanceLetter(Guid id, string? slug = null)
         {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            var submissionEntity = await GetAuthorizedSubmissionAsync(id, user);
+
+            if (submissionEntity == null)
+            {
+                return Forbid();
+            }
+
+            if (submissionEntity.Status != SubmissionStatus.Accepted &&
+                submissionEntity.Status != SubmissionStatus.Presented)
+            {
+                return BadRequest(T(
+                    "AcceptanceLetterNotReady",
+                    "Kabul mektubu henüz hazır değil."));
+            }
+
             var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
 
             if (submissionDto == null)
             {
                 return NotFound();
-            }
-
-            if (submissionDto.Status != "Accepted" && submissionDto.Status != "Presented")
-            {
-                return BadRequest(T(
-                    "AcceptanceLetterNotReady",
-                    "Kabul mektubu henüz hazır değil."));
             }
 
             return new ViewAsPdf("AcceptanceLetterPreview", submissionDto)
@@ -936,20 +1158,34 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [HttpGet("/Submission/DownloadRejectionLetter/{id:guid}")]
         [HttpGet("/{slug}/Submission/DownloadRejectionLetter/{id:guid}")]
         [HttpGet("/{slug}/my-submissions/{id:guid}/rejection-letter")]
-        public async Task<IActionResult> DownloadRejectionLetter(Guid id)
+        public async Task<IActionResult> DownloadRejectionLetter(Guid id, string? slug = null)
         {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            var submissionEntity = await GetAuthorizedSubmissionAsync(id, user);
+
+            if (submissionEntity == null)
+            {
+                return Forbid();
+            }
+
+            if (submissionEntity.Status != SubmissionStatus.Rejected)
+            {
+                return BadRequest(T(
+                    "GenericError",
+                    "Bu işlem şu anda yapılamaz."));
+            }
+
             var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
 
             if (submissionDto == null)
             {
                 return NotFound();
-            }
-
-            if (submissionDto.Status != "Rejected")
-            {
-                return BadRequest(T(
-                    "GenericError",
-                    "Bu işlem şu anda yapılamaz."));
             }
 
             return new ViewAsPdf("RejectionLetter", submissionDto)
@@ -962,20 +1198,35 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [HttpGet("/Submission/DownloadBadge/{id:guid}")]
         [HttpGet("/{slug}/Submission/DownloadBadge/{id:guid}")]
         [HttpGet("/{slug}/my-submissions/{id:guid}/badge")]
-        public async Task<IActionResult> DownloadBadge(Guid id)
+        public async Task<IActionResult> DownloadBadge(Guid id, string? slug = null)
         {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            var submissionEntity = await GetAuthorizedSubmissionAsync(id, user);
+
+            if (submissionEntity == null)
+            {
+                return Forbid();
+            }
+
+            if (submissionEntity.Status != SubmissionStatus.Accepted &&
+                submissionEntity.Status != SubmissionStatus.Presented)
+            {
+                return BadRequest(T(
+                    "GenericError",
+                    "Bu işlem şu anda yapılamaz."));
+            }
+
             var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
 
             if (submissionDto == null)
             {
                 return NotFound();
-            }
-
-            if (submissionDto.Status != "Accepted" && submissionDto.Status != "Presented")
-            {
-                return BadRequest(T(
-                    "GenericError",
-                    "Bu işlem şu anda yapılamaz."));
             }
 
             return new ViewAsPdf("BadgePreview", submissionDto)
@@ -1015,7 +1266,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             string uniqueFileName = Guid.NewGuid().ToString() + extension;
             string filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
-            using (var stream = new FileStream(filePath, FileMode.Create))
+            await using (var stream = new FileStream(filePath, FileMode.Create))
             {
                 await file.CopyToAsync(stream);
             }
@@ -1023,7 +1274,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             return (
                 "/uploads/submissions/" + uniqueFileName,
                 uniqueFileName,
-                file.FileName
+                Path.GetFileName(file.FileName)
             );
         }
     }

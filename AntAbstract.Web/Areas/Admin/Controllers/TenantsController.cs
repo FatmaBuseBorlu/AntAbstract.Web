@@ -168,12 +168,33 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
             var tenant = await _context.Tenants.FindAsync(id);
-            if (tenant != null)
+
+            if (tenant == null)
             {
-                _context.Tenants.Remove(tenant);
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = _localizer["Success_TenantDeleted"].Value;
+                return NotFound();
             }
+
+            var hasConferences = await _context.Conferences
+                .AnyAsync(x => x.TenantId == id);
+
+            var hasUsers = await _context.Users
+                .AnyAsync(x => x.TenantId == id);
+
+            var hasPageBlocks = await _context.ConferencePageBlocks
+                .AnyAsync(x => x.TenantId == id);
+
+            if (hasConferences || hasUsers || hasPageBlocks)
+            {
+                TempData["ErrorMessage"] =
+                    "Bu kuruma bağlı kongre, kullanıcı veya sayfa içerikleri olduğu için silinemez. Önce bağlı kayıtları temizleyin.";
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            _context.Tenants.Remove(tenant);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = _localizer["Success_TenantDeleted"].Value;
 
             return RedirectToAction(nameof(Index));
         }

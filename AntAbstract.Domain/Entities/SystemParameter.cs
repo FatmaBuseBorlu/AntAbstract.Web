@@ -9,11 +9,14 @@ namespace AntAbstract.Domain.Entities
 
         [Required]
         [MaxLength(50)]
-        public string Group { get; set; }
+        public string Group { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(200)]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
+
+        [MaxLength(250)]
+        public string? NameEn { get; set; }
 
         public int Order { get; set; } = 0;
 

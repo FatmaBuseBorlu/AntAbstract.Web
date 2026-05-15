@@ -33,15 +33,14 @@
         }
     };
 }
-
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h3 class="fw-bold text-dark mb-0">
-            @Localizer["PageTitle"]
+            Sistem Parametresini Düzenle
         </h3>
 
         <p class="text-muted small mb-0">
-            @Localizer["PageLead"]
+            Türkçe ve İngilizce karşılıkları buradan güncelleyebilirsiniz.
         </p>
     </div>
 
@@ -49,7 +48,7 @@
        asp-route-group="@Model.Group"
        class="btn btn-light shadow-sm rounded-pill fw-bold px-4">
         <i class="fas fa-arrow-left me-2"></i>
-        @Localizer["BackToListButton"]
+        Listeye Dön
     </a>
 </div>
 
@@ -58,15 +57,22 @@
         <div class="card border-0 shadow-sm rounded-4">
             <div class="card-body p-4 p-md-5">
 
-                <form asp-action="Create" method="post">
+                <form asp-action="Edit"
+                      asp-route-id="@Model.Id"
+                      method="post">
+
                     @Html.AntiForgeryToken()
 
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0 rounded-3 small mb-4"></div>
+                    <input type="hidden" asp-for="Id" />
+
+                    <div asp-validation-summary="ModelOnly"
+                         class="alert alert-danger border-0 rounded-3 small mb-4">
+                    </div>
 
                     <div class="row g-4 mb-4">
                         <div class="col-md-6">
                             <label asp-for="Group" class="form-label fw-bold text-muted small">
-                                @Localizer["GroupLabel"]
+                                Grup
                             </label>
 
                             <select asp-for="Group"
@@ -79,18 +85,18 @@
 
                         <div class="col-md-6">
                             <label asp-for="Order" class="form-label fw-bold text-muted small">
-                                @Localizer["OrderLabel"]
+                                Sıra
                             </label>
 
                             <input asp-for="Order"
                                    type="number"
                                    class="form-control bg-light border-0 py-2"
-                                   placeholder="@Localizer["OrderPlaceholder"]" />
+                                   placeholder="Örn: 1" />
 
                             <span asp-validation-for="Order" class="text-danger small"></span>
 
                             <small class="text-muted" style="font-size:0.75rem;">
-                                @Localizer["OrderHelpText"]
+                                Listede hangi sırada görüneceğini belirler.
                             </small>
                         </div>
                     </div>
@@ -139,18 +145,28 @@
                             <label class="form-check-label ms-2 fs-6 text-dark"
                                    for="IsActiveSwitch"
                                    style="cursor: pointer;">
-                                @Localizer["IsActiveLabel"]
+                                Aktif
                             </label>
                         </div>
+
+                        <small class="text-muted" style="font-size:0.75rem;">
+                            Pasif yapılırsa kayıt kullanıcı tarafındaki listelerde görünmez.
+                        </small>
                     </div>
 
                     <hr class="border-light mb-4" />
 
-                    <div class="d-flex justify-content-end">
+                    <div class="d-flex justify-content-end gap-2">
+                        <a asp-action="Index"
+                           asp-route-group="@Model.Group"
+                           class="btn btn-light rounded-pill px-4 py-2 fw-bold">
+                            Vazgeç
+                        </a>
+
                         <button type="submit"
                                 class="btn btn-primary rounded-pill px-5 py-2 fw-bold shadow-sm">
                             <i class="fas fa-save me-2"></i>
-                            @Localizer["SaveButton"]
+                            Güncelle
                         </button>
                     </div>
                 </form>
@@ -164,36 +180,38 @@
              style="top: 100px;">
             <div class="card-body p-4">
                 <h6 class="fw-bold text-primary mb-3">
-                    <i class="fas fa-lightbulb me-2"></i>
-                    Bilgilendirme
+                    <i class="fas fa-language me-2"></i>
+                    Çeviri Mantığı
                 </h6>
 
                 <p class="text-dark opacity-75 small mb-3">
-                    Sistem parametreleri kayıt formunda, profil alanlarında ve filtrelerde kullanılır.
+                    Bu alanlar kayıt formundaki üniversite, fakülte, bölüm ve ünvan listelerinde kullanılır.
                 </p>
 
                 <ul class="list-unstyled text-dark opacity-75 small mb-0">
                     <li class="mb-2">
                         <i class="fas fa-check text-success me-2"></i>
-                        <strong>Name TR:</strong> Türkçe ekranda gösterilir.
+                        <strong>Name TR:</strong> Türkçe dilinde gösterilir.
                     </li>
 
                     <li class="mb-2">
                         <i class="fas fa-check text-success me-2"></i>
-                        <strong>Name EN:</strong> İngilizce ekranda gösterilir.
+                        <strong>Name EN:</strong> İngilizce dilinde gösterilir.
                     </li>
 
                     <li class="mb-2">
                         <i class="fas fa-check text-success me-2"></i>
-                        <strong>Order:</strong> Listede sıralama için kullanılır.
+                        <strong>Veritabanı kaydı:</strong> Kullanıcı seçtiğinde değer olarak Name TR saklanır.
                     </li>
 
                     <li>
                         <i class="fas fa-check text-success me-2"></i>
-                        <strong>Aktif:</strong> Pasif kayıtlar kullanıcıya gösterilmez.
+                        <strong>Boş Name EN:</strong> İngilizce ekranda da Türkçe ad gösterilir.
                     </li>
                 </ul>
             </div>
         </div>
     </div>
 </div>
+
+<partial name="_ValidationScriptsPartial" />

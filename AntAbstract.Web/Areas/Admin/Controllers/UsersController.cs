@@ -37,9 +37,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             await EnsureBaseRoles();
 
             var currentUser = await _userManager.GetUserAsync(User);
-            var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, "Admin");
+            var isAdmin = currentUser != null &&
+                          await _userManager.IsInRoleAsync(currentUser, "Admin");
 
-            var query = _userManager.Users.AsNoTracking().AsQueryable();
+            var query = _userManager.Users
+                .AsNoTracking()
+                .AsQueryable();
 
             if (!isAdmin && currentUser?.TenantId != null)
             {
@@ -51,6 +54,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             var users = await query.ToListAsync();
+
             var vm = new List<UserListItemViewModel>();
 
             foreach (var user in users)
@@ -74,16 +78,22 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> ManageRoles(string userId)
         {
             if (string.IsNullOrWhiteSpace(userId))
+            {
                 return NotFound();
+            }
 
             await EnsureBaseRoles();
 
             var currentUser = await _userManager.GetUserAsync(User);
-            var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, "Admin");
+            var isAdmin = currentUser != null &&
+                          await _userManager.IsInRoleAsync(currentUser, "Admin");
 
             var user = await _userManager.FindByIdAsync(userId);
+
             if (user == null)
+            {
                 return NotFound();
+            }
 
             if (!isAdmin && user.TenantId != currentUser?.TenantId)
             {
@@ -98,7 +108,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (!isAdmin)
             {
-                allRoles = allRoles.Where(r => r.Name != "Admin").ToList();
+                allRoles = allRoles
+                    .Where(r => r.Name != "Admin")
+                    .ToList();
             }
 
             var userRoles = await _userManager.GetRolesAsync(user);
@@ -113,8 +125,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             foreach (var role in allRoles)
             {
                 var roleName = role.Name ?? "";
+
                 if (string.IsNullOrWhiteSpace(roleName))
+                {
                     continue;
+                }
 
                 model.Roles.Add(new UserWithRoleViewModel
                 {
@@ -132,16 +147,22 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> ManageRoles(UserWithRolesViewModel model)
         {
             if (model == null || string.IsNullOrWhiteSpace(model.UserId))
+            {
                 return BadRequest();
+            }
 
             model.Roles ??= new List<UserWithRoleViewModel>();
 
             var currentUser = await _userManager.GetUserAsync(User);
-            var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, "Admin");
+            var isAdmin = currentUser != null &&
+                          await _userManager.IsInRoleAsync(currentUser, "Admin");
 
             var user = await _userManager.FindByIdAsync(model.UserId);
+
             if (user == null)
+            {
                 return NotFound();
+            }
 
             if (!isAdmin && user.TenantId != currentUser?.TenantId)
             {
@@ -160,7 +181,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (!isAdmin && selectedRoles.Contains("Admin", StringComparer.OrdinalIgnoreCase))
             {
-                selectedRoles.RemoveAll(r => r.Equals("Admin", StringComparison.OrdinalIgnoreCase));
+                selectedRoles.RemoveAll(r =>
+                    r.Equals("Admin", StringComparison.OrdinalIgnoreCase));
             }
 
             var rolesToRemove = existingRoles
@@ -174,6 +196,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (rolesToRemove.Count > 0)
             {
                 var removeResult = await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+
                 if (!removeResult.Succeeded)
                 {
                     TempData["ErrorMessage"] = _localizer["Error_RemoveRoleFailed"].Value;
@@ -186,10 +209,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 foreach (var roleName in rolesToAdd)
                 {
                     if (!await _roleManager.RoleExistsAsync(roleName))
+                    {
                         await _roleManager.CreateAsync(new IdentityRole(roleName));
+                    }
                 }
 
                 var addResult = await _userManager.AddToRolesAsync(user, rolesToAdd);
+
                 if (!addResult.Succeeded)
                 {
                     TempData["ErrorMessage"] = _localizer["Error_AssignRoleFailed"].Value;
@@ -198,6 +224,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             TempData["SuccessMessage"] = _localizer["Success_RolesUpdated"].Value;
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -213,9 +240,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             var currentUser = await _userManager.GetUserAsync(User);
-            var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, "Admin");
+            var isAdmin = currentUser != null &&
+                          await _userManager.IsInRoleAsync(currentUser, "Admin");
 
             var user = await _userManager.FindByIdAsync(userId);
+
             if (user == null)
             {
                 TempData["ErrorMessage"] = _localizer["Error_UserNotFound"].Value;
@@ -237,6 +266,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (!await _roleManager.RoleExistsAsync(roleName))
             {
                 var createRoleResult = await _roleManager.CreateAsync(new IdentityRole(roleName));
+
                 if (!createRoleResult.Succeeded)
                 {
                     TempData["ErrorMessage"] = _localizer["Error_RoleCouldNotBeCreated"].Value;
@@ -247,6 +277,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (!await _userManager.IsInRoleAsync(user, roleName))
             {
                 var addResult = await _userManager.AddToRoleAsync(user, roleName);
+
                 if (!addResult.Succeeded)
                 {
                     TempData["ErrorMessage"] = _localizer["Error_RoleAssignmentFailed"].Value;
@@ -255,6 +286,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             TempData["SuccessMessage"] = _localizer["Success_RoleAssigned"].Value;
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -270,9 +302,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             var currentUser = await _userManager.GetUserAsync(User);
-            var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, "Admin");
+            var isAdmin = currentUser != null &&
+                          await _userManager.IsInRoleAsync(currentUser, "Admin");
 
             var user = await _userManager.FindByIdAsync(userId);
+
             if (user == null)
             {
                 TempData["ErrorMessage"] = _localizer["Error_UserNotFound"].Value;
@@ -285,9 +319,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            if (!isAdmin && roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["ErrorMessage"] = _localizer["Error_CannotRemoveSuperRole"].Value;
+                return RedirectToAction(nameof(Index));
+            }
+
             if (await _userManager.IsInRoleAsync(user, roleName))
             {
                 var removeResult = await _userManager.RemoveFromRoleAsync(user, roleName);
+
                 if (!removeResult.Succeeded)
                 {
                     TempData["ErrorMessage"] = _localizer["Error_RoleRemovalFailed"].Value;
@@ -296,17 +337,26 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             TempData["SuccessMessage"] = _localizer["Success_RoleRemoved"].Value;
+
             return RedirectToAction(nameof(Index));
         }
 
         private async Task EnsureBaseRoles()
         {
-            var baseRoles = new[] { "Admin", "Organizator", "Author", "Referee" };
+            var baseRoles = new[]
+            {
+                "Admin",
+                "Organizator",
+                "Author",
+                "Referee"
+            };
 
             foreach (var role in baseRoles)
             {
                 if (!await _roleManager.RoleExistsAsync(role))
+                {
                     await _roleManager.CreateAsync(new IdentityRole(role));
+                }
             }
         }
     }

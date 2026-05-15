@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using System.Globalization;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -30,37 +31,125 @@ namespace AntAbstract.Web.Controllers
             _localizer = localizer;
         }
 
+        private string T(string key, string fallback)
+        {
+            var value = _localizer[key];
+
+            return value.ResourceNotFound
+                ? fallback
+                : value.Value;
+        }
+
+        private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync(AppUser user)
+        {
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+            var isOrganizator = await _userManager.IsInRoleAsync(user, "Organizator");
+
+            var query = _context.Conferences
+                .AsNoTracking()
+                .Include(c => c.Tenant)
+                .AsQueryable();
+
+            if (isAdmin)
+            {
+                return query;
+            }
+
+            if (isOrganizator)
+            {
+                if (user.TenantId.HasValue)
+                {
+                    return query.Where(c => c.TenantId == user.TenantId.Value);
+                }
+
+                return query.Where(c => false);
+            }
+
+            var registrationConferenceIds = _context.Registrations
+                .AsNoTracking()
+                .Where(r => r.AppUserId == user.Id)
+                .Select(r => r.ConferenceId);
+
+            var authorConferenceIds = _context.Submissions
+                .AsNoTracking()
+                .Where(s => s.AuthorId == user.Id)
+                .Select(s => s.ConferenceId);
+
+            var reviewerConferenceIds = _context.ReviewAssignments
+                .AsNoTracking()
+                .Where(ra => ra.ReviewerId == user.Id)
+                .Join(
+                    _context.Submissions.AsNoTracking(),
+                    ra => ra.SubmissionId,
+                    s => s.Id,
+                    (ra, s) => s.ConferenceId);
+
+            var allowedConferenceIds = registrationConferenceIds
+                .Union(authorConferenceIds)
+                .Union(reviewerConferenceIds)
+                .Distinct();
+
+            return query.Where(c => allowedConferenceIds.Contains(c.Id));
+        }
+
+        private void SetConferenceSession(Conference conference)
+        {
+            var slug = conference.Tenant?.Slug ?? "";
+            var tenantId = conference.TenantId;
+
+            _selectedConferenceService.SetSelectedConferenceId(conference.Id);
+
+            HttpContext.Session.SetString("SelectedConferenceId", conference.Id.ToString());
+            HttpContext.Session.SetString("SelectedConferenceSlug", slug);
+            HttpContext.Session.SetString("SelectedConferenceTitle", conference.Title ?? "");
+
+            HttpContext.Session.SetString($"SelectedConferenceId:{tenantId}", conference.Id.ToString());
+            HttpContext.Session.SetString($"SelectedConferenceSlug:{tenantId}", slug);
+            HttpContext.Session.SetString($"SelectedConferenceTitle:{tenantId}", conference.Title ?? "");
+        }
+
         [AllowAnonymous]
         [HttpGet("Conference/Details/{slug}")]
         public async Task<IActionResult> Details(string slug)
         {
-            if (string.IsNullOrEmpty(slug))
+            if (string.IsNullOrWhiteSpace(slug))
             {
-                return NotFound(_localizer["ConferenceNotSpecified"]);
+                return NotFound(T("ConferenceNotSpecified", "Kongre belirtilmedi."));
             }
 
             var conference = await _context.Conferences
+                .AsNoTracking()
                 .Include(c => c.Tenant)
                 .Include(c => c.Registrations)
-                .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Slug == slug);
 
-            if (conference == null && Guid.TryParse(slug, out Guid guidId))
+            if (conference == null && Guid.TryParse(slug, out var conferenceId))
             {
                 conference = await _context.Conferences
+                    .AsNoTracking()
                     .Include(c => c.Tenant)
                     .Include(c => c.Registrations)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Id == guidId);
+                    .FirstOrDefaultAsync(c => c.Id == conferenceId);
             }
 
             if (conference == null)
             {
-                return NotFound(_localizer["ConferenceNotFound"]);
+                return NotFound(T("ConferenceNotFound", "Kongre bulunamadı."));
             }
 
+            var culture = CultureInfo.CurrentUICulture.Name;
+
             var pageBlocks = await _context.ConferencePageBlocks
-                .Where(b => b.ConferenceId == conference.Id && b.IsActive && b.Page == "Home")
+                .AsNoTracking()
+                .Where(b =>
+                    b.ConferenceId == conference.Id &&
+                    b.TenantId == conference.TenantId &&
+                    b.IsActive &&
+                    b.Page == "Home" &&
+                    (
+                        b.Culture == culture ||
+                        string.IsNullOrEmpty(b.Culture)
+                    ))
                 .OrderBy(b => b.Order)
                 .ToListAsync();
 
@@ -73,42 +162,13 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> Select()
         {
             var user = await _userManager.GetUserAsync(User);
+
             if (user == null)
-                return Redirect("/Identity/Account/Login");
-
-            var isAdminOrOrg = User.IsInRole("Admin") || User.IsInRole("Organizator");
-
-            IQueryable<Conference> query = _context.Conferences
-                .AsNoTracking()
-                .Include(c => c.Tenant);
-
-            if (!isAdminOrOrg)
             {
-                var regIds = _context.Registrations
-                    .AsNoTracking()
-                    .Where(r => r.AppUserId == user.Id)
-                    .Select(r => r.ConferenceId);
-
-                var authorIds = _context.Submissions
-                    .AsNoTracking()
-                    .Where(s => s.AuthorId == user.Id)
-                    .Select(s => s.ConferenceId);
-
-                var reviewerIds = _context.ReviewAssignments
-                    .AsNoTracking()
-                    .Where(ra => ra.ReviewerId == user.Id)
-                    .Join(_context.Submissions.AsNoTracking(),
-                         ra => ra.SubmissionId,
-                         s => s.Id,
-                         (ra, s) => s.ConferenceId);
-
-                var allowedIds = regIds
-                    .Union(authorIds)
-                    .Union(reviewerIds)
-                    .Distinct();
-
-                query = query.Where(c => allowedIds.Contains(c.Id));
+                return Redirect("/Identity/Account/Login");
             }
+
+            var query = await GetAccessibleConferenceQueryAsync(user);
 
             var conferences = await query
                 .OrderByDescending(c => c.StartDate)
@@ -116,10 +176,10 @@ namespace AntAbstract.Web.Controllers
 
             var vm = new SelectConferenceViewModel
             {
-                Title = _localizer["SelectConferenceTitle"],
-                Lead = _localizer["SelectConferenceLead"],
+                Title = T("SelectConferenceTitle", "Kongre Seç"),
+                Lead = T("SelectConferenceLead", "Devam etmek için bir kongre seçiniz."),
                 PostUrl = "/Conference/Select",
-                SubmitText = _localizer["ContinueButton"],
+                SubmitText = T("ContinueButton", "Devam Et"),
                 Conferences = conferences
             };
 
@@ -130,23 +190,41 @@ namespace AntAbstract.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SelectPost(Guid conferenceId)
         {
-            var conf = await _context.Conferences
-                .AsNoTracking()
-                .Include(c => c.Tenant)
-                .FirstOrDefaultAsync(c => c.Id == conferenceId);
-
-            if (conf == null || conf.Tenant == null || string.IsNullOrWhiteSpace(conf.Tenant.Slug))
+            if (conferenceId == Guid.Empty)
             {
-                TempData["ErrorMessage"] = _localizer["ConferenceNotFoundShort"];
+                TempData["ErrorMessage"] = T(
+                    "ConferenceNotFoundShort",
+                    "Kongre bulunamadı.");
+
                 return Redirect("/Conference/Select");
             }
 
-            _selectedConferenceService.SetSelectedConferenceId(conf.Id);
+            var user = await _userManager.GetUserAsync(User);
 
-            HttpContext.Session.SetString("SelectedConferenceId", conf.Id.ToString());
-            HttpContext.Session.SetString("SelectedConferenceSlug", conf.Tenant.Slug);
+            if (user == null)
+            {
+                return Redirect("/Identity/Account/Login");
+            }
 
-            return Redirect($"/{conf.Tenant.Slug}/Dashboard?conferenceId={conf.Id}");
+            var query = await GetAccessibleConferenceQueryAsync(user);
+
+            var conference = await query
+                .FirstOrDefaultAsync(c => c.Id == conferenceId);
+
+            if (conference == null ||
+                conference.Tenant == null ||
+                string.IsNullOrWhiteSpace(conference.Tenant.Slug))
+            {
+                TempData["ErrorMessage"] = T(
+                    "ConferenceNotFoundShort",
+                    "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+
+                return Redirect("/Conference/Select");
+            }
+
+            SetConferenceSession(conference);
+
+            return Redirect($"/{conference.Tenant.Slug}/Dashboard?conferenceId={conference.Id}");
         }
     }
 }
