@@ -12,6 +12,11 @@
     var requestCulture = HttpContext.Features.Get<IRequestCultureFeature>();
     var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? "tr-TR";
 
+    var isTurkishCulture = currentCulture.StartsWith("tr", StringComparison.OrdinalIgnoreCase);
+    var isEnglishCulture = currentCulture.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+
+    var currentShortCulture = isEnglishCulture ? "EN" : "TR";
+
     var currentReturnUrl = string.IsNullOrEmpty(HttpContext.Request.Path.Value)
         ? "/Identity/Account/Login"
         : $"{HttpContext.Request.Path.Value}{HttpContext.Request.QueryString}";
@@ -22,9 +27,10 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>@ViewData["Title"] - AntAbstract</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/brands.min.css">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -34,8 +40,15 @@
         :root {
             --primary-color: #00aeef;
             --primary-hover: #0095cd;
+            --primary-dark: #0284c7;
             --text-dark: #1e293b;
             --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --soft-bg: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
@@ -43,6 +56,7 @@
             background-color: #fff;
             min-height: 100vh;
             overflow-x: hidden;
+            margin: 0;
         }
 
         .login-wrapper {
@@ -110,7 +124,7 @@
             background-color: var(--primary-color);
             border: none;
             padding: 0.8rem;
-            font-weight: 700;
+            font-weight: 800;
             border-radius: 0.5rem;
             transition: all 0.3s ease;
         }
@@ -123,11 +137,12 @@
 
         .brand-logo {
             font-size: 1.8rem;
-            font-weight: 800;
+            font-weight: 900;
             color: var(--text-dark);
             margin-bottom: 2rem;
             display: inline-block;
             text-decoration: none;
+            letter-spacing: -0.5px;
         }
 
         .btn-orcid {
@@ -154,7 +169,7 @@
             align-items: center;
             justify-content: center;
             font-size: 0.78rem;
-            font-weight: 800;
+            font-weight: 900;
             line-height: 1;
         }
 
@@ -182,43 +197,133 @@
                 margin-left: .5em;
             }
 
-        .language-switcher {
-            display: inline-flex;
+        .auth-top-actions {
+            position: fixed;
+            top: 24px;
+            right: 28px;
+            z-index: 9999;
+            display: flex;
             align-items: center;
-            gap: 4px;
-            padding: 4px;
-            border: 1px solid #e2e8f0;
-            border-radius: 999px;
-            background: #fff;
-            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+            gap: 0.75rem;
         }
 
-            .language-switcher form {
+        .auth-language-dropdown {
+            position: relative;
+        }
+
+        .auth-language-current-btn {
+            height: 44px;
+            min-width: 92px;
+            padding: 0 16px;
+            border: 1px solid #dbe3ef;
+            border-radius: 999px;
+            background: #ffffff;
+            color: #475569;
+            font-weight: 900;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+            transition: all 0.2s ease;
+        }
+
+            .auth-language-current-btn:hover {
+                color: var(--primary-color);
+                border-color: rgba(0, 174, 239, 0.35);
+                box-shadow: 0 10px 28px rgba(0, 174, 239, 0.12);
+            }
+
+            .auth-language-current-btn::after {
+                margin-left: 2px;
+                font-size: 0.72rem;
+            }
+
+            .auth-language-current-btn i {
+                color: #475569;
+                font-size: 0.95rem;
+            }
+
+        .auth-language-menu {
+            min-width: 160px;
+            padding: 8px;
+            border: none !important;
+            border-radius: 20px !important;
+            background-color: #ffffff;
+            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.12);
+            overflow: hidden;
+            margin-top: 8px !important;
+        }
+
+            .auth-language-menu form {
                 margin: 0;
             }
 
-        .lang-btn {
+                .auth-language-menu form + form {
+                    margin-top: 4px;
+                }
+
+        .auth-language-menu-item {
+            width: 100%;
+            min-height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
             border: none;
             background: transparent;
-            color: #64748b;
-            font-size: 0.85rem;
-            font-weight: 700;
-            padding: 8px 14px;
-            border-radius: 999px;
-            cursor: pointer;
+            border-radius: 14px;
+            padding: 0.58rem 0.75rem;
+            color: #475569;
             transition: all 0.2s ease;
-            line-height: 1;
         }
 
-            .lang-btn:hover {
-                background: #f1f5f9;
+            .auth-language-menu-item:hover,
+            .auth-language-menu-item.active {
+                background-color: rgba(0, 174, 239, 0.12);
                 color: var(--primary-color);
             }
 
-            .lang-btn.active {
-                background: var(--primary-color);
-                color: white;
-                box-shadow: 0 4px 12px rgba(0, 174, 239, 0.25);
+        .auth-language-code {
+            min-width: 22px;
+            font-size: 0.74rem;
+            font-weight: 900;
+            color: var(--primary-color);
+            letter-spacing: 0.25px;
+        }
+
+        .auth-language-name {
+            font-size: 0.92rem;
+            font-weight: 800;
+            color: inherit;
+        }
+
+        .auth-close-link {
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            padding: 0 1rem;
+            border-radius: 999px;
+            color: #64748b;
+            background: transparent;
+            border: none;
+            font-size: 0.92rem;
+            font-weight: 900;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+            .auth-close-link:hover {
+                color: #ef4444;
+                background-color: rgba(239, 68, 68, 0.08);
+            }
+
+            .auth-close-link i {
+                font-size: 0.85rem;
             }
 
         @@media (max-width: 991px) {
@@ -230,8 +335,60 @@
                 width: 100%;
             }
         }
+
+        @@media (max-width: 768px) {
+            .auth-top-actions {
+                top: 16px;
+                right: 16px;
+                gap: 0.5rem;
+            }
+
+            .auth-language-current-btn {
+                height: 40px;
+                min-width: 82px;
+                padding: 0 13px;
+                font-size: 0.84rem;
+            }
+
+            .auth-language-menu {
+                min-width: 150px;
+                padding: 7px;
+                border-radius: 18px !important;
+            }
+
+            .auth-language-menu-item {
+                min-height: 40px;
+                padding: 0.54rem 0.7rem;
+                border-radius: 13px;
+            }
+
+            .auth-language-name {
+                font-size: 0.88rem;
+            }
+
+            .auth-close-link {
+                height: 40px;
+                width: 40px;
+                padding: 0;
+            }
+
+                .auth-close-link span {
+                    display: none;
+                }
+        }
+
+        @@media (max-width: 576px) {
+            .login-form-container {
+                padding: 1.5rem 1rem;
+            }
+
+            .login-card {
+                padding-top: 4rem;
+            }
+        }
     </style>
 </head>
+
 <body>
 
     <div class="login-wrapper">
@@ -263,23 +420,49 @@
         </div>
 
         <div class="login-form-container">
-            <div class="position-absolute top-0 end-0 m-4 d-flex align-items-center gap-3">
-                <div class="language-switcher">
-                    <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
-                        <input type="hidden" name="culture" value="tr-TR" />
-                        <input type="hidden" name="returnUrl" value="@currentReturnUrl" />
-                        <button type="submit" class="lang-btn @(currentCulture == "tr-TR" ? "active" : "")">TR</button>
-                    </form>
 
-                    <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
-                        <input type="hidden" name="culture" value="en-US" />
-                        <input type="hidden" name="returnUrl" value="@currentReturnUrl" />
-                        <button type="submit" class="lang-btn @(currentCulture == "en-US" ? "active" : "")">EN</button>
-                    </form>
+            <div class="auth-top-actions">
+                <div class="dropdown auth-language-dropdown">
+                    <button class="auth-language-current-btn dropdown-toggle"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                        <i class="fas fa-globe"></i>
+                        <span>@currentShortCulture</span>
+                    </button>
+
+                    <div class="dropdown-menu dropdown-menu-end auth-language-menu">
+                        <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                            @Html.AntiForgeryToken()
+
+                            <input type="hidden" name="culture" value="tr-TR" />
+                            <input type="hidden" name="returnUrl" value="@currentReturnUrl" />
+
+                            <button type="submit"
+                                    class="auth-language-menu-item @(isTurkishCulture ? "active" : "")">
+                                <span class="auth-language-code">TR</span>
+                                <span class="auth-language-name">Türkçe</span>
+                            </button>
+                        </form>
+
+                        <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                            @Html.AntiForgeryToken()
+
+                            <input type="hidden" name="culture" value="en-US" />
+                            <input type="hidden" name="returnUrl" value="@currentReturnUrl" />
+
+                            <button type="submit"
+                                    class="auth-language-menu-item @(isEnglishCulture ? "active" : "")">
+                                <span class="auth-language-code">GB</span>
+                                <span class="auth-language-name">English</span>
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
-                <a href="/" class="text-muted text-decoration-none small fw-bold">
-                    <i class="fas fa-times me-1"></i> @Localizer["Close"]
+                <a href="/" class="auth-close-link">
+                    <i class="fas fa-times"></i>
+                    <span>@Localizer["Close"]</span>
                 </a>
             </div>
 

@@ -1,10 +1,11 @@
 ﻿@using AntAbstract.Web.Models.ViewModels
 @using AntAbstract.Web.Models.ViewModels.Admin.Users
+@using System
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model UserWithRolesViewModel
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"].Value;
+    ViewData["Title"] = L("PageTitle", "Kullanıcı Rol Yönetimi");
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
     string L(string key, string fallback)
@@ -38,7 +39,7 @@
             "Author" => L("RoleDesc_Author", "Bildiri gönderir ve kendi başvurularını takip eder."),
             "Listener" => L("RoleDesc_Listener", "Kongreye katılımcı olarak kayıt olur ve katılım işlemlerini takip eder."),
             "Referee" => L("RoleDesc_Referee", "Kendisine atanan bildirileri değerlendirir."),
-            _ => ""
+            _ => L("RoleDesc_Default", "Bu role ait sistem yetkileri kullanıcıya atanır.")
         };
     }
 
@@ -46,51 +47,76 @@
     {
         return role switch
         {
-            "SuperAdmin" => "fas fa-crown text-danger",
-            "Admin" => "fas fa-shield-alt text-primary",
-            "Author" => "fas fa-pen-nib text-info",
-            "Listener" => "fas fa-user-check text-success",
-            "Referee" => "fas fa-gavel text-warning",
-            _ => "fas fa-user-tag text-secondary"
+            "SuperAdmin" => "fas fa-crown",
+            "Admin" => "fas fa-shield-alt",
+            "Author" => "fas fa-pen-nib",
+            "Listener" => "fas fa-user-check",
+            "Referee" => "fas fa-gavel",
+            _ => "fas fa-user-tag"
+        };
+    }
+
+    string GetRoleAccentClass(string role)
+    {
+        return role switch
+        {
+            "SuperAdmin" => "role-superadmin",
+            "Admin" => "role-admin",
+            "Author" => "role-author",
+            "Listener" => "role-listener",
+            "Referee" => "role-referee",
+            _ => "role-default"
+        };
+    }
+
+    string GetRoleBadge(string role)
+    {
+        return role switch
+        {
+            "SuperAdmin" => L("RoleBadge_SuperAdmin", "Tam Yetki"),
+            "Admin" => L("RoleBadge_Admin", "Yönetim"),
+            "Author" => L("RoleBadge_Author", "Bildiri"),
+            "Listener" => L("RoleBadge_Listener", "Katılım"),
+            "Referee" => L("RoleBadge_Referee", "Değerlendirme"),
+            _ => L("RoleBadge_Default", "Rol")
         };
     }
 }
 
-<div class="container-fluid">
+<div class="container-fluid role-management-page">
 
-    <div class="card border-0 shadow-sm mb-4 bg-white">
-        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+    <div class="role-header-card mb-4">
+        <div class="role-header-content">
             <div>
-                <h6 class="text-muted text-uppercase fw-bold small mb-1"
-                    style="font-size: 0.75rem; letter-spacing: 1px;">
+                <div class="role-section-label">
                     @L("SectionLabel", "Kullanıcı Yönetimi")
-                </h6>
+                </div>
 
-                <h4 class="fw-bold text-dark mb-1">
+                <h1 class="role-page-title">
                     @L("PageHeading", "Kullanıcı Rollerini Düzenle")
-                </h4>
+                </h1>
 
-                <small class="text-muted">
-                    @L("UserLabel", "Kullanıcı:")
+                <div class="role-user-line">
+                    <span>@L("UserLabel", "Kullanıcı:")</span>
                     <strong>@Model.UserEmail</strong>
-                </small>
+                </div>
             </div>
 
             <a asp-area="Admin"
                asp-controller="Users"
                asp-action="Index"
-               class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-                <i class="fas fa-arrow-left me-1"></i>
+               class="role-back-btn">
+                <i class="fas fa-arrow-left"></i>
                 @L("BackToListButton", "Listeye Dön")
             </a>
         </div>
 
-        <div class="card-footer border-0 py-1 bg-primary"></div>
+        <div class="role-header-line"></div>
     </div>
 
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger border-0 shadow-sm">
+        <div class="alert alert-danger role-alert">
             <i class="fas fa-times-circle me-2"></i>
             @TempData["ErrorMessage"]
         </div>
@@ -98,7 +124,7 @@
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success border-0 shadow-sm">
+        <div class="alert alert-success role-alert">
             <i class="fas fa-check-circle me-2"></i>
             @TempData["SuccessMessage"]
         </div>
@@ -114,87 +140,492 @@
         <input asp-for="UserId" type="hidden" />
         <input asp-for="UserEmail" type="hidden" />
 
-        <div class="card border-0 shadow-sm">
-            <div class="card-body p-4">
+        <div class="role-panel">
+            <div class="role-panel-body">
 
-                <div class="alert alert-info border-0 shadow-sm mb-4">
-                    <i class="fas fa-info-circle me-2"></i>
-                    @L("RoleInfoMessage", "Bu ekranda kullanıcıya atanacak rolleri seçebilirsiniz. SuperAdmin rolü sistem genelinde tam yetki verir.")
+                <div class="role-info-box mb-4">
+                    <div class="role-info-icon">
+                        <i class="fas fa-circle-info"></i>
+                    </div>
+
+                    <div class="role-info-text">
+                        @L("RoleInfoMessage", "Bu ekranda kullanıcıya atanacak rolleri seçebilirsiniz. SuperAdmin rolü sistem genelinde tam yetki verir.")
+                    </div>
                 </div>
 
                 @if (Model.Roles == null || !Model.Roles.Any())
                 {
-                    <div class="text-center text-muted py-5">
-                        <i class="fas fa-user-lock fa-2x mb-3"></i>
-                        <p class="mb-0">
+                    <div class="role-empty-state">
+                        <div class="role-empty-icon">
+                            <i class="fas fa-user-lock"></i>
+                        </div>
+
+                        <h5>@L("EmptyRolesTitle", "Rol bulunamadı")</h5>
+
+                        <p>
                             @L("EmptyRolesMessage", "Tanımlı rol bulunamadı.")
                         </p>
                     </div>
                 }
                 else
                 {
-                    <div class="row row-cols-1 row-cols-md-2 g-3">
+                    <div class="role-grid">
                         @for (int i = 0; i < Model.Roles.Count; i++)
                         {
                             var roleName = Model.Roles[i].RoleName ?? "";
                             var roleLabel = GetRoleLabel(roleName);
                             var roleDescription = GetRoleDescription(roleName);
                             var roleIcon = GetRoleIcon(roleName);
+                            var roleAccentClass = GetRoleAccentClass(roleName);
+                            var roleBadge = GetRoleBadge(roleName);
 
-                            <div class="col">
-                                <div class="border rounded-4 p-3 h-100 bg-light bg-opacity-50">
-                                    <div class="form-check d-flex align-items-start gap-2">
-                                        <input asp-for="Roles[i].RoleName" type="hidden" />
+                            <div class="role-card-wrapper">
+                                <input asp-for="Roles[i].RoleName" type="hidden" />
 
-                                        <input asp-for="Roles[i].IsSelected"
-                                               class="form-check-input mt-1"
-                                               id="role_@i" />
+                                <input asp-for="Roles[i].IsSelected"
+                                       class="role-checkbox"
+                                       id="role_@i" />
 
-                                        <label class="form-check-label w-100"
-                                               for="role_@i">
+                                <label for="role_@i"
+                                       class="role-card @roleAccentClass @(Model.Roles[i].IsSelected ? "selected" : "")">
 
-                                            <div class="d-flex align-items-center mb-1">
-                                                <i class="@roleIcon me-2"></i>
+                                    <div class="role-card-top">
+                                        <div class="role-icon-wrap">
+                                            <i class="@roleIcon"></i>
+                                        </div>
 
-                                                <span class="fw-bold text-dark">
-                                                    @roleLabel
-                                                </span>
-                                            </div>
-
-                                            @if (!string.IsNullOrWhiteSpace(roleDescription))
-                                            {
-                                                <div class="small text-muted">
-                                                    @roleDescription
-                                                </div>
-                                            }
-                                        </label>
+                                        <span class="role-badge">
+                                            @roleBadge
+                                        </span>
                                     </div>
-                                </div>
+
+                                    <div class="role-card-content">
+                                        <h3 class="role-card-title">
+                                            @roleLabel
+                                        </h3>
+
+                                        <p class="role-card-desc">
+                                            @roleDescription
+                                        </p>
+                                    </div>
+
+                                    <div class="role-card-check">
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                </label>
                             </div>
                         }
                     </div>
                 }
-
             </div>
 
-            <div class="card-footer bg-white border-0 d-flex gap-2 justify-content-end p-3">
+            <div class="role-panel-footer">
                 <a asp-area="Admin"
                    asp-controller="Users"
                    asp-action="Index"
-                   class="btn btn-light rounded-pill px-4">
+                   class="role-cancel-btn">
                     @L("CancelButton", "Vazgeç")
                 </a>
 
-                <button type="submit" class="btn btn-primary rounded-pill px-4">
-                    <i class="fas fa-save me-1"></i>
+                <button type="submit" class="role-save-btn">
+                    <i class="fas fa-save"></i>
                     @L("SaveButton", "Kaydet")
                 </button>
             </div>
         </div>
     </form>
-
 </div>
+
+<style>
+    .role-management-page {
+        --role-blue: #0d6efd;
+        --role-blue-dark: #0b5ed7;
+        --role-border: #e2e8f0;
+        --role-text: #0f172a;
+        --role-muted: #64748b;
+        --role-soft-bg: #f8fafc;
+        --role-radius: 22px;
+    }
+
+    .role-header-card {
+        background: #ffffff;
+        border: 1px solid var(--role-border);
+        border-radius: var(--role-radius);
+        overflow: hidden;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+    }
+
+    .role-header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.25rem;
+        padding: 1.35rem 1.6rem;
+        flex-wrap: wrap;
+    }
+
+    .role-section-label {
+        color: var(--role-muted);
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 0.35rem;
+    }
+
+    .role-page-title {
+        color: var(--role-text);
+        font-size: 1.55rem;
+        font-weight: 900;
+        letter-spacing: -0.035em;
+        margin: 0 0 0.4rem;
+    }
+
+    .role-user-line {
+        color: var(--role-muted);
+        font-size: 0.88rem;
+        font-weight: 600;
+    }
+
+    .role-back-btn {
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0 1rem;
+        border-radius: 999px;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #475569;
+        text-decoration: none;
+        font-size: 0.84rem;
+        font-weight: 800;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .role-header-line {
+        height: 5px;
+        background: linear-gradient(90deg, var(--role-blue), #38bdf8);
+    }
+
+    .role-panel-body {
+        padding: 1.35rem;
+    }
+
+    .role-info-box {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 0.85rem 1rem;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #e0f7ff, #eefbff);
+        border: 1px solid #bae6fd;
+        color: #075985;
+    }
+
+    .role-info-icon {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        background: #ffffff;
+        color: #0284c7;
+        font-size: 0.95rem;
+        box-shadow: 0 8px 18px rgba(2, 132, 199, 0.12);
+    }
+
+    .role-info-text {
+        font-size: 0.86rem;
+        font-weight: 700;
+        line-height: 1.55;
+    }
+
+    .role-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.85rem;
+    }
+
+    .role-card {
+        position: relative;
+        min-height: 128px;
+        display: block;
+        padding: 1rem;
+        border: 1px solid #dbe3ef;
+        border-radius: 18px;
+        background: #ffffff;
+        cursor: pointer;
+        overflow: hidden;
+        transition: all 0.22s ease;
+        height: 100%;
+    }
+
+    .role-card-top {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .role-icon-wrap {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        border-radius: 13px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.98rem;
+    }
+
+    .role-badge {
+        min-height: 26px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 0.65rem;
+        border-radius: 999px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 0.66rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .role-card-content {
+        position: relative;
+        z-index: 2;
+        padding-right: 2rem;
+    }
+
+    .role-card-title {
+        color: var(--role-text);
+        font-size: 1.05rem;
+        font-weight: 900;
+        line-height: 1.2;
+        margin: 0 0 0.35rem;
+    }
+
+    .role-card-desc {
+        color: var(--role-muted);
+        font-size: 0.82rem;
+        font-weight: 600;
+        line-height: 1.45;
+        margin: 0;
+    }
+
+    .role-card-check {
+        position: absolute;
+        right: 1rem;
+        bottom: 1rem;
+        width: 27px;
+        height: 27px;
+        border-radius: 999px;
+        background: #e2e8f0;
+        color: #94a3b8;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.78rem;
+        opacity: 0.7;
+        transition: all 0.22s ease;
+    }
+    .role-card.selected .role-card-check {
+        background: var(--role-blue);
+        color: #ffffff;
+        opacity: 1;
+        box-shadow: 0 8px 18px rgba(13, 110, 253, 0.25);
+    }
+
+    .role-admin .role-icon-wrap {
+        background: rgba(13, 110, 253, 0.12);
+        color: #0d6efd;
+    }
+
+    .role-author .role-icon-wrap {
+        background: rgba(14, 165, 233, 0.12);
+        color: #0ea5e9;
+    }
+
+    .role-listener .role-icon-wrap {
+        background: rgba(34, 197, 94, 0.12);
+        color: #16a34a;
+    }
+
+    .role-referee .role-icon-wrap {
+        background: rgba(245, 158, 11, 0.13);
+        color: #f59e0b;
+    }
+
+    .role-superadmin .role-icon-wrap {
+        background: rgba(239, 68, 68, 0.12);
+        color: #ef4444;
+    }
+
+    .role-default .role-icon-wrap {
+        background: rgba(100, 116, 139, 0.12);
+        color: #64748b;
+    }
+
+    .role-empty-state {
+        padding: 4rem 1rem;
+        text-align: center;
+        color: var(--role-muted);
+    }
+
+    .role-empty-icon {
+        width: 68px;
+        height: 68px;
+        margin: 0 auto 1rem;
+        border-radius: 22px;
+        background: #f1f5f9;
+        color: #94a3b8;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+    }
+
+    .role-empty-state h5 {
+        color: var(--role-text);
+        font-weight: 900;
+        margin-bottom: 0.4rem;
+    }
+
+    .role-empty-state p {
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .role-panel-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.65rem;
+        padding: 0.85rem 1.15rem;
+        background: #ffffff;
+        border-top: 1px solid var(--role-border);
+        flex-wrap: wrap;
+    }
+
+    .role-cancel-btn,
+    .role-save-btn {
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        padding: 0 1.1rem;
+        border-radius: 999px;
+        font-size: 0.86rem;
+        font-weight: 900;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border: none;
+    }
+
+    .role-cancel-btn {
+        background: #f8fafc;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+    }
+
+        .role-cancel-btn:hover {
+            background: #f1f5f9;
+            color: var(--role-text);
+        }
+
+    .role-save-btn {
+        background: linear-gradient(135deg, var(--role-blue), #2563eb);
+        color: #ffffff;
+        box-shadow: 0 12px 24px rgba(13, 110, 253, 0.24);
+    }
+
+        .role-save-btn:hover {
+            background: linear-gradient(135deg, var(--role-blue-dark), #1d4ed8);
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 16px 30px rgba(13, 110, 253, 0.30);
+        }
+
+    @@media (max-width: 992px) {
+        .role-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .role-header-content {
+            align-items: flex-start;
+        }
+
+        .role-page-title {
+            font-size: 1.65rem;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .role-panel-body {
+            padding: 1.15rem;
+        }
+
+        .role-header-content {
+            padding: 1.35rem;
+        }
+
+        .role-card {
+            min-height: auto;
+            padding: 1rem;
+        }
+
+        .role-card-title {
+            font-size: 1.15rem;
+        }
+
+        .role-panel-footer {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .role-cancel-btn,
+        .role-save-btn {
+            width: 100%;
+        }
+    }
+</style>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const roleInputs = document.querySelectorAll(".role-checkbox");
+
+            roleInputs.forEach(function (input) {
+                const label = document.querySelector("label[for='" + input.id + "']");
+
+                if (!label) {
+                    return;
+                }
+
+                function syncSelectedState() {
+                    if (input.checked) {
+                        label.classList.add("selected");
+                    } else {
+                        label.classList.remove("selected");
+                    }
+                }
+
+                input.addEventListener("change", syncSelectedState);
+                syncSelectedState();
+            });
+        });
+    </script>
 }

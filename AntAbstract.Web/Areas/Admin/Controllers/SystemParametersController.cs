@@ -8,7 +8,7 @@ using Microsoft.Extensions.Localization;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SuperAdmin")]
     public class SystemParametersController : Controller
     {
         private readonly AppDbContext _context;
@@ -20,6 +20,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             _context = context;
             _localizer = localizer;
+        }
+
+        private string T(string key, string fallback)
+        {
+            var value = _localizer[key];
+
+            return value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
+                ? fallback
+                : value.Value;
         }
 
         public async Task<IActionResult> Index(string group = "University")
@@ -63,6 +72,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             var exists = await _context.SystemParameters
+                .AsNoTracking()
                 .AnyAsync(x =>
                     x.Group == model.Group &&
                     x.Name.ToLower() == model.Name.ToLower());
@@ -71,22 +81,33 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 ModelState.AddModelError(
                     nameof(model.Name),
-                    "Bu kayıt aynı grup içinde zaten mevcut.");
+                    T("Error_DuplicateParameter", "Bu kayıt aynı grup içinde zaten mevcut."));
 
                 return View(model);
             }
 
             _context.SystemParameters.Add(model);
+
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = _localizer["Success_ParameterAdded"].Value;
+            TempData["SuccessMessage"] = T(
+                "Success_ParameterAdded",
+                "Parametre başarıyla eklendi.");
 
-            return RedirectToAction(nameof(Index), new { group = model.Group });
+            return RedirectToAction(nameof(Index), new
+            {
+                group = model.Group
+            });
         }
 
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
+            if (id <= 0)
+            {
+                return NotFound();
+            }
+
             var parameter = await _context.SystemParameters
                 .FirstOrDefaultAsync(x => x.Id == id);
 
@@ -102,7 +123,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, SystemParameter model)
         {
-            if (id != model.Id)
+            if (id <= 0 || id != model.Id)
             {
                 return BadRequest();
             }
@@ -123,6 +144,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             var duplicateExists = await _context.SystemParameters
+                .AsNoTracking()
                 .AnyAsync(x =>
                     x.Id != id &&
                     x.Group == model.Group &&
@@ -132,7 +154,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 ModelState.AddModelError(
                     nameof(model.Name),
-                    "Bu kayıt aynı grup içinde zaten mevcut.");
+                    T("Error_DuplicateParameter", "Bu kayıt aynı grup içinde zaten mevcut."));
 
                 return View(model);
             }
@@ -145,52 +167,78 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = _localizer["Success_RecordUpdated"].Value;
+            TempData["SuccessMessage"] = T(
+                "Success_RecordUpdated",
+                "Kayıt başarıyla güncellendi.");
 
-            return RedirectToAction(nameof(Index), new { group = parameter.Group });
+            return RedirectToAction(nameof(Index), new
+            {
+                group = parameter.Group
+            });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var param = await _context.SystemParameters.FindAsync(id);
-
-            if (param != null)
+            if (id <= 0)
             {
-                var group = param.Group;
-
-                _context.SystemParameters.Remove(param);
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = _localizer["Success_RecordDeleted"].Value;
-
-                return RedirectToAction(nameof(Index), new { group });
+                return RedirectToAction(nameof(Index));
             }
 
-            return RedirectToAction(nameof(Index));
+            var parameter = await _context.SystemParameters
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (parameter == null)
+            {
+                return RedirectToAction(nameof(Index));
+            }
+
+            var group = parameter.Group;
+
+            _context.SystemParameters.Remove(parameter);
+
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = T(
+                "Success_RecordDeleted",
+                "Kayıt başarıyla silindi.");
+
+            return RedirectToAction(nameof(Index), new
+            {
+                group
+            });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Toggle(int id)
         {
-            var param = await _context.SystemParameters.FindAsync(id);
-
-            if (param != null)
+            if (id <= 0)
             {
-                param.IsActive = !param.IsActive;
-
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = param.IsActive
-                    ? _localizer["Success_RecordActivated"].Value
-                    : _localizer["Success_RecordDeactivated"].Value;
-
-                return RedirectToAction(nameof(Index), new { group = param.Group });
+                return RedirectToAction(nameof(Index));
             }
 
-            return RedirectToAction(nameof(Index));
+            var parameter = await _context.SystemParameters
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (parameter == null)
+            {
+                return RedirectToAction(nameof(Index));
+            }
+
+            parameter.IsActive = !parameter.IsActive;
+
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = parameter.IsActive
+                ? T("Success_RecordActivated", "Kayıt aktif hale getirildi.")
+                : T("Success_RecordDeactivated", "Kayıt pasif hale getirildi.");
+
+            return RedirectToAction(nameof(Index), new
+            {
+                group = parameter.Group
+            });
         }
 
         private static void NormalizeModel(SystemParameter model)
@@ -213,7 +261,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             return string.IsNullOrWhiteSpace(value)
                 ? string.Empty
-                : string.Join(" ", value.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries));
+                : string.Join(
+                    " ",
+                    value.Trim().Split(
+                        ' ',
+                        StringSplitOptions.RemoveEmptyEntries));
         }
     }
 }

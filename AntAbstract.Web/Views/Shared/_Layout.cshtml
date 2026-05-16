@@ -1,4 +1,5 @@
-﻿@using System.Globalization
+﻿@using System
+@using System.Globalization
 @using AntAbstract.Domain.Entities
 @using AntAbstract.Infrastructure.Services
 @using AntAbstract.Infrastructure.Services.Conferences
@@ -18,9 +19,10 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>@ViewData["Title"] - AntAbstract</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
@@ -42,7 +44,13 @@
             min-height: 100vh;
         }
 
-        h1, h2, h3, h4, h5, h6, .navbar-brand {
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        .navbar-brand {
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
@@ -178,41 +186,58 @@
             }
 
         .language-menu {
-            min-width: 155px;
-            padding: 8px;
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            box-shadow: 0 14px 40px rgba(15, 23, 42, 0.14);
+            min-width: 190px;
+            padding: 10px;
+            border: none !important;
+            border-radius: 24px !important;
+            background-color: #ffffff;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+            overflow: hidden;
+            margin-top: 10px !important;
         }
 
             .language-menu form {
                 margin: 0;
             }
 
+                .language-menu form + form {
+                    margin-top: 6px;
+                }
+
         .language-menu-item {
             width: 100%;
-            border: none;
-            background: transparent;
-            padding: 10px 12px;
-            border-radius: 12px;
-            color: #475569;
-            font-weight: 700;
-            text-align: left;
+            min-height: 54px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: flex-start;
+            gap: 12px;
+            border: none;
+            background: transparent;
+            border-radius: 16px;
+            padding: 0.8rem 1rem;
+            color: #475569;
             transition: all 0.2s ease;
         }
 
-            .language-menu-item:hover {
-                background: #f1f5f9;
+            .language-menu-item:hover,
+            .language-menu-item.active {
+                background-color: rgba(0, 174, 239, 0.12);
                 color: var(--primary-color);
             }
 
-            .language-menu-item.active {
-                background: rgba(0, 174, 239, 0.1);
-                color: var(--primary-color);
-            }
+        .language-code {
+            min-width: 24px;
+            font-size: 0.8rem;
+            font-weight: 900;
+            color: var(--primary-color);
+            letter-spacing: 0.3px;
+        }
+
+        .language-name {
+            font-size: 1rem;
+            font-weight: 800;
+            color: inherit;
+        }
 
         .header-actions .btn,
         .header-actions a.btn,
@@ -257,6 +282,280 @@
                 color: #ffffff !important;
                 transform: translateY(-1px);
                 box-shadow: 0 8px 20px rgba(0, 174, 239, 0.32);
+            }
+
+        /* =========================
+                   Public User Menu
+                ========================= */
+
+        .public-user-btn,
+        .public-account-menu {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .public-user-btn-name,
+        .public-account-name,
+        .public-account-role,
+        .public-account-email,
+        .public-account-item-title,
+        .public-account-item-desc {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .public-account-menu .fas,
+        .public-account-menu .fa-solid,
+        .public-account-menu .far,
+        .public-account-menu .fa-regular,
+        .public-account-menu .fab,
+        .public-account-menu .fa-brands,
+        .public-user-btn .fas,
+        .public-user-btn .fa-solid,
+        .public-user-btn .far,
+        .public-user-btn .fa-regular,
+        .public-user-btn .fab,
+        .public-user-btn .fa-brands {
+            font-family: "Font Awesome 6 Free" !important;
+        }
+
+        .public-account-menu .fas,
+        .public-account-menu .fa-solid,
+        .public-user-btn .fas,
+        .public-user-btn .fa-solid {
+            font-weight: 900 !important;
+        }
+
+        .public-account-menu .far,
+        .public-account-menu .fa-regular,
+        .public-user-btn .far,
+        .public-user-btn .fa-regular {
+            font-weight: 400 !important;
+        }
+
+        .public-user-btn {
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.32rem 0.42rem 0.32rem 0.95rem;
+            border-radius: 999px;
+            background-color: #ffffff;
+            border: 1px solid #dbe3ef;
+            color: #0f172a;
+            font-weight: 800;
+            text-decoration: none;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+            .public-user-btn:hover,
+            .public-user-btn:focus {
+                color: var(--primary-color);
+                border-color: rgba(0, 174, 239, 0.35);
+                box-shadow: 0 8px 22px rgba(0, 174, 239, 0.12);
+            }
+
+            .public-user-btn::after {
+                display: none;
+            }
+
+        .public-user-btn-name {
+            max-width: 145px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #0f172a;
+            font-size: 0.92rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            line-height: 1;
+        }
+
+        .public-user-avatar-wrap {
+            position: relative;
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+        }
+
+        .public-user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #ffffff;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+        }
+
+        .public-user-online-dot {
+            position: absolute;
+            right: 0;
+            bottom: 1px;
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background-color: #22c55e;
+            border: 2px solid #ffffff;
+        }
+
+        .public-account-menu {
+            width: 272px;
+            padding: 0;
+            border: none !important;
+            border-radius: 22px !important;
+            overflow: hidden;
+            background-color: #ffffff;
+            box-shadow: 0 18px 44px rgba(15, 23, 42, 0.14);
+            margin-top: 12px !important;
+        }
+
+        .public-account-header {
+            display: flex;
+            align-items: center;
+            gap: 0.78rem;
+            padding: 1rem 1.05rem;
+            background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.20), transparent 38%), linear-gradient(135deg, rgba(0, 174, 239, 0.10), #ffffff);
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .public-account-avatar {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #ffffff;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+        }
+
+        .public-account-info {
+            min-width: 0;
+        }
+
+        .public-account-name {
+            font-size: 0.94rem;
+            font-weight: 900;
+            color: #0f172a;
+            line-height: 1.2;
+            letter-spacing: -0.025em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 175px;
+        }
+
+        .public-account-role {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 0.24rem;
+            padding: 0.16rem 0.55rem;
+            border-radius: 999px;
+            background-color: rgba(0, 174, 239, 0.14);
+            color: var(--primary-color);
+            font-size: 0.62rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.35px;
+            line-height: 1.2;
+        }
+
+        .public-account-email {
+            margin-top: 0.25rem;
+            color: #64748b;
+            font-size: 0.72rem;
+            font-weight: 600;
+            line-height: 1.3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 175px;
+        }
+
+        .public-account-divider {
+            height: 1px;
+            background-color: #e2e8f0;
+            margin: 0;
+        }
+
+        .public-account-body {
+            padding: 0.45rem;
+        }
+
+        .public-account-item {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 0.62rem;
+            padding: 0.68rem 0.7rem;
+            border-radius: 14px;
+            border: none;
+            background-color: transparent;
+            color: #334155;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+
+            .public-account-item:hover {
+                background-color: #f8fafc;
+                color: var(--primary-color);
+            }
+
+        .public-account-item-icon {
+            width: 34px;
+            height: 34px;
+            min-width: 34px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.88rem;
+        }
+
+        .public-icon-primary {
+            background-color: rgba(13, 110, 253, 0.10);
+            color: #0d6efd;
+        }
+
+        .public-icon-info {
+            background-color: rgba(0, 174, 239, 0.10);
+            color: var(--primary-color);
+        }
+
+        .public-icon-danger {
+            background-color: rgba(239, 68, 68, 0.10);
+            color: #ef4444;
+        }
+
+        .public-account-item-content {
+            min-width: 0;
+        }
+
+        .public-account-item-title {
+            display: block;
+            font-size: 0.88rem;
+            font-weight: 900;
+            line-height: 1.2;
+            letter-spacing: -0.015em;
+        }
+
+        .public-account-item-desc {
+            display: block;
+            margin-top: 0.16rem;
+            color: #64748b;
+            font-size: 0.7rem;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+
+        .public-account-logout {
+            color: #ef4444;
+            font-weight: 900;
+        }
+
+            .public-account-logout:hover {
+                background-color: rgba(239, 68, 68, 0.08);
+                color: #ef4444;
             }
 
         .footer-modern {
@@ -332,12 +631,50 @@
                 justify-content: flex-start;
                 flex-wrap: wrap;
             }
+
+            .public-account-menu {
+                width: 255px;
+            }
+
+            .public-user-btn {
+                padding: 0.32rem 0.42rem 0.32rem 0.8rem;
+            }
+
+            .public-user-btn-name {
+                max-width: 130px;
+                font-size: 0.88rem;
+            }
+
+            .public-user-avatar-wrap,
+            .public-user-avatar {
+                width: 34px;
+                height: 34px;
+                min-width: 34px;
+            }
+
+            .public-account-name {
+                max-width: 160px;
+            }
+
+            .public-account-email {
+                max-width: 160px;
+            }
         }
     </style>
 </head>
+
 <body>
 
     @{
+        Func<string, string, string> L = (key, fallback) =>
+        {
+            var value = Localizer[key].Value;
+
+            return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+        };
+
         var area = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
         var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
         var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
@@ -437,7 +774,7 @@
         ? $"/{slug}/Admin/Assignment?conferenceId={selectedConferenceId.Value}"
         : "/Admin/Assignment";
 
-        var websiteUrl = (!string.IsNullOrWhiteSpace(slug))
+        var websiteUrl = !string.IsNullOrWhiteSpace(slug)
         ? $"/{slug}/Admin/Website"
         : "/Admin/Website";
 
@@ -446,6 +783,14 @@
         var listenerPanelUrl = !string.IsNullOrWhiteSpace(slug)
         ? $"/{slug}/Dashboard"
         : "/Dashboard";
+
+        var refereePanelUrl = !string.IsNullOrWhiteSpace(slug)
+        ? $"/{slug}/Review/Index"
+        : "/Review/Index";
+
+        var authorPanelUrl = !string.IsNullOrWhiteSpace(slug)
+        ? $"/{slug}/Submission/Index"
+        : "/Submission/Index";
 
         var requestCulture = Context.Features.Get<IRequestCultureFeature>();
         var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? "tr-TR";
@@ -457,6 +802,88 @@
         var returnUrl = string.IsNullOrEmpty(Context.Request.Path.Value)
         ? "/"
         : $"{Context.Request.Path}{Context.Request.QueryString}";
+
+        var currentUser = SignInManager.IsSignedIn(User)
+        ? await UserManager.GetUserAsync(User)
+        : null;
+
+        var publicDisplayName = currentUser != null
+        ? $"{currentUser.FirstName} {currentUser.LastName}".Trim()
+        : "";
+
+        if (string.IsNullOrWhiteSpace(publicDisplayName))
+        {
+            publicDisplayName = currentUser?.Email ?? User.Identity?.Name ?? L("Role_User", "Kullanıcı");
+        }
+
+        var publicEmail = currentUser?.Email ?? User.Identity?.Name ?? "";
+
+        var publicRoleText = L("Role_User", "Kullanıcı");
+        var publicPanelUrl = "/Dashboard";
+        var publicPanelText = L("Dropdown_Dashboard", "Panelim");
+        var publicPanelIcon = "fas fa-gauge-high";
+
+        if (isSuperAdmin)
+        {
+            publicRoleText = L("Role_SuperAdmin", "Süper Admin");
+            publicPanelUrl = superAdminPanelUrl;
+            publicPanelText = L("Dropdown_SystemPanel", "Sistem Paneli");
+            publicPanelIcon = "fas fa-gauge-high";
+        }
+        else if (isAdminLike)
+        {
+            publicRoleText = L("Role_Admin", "Admin");
+            publicPanelUrl = hasSelectedConference ? assignmentUrl : "/Dashboard";
+            publicPanelText = L("Dropdown_ManagementPanel", "Yönetim Paneli");
+            publicPanelIcon = "fas fa-briefcase";
+        }
+        else if (isReferee)
+        {
+            publicRoleText = L("Role_Referee", "Hakem");
+            publicPanelUrl = refereePanelUrl;
+            publicPanelText = L("Dropdown_RefereePanel", "Hakem Paneli");
+            publicPanelIcon = "fas fa-gavel";
+        }
+        else if (isAuthor)
+        {
+            publicRoleText = L("Role_Author", "Yazar");
+            publicPanelUrl = authorPanelUrl;
+            publicPanelText = L("Dropdown_AuthorPanel", "Yazar Paneli");
+            publicPanelIcon = "fas fa-file-alt";
+        }
+        else if (isListener)
+        {
+            publicRoleText = L("Role_Listener", "Dinleyici");
+            publicPanelUrl = listenerPanelUrl;
+            publicPanelText = L("Dropdown_Dashboard", "Panelim");
+            publicPanelIcon = "fas fa-gauge-high";
+        }
+
+        var publicRoleUpper = publicRoleText.ToUpper(new CultureInfo("tr-TR"));
+
+        var nameParts = publicDisplayName
+        .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        var publicInitials = "U";
+
+        if (nameParts.Length >= 2)
+        {
+            publicInitials = $"{nameParts[0][0]}{nameParts[nameParts.Length - 1][0]}";
+        }
+        else if (nameParts.Length == 1 && nameParts[0].Length >= 2)
+        {
+            publicInitials = nameParts[0].Substring(0, 2);
+        }
+        else if (!string.IsNullOrWhiteSpace(publicEmail))
+        {
+            publicInitials = publicEmail.Substring(0, Math.Min(2, publicEmail.Length));
+        }
+
+        publicInitials = publicInitials.ToUpper(new CultureInfo("tr-TR"));
+
+        var publicProfileImg = !string.IsNullOrWhiteSpace(currentUser?.ProfileImagePath)
+        ? currentUser.ProfileImagePath
+        : $"https://ui-avatars.com/api/?name={Uri.EscapeDataString(publicDisplayName)}&background=00aeef&color=fff&size=128&bold=true";
     }
 
     @if (hideGlobalNavbar)
@@ -514,23 +941,33 @@
                     <div class="collapse navbar-collapse" id="navbarNav">
                         <ul class="navbar-nav mx-auto align-items-center">
                             <li class="nav-item">
-                                <a class="nav-link" href="/">@Localizer["Menu_Home"]</a>
+                                <a class="nav-link" href="/">
+                                    @Localizer["Menu_Home"]
+                                </a>
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link" href="/about">@Localizer["Menu_About"]</a>
+                                <a class="nav-link" href="/about">
+                                    @Localizer["Menu_About"]
+                                </a>
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link" href="/congresses">@Localizer["Menu_Congresses"]</a>
+                                <a class="nav-link" href="/congresses">
+                                    @Localizer["Menu_Congresses"]
+                                </a>
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link" href="/proceedings">@Localizer["Menu_Proceedings"]</a>
+                                <a class="nav-link" href="/proceedings">
+                                    @Localizer["Menu_Proceedings"]
+                                </a>
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link" href="/contact">@Localizer["Menu_Contact"]</a>
+                                <a class="nav-link" href="/contact">
+                                    @Localizer["Menu_Contact"]
+                                </a>
                             </li>
 
                             @if (!hideAdminNav && isSuperAdmin)
@@ -571,31 +1008,32 @@
                                 }
                             }
 
-                            @if (isReferee && !hideAdminNav)
+                            @if (!hideAdminNav && isReferee)
                             {
                                 <li class="nav-item ms-lg-3">
-                                    <a class="nav-link referee-link shadow-sm" href="/Dashboard">
+                                    <a class="nav-link referee-link shadow-sm" href="@refereePanelUrl">
                                         <i class="fas fa-gavel me-1"></i>
                                         @Localizer["RefereePanel"]
                                     </a>
                                 </li>
                             }
 
-                            @if (isAuthor && !hideAdminNav)
+                            @if (!hideAdminNav && isAuthor)
                             {
                                 <li class="nav-item ms-lg-3">
-                                    <a class="nav-link author-link shadow-sm" href="/Dashboard">
-                                        <i class="fas fa-user-graduate me-1"></i>
+                                    <a class="nav-link author-link shadow-sm" href="@authorPanelUrl">
+                                        <i class="fas fa-file-alt me-1"></i>
                                         @Localizer["AuthorPanel"]
                                     </a>
                                 </li>
                             }
-                            @if (isListener && !hideAdminNav)
+
+                            @if (!hideAdminNav && isListener)
                             {
                                 <li class="nav-item ms-lg-3">
-                                    <a class="nav-link author-link shadow-sm" href="@listenerPanelUrl">
-                                        <i class="fas fa-user-check me-1"></i>
-                                        Katılımcı Paneli
+                                    <a class="nav-link referee-link shadow-sm" href="@listenerPanelUrl">
+                                        <i class="fas fa-gauge-high me-1"></i>
+                                        @Localizer["Dashboard"]
                                     </a>
                                 </li>
                             }
@@ -608,7 +1046,7 @@
                                         data-bs-toggle="dropdown"
                                         aria-expanded="false">
                                     <i class="fas fa-globe"></i>
-                                    @currentShortCulture
+                                    <span>@currentShortCulture</span>
                                 </button>
 
                                 <div class="dropdown-menu dropdown-menu-end language-menu">
@@ -619,9 +1057,9 @@
                                         <input type="hidden" name="returnUrl" value="@returnUrl" />
 
                                         <button type="submit"
-                                                class="language-menu-item @(currentCulture == "tr-TR" ? "active" : "")">
-                                            <span>🇹🇷</span>
-                                            <span>Türkçe</span>
+                                                class="language-menu-item @(currentCulture.StartsWith("tr", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                                            <span class="language-code">TR</span>
+                                            <span class="language-name">Türkçe</span>
                                         </button>
                                     </form>
 
@@ -632,15 +1070,121 @@
                                         <input type="hidden" name="returnUrl" value="@returnUrl" />
 
                                         <button type="submit"
-                                                class="language-menu-item @(currentCulture == "en-US" ? "active" : "")">
-                                            <span>🇬🇧</span>
-                                            <span>English</span>
+                                                class="language-menu-item @(currentCulture.StartsWith("en", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                                            <span class="language-code">GB</span>
+                                            <span class="language-name">English</span>
                                         </button>
                                     </form>
                                 </div>
                             </div>
 
-                            <partial name="_LoginPartial" />
+                            @if (SignInManager.IsSignedIn(User))
+                            {
+                                <div class="dropdown">
+                                    <button class="public-user-btn"
+                                            type="button"
+                                            data-bs-toggle="dropdown"
+                                            aria-expanded="false"
+                                            aria-label="@L("AccountMenu", "Hesap menüsü")">
+                                        <span class="public-user-btn-name">
+                                            @publicDisplayName
+                                        </span>
+
+                                        <span class="public-user-avatar-wrap">
+                                            <img src="@publicProfileImg"
+                                                 class="public-user-avatar"
+                                                 alt="@publicDisplayName" />
+
+                                            <span class="public-user-online-dot"></span>
+                                        </span>
+                                    </button>
+
+                                    <div class="dropdown-menu dropdown-menu-end public-account-menu">
+                                        <div class="public-account-header">
+                                            <img src="@publicProfileImg"
+                                                 class="public-account-avatar"
+                                                 alt="@publicDisplayName" />
+
+                                            <div class="public-account-info">
+                                                <div class="public-account-name">
+                                                    @publicDisplayName
+                                                </div>
+
+                                                <div class="public-account-role">
+                                                    @publicRoleUpper
+                                                </div>
+
+                                                <div class="public-account-email">
+                                                    @publicEmail
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="public-account-body">
+                                            <a class="public-account-item"
+                                               href="@publicPanelUrl">
+                                                <span class="public-account-item-icon public-icon-primary">
+                                                    <i class="@publicPanelIcon"></i>
+                                                </span>
+
+                                                <span class="public-account-item-content">
+                                                    <span class="public-account-item-title">
+                                                        @publicPanelText
+                                                    </span>
+                                                </span>
+                                            </a>
+
+                                            <a class="public-account-item"
+                                               href="/Identity/Account/Manage">
+                                                <span class="public-account-item-icon public-icon-info">
+                                                    <i class="fas fa-user-gear"></i>
+                                                </span>
+
+                                                <span class="public-account-item-content">
+                                                    <span class="public-account-item-title">
+                                                        @L("Dropdown_Settings", "Hesap Ayarları")
+                                                    </span>
+                                                </span>
+                                            </a>
+                                        </div>
+
+                                        <div class="public-account-divider"></div>
+
+                                        <div class="public-account-body">
+                                            <form asp-area=""
+                                                  asp-controller="Dashboard"
+                                                  asp-action="CustomLogout"
+                                                  method="post"
+                                                  class="m-0">
+                                                @Html.AntiForgeryToken()
+
+                                                <button type="submit"
+                                                        class="public-account-item public-account-logout">
+                                                    <span class="public-account-item-icon public-icon-danger">
+                                                        <i class="fas fa-right-from-bracket"></i>
+                                                    </span>
+
+                                                    <span class="public-account-item-content">
+                                                        <span class="public-account-item-title">
+                                                            @L("Dropdown_Logout", "Çıkış Yap")
+                                                        </span>
+                                                    </span>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <a href="/login" class="btn btn-outline-primary">
+                                    @L("Login", "Giriş Yap")
+                                </a>
+
+                                <a href="/register" class="btn btn-primary">
+                                    @L("Register", "Kayıt Ol")
+                                </a>
+                            }
                         </div>
                     </div>
                 </div>
@@ -658,7 +1202,8 @@
 
                 <div class="col-lg-4 col-md-6">
                     <h5 class="text-white fw-bold mb-3">
-                        <i class="fas fa-layer-group me-2 text-primary"></i>ANT ABSTRACT
+                        <i class="fas fa-layer-group me-2 text-primary"></i>
+                        ANT ABSTRACT
                     </h5>
 
                     <p class="mb-4" style="line-height: 1.8;">
@@ -686,54 +1231,53 @@
 
                 <div class="col-lg-2 col-md-6">
                     <h6 class="footer-title">
-                        @Localizer["Footer_Platform"]
+                        @Localizer["Footer_QuickLinks"]
                     </h6>
 
                     <a href="/" class="footer-link">
+                        <i class="fas fa-chevron-right me-2 small text-primary"></i>
                         @Localizer["Menu_Home"]
                     </a>
 
-                    <a href="/congresses" class="footer-link">
-                        @Localizer["Menu_Congresses"]
-                    </a>
-
                     <a href="/about" class="footer-link">
+                        <i class="fas fa-chevron-right me-2 small text-primary"></i>
                         @Localizer["Menu_About"]
                     </a>
 
-                    <a href="/login" class="footer-link">
-                        @Localizer["Menu_Login"]
+                    <a href="/congresses" class="footer-link">
+                        <i class="fas fa-chevron-right me-2 small text-primary"></i>
+                        @Localizer["Menu_Congresses"]
+                    </a>
+
+                    <a href="/contact" class="footer-link">
+                        <i class="fas fa-chevron-right me-2 small text-primary"></i>
+                        @Localizer["Menu_Contact"]
                     </a>
                 </div>
 
                 <div class="col-lg-3 col-md-6">
                     <h6 class="footer-title">
-                        @Localizer["Footer_SupportLegal"]
+                        @Localizer["Footer_Legal"]
                     </h6>
 
                     <a href="/privacy" class="footer-link">
                         <i class="fas fa-shield-alt me-2 text-primary"></i>
-                        @Localizer["Footer_PrivacyPolicy"]
+                        @Localizer["PrivacyPolicy"]
                     </a>
 
                     <a href="/kvkk" class="footer-link">
                         <i class="fas fa-file-signature me-2 text-primary"></i>
-                        @Localizer["Footer_Kvkk"]
+                        KVKK
                     </a>
 
                     <a href="/cookies" class="footer-link">
                         <i class="fas fa-cookie-bite me-2 text-primary"></i>
-                        @Localizer["Footer_CookiePolicy"]
+                        @Localizer["CookiePolicy"]
                     </a>
 
                     <a href="/terms" class="footer-link">
                         <i class="fas fa-file-contract me-2 text-primary"></i>
-                        @Localizer["Footer_Terms"]
-                    </a>
-
-                    <a href="/contact" class="footer-link">
-                        <i class="fas fa-envelope me-2 text-primary"></i>
-                        @Localizer["Menu_Contact"]
+                        @Localizer["TermsOfUse"]
                     </a>
                 </div>
 

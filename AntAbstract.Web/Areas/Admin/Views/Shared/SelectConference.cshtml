@@ -1,4 +1,797 @@
-﻿@{
-    Layout = null;
-    Context.Response.Redirect("/Dashboard/MyConferences");
+﻿@model AntAbstract.Web.Models.ViewModels.Shared.SelectConferenceViewModel
+
+@{
+    ViewData["Title"] = Model.Title;
+    ViewData["HideSelectedConferenceBar"] = true;
+    Layout = "_LayoutDashboard";
+
+    var conferences = Model.Conferences?.ToList() ?? new List<AntAbstract.Domain.Entities.Conference>();
+    var returnUrl = Model.ReturnUrl;
+
+    var institutions = conferences
+        .Select(x => new
+        {
+            Name = x.Tenant?.Name ?? "-",
+            Slug = x.Tenant?.Slug ?? ""
+        })
+        .Where(x => !string.IsNullOrWhiteSpace(x.Name) && x.Name != "-")
+        .GroupBy(x => $"{x.Name}|{x.Slug}")
+        .Select(x => x.First())
+        .OrderBy(x => x.Name)
+        .ToList();
+}
+
+<div class="container-fluid">
+
+    <div class="page-header-wrap mb-4">
+        <div class="page-header-left">
+            <div class="text-uppercase text-muted fw-bold small mb-1">
+                Kongre Operasyonları
+            </div>
+
+            <h2 class="fw-bold mb-2 text-dark">
+                @Model.Title
+            </h2>
+
+            <p class="text-muted mb-0 page-header-desc">
+                @Model.Lead
+            </p>
+        </div>
+
+        <div class="page-header-right">
+            <a href="/Dashboard/SuperAdmin" class="btn btn-light border rounded-pill px-4 header-action-btn">
+                <i class="fas fa-arrow-left me-2 text-primary"></i>
+                Panele Dön
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4">
+            <i class="fas fa-times-circle me-2"></i>
+            @TempData["ErrorMessage"]
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (conferences.Any())
+    {
+        <div class="conference-filter-panel mb-4">
+            <div class="row g-3 align-items-end">
+
+                <div class="col-xl-5 col-lg-5 col-md-12">
+                    <label class="filter-label" for="conferenceSearchInput">
+                        Arama
+                    </label>
+
+                    <div class="filter-input-wrap">
+                        <input type="text"
+                               id="conferenceSearchInput"
+                               autocomplete="off"
+                               class="filter-control"
+                               placeholder="Kongre adı, kurum veya slug ara..." />
+                    </div>
+                </div>
+
+                <div class="col-xl-4 col-lg-4 col-md-12">
+                    <label class="filter-label" for="institutionFilterSelect">
+                        Kurum
+                    </label>
+
+                    <select id="institutionFilterSelect" class="filter-control filter-select">
+                        <option value="">
+                            Tüm Kurumlar
+                        </option>
+
+                        @foreach (var institution in institutions)
+                        {
+                            var optionValue = $"{institution.Name} {institution.Slug}".Trim().ToLowerInvariant();
+
+                            <option value="@optionValue">
+                                @institution.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-xl-2 col-lg-2 col-md-8">
+                    <button type="button"
+                            id="filterConferenceButton"
+                            class="btn-filter-conference w-100">
+                        <i class="fas fa-search"></i>
+                        Filtrele
+                    </button>
+                </div>
+
+                <div class="col-xl-1 col-lg-1 col-md-4">
+                    <button type="button"
+                            id="resetConferenceFilter"
+                            class="btn-reset-filter w-100"
+                            title="Filtreyi temizle">
+                        <i class="fas fa-rotate-left"></i>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden select-conference-card">
+        <div class="card-header bg-white border-0 px-4 py-3">
+            <div class="conference-card-header">
+                <div>
+                    <h5 class="fw-bold mb-1">
+                        Kongre Listesi
+                    </h5>
+
+                    <p class="text-muted small mb-0">
+                        İşlem yapmak istediğiniz kongreyi seçip devam edin.
+                    </p>
+                </div>
+
+                @if (conferences.Any())
+                {
+                    <div class="conference-count-text">
+                        <span id="visibleConferenceCount">@conferences.Count</span> / @conferences.Count kongre
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+
+            @if (!conferences.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-calendar-xmark fa-3x mb-3 opacity-25"></i>
+
+                    <h6 class="fw-bold mb-1">
+                        Kongre bulunamadı
+                    </h6>
+
+                    <p class="mb-0">
+                        Görüntülenebilecek kongre kaydı bulunmuyor.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <form action="@Model.PostUrl" method="post" id="selectConferenceForm">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 select-conference-table">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4 py-3 text-muted fw-bold small" style="width: 7%;">
+                                        Seç
+                                    </th>
+
+                                    <th class="py-3 text-muted fw-bold small" style="width: 35%;">
+                                        Kongre
+                                    </th>
+
+                                    <th class="py-3 text-muted fw-bold small" style="width: 25%;">
+                                        Kurum
+                                    </th>
+
+                                    <th class="py-3 text-muted fw-bold small" style="width: 18%;">
+                                        Tarih
+                                    </th>
+
+                                    <th class="pe-4 py-3 text-muted fw-bold small text-end" style="width: 15%;">
+                                        Site
+                                    </th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="conferenceTableBody">
+                                @foreach (var item in conferences)
+                                {
+                                    var tenantName = item.Tenant?.Name ?? "-";
+                                    var tenantSlug = item.Tenant?.Slug ?? "";
+                                    var rowId = $"conf_{item.Id}";
+
+                                    var startDateText = item.StartDate.ToString("dd.MM.yyyy");
+                                    var endDateText = item.EndDate.ToString("dd.MM.yyyy");
+
+                                    var searchText = $"{item.Title} {item.Slug} {tenantName} {tenantSlug} {startDateText} {endDateText}".ToLowerInvariant();
+                                    var institutionText = $"{tenantName} {tenantSlug}".Trim().ToLowerInvariant();
+
+                                    <tr class="select-row"
+                                        data-search="@searchText"
+                                        data-institution="@institutionText">
+                                        <td class="ps-4">
+                                            <input class="form-check-input conference-radio"
+                                                   type="radio"
+                                                   name="conferenceId"
+                                                   id="@rowId"
+                                                   value="@item.Id"
+                                                   required />
+                                        </td>
+
+                                        <td>
+                                            <label for="@rowId" class="select-label">
+                                                <span class="avatar-sm me-3 bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center">
+                                                    <i class="fas fa-calendar-alt"></i>
+                                                </span>
+
+                                                <span class="select-conference-info">
+                                                    <span class="fw-bold d-block text-dark select-conference-title">
+                                                        @item.Title
+                                                    </span>
+
+                                                    <small class="text-muted">
+                                                        Slug: @(string.IsNullOrWhiteSpace(item.Slug) ? "-" : item.Slug)
+                                                    </small>
+                                                </span>
+                                            </label>
+                                        </td>
+
+                                        <td>
+                                            <span class="fw-semibold d-block">
+                                                @tenantName
+                                            </span>
+
+                                            <small class="text-muted">
+                                                @(string.IsNullOrWhiteSpace(tenantSlug) ? "-" : "/" + tenantSlug)
+                                            </small>
+                                        </td>
+
+                                        <td>
+                                            <span class="fw-semibold d-block">
+                                                @startDateText
+                                            </span>
+
+                                            <small class="text-muted">
+                                                @endDateText
+                                            </small>
+                                        </td>
+
+                                        <td class="pe-4 text-end">
+                                            @if (!string.IsNullOrWhiteSpace(tenantSlug))
+                                            {
+                                                <a href="/@tenantSlug"
+                                                   target="_blank"
+                                                   class="btn btn-sm btn-outline-secondary rounded-3 text-nowrap site-preview-btn">
+                                                    <i class="fas fa-external-link-alt me-1"></i>
+                                                    Siteyi Gör
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small">-</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="conferenceNoResult" class="conference-no-result d-none">
+                        <div class="conference-no-result-icon">
+                            <i class="fas fa-magnifying-glass"></i>
+                        </div>
+
+                        <h6 class="fw-bold mb-1">
+                            Arama sonucu bulunamadı
+                        </h6>
+
+                        <p class="text-muted mb-0">
+                            Farklı bir kongre adı, kurum adı veya slug deneyin.
+                        </p>
+                    </div>
+
+                    <div class="select-footer">
+                        <div class="selected-conference-info" id="selectedConferenceInfo">
+                            Devam etmek için bir kongre seçin.
+                        </div>
+
+                        <div class="d-flex justify-content-end align-items-center gap-2">
+                            <a href="/Dashboard/SuperAdmin" class="btn btn-light border rounded-pill px-4">
+                                Vazgeç
+                            </a>
+
+                            <button type="submit"
+                                    class="btn btn-primary shadow-sm px-5 rounded-pill select-conference-submit-btn"
+                                    id="selectConferenceSubmitButton"
+                                    disabled>
+                                <i class="fas fa-arrow-right me-2"></i>
+                                @Model.SubmitText
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            }
+
+        </div>
+    </div>
+
+</div>
+
+<style>
+    :root {
+        --select-blue: #0d6efd;
+        --select-blue-dark: #0b5ed7;
+        --select-blue-soft: rgba(13, 110, 253, 0.10);
+    }
+
+    .page-header-wrap {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .page-header-left {
+        flex: 1 1 620px;
+        min-width: 320px;
+    }
+
+    .page-header-right {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+        flex: 0 0 auto;
+    }
+
+    .header-action-btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        font-weight: 700;
+        font-size: 0.95rem;
+        box-shadow: none;
+    }
+
+    .page-header-desc {
+        max-width: 780px;
+    }
+
+    .conference-filter-panel {
+        background-color: #ffffff;
+        border: 1px solid #edf2f7;
+        border-radius: 10px;
+        padding: 1.15rem 1.25rem;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
+    }
+
+    .filter-label {
+        display: block;
+        color: #0f172a;
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .filter-control {
+        width: 100%;
+        min-height: 46px;
+        border-radius: 6px;
+        border: 1px solid #cbd5e1;
+        background-color: #ffffff;
+        color: #0f172a;
+        padding: 0 0.95rem;
+        font-size: 0.95rem;
+        font-weight: 500;
+        outline: none;
+        transition: all 0.2s ease;
+    }
+
+        .filter-control::placeholder {
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .filter-control:focus {
+            border-color: rgba(13, 110, 253, 0.55);
+            box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.10);
+        }
+
+    .filter-select {
+        cursor: pointer;
+    }
+
+    .btn-filter-conference {
+        min-height: 46px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        padding: 0 1.25rem;
+        border: none;
+        border-radius: 6px;
+        background-color: var(--select-blue);
+        color: #ffffff;
+        font-size: 0.95rem;
+        font-weight: 800;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.18);
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+        .btn-filter-conference:hover {
+            background-color: var(--select-blue-dark);
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 14px 28px rgba(13, 110, 253, 0.25);
+        }
+
+    .btn-reset-filter {
+        min-height: 46px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #dbe3ef;
+        border-radius: 6px;
+        background-color: #ffffff;
+        color: #0f172a;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+    }
+
+        .btn-reset-filter:hover {
+            background-color: #f8fafc;
+            border-color: #cbd5e1;
+            color: var(--select-blue);
+        }
+
+    .select-conference-card {
+        border: 1px solid #edf2f7;
+    }
+
+    .conference-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .conference-count-text {
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 900;
+        white-space: nowrap;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        background-color: #f8fafc;
+        border: 1px solid #edf2f7;
+    }
+
+    .select-conference-table thead th {
+        font-size: 0.7rem;
+        letter-spacing: 0.8px;
+        border-bottom: none;
+        text-transform: uppercase;
+    }
+
+    .select-conference-table tbody tr {
+        transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        border-bottom: 1px solid #f8fafc;
+        cursor: pointer;
+    }
+
+        .select-conference-table tbody tr:hover {
+            background-color: #fbfcfe !important;
+        }
+
+    .select-conference-table td,
+    .select-conference-table th {
+        vertical-align: middle;
+    }
+
+    .conference-radio {
+        width: 1.15rem;
+        height: 1.15rem;
+        cursor: pointer;
+    }
+
+        .conference-radio:checked {
+            background-color: var(--select-blue);
+            border-color: var(--select-blue);
+        }
+
+        .conference-radio:focus {
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.18);
+        }
+
+    .select-label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        margin: 0;
+    }
+
+    .select-conference-info {
+        min-width: 0;
+    }
+
+    .select-conference-title {
+        line-height: 1.35;
+    }
+
+    .avatar-sm {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        font-size: 0.95rem;
+    }
+
+    .select-row:has(.conference-radio:checked) {
+        background-color: rgba(13, 110, 253, 0.065) !important;
+        box-shadow: inset 4px 0 0 var(--select-blue);
+    }
+
+    .site-preview-btn {
+        font-weight: 800;
+    }
+
+    .conference-no-result {
+        text-align: center;
+        padding: 3rem 1.5rem;
+        border-top: 1px solid #f1f5f9;
+    }
+
+    .conference-no-result-icon {
+        width: 58px;
+        height: 58px;
+        border-radius: 20px;
+        background-color: rgba(13, 110, 253, 0.10);
+        color: var(--select-blue);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        margin-bottom: 1rem;
+    }
+
+    .select-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #e2e8f0;
+        background-color: #ffffff;
+        flex-wrap: wrap;
+    }
+
+    .selected-conference-info {
+        color: #64748b;
+        font-size: 0.88rem;
+        font-weight: 800;
+    }
+
+        .selected-conference-info strong {
+            color: #0f172a;
+            font-weight: 900;
+        }
+
+    .select-conference-submit-btn {
+        min-height: 46px;
+        min-width: 220px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        border: none;
+        background-color: #0d6efd !important;
+        color: #ffffff !important;
+        font-size: 0.95rem;
+        font-weight: 900;
+        line-height: 1;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+        .select-conference-submit-btn i {
+            color: #ffffff !important;
+        }
+
+        .select-conference-submit-btn:hover:not(:disabled) {
+            background-color: #0b5ed7 !important;
+            color: #ffffff !important;
+            transform: translateY(-1px);
+            box-shadow: 0 12px 24px rgba(13, 110, 253, 0.24) !important;
+        }
+
+        .select-conference-submit-btn:focus {
+            color: #ffffff !important;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.18) !important;
+        }
+
+        .select-conference-submit-btn:disabled {
+            background-color: #78a9f5 !important;
+            color: #ffffff !important;
+            opacity: 1;
+            cursor: not-allowed;
+            box-shadow: none !important;
+        }
+
+            .select-conference-submit-btn:disabled i {
+                color: #ffffff !important;
+            }
+
+    @@media (max-width: 992px) {
+        .page-header-wrap {
+            align-items: flex-start;
+        }
+
+        .page-header-right {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .select-footer {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+            .select-footer .d-flex {
+                width: 100%;
+            }
+
+            .select-footer .btn {
+                flex: 1;
+            }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const searchInput = document.getElementById("conferenceSearchInput");
+            const institutionSelect = document.getElementById("institutionFilterSelect");
+            const filterButton = document.getElementById("filterConferenceButton");
+            const resetButton = document.getElementById("resetConferenceFilter");
+            const visibleConferenceCount = document.getElementById("visibleConferenceCount");
+            const noResultBox = document.getElementById("conferenceNoResult");
+            const rows = Array.from(document.querySelectorAll(".select-row"));
+            const radios = Array.from(document.querySelectorAll(".conference-radio"));
+            const submitButton = document.getElementById("selectConferenceSubmitButton");
+            const selectedConferenceInfo = document.getElementById("selectedConferenceInfo");
+
+            function normalizeText(value) {
+                return (value || "")
+                    .toString()
+                    .toLocaleLowerCase("tr-TR")
+                    .replaceAll("ı", "i")
+                    .replaceAll("İ", "i");
+            }
+
+            function updateVisibleCount(count) {
+                if (visibleConferenceCount) {
+                    visibleConferenceCount.textContent = count;
+                }
+            }
+
+            function filterRows() {
+                const searchTerm = searchInput ? normalizeText(searchInput.value.trim()) : "";
+                const institutionTerm = institutionSelect ? normalizeText(institutionSelect.value.trim()) : "";
+
+                let visibleCount = 0;
+
+                rows.forEach(function (row) {
+                    const searchText = normalizeText(row.getAttribute("data-search"));
+                    const institutionText = normalizeText(row.getAttribute("data-institution"));
+
+                    const matchesSearch = !searchTerm || searchText.includes(searchTerm);
+                    const matchesInstitution = !institutionTerm || institutionText.includes(institutionTerm);
+
+                    const isVisible = matchesSearch && matchesInstitution;
+
+                    row.classList.toggle("d-none", !isVisible);
+
+                    if (isVisible) {
+                        visibleCount++;
+                    }
+                });
+
+                updateVisibleCount(visibleCount);
+
+                if (noResultBox) {
+                    noResultBox.classList.toggle("d-none", visibleCount !== 0);
+                }
+            }
+
+            function resetFilters() {
+                if (searchInput) {
+                    searchInput.value = "";
+                }
+
+                if (institutionSelect) {
+                    institutionSelect.value = "";
+                }
+
+                filterRows();
+            }
+
+            function updateSelectedInfo(radio) {
+                if (!radio) {
+                    return;
+                }
+
+                const row = radio.closest(".select-row");
+                const titleElement = row ? row.querySelector(".select-conference-title") : null;
+                const title = titleElement ? titleElement.textContent.trim() : "Seçili kongre";
+
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+
+                if (selectedConferenceInfo) {
+                    selectedConferenceInfo.innerHTML = "<strong>" + title + "</strong> seçildi.";
+                }
+            }
+
+            rows.forEach(function (row) {
+                row.addEventListener("click", function (event) {
+                    if (event.target.closest("a")) {
+                        return;
+                    }
+
+                    const radio = row.querySelector(".conference-radio");
+
+                    if (radio) {
+                        radio.checked = true;
+                        updateSelectedInfo(radio);
+                    }
+                });
+            });
+
+            radios.forEach(function (radio) {
+                radio.addEventListener("change", function () {
+                    updateSelectedInfo(radio);
+                });
+
+                if (radio.checked) {
+                    updateSelectedInfo(radio);
+                }
+            });
+
+            if (searchInput) {
+                searchInput.addEventListener("keydown", function (event) {
+                    if (event.key === "Enter") {
+                        event.preventDefault();
+                        filterRows();
+                    }
+                });
+            }
+
+            if (filterButton) {
+                filterButton.addEventListener("click", filterRows);
+            }
+
+            if (institutionSelect) {
+                institutionSelect.addEventListener("change", filterRows);
+            }
+
+            if (resetButton) {
+                resetButton.addEventListener("click", resetFilters);
+            }
+
+            filterRows();
+        });
+    </script>
 }

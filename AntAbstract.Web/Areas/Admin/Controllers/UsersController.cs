@@ -66,7 +66,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         [HttpGet("/Admin/Users")]
         [HttpGet("/{slug}/Admin/Users")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? search, string? role)
         {
             await EnsureBaseRolesAsync();
 
@@ -77,25 +77,77 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .ThenBy(u => u.Email)
                 .ToListAsync();
 
-            var model = new List<UserListItemViewModel>();
+            var allUsersModel = new List<UserListItemViewModel>();
 
             foreach (var user in users)
             {
                 var roles = await _userManager.GetRolesAsync(user);
 
-                model.Add(new UserListItemViewModel
+                var fullName = $"{user.FirstName} {user.LastName}".Trim();
+
+                allUsersModel.Add(new UserListItemViewModel
                 {
                     UserId = user.Id,
                     Email = user.Email,
-                    Name = $"{user.FirstName} {user.LastName}".Trim(),
+                    Name = string.IsNullOrWhiteSpace(fullName)
+                        ? user.Email ?? "-"
+                        : fullName,
                     Roles = roles
                         .Where(IsAllowedRole)
-                        .OrderBy(role => role)
+                        .OrderBy(roleName => roleName)
                         .ToList()
                 });
             }
 
-            return View(model);
+            var filteredModel = allUsersModel.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var keyword = search.Trim();
+
+                filteredModel = filteredModel.Where(user =>
+                    (!string.IsNullOrWhiteSpace(user.Name) &&
+                     user.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrWhiteSpace(user.Email) &&
+                     user.Email.Contains(keyword, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(role) &&
+                !role.Equals("All", StringComparison.OrdinalIgnoreCase) &&
+                IsAllowedRole(role))
+            {
+                filteredModel = filteredModel.Where(user =>
+                    user.Roles != null &&
+                    user.Roles.Contains(role, StringComparer.OrdinalIgnoreCase));
+            }
+
+            ViewBag.Search = search;
+            ViewBag.SelectedRole = role;
+            ViewBag.AllowedRoles = AllowedRoles;
+
+            ViewBag.TotalUserCount = allUsersModel.Count;
+
+            ViewBag.SuperAdminCount = allUsersModel.Count(user =>
+                user.Roles != null &&
+                user.Roles.Contains("SuperAdmin", StringComparer.OrdinalIgnoreCase));
+
+            ViewBag.AdminCount = allUsersModel.Count(user =>
+                user.Roles != null &&
+                user.Roles.Contains("Admin", StringComparer.OrdinalIgnoreCase));
+
+            ViewBag.AuthorCount = allUsersModel.Count(user =>
+                user.Roles != null &&
+                user.Roles.Contains("Author", StringComparer.OrdinalIgnoreCase));
+
+            ViewBag.ListenerCount = allUsersModel.Count(user =>
+                user.Roles != null &&
+                user.Roles.Contains("Listener", StringComparer.OrdinalIgnoreCase));
+
+            ViewBag.RefereeCount = allUsersModel.Count(user =>
+                user.Roles != null &&
+                user.Roles.Contains("Referee", StringComparer.OrdinalIgnoreCase));
+
+            return View(filteredModel.ToList());
         }
 
         [HttpGet("/Admin/Users/ManageRoles")]

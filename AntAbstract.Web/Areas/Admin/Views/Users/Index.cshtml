@@ -1,299 +1,595 @@
-﻿@using AntAbstract.Web.Models.ViewModels
-@using AntAbstract.Web.Models.ViewModels.Admin.Users
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
-@model List<UserListItemViewModel>
+﻿@model List<AntAbstract.Web.Models.ViewModels.Admin.Users.UserListItemViewModel>
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"].Value;
-    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    ViewData["Title"] = "Kullanıcı Yönetimi";
+    Layout = "_LayoutDashboard";
 
-    string L(string key, string fallback)
+    var search = ViewBag.Search as string;
+    var selectedRole = ViewBag.SelectedRole as string;
+    var allowedRoles = ViewBag.AllowedRoles as string[] ?? new[]
     {
-        var value = Localizer[key].Value;
+        "SuperAdmin",
+        "Admin",
+        "Author",
+        "Listener",
+        "Referee"
+    };
 
-        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
-            ? fallback
-            : value;
-    }
+    var totalUserCount = ViewBag.TotalUserCount ?? 0;
+    var superAdminCount = ViewBag.SuperAdminCount ?? 0;
+    var adminCount = ViewBag.AdminCount ?? 0;
+    var authorCount = ViewBag.AuthorCount ?? 0;
+    var refereeCount = ViewBag.RefereeCount ?? 0;
+    var listenerCount = ViewBag.ListenerCount ?? 0;
+}
 
-    string GetRoleLabel(string role)
+@functions {
+    private string GetRoleLabel(string role)
     {
         return role switch
         {
-            "SuperAdmin" => L("Role_SuperAdmin", "Süper Admin"),
-            "Admin" => L("Role_Admin", "Admin"),
-            "Author" => L("Role_Author", "Yazar"),
-            "Listener" => L("Role_Listener", "Dinleyici"),
-            "Referee" => L("Role_Referee", "Hakem"),
+            "SuperAdmin" => "Süper Admin",
+            "Admin" => "Admin",
+            "Author" => "Yazar",
+            "Listener" => "Dinleyici",
+            "Referee" => "Hakem",
             _ => role
         };
     }
 
-    string GetRoleBadgeClass(string role)
+    private string GetRoleBadgeClass(string role)
     {
         return role switch
         {
-            "SuperAdmin" => "bg-danger-subtle text-danger border-danger-subtle",
-            "Admin" => "bg-primary-subtle text-primary border-primary-subtle",
-            "Author" => "bg-info-subtle text-info border-info-subtle",
-            "Listener" => "bg-success-subtle text-success border-success-subtle",
-            "Referee" => "bg-warning-subtle text-warning border-warning-subtle",
-            _ => "bg-light text-dark border"
+            "SuperAdmin" => "bg-dark text-white",
+            "Admin" => "bg-danger bg-opacity-10 text-danger",
+            "Author" => "bg-primary bg-opacity-10 text-primary",
+            "Listener" => "bg-info bg-opacity-10 text-info",
+            "Referee" => "bg-warning bg-opacity-10 text-warning",
+            _ => "bg-secondary bg-opacity-10 text-secondary"
         };
     }
 }
 
-<div class="card border-0 shadow-sm mb-4 bg-white">
-    <div class="card-body p-4 d-flex align-items-center justify-content-between">
-        <div>
-            <h6 class="text-muted text-uppercase fw-bold small mb-1"
-                style="font-size: 0.75rem; letter-spacing: 1px;">
-                @L("SectionLabel", "Sistem Yönetimi")
-            </h6>
+<div class="container-fluid">
 
-            <h4 class="fw-bold text-dark mb-0">
-                @L("PageHeading", "Kullanıcı Yönetimi")
-            </h4>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="text-uppercase text-muted fw-bold small mb-1">
+                Yönetim
+            </div>
+
+            <h2 class="fw-bold mb-1 text-dark">
+                Kullanıcı Yönetimi
+            </h2>
+
+            <p class="text-muted mb-0">
+                Sistemdeki kullanıcıları görüntüleyin, rolleri düzenleyin ve yetki atamalarını yönetin.
+            </p>
+        </div>
+        <div class="page-header-right">
+            <a href="/Admin/Tenants" class="btn btn-light border rounded-pill px-4 header-action-btn">
+                <i class="fas fa-building me-2 text-primary"></i>
+            Kurumlara Git
+        </a>
+    </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-2 col-6">
+            <div class="info-card">
+                <div class="info-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="fas fa-users"></i>
+                </div>
+
+                <div>
+                    <div class="info-number">@totalUserCount</div>
+                    <div class="info-label">Toplam Kullanıcı</div>
+                </div>
+            </div>
         </div>
 
-        <div class="d-none d-md-block text-end">
-            <div class="icon-shape bg-danger bg-opacity-10 text-danger rounded-circle p-3">
-                <i class="fas fa-users-cog fa-2x"></i>
+        <div class="col-md-2 col-6">
+            <div class="info-card">
+                <div class="info-icon bg-dark bg-opacity-10 text-dark">
+                    <i class="fas fa-shield-halved"></i>
+                </div>
+
+                <div>
+                    <div class="info-number">@superAdminCount</div>
+                    <div class="info-label">Süper Admin</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-2 col-6">
+            <div class="info-card">
+                <div class="info-icon bg-danger bg-opacity-10 text-danger">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+
+                <div>
+                    <div class="info-number">@adminCount</div>
+                    <div class="info-label">Admin</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-2 col-6">
+            <div class="info-card">
+                <div class="info-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="fas fa-pen-nib"></i>
+                </div>
+
+                <div>
+                    <div class="info-number">@authorCount</div>
+                    <div class="info-label">Yazar</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-2 col-6">
+            <div class="info-card">
+                <div class="info-icon bg-warning bg-opacity-10 text-warning">
+                    <i class="fas fa-gavel"></i>
+                </div>
+
+                <div>
+                    <div class="info-number">@refereeCount</div>
+                    <div class="info-label">Hakem</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-2 col-6">
+            <div class="info-card">
+                <div class="info-icon bg-info bg-opacity-10 text-info">
+                    <i class="fas fa-headphones"></i>
+                </div>
+
+                <div>
+                    <div class="info-number">@listenerCount</div>
+                    <div class="info-label">Dinleyici</div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="card-footer border-0 py-1 bg-danger"></div>
-</div>
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body">
+            <form method="get"
+                  asp-area="Admin"
+                  asp-controller="Users"
+                  asp-action="Index"
+                  class="row g-3 align-items-end">
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success border-0 shadow-sm">
-        <i class="fas fa-check-circle me-2"></i>
-        @TempData["SuccessMessage"]
-    </div>
-}
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Arama</label>
 
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger border-0 shadow-sm">
-        <i class="fas fa-times-circle me-2"></i>
-        @TempData["ErrorMessage"]
-    </div>
-}
+                    <input type="text"
+                           name="search"
+                           value="@search"
+                           class="form-control rounded-3"
+                           placeholder="Ad, soyad veya e-posta ara..." />
+                </div>
 
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light text-muted small text-uppercase">
-                    <tr>
-                        <th class="ps-4 py-3 border-0">
-                            @L("TableHeaderUser", "Kullanıcı")
-                        </th>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Rol</label>
 
-                        <th class="py-3 border-0">
-                            @L("TableHeaderEmail", "E-posta")
-                        </th>
-
-                        <th class="py-3 border-0">
-                            @L("TableHeaderCurrentRoles", "Mevcut Roller")
-                        </th>
-
-                        <th class="py-3 border-0 text-end pe-4">
-                            @L("TableHeaderActions", "İşlemler")
-                        </th>
-                    </tr>
-                </thead>
-
-                <tbody class="border-top-0">
-                    @if (Model != null && Model.Any())
-                    {
-                        foreach (var user in Model)
+                    <select name="role" class="form-select rounded-3">
+                        @if (string.IsNullOrWhiteSpace(selectedRole) || selectedRole == "All")
                         {
-                            var displayName = string.IsNullOrWhiteSpace(user.Name)
-                            ? L("UnnamedUser", "İsimsiz Kullanıcı")
-                            : user.Name;
+                            <option value="All" selected>Tüm Roller</option>
+                        }
+                        else
+                        {
+                            <option value="All">Tüm Roller</option>
+                        }
 
-                            var firstLetter = string.IsNullOrWhiteSpace(displayName)
-                            ? "?"
-                            : displayName.Substring(0, 1).ToUpper();
+                        @foreach (var role in allowedRoles)
+                        {
+                            if (selectedRole == role)
+                            {
+                                <option value="@role" selected>@GetRoleLabel(role)</option>
+                            }
+                            else
+                            {
+                                <option value="@role">@GetRoleLabel(role)</option>
+                            }
+                        }
+                    </select>
+                </div>
 
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary rounded-3 w-100">
+                        <i class="fas fa-search me-1"></i>
+                        Filtrele
+                    </button>
+
+                    <a href="/Admin/Users" class="btn btn-light border rounded-3">
+                        <i class="fas fa-rotate-left"></i>
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-visible">
+        <div class="card-header bg-white border-0 px-4 py-3">
+            <h5 class="fw-bold mb-1">
+                Kullanıcı Listesi
+            </h5>
+
+            <p class="text-muted small mb-0">
+                Kullanıcı rolleri bu ekrandan düzenlenir. Süper Admin kendi Süper Admin rolünü kaldıramaz.
+            </p>
+        </div>
+
+        <div class="card-body p-0">
+
+            @if (Model == null || !Model.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-user-slash fa-3x mb-3 opacity-25"></i>
+
+                    <h6 class="fw-bold mb-1">
+                        Kullanıcı bulunamadı
+                    </h6>
+
+                    <p class="mb-0">
+                        Arama veya filtre kriterlerine uygun kullanıcı yok.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive users-table-responsive">
+                    <table class="table table-hover align-middle mb-0 users-table">
+                        <thead class="bg-light">
                             <tr>
-                                <td class="ps-4 py-3">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center me-3 fw-bold"
-                                             style="width: 40px; height: 40px; font-size:14px;">
-                                            @firstLetter
+                                <th class="ps-4 py-3 text-muted fw-bold small" style="width: 28%;">
+                                    Kullanıcı
+                                </th>
+
+                                <th class="py-3 text-muted fw-bold small" style="width: 24%;">
+                                    E-posta
+                                </th>
+
+                                <th class="py-3 text-muted fw-bold small" style="width: 28%;">
+                                    Mevcut Roller
+                                </th>
+
+                                <th class="py-3 text-muted fw-bold small text-center" style="width: 10%;">
+                                    Durum
+                                </th>
+
+                                <th class="pe-4 py-3 text-muted fw-bold small text-end" style="min-width: 280px;">
+                                    İşlemler
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                var displayName = string.IsNullOrWhiteSpace(item.Name)
+                                ? item.Email
+                                : item.Name;
+
+                                var firstLetter = !string.IsNullOrWhiteSpace(displayName)
+                                ? displayName.Trim().Substring(0, 1).ToUpper()
+                                : "?";
+
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-3 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold">
+                                                @firstLetter
+                                            </div>
+
+                                            <div>
+                                                <span class="fw-bold d-block text-dark">
+                                                    @displayName
+                                                </span>
+
+                                                <small class="text-muted">
+                                                    ID: @item.UserId.Substring(0, 8)...
+                                                </small>
+                                            </div>
                                         </div>
+                                    </td>
 
-                                        <div>
-                                            <h6 class="mb-0 fw-bold text-dark">
-                                                @displayName
-                                            </h6>
-                                        </div>
-                                    </div>
-                                </td>
+                                    <td>
+                                        <span class="text-muted">
+                                            @(string.IsNullOrWhiteSpace(item.Email) ? "-" : item.Email)
+                                        </span>
+                                    </td>
 
-                                <td class="text-muted small">
-                                    @user.Email
-                                </td>
-
-                                <td>
-                                    @if (user.Roles != null && user.Roles.Any())
-                                    {
-                                        foreach (var role in user.Roles)
+                                    <td>
+                                        @if (item.Roles != null && item.Roles.Any())
                                         {
-                                            <span class="badge border me-1 mb-1 position-relative @GetRoleBadgeClass(role)">
-                                                @GetRoleLabel(role)
+                                            <div class="d-flex flex-wrap gap-2">
+                                                @foreach (var role in item.Roles)
+                                                {
+                                                    <span class="role-badge @GetRoleBadgeClass(role)">
+                                                        @GetRoleLabel(role)
 
-                                                <form asp-area="Admin"
-                                                      asp-controller="Users"
-                                                      asp-action="RemoveRole"
-                                                      method="post"
-                                                      style="display:inline;">
-                                                    @Html.AntiForgeryToken()
+                                                        <form asp-area="Admin"
+                                                              asp-controller="Users"
+                                                              asp-action="RemoveRole"
+                                                              method="post"
+                                                              class="d-inline ms-1">
 
-                                                    <input type="hidden" name="userId" value="@user.UserId" />
-                                                    <input type="hidden" name="roleName" value="@role" />
+                                                            @Html.AntiForgeryToken()
 
-                                                    <button type="submit"
-                                                            class="btn btn-link text-danger p-0 ms-2 text-decoration-none"
-                                                            style="font-size: 10px; vertical-align: text-top;"
-                                                            title="@L("RemoveRoleTitle", "Rolü kaldır")">
-                                                        <i class="fas fa-times"></i>
-                                                    </button>
-                                                </form>
+                                                            <input type="hidden" name="userId" value="@item.UserId" />
+                                                            <input type="hidden" name="roleName" value="@role" />
+
+                                                            <button type="submit"
+                                                                    class="role-remove-btn"
+                                                                    title="@GetRoleLabel(role) rolünü kaldır">
+                                                                ×
+                                                            </button>
+                                                        </form>
+                                                    </span>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">
+                                                Rol atanmamış
                                             </span>
                                         }
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">-</span>
-                                    }
-                                </td>
+                                    </td>
 
-                                <td class="text-end pe-4">
-                                    <a asp-area="Admin"
-                                       asp-controller="Users"
-                                       asp-action="ManageRoles"
-                                       asp-route-userId="@user.UserId"
-                                       class="btn btn-sm btn-outline-secondary me-2">
-                                        @L("EditRolesButton", "Rolleri Düzenle")
-                                    </a>
+                                    <td class="text-center">
+                                        <span class="badge rounded-pill bg-success bg-opacity-10 text-success px-3 py-2">
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            Aktif
+                                        </span>
+                                    </td>
 
-                                    <div class="dropdown d-inline-block">
-                                        <button class="btn btn-sm btn-outline-primary dropdown-toggle"
-                                                type="button"
-                                                data-bs-toggle="dropdown">
-                                            @L("GrantRoleButton", "Rol Ver")
-                                        </button>
+                                    <td class="pe-4 text-end actions-cell">
+                                        <div class="action-buttons">
 
-                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                                            <li>
-                                                <form asp-area="Admin"
-                                                      asp-controller="Users"
-                                                      asp-action="AssignRole"
-                                                      method="post">
-                                                    @Html.AntiForgeryToken()
+                                            <a asp-area="Admin"
+                                               asp-controller="Users"
+                                               asp-action="ManageRoles"
+                                               asp-route-userId="@item.UserId"
+                                               class="btn btn-sm btn-outline-secondary rounded-3 action-btn">
+                                                <i class="fas fa-user-gear me-1"></i>
+                                                Roller
+                                            </a>
 
-                                                    <input type="hidden" name="userId" value="@user.UserId" />
-                                                    <input type="hidden" name="roleName" value="SuperAdmin" />
+                                            <div class="dropdown user-role-dropdown-wrapper">
+                                                <button class="btn btn-sm btn-outline-primary rounded-3 dropdown-toggle action-btn"
+                                                        type="button"
+                                                        data-bs-toggle="dropdown"
+                                                        data-bs-boundary="viewport"
+                                                        aria-expanded="false">
+                                                    Yetki Ver
+                                                </button>
 
-                                                    <button type="submit" class="dropdown-item small text-danger fw-bold">
-                                                        <i class="fas fa-crown me-2"></i>
-                                                        @L("MakeSuperAdminAction", "Süper Admin Yap")
-                                                    </button>
-                                                </form>
-                                            </li>
+                                                <ul class="dropdown-menu dropdown-menu-end user-role-dropdown shadow border-0 rounded-3 p-2">
+                                                    @{
+                                                        var availableRoles = allowedRoles
+                                                        .Where(role => item.Roles == null ||
+                                                        !item.Roles.Contains(role, StringComparer.OrdinalIgnoreCase))
+                                                        .ToList();
+                                                    }
 
-                                            <li>
-                                                <form asp-area="Admin"
-                                                      asp-controller="Users"
-                                                      asp-action="AssignRole"
-                                                      method="post">
-                                                    @Html.AntiForgeryToken()
+                                                    @if (availableRoles.Any())
+                                                    {
+                                                        foreach (var role in availableRoles)
+                                                        {
+                                                            <li>
+                                                                <form asp-area="Admin"
+                                                                      asp-controller="Users"
+                                                                      asp-action="AssignRole"
+                                                                      method="post">
 
-                                                    <input type="hidden" name="userId" value="@user.UserId" />
-                                                    <input type="hidden" name="roleName" value="Admin" />
+                                                                    @Html.AntiForgeryToken()
 
-                                                    <button type="submit" class="dropdown-item small text-primary fw-bold">
-                                                        <i class="fas fa-shield-alt me-2"></i>
-                                                        @L("MakeAdminAction", "Admin Yap")
-                                                    </button>
-                                                </form>
-                                            </li>
+                                                                    <input type="hidden" name="userId" value="@item.UserId" />
+                                                                    <input type="hidden" name="roleName" value="@role" />
 
-                                            <li><hr class="dropdown-divider"></li>
+                                                                    <button type="submit" class="dropdown-item rounded-2 role-dropdown-item">
+                                                                        <i class="fas fa-plus text-primary"></i>
+                                                                        <span>@GetRoleLabel(role)</span>
+                                                                    </button>
+                                                                </form>
+                                                            </li>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <li>
+                                                            <span class="dropdown-item text-muted small">
+                                                                Tüm roller atanmış
+                                                            </span>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            </div>
 
-                                            <li>
-                                                <form asp-area="Admin"
-                                                      asp-controller="Users"
-                                                      asp-action="AssignRole"
-                                                      method="post">
-                                                    @Html.AntiForgeryToken()
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
 
-                                                    <input type="hidden" name="userId" value="@user.UserId" />
-                                                    <input type="hidden" name="roleName" value="Author" />
-
-                                                    <button type="submit" class="dropdown-item small">
-                                                        <i class="fas fa-pen-nib text-info me-2"></i>
-                                                        @L("MakeAuthorAction", "Yazar Yap")
-                                                    </button>
-                                                </form>
-                                            </li>
-
-                                            <li>
-                                                <form asp-area="Admin"
-                                                      asp-controller="Users"
-                                                      asp-action="AssignRole"
-                                                      method="post">
-                                                    @Html.AntiForgeryToken()
-
-                                                    <input type="hidden" name="userId" value="@user.UserId" />
-                                                    <input type="hidden" name="roleName" value="Listener" />
-
-                                                    <button type="submit" class="dropdown-item small">
-                                                        <i class="fas fa-user-check text-success me-2"></i>
-                                                        @L("MakeListenerAction", "Dinleyici Yap")
-                                                    </button>
-                                                </form>
-                                            </li>
-
-                                            <li>
-                                                <form asp-area="Admin"
-                                                      asp-controller="Users"
-                                                      asp-action="AssignRole"
-                                                      method="post">
-                                                    @Html.AntiForgeryToken()
-
-                                                    <input type="hidden" name="userId" value="@user.UserId" />
-                                                    <input type="hidden" name="roleName" value="Referee" />
-
-                                                    <button type="submit" class="dropdown-item small">
-                                                        <i class="fas fa-gavel text-warning me-2"></i>
-                                                        @L("MakeRefereeAction", "Hakem Yap")
-                                                    </button>
-                                                </form>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="4" class="text-center py-5 text-muted">
-                                <p class="mb-0">
-                                    @L("EmptyMessage", "Henüz kullanıcı bulunmuyor.")
-                                </p>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
         </div>
     </div>
 </div>
+
+<style>
+    .info-card {
+        background-color: #fff;
+        border-radius: 1rem;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        box-shadow: 0 8px 25px rgba(15, 23, 42, 0.05);
+        border: 1px solid #f1f5f9;
+        min-height: 95px;
+    }
+
+    .info-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .info-number {
+        font-size: 1.55rem;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1;
+    }
+
+    .info-label {
+        color: #64748b;
+        font-weight: 700;
+        font-size: 0.76rem;
+        margin-top: 0.25rem;
+    }
+
+    .users-table-responsive {
+        overflow: visible;
+    }
+
+    .users-table thead th {
+        font-size: 0.7rem;
+        letter-spacing: 0.8px;
+        border-bottom: none;
+        text-transform: uppercase;
+    }
+
+    .users-table tbody tr {
+        position: relative;
+        z-index: 1;
+        transition: background-color 0.2s ease;
+        border-bottom: 1px solid #f8fafc;
+    }
+
+        .users-table tbody tr:hover {
+            background-color: #fbfcfe !important;
+        }
+
+        .users-table tbody tr:has(.dropdown-menu.show) {
+            z-index: 9999;
+        }
+
+    .avatar-sm {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        font-size: 0.95rem;
+    }
+
+    .role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        border-radius: 999px;
+        padding: 0.35rem 0.6rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .role-remove-btn {
+        border: none;
+        background: transparent;
+        color: inherit;
+        font-weight: 900;
+        line-height: 1;
+        padding: 0;
+        cursor: pointer;
+        opacity: 0.8;
+    }
+
+        .role-remove-btn:hover {
+            opacity: 1;
+            transform: scale(1.15);
+        }
+
+    .actions-cell {
+        position: relative;
+        min-width: 280px;
+        white-space: nowrap;
+        overflow: visible;
+    }
+
+    .action-buttons {
+        position: relative;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: nowrap;
+        overflow: visible;
+    }
+
+    .action-btn {
+        min-width: 96px;
+        white-space: nowrap;
+    }
+
+    .user-role-dropdown-wrapper {
+        position: relative;
+    }
+
+    .user-role-dropdown {
+        min-width: 210px;
+        z-index: 10000 !important;
+        background-color: #fff;
+    }
+
+    .dropdown-menu.show {
+        z-index: 10000 !important;
+    }
+
+    .role-dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        font-weight: 600;
+        padding: 0.55rem 0.8rem;
+    }
+
+        .role-dropdown-item i {
+            width: 16px;
+            text-align: center;
+        }
+
+    .page-header-right {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.65rem;
+        flex-wrap: nowrap;
+        flex: 0 0 auto;
+    }
+
+    .header-action-btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        font-weight: 700;
+        font-size: 0.95rem;
+        box-shadow: none;
+    }
+</style>

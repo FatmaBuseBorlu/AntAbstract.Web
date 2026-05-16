@@ -1,0 +1,607 @@
+﻿@model List<AntAbstract.Domain.Entities.SiteSectionTemplate>
+
+@using AntAbstract.Domain.Entities
+
+@{
+    ViewData["Title"] = "Site Bölüm Şablonları";
+    Layout = "_LayoutDashboard";
+
+    var search = ViewBag.Search as string;
+    var status = ViewBag.Status as string;
+    var defaultFilter = ViewBag.DefaultFilter as string;
+
+    var totalCount = ViewBag.TotalCount ?? 0;
+    var activeCount = ViewBag.ActiveCount ?? 0;
+    var defaultCount = ViewBag.DefaultCount ?? 0;
+    var passiveCount = ViewBag.PassiveCount ?? 0;
+}
+
+@functions {
+    private string GetBlockTypeLabel(ConferencePageBlockType blockType)
+    {
+        return blockType switch
+        {
+            ConferencePageBlockType.Hero => "Ana Karşılama",
+            ConferencePageBlockType.About => "Hakkında / İçerik",
+            ConferencePageBlockType.Topics => "Kongre Konuları",
+            ConferencePageBlockType.ImportantDates => "Önemli Tarihler",
+            ConferencePageBlockType.Fees => "Katılım Ücreti",
+            ConferencePageBlockType.Committees => "Bilim Kurulu",
+            ConferencePageBlockType.Sponsors => "Sponsorlar",
+            ConferencePageBlockType.Contact => "İletişim",
+            ConferencePageBlockType.FAQ => "Sık Sorulan Sorular",
+            ConferencePageBlockType.CallForPapers => "Kongreye Çağrı",
+            _ => blockType.ToString()
+        };
+    }
+}
+
+<div class="container-fluid">
+
+    <div class="page-header-wrap mb-4">
+        <div class="page-header-left">
+            <div class="text-uppercase text-muted fw-bold small mb-1">
+                Global Sistem
+            </div>
+
+            <h2 class="fw-bold mb-2 text-dark">
+                Site Bölüm Şablonları
+            </h2>
+
+            <p class="text-muted mb-0 page-header-desc">
+                Kongre sitelerinde kullanılabilecek hazır bölüm şablonlarını buradan ekleyebilir, düzenleyebilir ve aktif/pasif yapabilirsiniz.
+            </p>
+        </div>
+
+        <div class="page-header-right">
+            <a href="/Admin/CentralVitrin" class="btn btn-light border rounded-pill px-4 header-action-btn">
+                <i class="fas fa-globe me-2 text-primary"></i>
+                Kongre Sitelerine Git
+            </a>
+
+            <a href="/Admin/PageBlocks/Create" class="btn btn-primary rounded-pill px-4 header-action-btn">
+                <i class="fas fa-plus me-2"></i>
+                Yeni Şablon Ekle
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4">
+            <i class="fas fa-times-circle me-2"></i>
+            @TempData["ErrorMessage"]
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="info-card">
+                <div class="info-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+
+                <div>
+                    <div class="info-number">@totalCount</div>
+                    <div class="info-label">Toplam Şablon</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-6">
+            <div class="info-card">
+                <div class="info-icon bg-success bg-opacity-10 text-success">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+
+                <div>
+                    <div class="info-number">@activeCount</div>
+                    <div class="info-label">Aktif Şablon</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-6">
+            <div class="info-card">
+                <div class="info-icon bg-info bg-opacity-10 text-info">
+                    <i class="fas fa-star"></i>
+                </div>
+
+                <div>
+                    <div class="info-number">@defaultCount</div>
+                    <div class="info-label">Varsayılan</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-6">
+            <div class="info-card">
+                <div class="info-icon bg-secondary bg-opacity-10 text-secondary">
+                    <i class="fas fa-eye-slash"></i>
+                </div>
+
+                <div>
+                    <div class="info-number">@passiveCount</div>
+                    <div class="info-label">Pasif</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body">
+            <form method="get"
+                  action="/Admin/PageBlocks"
+                  class="row g-3 align-items-end">
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                        Arama
+                    </label>
+
+                    <input type="text"
+                           name="search"
+                           value="@search"
+                           class="form-control rounded-3"
+                           placeholder="Blok tipi, ad veya açıklama ara..." />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">
+                        Durum
+                    </label>
+
+                    <select name="status" class="form-select rounded-3">
+                        @if (string.IsNullOrWhiteSpace(status) || status == "All")
+                        {
+                            <option value="All" selected>Tüm Durumlar</option>
+                        }
+                        else
+                        {
+                            <option value="All">Tüm Durumlar</option>
+                        }
+
+                        @if (status == "Active")
+                        {
+                            <option value="Active" selected>Aktif</option>
+                        }
+                        else
+                        {
+                            <option value="Active">Aktif</option>
+                        }
+
+                        @if (status == "Passive")
+                        {
+                            <option value="Passive" selected>Pasif</option>
+                        }
+                        else
+                        {
+                            <option value="Passive">Pasif</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">
+                        Şablon Tipi
+                    </label>
+
+                    <select name="defaultFilter" class="form-select rounded-3">
+                        @if (string.IsNullOrWhiteSpace(defaultFilter) || defaultFilter == "All")
+                        {
+                            <option value="All" selected>Tüm Şablonlar</option>
+                        }
+                        else
+                        {
+                            <option value="All">Tüm Şablonlar</option>
+                        }
+
+                        @if (defaultFilter == "Default")
+                        {
+                            <option value="Default" selected>Varsayılan</option>
+                        }
+                        else
+                        {
+                            <option value="Default">Varsayılan</option>
+                        }
+
+                        @if (defaultFilter == "Custom")
+                        {
+                            <option value="Custom" selected>Özel</option>
+                        }
+                        else
+                        {
+                            <option value="Custom">Özel</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary rounded-3 w-100">
+                        <i class="fas fa-search me-1"></i>
+                        Filtrele
+                    </button>
+
+                    <a href="/Admin/PageBlocks" class="btn btn-light border rounded-3">
+                        <i class="fas fa-rotate-left"></i>
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-0 px-4 py-3">
+            <h5 class="fw-bold mb-1">
+                Şablon Listesi
+            </h5>
+
+            <p class="text-muted small mb-0">
+                Bu liste sistemde kullanılabilecek hazır kongre sitesi bölümlerini gösterir.
+                Kongreye özel içerik düzenleme işlemi <strong>Kongre Siteleri</strong> ekranından yapılır.
+            </p>
+        </div>
+
+        <div class="card-body p-0">
+
+            @if (Model == null || !Model.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-layer-group fa-3x mb-3 opacity-25"></i>
+
+                    <h6 class="fw-bold mb-1">
+                        Şablon bulunamadı
+                    </h6>
+
+                    <p class="mb-0">
+                        Arama veya filtre kriterlerine uygun site bölüm şablonu bulunamadı.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 section-template-table">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4 py-3 text-muted fw-bold small" style="width: 7%;">
+                                    Sıra
+                                </th>
+
+                                <th class="py-3 text-muted fw-bold small" style="width: 28%;">
+                                    Şablon
+                                </th>
+
+                                <th class="py-3 text-muted fw-bold small" style="width: 31%;">
+                                    Açıklama
+                                </th>
+
+                                <th class="py-3 text-muted fw-bold small text-center" style="width: 12%;">
+                                    Durum
+                                </th>
+
+                                <th class="pe-4 py-3 text-muted fw-bold small text-end" style="width: 22%; min-width: 230px;">
+                                    İşlemler
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var item in Model.OrderBy(x => x.Order))
+                            {
+                                <tr>
+                                    <td class="ps-4">
+                                        <span class="order-badge">
+                                            @item.Order
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <div class="template-title-wrap">
+                                            <div class="template-icon">
+                                                <i class="fas fa-layer-group"></i>
+                                            </div>
+
+                                            <div>
+                                                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                                    <span class="fw-bold text-dark">
+                                                        @item.NameTr
+                                                    </span>
+
+                                                    @if (item.IsDefault)
+                                                    {
+                                                        <span class="mini-badge bg-info bg-opacity-10 text-info">
+                                                            Varsayılan
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="mini-badge bg-secondary bg-opacity-10 text-secondary">
+                                                            Özel
+                                                        </span>
+                                                    }
+                                                </div>
+
+                                                <div class="small text-muted">
+                                                    @item.NameEn
+                                                </div>
+
+                                                <div class="mt-2">
+                                                    <span class="type-badge">
+                                                        @GetBlockTypeLabel(item.BlockType)
+                                                    </span>
+
+                                                    <span class="small text-muted ms-1">
+                                                        @item.BlockType
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <span class="text-muted small">
+                                            @(string.IsNullOrWhiteSpace(item.Description) ? "-" : item.Description)
+                                        </span>
+                                    </td>
+
+                                    <td class="text-center">
+                                        @if (item.IsActive)
+                                        {
+                                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2">
+                                                <i class="fas fa-check-circle me-1"></i>
+                                                Aktif
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3 py-2">
+                                                <i class="fas fa-eye-slash me-1"></i>
+                                                Pasif
+                                            </span>
+                                        }
+                                    </td>
+
+                                    <td class="pe-4 text-end actions-cell">
+                                        <div class="action-buttons">
+
+                                            <a href="/Admin/PageBlocks/EditTemplate/@item.Id"
+                                               class="btn btn-sm btn-outline-primary rounded-3 text-nowrap">
+                                                <i class="fas fa-pen-to-square me-1"></i>
+                                                Düzenle
+                                            </a>
+
+                                            <form action="/Admin/PageBlocks/ToggleTemplate/@item.Id"
+                                                  method="post"
+                                                  class="d-inline">
+                                                @Html.AntiForgeryToken()
+
+                                                <button type="submit"
+                                                        class="btn btn-sm @(item.IsActive ? "btn-outline-secondary" : "btn-outline-success") rounded-3 text-nowrap">
+                                                    @if (item.IsActive)
+                                                    {
+                                                        <i class="fas fa-eye-slash me-1"></i>
+                                                        <span>Pasif Yap</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="fas fa-eye me-1"></i>
+                                                        <span>Aktif Yap</span>
+                                                    }
+                                                </button>
+                                            </form>
+
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .page-header-wrap {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .page-header-left {
+        flex: 1 1 620px;
+        min-width: 320px;
+    }
+
+    .page-header-right {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.65rem;
+        flex-wrap: nowrap;
+        flex: 0 0 auto;
+    }
+
+    .header-action-btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        font-weight: 700;
+        font-size: 0.95rem;
+        box-shadow: none;
+    }
+
+        .header-action-btn.btn-primary {
+            box-shadow: 0 8px 18px rgba(13, 110, 253, 0.18);
+        }
+
+    .page-header-desc {
+        max-width: 760px;
+    }
+
+    .info-card {
+        background-color: #fff;
+        border-radius: 1rem;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        box-shadow: 0 8px 25px rgba(15, 23, 42, 0.05);
+        border: 1px solid #f1f5f9;
+        min-height: 95px;
+    }
+
+    .info-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .info-number {
+        font-size: 1.55rem;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1;
+    }
+
+    .info-label {
+        color: #64748b;
+        font-weight: 700;
+        font-size: 0.76rem;
+        margin-top: 0.25rem;
+    }
+
+    .section-template-table thead th {
+        font-size: 0.7rem;
+        letter-spacing: 0.8px;
+        border-bottom: none;
+        text-transform: uppercase;
+    }
+
+    .section-template-table tbody tr {
+        transition: background-color 0.2s ease;
+        border-bottom: 1px solid #f8fafc;
+    }
+
+        .section-template-table tbody tr:hover {
+            background-color: #fbfcfe !important;
+        }
+
+    .section-template-table td,
+    .section-template-table th {
+        vertical-align: middle;
+    }
+
+    .order-badge {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        background-color: #f1f5f9;
+        color: #0f172a;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 0.85rem;
+    }
+
+    .template-title-wrap {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
+        min-width: 280px;
+    }
+
+    .template-icon {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        border-radius: 50%;
+        background-color: rgba(13, 110, 253, 0.1);
+        color: #0d6efd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+    }
+
+    .type-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        background-color: rgba(0, 174, 239, 0.12);
+        color: #00aeef;
+        padding: 0.38rem 0.65rem;
+        font-weight: 700;
+        font-size: 0.72rem;
+        white-space: nowrap;
+    }
+
+    .mini-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 0.25rem 0.55rem;
+        font-size: 0.68rem;
+        font-weight: 800;
+    }
+
+    .actions-cell {
+        min-width: 230px;
+        white-space: nowrap;
+    }
+
+    .action-buttons {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        flex-wrap: nowrap;
+    }
+
+        .action-buttons .btn {
+            font-weight: 700;
+        }
+
+    @@media (max-width: 992px) {
+        .page-header-wrap {
+            align-items: flex-start;
+        }
+
+        .page-header-right {
+            width: 100%;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .actions-cell {
+            min-width: 220px;
+        }
+    }
+</style>

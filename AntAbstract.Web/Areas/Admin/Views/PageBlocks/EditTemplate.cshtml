@@ -1,0 +1,285 @@
+﻿@model AntAbstract.Domain.Entities.SiteSectionTemplate
+
+@using AntAbstract.Domain.Entities
+
+@{
+    ViewData["Title"] = "Site Bölüm Şablonu Düzenle";
+    Layout = "_LayoutDashboard";
+
+    var blockTypes = Enum.GetValues(typeof(ConferencePageBlockType))
+        .Cast<ConferencePageBlockType>()
+        .ToList();
+
+    string GetBlockTypeLabel(ConferencePageBlockType blockType)
+    {
+        return blockType switch
+        {
+            ConferencePageBlockType.Hero => "Ana Karşılama",
+            ConferencePageBlockType.About => "Hakkında / İçerik",
+            ConferencePageBlockType.Topics => "Kongre Konuları",
+            ConferencePageBlockType.ImportantDates => "Önemli Tarihler",
+            ConferencePageBlockType.Fees => "Katılım Ücreti",
+            ConferencePageBlockType.Committees => "Bilim Kurulu",
+            ConferencePageBlockType.Sponsors => "Sponsorlar",
+            ConferencePageBlockType.Contact => "İletişim",
+            ConferencePageBlockType.FAQ => "Sık Sorulan Sorular",
+            ConferencePageBlockType.CallForPapers => "Kongreye Çağrı",
+            _ => blockType.ToString()
+        };
+    }
+}
+
+<div class="container-fluid">
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="text-uppercase text-muted fw-bold small mb-1">
+                Site Bölüm Şablonları
+            </div>
+
+            <h2 class="fw-bold mb-1 text-dark">
+                Şablon Düzenle
+            </h2>
+
+            <p class="text-muted mb-0">
+                Bu bölüm şablonunun adını, açıklamasını, sırasını ve durumunu düzenleyebilirsiniz.
+            </p>
+        </div>
+
+        <a href="/Admin/PageBlocks" class="btn btn-light border rounded-pill px-4">
+            <i class="fas fa-arrow-left me-2 text-secondary"></i>
+            Şablon Listesine Dön
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+
+        <div class="edit-hero">
+            <div class="d-flex align-items-center gap-3">
+                <div class="hero-icon">
+                    <i class="fas fa-pen-to-square"></i>
+                </div>
+
+                <div>
+                    <h4 class="fw-bold mb-1">
+                        @Model.NameTr
+                    </h4>
+
+                    <p class="mb-0 text-white-50">
+                        Bu kayıt sistem genelindeki hazır site bölüm şablonudur.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body p-4 p-lg-5">
+
+            <form asp-area="Admin"
+                  asp-controller="PageBlocks"
+                  asp-action="EditTemplate"
+                  asp-route-id="@Model.Id"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" asp-for="Id" />
+
+                <div class="row g-4">
+
+                    <div class="col-md-3">
+                        <label asp-for="Order" class="form-label fw-bold">
+                            Sıra
+                        </label>
+
+                        <input asp-for="Order" class="form-control form-control-modern" />
+
+                        <span asp-validation-for="Order" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-9">
+                        <label asp-for="BlockType" class="form-label fw-bold">
+                            Blok Tipi
+                        </label>
+
+                        <select asp-for="BlockType" class="form-select form-control-modern">
+                            @foreach (var blockType in blockTypes)
+                            {
+                                if (Model.BlockType == blockType)
+                                {
+                                    <option value="@blockType" selected>
+                                        @GetBlockTypeLabel(blockType) (@blockType)
+                                    </option>
+                                }
+                                else
+                                {
+                                    <option value="@blockType">
+                                        @GetBlockTypeLabel(blockType) (@blockType)
+                                    </option>
+                                }
+                            }
+                        </select>
+
+                        <span asp-validation-for="BlockType" class="text-danger small"></span>
+
+                        <div class="form-text">
+                            Aynı blok tipi için sistemde yalnızca bir şablon olabilir.
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="NameTr" class="form-label fw-bold">
+                            Türkçe Ad
+                        </label>
+
+                        <input asp-for="NameTr"
+                               class="form-control form-control-modern"
+                               placeholder="Örn: Sponsorlar" />
+
+                        <span asp-validation-for="NameTr" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="NameEn" class="form-label fw-bold">
+                            İngilizce Ad
+                        </label>
+
+                        <input asp-for="NameEn"
+                               class="form-control form-control-modern"
+                               placeholder="Örn: Sponsors" />
+
+                        <span asp-validation-for="NameEn" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Description" class="form-label fw-bold">
+                            Açıklama
+                        </label>
+
+                        <textarea asp-for="Description"
+                                  class="form-control form-control-modern"
+                                  rows="4"
+                                  placeholder="Bu şablonun ne işe yaradığını yazabilirsiniz."></textarea>
+
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="switch-card">
+                            <div>
+                                <div class="fw-bold text-dark">
+                                    Varsayılan Şablon
+                                </div>
+
+                                <div class="text-muted small">
+                                    Yeni kongrelerde temel şablon olarak kullanılabilir.
+                                </div>
+                            </div>
+
+                            <div class="form-check form-switch m-0">
+                                <input asp-for="IsDefault"
+                                       class="form-check-input custom-switch"
+                                       type="checkbox" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="switch-card">
+                            <div>
+                                <div class="fw-bold text-dark">
+                                    Aktif
+                                </div>
+
+                                <div class="text-muted small">
+                                    Pasif olursa sistemde kullanılabilir şablonlar içinde görünmez.
+                                </div>
+                            </div>
+
+                            <div class="form-check form-switch m-0">
+                                <input asp-for="IsActive"
+                                       class="form-check-input custom-switch"
+                                       type="checkbox" />
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4 pt-4 border-top">
+                    <a href="/Admin/PageBlocks" class="btn btn-light border rounded-pill px-4">
+                        Vazgeç
+                    </a>
+
+                    <button type="submit" class="btn btn-primary rounded-pill px-5">
+                        <i class="fas fa-save me-2"></i>
+                        Güncelle
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    .edit-hero {
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        padding: 1.6rem 1.8rem;
+        color: #fff;
+    }
+
+    .hero-icon {
+        width: 54px;
+        height: 54px;
+        min-width: 54px;
+        border-radius: 18px;
+        background-color: rgba(0, 174, 239, 0.18);
+        color: #22d3ee;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.45rem;
+    }
+
+    .form-control-modern {
+        border-radius: 14px;
+        border: 2px solid #e2e8f0;
+        padding: 0.85rem 1rem;
+        transition: all 0.2s ease;
+        min-height: 54px;
+    }
+
+        .form-control-modern:focus {
+            border-color: #00aeef;
+            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
+        }
+
+    .switch-card {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        min-height: 92px;
+    }
+
+    .custom-switch {
+        width: 3.1rem;
+        height: 1.55rem;
+        cursor: pointer;
+        box-shadow: none;
+    }
+
+        .custom-switch:checked {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

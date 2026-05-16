@@ -75,8 +75,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         private async Task FillSelectListsAsync(
-            Guid? selectedScientificFieldId = null,
-            Guid? selectedCongressTypeId = null)
+            int? selectedScientificFieldId = null,
+            int? selectedCongressTypeId = null)
         {
             var scientificFields = await _context.ScientificFields
                 .AsNoTracking()
@@ -124,7 +124,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .AsNoTracking()
                 .Include(t => t.ScientificField)
                 .Include(t => t.CongressType)
-                .Include(t => t.Conferences)
                 .FirstOrDefaultAsync(t => t.Id == id.Value);
 
             if (tenant == null)
@@ -148,7 +147,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Create(
             [Bind("Name,Slug,LogoUrl,ScientificFieldId,CongressTypeId")] Tenant tenant)
         {
-            ModelState.Remove("Conferences");
             ModelState.Remove("Users");
             ModelState.Remove("ScientificField");
             ModelState.Remove("CongressType");
@@ -241,7 +239,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return NotFound();
             }
 
-            ModelState.Remove("Conferences");
             ModelState.Remove("Users");
             ModelState.Remove("ScientificField");
             ModelState.Remove("CongressType");
@@ -460,11 +457,29 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 await _roleManager.CreateAsync(new IdentityRole("Admin"));
             }
 
-            await _userManager.AddToRoleAsync(adminUser, "Admin");
+            var addRoleResult = await _userManager.AddToRoleAsync(adminUser, "Admin");
 
-            TempData["SuccessMessage"] = T(
+            if (!addRoleResult.Succeeded)
+            {
+                foreach (var error in addRoleResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+
+                model.TenantName = tenant.Name;
+
+                return View(model);
+            }
+
+            var successMessageTemplate = T(
                 "Success_ManagerAssigned",
-                $"'{tenant.Name}' kurumuna {model.FirstName} {model.LastName} adlı admin atandı.");
+                "'{0}' kurumuna {1} {2} adlı admin atandı.");
+
+            TempData["SuccessMessage"] = string.Format(
+                successMessageTemplate,
+                tenant.Name,
+                model.FirstName,
+                model.LastName);
 
             return RedirectToAction(nameof(Index));
         }

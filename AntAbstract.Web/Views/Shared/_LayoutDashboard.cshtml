@@ -3,6 +3,7 @@
 @using Microsoft.AspNetCore.Localization
 @using Microsoft.AspNetCore.Mvc.Localization
 @using AntAbstract.Domain.Entities
+@using System
 @using System.Globalization
 
 @inject UserManager<AppUser> UserManager
@@ -18,13 +19,18 @@
 
     var user = await UserManager.GetUserAsync(User);
 
-    var profileImg = !string.IsNullOrEmpty(user?.ProfileImagePath)
-        ? user.ProfileImagePath
-        : $"https://ui-avatars.com/api/?name={user?.FirstName}+{user?.LastName}&background=00aeef&color=fff&size=128&bold=true";
-
     var displayName = user != null
         ? $"{user.FirstName} {user.LastName}".Trim()
         : User.Identity?.Name;
+
+    if (string.IsNullOrWhiteSpace(displayName))
+    {
+        displayName = user?.Email ?? "Kullanıcı";
+    }
+
+    var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
+        ? user.ProfileImagePath
+        : $"https://ui-avatars.com/api/?name={Uri.EscapeDataString(displayName)}&background=00aeef&color=fff&size=128&bold=true";
 
     var isSuperAdmin = User.IsInRole("SuperAdmin");
     var isAdmin = User.IsInRole("Admin");
@@ -32,7 +38,7 @@
     var isListener = User.IsInRole("Listener");
     var isReferee = User.IsInRole("Referee");
 
-    var isManagementTeam = isAdmin;
+    var isManagementTeam = isAdmin || isSuperAdmin;
 
     string userRole = L("Role_User", "Kullanıcı");
 
@@ -79,7 +85,7 @@
         ? parsedId
         : null;
 
-    var hasSelectedConference = selectedConferenceId.HasValue && !isSuperAdmin;
+    var hasSelectedConference = selectedConferenceId.HasValue;
 
     string? selectedConferenceTitle = null;
 
@@ -90,6 +96,8 @@
 
     selectedConferenceTitle ??= Context.Session.GetString("SelectedConferenceTitle");
 
+    var hideSelectedConferenceBar = ViewData["HideSelectedConferenceBar"] as bool? ?? false;
+
     var dashboardUrl = isSuperAdmin
         ? "/Dashboard/SuperAdmin"
         : string.IsNullOrWhiteSpace(slug)
@@ -99,6 +107,10 @@
     var dashboardMyConferencesUrl = string.IsNullOrWhiteSpace(slug)
         ? "/Dashboard/MyConferences"
         : $"/{slug}/Dashboard/MyConferences";
+
+    var changeSelectedConferenceUrl = isSuperAdmin
+        ? "/Admin/ConferenceFlow?forceSelect=true"
+        : dashboardMyConferencesUrl;
 
     var submissionsAdminUrl = string.IsNullOrWhiteSpace(slug)
         ? "/Admin/Submissions"
@@ -156,9 +168,13 @@
         ? "/Proceedings/Index"
         : $"/{slug}/Proceedings/Index";
 
-    var conferenceFlowUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Admin/ConferenceFlow"
-        : $"/{slug}/Admin/ConferenceFlow";
+    var conferenceFlowUrl = isSuperAdmin
+        ? hasSelectedConference && selectedConferenceId.HasValue && !string.IsNullOrWhiteSpace(slug)
+            ? $"/{slug}/Admin/ConferenceFlow?conferenceId={selectedConferenceId.Value}"
+            : "/Admin/ConferenceFlow?forceSelect=true"
+        : string.IsNullOrWhiteSpace(slug)
+            ? "/Admin/ConferenceFlow"
+            : $"/{slug}/Admin/ConferenceFlow";
 
     var reportsUrl = string.IsNullOrWhiteSpace(slug)
         ? "/Admin/Reports"
@@ -175,8 +191,6 @@
     var sessionUrl = string.IsNullOrWhiteSpace(slug)
         ? "/Admin/Session"
         : $"/{slug}/Admin/Session";
-
-    var usersUrl = "/Admin/Users";
 
     var conferencesUrl = string.IsNullOrWhiteSpace(slug)
         ? "/Admin/Conferences"
@@ -210,9 +224,18 @@
     var requestCulture = Context.Features.Get<IRequestCultureFeature>();
     var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? "tr-TR";
 
-    var returnUrl = string.IsNullOrEmpty(Context.Request.Path)
+    var isTurkishCulture = currentCulture.StartsWith("tr", StringComparison.OrdinalIgnoreCase);
+    var isEnglishCulture = currentCulture.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+
+    var currentShortCulture = isEnglishCulture ? "EN" : "TR";
+
+    var returnUrl = string.IsNullOrEmpty(Context.Request.Path.Value)
         ? "/"
         : $"{Context.Request.Path}{Context.Request.QueryString}";
+
+    var publicSiteUrl = !string.IsNullOrWhiteSpace(slug)
+        ? $"/{slug}"
+        : "/";
 }
 
 <!DOCTYPE html>
@@ -223,7 +246,7 @@
 
     <title>@ViewData["Title"] - AntAbstract</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
@@ -231,20 +254,31 @@
     <style>
         :root {
             --sidebar-width: 270px;
-            --header-height: 70px;
+            --header-height: 72px;
             --primary-color: #00aeef;
             --primary-hover: #0095cd;
+            --primary-soft: rgba(0, 174, 239, 0.10);
             --dark-bg: #1e293b;
             --menu-text: #64748b;
             --menu-hover-bg: #f8fafc;
             --menu-active-bg: rgba(0, 174, 239, 0.08);
             --menu-active-text: #00aeef;
+            --border-color: #e2e8f0;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --danger: #ef4444;
+            --page-bg: #f3f4f6;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f3f4f6;
+            background-color: var(--page-bg);
             overflow-x: hidden;
+            color: var(--text-dark);
         }
 
         .sidebar {
@@ -253,8 +287,8 @@
             position: fixed;
             top: 0;
             left: 0;
-            background-color: white;
-            border-right: 1px solid #e2e8f0;
+            background-color: #ffffff;
+            border-right: 1px solid var(--border-color);
             z-index: 1050;
             display: flex;
             flex-direction: column;
@@ -271,10 +305,11 @@
             align-items: center;
             padding: 0 1.5rem;
             font-size: 1.35rem;
-            font-weight: 800;
+            font-weight: 900;
             color: var(--dark-bg);
             border-bottom: 1px solid #f1f5f9;
             text-decoration: none;
+            letter-spacing: -0.5px;
         }
 
         .sidebar-menu {
@@ -297,7 +332,7 @@
             font-size: 0.7rem;
             text-transform: uppercase;
             color: #94a3b8;
-            font-weight: 700;
+            font-weight: 800;
             letter-spacing: 0.8px;
             margin: 1.5rem 0 0.5rem 0.8rem;
         }
@@ -311,9 +346,9 @@
             align-items: center;
             padding: 0.75rem 1rem;
             color: var(--menu-text);
-            font-weight: 600;
+            font-weight: 700;
             font-size: 0.9rem;
-            border-radius: 0.6rem;
+            border-radius: 0.75rem;
             margin-bottom: 0.2rem;
             transition: all 0.2s ease;
             text-decoration: none;
@@ -351,25 +386,225 @@
 
         .top-header {
             height: var(--header-height);
-            background-color: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid #e2e8f0;
+            background-color: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.85);
             position: sticky;
             top: 0;
             z-index: 1040;
-            padding: 0 2rem;
+            padding: 0 1.75rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
 
-        .header-icon-btn {
-            width: 40px;
-            height: 40px;
+        .dashboard-header-left {
             display: flex;
             align-items: center;
+            min-width: 0;
+        }
+
+        .sidebar-toggle-btn {
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            display: inline-flex;
+            align-items: center;
             justify-content: center;
-            border-radius: 50%;
+            border-radius: 14px;
+            color: var(--primary-color);
+            background: #ffffff;
+            border: 1px solid #edf2f7;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+        }
+
+            .sidebar-toggle-btn:hover {
+                background-color: rgba(0, 174, 239, 0.08);
+                color: var(--primary-color);
+                border-color: rgba(0, 174, 239, 0.22);
+                transform: translateY(-1px);
+            }
+
+        .dashboard-title-block {
+            min-width: 0;
+            margin-left: 0.9rem;
+        }
+
+        .dashboard-title-row {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            min-width: 0;
+        }
+
+        .dashboard-title {
+            margin: 0;
+            color: var(--text-dark);
+            font-size: 1rem;
+            font-weight: 900;
+            line-height: 1.2;
+            white-space: nowrap;
+            max-width: 260px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dashboard-role-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.16rem 0.55rem;
+            border-radius: 999px;
+            background-color: rgba(0, 174, 239, 0.12);
+            color: var(--primary-color);
+            font-size: 0.62rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.35px;
+            white-space: nowrap;
+        }
+
+        .dashboard-subtitle {
+            margin-top: 0.18rem;
+            color: var(--text-muted);
+            font-size: 0.76rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 360px;
+        }
+
+        .dashboard-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+        }
+
+        .dashboard-site-link {
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.55rem 0.95rem;
+            border-radius: 999px;
+            color: #64748b;
+            background-color: #ffffff;
+            border: 1px solid #dbe3ef;
+            font-size: 0.86rem;
+            font-weight: 900;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+            white-space: nowrap;
+        }
+
+            .dashboard-site-link:hover {
+                color: var(--primary-color);
+                background-color: #ffffff;
+                border-color: rgba(0, 174, 239, 0.28);
+                box-shadow: 0 10px 24px rgba(0, 174, 239, 0.10);
+                transform: translateY(-1px);
+            }
+
+        .language-dropdown-btn {
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+            padding: 0.55rem 0.95rem;
+            border-radius: 999px;
+            border: 1px solid #dbe3ef;
+            background-color: #ffffff;
+            color: #475569;
+            font-size: 0.9rem;
+            font-weight: 900;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+            transition: all 0.2s ease;
+        }
+
+            .language-dropdown-btn:hover {
+                border-color: rgba(0, 174, 239, 0.28);
+                color: var(--primary-color);
+                background-color: #ffffff;
+                box-shadow: 0 10px 24px rgba(0, 174, 239, 0.10);
+                transform: translateY(-1px);
+            }
+
+            .language-dropdown-btn .fa-globe {
+                color: #64748b;
+            }
+
+        .language-chevron {
+            font-size: 0.65rem;
+            color: #64748b;
+        }
+
+        .language-dropdown-menu {
+            min-width: 160px;
+            padding: 8px;
+            border: none !important;
+            border-radius: 20px !important;
+            background-color: #ffffff;
+            box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14);
+            overflow: hidden;
+            margin-top: 10px !important;
+        }
+
+            .language-dropdown-menu form {
+                margin: 0;
+            }
+
+            .language-dropdown-menu li + li {
+                margin-top: 4px;
+            }
+
+        .language-dropdown-item {
+            width: 100%;
+            min-height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+            border: none;
+            background: transparent;
+            border-radius: 14px;
+            padding: 0.58rem 0.75rem;
+            color: #475569;
+            transition: all 0.2s ease;
+        }
+
+            .language-dropdown-item:hover,
+            .language-dropdown-item.active {
+                background-color: rgba(0, 174, 239, 0.12);
+                color: var(--primary-color);
+            }
+
+        .language-code {
+            min-width: 22px;
+            font-size: 0.74rem;
+            font-weight: 900;
+            color: var(--primary-color);
+            letter-spacing: 0.25px;
+        }
+
+        .language-name {
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: inherit;
+        }
+
+        .header-icon-btn {
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
             color: #64748b;
             background: transparent;
             transition: all 0.2s;
@@ -388,41 +623,58 @@
             right: 2px;
             width: 8px;
             height: 8px;
-            background-color: #ef4444;
+            background-color: var(--danger);
             border-radius: 50%;
             border: 2px solid #fff;
         }
 
         .user-menu-btn {
-            display: flex;
+            width: 46px;
+            height: 46px;
+            min-width: 46px;
+            display: inline-flex;
             align-items: center;
+            justify-content: center;
             cursor: pointer;
-            padding: 6px 12px 6px 6px;
-            border-radius: 50px;
-            background-color: #fff;
-            border: 1px solid #e2e8f0;
-            transition: all 0.2s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            padding: 0;
+            border-radius: 999px;
+            background-color: #ffffff;
+            border: 1px solid #dbe3ef;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+            position: relative;
         }
 
             .user-menu-btn:hover {
-                background-color: #f8fafc;
-                border-color: #cbd5e1;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+                border-color: rgba(0, 174, 239, 0.32);
+                box-shadow: 0 12px 28px rgba(0, 174, 239, 0.12);
+                transform: translateY(-1px);
+            }
+
+            .user-menu-btn::after {
+                content: "";
+                width: 10px;
+                height: 10px;
+                border-radius: 999px;
+                background-color: #22c55e;
+                border: 2px solid #ffffff;
+                position: absolute;
+                right: 3px;
+                bottom: 4px;
             }
 
         .user-avatar {
-            width: 42px;
-            height: 42px;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             object-fit: cover;
-            border: 3px solid #fff;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border: 3px solid #ffffff;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.10);
         }
 
         .user-role-badge {
             font-size: 0.6rem;
-            font-weight: 700;
+            font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: var(--primary-color);
@@ -431,6 +683,159 @@
             border-radius: 10px;
             display: inline-block;
         }
+
+        .account-dropdown-menu {
+            width: 272px;
+            padding: 0;
+            border: none !important;
+            border-radius: 22px !important;
+            overflow: hidden;
+            background-color: #ffffff;
+            box-shadow: 0 22px 55px rgba(15, 23, 42, 0.16);
+            margin-top: 12px !important;
+        }
+
+        .account-dropdown-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.95rem;
+            background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.18), transparent 35%), linear-gradient(135deg, rgba(0, 174, 239, 0.08), #ffffff);
+        }
+
+        .account-dropdown-avatar {
+            width: 46px;
+            height: 46px;
+            min-width: 46px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #ffffff;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.11);
+        }
+
+        .account-dropdown-user-info {
+            min-width: 0;
+        }
+
+        .account-dropdown-name {
+            font-size: 0.9rem;
+            font-weight: 900;
+            color: #0f172a;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 175px;
+        }
+
+        .account-dropdown-role {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 0.23rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 999px;
+            background-color: rgba(0, 174, 239, 0.12);
+            color: var(--primary-color);
+            font-size: 0.58rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .account-dropdown-email {
+            margin-top: 0.24rem;
+            color: #64748b;
+            font-size: 0.69rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 175px;
+        }
+
+        .account-dropdown-divider {
+            height: 1px;
+            background-color: #e2e8f0;
+            margin: 0;
+        }
+
+        .account-dropdown-body {
+            padding: 0.45rem;
+        }
+
+        .account-dropdown-item {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.65rem 0.7rem;
+            border-radius: 15px;
+            border: none;
+            background-color: transparent;
+            color: #334155;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+
+            .account-dropdown-item:hover {
+                background-color: #f8fafc;
+                color: var(--primary-color);
+            }
+
+        .account-dropdown-item-icon {
+            width: 34px;
+            height: 34px;
+            min-width: 34px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+
+        .account-icon-primary {
+            background-color: rgba(13, 110, 253, 0.10);
+            color: #0d6efd;
+        }
+
+        .account-icon-info {
+            background-color: rgba(0, 174, 239, 0.10);
+            color: var(--primary-color);
+        }
+
+        .account-icon-danger {
+            background-color: rgba(239, 68, 68, 0.10);
+            color: var(--danger);
+        }
+
+        .account-dropdown-item-content {
+            min-width: 0;
+        }
+
+        .account-dropdown-item-title {
+            display: block;
+            font-size: 0.86rem;
+            font-weight: 900;
+            line-height: 1.2;
+        }
+
+        .account-dropdown-item-desc {
+            display: block;
+            margin-top: 0.16rem;
+            font-size: 0.68rem;
+            color: #64748b;
+            line-height: 1.25;
+        }
+
+        .account-dropdown-logout {
+            color: var(--danger);
+            font-weight: 900;
+        }
+
+            .account-dropdown-logout:hover {
+                background-color: rgba(239, 68, 68, 0.08);
+                color: var(--danger);
+            }
 
         .content-wrapper {
             padding: 2rem;
@@ -482,48 +887,9 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(15, 23, 42, 0.48);
             z-index: 1045;
         }
-
-        .language-switcher {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px;
-            border: 1px solid #e2e8f0;
-            border-radius: 999px;
-            background: #fff;
-            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
-        }
-
-            .language-switcher form {
-                margin: 0;
-            }
-
-        .lang-btn {
-            border: none;
-            background: transparent;
-            color: #64748b;
-            font-size: 0.85rem;
-            font-weight: 700;
-            padding: 8px 14px;
-            border-radius: 999px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            line-height: 1;
-        }
-
-            .lang-btn:hover {
-                background: #f1f5f9;
-                color: var(--primary-color);
-            }
-
-            .lang-btn.active {
-                background: var(--primary-color);
-                color: white;
-                box-shadow: 0 4px 12px rgba(0, 174, 239, 0.25);
-            }
 
         @@media (max-width: 991px) {
             .sidebar {
@@ -555,11 +921,25 @@
                 left: 0;
             }
 
+            .dashboard-site-link {
+                display: none !important;
+            }
+
+            .language-dropdown {
+                display: none !important;
+            }
+
+            .dashboard-title-block {
+                display: none;
+            }
+
             .user-menu-btn {
+                width: 42px;
+                height: 42px;
+                min-width: 42px;
                 border: none;
                 background: transparent;
                 box-shadow: none;
-                padding: 0;
             }
 
             .user-avatar {
@@ -568,17 +948,18 @@
                 border-width: 2px;
             }
 
-            .language-switcher {
-                display: none;
-            }
-
             .selected-conference-banner {
                 align-items: flex-start;
                 flex-direction: column;
             }
+
+            .account-dropdown-menu {
+                width: 255px;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar()"></div>
@@ -599,7 +980,9 @@
 
             @if (isSuperAdmin)
             {
-                <div class="menu-label text-info">@L("Section_GlobalSystem", "Global Sistem")</div>
+                <div class="menu-label text-info">
+                    @L("Section_GlobalSystem", "Global Sistem")
+                </div>
 
                 <a href="/Admin/Tenants"
                    class="nav-link @(currentController == "Tenants" ? "active" : "")">
@@ -613,16 +996,44 @@
                     @L("Management_Users", "Kullanıcılar")
                 </a>
 
-                <a href="/CentralVitrin/Index"
+                <a href="/Admin/AllConferences"
+                   class="nav-link @(currentController == "AllConferences" ? "active" : "")">
+                    <i class="fas fa-calendar-alt text-primary"></i>
+                    @L("Global_AllConferences", "Tüm Kongreler")
+                </a>
+
+                <a href="/Admin/CentralVitrin"
                    class="nav-link @(currentController == "CentralVitrin" ? "active" : "")">
                     <i class="fas fa-globe text-primary"></i>
-                    @L("Global_AllShowcases", "Tüm Vitrinler")
+                    @L("Global_CongressWebsites", "Kongre Siteleri")
+                </a>
+
+                <a href="/Admin/PageBlocks"
+                   class="nav-link @(currentController == "PageBlocks" ? "active" : "")">
+                    <i class="fas fa-layer-group text-success"></i>
+                    @L("Global_SiteSectionTemplates", "Site Bölüm Şablonları")
                 </a>
 
                 <a href="/Admin/SystemParameters"
                    class="nav-link @(currentController == "SystemParameters" ? "active" : "")">
                     <i class="fas fa-cogs text-info"></i>
                     @L("Global_SystemParameters", "Sistem Parametreleri")
+                </a>
+
+                <a href="/Dashboard/SuperAdmin"
+                   class="nav-link @(currentController == "Dashboard" && currentAction == "SuperAdmin" ? "active" : "")">
+                    <i class="fas fa-chart-line text-warning"></i>
+                    @L("Global_SystemReports", "Sistem Raporları")
+                </a>
+
+                <div class="menu-label text-primary">
+                    @L("Section_CongressOperations", "Kongre Operasyonları")
+                </div>
+
+                <a href="/Admin/ConferenceFlow?forceSelect=true"
+                   class="nav-link @(currentController == "ConferenceFlow" ? "active" : "")">
+                    <i class="fas fa-stream text-primary"></i>
+                    @L("Management_CongressFlow", "Kongre Akışı")
                 </a>
             }
 
@@ -744,28 +1155,18 @@
                 }
             }
 
-            @if (isManagementTeam)
+            @if (!isSuperAdmin && isManagementTeam)
             {
                 @if (hasSelectedConference)
                 {
-                    <div class="menu-label text-primary">@L("Section_CongressFlow", "Kongre Akışı")</div>
+                    <div class="menu-label text-primary">
+                        @L("Section_CongressOperations", "Kongre Operasyonları")
+                    </div>
 
                     <a href="@conferenceFlowUrl"
                        class="nav-link @(currentController == "ConferenceFlow" ? "active" : "")">
                         <i class="fas fa-stream text-primary"></i>
                         @L("Management_CongressFlow", "Kongre Akışı")
-                    </a>
-
-                    <a href="@reportsUrl"
-                       class="nav-link @(currentController == "Reports" ? "active" : "")">
-                        <i class="fas fa-chart-pie text-warning"></i>
-                        @L("Management_Reports", "Raporlar")
-                    </a>
-
-                    <a href="@assignmentUrl"
-                       class="nav-link @(currentController == "Assignment" ? "active" : "")">
-                        <i class="fas fa-tasks text-info"></i>
-                        @L("Management_Assignment", "Hakem Atama")
                     </a>
 
                     <a href="@submissionsAdminUrl"
@@ -774,33 +1175,33 @@
                         @L("Management_AllApplications", "Bildiri Yönetimi")
                     </a>
 
+                    <a href="@assignmentUrl"
+                       class="nav-link @(currentController == "Assignment" ? "active" : "")">
+                        <i class="fas fa-tasks text-info"></i>
+                        @L("Management_Assignment", "Hakem Atama")
+                    </a>
+
                     <a href="@decisionUrl"
                        class="nav-link @(currentController == "Decision" ? "active" : "")">
                         <i class="fas fa-gavel text-danger"></i>
                         @L("Management_DecisionScreen", "Karar Ekranı")
                     </a>
 
-                    <div class="menu-label text-danger">@L("Section_Management", "Yönetim")</div>
-
-                    <a href="@sessionUrl"
-                       class="nav-link @(currentController == "Session" ? "active" : "")">
-                        <i class="fas fa-microphone-alt text-success"></i>
-                        @L("Management_Session", "Program / Oturumlar")
+                    <a href="/Admin/Referee"
+                       class="nav-link @(currentController == "Referee" ? "active" : "")">
+                        <i class="fas fa-user-check text-warning"></i>
+                        @L("Management_Referees", "Hakemler")
                     </a>
 
-                    <a href="@websiteAdminUrl"
-                       class="nav-link @(currentController == "Website" ? "active" : "")">
-                        <i class="fas fa-pen-to-square text-success"></i>
-                        @L("System_WebsiteManagement", "Website Yönetimi")
+                    <a href="@certificatesIndexUrl"
+                       class="nav-link @(currentController == "Certificates" ? "active" : "")">
+                        <i class="fas fa-certificate text-success"></i>
+                        @L("Management_Certificates", "Sertifikalar")
                     </a>
 
-                    <div class="menu-label text-primary">@L("Section_SystemSettings", "Kongre Ayarları")</div>
-
-                    <a href="@conferencesUrl"
-                       class="nav-link @(currentController == "Conferences" ? "active" : "")">
-                        <i class="fas fa-sliders-h text-primary"></i>
-                        @L("System_ConferenceDefinitions", "Kongre Tanımları")
-                    </a>
+                    <div class="menu-label text-danger">
+                        @L("Section_RegistrationProgram", "Kayıt ve Program")
+                    </div>
 
                     <a href="@registrationsUrl"
                        class="nav-link @(currentController == "Registrations" ? "active" : "")">
@@ -819,16 +1220,30 @@
                         <i class="fas fa-layer-group text-success"></i>
                         @L("System_ConferenceTopics", "Bildiri Konuları")
                     </a>
+
+                    <a href="@sessionUrl"
+                       class="nav-link @(currentController == "Session" ? "active" : "")">
+                        <i class="fas fa-microphone-alt text-success"></i>
+                        @L("Management_Session", "Program / Oturumlar")
+                    </a>
+
+                    <a href="@reportsUrl"
+                       class="nav-link @(currentController == "Reports" ? "active" : "")">
+                        <i class="fas fa-chart-pie text-warning"></i>
+                        @L("Management_Reports", "Raporlar")
+                    </a>
+
+                    <a href="@websiteAdminUrl"
+                       class="nav-link @(currentController == "Website" ? "active" : "")">
+                        <i class="fas fa-pen-to-square text-success"></i>
+                        @L("System_WebsiteManagement", "Website Yönetimi")
+                    </a>
                 }
                 else
                 {
-                    <div class="menu-label text-danger">@L("Section_CongressOperations", "Kongre İşlemleri")</div>
-
-                    <a href="@dashboardMyConferencesUrl"
-                       class="nav-link @(currentController == "Dashboard" && currentAction == "MyConferences" ? "active" : "")">
-                        <i class="fas fa-hand-pointer text-danger animate__animated animate__pulse animate__infinite"></i>
-                        @L("Management_FirstStepSelectConference", "İlk Adım: Kongre Seç")
-                    </a>
+                    <div class="menu-label text-danger">
+                        @L("Section_CongressOperations", "Kongre İşlemleri")
+                    </div>
 
                     <a href="@conferencesUrl"
                        class="nav-link @(currentController == "Conferences" ? "active" : "")">
@@ -848,22 +1263,6 @@
                     @L("Common_Messages", "Mesajlar")
                 </a>
             }
-
-            <div class="menu-label">@L("Section_Account", "Hesap")</div>
-
-            @if (hasSelectedConference && (isAuthor || isListener || isReferee || isManagementTeam))
-            {
-                <a href="@dashboardMyConferencesUrl"
-                   class="nav-link @(currentController == "Dashboard" && currentAction == "MyConferences" ? "active" : "")">
-                    <i class="fas fa-exchange-alt text-secondary"></i>
-                    @L("Common_ChangeConference", "Kongre Değiştir")
-                </a>
-            }
-
-            <a href="/Identity/Account/Manage" class="nav-link">
-                <i class="fas fa-user-cog text-secondary"></i>
-                @L("Common_ProfileSettings", "Profil Ayarları")
-            </a>
         </div>
 
         <div class="p-3 border-top mt-auto">
@@ -876,111 +1275,198 @@
 
     <div class="main-content">
         <header class="top-header">
-            <div class="d-flex align-items-center">
-                <button class="btn btn-light shadow-sm me-3 border-0"
+            <div class="dashboard-header-left">
+                <button class="sidebar-toggle-btn"
                         id="sidebarToggle"
-                        onclick="toggleSidebar()">
-                    <i class="fas fa-bars text-primary"></i>
+                        type="button"
+                        onclick="toggleSidebar()"
+                        aria-label="@L("Common_Menu", "Menü")">
+                    <i class="fas fa-bars"></i>
                 </button>
 
-                <div class="lh-1 d-none d-sm-block">
-                    <h6 class="mb-0 fw-bold text-dark">@displayName</h6>
+                <div class="dashboard-title-block d-none d-sm-block">
+                    <div class="dashboard-title-row">
+                        <h6 class="dashboard-title">
+                            @displayName
+                        </h6>
 
-                    <small class="text-muted" style="font-size: 0.75rem;">
+                        <span class="dashboard-role-pill">
+                            @userRole
+                        </span>
+                    </div>
+
+                    <div class="dashboard-subtitle">
                         @(string.IsNullOrWhiteSpace(headerBadgeText)
                                                 ? L("Header_ManagementPanel", "Yönetim Paneli")
                                                 : headerBadgeText)
-
-                        <span class="ms-2 user-role-badge">@userRole</span>
-                    </small>
+                    </div>
                 </div>
             </div>
 
-            <div class="d-flex align-items-center gap-3">
-                <a href="/"
-                   class="text-decoration-none text-muted fw-bold small d-none d-md-block"
+            <div class="dashboard-header-actions">
+
+                <a href="@publicSiteUrl"
+                   target="_blank"
+                   class="dashboard-site-link d-none d-md-inline-flex"
                    data-bs-toggle="tooltip"
                    title="@L("Header_BackToSiteTooltip", "Siteye dön")">
-                    <i class="fas fa-external-link-alt me-1"></i>
-                    @L("Header_Site", "Site")
+                    <i class="fas fa-external-link-alt"></i>
+                    <span>@L("Header_Site", "Site")</span>
                 </a>
 
-                <div class="language-switcher d-none d-sm-inline-flex">
-                    <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
-                        @Html.AntiForgeryToken()
+                <div class="dropdown language-dropdown d-none d-sm-block">
+                    <button class="language-dropdown-btn"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                        <i class="fas fa-globe"></i>
 
-                        <input type="hidden" name="culture" value="tr-TR" />
-                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                        <span>
+                            @currentShortCulture
+                        </span>
 
-                        <button type="submit" class="lang-btn @(currentCulture == "tr-TR" ? "active" : "")">
-                            TR
-                        </button>
-                    </form>
+                        <i class="fas fa-chevron-down language-chevron"></i>
+                    </button>
 
-                    <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
-                        @Html.AntiForgeryToken()
-
-                        <input type="hidden" name="culture" value="en-US" />
-                        <input type="hidden" name="returnUrl" value="@returnUrl" />
-
-                        <button type="submit" class="lang-btn @(currentCulture == "en-US" ? "active" : "")">
-                            EN
-                        </button>
-                    </form>
-                </div>
-
-                @await Component.InvokeAsync("Notification")
-
-                <div class="dropdown">
-                    <div class="user-menu-btn ps-2" data-bs-toggle="dropdown">
-                        <img src="@profileImg" class="user-avatar" alt="@displayName">
-                    </div>
-
-                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-3 rounded-4 p-2" style="width: 220px;">
+                    <ul class="dropdown-menu dropdown-menu-end language-dropdown-menu">
                         <li>
-                            <h6 class="dropdown-header small fw-bold">
-                                @L("Dropdown_MyAccount", "Hesabım")
-                            </h6>
-                        </li>
-
-                        <li>
-                            <a class="dropdown-item rounded-2 py-2" href="/Identity/Account/Manage">
-                                <i class="fas fa-user-cog me-2 text-muted"></i>
-                                @L("Dropdown_Settings", "Ayarlar")
-                            </a>
-                        </li>
-
-                        @if (!isSuperAdmin)
-                        {
-                            <li>
-                                <a class="dropdown-item rounded-2 py-2" href="@dashboardMyConferencesUrl">
-                                    <i class="fas fa-exchange-alt me-2 text-muted"></i>
-                                    @L("Dropdown_ConferenceSelection", "Kongre Seçimi")
-                                </a>
-                            </li>
-                        }
-
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
-
-                        <li>
-                            <form asp-area="" asp-controller="Dashboard" asp-action="CustomLogout" method="post">
+                            <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
                                 @Html.AntiForgeryToken()
 
-                                <button type="submit" class="dropdown-item rounded-2 py-2 text-danger fw-bold">
-                                    <i class="fas fa-sign-out-alt me-2"></i>
-                                    @L("Dropdown_Logout", "Çıkış Yap")
+                                <input type="hidden" name="culture" value="tr-TR" />
+                                <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+                                <button type="submit"
+                                        class="dropdown-item language-dropdown-item @(isTurkishCulture ? "active" : "")">
+                                    <span class="language-code">TR</span>
+                                    <span class="language-name">Türkçe</span>
+                                </button>
+                            </form>
+                        </li>
+
+                        <li>
+                            <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                                @Html.AntiForgeryToken()
+
+                                <input type="hidden" name="culture" value="en-US" />
+                                <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+                                <button type="submit"
+                                        class="dropdown-item language-dropdown-item @(isEnglishCulture ? "active" : "")">
+                                    <span class="language-code">GB</span>
+                                    <span class="language-name">English</span>
                                 </button>
                             </form>
                         </li>
                     </ul>
                 </div>
+
+                @await Component.InvokeAsync("Notification")
+
+                <div class="dropdown account-dropdown">
+                    <button class="user-menu-btn"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                            aria-label="@L("Common_AccountMenu", "Hesap menüsü")">
+                        <img src="@profileImg" class="user-avatar" alt="@displayName">
+                    </button>
+
+                    <div class="dropdown-menu dropdown-menu-end account-dropdown-menu">
+
+                        <div class="account-dropdown-header">
+                            <img src="@profileImg"
+                                 class="account-dropdown-avatar"
+                                 alt="@displayName" />
+
+                            <div class="account-dropdown-user-info">
+                                <div class="account-dropdown-name">
+                                    @displayName
+                                </div>
+
+                                <div class="account-dropdown-role">
+                                    @userRole
+                                </div>
+
+                                <div class="account-dropdown-email">
+                                    @(user?.Email ?? User.Identity?.Name)
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="account-dropdown-divider"></div>
+
+                        <div class="account-dropdown-body">
+                            <a class="account-dropdown-item"
+                               href="/Identity/Account/Manage">
+                                <span class="account-dropdown-item-icon account-icon-primary">
+                                    <i class="fas fa-user-cog"></i>
+                                </span>
+
+                                <span class="account-dropdown-item-content">
+                                    <span class="account-dropdown-item-title">
+                                        @L("Dropdown_Settings", "Hesap Ayarları")
+                                    </span>
+
+                                    <span class="account-dropdown-item-desc">
+                                        @L("Dropdown_SettingsDescription", "Profil bilgilerini düzenle")
+                                    </span>
+                                </span>
+                            </a>
+
+                            @if (!isSuperAdmin)
+                            {
+                                <a class="account-dropdown-item"
+                                   href="@dashboardMyConferencesUrl">
+                                    <span class="account-dropdown-item-icon account-icon-info">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </span>
+
+                                    <span class="account-dropdown-item-content">
+                                        <span class="account-dropdown-item-title">
+                                            @L("Dropdown_ConferenceSelection", "Kongre Seçimi")
+                                        </span>
+
+                                        <span class="account-dropdown-item-desc">
+                                            @L("Dropdown_ConferenceSelectionDescription", "Aktif kongreyi değiştir")
+                                        </span>
+                                    </span>
+                                </a>
+                            }
+                        </div>
+
+                        <div class="account-dropdown-divider"></div>
+
+                        <div class="account-dropdown-body">
+                            <form asp-area=""
+                                  asp-controller="Dashboard"
+                                  asp-action="CustomLogout"
+                                  method="post"
+                                  class="m-0">
+                                @Html.AntiForgeryToken()
+
+                                <button type="submit"
+                                        class="account-dropdown-item account-dropdown-logout">
+                                    <span class="account-dropdown-item-icon account-icon-danger">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                    </span>
+
+                                    <span class="account-dropdown-item-content">
+                                        <span class="account-dropdown-item-title">
+                                            @L("Dropdown_Logout", "Çıkış Yap")
+                                        </span>
+                                    </span>
+                                </button>
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
             </div>
         </header>
 
         <div class="content-wrapper">
-            @if (hasSelectedConference && !string.IsNullOrWhiteSpace(selectedConferenceTitle))
+            @if (!isSuperAdmin && !hideSelectedConferenceBar && hasSelectedConference && !string.IsNullOrWhiteSpace(selectedConferenceTitle))
             {
                 <div class="selected-conference-banner">
                     <div class="d-flex align-items-center gap-3">
@@ -999,7 +1485,7 @@
                         </div>
                     </div>
 
-                    <a href="@dashboardMyConferencesUrl" class="btn btn-sm btn-primary rounded-pill px-3">
+                    <a href="@changeSelectedConferenceUrl" class="btn btn-sm btn-primary rounded-pill px-3">
                         <i class="fas fa-exchange-alt me-1"></i>
                         @L("Common_ChangeConference", "Kongre Değiştir")
                     </a>
