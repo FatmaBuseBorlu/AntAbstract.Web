@@ -345,9 +345,17 @@
 
         var isPaymentPage = string.Equals(controller, "Payment", StringComparison.OrdinalIgnoreCase);
 
+        var isSuperAdmin = User.Identity != null
+        && User.Identity.IsAuthenticated
+        && User.IsInRole("SuperAdmin");
+
         var isAdminLike = User.Identity != null
         && User.Identity.IsAuthenticated
-        && (User.IsInRole("Admin") || User.IsInRole("Organizator"));
+        && User.IsInRole("Admin");
+
+        var isListener = User.Identity != null
+        && User.Identity.IsAuthenticated
+        && User.IsInRole("Listener");
 
         var isReferee = User.Identity != null
         && User.Identity.IsAuthenticated
@@ -432,6 +440,12 @@
         var websiteUrl = (!string.IsNullOrWhiteSpace(slug))
         ? $"/{slug}/Admin/Website"
         : "/Admin/Website";
+
+        var superAdminPanelUrl = "/Dashboard/SuperAdmin";
+
+        var listenerPanelUrl = !string.IsNullOrWhiteSpace(slug)
+        ? $"/{slug}/Dashboard"
+        : "/Dashboard";
 
         var requestCulture = Context.Features.Get<IRequestCultureFeature>();
         var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? "tr-TR";
@@ -519,6 +533,16 @@
                                 <a class="nav-link" href="/contact">@Localizer["Menu_Contact"]</a>
                             </li>
 
+                            @if (!hideAdminNav && isSuperAdmin)
+                            {
+                                <li class="nav-item ms-lg-3">
+                                    <a class="nav-link admin-link shadow-sm" href="@superAdminPanelUrl">
+                                        <i class="fas fa-shield-alt me-1"></i>
+                                        Sistem Paneli
+                                    </a>
+                                </li>
+                            }
+
                             @if (!hideAdminNav && isAdminLike && (Tc.Current != null || !string.IsNullOrWhiteSpace(slug)))
                             {
                                 <li class="nav-item ms-lg-3">
@@ -563,6 +587,15 @@
                                     <a class="nav-link author-link shadow-sm" href="/Dashboard">
                                         <i class="fas fa-user-graduate me-1"></i>
                                         @Localizer["AuthorPanel"]
+                                    </a>
+                                </li>
+                            }
+                            @if (isListener && !hideAdminNav)
+                            {
+                                <li class="nav-item ms-lg-3">
+                                    <a class="nav-link author-link shadow-sm" href="@listenerPanelUrl">
+                                        <i class="fas fa-user-check me-1"></i>
+                                        Katılımcı Paneli
                                     </a>
                                 </li>
                             }

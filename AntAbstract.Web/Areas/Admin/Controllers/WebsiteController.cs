@@ -15,17 +15,17 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Organizator,Editor")]
+    [Authorize(Roles = "Admin")]
     public class WebsiteController : Controller
     {
         private const int MaxContentJsonLength = 10000;
         private const int MaxUrlLength = 500;
 
-        private static readonly HashSet<string> SupportedCultures = new HashSet<string>(
+        private static readonly HashSet<string> SupportedCultures = new(
             new[] { "tr-TR", "en-US" },
             StringComparer.OrdinalIgnoreCase);
 
-        private static readonly HashSet<string> SupportedPages = new HashSet<string>(
+        private static readonly HashSet<string> SupportedPages = new(
             new[] { "Home", "About", "Contact" },
             StringComparer.OrdinalIgnoreCase);
 
@@ -89,6 +89,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return await _userManager.GetUserAsync(User);
         }
 
+        private async Task<Guid?> GetCurrentAdminTenantIdAsync()
+        {
+            var user = await GetCurrentUserAsync();
+
+            if (user == null || !user.TenantId.HasValue)
+            {
+                return null;
+            }
+
+            return user.TenantId.Value;
+        }
+
         private async Task<bool> CanAccessCurrentTenantAsync(string? slug = null)
         {
             var tenant = _tenantContext.Current;
@@ -104,22 +116,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return false;
             }
 
-            var user = await GetCurrentUserAsync();
+            var adminTenantId = await GetCurrentAdminTenantIdAsync();
 
-            if (user == null)
+            if (!adminTenantId.HasValue)
             {
                 return false;
             }
 
-            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-
-            if (isAdmin)
-            {
-                return true;
-            }
-
-            return user.TenantId.HasValue &&
-                   user.TenantId.Value == tenant.Id;
+            return adminTenantId.Value == tenant.Id;
         }
 
         private async Task<bool> ConferenceBelongsToCurrentTenantAsync(Guid conferenceId)
@@ -127,6 +131,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var tenant = _tenantContext.Current;
 
             if (tenant == null || conferenceId == Guid.Empty)
+            {
+                return false;
+            }
+
+            var adminTenantId = await GetCurrentAdminTenantIdAsync();
+
+            if (!adminTenantId.HasValue || adminTenantId.Value != tenant.Id)
             {
                 return false;
             }
@@ -143,6 +154,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var tenant = _tenantContext.Current;
 
             if (tenant == null)
+            {
+                return new List<Conference>();
+            }
+
+            var adminTenantId = await GetCurrentAdminTenantIdAsync();
+
+            if (!adminTenantId.HasValue || adminTenantId.Value != tenant.Id)
             {
                 return new List<Conference>();
             }
@@ -290,6 +308,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 ModelState.AddModelError(
                     nameof(ConferencePageBlock.ContentJson),
                     T("Error_ContentJsonTooLong", "İçerik JSON alanı çok uzun."));
+
                 return;
             }
 
@@ -355,7 +374,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (tenant == null)
             {
-                return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
+                TempData["ErrorMessage"] = T(
+                    "Error_TenantNotFound",
+                    "Tenant bulunamadı.");
+
+                return RedirectToSafePage();
             }
 
             if (!await CanAccessCurrentTenantAsync(slug))
@@ -422,7 +445,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (tenant == null)
             {
-                return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
+                TempData["ErrorMessage"] = T(
+                    "Error_TenantNotFound",
+                    "Tenant bulunamadı.");
+
+                return RedirectToSafePage();
             }
 
             if (!await CanAccessCurrentTenantAsync(slug))
@@ -478,7 +505,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (tenant == null)
             {
-                return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
+                TempData["ErrorMessage"] = T(
+                    "Error_TenantNotFound",
+                    "Tenant bulunamadı.");
+
+                return RedirectToSafePage();
             }
 
             if (!await CanAccessCurrentTenantAsync(slug))
@@ -554,7 +585,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (tenant == null)
             {
-                return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
+                TempData["ErrorMessage"] = T(
+                    "Error_TenantNotFound",
+                    "Tenant bulunamadı.");
+
+                return RedirectToSafePage();
             }
 
             if (!await CanAccessCurrentTenantAsync(slug))
@@ -611,7 +646,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (tenant == null)
             {
-                return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
+                TempData["ErrorMessage"] = T(
+                    "Error_TenantNotFound",
+                    "Tenant bulunamadı.");
+
+                return RedirectToSafePage();
             }
 
             if (!await CanAccessCurrentTenantAsync(slug))
@@ -715,7 +754,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (tenant == null)
             {
-                return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
+                TempData["ErrorMessage"] = T(
+                    "Error_TenantNotFound",
+                    "Tenant bulunamadı.");
+
+                return RedirectToSafePage();
             }
 
             if (!await CanAccessCurrentTenantAsync(slug))
@@ -774,7 +817,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (tenant == null)
             {
-                return BadRequest(T("Error_TenantNotFound", "Tenant bulunamadı."));
+                TempData["ErrorMessage"] = T(
+                    "Error_TenantNotFound",
+                    "Tenant bulunamadı.");
+
+                return RedirectToSafePage();
             }
 
             if (!await CanAccessCurrentTenantAsync(slug))

@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Reviewer.Controllers
 {
     [Area("Reviewer")]
-    [Authorize]
+    [Authorize(Roles = "Referee")]
     public class ReviewController : Controller
     {
         private readonly IReviewService _reviewService;
@@ -39,20 +39,31 @@ namespace AntAbstract.Web.Areas.Reviewer.Controllers
 
         [HttpGet("/Review/Index")]
         [HttpGet("/{slug}/Review/Index")]
-        [Authorize(Roles = "Referee, Admin")]
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
             var assignments = await _reviewService.GetMyAssignmentsAsync(user.Id);
+
             return View(assignments);
         }
 
         [HttpGet("/Review/Evaluate")]
         [HttpGet("/{slug}/Review/Evaluate")]
-        [Authorize(Roles = "Referee, Admin")]
         public async Task<IActionResult> Evaluate(int id)
         {
             var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
             var assignmentDto = await _reviewService.GetAssignmentByIdAsync(id, user.Id);
 
             if (assignmentDto == null)
@@ -67,27 +78,36 @@ namespace AntAbstract.Web.Areas.Reviewer.Controllers
         [HttpPost("/Review/Evaluate")]
         [HttpPost("/{slug}/Review/Evaluate")]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Referee, Admin")]
         public async Task<IActionResult> Evaluate(SubmitReviewDto model)
         {
             if (!ModelState.IsValid)
             {
                 TempData["ErrorMessage"] = _localizer["PleaseFillAllFields"];
-                return RedirectToAction(nameof(Evaluate), new { id = model.ReviewAssignmentId });
+
+                return RedirectToAction(nameof(Evaluate), new
+                {
+                    id = model.ReviewAssignmentId
+                });
             }
 
             try
             {
                 var user = await _userManager.GetUserAsync(User);
-                if (user == null)
-                    return Challenge();
 
-                var reviewerName = $"{user.FirstName} {user.LastName}".Trim();
-                await _reviewService.SubmitReviewAsync(model, reviewerName);
+                if (user == null)
+                {
+                    return Challenge();
+                }
+
+                var refereeName = $"{user.FirstName} {user.LastName}".Trim();
+
+                await _reviewService.SubmitReviewAsync(model, refereeName);
 
                 var conferenceId = await _context.ReviewAssignments
                     .AsNoTracking()
-                    .Where(ra => ra.Id == model.ReviewAssignmentId && ra.ReviewerId == user.Id)
+                    .Where(ra =>
+                        ra.Id == model.ReviewAssignmentId &&
+                        ra.ReviewerId == user.Id)
                     .Select(ra => ra.Submission.ConferenceId)
                     .FirstOrDefaultAsync();
 
@@ -96,31 +116,42 @@ namespace AntAbstract.Web.Areas.Reviewer.Controllers
                     await _certificateService.EnsureReviewerCertificateAsync(
                         conferenceId,
                         user.Id,
-                        reviewerName,
+                        refereeName,
                         user.Email ?? ""
                     );
                 }
 
                 TempData["SuccessMessage"] = _localizer["ReviewSavedSuccessfully"];
+
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = _localizer["ErrorPrefix"] + ex.Message;
-                return RedirectToAction(nameof(Evaluate), new { id = model.ReviewAssignmentId });
+
+                return RedirectToAction(nameof(Evaluate), new
+                {
+                    id = model.ReviewAssignmentId
+                });
             }
         }
 
         [HttpPost("/Review/DeclineAssignment")]
         [HttpPost("/{slug}/Review/DeclineAssignment")]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Referee, Admin")]
         public async Task<IActionResult> DeclineAssignment(int id, string Reason, string Note)
         {
             try
             {
                 var user = await _userManager.GetUserAsync(User);
+
+                if (user == null)
+                {
+                    return Challenge();
+                }
+
                 await _reviewService.DeclineAssignmentAsync(id, user.Id, Reason, Note);
+
                 TempData["SuccessMessage"] = _localizer["AssignmentReturned"];
             }
             catch (Exception ex)
@@ -133,10 +164,15 @@ namespace AntAbstract.Web.Areas.Reviewer.Controllers
 
         [HttpGet("/Review/DownloadCertificate/{id:int}")]
         [HttpGet("/{slug}/Review/DownloadCertificate/{id:int}")]
-        [Authorize(Roles = "Referee, Admin")]
         public async Task<IActionResult> DownloadCertificate(int id)
         {
             var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
             var assignment = await _reviewService.GetAssignmentByIdAsync(id, user.Id);
 
             if (assignment == null || !assignment.IsReviewed)
@@ -145,27 +181,43 @@ namespace AntAbstract.Web.Areas.Reviewer.Controllers
             }
 
             ViewBag.ReviewerName = $"{user.Title} {user.FirstName} {user.LastName}";
+
             return View("Certificate", assignment);
         }
 
         [HttpGet("/Review/Interests")]
         [HttpGet("/{slug}/Review/Interests")]
-        public IActionResult Interests() => View();
+        public IActionResult Interests()
+        {
+            return View();
+        }
 
         [HttpGet("/Review/Availability")]
         [HttpGet("/{slug}/Review/Availability")]
-        public IActionResult Availability() => View();
+        public IActionResult Availability()
+        {
+            return View();
+        }
 
         [HttpGet("/Review/Conflicts")]
         [HttpGet("/{slug}/Review/Conflicts")]
-        public IActionResult Conflicts() => View();
+        public IActionResult Conflicts()
+        {
+            return View();
+        }
 
         [HttpGet("/Review/Guidelines")]
         [HttpGet("/{slug}/Review/Guidelines")]
-        public IActionResult Guidelines() => View();
+        public IActionResult Guidelines()
+        {
+            return View();
+        }
 
         [HttpGet("/Review/MyCertificates")]
         [HttpGet("/{slug}/Review/MyCertificates")]
-        public IActionResult MyCertificates() => View();
+        public IActionResult MyCertificates()
+        {
+            return View();
+        }
     }
 }

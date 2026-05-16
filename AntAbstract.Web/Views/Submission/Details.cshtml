@@ -7,7 +7,17 @@
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, System.StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
+
     SubmissionStatus currentStatus = SubmissionStatus.New;
+
     if (Enum.TryParse<SubmissionStatus>(Model.Status, out var parsedStatus))
     {
         currentStatus = parsedStatus;
@@ -48,56 +58,56 @@
         margin-bottom: 30px;
     }
 
-    .timeline-steps .timeline-step {
-        align-items: center;
-        display: flex;
-        flex-direction: column;
-        position: relative;
-        margin: 0 1rem;
-    }
+        .timeline-steps .timeline-step {
+            align-items: center;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            margin: 0 1rem;
+        }
 
-    .timeline-steps .timeline-content {
-        width: 100px;
-        text-align: center;
-    }
+        .timeline-steps .timeline-content {
+            width: 100px;
+            text-align: center;
+        }
 
-    .timeline-steps .timeline-content .inner-circle {
-        border-radius: 1.5rem;
-        height: 3rem;
-        width: 3rem;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background-color: #eef2f5;
-        color: #99a2a8;
-        border: 2px solid #eef2f5;
-        z-index: 10;
-        position: relative;
-        font-weight: bold;
-        transition: all 0.3s;
-    }
+            .timeline-steps .timeline-content .inner-circle {
+                border-radius: 1.5rem;
+                height: 3rem;
+                width: 3rem;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                background-color: #eef2f5;
+                color: #99a2a8;
+                border: 2px solid #eef2f5;
+                z-index: 10;
+                position: relative;
+                font-weight: bold;
+                transition: all 0.3s;
+            }
 
-    .timeline-steps .timeline-content .inner-circle.active {
-        background-color: #00aeef;
-        color: #fff;
-        border-color: #00aeef;
-        box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.2);
-    }
+                .timeline-steps .timeline-content .inner-circle.active {
+                    background-color: #00aeef;
+                    color: #fff;
+                    border-color: #00aeef;
+                    box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.2);
+                }
 
-    .timeline-steps .timeline-step:not(:last-child):after {
-        content: "";
-        display: block;
-        border-top: 3px solid #eef2f5;
-        width: 100%;
-        position: absolute;
-        left: 50%;
-        top: 1.5rem;
-        z-index: 0;
-    }
+        .timeline-steps .timeline-step:not(:last-child):after {
+            content: "";
+            display: block;
+            border-top: 3px solid #eef2f5;
+            width: 100%;
+            position: absolute;
+            left: 50%;
+            top: 1.5rem;
+            z-index: 0;
+        }
 
-    .timeline-steps .timeline-step.completed:not(:last-child):after {
-        border-top-color: #00aeef;
-    }
+        .timeline-steps .timeline-step.completed:not(:last-child):after {
+            border-top-color: #00aeef;
+        }
 
     .detail-card {
         border: none;
@@ -116,15 +126,15 @@
         border-bottom: 2px solid transparent;
     }
 
-    .nav-tabs-custom .nav-link.active {
-        color: #00aeef;
-        background: transparent;
-        border-bottom-color: #00aeef;
-    }
+        .nav-tabs-custom .nav-link.active {
+            color: #00aeef;
+            background: transparent;
+            border-bottom-color: #00aeef;
+        }
 
-    .nav-tabs-custom .nav-link:hover {
-        color: #00aeef;
-    }
+        .nav-tabs-custom .nav-link:hover {
+            color: #00aeef;
+        }
 </style>
 
 <div class="container-fluid py-4">
@@ -132,13 +142,22 @@
     <div class="d-flex justify-content-between align-items-center mb-5">
         <div>
             <h4 class="fw-bold text-dark mb-1">@Localizer["PageHeading"]</h4>
+
             <div class="d-flex align-items-center">
-                <span class="badge bg-light text-dark border me-2">#@Model.Id.ToString().Substring(0, 8).ToUpper()</span>
-                <span class="text-muted small">@Model.Title</span>
+                <span class="badge bg-light text-dark border me-2">
+                    #@Model.Id.ToString().Substring(0, 8).ToUpper()
+                </span>
+
+                <span class="text-muted small">
+                    @Model.Title
+                </span>
             </div>
         </div>
-        <a href="/Submission/Index" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-bold">
-            <i class="fas fa-arrow-left me-1"></i> @Localizer["BackToListButton"]
+
+        <a href="/Submission/Index"
+           class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-bold">
+            <i class="fas fa-arrow-left me-1"></i>
+            @Localizer["BackToListButton"]
         </a>
     </div>
 
@@ -146,36 +165,57 @@
         <div class="timeline-steps aos-init aos-animate" data-aos="fade-up">
             @{
                 bool step1 = true;
-                bool step2 = currentStatus >= SubmissionStatus.UnderReview && currentStatus != SubmissionStatus.Withdrawn;
-                bool step3 = (currentStatus == SubmissionStatus.Accepted || currentStatus == SubmissionStatus.Rejected) && currentStatus != SubmissionStatus.Withdrawn;
+
+                bool step2 =
+                currentStatus >= SubmissionStatus.UnderReview &&
+                currentStatus != SubmissionStatus.Withdrawn;
+
+                bool step3 =
+                (
+                currentStatus == SubmissionStatus.Accepted ||
+                currentStatus == SubmissionStatus.Rejected
+                ) &&
+                currentStatus != SubmissionStatus.Withdrawn;
+
                 bool step4 = currentStatus == SubmissionStatus.Presented;
             }
 
             <div class="timeline-step @(step2 ? "completed" : "")">
                 <div class="timeline-content">
                     <div class="inner-circle @(step1 ? "active" : "")">1</div>
-                    <p class="mt-2 mb-0 small fw-bold text-muted">@Localizer["TimelineSubmitted"]</p>
+                    <p class="mt-2 mb-0 small fw-bold text-muted">
+                        @Localizer["TimelineSubmitted"]
+                    </p>
                 </div>
             </div>
 
             <div class="timeline-step @(step3 ? "completed" : "")">
                 <div class="timeline-content">
                     <div class="inner-circle @(step2 ? "active" : "")">2</div>
-                    <p class="mt-2 mb-0 small fw-bold text-muted">@Localizer["TimelineReview"]</p>
+                    <p class="mt-2 mb-0 small fw-bold text-muted">
+                        @Localizer["TimelineReview"]
+                    </p>
                 </div>
             </div>
 
             <div class="timeline-step @(step4 ? "completed" : "")">
                 <div class="timeline-content">
                     <div class="inner-circle @(step3 ? "active" : "")">3</div>
-                    <p class="mt-2 mb-0 small fw-bold text-muted">@Localizer["TimelineDecision"]</p>
+                    <p class="mt-2 mb-0 small fw-bold text-muted">
+                        @Localizer["TimelineDecision"]
+                    </p>
                 </div>
             </div>
 
             <div class="timeline-step">
                 <div class="timeline-content">
-                    <div class="inner-circle @(step4 ? "active" : "")"><i class="fas fa-check"></i></div>
-                    <p class="mt-2 mb-0 small fw-bold text-muted">@Localizer["TimelineCompleted"]</p>
+                    <div class="inner-circle @(step4 ? "active" : "")">
+                        <i class="fas fa-check"></i>
+                    </div>
+
+                    <p class="mt-2 mb-0 small fw-bold text-muted">
+                        @Localizer["TimelineCompleted"]
+                    </p>
                 </div>
             </div>
         </div>
@@ -185,25 +225,47 @@
 
         <div class="col-md-4">
             <div class="detail-card p-4">
-                <h6 class="fw-bold text-muted small text-uppercase mb-3">@Localizer["CurrentStatusTitle"]</h6>
+                <h6 class="fw-bold text-muted small text-uppercase mb-3">
+                    @Localizer["CurrentStatusTitle"]
+                </h6>
 
                 <div class="d-flex align-items-center mb-3">
                     <div class="display-4 me-3">
-                        @if (currentStatus == SubmissionStatus.Accepted) { <i class="fas fa-check-circle text-success"></i> }
-                        else if (currentStatus == SubmissionStatus.Rejected) { <i class="fas fa-times-circle text-danger"></i> }
-                        else if (currentStatus == SubmissionStatus.RevisionRequired) { <i class="fas fa-exclamation-circle text-info"></i> }
-                        else { <i class="fas fa-hourglass-half text-warning"></i> }
+                        @if (currentStatus == SubmissionStatus.Accepted)
+                        {
+                            <i class="fas fa-check-circle text-success"></i>
+                        }
+                        else if (currentStatus == SubmissionStatus.Rejected)
+                        {
+                            <i class="fas fa-times-circle text-danger"></i>
+                        }
+                        else if (currentStatus == SubmissionStatus.RevisionRequired)
+                        {
+                            <i class="fas fa-exclamation-circle text-info"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-hourglass-half text-warning"></i>
+                        }
                     </div>
+
                     <div>
-                        <span class="badge @statusBadgeClass fs-6 px-3 py-2 rounded-3">@statusText</span>
-                        <small class="text-muted d-block mt-1">@Localizer["LastUpdatedLabel"] @(Model.CreatedDate.ToLocalTime().ToString("dd MMM yyyy"))</small>
+                        <span class="badge @statusBadgeClass fs-6 px-3 py-2 rounded-3">
+                            @statusText
+                        </span>
+
+                        <small class="text-muted d-block mt-1">
+                            @Localizer["LastUpdatedLabel"]
+                            @(Model.CreatedDate.ToLocalTime().ToString("dd MMM yyyy"))
+                        </small>
                     </div>
                 </div>
 
                 @if (currentStatus == SubmissionStatus.Withdrawn)
                 {
                     <div class="alert alert-secondary small mb-0">
-                        <i class="fas fa-ban me-1"></i> @Localizer["WithdrawnInfoText"]
+                        <i class="fas fa-ban me-1"></i>
+                        @Localizer["WithdrawnInfoText"]
                     </div>
                 }
             </div>
@@ -211,39 +273,59 @@
 
         <div class="col-md-4">
             <div class="detail-card p-4">
-                <h6 class="fw-bold text-muted small text-uppercase mb-3">@Localizer["QuickActionsTitle"]</h6>
+                <h6 class="fw-bold text-muted small text-uppercase mb-3">
+                    @Localizer["QuickActionsTitle"]
+                </h6>
 
                 <div class="d-grid gap-2">
                     @if (currentStatus == SubmissionStatus.RevisionRequired)
                     {
                         <div class="alert alert-warning small mb-2 p-2 border-warning text-dark">
-                            <i class="fas fa-exclamation-triangle me-1"></i> @Localizer["RevisionRequestedText"]
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            @Localizer["RevisionRequestedText"]
                         </div>
-                        <a asp-action="UploadRevision" asp-route-id="@Model.Id" class="btn btn-warning fw-bold">
-                            <i class="fas fa-upload me-2"></i> @Localizer["UploadRevisionButton"]
+
+                        <a asp-action="UploadRevision"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-warning fw-bold">
+                            <i class="fas fa-upload me-2"></i>
+                            @Localizer["UploadRevisionButton"]
                         </a>
                     }
                     else if (currentStatus == SubmissionStatus.Rejected)
                     {
-                        <a asp-action="DownloadRejectionLetter" asp-route-id="@Model.Id" target="_blank" class="btn btn-outline-danger fw-bold">
-                            <i class="fas fa-file-pdf me-2"></i> @Localizer["DownloadRejectionLetterButton"]
+                        <a asp-action="DownloadRejectionLetter"
+                           asp-route-id="@Model.Id"
+                           target="_blank"
+                           class="btn btn-outline-danger fw-bold">
+                            <i class="fas fa-file-pdf me-2"></i>
+                            @Localizer["DownloadRejectionLetterButton"]
                         </a>
                     }
                     else if (currentStatus == SubmissionStatus.New || currentStatus == SubmissionStatus.Pending)
                     {
-                        <form asp-action="Withdraw" method="post" onsubmit="return confirm(withdrawConfirmMessage);">
+                        <form asp-action="Withdraw"
+                              method="post"
+                              onsubmit="return confirm(withdrawConfirmMessage);">
                             @Html.AntiForgeryToken()
+
                             <input type="hidden" name="id" value="@Model.Id" />
+
                             <button type="submit" class="btn btn-outline-danger w-100 btn-sm">
-                                <i class="fas fa-ban me-2"></i> @Localizer["WithdrawSubmissionButton"]
+                                <i class="fas fa-ban me-2"></i>
+                                @Localizer["WithdrawSubmissionButton"]
                             </button>
                         </form>
-                        <small class="text-muted text-center d-block mt-2">@Localizer["WithdrawBeforeReviewText"]</small>
+
+                        <small class="text-muted text-center d-block mt-2">
+                            @Localizer["WithdrawBeforeReviewText"]
+                        </small>
                     }
                     else
                     {
                         <div class="alert alert-light border text-muted small text-center mb-0">
-                            <i class="fas fa-lock me-1"></i> @Localizer["NoAvailableActionText"]
+                            <i class="fas fa-lock me-1"></i>
+                            @Localizer["NoAvailableActionText"]
                         </div>
                     }
                 </div>
@@ -252,29 +334,56 @@
 
         <div class="col-md-4">
             <div class="detail-card p-4">
-                <h6 class="fw-bold text-muted small text-uppercase mb-3">@Localizer["DocumentsTitle"]</h6>
+                <h6 class="fw-bold text-muted small text-uppercase mb-3">
+                    @Localizer["DocumentsTitle"]
+                </h6>
 
                 <div class="d-grid gap-2">
                     @if (currentStatus == SubmissionStatus.Accepted || currentStatus == SubmissionStatus.Presented)
                     {
-                        <a asp-action="DownloadAcceptanceLetter" asp-route-id="@Model.Id" target="_blank" class="btn btn-outline-success fw-bold text-start">
-                            <i class="fas fa-file-contract me-2"></i> @Localizer["AcceptanceLetterButton"]
-                        </a>
-                        <a asp-action="DownloadBadge" asp-route-id="@Model.Id" target="_blank" class="btn btn-outline-dark fw-bold text-start">
-                            <i class="fas fa-id-badge me-2"></i> @Localizer["CreateBadgeButton"]
+                        <a asp-action="DownloadAcceptanceLetter"
+                           asp-route-id="@Model.Id"
+                           target="_blank"
+                           class="btn btn-outline-success fw-bold text-start">
+                            <i class="fas fa-file-contract me-2"></i>
+                            @Localizer["AcceptanceLetterButton"]
                         </a>
 
-                        <button class="btn btn-primary fw-bold text-start mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#uploadPres">
-                            <i class="fas fa-file-powerpoint me-2"></i> @Localizer["UploadPresentationButton"]
+                        <a asp-action="DownloadBadge"
+                           asp-route-id="@Model.Id"
+                           target="_blank"
+                           class="btn btn-outline-dark fw-bold text-start">
+                            <i class="fas fa-id-badge me-2"></i>
+                            @Localizer["CreateBadgeButton"]
+                        </a>
+
+                        <button class="btn btn-primary fw-bold text-start mt-2"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#uploadPres">
+                            <i class="fas fa-file-powerpoint me-2"></i>
+                            @Localizer["UploadPresentationButton"]
                         </button>
+
                         <div class="collapse" id="uploadPres">
                             <div class="card card-body p-2 bg-light border small mt-2">
-                                <form asp-action="UploadPresentation" method="post" enctype="multipart/form-data">
+                                <form asp-action="UploadPresentation"
+                                      method="post"
+                                      enctype="multipart/form-data">
                                     @Html.AntiForgeryToken()
+
                                     <input type="hidden" name="id" value="@Model.Id" />
+
                                     <div class="input-group input-group-sm">
-                                        <input type="file" name="presentationFile" class="form-control" accept=".ppt,.pptx,.pdf" required>
-                                        <button class="btn btn-dark" type="submit">@Localizer["UploadButton"]</button>
+                                        <input type="file"
+                                               name="presentationFile"
+                                               class="form-control"
+                                               accept=".ppt,.pptx,.pdf"
+                                               required>
+
+                                        <button class="btn btn-dark" type="submit">
+                                            @Localizer["UploadButton"]
+                                        </button>
                                     </div>
                                 </form>
                             </div>
@@ -284,7 +393,9 @@
                     {
                         <div class="text-center py-4 text-muted">
                             <i class="fas fa-file-invoice fa-2x mb-2 opacity-25"></i>
-                            <p class="small mb-0">@Localizer["DocumentsAvailableAfterAcceptanceText"]</p>
+                            <p class="small mb-0">
+                                @Localizer["DocumentsAvailableAfterAcceptanceText"]
+                            </p>
                         </div>
                     }
                 </div>
@@ -292,41 +403,82 @@
         </div>
     </div>
 
-    @if (User.IsInRole("Admin") || User.IsInRole("Editor"))
+    @if (User.IsInRole("Admin"))
     {
         <div class="card border-0 shadow-sm mb-5 border-start border-5 border-primary">
             <div class="card-body p-4 bg-light">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold text-primary m-0"><i class="fas fa-user-shield me-2"></i> @Localizer["AdminPanelTitle"]</h5>
-                    <span class="badge bg-primary">@Localizer["AdminEditorBadge"]</span>
+                    <h5 class="fw-bold text-primary m-0">
+                        <i class="fas fa-user-shield me-2"></i>
+                        @Localizer["AdminPanelTitle"]
+                    </h5>
+
+                    <span class="badge bg-primary">
+                        @L("AdminBadge", "Admin")
+                    </span>
                 </div>
 
                 <div class="row g-3 align-items-end">
                     <div class="col-md-6">
-                        <form asp-action="ChangeStatus" method="post" class="d-flex gap-2">
+                        <form asp-action="ChangeStatus"
+                              method="post"
+                              class="d-flex gap-2">
                             @Html.AntiForgeryToken()
+
                             <input type="hidden" name="id" value="@Model.Id" />
+
                             <div class="flex-grow-1">
-                                <label class="form-label small fw-bold text-muted">@Localizer["ChangeStatusLabel"]</label>
+                                <label class="form-label small fw-bold text-muted">
+                                    @Localizer["ChangeStatusLabel"]
+                                </label>
+
                                 <select name="status" class="form-select form-select-sm">
-                                    <option value="New" selected="@(currentStatus == SubmissionStatus.New ? "selected" : null)">@Localizer["OptionNew"]</option>
-                                    <option value="Pending" selected="@(currentStatus == SubmissionStatus.Pending ? "selected" : null)">@Localizer["OptionPending"]</option>
-                                    <option value="UnderReview" selected="@(currentStatus == SubmissionStatus.UnderReview ? "selected" : null)">@Localizer["OptionUnderReview"]</option>
-                                    <option value="RevisionRequired" selected="@(currentStatus == SubmissionStatus.RevisionRequired ? "selected" : null)">@Localizer["OptionRevisionRequired"]</option>
-                                    <option value="Accepted" selected="@(currentStatus == SubmissionStatus.Accepted ? "selected" : null)">@Localizer["OptionAccepted"]</option>
-                                    <option value="Rejected" selected="@(currentStatus == SubmissionStatus.Rejected ? "selected" : null)">@Localizer["OptionRejected"]</option>
+                                    <option value="New" selected="@(currentStatus == SubmissionStatus.New ? "selected" : null)">
+                                        @Localizer["OptionNew"]
+                                    </option>
+
+                                    <option value="Pending" selected="@(currentStatus == SubmissionStatus.Pending ? "selected" : null)">
+                                        @Localizer["OptionPending"]
+                                    </option>
+
+                                    <option value="UnderReview" selected="@(currentStatus == SubmissionStatus.UnderReview ? "selected" : null)">
+                                        @Localizer["OptionUnderReview"]
+                                    </option>
+
+                                    <option value="RevisionRequired" selected="@(currentStatus == SubmissionStatus.RevisionRequired ? "selected" : null)">
+                                        @Localizer["OptionRevisionRequired"]
+                                    </option>
+
+                                    <option value="Accepted" selected="@(currentStatus == SubmissionStatus.Accepted ? "selected" : null)">
+                                        @Localizer["OptionAccepted"]
+                                    </option>
+
+                                    <option value="Rejected" selected="@(currentStatus == SubmissionStatus.Rejected ? "selected" : null)">
+                                        @Localizer["OptionRejected"]
+                                    </option>
                                 </select>
                             </div>
-                            <button type="submit" class="btn btn-sm btn-primary fw-bold align-self-end px-3">
+
+                            <button type="submit"
+                                    class="btn btn-sm btn-primary fw-bold align-self-end px-3">
                                 <i class="fas fa-save"></i>
                             </button>
                         </form>
                     </div>
 
                     <div class="col-md-6 border-start ps-4">
-                        <label class="form-label small fw-bold text-muted">@Localizer["ReviewerAssignmentLabel"]</label> <br>
-                        <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#assignReviewerModal">
-                            <i class="fas fa-user-plus me-1"></i> @Localizer["AssignReviewerButton"]
+                        <label class="form-label small fw-bold text-muted">
+                            @Localizer["ReviewerAssignmentLabel"]
+                        </label>
+
+                        <br>
+
+                        <button type="button"
+                                class="btn btn-outline-dark btn-sm"
+                                data-bs-toggle="modal"
+                                data-bs-target="#assignReviewerModal">
+                            <i class="fas fa-user-plus me-1"></i>
+                            @Localizer["AssignReviewerButton"]
                         </button>
                     </div>
                 </div>
@@ -337,9 +489,35 @@
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
         <div class="card-header bg-white border-bottom p-0">
             <ul class="nav nav-tabs nav-tabs-custom px-4" id="detailTabs" role="tablist">
-                <li class="nav-item"><button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button">@Localizer["TabSummary"]</button></li>
-                <li class="nav-item"><button class="nav-link" id="authors-tab" data-bs-toggle="tab" data-bs-target="#authors" type="button">@Localizer["TabAuthors"]</button></li>
-                <li class="nav-item"><button class="nav-link" id="files-tab" data-bs-toggle="tab" data-bs-target="#files" type="button">@Localizer["TabFiles"]</button></li>
+                <li class="nav-item">
+                    <button class="nav-link active"
+                            id="info-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#info"
+                            type="button">
+                        @Localizer["TabSummary"]
+                    </button>
+                </li>
+
+                <li class="nav-item">
+                    <button class="nav-link"
+                            id="authors-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#authors"
+                            type="button">
+                        @Localizer["TabAuthors"]
+                    </button>
+                </li>
+
+                <li class="nav-item">
+                    <button class="nav-link"
+                            id="files-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#files"
+                            type="button">
+                        @Localizer["TabFiles"]
+                    </button>
+                </li>
             </ul>
         </div>
 
@@ -347,17 +525,29 @@
             <div class="tab-content" id="detailTabsContent">
 
                 <div class="tab-pane fade show active" id="info" role="tabpanel">
-                    <h4 class="fw-bold text-dark mb-4">@Model.Title</h4>
+                    <h4 class="fw-bold text-dark mb-4">
+                        @Model.Title
+                    </h4>
+
                     <div class="p-4 bg-light rounded-4 border">
-                        <p class="mb-0 text-secondary" style="white-space: pre-wrap; line-height: 1.8; font-size: 1.05rem;">@Model.Abstract</p>
+                        <p class="mb-0 text-secondary"
+                           style="white-space: pre-wrap; line-height: 1.8; font-size: 1.05rem;">
+                            @Model.Abstract
+                        </p>
                     </div>
+
                     <div class="mt-4">
-                        <span class="text-muted small text-uppercase fw-bold me-2">@Localizer["KeywordsLabel"]</span>
+                        <span class="text-muted small text-uppercase fw-bold me-2">
+                            @Localizer["KeywordsLabel"]
+                        </span>
+
                         @if (!string.IsNullOrEmpty(Model.Keywords))
                         {
                             foreach (var key in Model.Keywords.Split(','))
                             {
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary border me-1">@key.Trim()</span>
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border me-1">
+                                    @key.Trim()
+                                </span>
                             }
                         }
                     </div>
@@ -375,27 +565,52 @@
                                     <th>@Localizer["StatusColumn"]</th>
                                 </tr>
                             </thead>
+
                             <tbody>
                                 @if (Model.Authors != null)
                                 {
-                                    @foreach (var author in Model.Authors.OrderBy(a => a.Order))
+                                    foreach (var author in Model.Authors.OrderBy(a => a.Order))
                                     {
+                                        var firstInitial = !string.IsNullOrWhiteSpace(author.FirstName)
+                                        ? author.FirstName.Substring(0, 1)
+                                        : "";
+
+                                        var lastInitial = !string.IsNullOrWhiteSpace(author.LastName)
+                                        ? author.LastName.Substring(0, 1)
+                                        : "";
+
                                         <tr>
-                                            <td class="fw-bold text-muted">@author.Order</td>
+                                            <td class="fw-bold text-muted">
+                                                @author.Order
+                                            </td>
+
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; font-size: 0.8rem;">
-                                                        @(author.FirstName.Substring(0,1))@(author.LastName.Substring(0,1))
+                                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2"
+                                                         style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                                        @firstInitial@lastInitial
                                                     </div>
-                                                    <span class="fw-bold">@author.FirstName @author.LastName</span>
+
+                                                    <span class="fw-bold">
+                                                        @author.FirstName @author.LastName
+                                                    </span>
                                                 </div>
                                             </td>
-                                            <td class="text-muted">@author.Institution</td>
-                                            <td class="text-muted">@author.Email</td>
+
+                                            <td class="text-muted">
+                                                @author.Institution
+                                            </td>
+
+                                            <td class="text-muted">
+                                                @author.Email
+                                            </td>
+
                                             <td>
                                                 @if (author.IsCorrespondingAuthor)
                                                 {
-                                                    <span class="badge bg-info text-dark">@Localizer["CorrespondingAuthorBadge"]</span>
+                                                    <span class="badge bg-info text-dark">
+                                                        @Localizer["CorrespondingAuthorBadge"]
+                                                    </span>
                                                 }
                                             </td>
                                         </tr>
@@ -418,19 +633,37 @@
                                     <th>@Localizer["ActionColumn"]</th>
                                 </tr>
                             </thead>
+
                             <tbody>
                                 @if (Model.Files != null && Model.Files.Any())
                                 {
-                                    @foreach (var file in Model.Files.OrderByDescending(f => f.UploadedAt))
+                                    foreach (var file in Model.Files.OrderByDescending(f => f.UploadedAt))
                                     {
                                         <tr>
-                                            <td><span class="badge bg-secondary rounded-pill">V.@file.Version</span></td>
-                                            <td class="fw-bold text-dark">@file.FileName</td>
-                                            <td>@file.Type</td>
-                                            <td class="text-muted">@file.UploadedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
                                             <td>
-                                                <a href="@file.FilePath" target="_blank" class="btn btn-sm btn-primary fw-bold px-3">
-                                                    <i class="fas fa-download me-1"></i> @Localizer["DownloadButton"]
+                                                <span class="badge bg-secondary rounded-pill">
+                                                    V.@file.Version
+                                                </span>
+                                            </td>
+
+                                            <td class="fw-bold text-dark">
+                                                @file.FileName
+                                            </td>
+
+                                            <td>
+                                                @file.Type
+                                            </td>
+
+                                            <td class="text-muted">
+                                                @file.UploadedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                                            </td>
+
+                                            <td>
+                                                <a href="@file.FilePath"
+                                                   target="_blank"
+                                                   class="btn btn-sm btn-primary fw-bold px-3">
+                                                    <i class="fas fa-download me-1"></i>
+                                                    @Localizer["DownloadButton"]
                                                 </a>
                                             </td>
                                         </tr>
@@ -438,7 +671,11 @@
                                 }
                                 else
                                 {
-                                    <tr><td colspan="5" class="text-center text-muted py-4">@Localizer["NoFilesText"]</td></tr>
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">
+                                            @Localizer["NoFilesText"]
+                                        </td>
+                                    </tr>
                                 }
                             </tbody>
                         </table>
@@ -455,21 +692,49 @@
         <div class="modal-content rounded-4 border-0">
             <form asp-controller="Review" asp-action="AssignReviewer" method="post">
                 @Html.AntiForgeryToken()
+
                 <div class="modal-header border-bottom-0">
-                    <h5 class="modal-title fw-bold">@Localizer["AssignReviewerModalTitle"]</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@Localizer["CloseButton"]"></button>
+                    <h5 class="modal-title fw-bold">
+                        @Localizer["AssignReviewerModalTitle"]
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="@Localizer["CloseButton"]"></button>
                 </div>
+
                 <div class="modal-body">
                     <input type="hidden" name="SubmissionId" value="@Model.Id" />
+
                     <div class="mb-3">
-                        <label class="form-label fw-bold">@Localizer["ReviewerIdOrEmailLabel"]</label>
-                        <input type="text" name="ReviewerId" class="form-control" placeholder="@Localizer["ReviewerIdOrEmailPlaceholder"]" required />
-                        <div class="form-text">@Localizer["ReviewerAssignHelpText"]</div>
+                        <label class="form-label fw-bold">
+                            @Localizer["ReviewerIdOrEmailLabel"]
+                        </label>
+
+                        <input type="text"
+                               name="ReviewerId"
+                               class="form-control"
+                               placeholder="@Localizer["ReviewerIdOrEmailPlaceholder"]"
+                               required />
+
+                        <div class="form-text">
+                            @Localizer["ReviewerAssignHelpText"]
+                        </div>
                     </div>
                 </div>
+
                 <div class="modal-footer border-top-0">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">@Localizer["CancelButton"]</button>
-                    <button type="submit" class="btn btn-primary fw-bold">@Localizer["ConfirmAssignButton"]</button>
+                    <button type="button"
+                            class="btn btn-light"
+                            data-bs-dismiss="modal">
+                        @Localizer["CancelButton"]
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-primary fw-bold">
+                        @Localizer["ConfirmAssignButton"]
+                    </button>
                 </div>
             </form>
         </div>

@@ -58,21 +58,30 @@ namespace AntAbstract.Web.Controllers
         {
             if (submission?.Conference?.TenantId != null)
             {
-                var organizers = await _userManager.GetUsersInRoleAsync("Organizator");
+                var admins = await _userManager.GetUsersInRoleAsync("Admin");
 
-                var organizer = organizers.FirstOrDefault(x =>
+                var tenantAdmin = admins.FirstOrDefault(x =>
                     x.TenantId.HasValue &&
                     x.TenantId.Value == submission.Conference.TenantId);
 
-                if (organizer != null)
+                if (tenantAdmin != null)
                 {
-                    return organizer;
+                    return tenantAdmin;
                 }
             }
 
-            var admins = await _userManager.GetUsersInRoleAsync("Admin");
+            var superAdmins = await _userManager.GetUsersInRoleAsync("SuperAdmin");
 
-            return admins.FirstOrDefault()
+            var superAdmin = superAdmins.FirstOrDefault();
+
+            if (superAdmin != null)
+            {
+                return superAdmin;
+            }
+
+            var allAdmins = await _userManager.GetUsersInRoleAsync("Admin");
+
+            return allAdmins.FirstOrDefault()
                    ?? await _userManager.Users.FirstOrDefaultAsync();
         }
 

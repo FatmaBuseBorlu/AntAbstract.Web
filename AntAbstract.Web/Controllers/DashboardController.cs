@@ -30,7 +30,7 @@ namespace AntAbstract.Web.Controllers
             _localizer = localizer;
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "SuperAdmin,Admin")]
         public async Task<IActionResult> WhoAmI()
         {
             var user = await _userManager.GetUserAsync(User);
@@ -52,11 +52,39 @@ namespace AntAbstract.Web.Controllers
             });
         }
 
+        [Authorize(Roles = "SuperAdmin")]
+        public async Task<IActionResult> SuperAdmin()
+        {
+            ClearSelectedConference();
+
+            ViewBag.TotalTenants = await _context.Tenants
+                .AsNoTracking()
+                .CountAsync();
+
+            ViewBag.TotalUsers = await _context.Users
+                .AsNoTracking()
+                .CountAsync();
+
+            ViewBag.TotalConferences = await _context.Conferences
+                .AsNoTracking()
+                .CountAsync();
+
+            ViewBag.TotalSubmissions = await _context.Submissions
+                .AsNoTracking()
+                .CountAsync();
+
+            ViewBag.TotalRegistrations = await _context.Registrations
+                .AsNoTracking()
+                .CountAsync();
+
+            return View();
+        }
+
         private string T(string key, string fallback)
         {
             var value = _localizer[key];
 
-            return value.ResourceNotFound
+            return value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
                 ? fallback
                 : value.Value;
         }
@@ -153,16 +181,16 @@ namespace AntAbstract.Web.Controllers
 
         private async Task<bool> UserCanAccessConferenceAsync(AppUser user, Guid conferenceId)
         {
+            var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
+
+            if (isSuperAdmin)
+            {
+                return false;
+            }
+
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
 
             if (isAdmin)
-            {
-                return true;
-            }
-
-            var isOrganizator = await _userManager.IsInRoleAsync(user, "Organizator");
-
-            if (isOrganizator)
             {
                 if (!user.TenantId.HasValue)
                 {
@@ -329,6 +357,15 @@ namespace AntAbstract.Web.Controllers
                 return Challenge();
             }
 
+            var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
+
+            if (isSuperAdmin)
+            {
+                ClearSelectedConference();
+
+                return RedirectToAction(nameof(SuperAdmin));
+            }
+
             var conf = await _context.Conferences
                 .AsNoTracking()
                 .Include(x => x.Tenant)
@@ -389,8 +426,15 @@ namespace AntAbstract.Web.Controllers
                 return Challenge();
             }
 
+            var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-            var isOrganizator = await _userManager.IsInRoleAsync(user, "Organizator");
+
+            if (isSuperAdmin)
+            {
+                ClearSelectedConference();
+
+                return RedirectToAction(nameof(SuperAdmin));
+            }
 
             var selectedConferenceId = GetSelectedConferenceId();
             var slug = GetSlug();
@@ -423,9 +467,19 @@ namespace AntAbstract.Web.Controllers
 
             if (!selectedConferenceId.HasValue)
             {
-                if (isOrganizator && !isAdmin && user.TenantId.HasValue)
+                if (isAdmin)
                 {
+                    if (!user.TenantId.HasValue)
+                    {
+                        TempData["ErrorMessage"] = T(
+                            "NoInstitutionAssigned",
+                            "Admin hesabınıza bağlı kurum bulunamadı.");
+
+                        return RedirectToAction(nameof(MyConferences));
+                    }
+
                     var autoConference = await _context.Conferences
+                        .AsNoTracking()
                         .Include(c => c.Tenant)
                         .Where(c => c.TenantId == user.TenantId.Value)
                         .OrderByDescending(c => c.StartDate)
@@ -449,13 +503,18 @@ namespace AntAbstract.Web.Controllers
             }
 
             var submissionsQuery = _context.Submissions
-                .AsQueryable()
-                .Where(s => s.AuthorId == user.Id);
+                .AsQueryable();
 
-            if (selectedConferenceId.HasValue)
+            if (isAdmin)
             {
                 submissionsQuery = submissionsQuery
                     .Where(s => s.ConferenceId == selectedConferenceId.Value);
+            }
+            else
+            {
+                submissionsQuery = submissionsQuery
+                    .Where(s => s.AuthorId == user.Id &&
+                                s.ConferenceId == selectedConferenceId.Value);
             }
 
             var reviewAssignmentsQuery = _context.ReviewAssignments
@@ -476,7 +535,6 @@ namespace AntAbstract.Web.Controllers
 
             var isReferee =
                 await _userManager.IsInRoleAsync(user, "Referee") ||
-                await _userManager.IsInRoleAsync(user, "Admin") ||
                 await reviewAssignmentsQuery.AnyAsync();
 
             ViewBag.IsReferee = isReferee;
@@ -487,7 +545,14 @@ namespace AntAbstract.Web.Controllers
                 await _userManager.IsInRoleAsync(user, "Author") ||
                 await submissionsQuery.AnyAsync();
 
-            var myConferences = await GetUserConferencesAsync(user.Id);
+            var myConferences = isAdmin && user.TenantId.HasValue
+                ? await _context.Conferences
+                    .AsNoTracking()
+                    .Include(c => c.Tenant)
+                    .Where(c => c.TenantId == user.TenantId.Value)
+                    .OrderByDescending(c => c.StartDate)
+                    .ToListAsync()
+                : await GetUserConferencesAsync(user.Id);
 
             var currentConferenceName = T(
                 "GeneralManagementPanel",
@@ -536,52 +601,14 @@ namespace AntAbstract.Web.Controllers
                 return Challenge();
             }
 
+            var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-            var isOrganizator = await _userManager.IsInRoleAsync(user, "Organizator");
 
-            if (isOrganizator && !isAdmin)
+            if (isSuperAdmin)
             {
-                if (!user.TenantId.HasValue)
-                {
-                    TempData["ErrorMessage"] = T(
-                        "NoInstitutionAssigned",
-                        "Hesabınıza bağlı kurum bulunamadı.");
-                }
-                else
-                {
-                    var autoConference = await _context.Conferences
-                        .AsNoTracking()
-                        .Include(c => c.Tenant)
-                        .Where(c => c.TenantId == user.TenantId.Value)
-                        .OrderByDescending(c => c.StartDate)
-                        .FirstOrDefaultAsync();
+                ClearSelectedConference();
 
-                    if (autoConference != null)
-                    {
-                        var selectedSlug =
-                            autoConference.Tenant?.Slug ??
-                            _tenantContext.Current?.Slug ??
-                            autoConference.Slug ??
-                            "";
-
-                        SaveSelectedConference(
-                            autoConference.TenantId,
-                            autoConference.Id,
-                            selectedSlug,
-                            autoConference.Title);
-
-                        if (!string.IsNullOrWhiteSpace(selectedSlug))
-                        {
-                            return Redirect($"/{selectedSlug}/Dashboard");
-                        }
-
-                        return RedirectToAction(nameof(Index));
-                    }
-
-                    TempData["InfoMessage"] = T(
-                        "NoConferenceAssignedToInstitution",
-                        "Kurumunuza bağlı kongre bulunamadı.");
-                }
+                return RedirectToAction(nameof(SuperAdmin));
             }
 
             List<Conference> registeredConferences;
@@ -589,17 +616,15 @@ namespace AntAbstract.Web.Controllers
 
             if (isAdmin)
             {
-                registeredConferences = await _context.Conferences
-                    .AsNoTracking()
-                    .Include(c => c.Tenant)
-                    .OrderByDescending(c => c.StartDate)
-                    .ToListAsync();
+                if (!user.TenantId.HasValue)
+                {
+                    TempData["ErrorMessage"] = T(
+                        "NoInstitutionAssigned",
+                        "Admin hesabınıza bağlı kurum bulunamadı.");
 
-                availableConferences = new List<Conference>();
-            }
-            else if (isOrganizator)
-            {
-                if (user.TenantId.HasValue)
+                    registeredConferences = new List<Conference>();
+                }
+                else
                 {
                     registeredConferences = await _context.Conferences
                         .AsNoTracking()
@@ -607,10 +632,6 @@ namespace AntAbstract.Web.Controllers
                         .Where(c => c.TenantId == user.TenantId.Value)
                         .OrderByDescending(c => c.StartDate)
                         .ToListAsync();
-                }
-                else
-                {
-                    registeredConferences = new List<Conference>();
                 }
 
                 availableConferences = new List<Conference>();

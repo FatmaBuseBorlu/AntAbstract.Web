@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
-    [Authorize(Roles = "Referee,Admin")]
+    [Authorize(Roles = "Referee")]
     public class ReviewController : Controller
     {
         private const int MaxDeclineReasonLength = 200;
@@ -128,7 +128,10 @@ namespace AntAbstract.Web.Controllers
                     "PleaseFillAllFields",
                     "Lütfen zorunlu alanları doldurun.");
 
-                return RedirectToAction(nameof(Evaluate), new { id = model.ReviewAssignmentId });
+                return RedirectToAction(nameof(Evaluate), new
+                {
+                    id = model.ReviewAssignmentId
+                });
             }
 
             var user = await _userManager.GetUserAsync(User);
@@ -192,7 +195,10 @@ namespace AntAbstract.Web.Controllers
                     "ReviewSaveFailed",
                     "Değerlendirme kaydedilirken bir hata oluştu.");
 
-                return RedirectToAction(nameof(Evaluate), new { id = model.ReviewAssignmentId });
+                return RedirectToAction(nameof(Evaluate), new
+                {
+                    id = model.ReviewAssignmentId
+                });
             }
         }
 

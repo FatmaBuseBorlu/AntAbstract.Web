@@ -35,34 +35,34 @@ namespace AntAbstract.Web.Controllers
         {
             var value = _localizer[key];
 
-            return value.ResourceNotFound
+            return value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
                 ? fallback
                 : value.Value;
         }
 
         private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync(AppUser user)
         {
+            var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-            var isOrganizator = await _userManager.IsInRoleAsync(user, "Organizator");
 
             var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .AsQueryable();
 
-            if (isAdmin)
+            if (isSuperAdmin)
             {
-                return query;
+                return query.Where(c => false);
             }
 
-            if (isOrganizator)
+            if (isAdmin)
             {
-                if (user.TenantId.HasValue)
+                if (!user.TenantId.HasValue)
                 {
-                    return query.Where(c => c.TenantId == user.TenantId.Value);
+                    return query.Where(c => false);
                 }
 
-                return query.Where(c => false);
+                return query.Where(c => c.TenantId == user.TenantId.Value);
             }
 
             var registrationConferenceIds = _context.Registrations
@@ -75,18 +75,18 @@ namespace AntAbstract.Web.Controllers
                 .Where(s => s.AuthorId == user.Id)
                 .Select(s => s.ConferenceId);
 
-            var reviewerConferenceIds = _context.ReviewAssignments
+            var refereeConferenceIds = _context.ReviewAssignments
                 .AsNoTracking()
                 .Where(ra => ra.ReviewerId == user.Id)
                 .Join(
                     _context.Submissions.AsNoTracking(),
-                    ra => ra.SubmissionId,
-                    s => s.Id,
-                    (ra, s) => s.ConferenceId);
+                    reviewAssignment => reviewAssignment.SubmissionId,
+                    submission => submission.Id,
+                    (reviewAssignment, submission) => submission.ConferenceId);
 
             var allowedConferenceIds = registrationConferenceIds
                 .Union(authorConferenceIds)
-                .Union(reviewerConferenceIds)
+                .Union(refereeConferenceIds)
                 .Distinct();
 
             return query.Where(c => allowedConferenceIds.Contains(c.Id));
@@ -108,13 +108,24 @@ namespace AntAbstract.Web.Controllers
             HttpContext.Session.SetString($"SelectedConferenceTitle:{tenantId}", conference.Title ?? "");
         }
 
+        private void ClearConferenceSession()
+        {
+            _selectedConferenceService.ClearSelectedConferenceId();
+
+            HttpContext.Session.Remove("SelectedConferenceId");
+            HttpContext.Session.Remove("SelectedConferenceSlug");
+            HttpContext.Session.Remove("SelectedConferenceTitle");
+        }
+
         [AllowAnonymous]
         [HttpGet("Conference/Details/{slug}")]
         public async Task<IActionResult> Details(string slug)
         {
             if (string.IsNullOrWhiteSpace(slug))
             {
-                return NotFound(T("ConferenceNotSpecified", "Kongre belirtilmedi."));
+                return NotFound(T(
+                    "ConferenceNotSpecified",
+                    "Kongre belirtilmedi."));
             }
 
             var conference = await _context.Conferences
@@ -134,7 +145,9 @@ namespace AntAbstract.Web.Controllers
 
             if (conference == null)
             {
-                return NotFound(T("ConferenceNotFound", "Kongre bulunamadı."));
+                return NotFound(T(
+                    "ConferenceNotFound",
+                    "Kongre bulunamadı."));
             }
 
             var culture = CultureInfo.CurrentUICulture.Name;
@@ -166,6 +179,14 @@ namespace AntAbstract.Web.Controllers
             if (user == null)
             {
                 return Redirect("/Identity/Account/Login");
+            }
+
+            var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
+
+            if (isSuperAdmin)
+            {
+                ClearConferenceSession();
+                return RedirectToAction("SuperAdmin", "Dashboard");
             }
 
             var query = await GetAccessibleConferenceQueryAsync(user);
@@ -204,6 +225,14 @@ namespace AntAbstract.Web.Controllers
             if (user == null)
             {
                 return Redirect("/Identity/Account/Login");
+            }
+
+            var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
+
+            if (isSuperAdmin)
+            {
+                ClearConferenceSession();
+                return RedirectToAction("SuperAdmin", "Dashboard");
             }
 
             var query = await GetAccessibleConferenceQueryAsync(user);
