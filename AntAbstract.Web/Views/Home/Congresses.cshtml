@@ -6,6 +6,7 @@
 
 @{
     ViewData["Title"] = "Kongreler";
+    ViewData["BodyClass"] = "page-congresses";
 
     var conferences = Model?.ToList() ?? new List<object>();
 
@@ -182,7 +183,9 @@
             return "accent-orange";
         }
 
-        return index % 3 switch
+        var remainder = index % 3;
+
+        return remainder switch
         {
             0 => "accent-green",
             1 => "accent-blue",
@@ -476,8 +479,16 @@
 </section>
 
 <style>
+    .page-congresses main,
+    .page-congresses .main-content,
+    .page-congresses .page-content,
+    .page-congresses .content-wrapper {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+
     .congresses-page {
-        padding-top: 86px;
+        padding-top: 0;
         background: #f8fafc;
         min-height: 100vh;
         font-family: 'Plus Jakarta Sans', sans-serif;
@@ -486,7 +497,7 @@
     .congress-hero {
         position: relative;
         overflow: hidden;
-        padding: 4rem 0 2.1rem;
+        padding: calc(4rem + 86px) 0 2.1rem;
         background: radial-gradient(circle at 8% 28%, rgba(0, 174, 239, 0.18), transparent 22%), radial-gradient(circle at 88% 18%, rgba(13, 110, 253, 0.16), transparent 28%), linear-gradient(135deg, #f8fcff 0%, #eef8ff 48%, #e8f3ff 100%);
         border-bottom-left-radius: 46px;
         border-bottom-right-radius: 46px;
@@ -993,12 +1004,8 @@
     }
 
     @@media (max-width: 768px) {
-        .congresses-page {
-            padding-top: 74px;
-        }
-
         .congress-hero {
-            padding: 2.5rem 0 1.8rem;
+            padding: calc(2.5rem + 74px) 0 1.8rem;
             border-bottom-left-radius: 30px;
             border-bottom-right-radius: 30px;
         }
