@@ -1,0 +1,266 @@
+﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
+
+@using AntAbstract.Domain.Entities
+
+@{
+    ViewData["Title"] = "Yeni Vitrin Bloğu Ekle";
+    Layout = "_LayoutDashboard";
+
+    string GetBlockTypeLabel(ConferencePageBlockType blockType)
+    {
+        return blockType switch
+        {
+            ConferencePageBlockType.Hero => "Ana Karşılama",
+            ConferencePageBlockType.CallForPapers => "Kongreye Çağrı",
+            ConferencePageBlockType.Topics => "Kongre Konuları",
+            ConferencePageBlockType.Committees => "Bilim Kurulu",
+            ConferencePageBlockType.About => "Hakkında / İçerik",
+            ConferencePageBlockType.Fees => "Katılım Ücreti",
+            _ => blockType.ToString()
+        };
+    }
+
+    var blockTypes = Enum.GetValues(typeof(ConferencePageBlockType))
+        .Cast<ConferencePageBlockType>()
+        .ToList();
+}
+
+<div class="container-fluid">
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="text-uppercase text-muted fw-bold small mb-1">
+                Vitrin Blokları
+            </div>
+
+            <h2 class="fw-bold mb-1 text-dark">
+                Yeni Vitrin Bloğu Ekle
+            </h2>
+
+            <p class="text-muted mb-0">
+                Kongre vitrin sayfasında gösterilecek yeni bir içerik bloğu oluşturabilirsiniz.
+            </p>
+        </div>
+
+        <a asp-area="Admin"
+           asp-controller="CentralVitrin"
+           asp-action="ManageBlocks"
+           asp-route-conferenceId="@Model.ConferenceId"
+           class="btn btn-light border rounded-pill px-4">
+            <i class="fas fa-arrow-left me-2 text-secondary"></i>
+            Blok Listesine Dön
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+
+        <div class="create-hero">
+            <div class="d-flex align-items-center gap-3">
+                <div class="hero-icon">
+                    <i class="fas fa-plus-circle"></i>
+                </div>
+
+                <div>
+                    <h4 class="fw-bold mb-1">
+                        Blok Oluşturma
+                    </h4>
+
+                    <p class="mb-0 text-white-50">
+                        Oluşturduğunuz blok, seçtiğiniz duruma göre vitrin sayfasında yayınlanır.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body p-4 p-lg-5">
+
+            <form asp-area="Admin"
+                  asp-controller="CentralVitrin"
+                  asp-action="CreateBlock"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" asp-for="ConferenceId" />
+
+                <div class="row g-4 mb-4">
+
+                    <div class="col-md-6">
+                        <label asp-for="Title" class="form-label fw-bold text-dark">
+                            Menüde Görünen Başlık
+                            <span class="text-danger">*</span>
+                        </label>
+
+                        <input asp-for="Title"
+                               class="form-control form-control-modern"
+                               placeholder="Örn: Sponsorlar, Ulaşım, Konaklama"
+                               required />
+
+                        <span asp-validation-for="Title" class="text-danger small"></span>
+
+                        <div class="form-text">
+                            Bu başlık vitrin sayfasındaki menü veya bölüm başlığı olarak kullanılabilir.
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="BlockType" class="form-label fw-bold text-dark">
+                            Blok Türü
+                            <span class="text-danger">*</span>
+                        </label>
+
+                        <select asp-for="BlockType" class="form-select form-control-modern">
+                            @foreach (var blockType in blockTypes)
+                            {
+                                if (Model.BlockType == blockType)
+                                {
+                                    <option value="@blockType" selected>
+                                        @GetBlockTypeLabel(blockType)
+                                    </option>
+                                }
+                                else
+                                {
+                                    <option value="@blockType">
+                                        @GetBlockTypeLabel(blockType)
+                                    </option>
+                                }
+                            }
+                        </select>
+
+                        <span asp-validation-for="BlockType" class="text-danger small"></span>
+
+                        <div class="form-text">
+                            Blok türü, bu içeriğin vitrin sayfasında nasıl yorumlanacağını belirler.
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Subtitle" class="form-label fw-bold text-dark">
+                            Kısa Açıklama
+                        </label>
+
+                        <textarea asp-for="Subtitle"
+                                  class="form-control form-control-modern"
+                                  rows="4"
+                                  placeholder="Bu blok için kısa bir açıklama yazabilirsiniz."></textarea>
+
+                        <span asp-validation-for="Subtitle" class="text-danger small"></span>
+                    </div>
+
+                </div>
+
+                <div class="publish-box">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="form-check form-switch m-0">
+                            <input asp-for="IsActive"
+                                   class="form-check-input publish-switch"
+                                   type="checkbox"
+                                   role="switch"
+                                   id="activeSwitch" />
+                        </div>
+
+                        <div>
+                            <label asp-for="IsActive"
+                                   class="fw-bold text-dark mb-1"
+                                   for="activeSwitch"
+                                   style="cursor:pointer;">
+                                Sitede Yayında Göster
+                            </label>
+
+                            <div class="text-muted small">
+                                Açık olursa bu blok vitrin sayfasında görünür. Kapalı olursa taslak gibi saklanır.
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit"
+                            class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
+                        <i class="fas fa-check me-2"></i>
+                        Bloğu Oluştur
+                    </button>
+                </div>
+
+            </form>
+
+            <div class="alert alert-info border-0 rounded-4 mt-4 mb-0">
+                <i class="fas fa-info-circle me-2"></i>
+                Blok oluşturulduktan sonra içerik detaylarını
+                <strong>Düzenle</strong>
+                butonuyla güncelleyebilirsiniz.
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    .create-hero {
+        background: linear-gradient(135deg, #00aeef 0%, #0077b6 100%);
+        padding: 1.6rem 1.8rem;
+        color: #fff;
+    }
+
+    .hero-icon {
+        width: 54px;
+        height: 54px;
+        min-width: 54px;
+        border-radius: 18px;
+        background-color: rgba(255, 255, 255, 0.18);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.45rem;
+    }
+
+    .form-control-modern {
+        border-radius: 14px;
+        border: 2px solid #e2e8f0;
+        padding: 0.85rem 1rem;
+        transition: all 0.2s ease;
+        min-height: 54px;
+    }
+
+        .form-control-modern:focus {
+            border-color: #00aeef;
+            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
+        }
+
+    .publish-box {
+        border-top: 1px solid #e2e8f0;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .publish-switch {
+        width: 3.1rem;
+        height: 1.55rem;
+        cursor: pointer;
+        box-shadow: none;
+    }
+
+        .publish-switch:checked {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+
+    @@media (max-width: 768px) {
+        .publish-box {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+            .publish-box .btn {
+                width: 100%;
+            }
+    }
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

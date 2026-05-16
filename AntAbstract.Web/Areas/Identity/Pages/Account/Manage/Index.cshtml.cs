@@ -1,17 +1,27 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using AntAbstract.Domain.Entities;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Http; // Dosya yükleme için gerekli
-using System.IO;
 
 namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
 {
     public class IndexModel : PageModel
     {
+        private const long MaxProfileImageSize = 2 * 1024 * 1024; // 2 MB
+
+        private static readonly string[] AllowedImageExtensions =
+        {
+            ".jpg",
+            ".jpeg",
+            ".png"
+        };
+
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager;
 
@@ -23,37 +33,44 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
             _signInManager = signInManager;
         }
 
-        public string Username { get; set; }
+        public string Username { get; set; } = string.Empty;
+
+        public string? CurrentProfileImage { get; set; }
 
         [TempData]
-        public string StatusMessage { get; set; }
+        public string? StatusMessage { get; set; }
 
         [BindProperty]
-        public InputModel Input { get; set; }
+        public InputModel Input { get; set; } = new InputModel();
 
         public class InputModel
         {
-            [Phone]
+            [Phone(ErrorMessage = "Lütfen geçerli bir telefon numarası giriniz.")]
             [Display(Name = "Telefon Numarası")]
-            public string PhoneNumber { get; set; }
+            public string? PhoneNumber { get; set; }
 
             [Display(Name = "Ad")]
-            public string FirstName { get; set; }
+            [StringLength(100, ErrorMessage = "Ad alanı en fazla 100 karakter olabilir.")]
+            public string? FirstName { get; set; }
 
             [Display(Name = "Soyad")]
-            public string LastName { get; set; }
+            [StringLength(100, ErrorMessage = "Soyad alanı en fazla 100 karakter olabilir.")]
+            public string? LastName { get; set; }
 
             [Display(Name = "Ünvan")]
-            public string Title { get; set; }
+            [StringLength(150, ErrorMessage = "Ünvan alanı en fazla 150 karakter olabilir.")]
+            public string? Title { get; set; }
 
-            [Display(Name = "Üniversite/Kurum")]
-            public string University { get; set; }
+            [Display(Name = "Üniversite / Kurum")]
+            [StringLength(250, ErrorMessage = "Üniversite / kurum alanı en fazla 250 karakter olabilir.")]
+            public string? University { get; set; }
 
-            [Display(Name = "Uzmanlık Alanları (Virgülle ayırın)")]
-            public string ExpertiseAreas { get; set; }
+            [Display(Name = "Uzmanlık Alanları")]
+            [StringLength(1000, ErrorMessage = "Uzmanlık alanları en fazla 1000 karakter olabilir.")]
+            public string? ExpertiseAreas { get; set; }
 
-            [Display(Name = "Profil Resmi")]
-            public IFormFile ProfileImage { get; set; } // Resim yükleme kutusu
+            [Display(Name = "Profil Fotoğrafı")]
+            public IFormFile? ProfileImage { get; set; }
         }
 
         private async Task LoadAsync(AppUser user)
@@ -61,38 +78,38 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
             var userName = await _userManager.GetUserNameAsync(user);
             var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
 
-            Username = userName;
+            Username = userName ?? string.Empty;
+            CurrentProfileImage = user.ProfileImagePath;
 
             Input = new InputModel
             {
                 PhoneNumber = phoneNumber,
-                // Veritabanındaki bilgileri kutucuklara dolduruyoruz
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Title = user.Title,
                 University = user.University,
                 ExpertiseAreas = user.ExpertiseAreas
             };
-
-            // Mevcut resim yolunu View'a taşıyoruz
-            ViewData["CurrentProfileImage"] = user.ProfileImagePath;
         }
 
         public async Task<IActionResult> OnGetAsync()
         {
             var user = await _userManager.GetUserAsync(User);
+
             if (user == null)
             {
                 return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
             }
 
             await LoadAsync(user);
+
             return Page();
         }
 
         public async Task<IActionResult> OnPostAsync()
         {
             var user = await _userManager.GetUserAsync(User);
+
             if (user == null)
             {
                 return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
@@ -104,45 +121,94 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
                 return Page();
             }
 
-            // 1. Değişen Alanları Kontrol Et ve Güncelle
             var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
+
             if (Input.PhoneNumber != phoneNumber)
             {
                 await _userManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
             }
 
-            if (Input.FirstName != user.FirstName) user.FirstName = Input.FirstName;
-            if (Input.LastName != user.LastName) user.LastName = Input.LastName;
-            if (Input.Title != user.Title) user.Title = Input.Title;
-            if (Input.University != user.University) user.University = Input.University;
-            if (Input.ExpertiseAreas != user.ExpertiseAreas) user.ExpertiseAreas = Input.ExpertiseAreas;
+            user.FirstName = Input.FirstName?.Trim();
+            user.LastName = Input.LastName?.Trim();
+            user.Title = Input.Title?.Trim();
+            user.University = Input.University?.Trim();
+            user.ExpertiseAreas = Input.ExpertiseAreas?.Trim();
 
-            // 2. Profil Resmi Yükleme
-            if (Input.ProfileImage != null)
+            if (Input.ProfileImage != null && Input.ProfileImage.Length > 0)
             {
-                var extension = Path.GetExtension(Input.ProfileImage.FileName);
-                var newFileName = "profile_" + user.Id + "_" + Guid.NewGuid().ToString().Substring(0, 4) + extension;
+                var extension = Path.GetExtension(Input.ProfileImage.FileName).ToLowerInvariant();
 
-                var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "users");
-                if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
+                if (!AllowedImageExtensions.Contains(extension))
+                {
+                    ModelState.AddModelError(
+                        "Input.ProfileImage",
+                        "Profil fotoğrafı sadece JPG, JPEG veya PNG formatında olmalıdır.");
 
+                    await LoadAsync(user);
+                    return Page();
+                }
+
+                if (Input.ProfileImage.Length > MaxProfileImageSize)
+                {
+                    ModelState.AddModelError(
+                        "Input.ProfileImage",
+                        "Profil fotoğrafı en fazla 2 MB olabilir.");
+
+                    await LoadAsync(user);
+                    return Page();
+                }
+
+                var folderPath = Path.Combine(
+                    Directory.GetCurrentDirectory(),
+                    "wwwroot",
+                    "uploads",
+                    "users");
+
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+                var newFileName = $"profile_{user.Id}_{Guid.NewGuid():N}{extension}";
                 var filePath = Path.Combine(folderPath, newFileName);
 
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                await using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await Input.ProfileImage.CopyToAsync(stream);
+                }
+
+                if (!string.IsNullOrWhiteSpace(user.ProfileImagePath) &&
+                    user.ProfileImagePath.StartsWith("/uploads/users/", StringComparison.OrdinalIgnoreCase))
+                {
+                    var oldFileName = Path.GetFileName(user.ProfileImagePath);
+                    var oldFilePath = Path.Combine(folderPath, oldFileName);
+
+                    if (System.IO.File.Exists(oldFilePath))
+                    {
+                        System.IO.File.Delete(oldFilePath);
+                    }
                 }
 
                 user.ProfileImagePath = "/uploads/users/" + newFileName;
             }
 
-            // 3. Kaydet
-            await _userManager.UpdateAsync(user);
+            var updateResult = await _userManager.UpdateAsync(user);
 
-            // 4. Oturumu Yenile (Yeni bilgilerin hemen görünmesi için)
+            if (!updateResult.Succeeded)
+            {
+                foreach (var error in updateResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+
+                await LoadAsync(user);
+                return Page();
+            }
+
             await _signInManager.RefreshSignInAsync(user);
 
-            StatusMessage = "Profiliniz başarıyla güncellendi.";
+            StatusMessage = "Profil bilgileriniz başarıyla güncellendi.";
+
             return RedirectToPage();
         }
     }

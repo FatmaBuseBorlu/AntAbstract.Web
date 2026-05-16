@@ -32,6 +32,7 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<Submission> Submissions { get; set; }
         public DbSet<SubmissionAuthor> SubmissionAuthors { get; set; }
         public DbSet<SubmissionFile> SubmissionFiles { get; set; }
+        public DbSet<SiteSectionTemplate> SiteSectionTemplates { get; set; }
 
         public DbSet<ReviewAssignment> ReviewAssignments { get; set; }
         public DbSet<Review> Reviews { get; set; }
@@ -86,6 +87,10 @@ namespace AntAbstract.Infrastructure.Context
                 entity.Property(s => s.PresentationType)
                     .HasMaxLength(50);
             });
+
+            builder.Entity<SiteSectionTemplate>()
+                    .HasIndex(x => x.BlockType)
+                    .IsUnique();
 
             builder.Entity<ConferenceTopic>(entity =>
             {
@@ -171,6 +176,7 @@ namespace AntAbstract.Infrastructure.Context
                 .HasForeignKey<Review>(r => r.ReviewAssignmentId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
+
 
         static readonly MethodInfo SetGlobalQueryMethod = typeof(AppDbContext)
             .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)

@@ -1,16 +1,19 @@
 ﻿@using AntAbstract.Web.Models.ViewModels.Admin.Assignment
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
 @model ConferenceFlowIndexViewModel
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"].Value;
+    ViewData["Title"] = "Kongre Akışı";
+    ViewData["HideSelectedConferenceBar"] = true;
     Layout = "_LayoutDashboard";
 
     var slug = Model.Slug ?? "";
 
-    var changeUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Admin/ConferenceFlow"
-        : $"/{slug}/Admin/ConferenceFlow";
+    var changeConferenceUrl = "/Admin/ConferenceFlow?forceSelect=true";
+
+    var submissionUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Admin/Submissions"
+        : $"/{slug}/Admin/Submissions?conferenceId={Model.ConferenceId}";
 
     var assignmentUrl = string.IsNullOrWhiteSpace(slug)
         ? "/Admin/Assignment"
@@ -19,105 +22,572 @@
     var decisionUrl = string.IsNullOrWhiteSpace(slug)
         ? "/Admin/Decision"
         : $"/{slug}/Admin/Decision?conferenceId={Model.ConferenceId}";
+
+    var reviewersUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Admin/Referee"
+        : $"/{slug}/Admin/Referee?conferenceId={Model.ConferenceId}";
+
+    var registrationsUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Admin/Registrations"
+        : $"/{slug}/Admin/Registrations?conferenceId={Model.ConferenceId}";
+
+    var sessionsUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Admin/Session"
+        : $"/{slug}/Admin/Session?conferenceId={Model.ConferenceId}";
 }
 
 <div class="container-fluid">
 
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h4 class="fw-bold mb-1">@Localizer["PageTitle"]</h4>
-            <small class="text-muted d-block">
-                @Localizer["SelectedConferenceLabel"] <strong>@Model.ConferenceTitle</strong> (@Model.Slug)
-            </small>
+    <div class="selected-conference-card mb-4">
+        <div class="selected-conference-left">
+            <div class="selected-conference-icon">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+
+            <div>
+                <div class="selected-label">
+                    Seçili Kongre
+                </div>
+
+                <div class="selected-title">
+                    @Model.ConferenceTitle
+                </div>
+            </div>
+        </div>
+
+        <a href="@changeConferenceUrl"
+           class="btn btn-primary rounded-pill px-4 selected-change-btn">
+            <i class="fas fa-exchange-alt me-2"></i>
+            Kongre Değiştir
+        </a>
+    </div>
+
+    <div class="page-header-wrap mb-4">
+        <div class="page-header-left">
+            <div class="text-uppercase text-muted fw-bold small mb-1">
+                Kongre Operasyonları
+            </div>
+
+            <h2 class="fw-bold mb-2 text-dark">
+                Kongre Akışı
+            </h2>
+
+            <p class="text-muted mb-0 page-header-desc">
+                <strong>@Model.ConferenceTitle</strong> kongresinin bildiri, hakem atama ve karar süreçlerini buradan takip edebilirsiniz.
+            </p>
+
+            @if (!string.IsNullOrWhiteSpace(Model.Slug))
+            {
+                <div class="mt-2">
+                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
+                        /@Model.Slug
+                    </span>
+                </div>
+            }
+        </div>
+
+        <div class="page-header-right">
+            @if (!string.IsNullOrWhiteSpace(slug))
+            {
+                <a href="/@slug"
+                   target="_blank"
+                   class="btn btn-primary rounded-pill px-4 header-action-btn">
+                    <i class="fas fa-external-link-alt me-2"></i>
+                    Siteyi Gör
+                </a>
+            }
         </div>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success border-0">@TempData["SuccessMessage"]</div>
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
     }
+
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger border-0">@TempData["ErrorMessage"]</div>
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4">
+            <i class="fas fa-times-circle me-2"></i>
+            @TempData["ErrorMessage"]
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
     }
 
-    <div class="row g-3">
-        <div class="col-12 col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-muted small">@Localizer["TotalSubmissions"]</div>
-                            <div class="fs-3 fw-bold">@Model.SubmissionCount</div>
-                        </div>
-                        <i class="fas fa-file-alt fs-2 text-primary opacity-50"></i>
-                    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="info-card">
+                <div class="info-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+
+                <div>
+                    <div class="info-number">@Model.SubmissionCount</div>
+                    <div class="info-label">Toplam Bildiri</div>
                 </div>
             </div>
         </div>
 
-        <div class="col-12 col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-muted small">@Localizer["AssignedToReviewer"]</div>
-                            <div class="fs-3 fw-bold">@Model.AssignedSubmissionCount</div>
-                        </div>
-                        <i class="fas fa-user-check fs-2 text-success opacity-50"></i>
-                    </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="info-card">
+                <div class="info-icon bg-success bg-opacity-10 text-success">
+                    <i class="fas fa-user-check"></i>
+                </div>
+
+                <div>
+                    <div class="info-number">@Model.AssignedSubmissionCount</div>
+                    <div class="info-label">Hakeme Atanan</div>
                 </div>
             </div>
         </div>
 
-        <div class="col-12 col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-muted small">@Localizer["DecidedSubmissions"]</div>
-                            <div class="fs-3 fw-bold">@Model.DecidedSubmissionCount</div>
-                        </div>
-                        <i class="fas fa-gavel fs-2 text-danger opacity-50"></i>
-                    </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="info-card">
+                <div class="info-icon bg-warning bg-opacity-10 text-warning">
+                    <i class="fas fa-user-clock"></i>
+                </div>
+
+                <div>
+                    <div class="info-number">@Model.WaitingAssignmentCount</div>
+                    <div class="info-label">Atama Bekleyen</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="info-card">
+                <div class="info-icon bg-danger bg-opacity-10 text-danger">
+                    <i class="fas fa-gavel"></i>
+                </div>
+
+                <div>
+                    <div class="info-number">@Model.DecidedSubmissionCount</div>
+                    <div class="info-label">Karar Verilen</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm mt-3">
-        <div class="card-body">
-            <div class="fw-bold mb-2">@Localizer["FlowSummary"]</div>
+    <div class="row g-4 mb-4">
 
-            @{
-                var total = Model.SubmissionCount;
-                var assigned = Model.AssignedSubmissionCount;
-                var decided = Model.DecidedSubmissionCount;
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 px-4 py-3">
+                    <h5 class="fw-bold mb-1">
+                        Süreç Özeti
+                    </h5>
 
-                var assignedPct = total == 0 ? 0 : (int)Math.Round(assigned * 100.0 / total);
-                var decidedPct = total == 0 ? 0 : (int)Math.Round(decided * 100.0 / total);
-            }
+                    <p class="text-muted small mb-0">
+                        Bildirilerin hakem atama ve karar aşamalarındaki ilerleme durumunu gösterir.
+                    </p>
+                </div>
 
-            <div class="mb-2 small text-muted">@Localizer["AssignmentProgressLabel"] % @assignedPct</div>
-            <div class="progress mb-3" style="height: 10px;">
-                <div class="progress-bar" role="progressbar" style="width: @assignedPct%"></div>
-            </div>
+                <div class="card-body px-4 pb-4">
 
-            <div class="mb-2 small text-muted">@Localizer["DecisionProgressLabel"] % @decidedPct</div>
-            <div class="progress" style="height: 10px;">
-                <div class="progress-bar" role="progressbar" style="width: @decidedPct%"></div>
-            </div>
+                    <div class="progress-block mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <div class="fw-bold text-dark">
+                                    Hakem Atama İlerlemesi
+                                </div>
 
-            <div class="mt-3 d-flex gap-2 flex-wrap">
-                <a class="btn btn-sm btn-outline-info" href="@assignmentUrl">
-                    <i class="fas fa-tasks me-1"></i> @Localizer["GoToAssignmentButton"]
-                </a>
+                                <div class="text-muted small">
+                                    @Model.AssignedSubmissionCount / @Model.SubmissionCount bildiri hakeme atanmış.
+                                </div>
+                            </div>
 
-                <a class="btn btn-sm btn-outline-danger" href="@decisionUrl">
-                    <i class="fas fa-gavel me-1"></i> @Localizer["GoToDecisionButton"]
-                </a>
+                            <span class="progress-percent">
+                                %@Model.AssignmentProgressPercent
+                            </span>
+                        </div>
+
+                        <div class="progress progress-modern">
+                            <div class="progress-bar"
+                                 role="progressbar"
+                                 style="width: @(Model.AssignmentProgressPercent)%;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="progress-block">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <div class="fw-bold text-dark">
+                                    Karar İlerlemesi
+                                </div>
+
+                                <div class="text-muted small">
+                                    @Model.DecidedSubmissionCount / @Model.SubmissionCount bildiri için karar verilmiş.
+                                </div>
+                            </div>
+
+                            <span class="progress-percent">
+                                %@Model.DecisionProgressPercent
+                            </span>
+                        </div>
+
+                        <div class="progress progress-modern">
+                            <div class="progress-bar bg-danger"
+                                 role="progressbar"
+                                 style="width: @(Model.DecisionProgressPercent)%;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flow-note mt-4">
+                        <i class="fas fa-circle-info me-2"></i>
+                        Akışın tamamlanması için tüm bildirilerin hakeme atanması ve karar ekranından sonuçlandırılması gerekir.
+                    </div>
+
+                </div>
             </div>
         </div>
+
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 px-4 py-3">
+                    <h5 class="fw-bold mb-1">
+                        Hızlı İşlemler
+                    </h5>
+
+                    <p class="text-muted small mb-0">
+                        Seçili kongreyle ilgili operasyon ekranlarına hızlı geçiş yapabilirsiniz.
+                    </p>
+                </div>
+
+                <div class="card-body p-4">
+                    <div class="quick-actions-grid">
+
+                        <a href="@submissionUrl" class="quick-action-card">
+                            <div class="quick-action-icon bg-primary bg-opacity-10 text-primary">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+
+                            <div>
+                                <div class="fw-bold text-dark">
+                                    Bildiri Yönetimi
+                                </div>
+
+                                <div class="text-muted small">
+                                    Gönderilen bildirileri incele.
+                                </div>
+                            </div>
+                        </a>
+
+                        <a href="@assignmentUrl" class="quick-action-card">
+                            <div class="quick-action-icon bg-success bg-opacity-10 text-success">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+
+                            <div>
+                                <div class="fw-bold text-dark">
+                                    Hakem Atama
+                                </div>
+
+                                <div class="text-muted small">
+                                    Bildirilere hakem ata.
+                                </div>
+                            </div>
+                        </a>
+
+                        <a href="@decisionUrl" class="quick-action-card">
+                            <div class="quick-action-icon bg-danger bg-opacity-10 text-danger">
+                                <i class="fas fa-gavel"></i>
+                            </div>
+
+                            <div>
+                                <div class="fw-bold text-dark">
+                                    Karar Ekranı
+                                </div>
+
+                                <div class="text-muted small">
+                                    Kabul, ret veya revizyon kararı ver.
+                                </div>
+                            </div>
+                        </a>
+
+                        <a href="@reviewersUrl" class="quick-action-card">
+                            <div class="quick-action-icon bg-warning bg-opacity-10 text-warning">
+                                <i class="fas fa-user-check"></i>
+                            </div>
+
+                            <div>
+                                <div class="fw-bold text-dark">
+                                    Hakemler
+                                </div>
+
+                                <div class="text-muted small">
+                                    Hakem listesini yönet.
+                                </div>
+                            </div>
+                        </a>
+
+                        <a href="@registrationsUrl" class="quick-action-card">
+                            <div class="quick-action-icon bg-info bg-opacity-10 text-info">
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+
+                            <div>
+                                <div class="fw-bold text-dark">
+                                    Kayıtlar ve Ödemeler
+                                </div>
+
+                                <div class="text-muted small">
+                                    Katılımcı kayıtlarını kontrol et.
+                                </div>
+                            </div>
+                        </a>
+
+                        <a href="@sessionsUrl" class="quick-action-card">
+                            <div class="quick-action-icon bg-secondary bg-opacity-10 text-secondary">
+                                <i class="fas fa-microphone-alt"></i>
+                            </div>
+
+                            <div>
+                                <div class="fw-bold text-dark">
+                                    Program / Oturumlar
+                                </div>
+
+                                <div class="text-muted small">
+                                    Kongre programını düzenle.
+                                </div>
+                            </div>
+                        </a>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
 </div>
+
+<style>
+    .selected-conference-card {
+        background: linear-gradient(135deg, rgba(0, 174, 239, 0.14) 0%, rgba(255, 255, 255, 0.95) 75%);
+        border: 1px solid rgba(0, 174, 239, 0.25);
+        border-radius: 1.25rem;
+        padding: 1.1rem 1.4rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+    }
+
+    .selected-conference-left {
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        min-width: 0;
+    }
+
+    .selected-conference-icon {
+        width: 54px;
+        height: 54px;
+        min-width: 54px;
+        border-radius: 17px;
+        background-color: #00aeef;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        box-shadow: 0 10px 22px rgba(0, 174, 239, 0.22);
+    }
+
+    .selected-label {
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 800;
+        margin-bottom: 0.15rem;
+    }
+
+    .selected-title {
+        color: #0f172a;
+        font-size: 1.05rem;
+        font-weight: 800;
+        line-height: 1.25;
+        word-break: break-word;
+    }
+
+    .selected-change-btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        font-weight: 700;
+        font-size: 0.95rem;
+        box-shadow: 0 8px 18px rgba(13, 110, 253, 0.18);
+    }
+
+    .page-header-wrap {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .page-header-left {
+        flex: 1 1 620px;
+        min-width: 320px;
+    }
+
+    .page-header-right {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+        flex: 0 0 auto;
+    }
+
+    .header-action-btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        font-weight: 700;
+        font-size: 0.95rem;
+        box-shadow: none;
+    }
+
+        .header-action-btn.btn-primary {
+            box-shadow: 0 8px 18px rgba(13, 110, 253, 0.18);
+        }
+
+    .page-header-desc {
+        max-width: 780px;
+    }
+
+    .info-card {
+        background-color: #fff;
+        border-radius: 1rem;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        box-shadow: 0 8px 25px rgba(15, 23, 42, 0.05);
+        border: 1px solid #f1f5f9;
+        min-height: 95px;
+    }
+
+    .info-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .info-number {
+        font-size: 1.55rem;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1;
+    }
+
+    .info-label {
+        color: #64748b;
+        font-weight: 700;
+        font-size: 0.76rem;
+        margin-top: 0.25rem;
+    }
+
+    .progress-modern {
+        height: 10px;
+        border-radius: 999px;
+        background-color: #eef2f7;
+        overflow: hidden;
+    }
+
+        .progress-modern .progress-bar {
+            border-radius: 999px;
+        }
+
+    .progress-percent {
+        background-color: #f1f5f9;
+        color: #0f172a;
+        border-radius: 999px;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.78rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .flow-note {
+        background-color: #f8fafc;
+        color: #64748b;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 0.9rem 1rem;
+        font-size: 0.86rem;
+        font-weight: 600;
+    }
+
+    .quick-actions-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .quick-action-card {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 0.95rem;
+        border-radius: 16px;
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+        .quick-action-card:hover {
+            background-color: #ffffff;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+            transform: translateY(-1px);
+        }
+
+    .quick-action-icon {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    @@media (max-width: 992px) {
+        .selected-conference-card {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .selected-change-btn {
+            width: 100%;
+        }
+
+        .page-header-wrap {
+            align-items: flex-start;
+        }
+
+        .page-header-right {
+            width: 100%;
+            justify-content: flex-start;
+        }
+    }
+</style>

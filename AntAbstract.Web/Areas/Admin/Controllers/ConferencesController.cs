@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public class ConferencesController : Controller
     {
         private const long MaxTemplateFileSize = 10 * 1024 * 1024;

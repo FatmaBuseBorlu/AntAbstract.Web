@@ -1,356 +1,182 @@
 ﻿@using AntAbstract.Domain.Entities
-@using Microsoft.AspNetCore.Identity
-@using Microsoft.AspNetCore.Mvc.Localization
+@using AntAbstract.Infrastructure.Services.Conferences
 @using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Identity
 
 @inject SignInManager<AppUser> SignInManager
 @inject UserManager<AppUser> UserManager
-@inject IViewLocalizer Localizer
 @inject AntAbstract.Infrastructure.Context.TenantContext Tc
+@inject ISelectedConferenceService SelectedConferenceService
 
 @{
-    string L(string key, string fallback)
-    {
-        var value = Localizer[key].Value;
+    var isSignedIn = SignInManager.IsSignedIn(User);
 
-        return string.Equals(value, key, System.StringComparison.OrdinalIgnoreCase)
-            ? fallback
-            : value;
-    }
-}
-
-<style>
-    .login-partial-nav {
-        display: flex;
-        align-items: center;
-        flex-direction: row;
-        gap: 12px;
-        margin: 0;
-        padding: 0;
-        white-space: nowrap;
-    }
-
-        .login-partial-nav .nav-item {
-            margin: 0 !important;
-            padding: 0;
-        }
-
-    .auth-btn {
-        height: 44px;
-        min-width: 116px;
-        padding: 0 24px;
-        border-radius: 999px;
-        font-weight: 800;
-        font-size: 0.95rem;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-        white-space: nowrap;
-        line-height: 1;
-        transition: all 0.22s ease;
-    }
-
-    .auth-btn-login {
-        color: #0f172a;
-        background: #ffffff;
-        border: 1.5px solid #0f172a;
-    }
-
-        .auth-btn-login:hover {
-            color: #0f172a;
-            background: #f8fafc;
-            transform: translateY(-1px);
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
-        }
-
-    .auth-btn-register {
-        color: #ffffff;
-        background: linear-gradient(135deg, #00aeef, #0284c7);
-        border: 1.5px solid transparent;
-        box-shadow: 0 8px 20px rgba(0, 174, 239, 0.24);
-    }
-
-        .auth-btn-register:hover {
-            color: #ffffff;
-            transform: translateY(-1px);
-            box-shadow: 0 10px 26px rgba(0, 174, 239, 0.34);
-        }
-
-    .user-menu-toggle {
-        border: none;
-        background: transparent;
-        padding: 0;
-        text-decoration: none;
-    }
-
-    .user-menu-wrap {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 6px 8px 6px 14px;
-        border: 1px solid #e2e8f0;
-        border-radius: 999px;
-        background: #ffffff;
-        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
-        transition: all 0.22s ease;
-    }
-
-        .user-menu-wrap:hover {
-            border-color: rgba(0, 174, 239, 0.35);
-            box-shadow: 0 10px 24px rgba(0, 174, 239, 0.12);
-            transform: translateY(-1px);
-        }
-
-    .user-display-name {
-        max-width: 155px;
-        color: #0f172a;
-        font-size: 0.92rem;
-        font-weight: 800;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .user-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 999px;
-        overflow: hidden;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, #00aeef, #0284c7);
-        color: #ffffff;
-        font-weight: 900;
-        border: 2px solid #ffffff;
-        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
-    }
-
-        .user-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-    .user-dropdown-menu {
-        min-width: 240px;
-        padding: 10px;
-        border: 1px solid #e2e8f0;
-        border-radius: 18px;
-        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.16);
-    }
-
-    .user-dropdown-header {
-        padding: 10px 12px 12px;
-        border-bottom: 1px solid #f1f5f9;
-        margin-bottom: 8px;
-    }
-
-    .user-dropdown-name {
-        color: #0f172a;
-        font-weight: 900;
-        margin-bottom: 2px;
-    }
-
-    .user-dropdown-email {
-        color: #64748b;
-        font-size: 0.82rem;
-        max-width: 200px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .user-dropdown-menu .dropdown-item {
-        border-radius: 12px;
-        padding: 10px 12px;
-        font-weight: 700;
-        color: #475569;
-    }
-
-        .user-dropdown-menu .dropdown-item:hover {
-            background: #f1f5f9;
-            color: #00aeef;
-        }
-
-    .logout-btn {
-        border: none;
-        background: transparent;
-        width: 100%;
-        text-align: left;
-        border-radius: 12px;
-        padding: 10px 12px;
-        color: #dc2626;
-        font-weight: 800;
-    }
-
-        .logout-btn:hover {
-            background: rgba(220, 38, 38, 0.08);
-            color: #b91c1c;
-        }
-
-    @@media (max-width: 991.98px) {
-        .login-partial-nav {
-            align-items: flex-start;
-            flex-wrap: wrap;
-        }
-
-        .auth-btn {
-            min-width: 132px;
-        }
-
-        .user-display-name {
-            display: none;
-        }
-    }
-</style>
-
-<ul class="navbar-nav login-partial-nav">
-
-    @if (SignInManager.IsSignedIn(User))
-    {
-        var user = await UserManager.GetUserAsync(User);
-
-        var displayName = !string.IsNullOrWhiteSpace(user?.FirstName)
-        ? $"{user.FirstName} {user.LastName}".Trim()
-        : User.Identity?.Name;
-
-        var profileImg = user?.ProfileImagePath;
-
-        var slug = ViewContext.RouteData.Values["slug"]?.ToString()
+    var slug =
+        ViewContext.RouteData.Values["slug"]?.ToString()
         ?? Tc.Current?.Slug
         ?? Context.Session.GetString("SelectedConferenceSlug")
         ?? "";
 
-        var isSuperAdmin = User.IsInRole("SuperAdmin");
-        var isAdmin = User.IsInRole("Admin");
-        var isReferee = User.IsInRole("Referee");
+    var selectedConferenceId = SelectedConferenceService.GetSelectedConferenceId();
+    var hasSelectedConference = selectedConferenceId.HasValue;
+}
 
-        string panelUrl;
-        string panelText;
+@if (isSignedIn)
+{
+    var user = await UserManager.GetUserAsync(User);
 
-        if (isSuperAdmin)
-        {
-            panelUrl = "/Dashboard/SuperAdmin";
-            panelText = L("SystemPanel", "Sistem Paneli");
-        }
-        else if (isAdmin)
-        {
-            panelUrl = "/Admin/Conferences";
-            panelText = L("ManagementPanel", "Yönetim Paneli");
-        }
-        else if (isReferee)
-        {
-            panelUrl = !string.IsNullOrWhiteSpace(slug)
-            ? $"/{slug}/Dashboard"
-            : "/Dashboard";
+    var displayName = user != null
+        ? $"{user.FirstName} {user.LastName}".Trim()
+        : User.Identity?.Name;
 
-            panelText = L("RefereePanel", "Hakem Panelim");
-        }
-        else
-        {
-            panelUrl = !string.IsNullOrWhiteSpace(slug)
-            ? $"/{slug}/Dashboard"
-            : "/Dashboard";
-
-            panelText = L("MyPanel", "Panelim");
-        }
-
-        var firstLetter = !string.IsNullOrWhiteSpace(displayName)
-        ? displayName.Substring(0, 1).ToUpper()
-        : "U";
-
-        <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle user-menu-toggle"
-               href="#"
-               id="userDropdown"
-               role="button"
-               data-bs-toggle="dropdown"
-               aria-expanded="false">
-
-                <div class="user-menu-wrap">
-                    <span class="user-display-name">
-                        @displayName
-                    </span>
-
-                    <span class="user-avatar">
-                        @if (!string.IsNullOrWhiteSpace(profileImg))
-                        {
-                            <img src="@profileImg"
-                                 alt="@L("ProfileImageAlt", "Profil görseli")">
-                        }
-                        else
-                        {
-                            @firstLetter
-                        }
-                    </span>
-                </div>
-            </a>
-
-            <ul class="dropdown-menu dropdown-menu-end user-dropdown-menu animate__animated animate__fadeIn"
-                aria-labelledby="userDropdown">
-
-                <li class="user-dropdown-header">
-                    <div class="user-dropdown-name">
-                        @displayName
-                    </div>
-
-                    <div class="user-dropdown-email">
-                        @user?.Email
-                    </div>
-                </li>
-
-                <li>
-                    <a class="dropdown-item" href="@panelUrl">
-                        <i class="fas fa-tachometer-alt me-2 text-primary" style="width:20px;"></i>
-                        @panelText
-                    </a>
-                </li>
-
-                <li>
-                    <a class="dropdown-item"
-                       asp-area="Identity"
-                       asp-page="/Account/Manage/Index">
-                        <i class="fas fa-user-cog me-2 text-info" style="width:20px;"></i>
-                        @L("ProfileSettings", "Profil Ayarları")
-                    </a>
-                </li>
-
-                <li>
-                    <hr class="dropdown-divider">
-                </li>
-
-                <li>
-                    <form asp-area="Identity"
-                          asp-page="/Account/Logout"
-                          asp-route-returnUrl="/"
-                          method="post">
-                        @Html.AntiForgeryToken()
-
-                        <button type="submit" class="logout-btn">
-                            <i class="fas fa-sign-out-alt me-2" style="width:20px;"></i>
-                            @L("Logout", "Çıkış Yap")
-                        </button>
-                    </form>
-                </li>
-            </ul>
-        </li>
-    }
-    else
+    if (string.IsNullOrWhiteSpace(displayName))
     {
-        <li class="nav-item">
-            <a class="auth-btn auth-btn-login"
-               href="/login">
-                @L("Login", "Giriş Yap")
-            </a>
-        </li>
-
-        <li class="nav-item">
-            <a class="auth-btn auth-btn-register"
-               href="/register">
-                @L("Register", "Kayıt Ol")
-            </a>
-        </li>
+        displayName = user?.Email ?? "Kullanıcı";
     }
-</ul>
+
+    var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
+        ? user.ProfileImagePath
+        : $"https://ui-avatars.com/api/?name={Uri.EscapeDataString(displayName)}&background=00aeef&color=fff&size=128&bold=true";
+
+    var isSuperAdmin = User.IsInRole("SuperAdmin");
+    var isAdmin = User.IsInRole("Admin");
+    var isAuthor = User.IsInRole("Author");
+    var isListener = User.IsInRole("Listener");
+    var isReferee = User.IsInRole("Referee");
+
+    var roleText = "Kullanıcı";
+
+    if (isSuperAdmin)
+    {
+        roleText = "Süper Admin";
+    }
+    else if (isAdmin)
+    {
+        roleText = "Admin";
+    }
+    else if (isReferee)
+    {
+        roleText = "Hakem";
+    }
+    else if (isAuthor)
+    {
+        roleText = "Yazar";
+    }
+    else if (isListener)
+    {
+        roleText = "Katılımcı";
+    }
+
+    var panelUrl = "/Dashboard";
+
+    if (isSuperAdmin)
+    {
+        panelUrl = "/Dashboard/SuperAdmin";
+    }
+    else if (!string.IsNullOrWhiteSpace(slug))
+    {
+        panelUrl = $"/{slug}/Dashboard";
+    }
+
+    <div class="dropdown">
+        <button class="public-user-btn"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false">
+            <span class="public-user-btn-name d-none d-xl-inline">
+                @displayName
+            </span>
+
+            <img src="@profileImg"
+                 class="public-user-avatar"
+                 alt="@displayName" />
+        </button>
+
+        <div class="dropdown-menu dropdown-menu-end public-account-menu">
+
+            <div class="public-account-header">
+                <img src="@profileImg"
+                     class="public-account-avatar"
+                     alt="@displayName" />
+
+                <div class="public-account-info">
+                    <div class="public-account-name">
+                        @displayName
+                    </div>
+
+                    <div class="public-account-role">
+                        @roleText
+                    </div>
+
+                    <div class="public-account-email">
+                        @(user?.Email ?? User.Identity?.Name)
+                    </div>
+                </div>
+            </div>
+
+            <div class="public-account-divider"></div>
+
+            <div class="public-account-body">
+                <a href="@panelUrl" class="public-account-item">
+                    <span class="public-account-item-icon public-icon-primary">
+                        <i class="fas fa-gauge-high"></i>
+                    </span>
+
+                    <span>
+                        <span class="public-account-item-title">
+                            Sistem Paneli
+                        </span>
+                    </span>
+                </a>
+
+                <a href="/Identity/Account/Manage" class="public-account-item">
+                    <span class="public-account-item-icon public-icon-info">
+                        <i class="fas fa-user-cog"></i>
+                    </span>
+
+                    <span>
+                        <span class="public-account-item-title">
+                            Hesap Ayarları
+                        </span>
+                    </span>
+                </a>
+            </div>
+
+            <div class="public-account-divider"></div>
+
+            <div class="public-account-body">
+                <form asp-area=""
+                      asp-controller="Dashboard"
+                      asp-action="CustomLogout"
+                      method="post"
+                      class="m-0">
+                    @Html.AntiForgeryToken()
+
+                    <button type="submit"
+                            class="public-account-item public-account-logout">
+                        <span class="public-account-item-icon public-icon-danger">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </span>
+
+                        <span>
+                            <span class="public-account-item-title">
+                                Çıkış Yap
+                            </span>
+                        </span>
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+}
+else
+{
+    <a href="/login" class="btn btn-outline-dark">
+        Giriş Yap
+    </a>
+
+    <a href="/register" class="btn btn-primary">
+        Kayıt Ol
+    </a>
+}

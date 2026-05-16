@@ -1,0 +1,432 @@
+﻿@using Microsoft.AspNetCore.Mvc.Rendering
+@using AntAbstract.WebUI.Models.ViewModels.Admin.AllConferences
+
+@model List<AllConferenceListItemViewModel>
+
+@{
+    ViewData["Title"] = "Tüm Kongreler";
+    Layout = "_LayoutDashboard";
+
+    var search = ViewBag.Search as string;
+    var tenants = ViewBag.Tenants as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+
+    var now = DateTime.Now;
+
+    var totalConferenceCount = Model?.Count ?? 0;
+    var activeConferenceCount = Model?.Count(x => x.StartDate <= now && x.EndDate >= now) ?? 0;
+    var upcomingConferenceCount = Model?.Count(x => x.StartDate > now) ?? 0;
+    var completedConferenceCount = Model?.Count(x => x.EndDate < now) ?? 0;
+}
+
+<div class="container-fluid">
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="text-uppercase text-muted fw-bold small mb-1">
+                Global Sistem
+            </div>
+
+            <h2 class="fw-bold mb-1 text-dark">
+                Tüm Kongreler
+            </h2>
+
+            <p class="text-muted mb-0">
+                Sistemdeki tüm kurumlara bağlı kongreleri buradan görüntüleyebilirsiniz.
+            </p>
+        </div>
+        <div class="page-header-right">
+        <a href="/Admin/Tenants" class="btn btn-light border rounded-pill px-4 header-action-btn">
+            <i class="fas fa-building me-2 text-primary"></i>
+            Kurumlara Git
+        </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="info-card">
+                <div class="info-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+
+                <div>
+                    <div class="info-number">@totalConferenceCount</div>
+                    <div class="info-label">Toplam Kongre</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-6">
+            <div class="info-card">
+                <div class="info-icon bg-success bg-opacity-10 text-success">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+
+                <div>
+                    <div class="info-number">@activeConferenceCount</div>
+                    <div class="info-label">Devam Eden</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-6">
+            <div class="info-card">
+                <div class="info-icon bg-info bg-opacity-10 text-info">
+                    <i class="fas fa-clock"></i>
+                </div>
+
+                <div>
+                    <div class="info-number">@upcomingConferenceCount</div>
+                    <div class="info-label">Yaklaşan</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-6">
+            <div class="info-card">
+                <div class="info-icon bg-secondary bg-opacity-10 text-secondary">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+
+                <div>
+                    <div class="info-number">@completedConferenceCount</div>
+                    <div class="info-label">Tamamlanan</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body">
+            <form method="get"
+                  asp-area="Admin"
+                  asp-controller="AllConferences"
+                  asp-action="Index"
+                  class="row g-3 align-items-end">
+
+                <div class="col-md-5">
+                    <label class="form-label fw-semibold">
+                        Arama
+                    </label>
+
+                    <input type="text"
+                           name="search"
+                           value="@search"
+                           class="form-control rounded-3"
+                           placeholder="Kongre adı, kurum, şehir, ülke veya slug ara..." />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                        Kurum
+                    </label>
+
+                    <select name="tenantId" class="form-select rounded-3">
+                        <option value="">Tüm Kurumlar</option>
+
+                        @foreach (var tenant in tenants)
+                        {
+                            if (tenant.Selected)
+                            {
+                                <option value="@tenant.Value" selected>@tenant.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@tenant.Value">@tenant.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary rounded-3 w-100">
+                        <i class="fas fa-search me-1"></i>
+                        Filtrele
+                    </button>
+
+                    <a href="/Admin/AllConferences" class="btn btn-light border rounded-3">
+                        <i class="fas fa-rotate-left"></i>
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-0 px-4 py-3">
+            <h5 class="fw-bold mb-1">
+                Kongre Listesi
+            </h5>
+
+            <p class="text-muted small mb-0">
+                Bu liste SuperAdmin için genel izleme ekranıdır. Kongre operasyonları kurum adminleri tarafından yapılır.
+            </p>
+        </div>
+
+        <div class="card-body p-0">
+
+            @if (Model == null || !Model.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-calendar-xmark fa-3x mb-3 opacity-25"></i>
+
+                    <h6 class="fw-bold mb-1">
+                        Kongre bulunamadı
+                    </h6>
+
+                    <p class="mb-0">
+                        Arama kriterlerine uygun kongre yok.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 all-conferences-table">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4 py-3 text-muted fw-bold small" style="width: 27%;">
+                                    Kongre Adı
+                                </th>
+
+                                <th class="py-3 text-muted fw-bold small" style="width: 19%;">
+                                    Kurum
+                                </th>
+
+                                <th class="py-3 text-muted fw-bold small" style="width: 11%;">
+                                    Konum
+                                </th>
+
+                                <th class="py-3 text-muted fw-bold small" style="width: 12%;">
+                                    Tarih
+                                </th>
+
+                                <th class="py-3 text-muted fw-bold small text-center" style="width: 7%;">
+                                    Bildiri
+                                </th>
+
+                                <th class="py-3 text-muted fw-bold small text-center" style="width: 7%;">
+                                    Kayıt
+                                </th>
+
+                                <th class="py-3 text-muted fw-bold small text-center" style="width: 9%;">
+                                    Durum
+                                </th>
+
+                                <th class="pe-4 py-3 text-muted fw-bold small text-end" style="width: 8%; min-width: 135px;">
+                                    İşlem
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                var statusText = "Yaklaşan";
+                                var statusClass = "bg-info bg-opacity-10 text-info";
+
+                                if (item.StartDate <= now && item.EndDate >= now)
+                                {
+                                    statusText = "Devam Ediyor";
+                                    statusClass = "bg-success bg-opacity-10 text-success";
+                                }
+                                else if (item.EndDate < now)
+                                {
+                                    statusText = "Tamamlandı";
+                                    statusClass = "bg-secondary bg-opacity-10 text-secondary";
+                                }
+
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-3 bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center">
+                                                <i class="fas fa-calendar-alt"></i>
+                                            </div>
+
+                                            <div>
+                                                <span class="fw-bold d-block text-dark">
+                                                    @item.Title
+                                                </span>
+
+                                                <small class="text-muted" style="font-size: 0.72rem;">
+                                                    Slug:
+                                                    @(string.IsNullOrWhiteSpace(item.Slug) ? "-" : item.Slug)
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <span class="fw-semibold d-block">
+                                            @item.TenantName
+                                        </span>
+
+                                        <small class="text-muted">
+                                            @(string.IsNullOrWhiteSpace(item.TenantSlug) ? "-" : "/" + item.TenantSlug)
+                                        </small>
+                                    </td>
+
+                                    <td>
+                                        <span class="d-block">
+                                            @(string.IsNullOrWhiteSpace(item.City) ? "-" : item.City)
+                                        </span>
+
+                                        <small class="text-muted">
+                                            @(string.IsNullOrWhiteSpace(item.Country) ? "-" : item.Country)
+                                        </small>
+                                    </td>
+
+                                    <td>
+                                        <span class="fw-semibold d-block">
+                                            @item.StartDate.ToString("dd.MM.yyyy")
+                                        </span>
+
+                                        <small class="text-muted">
+                                            @item.EndDate.ToString("dd.MM.yyyy")
+                                        </small>
+                                    </td>
+
+                                    <td class="text-center">
+                                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
+                                            @item.SubmissionCount
+                                        </span>
+                                    </td>
+
+                                    <td class="text-center">
+                                        <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3 py-2">
+                                            @item.RegistrationCount
+                                        </span>
+                                    </td>
+
+                                    <td class="text-center">
+                                        <span class="badge @statusClass rounded-pill px-3 py-2">
+                                            @statusText
+                                        </span>
+                                    </td>
+
+                                    <td class="pe-4 text-end actions-cell">
+                                        @if (!string.IsNullOrWhiteSpace(item.TenantSlug))
+                                        {
+                                            <a href="/@item.TenantSlug"
+                                               target="_blank"
+                                               class="btn btn-sm btn-outline-primary rounded-3 text-nowrap">
+                                                <i class="fas fa-external-link-alt me-1"></i>
+                                                Siteyi Gör
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">-</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+        </div>
+    </div>
+</div>
+
+<style>
+    .info-card {
+        background-color: #fff;
+        border-radius: 1rem;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        box-shadow: 0 8px 25px rgba(15, 23, 42, 0.05);
+        border: 1px solid #f1f5f9;
+        min-height: 95px;
+    }
+
+    .info-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .info-number {
+        font-size: 1.55rem;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1;
+    }
+
+    .info-label {
+        color: #64748b;
+        font-weight: 700;
+        font-size: 0.76rem;
+        margin-top: 0.25rem;
+    }
+
+    .all-conferences-table thead th {
+        font-size: 0.7rem;
+        letter-spacing: 0.8px;
+        border-bottom: none;
+        text-transform: uppercase;
+    }
+
+    .all-conferences-table tbody tr {
+        transition: background-color 0.2s ease;
+        border-bottom: 1px solid #f8fafc;
+    }
+
+        .all-conferences-table tbody tr:hover {
+            background-color: #fbfcfe !important;
+        }
+
+    .avatar-sm {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        font-size: 0.95rem;
+    }
+
+        .avatar-sm i {
+            font-size: 0.95rem;
+        }
+
+    .actions-cell {
+        min-width: 135px;
+        white-space: nowrap;
+    }
+
+        .actions-cell .btn {
+            font-weight: 700;
+        }
+
+    .all-conferences-table td,
+    .all-conferences-table th {
+        vertical-align: middle;
+    }
+
+    .page-header-right {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.65rem;
+        flex-wrap: nowrap;
+        flex: 0 0 auto;
+    }
+
+    .header-action-btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        font-weight: 700;
+        font-size: 0.95rem;
+        box-shadow: none;
+    }
+</style>

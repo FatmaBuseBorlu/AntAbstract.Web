@@ -1,372 +1,1116 @@
-﻿@using System
-@using System.Linq
-@using System.Collections.Generic
-@using AntAbstract.Domain.Entities
-@using Microsoft.AspNetCore.Identity
-@inject SignInManager<AppUser> SignInManager
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+﻿@model IEnumerable<object>
 
-@model IEnumerable<Conference>
+@using System
+@using System.Globalization
+@using System.Linq
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"].Value;
-    Layout = "_Layout";
+    ViewData["Title"] = "Kongreler";
 
-    var isSignedIn = (bool)(ViewBag.IsSignedIn ?? false);
+    var conferences = Model?.ToList() ?? new List<object>();
 
-    var registrationsByConference =
-        ViewBag.RegistrationsByConference as Dictionary<Guid, Registration>
-        ?? new Dictionary<Guid, Registration>();
+    var isSuperAdmin = User.Identity?.IsAuthenticated == true && User.IsInRole("SuperAdmin");
+    var isAdmin = User.Identity?.IsAuthenticated == true && User.IsInRole("Admin");
+    var isAuthor = User.Identity?.IsAuthenticated == true && User.IsInRole("Author");
 
-    var submissionsByConference =
-        ViewBag.SubmissionsByConference as Dictionary<Guid, List<Submission>>
-        ?? new Dictionary<Guid, List<Submission>>();
+    var isSystemUser = isSuperAdmin || isAdmin;
 
-    string L(string key, string fallback)
+    object? GetPropertyValue(object? item, params string[] propertyNames)
     {
-        var value = Localizer[key].Value;
+        if (item == null)
+        {
+            return null;
+        }
 
-        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+        foreach (var propertyName in propertyNames)
+        {
+            var property = item.GetType().GetProperty(propertyName);
+
+            if (property == null)
+            {
+                continue;
+            }
+
+            var value = property.GetValue(item);
+
+            if (value != null)
+            {
+                return value;
+            }
+        }
+
+        return null;
+    }
+
+    object? GetNestedPropertyValue(object? item, string parentName, params string[] propertyNames)
+    {
+        var parent = GetPropertyValue(item, parentName);
+
+        if (parent == null)
+        {
+            return null;
+        }
+
+        return GetPropertyValue(parent, propertyNames);
+    }
+
+    string GetText(object? item, string fallback, params string[] propertyNames)
+    {
+        var value = GetPropertyValue(item, propertyNames);
+        var text = value?.ToString();
+
+        return string.IsNullOrWhiteSpace(text)
             ? fallback
-            : value;
+            : text;
+    }
+
+    string GetNestedText(object? item, string parentName, string fallback, params string[] propertyNames)
+    {
+        var value = GetNestedPropertyValue(item, parentName, propertyNames);
+        var text = value?.ToString();
+
+        return string.IsNullOrWhiteSpace(text)
+            ? fallback
+            : text;
+    }
+
+    DateTime? GetDate(object? item, params string[] propertyNames)
+    {
+        var value = GetPropertyValue(item, propertyNames);
+
+        if (value == null)
+        {
+            return null;
+        }
+
+        if (value is DateTime date)
+        {
+            return date;
+        }
+
+        if (DateTime.TryParse(value.ToString(), out var parsedDate))
+        {
+            return parsedDate;
+        }
+
+        return null;
+    }
+
+    string NormalizeUrl(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return "";
+        }
+
+        if (path.StartsWith("http", StringComparison.OrdinalIgnoreCase) || path.StartsWith("/"))
+        {
+            return path;
+        }
+
+        return "/" + path.TrimStart('/');
+    }
+
+    string GetSlug(object item)
+    {
+        var slug = GetText(item, "", "Slug", "ConferenceSlug", "TenantSlug");
+
+        if (string.IsNullOrWhiteSpace(slug))
+        {
+            slug = GetNestedText(item, "Tenant", "", "Slug", "TenantSlug");
+        }
+
+        return slug?.Trim('/') ?? "";
+    }
+
+    string GetLogoText(string title, string slug)
+    {
+        var key = $"{title} {slug}".ToLowerInvariant();
+
+        if (key.Contains("irtad"))
+        {
+            return "IRTAD";
+        }
+
+        if (key.Contains("vet"))
+        {
+            return "VET LOGO";
+        }
+
+        if (key.Contains("tech") || key.Contains("ai") || key.Contains("artificial"))
+        {
+            return "AI SUMMIT";
+        }
+
+        var words = title
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Where(x => x.Length > 2)
+            .Take(2)
+            .ToList();
+
+        if (words.Count == 0)
+        {
+            return "KONGRE";
+        }
+
+        if (words.Count == 1)
+        {
+            return words[0].Length > 8
+                ? words[0].Substring(0, 8).ToUpper(new CultureInfo("tr-TR"))
+                : words[0].ToUpper(new CultureInfo("tr-TR"));
+        }
+
+        return $"{words[0][0]}{words[1][0]}".ToUpper(new CultureInfo("tr-TR"));
+    }
+
+    string GetAccentClass(string title, string slug, int index)
+    {
+        var key = $"{title} {slug}".ToLowerInvariant();
+
+        if (key.Contains("irtad") || key.Contains("turizm"))
+        {
+            return "accent-green";
+        }
+
+        if (key.Contains("vet") || key.Contains("veteriner"))
+        {
+            return "accent-blue";
+        }
+
+        if (key.Contains("tech") || key.Contains("ai") || key.Contains("artificial") || key.Contains("intelligence"))
+        {
+            return "accent-orange";
+        }
+
+        return index % 3 switch
+        {
+            0 => "accent-green",
+            1 => "accent-blue",
+            _ => "accent-orange"
+        };
+    }
+
+    string GetMonthShort(DateTime? date)
+    {
+        if (!date.HasValue)
+        {
+            return "";
+        }
+
+        return date.Value
+            .ToString("MMM", new CultureInfo("tr-TR"))
+            .Replace(".", "")
+            .ToUpper(new CultureInfo("tr-TR"));
     }
 }
 
-<style>
-    .search-section {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        padding: 80px 0;
-        border-radius: 0 0 50px 50px;
-        margin-bottom: 50px;
-    }
+<section class="congresses-page">
 
-    .search-input-group {
-        background: #fff;
-        padding: 10px;
-        border-radius: 20px;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.05);
-        display: flex;
-        gap: 10px;
-    }
+    <div class="congress-hero">
+        <div class="congress-hero-decoration decoration-one"></div>
+        <div class="congress-hero-decoration decoration-two"></div>
 
-        .search-input-group input {
-            border: none;
-            padding: 12px 25px;
-            flex-grow: 1;
-            font-size: 1.1rem;
-            outline: none;
-            border-radius: 15px;
-        }
+        <div class="container">
+            <div class="congress-hero-content">
 
-    .congress-card {
-        border: none;
-        border-radius: 24px;
-        background: #fff;
-        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-        position: relative;
-        height: 100%;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-    }
+                <div class="hero-pill">
+                    <i class="fas fa-calendar-check"></i>
+                    Güncel bilimsel gelişmeleri keşfedin
+                </div>
 
-        .congress-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            border-color: #00aeef;
-        }
+                <h1 class="congress-hero-title">
+                    Kongreler & Etkinlikler
+                </h1>
 
-    .image-wrapper {
-        position: relative;
-        height: 200px;
-        overflow: hidden;
-        background-color: #f8fafc;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+                <p class="congress-hero-description">
+                    Alanınızdaki en güncel bilimsel gelişmeleri keşfedin, kaydınızı oluşturun.
+                </p>
 
-    .congress-img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        padding: 20px;
-        transition: transform 0.6s ease;
-    }
+                <div class="congress-search-card">
+                    <div class="congress-search-input-wrap">
+                        <i class="fas fa-search"></i>
 
-    .congress-card:hover .congress-img {
-        transform: scale(1.05);
-    }
+                        <input type="text"
+                               id="congressSearchInput"
+                               autocomplete="off"
+                               placeholder="Kongre adı, şehir veya konu ara..." />
+                    </div>
 
-    .date-badge-floating {
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(5px);
-        padding: 8px 15px;
-        border-radius: 15px;
-        text-align: center;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        z-index: 2;
-        border: 1px solid #eee;
-        line-height: 1;
-    }
+                    <button type="button"
+                            id="congressSearchButton"
+                            class="congress-search-button">
+                        <i class="fas fa-search"></i>
+                        ARA
+                    </button>
+                </div>
 
-    .date-day {
-        font-size: 1.2rem;
-        font-weight: 800;
-        color: #00aeef;
-        display: block;
-    }
+                <div class="congress-filter-chips">
+                    <button type="button" class="filter-chip active" data-filter="">
+                        <i class="fas fa-border-all"></i>
+                        Tümü
+                    </button>
 
-    .date-month {
-        font-size: 0.7rem;
-        font-weight: 700;
-        color: #64748b;
-        text-transform: uppercase;
-    }
+                    <button type="button" class="filter-chip" data-filter="tıp sağlık medicine health">
+                        <i class="fas fa-stethoscope"></i>
+                        Tıp & Sağlık
+                    </button>
 
-    .card-body-custom {
-        padding: 25px;
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-    }
+                    <button type="button" class="filter-chip" data-filter="veteriner vet">
+                        <i class="fas fa-paw"></i>
+                        Veterinerlik
+                    </button>
 
-    .congress-slug-tag {
-        display: inline-block;
-        padding: 4px 12px;
-        background: #f1f5f9;
-        color: #475569;
-        border-radius: 8px;
-        font-size: 0.7rem;
-        font-weight: 700;
-        margin-bottom: 12px;
-        text-transform: uppercase;
-        align-self: flex-start;
-    }
+                    <button type="button" class="filter-chip" data-filter="teknoloji tech ai artificial intelligence">
+                        <i class="fas fa-microchip"></i>
+                        Teknoloji
+                    </button>
 
-    .congress-title {
-        font-size: 1.15rem;
-        font-weight: 700;
-        color: #1e293b;
-        line-height: 1.4;
-        margin-bottom: 15px;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        text-decoration: none;
-    }
+                    <button type="button" class="filter-chip" data-filter="yapay zeka artificial intelligence ai">
+                        <i class="fas fa-brain"></i>
+                        Yapay Zeka
+                    </button>
+                </div>
 
-    .meta-info {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        color: #64748b;
-        font-size: 0.85rem;
-        margin-top: auto;
-    }
-
-    .btn-detail {
-        width: 100%;
-        padding: 12px;
-        border-radius: 14px;
-        background: #f8fafc;
-        color: #00aeef;
-        font-weight: 700;
-        border: 2px solid #e2e8f0;
-        transition: all 0.3s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        text-decoration: none;
-        margin-top: 20px;
-    }
-
-    .congress-card:hover .btn-detail {
-        background: #00aeef;
-        color: #fff;
-        border-color: #00aeef;
-    }
-</style>
-
-<div class="search-section text-center">
-    <div class="container">
-        <h1 class="display-5 fw-bold text-dark mb-3">
-            @Localizer["HeroTitle"]
-        </h1>
-
-        <p class="lead text-muted mb-5">
-            @Localizer["HeroDescription"]
-        </p>
-
-        <div class="search-container">
-            <div class="search-input-group shadow-sm">
-                <input type="text"
-                       id="congressSearch"
-                       placeholder="@Localizer["SearchPlaceholder"]"
-                       aria-label="@Localizer["SearchAriaLabel"]">
-
-                <button type="button"
-                        class="btn btn-primary px-5 rounded-pill fw-bold"
-                        style="background-color: #00aeef; border:none;">
-                    <i class="fas fa-search me-2"></i>
-                    @Localizer["SearchButton"]
-                </button>
             </div>
         </div>
     </div>
-</div>
 
-<div class="container mb-5">
-    <div class="row g-4">
-        @if (Model != null && Model.Any())
-        {
-            foreach (var kongre in Model)
-            {
-                var slug = !string.IsNullOrWhiteSpace(kongre.Tenant?.Slug)
-                ? kongre.Tenant.Slug
-                : kongre.Slug;
+    <div class="congress-list-section">
+        <div class="container">
 
-                var hasRegistration = registrationsByConference.TryGetValue(
-                kongre.Id,
-                out Registration? registration
-                );
-
-                var userSubmissions = submissionsByConference.ContainsKey(kongre.Id)
-                ? submissionsByConference[kongre.Id]
-                : new List<Submission>();
-
-                var hasSubmission = userSubmissions.Any();
-
-                var hasAcceptedSubmission = userSubmissions.Any(s =>
-                s.Status == SubmissionStatus.Accepted ||
-                s.Status == SubmissionStatus.Presented
-                );
-
-                string actionText;
-                string actionUrl;
-                string actionIcon;
-
-                if (!isSignedIn)
-                {
-                    actionText = L("ViewDetailsButton", "Detayları Gör");
-                    actionUrl = $"/{slug}";
-                    actionIcon = "fas fa-search";
-                }
-                else if (!hasRegistration)
-                {
-                    actionText = L("RegisterForCongressButton", "Kongreye Kayıt Ol");
-                    actionUrl = $"/{slug}/registration";
-                    actionIcon = "fas fa-user-plus";
-                }
-                else if (hasAcceptedSubmission && registration != null && !registration.IsPaid)
-                {
-                    actionText = L("PayNowButton", "Ödeme Yap");
-                    actionUrl = $"/{slug}/Payment/New";
-                    actionIcon = "fas fa-credit-card";
-                }
-                else if (!hasSubmission)
-                {
-                    actionText = L("SubmitAbstractButton", "Bildiri Gönder");
-                    actionUrl = $"/{slug}/Submission/Create";
-                    actionIcon = "fas fa-paper-plane";
-                }
-                else if (registration != null && registration.IsPaid)
-                {
-                    actionText = L("GoToPanelButton", "Panelime Git");
-                    actionUrl = $"/{slug}/Dashboard";
-                    actionIcon = "fas fa-gauge-high";
-                }
-                else
-                {
-                    actionText = L("ViewMyApplicationButton", "Başvurumu Gör");
-                    actionUrl = $"/{slug}/Submission/Index";
-                    actionIcon = "fas fa-folder-open";
-                }
-
-                <div class="col-md-6 col-lg-4">
-                    <div class="congress-card">
-                        <div class="image-wrapper">
-                            <div class="date-badge-floating">
-                                <span class="date-day">
-                                    @kongre.StartDate.Day
-                                </span>
-
-                                <span class="date-month">
-                                    @kongre.StartDate.ToString("MMM")
-                                </span>
-                            </div>
-
-                            @if (!string.IsNullOrWhiteSpace(kongre.LogoPath))
-                            {
-                                <img src="@kongre.LogoPath"
-                                     class="congress-img"
-                                     alt="@kongre.Title">
-                            }
-                            else
-                            {
-                                <div class="text-muted text-center opacity-25">
-                                    <i class="fa fa-university fa-4x mb-2"></i>
-
-                                    <div class="small fw-bold">
-                                        @Localizer["NoImageText"]
-                                    </div>
-                                </div>
-                            }
-                        </div>
-
-                        <div class="card-body-custom">
-                            <span class="congress-slug-tag">
-                                #@slug
-                            </span>
-
-                            <a href="/@slug"
-                               class="congress-title"
-                               title="@kongre.Title">
-                                @kongre.Title
-                            </a>
-
-                            <div class="meta-info">
-                                <span>
-                                    <i class="fas fa-map-marker-alt text-danger me-1"></i>
-                                    @(kongre.City ?? Localizer["OnlineText"].Value)
-                                </span>
-
-                                <span>
-                                    <i class="fas fa-calendar-check text-primary me-1"></i>
-                                    @kongre.StartDate.Year
-                                </span>
-                            </div>
-
-                            <a href="@actionUrl" class="btn-detail">
-                                @actionText
-                                <i class="@actionIcon"></i>
-                            </a>
-                        </div>
-                    </div>
+            <div class="congress-list-header">
+                <div>
+                    <h2>Kongre Listesi</h2>
+                    <p>Katılabileceğiniz güncel kongreleri ve etkinlikleri inceleyin.</p>
                 </div>
-            }
-        }
-        else
-        {
-            <div class="col-12 text-center py-5">
-                <div class="alert alert-light border shadow-sm d-inline-block px-5 py-4 rounded-4">
-                    <i class="fas fa-search text-muted mb-3 fs-1 opacity-50"></i>
 
-                    <h5 class="text-dark fw-bold">
-                        @Localizer["EmptyStateTitle"]
-                    </h5>
-
-                    <p class="mb-0 text-muted">
-                        @Localizer["EmptyStateText"]
-                    </p>
+                <div class="congress-count-badge">
+                    <span id="visibleCongressCount">@conferences.Count</span> / @conferences.Count kongre
                 </div>
             </div>
-        }
+
+            @if (!conferences.Any())
+            {
+                <div class="empty-congress-box">
+                    <div class="empty-congress-icon">
+                        <i class="fas fa-calendar-xmark"></i>
+                    </div>
+
+                    <h3>Henüz kongre bulunamadı</h3>
+
+                    <p>
+                        Şu anda görüntülenecek aktif kongre bulunmuyor.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="congress-card-grid" id="congressCardGrid">
+                    @for (var i = 0; i < conferences.Count; i++)
+                    {
+                        var item = conferences[i];
+
+                        var title = GetText(item, "Kongre", "Title", "ConferenceTitle", "Name", "CongressName");
+                        var slug = GetSlug(item);
+
+                        var tenantName = GetNestedText(item, "Tenant", "", "Name", "TenantName");
+                        var city = GetText(item, "", "City", "LocationCity", "CongressCity");
+                        var country = GetText(item, "Türkiye", "Country", "LocationCountry", "CongressCountry");
+
+                        if (string.IsNullOrWhiteSpace(city))
+                        {
+                            city = GetText(item, "", "Location", "Address");
+                        }
+
+                        var startDate = GetDate(item, "StartDate", "ConferenceStartDate", "CongressStartDate", "BeginDate");
+                        var endDate = GetDate(item, "EndDate", "ConferenceEndDate", "CongressEndDate", "FinishDate");
+
+                        var yearText = startDate.HasValue
+                        ? startDate.Value.Year.ToString()
+                        : DateTime.Now.Year.ToString();
+
+                        var dayText = startDate.HasValue
+                        ? startDate.Value.Day.ToString("00")
+                        : "--";
+
+                        var monthText = GetMonthShort(startDate);
+
+                        var description = GetText(
+                        item,
+                        !string.IsNullOrWhiteSpace(tenantName)
+                        ? $"{tenantName} tarafından düzenlenen bilimsel kongre."
+                        : "Bilimsel program, bildiri süreçleri ve kayıt bilgilerini inceleyebilirsiniz.",
+                        "Description",
+                        "ShortDescription",
+                        "Summary",
+                        "About"
+                        );
+
+                        if (description.Length > 110)
+                        {
+                            description = description.Substring(0, 110).Trim() + "...";
+                        }
+
+                        var logoUrl = NormalizeUrl(GetText(item, "", "LogoUrl", "LogoPath", "ImageUrl", "ImagePath", "CoverImageUrl", "CoverImagePath"));
+                        var logoText = GetLogoText(title, slug);
+                        var accentClass = GetAccentClass(title, slug, i);
+
+                        var siteUrl = !string.IsNullOrWhiteSpace(slug)
+                        ? $"/{slug}"
+                        : "#";
+
+                        var registrationUrl = !string.IsNullOrWhiteSpace(slug)
+                        ? $"/{slug}/registration"
+                        : "#";
+
+                        var submissionUrl = !string.IsNullOrWhiteSpace(slug)
+                        ? $"/{slug}/Submission/Create"
+                        : "#";
+
+                        string actionUrl;
+                        string actionText;
+                        string actionIcon;
+                        string actionClass;
+
+                        if (isSystemUser)
+                        {
+                            actionUrl = siteUrl;
+                            actionText = "Siteyi Gör";
+                            actionIcon = "fas fa-external-link-alt";
+                            actionClass = "btn-site-view";
+                        }
+                        else if (isAuthor)
+                        {
+                            actionUrl = submissionUrl;
+                            actionText = "Bildiri Gönder";
+                            actionIcon = "fas fa-paper-plane";
+                            actionClass = "btn-submit-paper";
+                        }
+                        else
+                        {
+                            actionUrl = registrationUrl;
+                            actionText = "Kongreye Kayıt Ol";
+                            actionIcon = "fas fa-user-plus";
+                            actionClass = "btn-register-congress";
+                        }
+
+                        var searchText = $"{title} {slug} {tenantName} {city} {country} {description}".ToLowerInvariant();
+
+                        <article class="congress-card @accentClass"
+                                 data-search="@searchText">
+
+                            <div class="congress-card-media">
+                                <div class="congress-logo-box">
+                                    @if (!string.IsNullOrWhiteSpace(logoUrl))
+                                    {
+                                        <img src="@logoUrl"
+                                             alt="@title"
+                                             class="congress-logo-image" />
+                                    }
+                                    else
+                                    {
+                                        <span>@logoText</span>
+                                    }
+                                </div>
+
+                                <div class="congress-date-badge">
+                                    <div class="date-day">@dayText</div>
+                                    <div class="date-month">@monthText</div>
+                                </div>
+                            </div>
+
+                            <div class="congress-card-body">
+                                <div class="congress-tag">
+                                    #@(string.IsNullOrWhiteSpace(slug) ? "KONGRE" : slug.ToUpper(new CultureInfo("tr-TR")))
+                                </div>
+
+                                <h3 class="congress-card-title">
+                                    @title
+                                </h3>
+
+                                <div class="congress-meta">
+                                    @if (!string.IsNullOrWhiteSpace(city))
+                                    {
+                                        <span>
+                                            <i class="fas fa-location-dot"></i>
+                                            @city@(string.IsNullOrWhiteSpace(country) ? "" : $", {country}")
+                                        </span>
+                                    }
+
+                                    <span>
+                                        <i class="fas fa-calendar-check"></i>
+                                        @yearText
+                                    </span>
+                                </div>
+
+                                <p class="congress-description">
+                                    @description
+                                </p>
+
+                                <a href="@actionUrl"
+                                   class="congress-action-button @actionClass">
+                                    <span>@actionText</span>
+                                    <i class="@actionIcon"></i>
+                                </a>
+                            </div>
+                        </article>
+                    }
+                </div>
+
+                <div class="empty-congress-box d-none" id="noCongressResult">
+                    <div class="empty-congress-icon">
+                        <i class="fas fa-magnifying-glass"></i>
+                    </div>
+
+                    <h3>Arama sonucu bulunamadı</h3>
+
+                    <p>
+                        Farklı bir kongre adı, şehir veya konu deneyin.
+                    </p>
+                </div>
+            }
+
+        </div>
     </div>
-</div>
+
+</section>
+
+<style>
+    .congresses-page {
+        padding-top: 86px;
+        background: #f8fafc;
+        min-height: 100vh;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .congress-hero {
+        position: relative;
+        overflow: hidden;
+        padding: 4rem 0 2.1rem;
+        background: radial-gradient(circle at 8% 28%, rgba(0, 174, 239, 0.18), transparent 22%), radial-gradient(circle at 88% 18%, rgba(13, 110, 253, 0.16), transparent 28%), linear-gradient(135deg, #f8fcff 0%, #eef8ff 48%, #e8f3ff 100%);
+        border-bottom-left-radius: 46px;
+        border-bottom-right-radius: 46px;
+    }
+
+        .congress-hero::before {
+            content: "";
+            position: absolute;
+            left: -110px;
+            top: -140px;
+            width: 350px;
+            height: 350px;
+            border-radius: 999px;
+            border: 2px solid rgba(13, 110, 253, 0.10);
+        }
+
+        .congress-hero::after {
+            content: "";
+            position: absolute;
+            right: -150px;
+            bottom: -190px;
+            width: 440px;
+            height: 440px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.45);
+        }
+
+    .congress-hero-decoration {
+        position: absolute;
+        border-radius: 999px;
+        pointer-events: none;
+    }
+
+    .decoration-one {
+        left: 9%;
+        top: 52%;
+        width: 34px;
+        height: 34px;
+        background: rgba(13, 110, 253, 0.20);
+        box-shadow: 0 18px 44px rgba(13, 110, 253, 0.22);
+    }
+
+    .decoration-two {
+        right: 16%;
+        top: 20%;
+        width: 9px;
+        height: 9px;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 90px 50px 0 rgba(255, 255, 255, 0.75), 160px 100px 0 rgba(255, 255, 255, 0.75);
+    }
+
+    .congress-hero-content {
+        position: relative;
+        z-index: 2;
+        max-width: 1180px;
+        margin: 0 auto;
+        text-align: center;
+    }
+
+    .hero-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.55rem 1rem;
+        border-radius: 999px;
+        background: rgba(13, 110, 253, 0.08);
+        color: #0d6efd;
+        font-size: 0.86rem;
+        font-weight: 900;
+        margin-bottom: 1.25rem;
+    }
+
+    .congress-hero-title {
+        margin: 0;
+        color: #0f172a;
+        font-size: clamp(2.25rem, 4.5vw, 4rem);
+        font-weight: 900;
+        letter-spacing: -0.06em;
+        line-height: 1.05;
+    }
+
+    .congress-hero-description {
+        margin: 1rem auto 0;
+        max-width: 760px;
+        color: #64748b;
+        font-size: 1.12rem;
+        font-weight: 500;
+        line-height: 1.7;
+    }
+
+    .congress-search-card {
+        max-width: 1120px;
+        margin: 2.1rem auto 0;
+        padding: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        border-radius: 26px;
+        box-shadow: 0 22px 50px rgba(15, 23, 42, 0.10);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+    }
+
+    .congress-search-input-wrap {
+        flex: 1;
+        min-height: 58px;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 0 1.1rem;
+        border-radius: 18px;
+        background: #ffffff;
+        border: 1px solid #dbe3ef;
+    }
+
+        .congress-search-input-wrap i {
+            color: #64748b;
+            font-size: 1.1rem;
+        }
+
+        .congress-search-input-wrap input {
+            width: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: #0f172a;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+            .congress-search-input-wrap input::placeholder {
+                color: #94a3b8;
+                font-weight: 600;
+            }
+
+    .congress-search-button {
+        min-height: 58px;
+        min-width: 150px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.65rem;
+        border: none;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        font-size: 0.98rem;
+        font-weight: 900;
+        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.28);
+        transition: all 0.2s ease;
+    }
+
+        .congress-search-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 20px 40px rgba(13, 110, 253, 0.34);
+        }
+
+    .congress-filter-chips {
+        margin-top: 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.7rem;
+    }
+
+    .filter-chip {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0 1rem;
+        border-radius: 999px;
+        border: 1px solid #dbe3ef;
+        background: rgba(255, 255, 255, 0.86);
+        color: #334155;
+        font-size: 0.82rem;
+        font-weight: 800;
+        transition: all 0.2s ease;
+    }
+
+        .filter-chip:hover,
+        .filter-chip.active {
+            border-color: rgba(13, 110, 253, 0.35);
+            background: rgba(13, 110, 253, 0.08);
+            color: #0d6efd;
+        }
+
+    .congress-list-section {
+        padding: 2.2rem 0 4rem;
+    }
+
+    .congress-list-header {
+        margin-bottom: 1.35rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+        .congress-list-header h2 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 1.45rem;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+        }
+
+        .congress-list-header p {
+            margin: 0.35rem 0 0;
+            color: #64748b;
+            font-size: 0.94rem;
+            font-weight: 600;
+        }
+
+    .congress-count-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem 0.85rem;
+        border-radius: 999px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 0.82rem;
+        font-weight: 900;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+    }
+
+    .congress-card-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1.35rem;
+    }
+
+    .congress-card {
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.07);
+        transition: all 0.24s ease;
+    }
+
+        .congress-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 26px 60px rgba(15, 23, 42, 0.11);
+        }
+
+    .congress-card-media {
+        position: relative;
+        min-height: 220px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle at top left, rgba(13, 110, 253, 0.06), transparent 35%), #f8fafc;
+        border-bottom: 1px solid #edf2f7;
+    }
+
+    .congress-logo-box {
+        width: 180px;
+        height: 180px;
+        border-radius: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-size: 1.8rem;
+        font-weight: 900;
+        text-align: center;
+        letter-spacing: -0.03em;
+        overflow: hidden;
+    }
+
+    .congress-logo-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .accent-green .congress-logo-box {
+        background: linear-gradient(135deg, #16a34a, #22c55e);
+    }
+
+    .accent-blue .congress-logo-box {
+        background: linear-gradient(135deg, #0d47a1, #0d6efd);
+    }
+
+    .accent-orange .congress-logo-box {
+        background: linear-gradient(135deg, #ff4d22, #ff7a1a);
+    }
+
+    .congress-date-badge {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        width: 58px;
+        min-height: 58px;
+        border-radius: 16px;
+        background: #ffffff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+        border: 1px solid #edf2f7;
+    }
+
+    .date-day {
+        font-size: 1.15rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .date-month {
+        margin-top: 0.2rem;
+        font-size: 0.68rem;
+        font-weight: 900;
+        color: #64748b;
+        line-height: 1;
+    }
+
+    .accent-green .date-day {
+        color: #16a34a;
+    }
+
+    .accent-blue .date-day {
+        color: #0d6efd;
+    }
+
+    .accent-orange .date-day {
+        color: #ff4d22;
+    }
+
+    .congress-card-body {
+        padding: 1.55rem;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+
+    .congress-tag {
+        width: fit-content;
+        display: inline-flex;
+        align-items: center;
+        padding: 0.32rem 0.7rem;
+        border-radius: 10px;
+        background: #f1f5f9;
+        color: #334155;
+        font-size: 0.72rem;
+        font-weight: 900;
+        margin-bottom: 1rem;
+    }
+
+    .accent-green .congress-tag {
+        background: rgba(34, 197, 94, 0.10);
+        color: #16a34a;
+    }
+
+    .accent-blue .congress-tag {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .accent-orange .congress-tag {
+        background: rgba(255, 77, 34, 0.10);
+        color: #ff4d22;
+    }
+
+    .congress-card-title {
+        margin: 0;
+        min-height: 62px;
+        color: #0f172a;
+        font-size: 1.15rem;
+        font-weight: 900;
+        letter-spacing: -0.03em;
+        line-height: 1.35;
+    }
+
+    .congress-meta {
+        margin-top: 1rem;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.85rem;
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+        .congress-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.38rem;
+        }
+
+        .congress-meta i {
+            color: #0d6efd;
+        }
+
+        .congress-meta span:first-child i {
+            color: #ef4444;
+        }
+
+    .congress-description {
+        margin: 1rem 0 1.35rem;
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 500;
+        line-height: 1.65;
+        min-height: 48px;
+    }
+
+    .congress-action-button {
+        margin-top: auto;
+        min-height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        border-radius: 14px;
+        text-decoration: none;
+        font-size: 0.92rem;
+        font-weight: 900;
+        border: 1px solid #dbe3ef;
+        background: #ffffff;
+        transition: all 0.2s ease;
+    }
+
+    .btn-register-congress,
+    .btn-submit-paper {
+        color: #00aeef;
+        border-color: #dbe3ef;
+    }
+
+        .btn-register-congress:hover,
+        .btn-submit-paper:hover {
+            color: #ffffff;
+            background: linear-gradient(135deg, #0d6efd, #00aeef);
+            border-color: transparent;
+            box-shadow: 0 14px 28px rgba(13, 110, 253, 0.22);
+            transform: translateY(-1px);
+        }
+
+    .btn-site-view {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.25);
+        background: rgba(13, 110, 253, 0.06);
+    }
+
+        .btn-site-view:hover {
+            color: #ffffff;
+            background: #0d6efd;
+            border-color: #0d6efd;
+            box-shadow: 0 14px 28px rgba(13, 110, 253, 0.22);
+            transform: translateY(-1px);
+        }
+
+    .empty-congress-box {
+        padding: 4rem 1.5rem;
+        text-align: center;
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+    }
+
+    .empty-congress-icon {
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 1rem;
+        border-radius: 24px;
+        background: rgba(0, 174, 239, 0.10);
+        color: #00aeef;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+    }
+
+    .empty-congress-box h3 {
+        margin: 0 0 0.4rem;
+        color: #0f172a;
+        font-size: 1.25rem;
+        font-weight: 900;
+    }
+
+    .empty-congress-box p {
+        margin: 0;
+        color: #64748b;
+        font-weight: 600;
+    }
+
+    @@media (max-width: 1200px) {
+        .congress-card-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .congresses-page {
+            padding-top: 74px;
+        }
+
+        .congress-hero {
+            padding: 2.5rem 0 1.8rem;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+        }
+
+        .congress-search-card {
+            flex-direction: column;
+            align-items: stretch;
+            border-radius: 22px;
+        }
+
+        .congress-search-button {
+            width: 100%;
+        }
+
+        .congress-card-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .congress-card-media {
+            min-height: 200px;
+        }
+
+        .congress-logo-box {
+            width: 160px;
+            height: 160px;
+        }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const searchInput = document.getElementById("congressSearchInput");
+            const searchButton = document.getElementById("congressSearchButton");
+            const congressCards = Array.from(document.querySelectorAll(".congress-card"));
+            const noResultBox = document.getElementById("noCongressResult");
+            const visibleCongressCount = document.getElementById("visibleCongressCount");
+            const filterChips = Array.from(document.querySelectorAll(".filter-chip"));
+
+            let activeFilter = "";
+
+            function normalizeText(value) {
+                return (value || "")
+                    .toString()
+                    .toLocaleLowerCase("tr-TR")
+                    .replaceAll("ı", "i")
+                    .replaceAll("İ", "i");
+            }
+
+            function applyFilters() {
+                const searchTerm = searchInput ? normalizeText(searchInput.value.trim()) : "";
+                const filterTerm = normalizeText(activeFilter);
+                let visibleCount = 0;
+
+                congressCards.forEach(function (card) {
+                    const searchText = normalizeText(card.getAttribute("data-search"));
+
+                    const matchesSearch = !searchTerm || searchText.includes(searchTerm);
+
+                    const matchesFilter = !filterTerm || filterTerm
+                        .split(" ")
+                        .filter(Boolean)
+                        .some(function (term) {
+                            return searchText.includes(term);
+                        });
+
+                    const isVisible = matchesSearch && matchesFilter;
+
+                    card.classList.toggle("d-none", !isVisible);
+
+                    if (isVisible) {
+                        visibleCount++;
+                    }
+                });
+
+                if (visibleCongressCount) {
+                    visibleCongressCount.textContent = visibleCount;
+                }
+
+                if (noResultBox) {
+                    noResultBox.classList.toggle("d-none", visibleCount !== 0);
+                }
+            }
+
+            if (searchButton) {
+                searchButton.addEventListener("click", applyFilters);
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener("input", applyFilters);
+
+                searchInput.addEventListener("keydown", function (event) {
+                    if (event.key === "Enter") {
+                        event.preventDefault();
+                        applyFilters();
+                    }
+                });
+            }
+
+            filterChips.forEach(function (chip) {
+                chip.addEventListener("click", function () {
+                    filterChips.forEach(function (item) {
+                        item.classList.remove("active");
+                    });
+
+                    chip.classList.add("active");
+                    activeFilter = chip.getAttribute("data-filter") || "";
+                    applyFilters();
+                });
+            });
+
+            applyFilters();
+        });
+    </script>
+}

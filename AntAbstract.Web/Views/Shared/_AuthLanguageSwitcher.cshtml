@@ -1,0 +1,68 @@
+﻿@using Microsoft.AspNetCore.Localization
+@using System.Globalization
+
+@{
+    var requestCulture = Context.Features.Get<IRequestCultureFeature>();
+    var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? "tr-TR";
+
+    var isTurkishCulture = currentCulture.StartsWith("tr", StringComparison.OrdinalIgnoreCase);
+    var isEnglishCulture = currentCulture.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+
+    var returnUrl = string.IsNullOrEmpty(Context.Request.Path)
+        ? "/"
+        : $"{Context.Request.Path}{Context.Request.QueryString}";
+}
+
+<div class="auth-top-actions">
+    <div class="dropdown auth-language-dropdown">
+        <button class="auth-language-btn"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false">
+            <i class="fas fa-globe"></i>
+
+            <span>
+                @(isEnglishCulture ? "EN" : "TR")
+            </span>
+
+            <i class="fas fa-chevron-down auth-language-chevron"></i>
+        </button>
+
+        <ul class="dropdown-menu dropdown-menu-end auth-language-menu">
+            <li>
+                <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" name="culture" value="tr-TR" />
+                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+                    <button type="submit"
+                            class="dropdown-item auth-language-item @(isTurkishCulture ? "active" : "")">
+                        <span class="auth-language-code">TR</span>
+                        <span class="auth-language-name">Türkçe</span>
+                    </button>
+                </form>
+            </li>
+
+            <li>
+                <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" name="culture" value="en-US" />
+                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+                    <button type="submit"
+                            class="dropdown-item auth-language-item @(isEnglishCulture ? "active" : "")">
+                        <span class="auth-language-code">GB</span>
+                        <span class="auth-language-name">English</span>
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </div>
+
+    <a href="/" class="auth-close-link">
+        <i class="fas fa-times"></i>
+        <span>Kapat</span>
+    </a>
+</div>
