@@ -223,15 +223,39 @@
         ?? Context.Session.GetString("SelectedConferenceSlug")
         ?? "";
 
-        var isAdmin = User.IsInRole("Admin") || User.IsInRole("Organizator");
+        var isSuperAdmin = User.IsInRole("SuperAdmin");
+        var isAdmin = User.IsInRole("Admin");
+        var isReferee = User.IsInRole("Referee");
 
-        var panelUrl = isAdmin
-        ? (!string.IsNullOrWhiteSpace(slug) ? $"/{slug}/Admin/Assignment" : "/Admin/Assignment")
-        : (!string.IsNullOrWhiteSpace(slug) ? $"/{slug}/Dashboard" : "/Dashboard");
+        string panelUrl;
+        string panelText;
 
-        var panelText = isAdmin
-        ? L("ManagementPanel", "Yönetim Paneli")
-        : L("MyPanel", "Panelim");
+        if (isSuperAdmin)
+        {
+            panelUrl = "/Dashboard/SuperAdmin";
+            panelText = L("SystemPanel", "Sistem Paneli");
+        }
+        else if (isAdmin)
+        {
+            panelUrl = "/Admin/Conferences";
+            panelText = L("ManagementPanel", "Yönetim Paneli");
+        }
+        else if (isReferee)
+        {
+            panelUrl = !string.IsNullOrWhiteSpace(slug)
+            ? $"/{slug}/Dashboard"
+            : "/Dashboard";
+
+            panelText = L("RefereePanel", "Hakem Panelim");
+        }
+        else
+        {
+            panelUrl = !string.IsNullOrWhiteSpace(slug)
+            ? $"/{slug}/Dashboard"
+            : "/Dashboard";
+
+            panelText = L("MyPanel", "Panelim");
+        }
 
         var firstLetter = !string.IsNullOrWhiteSpace(displayName)
         ? displayName.Substring(0, 1).ToUpper()

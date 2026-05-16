@@ -1,5 +1,6 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
+using AntAbstract.Web.Models.ViewModels.Admin.Tenants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -8,12 +9,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SuperAdmin")]
     [Route("Tenants/{action=Index}/{id?}")]
     [Route("Admin/Tenants/{action=Index}/{id?}")]
     public class TenantsController : Controller
@@ -35,130 +37,300 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _localizer = localizer;
         }
 
+        private string T(string key, string fallback)
+        {
+            var value = _localizer[key];
+
+            return value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
+                ? fallback
+                : value.Value;
+        }
+
+        private static string NormalizeSlug(string? slug)
+        {
+            if (string.IsNullOrWhiteSpace(slug))
+            {
+                return "";
+            }
+
+            var text = slug.Trim().ToLowerInvariant();
+
+            text = text
+                .Replace("ş", "s")
+                .Replace("ı", "i")
+                .Replace("ğ", "g")
+                .Replace("ü", "u")
+                .Replace("ö", "o")
+                .Replace("ç", "c");
+
+            text = Regex.Replace(text, @"[^a-z0-9\s-]", "");
+            text = Regex.Replace(text, @"\s+", "-").Trim('-');
+
+            return text;
+        }
+
+        private static bool IsValidSlug(string slug)
+        {
+            return Regex.IsMatch(slug, @"^[a-z0-9]+(?:-[a-z0-9]+)*$");
+        }
+
+        private async Task FillSelectListsAsync(
+            Guid? selectedScientificFieldId = null,
+            Guid? selectedCongressTypeId = null)
+        {
+            var scientificFields = await _context.ScientificFields
+                .AsNoTracking()
+                .OrderBy(s => s.Name)
+                .ToListAsync();
+
+            var congressTypes = await _context.CongressTypes
+                .AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+
+            ViewBag.ScientificFieldId = new SelectList(
+                scientificFields,
+                "Id",
+                "Name",
+                selectedScientificFieldId);
+
+            ViewBag.CongressTypeId = new SelectList(
+                congressTypes,
+                "Id",
+                "Name",
+                selectedCongressTypeId);
+        }
+
         public async Task<IActionResult> Index()
         {
-            var tenants = _context.Tenants
+            var tenants = await _context.Tenants
+                .AsNoTracking()
                 .Include(t => t.ScientificField)
-                .Include(t => t.CongressType);
+                .Include(t => t.CongressType)
+                .OrderBy(t => t.Name)
+                .ToListAsync();
 
-            return View(await tenants.ToListAsync());
+            return View(tenants);
         }
 
         public async Task<IActionResult> Details(Guid? id)
         {
-            if (id == null) return NotFound();
+            if (!id.HasValue || id.Value == Guid.Empty)
+            {
+                return NotFound();
+            }
 
             var tenant = await _context.Tenants
+                .AsNoTracking()
                 .Include(t => t.ScientificField)
                 .Include(t => t.CongressType)
-                .FirstOrDefaultAsync(m => m.Id == id);
+                .Include(t => t.Conferences)
+                .FirstOrDefaultAsync(t => t.Id == id.Value);
 
-            if (tenant == null) return NotFound();
+            if (tenant == null)
+            {
+                return NotFound();
+            }
 
             return View(tenant);
         }
 
-        public IActionResult Create()
+        [HttpGet]
+        public async Task<IActionResult> Create()
         {
-            ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields.OrderBy(s => s.Name), "Id", "Name");
-            ViewBag.CongressTypeId = new SelectList(_context.CongressTypes.OrderBy(c => c.Name), "Id", "Name");
+            await FillSelectListsAsync();
+
             return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Slug,LogoUrl,ScientificFieldId,CongressTypeId")] Tenant tenant)
+        public async Task<IActionResult> Create(
+            [Bind("Name,Slug,LogoUrl,ScientificFieldId,CongressTypeId")] Tenant tenant)
         {
             ModelState.Remove("Conferences");
             ModelState.Remove("Users");
             ModelState.Remove("ScientificField");
             ModelState.Remove("CongressType");
 
-            if (ModelState.IsValid)
+            tenant.Slug = NormalizeSlug(tenant.Slug);
+
+            if (string.IsNullOrWhiteSpace(tenant.Name))
             {
-                var slugExists = await _context.Tenants.AnyAsync(x => x.Slug.ToLower() == tenant.Slug.ToLower());
-                if (slugExists)
-                {
-                    ModelState.AddModelError("Slug", _localizer["Error_SlugAlreadyExists"].Value);
-                }
-                else
-                {
-                    tenant.Id = Guid.NewGuid();
-                    _context.Add(tenant);
-                    await _context.SaveChangesAsync();
-                    TempData["SuccessMessage"] = _localizer["Success_TenantCreated"].Value;
-                    return RedirectToAction(nameof(Index));
-                }
+                ModelState.AddModelError(
+                    nameof(tenant.Name),
+                    T("Error_NameRequired", "Kurum adı zorunludur."));
             }
 
-            ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields.OrderBy(s => s.Name), "Id", "Name", tenant.ScientificFieldId);
-            ViewBag.CongressTypeId = new SelectList(_context.CongressTypes.OrderBy(c => c.Name), "Id", "Name", tenant.CongressTypeId);
-            return View(tenant);
+            if (string.IsNullOrWhiteSpace(tenant.Slug))
+            {
+                ModelState.AddModelError(
+                    nameof(tenant.Slug),
+                    T("Error_SlugRequired", "Slug zorunludur."));
+            }
+            else if (!IsValidSlug(tenant.Slug))
+            {
+                ModelState.AddModelError(
+                    nameof(tenant.Slug),
+                    T("Error_InvalidSlug", "Slug sadece küçük harf, rakam ve tire içerebilir."));
+            }
+
+            var slugExists = await _context.Tenants
+                .AsNoTracking()
+                .AnyAsync(x => x.Slug.ToLower() == tenant.Slug.ToLower());
+
+            if (slugExists)
+            {
+                ModelState.AddModelError(
+                    nameof(tenant.Slug),
+                    T("Error_SlugAlreadyExists", "Bu slug zaten kullanılıyor."));
+            }
+
+            if (!ModelState.IsValid)
+            {
+                await FillSelectListsAsync(
+                    tenant.ScientificFieldId,
+                    tenant.CongressTypeId);
+
+                return View(tenant);
+            }
+
+            tenant.Id = Guid.NewGuid();
+
+            _context.Tenants.Add(tenant);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = T(
+                "Success_TenantCreated",
+                "Kurum başarıyla oluşturuldu.");
+
+            return RedirectToAction(nameof(Index));
         }
 
+        [HttpGet]
         public async Task<IActionResult> Edit(Guid? id)
         {
-            if (id == null) return NotFound();
+            if (!id.HasValue || id.Value == Guid.Empty)
+            {
+                return NotFound();
+            }
 
-            var tenant = await _context.Tenants.FindAsync(id);
-            if (tenant == null) return NotFound();
+            var tenant = await _context.Tenants
+                .FirstOrDefaultAsync(x => x.Id == id.Value);
 
-            ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields.OrderBy(s => s.Name), "Id", "Name", tenant.ScientificFieldId);
-            ViewBag.CongressTypeId = new SelectList(_context.CongressTypes.OrderBy(c => c.Name), "Id", "Name", tenant.CongressTypeId);
+            if (tenant == null)
+            {
+                return NotFound();
+            }
+
+            await FillSelectListsAsync(
+                tenant.ScientificFieldId,
+                tenant.CongressTypeId);
+
             return View(tenant);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name,Slug,LogoUrl,ScientificFieldId,CongressTypeId")] Tenant tenant)
+        public async Task<IActionResult> Edit(
+            Guid id,
+            [Bind("Id,Name,Slug,LogoUrl,ScientificFieldId,CongressTypeId")] Tenant tenant)
         {
-            if (id != tenant.Id) return NotFound();
+            if (id != tenant.Id)
+            {
+                return NotFound();
+            }
 
             ModelState.Remove("Conferences");
             ModelState.Remove("Users");
             ModelState.Remove("ScientificField");
             ModelState.Remove("CongressType");
 
-            if (ModelState.IsValid)
-            {
-                var slugExists = await _context.Tenants.AnyAsync(x => x.Slug.ToLower() == tenant.Slug.ToLower() && x.Id != tenant.Id);
-                if (slugExists)
-                {
-                    ModelState.AddModelError("Slug", _localizer["Error_SlugAlreadyExists"].Value);
-                }
-                else
-                {
-                    try
-                    {
-                        _context.Update(tenant);
-                        await _context.SaveChangesAsync();
-                        TempData["SuccessMessage"] = _localizer["Success_TenantUpdated"].Value;
-                    }
-                    catch (DbUpdateConcurrencyException)
-                    {
-                        if (!TenantExists(tenant.Id)) return NotFound();
-                        else throw;
-                    }
+            tenant.Slug = NormalizeSlug(tenant.Slug);
 
-                    return RedirectToAction(nameof(Index));
-                }
+            if (string.IsNullOrWhiteSpace(tenant.Name))
+            {
+                ModelState.AddModelError(
+                    nameof(tenant.Name),
+                    T("Error_NameRequired", "Kurum adı zorunludur."));
             }
 
-            ViewBag.ScientificFieldId = new SelectList(_context.ScientificFields.OrderBy(s => s.Name), "Id", "Name", tenant.ScientificFieldId);
-            ViewBag.CongressTypeId = new SelectList(_context.CongressTypes.OrderBy(c => c.Name), "Id", "Name", tenant.CongressTypeId);
-            return View(tenant);
+            if (string.IsNullOrWhiteSpace(tenant.Slug))
+            {
+                ModelState.AddModelError(
+                    nameof(tenant.Slug),
+                    T("Error_SlugRequired", "Slug zorunludur."));
+            }
+            else if (!IsValidSlug(tenant.Slug))
+            {
+                ModelState.AddModelError(
+                    nameof(tenant.Slug),
+                    T("Error_InvalidSlug", "Slug sadece küçük harf, rakam ve tire içerebilir."));
+            }
+
+            var slugExists = await _context.Tenants
+                .AsNoTracking()
+                .AnyAsync(x =>
+                    x.Slug.ToLower() == tenant.Slug.ToLower() &&
+                    x.Id != tenant.Id);
+
+            if (slugExists)
+            {
+                ModelState.AddModelError(
+                    nameof(tenant.Slug),
+                    T("Error_SlugAlreadyExists", "Bu slug zaten kullanılıyor."));
+            }
+
+            if (!ModelState.IsValid)
+            {
+                await FillSelectListsAsync(
+                    tenant.ScientificFieldId,
+                    tenant.CongressTypeId);
+
+                return View(tenant);
+            }
+
+            var existingTenant = await _context.Tenants
+                .FirstOrDefaultAsync(x => x.Id == tenant.Id);
+
+            if (existingTenant == null)
+            {
+                return NotFound();
+            }
+
+            existingTenant.Name = tenant.Name;
+            existingTenant.Slug = tenant.Slug;
+            existingTenant.LogoUrl = tenant.LogoUrl;
+            existingTenant.ScientificFieldId = tenant.ScientificFieldId;
+            existingTenant.CongressTypeId = tenant.CongressTypeId;
+
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = T(
+                "Success_TenantUpdated",
+                "Kurum başarıyla güncellendi.");
+
+            return RedirectToAction(nameof(Index));
         }
 
+        [HttpGet]
         public async Task<IActionResult> Delete(Guid? id)
         {
-            if (id == null) return NotFound();
+            if (!id.HasValue || id.Value == Guid.Empty)
+            {
+                return NotFound();
+            }
 
             var tenant = await _context.Tenants
+                .AsNoTracking()
                 .Include(t => t.ScientificField)
                 .Include(t => t.CongressType)
-                .FirstOrDefaultAsync(m => m.Id == id);
+                .FirstOrDefaultAsync(t => t.Id == id.Value);
 
-            if (tenant == null) return NotFound();
+            if (tenant == null)
+            {
+                return NotFound();
+            }
 
             return View(tenant);
         }
@@ -167,7 +339,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var tenant = await _context.Tenants.FindAsync(id);
+            var tenant = await _context.Tenants
+                .FirstOrDefaultAsync(x => x.Id == id);
 
             if (tenant == null)
             {
@@ -185,8 +358,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (hasConferences || hasUsers || hasPageBlocks)
             {
-                TempData["ErrorMessage"] =
-                    "Bu kuruma bağlı kongre, kullanıcı veya sayfa içerikleri olduğu için silinemez. Önce bağlı kayıtları temizleyin.";
+                TempData["ErrorMessage"] = T(
+                    "Error_TenantHasDependencies",
+                    "Bu kuruma bağlı kongre, kullanıcı veya sayfa içerikleri olduğu için silinemez. Önce bağlı kayıtları temizleyin.");
 
                 return RedirectToAction(nameof(Index));
             }
@@ -194,23 +368,31 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _context.Tenants.Remove(tenant);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = _localizer["Success_TenantDeleted"].Value;
+            TempData["SuccessMessage"] = T(
+                "Success_TenantDeleted",
+                "Kurum başarıyla silindi.");
 
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool TenantExists(Guid id)
-        {
-            return _context.Tenants.Any(e => e.Id == id);
         }
 
         [HttpGet]
         public async Task<IActionResult> AssignManager(Guid id)
         {
-            var tenant = await _context.Tenants.FindAsync(id);
-            if (tenant == null) return NotFound();
+            if (id == Guid.Empty)
+            {
+                return NotFound();
+            }
 
-            var model = new AntAbstract.Web.Models.ViewModels.Admin.Tenants.TenantAssignManagerViewModel
+            var tenant = await _context.Tenants
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (tenant == null)
+            {
+                return NotFound();
+            }
+
+            var model = new TenantAssignManagerViewModel
             {
                 TenantId = tenant.Id,
                 TenantName = tenant.Name
@@ -221,22 +403,35 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AssignManager(AntAbstract.Web.Models.ViewModels.Admin.Tenants.TenantAssignManagerViewModel model)
+        public async Task<IActionResult> AssignManager(TenantAssignManagerViewModel model)
         {
-            if (!ModelState.IsValid) return View(model);
-
-            var tenant = await _context.Tenants.FindAsync(model.TenantId);
-            if (tenant == null) return NotFound();
-
-            var existingUser = await _userManager.FindByEmailAsync(model.Email);
-            if (existingUser != null)
+            if (!ModelState.IsValid)
             {
-                ModelState.AddModelError("Email", _localizer["Error_EmailAlreadyRegistered"].Value);
-                model.TenantName = tenant.Name;
                 return View(model);
             }
 
-            var user = new AppUser
+            var tenant = await _context.Tenants
+                .FirstOrDefaultAsync(x => x.Id == model.TenantId);
+
+            if (tenant == null)
+            {
+                return NotFound();
+            }
+
+            var existingUser = await _userManager.FindByEmailAsync(model.Email);
+
+            if (existingUser != null)
+            {
+                ModelState.AddModelError(
+                    nameof(model.Email),
+                    T("Error_EmailAlreadyRegistered", "Bu e-posta adresiyle kayıtlı bir kullanıcı zaten var."));
+
+                model.TenantName = tenant.Name;
+
+                return View(model);
+            }
+
+            var adminUser = new AppUser
             {
                 UserName = model.Email,
                 Email = model.Email,
@@ -246,70 +441,53 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 EmailConfirmed = true
             };
 
-            var result = await _userManager.CreateAsync(user, model.Password);
+            var createResult = await _userManager.CreateAsync(adminUser, model.Password);
 
-            if (result.Succeeded)
+            if (!createResult.Succeeded)
             {
-                if (!await _roleManager.RoleExistsAsync("Organizator"))
+                foreach (var error in createResult.Errors)
                 {
-                    await _roleManager.CreateAsync(new IdentityRole("Organizator"));
+                    ModelState.AddModelError(string.Empty, error.Description);
                 }
 
-                await _userManager.AddToRoleAsync(user, "Organizator");
+                model.TenantName = tenant.Name;
 
-                TempData["SuccessMessage"] = _localizer["Success_ManagerAssigned", tenant.Name, model.FirstName, model.LastName].Value;
-                return RedirectToAction(nameof(Index));
+                return View(model);
             }
 
-            foreach (var error in result.Errors)
+            if (!await _roleManager.RoleExistsAsync("Admin"))
             {
-                ModelState.AddModelError(string.Empty, error.Description);
+                await _roleManager.CreateAsync(new IdentityRole("Admin"));
             }
 
-            model.TenantName = tenant.Name;
-            return View(model);
+            await _userManager.AddToRoleAsync(adminUser, "Admin");
+
+            TempData["SuccessMessage"] = T(
+                "Success_ManagerAssigned",
+                $"'{tenant.Name}' kurumuna {model.FirstName} {model.LastName} adlı admin atandı.");
+
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpGet]
-        public async Task<IActionResult> AddConference(Guid id)
+        public IActionResult AddConference(Guid id)
         {
-            var tenant = await _context.Tenants.FindAsync(id);
-            if (tenant == null) return NotFound();
+            TempData["ErrorMessage"] = T(
+                "Error_ConferenceCreateFromTenantDisabled",
+                "Kongre oluşturma işlemi kurum admini tarafından Kongreler ekranından yapılmalıdır.");
 
-            ViewBag.TenantId = tenant.Id;
-            ViewBag.TenantName = tenant.Name;
-
-            var conference = new Conference { TenantId = tenant.Id };
-            return View(conference);
+            return RedirectToAction(nameof(Details), new { id });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddConference(Guid id, Conference conference)
+        public IActionResult AddConference(Guid id, Conference conference)
         {
-            var tenant = await _context.Tenants.FindAsync(id);
-            if (tenant == null) return NotFound();
+            TempData["ErrorMessage"] = T(
+                "Error_ConferenceCreateFromTenantDisabled",
+                "Kongre oluşturma işlemi kurum admini tarafından Kongreler ekranından yapılmalıdır.");
 
-            ModelState.Remove("Tenant");
-            ModelState.Remove("Sessions");
-            ModelState.Remove("Submissions");
-            ModelState.Remove("RegistrationTypes");
-
-            if (ModelState.IsValid)
-            {
-                conference.Id = Guid.NewGuid();
-                conference.TenantId = id;
-
-                _context.Conferences.Add(conference);
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = _localizer["Success_ConferenceAddedToTenant", tenant.Name].Value;
-                return RedirectToAction(nameof(Details), new { id = id });
-            }
-
-            ViewBag.TenantId = tenant.Id;
-            ViewBag.TenantName = tenant.Name;
-            return View(conference);
+            return RedirectToAction(nameof(Details), new { id });
         }
     }
 }

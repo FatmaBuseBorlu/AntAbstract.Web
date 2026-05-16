@@ -6,35 +6,79 @@
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
+
+    string GetRoleLabel(string role)
+    {
+        return role switch
+        {
+            "SuperAdmin" => L("Role_SuperAdmin", "Süper Admin"),
+            "Admin" => L("Role_Admin", "Admin"),
+            "Author" => L("Role_Author", "Yazar"),
+            "Listener" => L("Role_Listener", "Dinleyici"),
+            "Referee" => L("Role_Referee", "Hakem"),
+            _ => role
+        };
+    }
+
+    string GetRoleBadgeClass(string role)
+    {
+        return role switch
+        {
+            "SuperAdmin" => "bg-danger-subtle text-danger border-danger-subtle",
+            "Admin" => "bg-primary-subtle text-primary border-primary-subtle",
+            "Author" => "bg-info-subtle text-info border-info-subtle",
+            "Listener" => "bg-success-subtle text-success border-success-subtle",
+            "Referee" => "bg-warning-subtle text-warning border-warning-subtle",
+            _ => "bg-light text-dark border"
+        };
+    }
 }
 
 <div class="card border-0 shadow-sm mb-4 bg-white">
     <div class="card-body p-4 d-flex align-items-center justify-content-between">
         <div>
-            <h6 class="text-muted text-uppercase fw-bold small mb-1" style="font-size: 0.75rem; letter-spacing: 1px;">
-                @Localizer["SectionLabel"]
+            <h6 class="text-muted text-uppercase fw-bold small mb-1"
+                style="font-size: 0.75rem; letter-spacing: 1px;">
+                @L("SectionLabel", "Sistem Yönetimi")
             </h6>
-            <h4 class="fw-bold text-dark mb-0">@Localizer["PageHeading"]</h4>
+
+            <h4 class="fw-bold text-dark mb-0">
+                @L("PageHeading", "Kullanıcı Yönetimi")
+            </h4>
         </div>
+
         <div class="d-none d-md-block text-end">
             <div class="icon-shape bg-danger bg-opacity-10 text-danger rounded-circle p-3">
                 <i class="fas fa-users-cog fa-2x"></i>
             </div>
         </div>
     </div>
+
     <div class="card-footer border-0 py-1 bg-danger"></div>
 </div>
 
 @if (TempData["SuccessMessage"] != null)
 {
     <div class="alert alert-success border-0 shadow-sm">
-        <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+        <i class="fas fa-check-circle me-2"></i>
+        @TempData["SuccessMessage"]
     </div>
 }
+
 @if (TempData["ErrorMessage"] != null)
 {
     <div class="alert alert-danger border-0 shadow-sm">
-        <i class="fas fa-times-circle me-2"></i> @TempData["ErrorMessage"]
+        <i class="fas fa-times-circle me-2"></i>
+        @TempData["ErrorMessage"]
     </div>
 }
 
@@ -44,10 +88,21 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="bg-light text-muted small text-uppercase">
                     <tr>
-                        <th class="ps-4 py-3 border-0">@Localizer["TableHeaderUser"]</th>
-                        <th class="py-3 border-0">@Localizer["TableHeaderEmail"]</th>
-                        <th class="py-3 border-0">@Localizer["TableHeaderCurrentRoles"]</th>
-                        <th class="py-3 border-0 text-end pe-4">@Localizer["TableHeaderActions"]</th>
+                        <th class="ps-4 py-3 border-0">
+                            @L("TableHeaderUser", "Kullanıcı")
+                        </th>
+
+                        <th class="py-3 border-0">
+                            @L("TableHeaderEmail", "E-posta")
+                        </th>
+
+                        <th class="py-3 border-0">
+                            @L("TableHeaderCurrentRoles", "Mevcut Roller")
+                        </th>
+
+                        <th class="py-3 border-0 text-end pe-4">
+                            @L("TableHeaderActions", "İşlemler")
+                        </th>
                     </tr>
                 </thead>
 
@@ -56,45 +111,56 @@
                     {
                         foreach (var user in Model)
                         {
+                            var displayName = string.IsNullOrWhiteSpace(user.Name)
+                            ? L("UnnamedUser", "İsimsiz Kullanıcı")
+                            : user.Name;
+
+                            var firstLetter = string.IsNullOrWhiteSpace(displayName)
+                            ? "?"
+                            : displayName.Substring(0, 1).ToUpper();
+
                             <tr>
                                 <td class="ps-4 py-3">
                                     <div class="d-flex align-items-center">
-                                        <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center me-3 fw-bold" style="width: 40px; height: 40px; font-size:14px;">
-                                            @(string.IsNullOrWhiteSpace(user.Name) ? "?" : user.Name.Substring(0, 1).ToUpper())
+                                        <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center me-3 fw-bold"
+                                             style="width: 40px; height: 40px; font-size:14px;">
+                                            @firstLetter
                                         </div>
+
                                         <div>
-                                            <h6 class="mb-0 fw-bold text-dark">@user.Name</h6>
+                                            <h6 class="mb-0 fw-bold text-dark">
+                                                @displayName
+                                            </h6>
                                         </div>
                                     </div>
                                 </td>
 
-                                <td class="text-muted small">@user.Email</td>
+                                <td class="text-muted small">
+                                    @user.Email
+                                </td>
 
                                 <td>
                                     @if (user.Roles != null && user.Roles.Any())
                                     {
                                         foreach (var role in user.Roles)
                                         {
-                                            var localizedRole = role switch
-                                            {
-                                                "Admin" => Localizer["Role_Admin"].Value,
-                                                "Organizator" => Localizer["Role_Organizer"].Value,
-                                                "Author" => Localizer["Role_Author"].Value,
-                                                "Referee" => Localizer["Role_Referee"].Value,
-                                                _ => role
-                                            };
+                                            <span class="badge border me-1 mb-1 position-relative @GetRoleBadgeClass(role)">
+                                                @GetRoleLabel(role)
 
-                                            <span class="badge bg-light text-dark border me-1 position-relative">
-                                                @localizedRole
-
-                                                <form asp-area="Admin" asp-controller="Users" asp-action="RemoveRole" method="post" style="display:inline;">
+                                                <form asp-area="Admin"
+                                                      asp-controller="Users"
+                                                      asp-action="RemoveRole"
+                                                      method="post"
+                                                      style="display:inline;">
                                                     @Html.AntiForgeryToken()
+
                                                     <input type="hidden" name="userId" value="@user.UserId" />
                                                     <input type="hidden" name="roleName" value="@role" />
+
                                                     <button type="submit"
                                                             class="btn btn-link text-danger p-0 ms-2 text-decoration-none"
                                                             style="font-size: 10px; vertical-align: text-top;"
-                                                            title="@Localizer["RemoveRoleTitle"]">
+                                                            title="@L("RemoveRoleTitle", "Rolü kaldır")">
                                                         <i class="fas fa-times"></i>
                                                     </button>
                                                 </form>
@@ -113,33 +179,47 @@
                                        asp-action="ManageRoles"
                                        asp-route-userId="@user.UserId"
                                        class="btn btn-sm btn-outline-secondary me-2">
-                                        @Localizer["EditRolesButton"]
+                                        @L("EditRolesButton", "Rolleri Düzenle")
                                     </a>
 
                                     <div class="dropdown d-inline-block">
-                                        <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                            @Localizer["GrantRoleButton"]
+                                        <button class="btn btn-sm btn-outline-primary dropdown-toggle"
+                                                type="button"
+                                                data-bs-toggle="dropdown">
+                                            @L("GrantRoleButton", "Rol Ver")
                                         </button>
 
                                         <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                                             <li>
-                                                <form asp-area="Admin" asp-controller="Users" asp-action="AssignRole" method="post">
+                                                <form asp-area="Admin"
+                                                      asp-controller="Users"
+                                                      asp-action="AssignRole"
+                                                      method="post">
                                                     @Html.AntiForgeryToken()
+
                                                     <input type="hidden" name="userId" value="@user.UserId" />
-                                                    <input type="hidden" name="roleName" value="Referee" />
-                                                    <button type="submit" class="dropdown-item small">
-                                                        <i class="fas fa-gavel text-warning me-2"></i> @Localizer["MakeRefereeAction"]
+                                                    <input type="hidden" name="roleName" value="SuperAdmin" />
+
+                                                    <button type="submit" class="dropdown-item small text-danger fw-bold">
+                                                        <i class="fas fa-crown me-2"></i>
+                                                        @L("MakeSuperAdminAction", "Süper Admin Yap")
                                                     </button>
                                                 </form>
                                             </li>
 
                                             <li>
-                                                <form asp-area="Admin" asp-controller="Users" asp-action="AssignRole" method="post">
+                                                <form asp-area="Admin"
+                                                      asp-controller="Users"
+                                                      asp-action="AssignRole"
+                                                      method="post">
                                                     @Html.AntiForgeryToken()
+
                                                     <input type="hidden" name="userId" value="@user.UserId" />
-                                                    <input type="hidden" name="roleName" value="Author" />
-                                                    <button type="submit" class="dropdown-item small">
-                                                        <i class="fas fa-pen-nib text-primary me-2"></i> @Localizer["MakeAuthorAction"]
+                                                    <input type="hidden" name="roleName" value="Admin" />
+
+                                                    <button type="submit" class="dropdown-item small text-primary fw-bold">
+                                                        <i class="fas fa-shield-alt me-2"></i>
+                                                        @L("MakeAdminAction", "Admin Yap")
                                                     </button>
                                                 </form>
                                             </li>
@@ -147,12 +227,52 @@
                                             <li><hr class="dropdown-divider"></li>
 
                                             <li>
-                                                <form asp-area="Admin" asp-controller="Users" asp-action="AssignRole" method="post">
+                                                <form asp-area="Admin"
+                                                      asp-controller="Users"
+                                                      asp-action="AssignRole"
+                                                      method="post">
                                                     @Html.AntiForgeryToken()
+
                                                     <input type="hidden" name="userId" value="@user.UserId" />
-                                                    <input type="hidden" name="roleName" value="Admin" />
-                                                    <button type="submit" class="dropdown-item small text-danger fw-bold">
-                                                        <i class="fas fa-shield-alt me-2"></i> @Localizer["MakeAdminAction"]
+                                                    <input type="hidden" name="roleName" value="Author" />
+
+                                                    <button type="submit" class="dropdown-item small">
+                                                        <i class="fas fa-pen-nib text-info me-2"></i>
+                                                        @L("MakeAuthorAction", "Yazar Yap")
+                                                    </button>
+                                                </form>
+                                            </li>
+
+                                            <li>
+                                                <form asp-area="Admin"
+                                                      asp-controller="Users"
+                                                      asp-action="AssignRole"
+                                                      method="post">
+                                                    @Html.AntiForgeryToken()
+
+                                                    <input type="hidden" name="userId" value="@user.UserId" />
+                                                    <input type="hidden" name="roleName" value="Listener" />
+
+                                                    <button type="submit" class="dropdown-item small">
+                                                        <i class="fas fa-user-check text-success me-2"></i>
+                                                        @L("MakeListenerAction", "Dinleyici Yap")
+                                                    </button>
+                                                </form>
+                                            </li>
+
+                                            <li>
+                                                <form asp-area="Admin"
+                                                      asp-controller="Users"
+                                                      asp-action="AssignRole"
+                                                      method="post">
+                                                    @Html.AntiForgeryToken()
+
+                                                    <input type="hidden" name="userId" value="@user.UserId" />
+                                                    <input type="hidden" name="roleName" value="Referee" />
+
+                                                    <button type="submit" class="dropdown-item small">
+                                                        <i class="fas fa-gavel text-warning me-2"></i>
+                                                        @L("MakeRefereeAction", "Hakem Yap")
                                                     </button>
                                                 </form>
                                             </li>
@@ -166,12 +286,13 @@
                     {
                         <tr>
                             <td colspan="4" class="text-center py-5 text-muted">
-                                <p class="mb-0">@Localizer["EmptyMessage"]</p>
+                                <p class="mb-0">
+                                    @L("EmptyMessage", "Henüz kullanıcı bulunmuyor.")
+                                </p>
                             </td>
                         </tr>
                     }
                 </tbody>
-
             </table>
         </div>
     </div>

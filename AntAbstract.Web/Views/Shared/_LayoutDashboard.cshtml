@@ -23,15 +23,16 @@
         : $"https://ui-avatars.com/api/?name={user?.FirstName}+{user?.LastName}&background=00aeef&color=fff&size=128&bold=true";
 
     var displayName = user != null
-        ? $"{user.FirstName} {user.LastName}"
+        ? $"{user.FirstName} {user.LastName}".Trim()
         : User.Identity?.Name;
 
-    var isSuperAdmin = User.IsInRole("Admin");
-    var isOrganizator = User.IsInRole("Organizator");
-    var isManagementTeam = isSuperAdmin || isOrganizator;
-
+    var isSuperAdmin = User.IsInRole("SuperAdmin");
+    var isAdmin = User.IsInRole("Admin");
     var isAuthor = User.IsInRole("Author");
+    var isListener = User.IsInRole("Listener");
     var isReferee = User.IsInRole("Referee");
+
+    var isManagementTeam = isAdmin;
 
     string userRole = L("Role_User", "Kullanıcı");
 
@@ -39,9 +40,9 @@
     {
         userRole = L("Role_SuperAdmin", "Süper Admin");
     }
-    else if (isOrganizator)
+    else if (isAdmin)
     {
-        userRole = L("Role_Organizer", "Organizatör");
+        userRole = L("Role_Admin", "Admin");
     }
     else if (isReferee)
     {
@@ -50,6 +51,10 @@
     else if (isAuthor)
     {
         userRole = L("Role_Author", "Yazar");
+    }
+    else if (isListener)
+    {
+        userRole = L("Role_Listener", "Dinleyici");
     }
 
     var currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
@@ -74,7 +79,7 @@
         ? parsedId
         : null;
 
-    var hasSelectedConference = selectedConferenceId.HasValue;
+    var hasSelectedConference = selectedConferenceId.HasValue && !isSuperAdmin;
 
     string? selectedConferenceTitle = null;
 
@@ -85,9 +90,11 @@
 
     selectedConferenceTitle ??= Context.Session.GetString("SelectedConferenceTitle");
 
-    var dashboardUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Dashboard"
-        : $"/{slug}/Dashboard";
+    var dashboardUrl = isSuperAdmin
+        ? "/Dashboard/SuperAdmin"
+        : string.IsNullOrWhiteSpace(slug)
+            ? "/Dashboard"
+            : $"/{slug}/Dashboard";
 
     var dashboardMyConferencesUrl = string.IsNullOrWhiteSpace(slug)
         ? "/Dashboard/MyConferences"
@@ -191,9 +198,11 @@
         ? "/Admin/Website"
         : $"/{slug}/Admin/Website";
 
-    var headerBadgeText = Tc.Current?.Name;
+    var headerBadgeText = isSuperAdmin
+        ? L("Header_SystemManagement", "Sistem Yönetimi")
+        : Tc.Current?.Name;
 
-    if (string.IsNullOrWhiteSpace(headerBadgeText) && !string.IsNullOrWhiteSpace(slug))
+    if (!isSuperAdmin && string.IsNullOrWhiteSpace(headerBadgeText) && !string.IsNullOrWhiteSpace(slug))
     {
         headerBadgeText = slug;
     }
@@ -583,12 +592,41 @@
             <div class="menu-label">@L("Section_General", "Genel")</div>
 
             <a href="@dashboardUrl"
-               class="nav-link @(currentController == "Dashboard" && currentAction == "Index" ? "active" : "")">
+               class="nav-link @(currentController == "Dashboard" && (currentAction == "Index" || currentAction == "SuperAdmin") ? "active" : "")">
                 <i class="fas fa-home"></i>
                 @L("Dashboard_Home", "Ana Sayfa")
             </a>
 
-            @if (!isManagementTeam)
+            @if (isSuperAdmin)
+            {
+                <div class="menu-label text-info">@L("Section_GlobalSystem", "Global Sistem")</div>
+
+                <a href="/Admin/Tenants"
+                   class="nav-link @(currentController == "Tenants" ? "active" : "")">
+                    <i class="fas fa-building text-info"></i>
+                    @L("Global_Institutions", "Kurumlar")
+                </a>
+
+                <a href="/Admin/Users"
+                   class="nav-link @(currentController == "Users" ? "active" : "")">
+                    <i class="fas fa-users-cog text-danger"></i>
+                    @L("Management_Users", "Kullanıcılar")
+                </a>
+
+                <a href="/CentralVitrin/Index"
+                   class="nav-link @(currentController == "CentralVitrin" ? "active" : "")">
+                    <i class="fas fa-globe text-primary"></i>
+                    @L("Global_AllShowcases", "Tüm Vitrinler")
+                </a>
+
+                <a href="/Admin/SystemParameters"
+                   class="nav-link @(currentController == "SystemParameters" ? "active" : "")">
+                    <i class="fas fa-cogs text-info"></i>
+                    @L("Global_SystemParameters", "Sistem Parametreleri")
+                </a>
+            }
+
+            @if (!isSuperAdmin && !isManagementTeam)
             {
                 if (isReferee)
                 {
@@ -657,7 +695,10 @@
                             @L("Common_SelectConferenceBeforeSubmission", "Bildiri göndermek için önce kongre seç / kayıt ol")
                         </a>
                     }
+                }
 
+                if (isAuthor || isListener)
+                {
                     <div class="menu-label">@L("Section_Congress", "Kongre")</div>
 
                     @if (!hasSelectedConference)
@@ -693,6 +734,12 @@
                             <i class="fas fa-hotel text-warning"></i>
                             @L("Congress_Accommodation", "Konaklama")
                         </a>
+
+                        <a href="@certificatesIndexUrl"
+                           class="nav-link @(currentController == "Certificates" ? "active" : "")">
+                            <i class="fas fa-certificate text-success"></i>
+                            @L("Congress_Certificates", "Sertifikalarım")
+                        </a>
                     }
                 }
             }
@@ -718,13 +765,13 @@
                     <a href="@assignmentUrl"
                        class="nav-link @(currentController == "Assignment" ? "active" : "")">
                         <i class="fas fa-tasks text-info"></i>
-                        @L("Management_Assignment", "Atamalar")
+                        @L("Management_Assignment", "Hakem Atama")
                     </a>
 
                     <a href="@submissionsAdminUrl"
                        class="nav-link @(currentController == "Submissions" ? "active" : "")">
                         <i class="fas fa-file-alt text-primary"></i>
-                        @L("Management_AllApplications", "Tüm Başvurular")
+                        @L("Management_AllApplications", "Bildiri Yönetimi")
                     </a>
 
                     <a href="@decisionUrl"
@@ -738,21 +785,21 @@
                     <a href="@sessionUrl"
                        class="nav-link @(currentController == "Session" ? "active" : "")">
                         <i class="fas fa-microphone-alt text-success"></i>
-                        @L("Management_Session", "Oturumlar")
+                        @L("Management_Session", "Program / Oturumlar")
                     </a>
 
-                    <a href="@usersUrl"
-                       class="nav-link @(currentController == "Users" ? "active" : "")">
-                        <i class="fas fa-users-cog text-danger"></i>
-                        @L("Management_Users", "Kullanıcılar")
+                    <a href="@websiteAdminUrl"
+                       class="nav-link @(currentController == "Website" ? "active" : "")">
+                        <i class="fas fa-pen-to-square text-success"></i>
+                        @L("System_WebsiteManagement", "Website Yönetimi")
                     </a>
 
-                    <div class="menu-label text-primary">@L("Section_SystemSettings", "Sistem Ayarları")</div>
+                    <div class="menu-label text-primary">@L("Section_SystemSettings", "Kongre Ayarları")</div>
 
                     <a href="@conferencesUrl"
                        class="nav-link @(currentController == "Conferences" ? "active" : "")">
                         <i class="fas fa-sliders-h text-primary"></i>
-                        @L("System_ConferenceDefinitions", "Konferans Tanımları")
+                        @L("System_ConferenceDefinitions", "Kongre Tanımları")
                     </a>
 
                     <a href="@registrationsUrl"
@@ -772,15 +819,6 @@
                         <i class="fas fa-layer-group text-success"></i>
                         @L("System_ConferenceTopics", "Bildiri Konuları")
                     </a>
-
-                    @if (isSuperAdmin)
-                    {
-                        <a href="@websiteAdminUrl"
-                           class="nav-link @(currentController == "Website" ? "active" : "")">
-                            <i class="fas fa-pen-to-square text-success"></i>
-                            @L("System_WebsiteManagement", "Website Yönetimi")
-                        </a>
-                    }
                 }
                 else
                 {
@@ -791,43 +829,29 @@
                         <i class="fas fa-hand-pointer text-danger animate__animated animate__pulse animate__infinite"></i>
                         @L("Management_FirstStepSelectConference", "İlk Adım: Kongre Seç")
                     </a>
-                }
 
-                @if (isSuperAdmin)
-                {
-                    <div class="menu-label text-info">@L("Section_GlobalSystem", "Global Sistem")</div>
-
-                    <a href="/Admin/Tenants"
-                       class="nav-link @(currentController == "Tenants" ? "active" : "")">
-                        <i class="fas fa-building text-info"></i>
-                        @L("Global_Institutions", "Kurumlar")
-                    </a>
-
-                    <a href="/CentralVitrin/Index"
-                       class="nav-link @(currentController == "CentralVitrin" ? "active" : "")">
-                        <i class="fas fa-globe text-primary"></i>
-                        @L("Global_AllShowcases", "Tüm Vitrinler")
-                    </a>
-
-                    <a href="/Admin/SystemParameters"
-                       class="nav-link @(currentController == "SystemParameters" ? "active" : "")">
-                        <i class="fas fa-cogs text-info"></i>
-                        @L("Global_SystemParameters", "Sistem Parametreleri")
+                    <a href="@conferencesUrl"
+                       class="nav-link @(currentController == "Conferences" ? "active" : "")">
+                        <i class="fas fa-calendar-plus text-primary"></i>
+                        @L("Management_Conferences", "Kongrelerim / Kongre Oluştur")
                     </a>
                 }
             }
 
-            <div class="menu-label">@L("Section_Communication", "İletişim")</div>
+            @if (!isSuperAdmin)
+            {
+                <div class="menu-label">@L("Section_Communication", "İletişim")</div>
 
-            <a href="@messageIndexUrl"
-               class="nav-link @(currentController == "Message" ? "active" : "")">
-                <i class="fas fa-envelope text-warning"></i>
-                @L("Common_Messages", "Mesajlar")
-            </a>
+                <a href="@messageIndexUrl"
+                   class="nav-link @(currentController == "Message" ? "active" : "")">
+                    <i class="fas fa-envelope text-warning"></i>
+                    @L("Common_Messages", "Mesajlar")
+                </a>
+            }
 
             <div class="menu-label">@L("Section_Account", "Hesap")</div>
 
-            @if (hasSelectedConference && (isAuthor || isReferee || isManagementTeam))
+            @if (hasSelectedConference && (isAuthor || isListener || isReferee || isManagementTeam))
             {
                 <a href="@dashboardMyConferencesUrl"
                    class="nav-link @(currentController == "Dashboard" && currentAction == "MyConferences" ? "active" : "")">
@@ -926,12 +950,15 @@
                             </a>
                         </li>
 
-                        <li>
-                            <a class="dropdown-item rounded-2 py-2" href="@dashboardMyConferencesUrl">
-                                <i class="fas fa-exchange-alt me-2 text-muted"></i>
-                                @L("Dropdown_ConferenceSelection", "Kongre Seçimi")
-                            </a>
-                        </li>
+                        @if (!isSuperAdmin)
+                        {
+                            <li>
+                                <a class="dropdown-item rounded-2 py-2" href="@dashboardMyConferencesUrl">
+                                    <i class="fas fa-exchange-alt me-2 text-muted"></i>
+                                    @L("Dropdown_ConferenceSelection", "Kongre Seçimi")
+                                </a>
+                            </li>
+                        }
 
                         <li>
                             <hr class="dropdown-divider">

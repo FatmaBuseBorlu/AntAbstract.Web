@@ -13,12 +13,21 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Organizator")]
+    [Authorize(Roles = "SuperAdmin")]
     public class UsersController : Controller
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IStringLocalizer<UsersController> _localizer;
+
+        private static readonly string[] AllowedRoles =
+        {
+            "SuperAdmin",
+            "Admin",
+            "Author",
+            "Listener",
+            "Referee"
+        };
 
         public UsersController(
             UserManager<AppUser> userManager,
@@ -30,47 +39,63 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _localizer = localizer;
         }
 
+        private string T(string key, string fallback)
+        {
+            var value = _localizer[key];
+
+            return value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
+                ? fallback
+                : value.Value;
+        }
+
+        private static bool IsAllowedRole(string roleName)
+        {
+            return AllowedRoles.Contains(roleName, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private async Task EnsureBaseRolesAsync()
+        {
+            foreach (var roleName in AllowedRoles)
+            {
+                if (!await _roleManager.RoleExistsAsync(roleName))
+                {
+                    await _roleManager.CreateAsync(new IdentityRole(roleName));
+                }
+            }
+        }
+
         [HttpGet("/Admin/Users")]
         [HttpGet("/{slug}/Admin/Users")]
         public async Task<IActionResult> Index()
         {
-            await EnsureBaseRoles();
+            await EnsureBaseRolesAsync();
 
-            var currentUser = await _userManager.GetUserAsync(User);
-            var isAdmin = currentUser != null &&
-                          await _userManager.IsInRoleAsync(currentUser, "Admin");
-
-            var query = _userManager.Users
+            var users = await _userManager.Users
                 .AsNoTracking()
-                .AsQueryable();
+                .OrderBy(u => u.FirstName)
+                .ThenBy(u => u.LastName)
+                .ThenBy(u => u.Email)
+                .ToListAsync();
 
-            if (!isAdmin && currentUser?.TenantId != null)
-            {
-                query = query.Where(u => u.TenantId == currentUser.TenantId);
-            }
-            else if (!isAdmin && currentUser?.TenantId == null)
-            {
-                query = query.Where(u => false);
-            }
-
-            var users = await query.ToListAsync();
-
-            var vm = new List<UserListItemViewModel>();
+            var model = new List<UserListItemViewModel>();
 
             foreach (var user in users)
             {
                 var roles = await _userManager.GetRolesAsync(user);
 
-                vm.Add(new UserListItemViewModel
+                model.Add(new UserListItemViewModel
                 {
                     UserId = user.Id,
                     Email = user.Email,
                     Name = $"{user.FirstName} {user.LastName}".Trim(),
-                    Roles = roles ?? new List<string>()
+                    Roles = roles
+                        .Where(IsAllowedRole)
+                        .OrderBy(role => role)
+                        .ToList()
                 });
             }
 
-            return View(vm);
+            return View(model);
         }
 
         [HttpGet("/Admin/Users/ManageRoles")]
@@ -82,11 +107,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return NotFound();
             }
 
-            await EnsureBaseRoles();
-
-            var currentUser = await _userManager.GetUserAsync(User);
-            var isAdmin = currentUser != null &&
-                          await _userManager.IsInRoleAsync(currentUser, "Admin");
+            await EnsureBaseRolesAsync();
 
             var user = await _userManager.FindByIdAsync(userId);
 
@@ -95,48 +116,21 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return NotFound();
             }
 
-            if (!isAdmin && user.TenantId != currentUser?.TenantId)
-            {
-                TempData["ErrorMessage"] = _localizer["Error_UnauthorizedManageUser"].Value;
-                return RedirectToAction(nameof(Index));
-            }
-
-            var allRoles = await _roleManager.Roles
-                .AsNoTracking()
-                .OrderBy(x => x.Name)
-                .ToListAsync();
-
-            if (!isAdmin)
-            {
-                allRoles = allRoles
-                    .Where(r => r.Name != "Admin")
-                    .ToList();
-            }
-
             var userRoles = await _userManager.GetRolesAsync(user);
 
             var model = new UserWithRolesViewModel
             {
                 UserId = user.Id,
                 UserEmail = user.Email ?? "",
-                Roles = new List<UserWithRoleViewModel>()
+                Roles = AllowedRoles
+                    .OrderBy(role => role)
+                    .Select(role => new UserWithRoleViewModel
+                    {
+                        RoleName = role,
+                        IsSelected = userRoles.Contains(role, StringComparer.OrdinalIgnoreCase)
+                    })
+                    .ToList()
             };
-
-            foreach (var role in allRoles)
-            {
-                var roleName = role.Name ?? "";
-
-                if (string.IsNullOrWhiteSpace(roleName))
-                {
-                    continue;
-                }
-
-                model.Roles.Add(new UserWithRoleViewModel
-                {
-                    RoleName = roleName,
-                    IsSelected = userRoles != null && userRoles.Contains(roleName)
-                });
-            }
 
             return View(model);
         }
@@ -151,79 +145,98 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return BadRequest();
             }
 
+            await EnsureBaseRolesAsync();
+
             model.Roles ??= new List<UserWithRoleViewModel>();
 
-            var currentUser = await _userManager.GetUserAsync(User);
-            var isAdmin = currentUser != null &&
-                          await _userManager.IsInRoleAsync(currentUser, "Admin");
+            var targetUser = await _userManager.FindByIdAsync(model.UserId);
 
-            var user = await _userManager.FindByIdAsync(model.UserId);
-
-            if (user == null)
+            if (targetUser == null)
             {
                 return NotFound();
             }
 
-            if (!isAdmin && user.TenantId != currentUser?.TenantId)
+            var currentUser = await _userManager.GetUserAsync(User);
+
+            if (currentUser == null)
             {
-                TempData["ErrorMessage"] = _localizer["Error_UnauthorizedAction"].Value;
-                return RedirectToAction(nameof(Index));
+                return Challenge();
             }
 
-            var existingRoles = await _userManager.GetRolesAsync(user);
-            existingRoles ??= new List<string>();
+            var existingRoles = await _userManager.GetRolesAsync(targetUser);
 
             var selectedRoles = model.Roles
                 .Where(x => x.IsSelected && !string.IsNullOrWhiteSpace(x.RoleName))
                 .Select(x => x.RoleName.Trim())
+                .Where(IsAllowedRole)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            if (!isAdmin && selectedRoles.Contains("Admin", StringComparer.OrdinalIgnoreCase))
+            if (targetUser.Id == currentUser.Id &&
+                !selectedRoles.Contains("SuperAdmin", StringComparer.OrdinalIgnoreCase))
             {
-                selectedRoles.RemoveAll(r =>
-                    r.Equals("Admin", StringComparison.OrdinalIgnoreCase));
+                TempData["ErrorMessage"] = T(
+                    "Error_CannotRemoveOwnSuperAdminRole",
+                    "Kendi SuperAdmin rolünüzü kaldıramazsınız.");
+
+                model.UserEmail = targetUser.Email ?? "";
+                model.Roles = AllowedRoles
+                    .OrderBy(role => role)
+                    .Select(role => new UserWithRoleViewModel
+                    {
+                        RoleName = role,
+                        IsSelected = existingRoles.Contains(role, StringComparer.OrdinalIgnoreCase)
+                    })
+                    .ToList();
+
+                return View(model);
             }
 
-            var rolesToRemove = existingRoles
-                .Where(r => !selectedRoles.Contains(r, StringComparer.OrdinalIgnoreCase))
+            var existingAllowedRoles = existingRoles
+                .Where(IsAllowedRole)
+                .ToList();
+
+            var rolesToRemove = existingAllowedRoles
+                .Where(role => !selectedRoles.Contains(role, StringComparer.OrdinalIgnoreCase))
                 .ToList();
 
             var rolesToAdd = selectedRoles
-                .Where(r => !existingRoles.Contains(r, StringComparer.OrdinalIgnoreCase))
+                .Where(role => !existingAllowedRoles.Contains(role, StringComparer.OrdinalIgnoreCase))
                 .ToList();
 
-            if (rolesToRemove.Count > 0)
+            if (rolesToRemove.Any())
             {
-                var removeResult = await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+                var removeResult = await _userManager.RemoveFromRolesAsync(targetUser, rolesToRemove);
 
                 if (!removeResult.Succeeded)
                 {
-                    TempData["ErrorMessage"] = _localizer["Error_RemoveRoleFailed"].Value;
+                    TempData["ErrorMessage"] = T(
+                        "Error_RemoveRoleFailed",
+                        "Rol kaldırılırken bir hata oluştu.");
+
+                    model.UserEmail = targetUser.Email ?? "";
                     return View(model);
                 }
             }
 
-            if (rolesToAdd.Count > 0)
+            if (rolesToAdd.Any())
             {
-                foreach (var roleName in rolesToAdd)
-                {
-                    if (!await _roleManager.RoleExistsAsync(roleName))
-                    {
-                        await _roleManager.CreateAsync(new IdentityRole(roleName));
-                    }
-                }
-
-                var addResult = await _userManager.AddToRolesAsync(user, rolesToAdd);
+                var addResult = await _userManager.AddToRolesAsync(targetUser, rolesToAdd);
 
                 if (!addResult.Succeeded)
                 {
-                    TempData["ErrorMessage"] = _localizer["Error_AssignRoleFailed"].Value;
+                    TempData["ErrorMessage"] = T(
+                        "Error_AssignRoleFailed",
+                        "Rol atanırken bir hata oluştu.");
+
+                    model.UserEmail = targetUser.Email ?? "";
                     return View(model);
                 }
             }
 
-            TempData["SuccessMessage"] = _localizer["Success_RolesUpdated"].Value;
+            TempData["SuccessMessage"] = T(
+                "Success_RolesUpdated",
+                "Kullanıcı rolleri başarıyla güncellendi.");
 
             return RedirectToAction(nameof(Index));
         }
@@ -235,57 +248,54 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(roleName))
             {
-                TempData["ErrorMessage"] = _localizer["Error_MissingUserOrRole"].Value;
+                TempData["ErrorMessage"] = T(
+                    "Error_MissingUserOrRole",
+                    "Kullanıcı veya rol bilgisi eksik.");
+
                 return RedirectToAction(nameof(Index));
             }
 
-            var currentUser = await _userManager.GetUserAsync(User);
-            var isAdmin = currentUser != null &&
-                          await _userManager.IsInRoleAsync(currentUser, "Admin");
+            roleName = roleName.Trim();
 
-            var user = await _userManager.FindByIdAsync(userId);
-
-            if (user == null)
+            if (!IsAllowedRole(roleName))
             {
-                TempData["ErrorMessage"] = _localizer["Error_UserNotFound"].Value;
+                TempData["ErrorMessage"] = T(
+                    "Error_InvalidRole",
+                    "Geçersiz rol seçimi.");
+
                 return RedirectToAction(nameof(Index));
             }
 
-            if (!isAdmin && user.TenantId != currentUser?.TenantId)
+            await EnsureBaseRolesAsync();
+
+            var targetUser = await _userManager.FindByIdAsync(userId);
+
+            if (targetUser == null)
             {
-                TempData["ErrorMessage"] = _localizer["Error_UnauthorizedAction"].Value;
+                TempData["ErrorMessage"] = T(
+                    "Error_UserNotFound",
+                    "Kullanıcı bulunamadı.");
+
                 return RedirectToAction(nameof(Index));
             }
 
-            if (!isAdmin && roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            if (!await _userManager.IsInRoleAsync(targetUser, roleName))
             {
-                TempData["ErrorMessage"] = _localizer["Error_CannotAssignSuperRole"].Value;
-                return RedirectToAction(nameof(Index));
-            }
-
-            if (!await _roleManager.RoleExistsAsync(roleName))
-            {
-                var createRoleResult = await _roleManager.CreateAsync(new IdentityRole(roleName));
-
-                if (!createRoleResult.Succeeded)
-                {
-                    TempData["ErrorMessage"] = _localizer["Error_RoleCouldNotBeCreated"].Value;
-                    return RedirectToAction(nameof(Index));
-                }
-            }
-
-            if (!await _userManager.IsInRoleAsync(user, roleName))
-            {
-                var addResult = await _userManager.AddToRoleAsync(user, roleName);
+                var addResult = await _userManager.AddToRoleAsync(targetUser, roleName);
 
                 if (!addResult.Succeeded)
                 {
-                    TempData["ErrorMessage"] = _localizer["Error_RoleAssignmentFailed"].Value;
+                    TempData["ErrorMessage"] = T(
+                        "Error_RoleAssignmentFailed",
+                        "Rol atanırken bir hata oluştu.");
+
                     return RedirectToAction(nameof(Index));
                 }
             }
 
-            TempData["SuccessMessage"] = _localizer["Success_RoleAssigned"].Value;
+            TempData["SuccessMessage"] = T(
+                "Success_RoleAssigned",
+                "Rol başarıyla atandı.");
 
             return RedirectToAction(nameof(Index));
         }
@@ -297,67 +307,71 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(roleName))
             {
-                TempData["ErrorMessage"] = _localizer["Error_MissingUserOrRole"].Value;
+                TempData["ErrorMessage"] = T(
+                    "Error_MissingUserOrRole",
+                    "Kullanıcı veya rol bilgisi eksik.");
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            roleName = roleName.Trim();
+
+            if (!IsAllowedRole(roleName))
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_InvalidRole",
+                    "Geçersiz rol seçimi.");
+
                 return RedirectToAction(nameof(Index));
             }
 
             var currentUser = await _userManager.GetUserAsync(User);
-            var isAdmin = currentUser != null &&
-                          await _userManager.IsInRoleAsync(currentUser, "Admin");
 
-            var user = await _userManager.FindByIdAsync(userId);
-
-            if (user == null)
+            if (currentUser == null)
             {
-                TempData["ErrorMessage"] = _localizer["Error_UserNotFound"].Value;
+                return Challenge();
+            }
+
+            var targetUser = await _userManager.FindByIdAsync(userId);
+
+            if (targetUser == null)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_UserNotFound",
+                    "Kullanıcı bulunamadı.");
+
                 return RedirectToAction(nameof(Index));
             }
 
-            if (!isAdmin && user.TenantId != currentUser?.TenantId)
+            if (targetUser.Id == currentUser.Id &&
+                roleName.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase))
             {
-                TempData["ErrorMessage"] = _localizer["Error_UnauthorizedAction"].Value;
+                TempData["ErrorMessage"] = T(
+                    "Error_CannotRemoveOwnSuperAdminRole",
+                    "Kendi SuperAdmin rolünüzü kaldıramazsınız.");
+
                 return RedirectToAction(nameof(Index));
             }
 
-            if (!isAdmin && roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            if (await _userManager.IsInRoleAsync(targetUser, roleName))
             {
-                TempData["ErrorMessage"] = _localizer["Error_CannotRemoveSuperRole"].Value;
-                return RedirectToAction(nameof(Index));
-            }
-
-            if (await _userManager.IsInRoleAsync(user, roleName))
-            {
-                var removeResult = await _userManager.RemoveFromRoleAsync(user, roleName);
+                var removeResult = await _userManager.RemoveFromRoleAsync(targetUser, roleName);
 
                 if (!removeResult.Succeeded)
                 {
-                    TempData["ErrorMessage"] = _localizer["Error_RoleRemovalFailed"].Value;
+                    TempData["ErrorMessage"] = T(
+                        "Error_RoleRemovalFailed",
+                        "Rol kaldırılırken bir hata oluştu.");
+
                     return RedirectToAction(nameof(Index));
                 }
             }
 
-            TempData["SuccessMessage"] = _localizer["Success_RoleRemoved"].Value;
+            TempData["SuccessMessage"] = T(
+                "Success_RoleRemoved",
+                "Rol başarıyla kaldırıldı.");
 
             return RedirectToAction(nameof(Index));
-        }
-
-        private async Task EnsureBaseRoles()
-        {
-            var baseRoles = new[]
-            {
-                "Admin",
-                "Organizator",
-                "Author",
-                "Referee"
-            };
-
-            foreach (var role in baseRoles)
-            {
-                if (!await _roleManager.RoleExistsAsync(role))
-                {
-                    await _roleManager.CreateAsync(new IdentityRole(role));
-                }
-            }
         }
     }
 }

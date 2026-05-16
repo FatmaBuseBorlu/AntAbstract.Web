@@ -1,6 +1,7 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Identity;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace AntAbstract.Infrastructure.Data
@@ -66,20 +67,15 @@ namespace AntAbstract.Infrastructure.Data
 
             await userManager.UpdateAsync(superAdmin);
 
-            var obsoleteRoles = new[]
-            {
-                "Admin",
-                "Organizator",
-                "Editor",
-                "Reviewer"
-            };
+            var currentRoles = await userManager.GetRolesAsync(superAdmin);
 
-            foreach (var obsoleteRole in obsoleteRoles)
+            var rolesToRemove = currentRoles
+                .Where(role => role != "SuperAdmin")
+                .ToList();
+
+            if (rolesToRemove.Any())
             {
-                if (await userManager.IsInRoleAsync(superAdmin, obsoleteRole))
-                {
-                    await userManager.RemoveFromRoleAsync(superAdmin, obsoleteRole);
-                }
+                await userManager.RemoveFromRolesAsync(superAdmin, rolesToRemove);
             }
 
             if (!await userManager.IsInRoleAsync(superAdmin, "SuperAdmin"))

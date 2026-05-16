@@ -6,66 +6,189 @@
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
+
+    string GetRoleLabel(string role)
+    {
+        return role switch
+        {
+            "SuperAdmin" => L("Role_SuperAdmin", "Süper Admin"),
+            "Admin" => L("Role_Admin", "Admin"),
+            "Author" => L("Role_Author", "Yazar"),
+            "Listener" => L("Role_Listener", "Dinleyici"),
+            "Referee" => L("Role_Referee", "Hakem"),
+            _ => role
+        };
+    }
+
+    string GetRoleDescription(string role)
+    {
+        return role switch
+        {
+            "SuperAdmin" => L("RoleDesc_SuperAdmin", "Sistem genelini, kurumları ve kullanıcı rollerini yönetir."),
+            "Admin" => L("RoleDesc_Admin", "Kendi kurumuna bağlı kongreleri ve operasyonları yönetir."),
+            "Author" => L("RoleDesc_Author", "Bildiri gönderir ve kendi başvurularını takip eder."),
+            "Listener" => L("RoleDesc_Listener", "Kongreye katılımcı olarak kayıt olur ve katılım işlemlerini takip eder."),
+            "Referee" => L("RoleDesc_Referee", "Kendisine atanan bildirileri değerlendirir."),
+            _ => ""
+        };
+    }
+
+    string GetRoleIcon(string role)
+    {
+        return role switch
+        {
+            "SuperAdmin" => "fas fa-crown text-danger",
+            "Admin" => "fas fa-shield-alt text-primary",
+            "Author" => "fas fa-pen-nib text-info",
+            "Listener" => "fas fa-user-check text-success",
+            "Referee" => "fas fa-gavel text-warning",
+            _ => "fas fa-user-tag text-secondary"
+        };
+    }
 }
 
 <div class="container-fluid">
 
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h4 class="fw-bold mb-0">@Localizer["PageHeading"]</h4>
-            <small class="text-muted">@Localizer["UserLabel"] <strong>@Model.UserEmail</strong></small>
+    <div class="card border-0 shadow-sm mb-4 bg-white">
+        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+            <div>
+                <h6 class="text-muted text-uppercase fw-bold small mb-1"
+                    style="font-size: 0.75rem; letter-spacing: 1px;">
+                    @L("SectionLabel", "Kullanıcı Yönetimi")
+                </h6>
+
+                <h4 class="fw-bold text-dark mb-1">
+                    @L("PageHeading", "Kullanıcı Rollerini Düzenle")
+                </h4>
+
+                <small class="text-muted">
+                    @L("UserLabel", "Kullanıcı:")
+                    <strong>@Model.UserEmail</strong>
+                </small>
+            </div>
+
+            <a asp-area="Admin"
+               asp-controller="Users"
+               asp-action="Index"
+               class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                <i class="fas fa-arrow-left me-1"></i>
+                @L("BackToListButton", "Listeye Dön")
+            </a>
         </div>
 
-        <a asp-area="Admin" asp-controller="Users" asp-action="Index" class="btn btn-outline-secondary btn-sm">
-            @Localizer["BackToListButton"]
-        </a>
+        <div class="card-footer border-0 py-1 bg-primary"></div>
     </div>
 
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger border-0">@TempData["ErrorMessage"]</div>
+        <div class="alert alert-danger border-0 shadow-sm">
+            <i class="fas fa-times-circle me-2"></i>
+            @TempData["ErrorMessage"]
+        </div>
     }
 
-    <form asp-area="Admin" asp-controller="Users" asp-action="ManageRoles" method="post">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    <form asp-area="Admin"
+          asp-controller="Users"
+          asp-action="ManageRoles"
+          method="post">
+
         @Html.AntiForgeryToken()
+
         <input asp-for="UserId" type="hidden" />
+        <input asp-for="UserEmail" type="hidden" />
 
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
 
-                <div class="row row-cols-1 row-cols-md-2 g-2">
-                    @for (int i = 0; i < Model.Roles.Count; i++)
-                    {
-                        var localizedRole = Model.Roles[i].RoleName switch
-                        {
-                            "Admin" => Localizer["Role_Admin"].Value,
-                            "Organizator" => Localizer["Role_Organizer"].Value,
-                            "Author" => Localizer["Role_Author"].Value,
-                            "Referee" => Localizer["Role_Referee"].Value,
-                            _ => Model.Roles[i].RoleName
-                        };
-
-                        <div class="col">
-                            <div class="form-check">
-                                <input asp-for="Roles[i].RoleName" type="hidden" />
-                                <input asp-for="Roles[i].IsSelected" class="form-check-input" />
-                                <label class="form-check-label" asp-for="Roles[i].IsSelected">
-                                    @localizedRole
-                                </label>
-                            </div>
-                        </div>
-                    }
+                <div class="alert alert-info border-0 shadow-sm mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    @L("RoleInfoMessage", "Bu ekranda kullanıcıya atanacak rolleri seçebilirsiniz. SuperAdmin rolü sistem genelinde tam yetki verir.")
                 </div>
+
+                @if (Model.Roles == null || !Model.Roles.Any())
+                {
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-user-lock fa-2x mb-3"></i>
+                        <p class="mb-0">
+                            @L("EmptyRolesMessage", "Tanımlı rol bulunamadı.")
+                        </p>
+                    </div>
+                }
+                else
+                {
+                    <div class="row row-cols-1 row-cols-md-2 g-3">
+                        @for (int i = 0; i < Model.Roles.Count; i++)
+                        {
+                            var roleName = Model.Roles[i].RoleName ?? "";
+                            var roleLabel = GetRoleLabel(roleName);
+                            var roleDescription = GetRoleDescription(roleName);
+                            var roleIcon = GetRoleIcon(roleName);
+
+                            <div class="col">
+                                <div class="border rounded-4 p-3 h-100 bg-light bg-opacity-50">
+                                    <div class="form-check d-flex align-items-start gap-2">
+                                        <input asp-for="Roles[i].RoleName" type="hidden" />
+
+                                        <input asp-for="Roles[i].IsSelected"
+                                               class="form-check-input mt-1"
+                                               id="role_@i" />
+
+                                        <label class="form-check-label w-100"
+                                               for="role_@i">
+
+                                            <div class="d-flex align-items-center mb-1">
+                                                <i class="@roleIcon me-2"></i>
+
+                                                <span class="fw-bold text-dark">
+                                                    @roleLabel
+                                                </span>
+                                            </div>
+
+                                            @if (!string.IsNullOrWhiteSpace(roleDescription))
+                                            {
+                                                <div class="small text-muted">
+                                                    @roleDescription
+                                                </div>
+                                            }
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
 
             </div>
 
             <div class="card-footer bg-white border-0 d-flex gap-2 justify-content-end p-3">
-                <button type="submit" class="btn btn-primary">
-                    @Localizer["SaveButton"]
-                </button>
-                <a asp-area="Admin" asp-controller="Users" asp-action="Index" class="btn btn-light">
-                    @Localizer["CancelButton"]
+                <a asp-area="Admin"
+                   asp-controller="Users"
+                   asp-action="Index"
+                   class="btn btn-light rounded-pill px-4">
+                    @L("CancelButton", "Vazgeç")
                 </a>
+
+                <button type="submit" class="btn btn-primary rounded-pill px-4">
+                    <i class="fas fa-save me-1"></i>
+                    @L("SaveButton", "Kaydet")
+                </button>
             </div>
         </div>
     </form>
