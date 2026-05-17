@@ -22,6 +22,10 @@
         ? "/Submission/Create"
         : $"/{slug}/Submission/Create";
 
+    var programUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Program"
+        : $"/{slug}/program";
+
     string L(string key, string fallback)
     {
         var value = Localizer[key].Value;
@@ -45,6 +49,18 @@
     :root {
         --theme-primary: #0f172a;
         --theme-accent: #00aeef;
+        --theme-accent-dark: #0d6efd;
+        --theme-muted: #64748b;
+        --theme-soft: #f8fafc;
+        --theme-border: #e2e8f0;
+    }
+
+    body {
+        background: #f6f8fb;
+    }
+
+    .conference-home-shell {
+        background: radial-gradient(circle at 12% 8%, rgba(0, 174, 239, 0.08), transparent 28%), radial-gradient(circle at 88% 15%, rgba(13, 110, 253, 0.06), transparent 26%), #f6f8fb;
     }
 
     .sticky-sidebar {
@@ -54,47 +70,78 @@
     }
 
     .modern-menu-list {
-        background: #fff;
-        border-radius: 20px;
+        background: #ffffff;
+        border-radius: 24px;
         padding: 10px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-        border: 1px solid #f1f5f9;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        border: 1px solid #eef2f7;
+    }
+
+    .modern-menu-title {
+        color: #0f172a;
+        font-size: 0.82rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        padding: 12px 14px 8px;
     }
 
     .modern-menu-item {
         color: #475569 !important;
-        font-weight: 600;
-        padding: 14px 20px !important;
+        font-weight: 800;
+        padding: 14px 16px !important;
         margin-bottom: 5px;
-        border-radius: 12px !important;
-        transition: all 0.3s ease;
+        border-radius: 16px !important;
+        transition: all 0.25s ease;
         border: none !important;
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
     }
 
-        .modern-menu-item:hover {
-            background-color: var(--theme-accent) !important;
-            color: #fff !important;
-            transform: translateX(5px);
-            box-shadow: 0 4px 10px rgba(0, 174, 239, 0.2);
+        .modern-menu-item i {
+            width: 30px;
+            height: 30px;
+            min-width: 30px;
+            border-radius: 11px;
+            background: rgba(0, 174, 239, 0.09);
+            color: var(--theme-accent);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.72rem;
+            transition: all 0.25s ease;
         }
 
+        .modern-menu-item:hover {
+            background-color: rgba(0, 174, 239, 0.09) !important;
+            color: var(--theme-accent) !important;
+            transform: translateX(4px);
+        }
+
+            .modern-menu-item:hover i {
+                background: var(--theme-accent);
+                color: #ffffff;
+            }
+
     .content-card {
-        background: #fff;
-        border-radius: 24px;
+        background: #ffffff;
+        border-radius: 28px;
         padding: 40px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.03);
-        border: 1px solid rgba(0,0,0,0.02);
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        border: 1px solid #eef2f7;
         margin-bottom: 40px;
         scroll-margin-top: 40px;
     }
 
     .content-title {
         color: var(--theme-primary);
-        font-weight: 800;
+        font-weight: 900;
         font-size: 1.75rem;
         margin-bottom: 25px;
         position: relative;
         padding-bottom: 15px;
+        letter-spacing: -0.04em;
     }
 
         .content-title::after {
@@ -102,74 +149,226 @@
             position: absolute;
             bottom: 0;
             left: 0;
-            width: 60px;
+            width: 68px;
             height: 4px;
-            background: var(--theme-accent);
-            border-radius: 2px;
+            background: linear-gradient(135deg, var(--theme-accent), var(--theme-accent-dark));
+            border-radius: 999px;
         }
 
-    .modern-red-pulse-btn {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        aspect-ratio: 1/1;
-        max-height: 240px;
-        background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
-        border-radius: 50%;
-        text-decoration: none;
-        color: white;
-        box-shadow: 0 15px 35px rgba(255, 75, 43, 0.3);
-        transition: all 0.4s ease;
-        border: 8px solid rgba(255,255,255,0.5);
+    .action-card {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 35%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e8eef6;
+        border-radius: 30px;
+        padding: 1.25rem;
+        box-shadow: 0 22px 55px rgba(15, 23, 42, 0.08);
+        margin-bottom: 1.5rem;
     }
 
-        .modern-red-pulse-btn:hover {
-            transform: scale(1.05) translateY(-5px);
-            color: white;
-            box-shadow: 0 20px 40px rgba(255, 75, 43, 0.4);
-            border-color: #fff;
+    .action-card-icon {
+        width: 58px;
+        height: 58px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, var(--theme-accent), var(--theme-accent-dark));
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
+        margin-bottom: 1rem;
+    }
+
+    .action-card-badge {
+        width: fit-content;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.38rem 0.72rem;
+        border-radius: 999px;
+        background: rgba(34, 197, 94, 0.10);
+        color: #16a34a;
+        font-size: 0.72rem;
+        font-weight: 900;
+        margin-bottom: 0.7rem;
+    }
+
+    .action-card h4 {
+        color: #0f172a;
+        font-size: 1.32rem;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        margin-bottom: 0.55rem;
+    }
+
+    .action-card p {
+        color: #64748b;
+        font-size: 0.88rem;
+        font-weight: 600;
+        line-height: 1.65;
+        margin-bottom: 1rem;
+    }
+
+    .action-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.65rem;
+        margin-bottom: 1rem;
+    }
+
+    .action-info-item {
+        background: #ffffff;
+        border: 1px solid #edf2f7;
+        border-radius: 18px;
+        padding: 0.8rem;
+    }
+
+        .action-info-item span {
+            display: block;
+            color: #64748b;
+            font-size: 0.7rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.25rem;
+        }
+
+        .action-info-item strong {
+            display: block;
+            color: #0f172a;
+            font-size: 0.88rem;
+            font-weight: 900;
+            line-height: 1.25;
+        }
+
+    .action-primary-btn,
+    .action-secondary-btn {
+        min-height: 48px;
+        width: 100%;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        text-decoration: none;
+        font-weight: 900;
+        transition: all 0.2s ease;
+    }
+
+    .action-primary-btn {
+        background: linear-gradient(135deg, var(--theme-accent), var(--theme-accent-dark));
+        color: #ffffff;
+        box-shadow: 0 14px 30px rgba(0, 174, 239, 0.22);
+        margin-bottom: 0.65rem;
+    }
+
+        .action-primary-btn:hover {
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 18px 38px rgba(0, 174, 239, 0.30);
+        }
+
+    .action-secondary-btn {
+        background: #ffffff;
+        border: 1px solid #dbe3ef;
+        color: #334155;
+    }
+
+        .action-secondary-btn:hover {
+            color: var(--theme-accent);
+            border-color: rgba(0, 174, 239, 0.30);
+            background: #f8fbff;
+        }
+
+    .documents-card {
+        background: #ffffff;
+        border: 1px solid #eef2f7;
+        border-radius: 28px;
+        padding: 1.2rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+    }
+
+    .documents-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.85rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.85rem;
+        border-bottom: 1px solid #edf2f7;
+    }
+
+        .documents-card-header h5 {
+            color: #0f172a;
+            font-size: 1rem;
+            font-weight: 900;
+            margin: 0;
+        }
+
+        .documents-card-header span {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border-radius: 15px;
+            background: rgba(0, 174, 239, 0.10);
+            color: var(--theme-accent);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
     .word-doc-card {
         display: flex;
         align-items: center;
         text-decoration: none;
-        padding: 15px;
-        background: #fff;
-        border-radius: 16px;
-        border: 1px solid #e2e8f0;
-        transition: all 0.3s;
-        margin-bottom: 15px;
+        padding: 0.9rem;
+        background: #f8fafc;
+        border-radius: 18px;
+        border: 1px solid #edf2f7;
+        transition: all 0.25s ease;
+        margin-bottom: 0.75rem;
     }
 
         .word-doc-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 25px rgba(0,0,0,0.06);
-            border-color: #2b579a;
+            transform: translateY(-3px);
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.07);
+            border-color: rgba(0, 174, 239, 0.28);
+            background: #ffffff;
         }
 
     .word-icon-wrapper {
-        width: 50px;
-        height: 50px;
-        border-radius: 12px;
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
         display: flex;
         align-items: center;
         justify-content: center;
         background: linear-gradient(135deg, #2b579a 0%, #1e3c6b 100%);
         color: white;
-        margin-right: 15px;
-        font-size: 1.5rem;
+        margin-right: 0.85rem;
+        font-size: 1.35rem;
         flex-shrink: 0;
     }
 
-    .submit-help-text {
-        font-size: 0.85rem;
-        color: #64748b;
-        text-align: center;
-        margin-top: 12px;
-        line-height: 1.5;
+    .suggested-section {
+        background: radial-gradient(circle at 10% 0%, rgba(0, 174, 239, 0.08), transparent 30%), #ffffff;
+        border-top: 1px solid #e8eef6;
+    }
+
+    @@media (max-width: 992px) {
+        .sticky-sidebar {
+            position: static;
+        }
+
+        .action-info-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .content-card {
+            padding: 24px;
+            border-radius: 24px;
+        }
     }
 </style>
 
@@ -185,156 +384,190 @@ else
     </div>
 }
 
-<div class="container py-5">
-    <div class="row g-4 g-lg-5">
+<div class="conference-home-shell">
+    <div class="container py-5">
+        <div class="row g-4 g-lg-5">
 
-        <div class="col-lg-3 d-none d-lg-block">
-            <div class="sticky-sidebar">
-                <div class="modern-menu-list list-group">
-                    @if (!others.Any())
-                    {
-                        <div class="p-3 text-muted text-center small">
-                            @Localizer["MenuComingSoon"]
+            <div class="col-lg-3 d-none d-lg-block">
+                <div class="sticky-sidebar">
+                    <div class="modern-menu-list list-group">
+                        <div class="modern-menu-title">
+                            Hızlı Erişim
                         </div>
-                    }
 
-                    @foreach (var block in others)
-                    {
-                        <a href="#block-@block.Id" class="list-group-item modern-menu-item">
-                            <i class="fas fa-chevron-right me-2 opacity-50" style="font-size: 0.7rem;"></i>
-                            @block.Title
-                        </a>
-                    }
+                        @if (!others.Any())
+                        {
+                            <div class="p-3 text-muted text-center small">
+                                @Localizer["MenuComingSoon"]
+                            </div>
+                        }
+
+                        @foreach (var block in others)
+                        {
+                            <a href="#block-@block.Id" class="list-group-item modern-menu-item">
+                                <i class="fas fa-chevron-right"></i>
+                                @block.Title
+                            </a>
+                        }
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="col-lg-6">
-            @if (!others.Any())
-            {
-                <div class="content-card text-center py-5">
-                    <i class="fas fa-tools fa-4x text-muted mb-3 opacity-25"></i>
-
-                    <h4 class="text-muted fw-bold">
-                        @Localizer["ContentPreparingTitle"]
-                    </h4>
-
-                    <p class="text-muted">
-                        @Localizer["ContentPreparingLead"]
-                    </p>
-                </div>
-            }
-
-            @foreach (var block in others)
-            {
-                switch (block.BlockType)
+            <div class="col-lg-6">
+                @if (!others.Any())
                 {
-                    case ConferencePageBlockType.About:
-                        <partial name="~/Views/Shared/Blocks/_About.cshtml" model="block" />
-                        break;
+                    <div class="content-card text-center py-5">
+                        <i class="fas fa-tools fa-4x text-muted mb-3 opacity-25"></i>
 
-                    default:
-                        <partial name="~/Views/Shared/Blocks/_RawBlock.cshtml" model="block" />
-                        break;
-                }
-            }
-        </div>
+                        <h4 class="text-muted fw-bold">
+                            @Localizer["ContentPreparingTitle"]
+                        </h4>
 
-        <div class="col-lg-3">
-            <div class="sticky-sidebar">
-
-                <div class="d-flex justify-content-center mb-2 mx-auto" style="max-width: 240px;">
-                    <a href="@submitAbstractUrl" class="modern-red-pulse-btn">
-                        <i class="fas fa-cloud-upload-alt fa-3x mb-2 opacity-75"></i>
-
-                        <span class="fs-6 fw-bold mb-1 opacity-75">
-                            @L("OnlineLabel", "ÇEVRİMİÇİ")
-                        </span>
-
-                        <span class="fs-4 fw-bolder lh-1 text-center">
-                            @L("SubmitAbstractLabel", "ÖZET GÖNDER")
-                        </span>
-                    </a>
-                </div>
-
-                <div class="submit-help-text mb-5">
-                    @L(
-                    "SubmitAbstractHelpText",
-                                        "Kongreye kayıt olduktan sonra bildirinizin özetini sisteme yükleyebilirsiniz."
-                                        )
-                </div>
-
-                <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
-                    @Localizer["DocumentsHeader"]
-                </h5>
-
-                @if (!string.IsNullOrEmpty(Model.Conference.WritingRulesPath))
-                {
-                    <a href="@Model.Conference.WritingRulesPath" target="_blank" class="word-doc-card">
-                        <div class="word-icon-wrapper">
-                            <i class="fas fa-file-word"></i>
-                        </div>
-
-                        <div>
-                            <h6 class="text-dark fw-bold mb-0">
-                                @Localizer["WritingRulesTitle"]
-                            </h6>
-
-                            <small class="text-muted">
-                                @Localizer["WritingRulesSubtitle"]
-                            </small>
-                        </div>
-                    </a>
-                }
-
-                @if (!string.IsNullOrEmpty(Model.Conference.AbstractTemplatePath))
-                {
-                    <a href="@Model.Conference.AbstractTemplatePath" target="_blank" class="word-doc-card" download>
-                        <div class="word-icon-wrapper">
-                            <i class="fas fa-file-word"></i>
-                        </div>
-
-                        <div>
-                            <h6 class="text-dark fw-bold mb-0">
-                                @Localizer["AbstractTemplateTitle"]
-                            </h6>
-
-                            <small class="text-muted">
-                                @Localizer["DownloadDocx"]
-                            </small>
-                        </div>
-                    </a>
-                }
-
-                @if (!string.IsNullOrEmpty(Model.Conference.FullTextTemplatePath))
-                {
-                    <a href="@Model.Conference.FullTextTemplatePath" target="_blank" class="word-doc-card" download>
-                        <div class="word-icon-wrapper">
-                            <i class="fas fa-file-word"></i>
-                        </div>
-
-                        <div>
-                            <h6 class="text-dark fw-bold mb-0">
-                                @Localizer["FullTextTemplateTitle"]
-                            </h6>
-
-                            <small class="text-muted">
-                                @Localizer["DownloadDocx"]
-                            </small>
-                        </div>
-                    </a>
-                }
-
-                @if (string.IsNullOrEmpty(Model.Conference.WritingRulesPath) &&
-                                string.IsNullOrEmpty(Model.Conference.AbstractTemplatePath) &&
-                                string.IsNullOrEmpty(Model.Conference.FullTextTemplatePath))
-                {
-                    <div class="alert alert-light border text-muted small rounded-3">
-                        <i class="fas fa-info-circle me-1"></i>
-                        @Localizer["TemplatesNotUploaded"]
+                        <p class="text-muted">
+                            @Localizer["ContentPreparingLead"]
+                        </p>
                     </div>
                 }
 
+                @foreach (var block in others)
+                {
+                    switch (block.BlockType)
+                    {
+                        case ConferencePageBlockType.About:
+                            <partial name="~/Views/Shared/Blocks/_About.cshtml" model="block" />
+                            break;
+
+                        default:
+                            <partial name="~/Views/Shared/Blocks/_RawBlock.cshtml" model="block" />
+                            break;
+                    }
+                }
+            </div>
+
+            <div class="col-lg-3">
+                <div class="sticky-sidebar">
+
+                    <div class="action-card">
+                        <div class="action-card-badge">
+                            <i class="fas fa-circle"></i>
+                            Başvurular Açık
+                        </div>
+
+                        <div class="action-card-icon">
+                            <i class="fas fa-paper-plane"></i>
+                        </div>
+
+                        <h4>
+                            Kayıt ve Bildiri İşlemleri
+                        </h4>
+
+                        <p>
+                            Kongreye kayıt olabilir, kayıt sonrası bildiri özetinizi sistem üzerinden gönderebilirsiniz.
+                        </p>
+
+                        <div class="action-info-grid">
+                            <div class="action-info-item">
+                                <span>Katılım</span>
+                                <strong>Çevrimiçi</strong>
+                            </div>
+
+                            <div class="action-info-item">
+                                <span>Durum</span>
+                                <strong>Aktif</strong>
+                            </div>
+                        </div>
+
+                        <a href="@registrationUrl" class="action-primary-btn">
+                            <i class="fas fa-user-plus"></i>
+                            @L("RegisterButton", "Kongreye Kayıt Ol")
+                        </a>
+
+                        <a href="@submitAbstractUrl" class="action-secondary-btn">
+                            <i class="fas fa-upload"></i>
+                            @L("SubmitAbstractLabel", "Özet Gönder")
+                        </a>
+                    </div>
+
+                    <div class="documents-card">
+                        <div class="documents-card-header">
+                            <h5>
+                                @Localizer["DocumentsHeader"]
+                            </h5>
+
+                            <span>
+                                <i class="fas fa-file-lines"></i>
+                            </span>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.Conference.WritingRulesPath))
+                        {
+                            <a href="@Model.Conference.WritingRulesPath" target="_blank" class="word-doc-card">
+                                <div class="word-icon-wrapper">
+                                    <i class="fas fa-file-word"></i>
+                                </div>
+
+                                <div>
+                                    <h6 class="text-dark fw-bold mb-0">
+                                        @Localizer["WritingRulesTitle"]
+                                    </h6>
+
+                                    <small class="text-muted">
+                                        @Localizer["WritingRulesSubtitle"]
+                                    </small>
+                                </div>
+                            </a>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.Conference.AbstractTemplatePath))
+                        {
+                            <a href="@Model.Conference.AbstractTemplatePath" target="_blank" class="word-doc-card" download>
+                                <div class="word-icon-wrapper">
+                                    <i class="fas fa-file-word"></i>
+                                </div>
+
+                                <div>
+                                    <h6 class="text-dark fw-bold mb-0">
+                                        @Localizer["AbstractTemplateTitle"]
+                                    </h6>
+
+                                    <small class="text-muted">
+                                        @Localizer["DownloadDocx"]
+                                    </small>
+                                </div>
+                            </a>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.Conference.FullTextTemplatePath))
+                        {
+                            <a href="@Model.Conference.FullTextTemplatePath" target="_blank" class="word-doc-card" download>
+                                <div class="word-icon-wrapper">
+                                    <i class="fas fa-file-word"></i>
+                                </div>
+
+                                <div>
+                                    <h6 class="text-dark fw-bold mb-0">
+                                        @Localizer["FullTextTemplateTitle"]
+                                    </h6>
+
+                                    <small class="text-muted">
+                                        @Localizer["DownloadDocx"]
+                                    </small>
+                                </div>
+                            </a>
+                        }
+
+                        @if (string.IsNullOrEmpty(Model.Conference.WritingRulesPath) &&
+                                                string.IsNullOrEmpty(Model.Conference.AbstractTemplatePath) &&
+                                                string.IsNullOrEmpty(Model.Conference.FullTextTemplatePath))
+                        {
+                            <div class="alert alert-light border text-muted small rounded-3 mb-0">
+                                <i class="fas fa-info-circle me-1"></i>
+                                @Localizer["TemplatesNotUploaded"]
+                            </div>
+                        }
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>
@@ -342,7 +575,7 @@ else
 
 @if (Model.SuggestedConferences != null && Model.SuggestedConferences.Any())
 {
-    <div class="bg-light py-5 border-top">
+    <div class="suggested-section py-5">
         <div class="container py-4">
             <h3 class="text-center fw-bold text-dark mb-5">
                 @Localizer["SuggestedConferencesHeader"]

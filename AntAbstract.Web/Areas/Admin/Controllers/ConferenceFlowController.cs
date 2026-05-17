@@ -2,6 +2,7 @@
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.ViewModels.Admin.Assignment;
+using AntAbstract.Web.Models.ViewModels.Admin.ConferenceFlow;
 using AntAbstract.Web.Models.ViewModels.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -384,7 +385,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         [HttpGet("/{slug}/Admin/ConferenceFlow/RegistrationsAndPayments")]
-        public async Task<IActionResult> RegistrationsAndPayments(string slug, Guid? conferenceId)
+        public async Task<IActionResult> RegistrationsAndPayments(
+            string slug,
+            Guid? conferenceId,
+            string? search = null,
+            string? paymentStatus = null,
+            Guid? registrationTypeId = null)
         {
             var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
 
@@ -399,11 +405,242 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             SetConferenceSession(conference);
 
+            var baseQuery = _context.Registrations
+                .AsNoTracking()
+                .Include(x => x.AppUser)
+                .Include(x => x.RegistrationType)
+                .Include(x => x.Conference)
+                    .ThenInclude(x => x.Tenant)
+                .Where(x => x.ConferenceId == conference.Id);
+
+            var totalRegistrations = await baseQuery.CountAsync();
+            var paidRegistrations = await baseQuery.CountAsync(x => x.IsPaid);
+            var pendingPayments = await baseQuery.CountAsync(x => !x.IsPaid);
+
+            var totalRevenue = await baseQuery
+                .Where(x => x.IsPaid)
+                .SumAsync(x => x.Amount);
+
+            var registrationTypes = await _context.RegistrationTypes
+                .AsNoTracking()
+                .Where(x => x.ConferenceId == conference.Id)
+                .OrderBy(x => x.Price)
+                .ThenBy(x => x.Name)
+                .Select(x => new RegistrationTypeFilterItem
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Price = x.Price,
+                    Currency = x.Currency
+                })
+                .ToListAsync();
+
+            var filteredQuery = baseQuery;
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchText = search.Trim();
+
+                filteredQuery = filteredQuery.Where(x =>
+                    (x.AppUser != null && (
+                        (x.AppUser.FirstName != null && x.AppUser.FirstName.Contains(searchText)) ||
+                        (x.AppUser.LastName != null && x.AppUser.LastName.Contains(searchText)) ||
+                        (x.AppUser.Email != null && x.AppUser.Email.Contains(searchText))
+                    )) ||
+                    (x.RegistrationType != null && x.RegistrationType.Name.Contains(searchText)) ||
+                    (x.BillingName != null && x.BillingName.Contains(searchText)) ||
+                    (x.PaymentTransactionId != null && x.PaymentTransactionId.Contains(searchText))
+                );
+            }
+
+            if (!string.IsNullOrWhiteSpace(paymentStatus))
+            {
+                var normalizedStatus = paymentStatus.Trim().ToLowerInvariant();
+
+                if (normalizedStatus == "paid")
+                {
+                    filteredQuery = filteredQuery.Where(x => x.IsPaid);
+                }
+                else if (normalizedStatus == "pending")
+                {
+                    filteredQuery = filteredQuery.Where(x => !x.IsPaid);
+                }
+                else if (normalizedStatus == "failed" || normalizedStatus == "cancelled")
+                {
+                    filteredQuery = filteredQuery.Where(x => false);
+                }
+            }
+
+            if (registrationTypeId.HasValue && registrationTypeId.Value != Guid.Empty)
+            {
+                filteredQuery = filteredQuery.Where(x => x.RegistrationTypeId == registrationTypeId.Value);
+            }
+
+            var registrations = await filteredQuery
+                .OrderByDescending(x => x.RegistrationDate)
+                .ToListAsync();
+
+            var items = registrations
+                .Select(x =>
+                {
+                    var fullName = x.AppUser == null
+                        ? ""
+                        : $"{x.AppUser.FirstName} {x.AppUser.LastName}".Trim();
+
+                    if (string.IsNullOrWhiteSpace(fullName))
+                    {
+                        fullName = x.AppUser?.UserName ?? x.AppUser?.Email ?? "Kullanıcı";
+                    }
+
+                    return new RegistrationPaymentRowItem
+                    {
+                        RegistrationId = x.Id,
+                        UserId = x.AppUserId,
+                        FullName = fullName,
+                        Email = x.AppUser?.Email ?? "",
+                        RegistrationTypeName = x.RegistrationType?.Name ?? "Kayıt türü yok",
+                        Amount = x.Amount,
+                        Currency = x.RegistrationType?.Currency ?? "TRY",
+                        IsPaid = x.IsPaid,
+                        RegistrationDate = x.RegistrationDate,
+                        PaymentDate = x.PaymentDate,
+                        PaymentTransactionId = x.PaymentTransactionId,
+                        BillingName = x.BillingName,
+                        TaxOffice = x.TaxOffice,
+                        TaxNumber = x.TaxNumber
+                    };
+                })
+                .ToList();
+
+            var model = new RegistrationsAndPaymentsViewModel
+            {
+                ConferenceId = conference.Id,
+                ConferenceTitle = conference.Title ?? "",
+                Slug = slug,
+
+                TotalRegistrations = totalRegistrations,
+                PaidRegistrations = paidRegistrations,
+                PendingPayments = pendingPayments,
+                TotalRevenue = totalRevenue,
+
+                Search = search ?? "",
+                PaymentStatus = paymentStatus ?? "",
+                RegistrationTypeId = registrationTypeId,
+
+                RegistrationTypes = registrationTypes,
+                Items = items
+            };
+
             ViewBag.ConferenceId = conference.Id;
             ViewBag.ConferenceTitle = conference.Title ?? "";
             ViewBag.Slug = slug;
 
-            return View("~/Areas/Admin/Views/ConferenceFlow/RegistrationsAndPayments.cshtml");
+            return View("~/Areas/Admin/Views/ConferenceFlow/RegistrationsAndPayments.cshtml", model);
+        }
+
+        [HttpPost("/Admin/ConferenceFlow/RegistrationsAndPayments/ApprovePayment")]
+        [HttpPost("/{slug}/Admin/ConferenceFlow/RegistrationsAndPayments/ApprovePayment")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApproveRegistrationPayment(
+            string? slug,
+            Guid registrationId,
+            Guid conferenceId,
+            string? returnUrl = null)
+        {
+            if (registrationId == Guid.Empty || conferenceId == Guid.Empty)
+            {
+                TempData["ErrorMessage"] = "Geçersiz kayıt veya kongre bilgisi.";
+
+                return RedirectToAction(nameof(SelectConference));
+            }
+
+            var conferenceQuery = await GetAccessibleConferenceQueryAsync();
+
+            var conference = await conferenceQuery
+                .FirstOrDefaultAsync(x => x.Id == conferenceId);
+
+            if (conference == null || conference.Tenant == null || string.IsNullOrWhiteSpace(conference.Tenant.Slug))
+            {
+                TempData["ErrorMessage"] = "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.";
+
+                return RedirectToAction(nameof(SelectConference));
+            }
+
+            SetConferenceSession(conference);
+
+            var registration = await _context.Registrations
+                .Include(x => x.RegistrationType)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == registrationId &&
+                    x.ConferenceId == conference.Id);
+
+            if (registration == null)
+            {
+                TempData["ErrorMessage"] = "Onaylanacak kayıt bulunamadı.";
+
+                return Redirect($"/{conference.Tenant.Slug}/Admin/ConferenceFlow/RegistrationsAndPayments?conferenceId={conference.Id}");
+            }
+
+            if (registration.IsPaid)
+            {
+                TempData["InfoMessage"] = "Bu kayıt zaten ödenmiş olarak görünüyor.";
+
+                return Redirect($"/{conference.Tenant.Slug}/Admin/ConferenceFlow/RegistrationsAndPayments?conferenceId={conference.Id}");
+            }
+
+            var now = DateTime.UtcNow;
+
+            if (registration.Amount <= 0 && registration.RegistrationType != null)
+            {
+                registration.Amount = registration.RegistrationType.Price;
+            }
+
+            var shortRegistrationId = registration.Id.ToString("N").Substring(0, 8);
+
+            var transactionId = !string.IsNullOrWhiteSpace(registration.PaymentTransactionId)
+                ? registration.PaymentTransactionId
+                : $"MANUAL-{DateTime.UtcNow:yyyyMMddHHmmss}-{shortRegistrationId}";
+
+            registration.IsPaid = true;
+            registration.PaymentDate = now;
+            registration.PaymentTransactionId = transactionId;
+
+            var paymentExists = await _context.Payments
+                .AnyAsync(x =>
+                    x.ConferenceId == conference.Id &&
+                    x.AppUserId == registration.AppUserId &&
+                    x.TransactionId == transactionId &&
+                    x.Status == PaymentStatus.Completed);
+
+            if (!paymentExists)
+            {
+                _context.Payments.Add(new Payment
+                {
+                    Amount = registration.Amount,
+                    Currency = registration.RegistrationType?.Currency ?? "TRY",
+                    PaymentMethod = "Manual",
+                    TransactionId = transactionId,
+                    PaymentDate = now,
+                    Status = PaymentStatus.Completed,
+                    BillingName = registration.BillingName,
+                    BillingAddress = registration.BillingAddress,
+                    TaxOffice = registration.TaxOffice,
+                    TaxNumber = registration.TaxNumber,
+                    AppUserId = registration.AppUserId,
+                    ConferenceId = conference.Id
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Ödeme başarıyla onaylandı.";
+
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return LocalRedirect(returnUrl);
+            }
+
+            return Redirect($"/{conference.Tenant.Slug}/Admin/ConferenceFlow/RegistrationsAndPayments?conferenceId={conference.Id}");
         }
 
         [HttpGet("/Admin/ConferenceFlow/ProgramSessions")]

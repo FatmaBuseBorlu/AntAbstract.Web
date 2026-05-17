@@ -303,14 +303,7 @@ namespace AntAbstract.Web.Controllers
         {
             ClearSelectedConference();
 
-            var slug = GetSlug();
-
-            if (string.IsNullOrWhiteSpace(slug))
-            {
-                return RedirectToAction(nameof(MyConferences));
-            }
-
-            return Redirect($"/{slug}/Dashboard/MyConferences");
+            return RedirectToAction(nameof(MyConferences));
         }
 
         [HttpGet]
@@ -358,6 +351,9 @@ namespace AntAbstract.Web.Controllers
             }
 
             var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+            var isAuthor = await _userManager.IsInRoleAsync(user, "Author");
+            var isListener = await _userManager.IsInRoleAsync(user, "Listener");
 
             if (isSuperAdmin)
             {
@@ -411,6 +407,21 @@ namespace AntAbstract.Web.Controllers
 
             if (!string.IsNullOrWhiteSpace(selectedSlug))
             {
+                if (isAdmin)
+                {
+                    return Redirect($"/{selectedSlug}/Dashboard");
+                }
+
+                if (isAuthor)
+                {
+                    return Redirect($"/{selectedSlug}/Submission/Index");
+                }
+
+                if (isListener)
+                {
+                    return Redirect($"/{selectedSlug}/Program/Index");
+                }
+
                 return Redirect($"/{selectedSlug}/Dashboard");
             }
 
@@ -428,12 +439,21 @@ namespace AntAbstract.Web.Controllers
 
             var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+            var isAuthor = await _userManager.IsInRoleAsync(user, "Author");
+            var isListener = await _userManager.IsInRoleAsync(user, "Listener");
 
             if (isSuperAdmin)
             {
                 ClearSelectedConference();
 
                 return RedirectToAction(nameof(SuperAdmin));
+            }
+
+            if (!isAdmin && (isAuthor || isListener))
+            {
+                ClearSelectedConference();
+
+                return RedirectToAction(nameof(MyConferences));
             }
 
             var selectedConferenceId = GetSelectedConferenceId();
@@ -609,6 +629,11 @@ namespace AntAbstract.Web.Controllers
                 ClearSelectedConference();
 
                 return RedirectToAction(nameof(SuperAdmin));
+            }
+
+            if (!isAdmin)
+            {
+                ClearSelectedConference();
             }
 
             List<Conference> registeredConferences;

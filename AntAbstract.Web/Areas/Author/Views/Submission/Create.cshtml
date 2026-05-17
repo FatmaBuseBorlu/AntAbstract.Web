@@ -31,28 +31,8 @@
         : $"/{slug}/submit-abstract";
 
     var backUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Submission/Index"
+        ? "/Dashboard/MyConferences"
         : $"/{slug}/my-submissions";
-
-    var registrationUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/registration"
-        : $"/{slug}/registration";
-
-    var selectedConferenceName = "";
-
-    if (Model.ConferenceId != Guid.Empty &&
-        Model.AvailableConferences != null &&
-        Model.AvailableConferences.Any(c => c.Value == Model.ConferenceId.ToString()))
-    {
-        selectedConferenceName = Model.AvailableConferences
-            .First(c => c.Value == Model.ConferenceId.ToString())
-            .Text;
-    }
-
-    if (string.IsNullOrWhiteSpace(selectedConferenceName))
-    {
-        selectedConferenceName = L("SelectedConferenceFallback", "Seçili Kongre", "Selected Congress");
-    }
 
     var hasValidationErrors =
         !ViewData.ModelState.IsValid &&
@@ -65,135 +45,397 @@
 }
 
 <style>
-    .modern-card {
-        border: none;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.04);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        background: #fff;
-        overflow: hidden;
+    .submission-page {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 2.2rem 1.5rem 4rem;
     }
 
-    .section-header {
-        background: linear-gradient(to right, #f8f9fa, #fff);
-        padding: 20px 30px;
-        border-bottom: 1px solid #f0f0f0;
-        display: flex;
-        align-items: center;
+    .submission-hero {
+        text-align: center;
+        margin-top: 0.5rem;
+        margin-bottom: 2rem;
     }
 
-    .section-number {
-        background: #00aeef;
-        color: white;
-        width: 32px;
-        height: 32px;
-        border-radius: 10px;
-        display: flex;
+    .submission-hero-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(0, 174, 239, 0.14));
+        color: #2563eb;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-weight: bold;
-        margin-right: 15px;
-        box-shadow: 0 4px 10px rgba(0, 174, 239, 0.3);
+        margin-bottom: 1rem;
+        box-shadow: 0 18px 40px rgba(37, 99, 235, 0.08);
     }
 
-    .section-title {
-        font-weight: 700;
-        color: #2d3748;
-        font-size: 1.1rem;
-        margin: 0;
+    .submission-hero h2 {
+        font-size: 2.15rem;
+        font-weight: 900;
+        color: #0f172a;
+        letter-spacing: -0.8px;
+        margin-bottom: 0.45rem;
     }
 
-    .form-control-lg,
-    .form-select-lg {
-        border-radius: 12px;
+    .submission-hero p {
+        color: #64748b;
+        font-size: 1rem;
+        margin-bottom: 0;
+    }
+
+    .submission-card {
+        background: #fff;
         border: 1px solid #e2e8f0;
-        padding: 15px 20px;
-        font-size: 0.95rem;
-        transition: all 0.3s;
-        background-color: #fcfcfc;
+        border-radius: 26px;
+        box-shadow: 0 22px 55px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+        margin-bottom: 2rem;
     }
 
-        .form-control-lg:focus,
-        .form-select-lg:focus {
-            background-color: #fff;
-            border-color: #00aeef;
-            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
+    .submission-card-header {
+        padding: 1.35rem 1.65rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .submission-step-title {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+    }
+
+    .submission-step-number {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #00aeef, #2563eb);
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        box-shadow: 0 10px 22px rgba(37, 99, 235, 0.24);
+    }
+
+    .submission-step-title h5 {
+        color: #0f172a;
+        font-size: 1.05rem;
+        font-weight: 900;
+        margin-bottom: 0.12rem;
+    }
+
+    .submission-step-title span {
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .step-dots {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+    }
+
+    .step-dot {
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        border: 1px solid #cbd5e1;
+        color: #94a3b8;
+        font-size: 0.78rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+    }
+
+        .step-dot.active {
+            border-color: #2563eb;
+            color: #fff;
+            background: linear-gradient(135deg, #00aeef, #2563eb);
+            box-shadow: 0 10px 22px rgba(37, 99, 235, 0.2);
         }
 
-    .form-label {
-        font-weight: 600;
-        color: #4a5568;
-        margin-bottom: 8px;
-        font-size: 0.9rem;
+    .submission-card-body {
+        padding: 2.2rem;
     }
 
-    .upload-zone {
-        border: 2px dashed #cbd5e0;
-        border-radius: 20px;
+    .form-label {
+        color: #475569;
+        font-size: 0.86rem;
+        font-weight: 900;
+        margin-bottom: 0.55rem;
+    }
+
+    .form-control-modern,
+    .form-select-modern {
+        width: 100%;
+        min-height: 54px;
+        border-radius: 15px;
+        border: 1px solid #dbe4ef;
+        background: #ffffff;
+        color: #0f172a;
+        font-size: 0.94rem;
+        font-weight: 700;
+        padding: 0.85rem 1rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.025);
+    }
+
+        .form-control-modern::placeholder {
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .form-control-modern:focus,
+        .form-select-modern:focus {
+            outline: none;
+            border-color: #00aeef;
+            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.12);
+        }
+
+    textarea.form-control-modern {
+        min-height: 170px;
+        resize: vertical;
+    }
+
+    .modern-notice {
+        min-height: 54px;
+        border-radius: 15px;
+        border: 1px solid rgba(245, 158, 11, 0.35);
+        background: linear-gradient(135deg, rgba(255, 251, 235, 0.95), rgba(255, 247, 237, 0.95));
+        color: #92400e;
+        font-size: 0.86rem;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        padding: 0.85rem 1rem;
+    }
+
+        .modern-notice i {
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+            border-radius: 10px;
+            background: rgba(245, 158, 11, 0.16);
+            color: #f59e0b;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+    .field-hint {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 700;
+        margin-top: 0.45rem;
+    }
+
+    .counter-badge {
+        min-width: 76px;
+        height: 30px;
+        padding: 0 0.7rem;
+        border-radius: 999px;
         background: #f8fafc;
-        transition: all 0.3s;
+        border: 1px solid #e2e8f0;
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .author-info-card {
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(0, 174, 239, 0.08));
+        border: 1px solid rgba(37, 99, 235, 0.12);
+        border-radius: 18px;
+        padding: 1rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
+        color: #1e40af;
+        margin-bottom: 1.4rem;
+    }
+
+        .author-info-card i {
+            width: 38px;
+            height: 38px;
+            min-width: 38px;
+            border-radius: 14px;
+            background: #fff;
+            color: #2563eb;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
+        }
+
+    .author-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        background: #fff;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+        transition: all 0.2s ease;
+    }
+
+        .author-card:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 16px 38px rgba(15, 23, 42, 0.07);
+        }
+
+    .btn-add-author {
+        min-height: 54px;
+        border: 1px dashed #60a5fa;
+        background: rgba(239, 248, 255, 0.8);
+        color: #2563eb;
+        border-radius: 16px;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        transition: all 0.2s ease;
+    }
+
+        .btn-add-author:hover {
+            background: #eff6ff;
+            color: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+    .upload-zone {
+        border: 2px dashed #cbd5e1;
+        border-radius: 24px;
+        background: linear-gradient(135deg, #f8fafc, #ffffff);
+        transition: all 0.25s ease;
         cursor: pointer;
+        position: relative;
+        overflow: hidden;
     }
 
         .upload-zone:hover {
             border-color: #00aeef;
-            background: #f0f9ff;
-        }
-
-    .btn-action {
-        border-radius: 12px;
-        padding: 12px 30px;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        transition: all 0.3s;
-    }
-
-    .btn-primary-glow {
-        background: linear-gradient(135deg, #00aeef 0%, #0077b6 100%);
-        border: none;
-        box-shadow: 0 4px 15px rgba(0, 174, 239, 0.4);
-    }
-
-        .btn-primary-glow:hover {
+            background: linear-gradient(135deg, #f0f9ff, #ffffff);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 174, 239, 0.5);
         }
 
-    .author-card {
-        border: 1px solid #edf2f7;
-        border-radius: 15px;
+    .upload-icon {
+        width: 82px;
+        height: 82px;
+        border-radius: 28px;
         background: #fff;
-        transition: all 0.2s;
-    }
-
-        .author-card:hover {
-            border-color: #cbd5e0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-        }
-
-    .selected-conference-box {
-        background: linear-gradient(135deg, rgba(0, 174, 239, 0.12), rgba(15, 23, 42, 0.04));
-        border: 1px solid rgba(0, 174, 239, 0.22);
-        border-radius: 20px;
-        padding: 22px;
-        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
-    }
-
-    .selected-conference-icon {
-        width: 52px;
-        height: 52px;
-        border-radius: 16px;
-        background: #00aeef;
-        color: #fff;
-        display: flex;
+        color: #2563eb;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        flex-shrink: 0;
-        box-shadow: 0 8px 22px rgba(0, 174, 239, 0.28);
+        box-shadow: 0 16px 38px rgba(37, 99, 235, 0.12);
+    }
+
+    .submission-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 3rem;
+    }
+
+    .btn-back {
+        min-height: 52px;
+        border-radius: 16px;
+        padding: 0 1.1rem;
+        color: #64748b;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        font-weight: 900;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        transition: all 0.2s ease;
+    }
+
+        .btn-back:hover {
+            color: #0f172a;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+            text-decoration: none;
+        }
+
+    .btn-submit-modern {
+        min-height: 56px;
+        border: none;
+        border-radius: 18px;
+        padding: 0 1.65rem;
+        color: #fff;
+        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 45%, #2563eb 100%);
+        box-shadow: 0 16px 34px rgba(37, 99, 235, 0.24);
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        transition: all 0.2s ease;
+    }
+
+        .btn-submit-modern:hover {
+            transform: translateY(-2px);
+            color: #fff;
+            box-shadow: 0 20px 44px rgba(37, 99, 235, 0.32);
+        }
+
+    .validation-summary-errors {
+        border: none;
+        border-radius: 18px;
+        background: rgba(239, 68, 68, 0.08);
+        color: #b91c1c;
+        font-weight: 800;
+    }
+
+    @@media (max-width: 768px) {
+        .submission-page {
+            padding: 1.5rem 1rem 3rem;
+            max-width: 100%;
+        }
+
+        .submission-hero h2 {
+            font-size: 1.65rem;
+        }
+
+        .submission-card-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .step-dots {
+            display: none;
+        }
+
+        .submission-card-body {
+            padding: 1.2rem;
+        }
+
+        .submission-actions {
+            flex-direction: column-reverse;
+            align-items: stretch;
+        }
+
+        .btn-back,
+        .btn-submit-modern {
+            justify-content: center;
+            width: 100%;
+        }
     }
 </style>
 
-<div class="container py-5">
+<div class="submission-page">
 
     @if (TempData["SuccessMessage"] != null)
     {
@@ -219,308 +461,303 @@
         </div>
     }
 
-    <div class="row justify-content-center mb-4">
-        <div class="col-lg-9 text-center">
-            <h2 class="fw-bold text-dark mb-2">
-                @L("PageHeading", "Bilimsel Çalışmanızı Gönderin", "Submit Your Scientific Work")
-            </h2>
-
-            <p class="text-muted mb-0">
-                @L("PageLead", "Aşağıdaki adımları takip ederek bildirinizin detaylarını giriniz.", "Enter your abstract details by following the steps below.")
-            </p>
+    <div class="submission-hero">
+        <div class="submission-hero-icon">
+            <i class="fas fa-paper-plane fs-3"></i>
         </div>
+
+        <h2>
+            @L("PageHeading", "Yeni Bildiri Gönder", "Submit New Abstract")
+        </h2>
+
+        <p>
+            @L("PageLead", "Bildirinizi seçili kongre için oluşturun ve değerlendirme sürecine gönderin.", "Create your abstract for the selected congress and submit it for review.")
+        </p>
     </div>
 
-    <div class="row justify-content-center mb-5">
-        <div class="col-lg-9">
-            <div class="selected-conference-box d-flex align-items-center gap-3">
-                <div class="selected-conference-icon">
-                    <i class="fas fa-university fs-4"></i>
+    <form action="@submitUrl"
+          enctype="multipart/form-data"
+          method="post">
+
+        @Html.AntiForgeryToken()
+
+        <input type="hidden" asp-for="ConferenceId" />
+
+        @if (hasValidationErrors)
+        {
+            <div asp-validation-summary="All" class="alert validation-summary-errors mb-4 shadow-sm"></div>
+        }
+
+        <div class="submission-card">
+            <div class="submission-card-header">
+                <div class="submission-step-title">
+                    <div class="submission-step-number">1</div>
+
+                    <div>
+                        <h5>
+                            @L("Section1Title", "Çalışma Detayları", "Work Details")
+                        </h5>
+
+                        <span>
+                            @L("Section1Subtitle", "Bildiri ile ilgili temel bilgileri girin.", "Enter the basic information about your abstract.")
+                        </span>
+                    </div>
                 </div>
 
-                <div>
-                    <div class="text-muted small fw-bold text-uppercase mb-1">
-                        @L("SelectedConferenceLabel", "Bildiri Gönderilecek Kongre", "Congress for Submission")
+                <div class="step-dots">
+                    <span class="step-dot active">1</span>
+                    <span class="step-dot">2</span>
+                    <span class="step-dot">3</span>
+                </div>
+            </div>
+
+            <div class="submission-card-body">
+                <div class="mb-4">
+                    <label asp-for="Title" class="form-label">
+                        @L("TitleLabel", "Bildiri Başlığı", "Abstract Title") <span class="text-danger">*</span>
+                    </label>
+
+                    <input asp-for="Title"
+                           maxlength="200"
+                           class="form-control-modern"
+                           placeholder="@L("TitlePlaceholder", "Örn: Kırsal Turizmde Yapay Zeka Kullanımı", "Example: The Use of Artificial Intelligence in Rural Tourism")" />
+
+                    <div class="d-flex align-items-center justify-content-between mt-2">
+                        <span asp-validation-for="Title" class="text-danger small fw-bold"></span>
+                        <span id="titleCounter" class="counter-badge">0 / 200</span>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label asp-for="PresentationType" class="form-label">
+                            @L("PresentationTypeLabel", "Sunum Türü", "Presentation Type") <span class="text-danger">*</span>
+                        </label>
+
+                        <select asp-for="PresentationType" class="form-select-modern">
+                            <option value="">
+                                @L("SelectPresentationTypeOption", "Sunum türü seçiniz", "Select presentation type")
+                            </option>
+
+                            <option value="Oral">
+                                @L("PresentationTypeOral", "Sözlü Sunum", "Oral Presentation")
+                            </option>
+
+                            <option value="Poster">
+                                @L("PresentationTypePoster", "Poster Sunum", "Poster Presentation")
+                            </option>
+
+                            <option value="Online">
+                                @L("PresentationTypeOnline", "Çevrimiçi Sunum", "Online Presentation")
+                            </option>
+                        </select>
+
+                        <span asp-validation-for="PresentationType" class="text-danger small fw-bold mt-2 d-block"></span>
                     </div>
 
-                    <div class="fs-5 fw-bold text-dark">
-                        @selectedConferenceName
+                    <div class="col-md-6">
+                        <label asp-for="ConferenceTopicId" class="form-label">
+                            @L("TopicLabel", "Bildiri Konusu / Tema", "Abstract Topic / Theme") <span class="text-danger">*</span>
+                        </label>
+
+                        @if (Model.AvailableTopics == null || !Model.AvailableTopics.Any())
+                        {
+                            <div class="modern-notice">
+                                <i class="fas fa-info"></i>
+                                <span>
+                                    @L("NoTopicsDefinedMessage", "Bu kongre için henüz bildiri konusu tanımlanmamış.", "No abstract topics have been defined for this congress yet.")
+                                </span>
+                            </div>
+                        }
+                        else
+                        {
+                            <select asp-for="ConferenceTopicId"
+                                    asp-items="Model.AvailableTopics"
+                                    class="form-select-modern">
+
+                                <option value="">
+                                    @L("SelectTopicOption", "Bildiri konusu seçiniz", "Select abstract topic")
+                                </option>
+                            </select>
+                        }
+
+                        <span asp-validation-for="ConferenceTopicId" class="text-danger small fw-bold mt-2 d-block"></span>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <label asp-for="AbstractText" class="form-label">
+                        @L("AbstractLabel", "Özet Metni", "Abstract Text") <span class="text-danger">*</span>
+                    </label>
+
+                    <textarea asp-for="AbstractText"
+                              id="AbstractText"
+                              maxlength="5000"
+                              class="form-control-modern"
+                              rows="8"
+                              placeholder="@L("AbstractPlaceholder", "Özetinizi buraya yazın veya yapıştırın...", "Write or paste your abstract here...")"></textarea>
+
+                    <div class="d-flex align-items-center justify-content-between mt-2">
+                        <span asp-validation-for="AbstractText" class="text-danger small fw-bold"></span>
+                        <span id="abstractCounter" class="counter-badge">0 / 5000</span>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <label asp-for="Keywords" class="form-label">
+                        @L("KeywordsLabel", "Anahtar Kelimeler", "Keywords") <span class="text-danger">*</span>
+                    </label>
+
+                    <input asp-for="Keywords"
+                           id="Keywords"
+                           class="form-control-modern"
+                           placeholder="@L("KeywordsPlaceholder", "Örn: yapay zeka, kırsal turizm, sürdürülebilirlik", "Example: AI, rural tourism, sustainability")" />
+
+                    <div class="d-flex align-items-center justify-content-between mt-2">
+                        <span class="field-hint">
+                            @L("KeywordsHint", "Anahtar kelimeleri virgül ile ayırarak yazınız.", "Separate keywords with commas.")
+                        </span>
+
+                        <span id="keywordCounter" class="counter-badge">0</span>
                     </div>
 
-                    <div class="text-muted small mt-1">
-                        @L(
-                        "SelectedConferenceInfo",
-                                                "Bildiriniz bu kongre için gönderilecektir.",
-                                                "Your abstract will be submitted for this congress."
-                                                )
-                    </div>
+                    <span asp-validation-for="Keywords" class="text-danger small fw-bold mt-2 d-block"></span>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="row justify-content-center">
-        <div class="col-lg-9">
+        <div class="submission-card">
+            <div class="submission-card-header">
+                <div class="submission-step-title">
+                    <div class="submission-step-number">2</div>
 
-            <form action="@submitUrl"
-                  enctype="multipart/form-data"
-                  method="post">
-
-                @Html.AntiForgeryToken()
-
-                @if (hasValidationErrors)
-                {
-                    <div asp-validation-summary="All" class="alert alert-danger rounded-4 mb-4 border-0 shadow-sm"></div>
-                }
-
-                <div class="modern-card mb-5">
-                    <div class="section-header">
-                        <div class="section-number">1</div>
-                        <h5 class="section-title">
-                            @L("Section1Title", "Çalışma Detayları", "Work Details")
-                        </h5>
-                    </div>
-
-                    <div class="p-4 p-md-5">
-
-                        <div class="mb-4">
-                            <label class="form-label">
-                                @L("ConferenceLabel", "Başvuru Yapılacak Kongre", "Conference")
-                            </label>
-
-                            @if (Model.ConferenceId != Guid.Empty &&
-                                                        Model.AvailableConferences != null &&
-                                                        Model.AvailableConferences.Any(c => c.Value == Model.ConferenceId.ToString()))
-                            {
-                                <div class="p-3 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded-3 text-dark fw-bold d-flex align-items-center">
-                                    <i class="fas fa-university text-primary fs-5 me-3"></i>
-                                    <span class="fs-6">@selectedConferenceName</span>
-                                </div>
-
-                                <input type="hidden" asp-for="ConferenceId" />
-                            }
-                            else
-                            {
-                                <div class="position-relative">
-                                    <select asp-for="ConferenceId"
-                                            asp-items="Model.AvailableConferences"
-                                            class="form-select form-select-lg">
-
-                                        <option value="">
-                                            @L("SelectConferenceOption", "Kongre seçiniz", "Select conference")
-                                        </option>
-                                    </select>
-                                </div>
-
-                                <span asp-validation-for="ConferenceId" class="text-danger small mt-1 d-block"></span>
-                            }
-                        </div>
-
-                        <div class="mb-4">
-                            <label asp-for="Title" class="form-label">
-                                @L("TitleLabel", "Bildiri Başlığı", "Abstract Title") <span class="text-danger">*</span>
-                            </label>
-
-                            <input asp-for="Title"
-                                   class="form-control form-control-lg"
-                                   placeholder="@L("TitlePlaceholder", "Örn: Kırsal Turizmde Yapay Zeka Kullanımı", "Example: The Use of Artificial Intelligence in Rural Tourism")" />
-
-                            <span asp-validation-for="Title" class="text-danger small mt-1 d-block"></span>
-                        </div>
-
-                        <div class="row g-4">
-                            <div class="col-md-6">
-                                <label asp-for="PresentationType" class="form-label">
-                                    @L("PresentationTypeLabel", "Sunum Türü", "Presentation Type") <span class="text-danger">*</span>
-                                </label>
-
-                                <select asp-for="PresentationType" class="form-select form-select-lg">
-                                    <option value="">
-                                        @L("SelectPresentationTypeOption", "Sunum türü seçiniz", "Select presentation type")
-                                    </option>
-
-                                    <option value="Oral">
-                                        @L("PresentationTypeOral", "Sözlü Sunum", "Oral Presentation")
-                                    </option>
-
-                                    <option value="Poster">
-                                        @L("PresentationTypePoster", "Poster Sunum", "Poster Presentation")
-                                    </option>
-
-                                    <option value="Online">
-                                        @L("PresentationTypeOnline", "Çevrimiçi Sunum", "Online Presentation")
-                                    </option>
-                                </select>
-
-                                <span asp-validation-for="PresentationType" class="text-danger small mt-1 d-block"></span>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label asp-for="ConferenceTopicId" class="form-label">
-                                    @L("TopicLabel", "Bildiri Konusu / Tema", "Abstract Topic / Theme") <span class="text-danger">*</span>
-                                </label>
-
-                                @if (Model.AvailableTopics == null || !Model.AvailableTopics.Any())
-                                {
-                                    <div class="alert alert-warning rounded-3 mb-2">
-                                        @L("NoTopicsDefinedMessage", "Bu kongre için henüz bildiri konusu tanımlanmamış.", "No abstract topics have been defined for this congress yet.")
-                                    </div>
-                                }
-
-                                <select asp-for="ConferenceTopicId"
-                                        asp-items="Model.AvailableTopics"
-                                        class="form-select form-select-lg">
-
-                                    <option value="">
-                                        @L("SelectTopicOption", "Bildiri konusu seçiniz", "Select abstract topic")
-                                    </option>
-                                </select>
-
-                                <span asp-validation-for="ConferenceTopicId" class="text-danger small mt-1 d-block"></span>
-                            </div>
-
-                            <div class="col-md-12">
-                                <label asp-for="Keywords" class="form-label">
-                                    @L("KeywordsLabel", "Anahtar Kelimeler", "Keywords") <span class="text-danger">*</span>
-                                </label>
-
-                                <input asp-for="Keywords"
-                                       class="form-control form-control-lg"
-                                       placeholder="@L("KeywordsPlaceholder", "Örn: yapay zeka, kırsal turizm, sürdürülebilirlik", "Example: AI, rural tourism, sustainability")" />
-
-                                <span asp-validation-for="Keywords" class="text-danger small mt-1 d-block"></span>
-                            </div>
-                        </div>
-
-                        <div class="mt-4 position-relative">
-                            <label asp-for="AbstractText" class="form-label">
-                                @L("AbstractLabel", "Özet Metni", "Abstract Text") <span class="text-danger">*</span>
-                            </label>
-
-                            <textarea asp-for="AbstractText"
-                                      id="AbstractText"
-                                      class="form-control form-control-lg"
-                                      rows="8"
-                                      placeholder="@L("AbstractPlaceholder", "Özetinizi buraya yazın veya yapıştırın...", "Write or paste your abstract here...")"></textarea>
-
-                            <span asp-validation-for="AbstractText" class="text-danger small mt-1 d-block"></span>
-
-                            <div class="d-flex justify-content-end mt-2">
-                                <span id="wordCountBadge" class="badge bg-light text-secondary border">
-                                    @L("WordCountInitial", "0 Kelime", "0 Words")
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="modern-card mb-5">
-                    <div class="section-header">
-                        <div class="section-number">2</div>
-                        <h5 class="section-title">
+                    <div>
+                        <h5>
                             @L("Section2Title", "Yazar Bilgileri", "Author Information")
                         </h5>
-                    </div>
 
-                    <div class="p-4 p-md-5">
-                        <div class="alert alert-primary bg-opacity-10 border-0 rounded-3 text-primary d-flex align-items-center mb-4">
-                            <i class="fas fa-info-circle fa-lg me-3"></i>
-
-                            <div>
-                                <small class="fw-bold d-block">
-                                    @L("AutoAssignTitle", "Sorumlu yazar otomatik atanır.", "The corresponding author is assigned automatically.")
-                                </small>
-
-                                <small>
-                                    @L("AutoAssignText", "Giriş yapan kullanıcı ilk yazar olarak eklenecektir. Ek yazarları aşağıdan ekleyebilirsiniz.", "The logged-in user will be added as the first author. You can add co-authors below.")
-                                </small>
-                            </div>
-                        </div>
-
-                        <div id="author-list"></div>
-
-                        <button type="button"
-                                class="btn btn-outline-primary btn-action w-100 border-dashed"
-                                id="add-author-btn"
-                                style="border-style: dashed; border-width: 2px;">
-
-                            <i class="fas fa-plus-circle me-2"></i>
-                            @L("AddCoAuthorButton", "Ek Yazar Ekle", "Add Co-Author")
-                        </button>
+                        <span>
+                            @L("Section2Subtitle", "Ek yazarları bu bölümden ekleyebilirsiniz.", "You can add co-authors in this section.")
+                        </span>
                     </div>
                 </div>
 
-                <div class="modern-card mb-5">
-                    <div class="section-header">
-                        <div class="section-number">3</div>
-                        <h5 class="section-title">
+                <div class="step-dots">
+                    <span class="step-dot">1</span>
+                    <span class="step-dot active">2</span>
+                    <span class="step-dot">3</span>
+                </div>
+            </div>
+
+            <div class="submission-card-body">
+                <div class="author-info-card">
+                    <i class="fas fa-info-circle"></i>
+
+                    <div>
+                        <div class="fw-bold mb-1">
+                            @L("AutoAssignTitle", "Sorumlu yazar otomatik atanır.", "The corresponding author is assigned automatically.")
+                        </div>
+
+                        <div class="small fw-bold opacity-75">
+                            @L("AutoAssignText", "Giriş yapan kullanıcı ilk yazar olarak eklenecektir. Ek yazarları aşağıdan ekleyebilirsiniz.", "The logged-in user will be added as the first author. You can add co-authors below.")
+                        </div>
+                    </div>
+                </div>
+
+                <div id="author-list"></div>
+
+                <button type="button"
+                        class="btn-add-author w-100"
+                        id="add-author-btn">
+
+                    <i class="fas fa-plus-circle"></i>
+                    @L("AddCoAuthorButton", "Ek Yazar Ekle", "Add Co-Author")
+                </button>
+            </div>
+        </div>
+
+        <div class="submission-card">
+            <div class="submission-card-header">
+                <div class="submission-step-title">
+                    <div class="submission-step-number">3</div>
+
+                    <div>
+                        <h5>
                             @L("Section3Title", "Dosya Yükleme", "File Upload")
                         </h5>
+
+                        <span>
+                            @L("Section3Subtitle", "Bildiri dosyanızı PDF, DOC veya DOCX formatında yükleyin.", "Upload your abstract file in PDF, DOC, or DOCX format.")
+                        </span>
                     </div>
+                </div>
 
-                    <div class="p-4 p-md-5 text-center">
-                        <label class="form-label d-block text-start mb-3">
-                            @L("FileLabel", "Bildiri Dosyası", "Abstract File") <span class="text-danger">*</span>
-                        </label>
+                <div class="step-dots">
+                    <span class="step-dot">1</span>
+                    <span class="step-dot">2</span>
+                    <span class="step-dot active">3</span>
+                </div>
+            </div>
 
-                        <div class="upload-zone p-5 position-relative">
-                            <div id="upload-placeholder">
-                                <div class="mb-3">
-                                    <div class="bg-white rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center"
-                                         style="width: 80px; height: 80px;">
+            <div class="submission-card-body">
+                <label class="form-label d-block mb-3">
+                    @L("FileLabel", "Bildiri Dosyası", "Abstract File") <span class="text-danger">*</span>
+                </label>
 
-                                        <i class="fas fa-cloud-upload-alt fa-2x text-primary"></i>
-                                    </div>
-                                </div>
-
-                                <h6 class="fw-bold text-dark mb-1">
-                                    @L("UploadDragTitle", "Dosyanızı buraya yükleyin", "Upload your file here")
-                                </h6>
-
-                                <p class="text-muted small mb-0">
-                                    @L("UploadDragText", "PDF, DOC veya DOCX dosyası yükleyebilirsiniz.", "You can upload a PDF, DOC, or DOCX file.")
-                                </p>
-                            </div>
-
-                            <div id="file-preview" class="d-none align-items-center justify-content-center flex-column">
-                                <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
-
-                                <h6 class="fw-bold text-dark mb-1" id="fileNameText">
-                                    file.pdf
-                                </h6>
-
-                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">
-                                    @L("ReadyToUploadLabel", "Yüklemeye hazır", "Ready to upload")
-                                </span>
-                            </div>
-
-                            <input asp-for="SubmissionFile"
-                                   type="file"
-                                   class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
-                                   accept=".pdf, .docx, .doc"
-                                   onchange="fileSelected(this)"
-                                   style="cursor: pointer;" />
+                <div class="upload-zone p-5 text-center">
+                    <div id="upload-placeholder">
+                        <div class="upload-icon mb-3">
+                            <i class="fas fa-cloud-upload-alt fa-2x"></i>
                         </div>
 
-                        <span asp-validation-for="SubmissionFile" class="text-danger small mt-2 d-block text-start"></span>
+                        <h6 class="fw-bold text-dark mb-1">
+                            @L("UploadDragTitle", "Dosyanızı buraya yükleyin", "Upload your file here")
+                        </h6>
+
+                        <p class="text-muted small mb-0">
+                            @L("UploadDragText", "PDF, DOC veya DOCX dosyası yükleyebilirsiniz. Maksimum dosya boyutu 10 MB olmalıdır.", "You can upload a PDF, DOC, or DOCX file. Maximum file size should be 10 MB.")
+                        </p>
                     </div>
+
+                    <div id="file-preview" class="d-none align-items-center justify-content-center flex-column">
+                        <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
+
+                        <h6 class="fw-bold text-dark mb-1" id="fileNameText">
+                            file.pdf
+                        </h6>
+
+                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">
+                            @L("ReadyToUploadLabel", "Yüklemeye hazır", "Ready to upload")
+                        </span>
+                    </div>
+
+                    <input asp-for="SubmissionFile"
+                           type="file"
+                           class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
+                           accept=".pdf, .docx, .doc"
+                           onchange="fileSelected(this)"
+                           style="cursor: pointer;" />
                 </div>
 
-                <div class="d-flex justify-content-between align-items-center mb-5">
-                    <a href="@backUrl" class="text-decoration-none text-muted fw-bold">
-                        <i class="fas fa-arrow-left me-2"></i>
-                        @L("CancelButton", "Vazgeç", "Cancel")
-                    </a>
-
-                    <button type="submit" class="btn btn-primary btn-action btn-primary-glow text-white px-5 py-3">
-                        @L("SubmitButton", "Bildiriyi Gönder", "Submit Abstract")
-                        <i class="fas fa-paper-plane ms-2"></i>
-                    </button>
-                </div>
-
-            </form>
+                <span asp-validation-for="SubmissionFile" class="text-danger small fw-bold mt-2 d-block"></span>
+            </div>
         </div>
-    </div>
+
+        <div class="submission-actions">
+            <a href="@backUrl" class="btn-back">
+                <i class="fas fa-arrow-left"></i>
+                @L("CancelButton", "Vazgeç", "Cancel")
+            </a>
+
+            <button type="submit" class="btn-submit-modern">
+                <span>
+                    @L("SubmitButton", "Bildiriyi Gönder", "Submit Abstract")
+                </span>
+
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </form>
 </div>
 
 @section Scripts {
@@ -538,16 +775,66 @@
         const orcidPlaceholder = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("AuthorOrcidPlaceholder", "0000-0000-0000-0000", "0000-0000-0000-0000")));
         const correspondingAuthorLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("CorrespondingAuthorLabel", "Sorumlu yazar", "Corresponding author")));
 
-        document.getElementById('AbstractText').addEventListener('input', function () {
-            var text = this.value.trim();
-            var wordCount = text ? text.split(/\s+/).filter(str => str !== "").length : 0;
-            var badge = document.getElementById('wordCountBadge');
+        function updateTextCounter(selector, counterSelector, max) {
+            const input = document.querySelector(selector);
+            const counter = document.querySelector(counterSelector);
 
-            badge.innerText = wordCount + " " + wordLabel;
-            badge.className = wordCount > 500
-                ? "badge bg-danger text-white border"
-                : "badge bg-light text-secondary border";
-        });
+            if (!input || !counter) {
+                return;
+            }
+
+            const update = function () {
+                counter.innerText = input.value.length + " / " + max;
+            };
+
+            input.addEventListener("input", update);
+            update();
+        }
+
+        function updateKeywordCounter() {
+            const input = document.getElementById("Keywords");
+            const counter = document.getElementById("keywordCounter");
+
+            if (!input || !counter) {
+                return;
+            }
+
+            const keywords = input.value
+                .split(",")
+                .map(x => x.trim())
+                .filter(x => x.length > 0);
+
+            counter.innerText = keywords.length + " / 8";
+        }
+
+        function updateWordCount() {
+            const abstractInput = document.getElementById('AbstractText');
+
+            if (!abstractInput) {
+                return;
+            }
+
+            const text = abstractInput.value.trim();
+            const wordCount = text ? text.split(/\s+/).filter(str => str !== "").length : 0;
+            abstractInput.dataset.wordCount = wordCount;
+        }
+
+        updateTextCounter("[name='Title']", "#titleCounter", 200);
+        updateTextCounter("#AbstractText", "#abstractCounter", 5000);
+
+        const keywordsInput = document.getElementById("Keywords");
+
+        if (keywordsInput) {
+            keywordsInput.addEventListener("input", updateKeywordCounter);
+            updateKeywordCounter();
+        }
+
+        const abstractInput = document.getElementById("AbstractText");
+
+        if (abstractInput) {
+            abstractInput.addEventListener("input", updateWordCount);
+            updateWordCount();
+        }
 
         function fileSelected(input) {
             if (input.files && input.files[0]) {
@@ -572,33 +859,33 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label small">${firstNameLabel}</label>
-                                <input name="Authors[${index}].FirstName" class="form-control" required />
+                                <input name="Authors[${index}].FirstName" class="form-control-modern" required />
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label small">${lastNameLabel}</label>
-                                <input name="Authors[${index}].LastName" class="form-control" required />
+                                <input name="Authors[${index}].LastName" class="form-control-modern" required />
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label small">${emailLabel}</label>
-                                <input name="Authors[${index}].Email" class="form-control" type="email" required />
+                                <input name="Authors[${index}].Email" class="form-control-modern" type="email" required />
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label small">${institutionLabel}</label>
-                                <input name="Authors[${index}].Institution" class="form-control" required />
+                                <input name="Authors[${index}].Institution" class="form-control-modern" required />
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label small">${orcidLabel}</label>
-                                <input name="Authors[${index}].ORCID" class="form-control" placeholder="${orcidPlaceholder}" />
+                                <input name="Authors[${index}].ORCID" class="form-control-modern" placeholder="${orcidPlaceholder}" />
                             </div>
 
                             <div class="col-md-6 d-flex align-items-end">
                                 <div class="form-check mb-2">
                                     <input class="form-check-input" type="checkbox" name="Authors[${index}].IsCorrespondingAuthor" value="true">
-                                    <label class="form-check-label small text-muted">${correspondingAuthorLabel}</label>
+                                    <label class="form-check-label small text-muted fw-bold">${correspondingAuthorLabel}</label>
                                 </div>
 
                                 <input type="hidden" name="Authors[${index}].Order" value="${index + 2}" />

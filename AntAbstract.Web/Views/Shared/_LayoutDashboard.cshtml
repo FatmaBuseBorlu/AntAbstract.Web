@@ -98,15 +98,15 @@
 
     var hideSelectedConferenceBar = ViewData["HideSelectedConferenceBar"] as bool? ?? false;
 
+    var dashboardMyConferencesUrl = "/Dashboard/MyConferences";
+
     var dashboardUrl = isSuperAdmin
         ? "/Dashboard/SuperAdmin"
-        : string.IsNullOrWhiteSpace(slug)
-            ? "/Dashboard"
-            : $"/{slug}/Dashboard";
-
-    var dashboardMyConferencesUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Dashboard/MyConferences"
-        : $"/{slug}/Dashboard/MyConferences";
+        : isAuthor || isListener
+            ? "/Dashboard/MyConferences"
+            : string.IsNullOrWhiteSpace(slug)
+                ? "/Dashboard"
+                : $"/{slug}/Dashboard";
 
     var changeSelectedConferenceUrl = isSuperAdmin
         ? "/Admin/ConferenceFlow?forceSelect=true"
@@ -973,7 +973,7 @@
             <div class="menu-label">@L("Section_General", "Genel")</div>
 
             <a href="@dashboardUrl"
-               class="nav-link @(currentController == "Dashboard" && (currentAction == "Index" || currentAction == "SuperAdmin") ? "active" : "")">
+               class="nav-link @(currentController == "Dashboard" && (currentAction == "Index" || currentAction == "SuperAdmin" || ((isAuthor || isListener) && currentAction == "MyConferences")) ? "active" : "")">
                 <i class="fas fa-home"></i>
                 @L("Dashboard_Home", "Ana Sayfa")
             </a>
@@ -1020,8 +1020,8 @@
                     @L("Global_SystemParameters", "Sistem Parametreleri")
                 </a>
 
-                <a href="/Dashboard/SuperAdmin"
-                   class="nav-link @(currentController == "Dashboard" && currentAction == "SuperAdmin" ? "active" : "")">
+                <a href="/Admin/SystemReports"
+                   class="nav-link @(currentController == "SystemReports" ? "active" : "")">
                     <i class="fas fa-chart-line text-warning"></i>
                     @L("Global_SystemReports", "Sistem Raporları")
                 </a>
@@ -1080,81 +1080,67 @@
                     </a>
                 }
 
-                if (isAuthor)
+                if (isAuthor || isListener)
                 {
                     <div class="menu-label">@L("Section_Submissions", "Başvurular")</div>
 
-                    @if (hasSelectedConference)
-                    {
-                        <a href="@submissionCreateUrl"
-                           class="nav-link @(currentController == "Submission" && currentAction == "Create" ? "active" : "")">
-                            <i class="fas fa-plus-circle text-success"></i>
-                            @L("Author_NewSubmission", "Bildiri Gönder")
-                        </a>
-
-                        <a href="@submissionIndexUrl"
-                           class="nav-link @(currentController == "Submission" && currentAction == "Index" ? "active" : "")">
-                            <i class="fas fa-file-contract text-info"></i>
-                            @L("Author_MySubmissions", "Başvurularım")
-                        </a>
-                    }
-                    else
-                    {
-                        <a href="@dashboardMyConferencesUrl"
-                           class="nav-link @(currentController == "Dashboard" && currentAction == "MyConferences" ? "active" : "")">
-                            <i class="fas fa-hand-pointer text-danger"></i>
-                            @L("Common_SelectConferenceBeforeSubmission", "Bildiri göndermek için önce kongre seç / kayıt ol")
-                        </a>
-                    }
+                    <a href="@dashboardMyConferencesUrl"
+                       class="nav-link @(currentController == "Dashboard" && currentAction == "MyConferences" ? "active" : "")">
+                        <i class="fas fa-calendar-check text-primary"></i>
+                        @L("Common_SelectConference", "Kongre Seç")
+                    </a>
                 }
 
-                if (isAuthor || isListener)
+                if (isAuthor && hasSelectedConference)
+                {
+                    <a href="@submissionCreateUrl"
+                       class="nav-link @(currentController == "Submission" && currentAction == "Create" ? "active" : "")">
+                        <i class="fas fa-plus-circle text-success"></i>
+                        @L("Author_NewSubmission", "Bildiri Gönder")
+                    </a>
+
+                    <a href="@submissionIndexUrl"
+                       class="nav-link @(currentController == "Submission" && currentAction == "Index" ? "active" : "")">
+                        <i class="fas fa-file-contract text-info"></i>
+                        @L("Author_MySubmissions", "Başvurularım")
+                    </a>
+                }
+
+                if ((isAuthor || isListener) && hasSelectedConference)
                 {
                     <div class="menu-label">@L("Section_Congress", "Kongre")</div>
 
-                    @if (!hasSelectedConference)
-                    {
-                        <a href="@dashboardMyConferencesUrl"
-                           class="nav-link @(currentController == "Dashboard" && currentAction == "MyConferences" ? "active" : "")">
-                            <i class="fas fa-hand-pointer text-danger"></i>
-                            @L("Common_SelectConference", "Kongre Seç")
-                        </a>
-                    }
-                    else
-                    {
-                        <a href="@programUrl"
-                           class="nav-link @(currentController == "Program" ? "active" : "")">
-                            <i class="fas fa-calendar-day text-danger"></i>
-                            @L("Congress_Program", "Program")
-                        </a>
+                    <a href="@programUrl"
+                       class="nav-link @(currentController == "Program" ? "active" : "")">
+                        <i class="fas fa-calendar-day text-danger"></i>
+                        @L("Congress_Program", "Program")
+                    </a>
 
-                        <a href="@proceedingsUrl"
-                           class="nav-link @(currentController == "Proceedings" ? "active" : "")">
-                            <i class="fas fa-book" style="color: #6f42c1;"></i>
-                            @L("Congress_Proceedings", "Bildiri Kitabı")
-                        </a>
+                    <a href="@proceedingsUrl"
+                       class="nav-link @(currentController == "Proceedings" ? "active" : "")">
+                        <i class="fas fa-book" style="color: #6f42c1;"></i>
+                        @L("Congress_Proceedings", "Bildiri Kitabı")
+                    </a>
 
-                        <a href="@paymentMyUrl"
-                           class="nav-link @(currentController == "Payment" ? "active" : "")">
-                            <i class="fas fa-file-invoice-dollar text-info"></i>
-                            @L("Congress_MyPayments", "Ödemelerim")
-                        </a>
+                    <a href="@paymentMyUrl"
+                       class="nav-link @(currentController == "Payment" ? "active" : "")">
+                        <i class="fas fa-file-invoice-dollar text-info"></i>
+                        @L("Congress_MyPayments", "Ödemelerim")
+                    </a>
 
-                        <a href="@accommodationUrl"
-                           class="nav-link @(currentController == "Accommodation" ? "active" : "")">
-                            <i class="fas fa-hotel text-warning"></i>
-                            @L("Congress_Accommodation", "Konaklama")
-                        </a>
+                    <a href="@accommodationUrl"
+                       class="nav-link @(currentController == "Accommodation" ? "active" : "")">
+                        <i class="fas fa-hotel text-warning"></i>
+                        @L("Congress_Accommodation", "Konaklama")
+                    </a>
 
-                        <a href="@certificatesIndexUrl"
-                           class="nav-link @(currentController == "Certificates" ? "active" : "")">
-                            <i class="fas fa-certificate text-success"></i>
-                            @L("Congress_Certificates", "Sertifikalarım")
-                        </a>
-                    }
+                    <a href="@certificatesIndexUrl"
+                       class="nav-link @(currentController == "Certificates" ? "active" : "")">
+                        <i class="fas fa-certificate text-success"></i>
+                        @L("Congress_Certificates", "Sertifikalarım")
+                    </a>
                 }
             }
-
             @if (!isSuperAdmin && isManagementTeam)
             {
                 @if (hasSelectedConference)

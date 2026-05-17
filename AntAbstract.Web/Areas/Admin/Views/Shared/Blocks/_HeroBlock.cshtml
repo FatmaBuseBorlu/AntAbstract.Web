@@ -1,12 +1,39 @@
 ﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
 @using System.Text.Json
+@using AntAbstract.Web.Models.ViewModels.Website
+@using Microsoft.AspNetCore.Http
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject AntAbstract.Infrastructure.Context.TenantContext Tc
 
 @{
-    string? buttonText = null;
-    string? buttonUrl = null;
-    string? imageUrl = null;
-    string? backgroundImageUrl = null;
+    HeroBlockContentDto content = new();
+
+    if (!string.IsNullOrWhiteSpace(Model.ContentJson))
+    {
+        try
+        {
+            content = JsonSerializer.Deserialize<HeroBlockContentDto>(
+                Model.ContentJson,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                }
+            ) ?? new HeroBlockContentDto();
+        }
+        catch
+        {
+            content = new HeroBlockContentDto();
+        }
+    }
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
 
     string? ResolveUrl(string? url)
     {
@@ -48,6 +75,13 @@
         return null;
     }
 
+    string? city = null;
+    string? dateText = null;
+    string? formatText = null;
+    string? badgeText = null;
+    string? secondaryButtonText = null;
+    string? secondaryButtonUrl = null;
+
     if (!string.IsNullOrWhiteSpace(Model.ContentJson))
     {
         try
@@ -55,56 +89,508 @@
             using var doc = JsonDocument.Parse(Model.ContentJson);
             var root = doc.RootElement;
 
-            buttonText = GetStringProp(root, "buttonText", "ButtonText");
-            buttonUrl = GetStringProp(root, "buttonUrl", "ButtonUrl");
-            imageUrl = GetStringProp(root, "imageUrl", "ImageUrl");
-            backgroundImageUrl = GetStringProp(root, "backgroundImageUrl", "BackgroundImageUrl");
+            city = GetStringProp(root, "city", "City", "location", "Location");
+            dateText = GetStringProp(root, "dateText", "DateText", "date", "Date");
+            formatText = GetStringProp(root, "formatText", "FormatText", "type", "Type");
+            badgeText = GetStringProp(root, "badgeText", "BadgeText");
+            secondaryButtonText = GetStringProp(root, "secondaryButtonText", "SecondaryButtonText");
+            secondaryButtonUrl = GetStringProp(root, "secondaryButtonUrl", "SecondaryButtonUrl");
         }
         catch
         {
         }
     }
 
-    var bg = ResolveUrl(backgroundImageUrl);
-    var img = ResolveUrl(imageUrl);
-    var btnUrl = ResolveUrl(buttonUrl);
+    var title = Model.Title ?? "";
+    var subtitle = Model.Subtitle ?? "";
 
-    var bgStyle = !string.IsNullOrWhiteSpace(bg)
-        ? $"background-image:url('{bg}'); background-size:cover; background-position:center;"
-        : "background:#f6f7fb;";
+    var slug =
+        ViewContext.RouteData.Values["slug"]?.ToString()
+        ?? Tc.Current?.Slug
+        ?? Context.Session.GetString("SelectedConferenceSlug")
+        ?? "";
+
+    var registrationUrl = !string.IsNullOrWhiteSpace(slug)
+        ? $"/{slug}/registration"
+        : "/Home/Congresses";
+
+    var programUrl = !string.IsNullOrWhiteSpace(slug)
+        ? $"/{slug}/program"
+        : "/Home/Congresses";
+
+    var bg = ResolveUrl(content.BackgroundImageUrl);
+
+    var btnText = L("RegisterForCongressButton", "Kayıt Ol / Bildiri Gönder");
+    var btnUrl = registrationUrl;
+
+    if (string.IsNullOrWhiteSpace(city))
+    {
+        city = L("DefaultHeroCity", "İstanbul");
+    }
+
+    if (string.IsNullOrWhiteSpace(dateText))
+    {
+        dateText = L("DefaultHeroDate", "22 Eylül 2026");
+    }
+
+    if (string.IsNullOrWhiteSpace(formatText))
+    {
+        formatText = L("DefaultHeroFormat", "Çevrimiçi / Hibrit");
+    }
+
+    if (string.IsNullOrWhiteSpace(badgeText))
+    {
+        badgeText = L("HeroBadgeText", "Güncel Bilimsel Etkinlik");
+    }
+
+    if (string.IsNullOrWhiteSpace(secondaryButtonText))
+    {
+        secondaryButtonText = L("ProgramButtonText", "Programı İncele");
+    }
+
+    var resolvedSecondaryButtonUrl = ResolveUrl(secondaryButtonUrl) ?? programUrl;
+
+    var heroStyle = !string.IsNullOrWhiteSpace(bg)
+        ? $"background-image: linear-gradient(120deg, rgba(15, 23, 42, 0.84), rgba(15, 23, 42, 0.52)), url('{bg}');"
+        : "background: radial-gradient(circle at 15% 20%, rgba(0,174,239,0.22), transparent 28%), linear-gradient(135deg, #0f172a 0%, #172554 55%, #083344 100%);";
 }
 
-<section class="p-5 rounded-4 mb-4" style="@bgStyle">
-    <div class="container">
+<section class="modern-conference-hero" style="@heroStyle">
+    <div class="hero-shape hero-shape-one"></div>
+    <div class="hero-shape hero-shape-two"></div>
+
+    <div class="container position-relative">
         <div class="row align-items-center g-4">
-            <div class="col-md-7">
-                <h1 class="display-6 fw-bold mb-2">
-                    @Model.Title
+
+            <div class="col-xl-7 col-lg-7">
+                <div class="hero-badge">
+                    <i class="fas fa-sparkles"></i>
+                    @badgeText
+                </div>
+
+                <h1 class="hero-title">
+                    @title
                 </h1>
 
-                @if (!string.IsNullOrWhiteSpace(Model.Subtitle))
+                @if (!string.IsNullOrWhiteSpace(subtitle))
                 {
-                    <p class="lead mb-4">
-                        @Model.Subtitle
+                    <p class="hero-subtitle">
+                        @subtitle
                     </p>
                 }
 
-                @if (!string.IsNullOrWhiteSpace(buttonText) && !string.IsNullOrWhiteSpace(btnUrl))
-                {
-                    <a class="btn btn-primary btn-lg rounded-pill px-4 fw-bold" href="@btnUrl">
-                        @buttonText
+                <div class="hero-meta-list">
+                    <div class="hero-meta-item">
+                        <span>
+                            <i class="fas fa-location-dot"></i>
+                        </span>
+
+                        <div>
+                            <small>Konum</small>
+                            <strong>@city</strong>
+                        </div>
+                    </div>
+
+                    <div class="hero-meta-item">
+                        <span>
+                            <i class="fas fa-calendar-days"></i>
+                        </span>
+
+                        <div>
+                            <small>Tarih</small>
+                            <strong>@dateText</strong>
+                        </div>
+                    </div>
+
+                    <div class="hero-meta-item">
+                        <span>
+                            <i class="fas fa-globe"></i>
+                        </span>
+
+                        <div>
+                            <small>Katılım</small>
+                            <strong>@formatText</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-actions">
+                    <a class="hero-primary-btn" href="@btnUrl">
+                        <i class="fas fa-user-plus"></i>
+                        @btnText
                     </a>
-                }
+
+                    <a class="hero-secondary-btn" href="@resolvedSecondaryButtonUrl">
+                        <i class="fas fa-calendar-check"></i>
+                        @secondaryButtonText
+                    </a>
+                </div>
             </div>
 
-            <div class="col-md-5 text-center">
-                @if (!string.IsNullOrWhiteSpace(img))
-                {
-                    <img src="@img"
-                         class="img-fluid rounded-4 shadow"
-                         alt="@Localizer["HeroImageAlt"]" />
-                }
+            <div class="col-xl-5 col-lg-5">
+                <div class="hero-info-card">
+                    <div class="hero-info-card-header">
+                        <div>
+                            <span>Kongre Bilgileri</span>
+                            <h3>Başvuru ve Katılım</h3>
+                        </div>
+
+                        <div class="hero-info-icon">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                    </div>
+
+                    <div class="hero-info-grid">
+                        <div>
+                            <small>Kayıt Durumu</small>
+                            <strong>Açık</strong>
+                        </div>
+
+                        <div>
+                            <small>Bildiri Gönderimi</small>
+                            <strong>Aktif</strong>
+                        </div>
+
+                        <div>
+                            <small>Katılım Türü</small>
+                            <strong>@formatText</strong>
+                        </div>
+
+                        <div>
+                            <small>Kongre Tarihi</small>
+                            <strong>@dateText</strong>
+                        </div>
+                    </div>
+
+                    <a href="@btnUrl" class="hero-card-cta">
+                        <span>
+                            <i class="fas fa-paper-plane"></i>
+                            Hemen Başvur
+                        </span>
+
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
             </div>
+
         </div>
     </div>
 </section>
+
+<style>
+    .modern-conference-hero {
+        position: relative;
+        min-height: 560px;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        background-size: cover;
+        background-position: center;
+        color: #ffffff;
+        padding: 6rem 0;
+        border-bottom: 5px solid #00aeef;
+    }
+
+        .modern-conference-hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 20% 20%, rgba(0, 174, 239, 0.26), transparent 26%), radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.14), transparent 22%), linear-gradient(180deg, rgba(15, 23, 42, 0.18), rgba(15, 23, 42, 0.72));
+            pointer-events: none;
+        }
+
+    .hero-shape {
+        position: absolute;
+        border-radius: 999px;
+        pointer-events: none;
+        opacity: 0.55;
+    }
+
+    .hero-shape-one {
+        width: 260px;
+        height: 260px;
+        right: -80px;
+        top: -80px;
+        background: rgba(0, 174, 239, 0.20);
+        filter: blur(2px);
+    }
+
+    .hero-shape-two {
+        width: 180px;
+        height: 180px;
+        left: -60px;
+        bottom: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+    }
+
+    .hero-badge {
+        width: fit-content;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.55rem 0.9rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.20);
+        backdrop-filter: blur(14px);
+        color: #ffffff;
+        font-size: 0.82rem;
+        font-weight: 900;
+        margin-bottom: 1.1rem;
+    }
+
+        .hero-badge i {
+            color: #38bdf8;
+        }
+
+    .hero-title {
+        color: #ffffff;
+        font-size: clamp(2.4rem, 5vw, 4.8rem);
+        font-weight: 900;
+        line-height: 1.04;
+        letter-spacing: -0.07em;
+        margin-bottom: 1.1rem;
+        max-width: 900px;
+    }
+
+    .hero-subtitle {
+        color: rgba(255, 255, 255, 0.80);
+        font-size: 1.08rem;
+        font-weight: 600;
+        line-height: 1.8;
+        max-width: 780px;
+        margin-bottom: 1.4rem;
+    }
+
+    .hero-meta-list {
+        display: flex;
+        align-items: stretch;
+        flex-wrap: wrap;
+        gap: 0.85rem;
+        margin-bottom: 1.65rem;
+    }
+
+    .hero-meta-item {
+        min-width: 175px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.82rem 1rem;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.13);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(16px);
+    }
+
+        .hero-meta-item > span {
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            border-radius: 14px;
+            background: rgba(0, 174, 239, 0.18);
+            color: #38bdf8;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-meta-item small {
+            display: block;
+            color: rgba(255, 255, 255, 0.58);
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.12rem;
+        }
+
+        .hero-meta-item strong {
+            display: block;
+            color: #ffffff;
+            font-size: 0.92rem;
+            font-weight: 900;
+            line-height: 1.25;
+        }
+
+    .hero-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.9rem;
+    }
+
+    .hero-primary-btn,
+    .hero-secondary-btn {
+        min-height: 52px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.65rem;
+        padding: 0 1.35rem;
+        border-radius: 999px;
+        font-weight: 900;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .hero-primary-btn {
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        box-shadow: 0 18px 38px rgba(0, 174, 239, 0.28);
+    }
+
+        .hero-primary-btn:hover {
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 22px 48px rgba(0, 174, 239, 0.36);
+        }
+
+    .hero-secondary-btn {
+        background: rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.24);
+        backdrop-filter: blur(14px);
+    }
+
+        .hero-secondary-btn:hover {
+            background: #ffffff;
+            color: #0f172a;
+            transform: translateY(-2px);
+        }
+
+    .hero-info-card {
+        position: relative;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.54);
+        border-radius: 34px;
+        padding: 1.4rem;
+        color: #0f172a;
+        box-shadow: 0 26px 70px rgba(15, 23, 42, 0.28);
+        backdrop-filter: blur(18px);
+    }
+
+    .hero-info-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.1rem;
+    }
+
+        .hero-info-card-header span {
+            display: block;
+            color: #64748b;
+            font-size: 0.75rem;
+            font-weight: 900;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            margin-bottom: 0.18rem;
+        }
+
+        .hero-info-card-header h3 {
+            color: #0f172a;
+            font-size: 1.25rem;
+            font-weight: 900;
+            margin: 0;
+            letter-spacing: -0.04em;
+        }
+
+    .hero-info-icon {
+        width: 54px;
+        height: 54px;
+        min-width: 54px;
+        border-radius: 18px;
+        background: rgba(0, 174, 239, 0.12);
+        color: #00aeef;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+
+    .hero-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.85rem;
+        margin-bottom: 1rem;
+    }
+
+        .hero-info-grid div {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 0.95rem;
+        }
+
+        .hero-info-grid small {
+            display: block;
+            color: #64748b;
+            font-size: 0.72rem;
+            font-weight: 900;
+            margin-bottom: 0.25rem;
+        }
+
+        .hero-info-grid strong {
+            display: block;
+            color: #0f172a;
+            font-size: 0.9rem;
+            font-weight: 900;
+            line-height: 1.25;
+        }
+
+    .hero-card-cta {
+        min-height: 54px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        border-radius: 999px;
+        padding: 0 1rem 0 1.15rem;
+        background: #0f172a;
+        color: #ffffff;
+        text-decoration: none;
+        font-weight: 900;
+        transition: all 0.2s ease;
+    }
+
+        .hero-card-cta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+        }
+
+        .hero-card-cta:hover {
+            color: #ffffff;
+            background: #00aeef;
+            transform: translateY(-1px);
+        }
+
+    @@media (max-width: 992px) {
+        .modern-conference-hero {
+            min-height: auto;
+            padding: 4.5rem 0;
+        }
+
+        .hero-info-card {
+            margin-top: 1.2rem;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .modern-conference-hero {
+            padding: 3.5rem 0;
+        }
+
+        .hero-meta-item {
+            width: 100%;
+        }
+
+        .hero-actions a {
+            width: 100%;
+        }
+
+        .hero-info-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
