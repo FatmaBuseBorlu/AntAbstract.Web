@@ -3,6 +3,7 @@
 @using AntAbstract.Domain.Entities
 @using AntAbstract.Web.Models.WebsiteBlocks
 @using System.Text.Json
+@using System.Linq
 
 @inject SignInManager<AppUser> SignInManager
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
@@ -17,6 +18,32 @@
         return string.Equals(text, key, StringComparison.OrdinalIgnoreCase) ? fallback : text;
     };
 
+    string ResolveAssetUrl(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return "";
+        }
+
+        if (path.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return path;
+        }
+
+        if (path.StartsWith("~/"))
+        {
+            return Url.Content(path);
+        }
+
+        if (path.StartsWith("/"))
+        {
+            return path;
+        }
+
+        return "/" + path.TrimStart('/');
+    }
+
     var registeredIds = ViewBag.RegisteredConferenceIds as List<Guid> ?? new List<Guid>();
 
     var activeBlocks = Model.Blocks?
@@ -26,30 +53,9 @@
 
     var heroBlock = activeBlocks.FirstOrDefault(b => b.BlockType == ConferencePageBlockType.Hero);
 
-    string? heroBtnText = null;
-    string? heroBtnUrl = null;
-
-    if (heroBlock != null && !string.IsNullOrWhiteSpace(heroBlock.ContentJson))
-    {
-        try
-        {
-            using var doc = JsonDocument.Parse(heroBlock.ContentJson);
-            var root = doc.RootElement;
-
-            if (root.TryGetProperty("buttonText", out var bt))
-            {
-                heroBtnText = bt.GetString();
-            }
-
-            if (root.TryGetProperty("buttonUrl", out var bu))
-            {
-                heroBtnUrl = bu.GetString();
-            }
-        }
-        catch
-        {
-        }
-    }
+    var contentBlocks = activeBlocks
+        .Where(x => x.BlockType != ConferencePageBlockType.Hero)
+        .ToList();
 
     var slug = Model.Conference?.Tenant?.Slug
         ?? Model.Conference?.Slug
@@ -64,6 +70,10 @@
         ? "#"
         : $"/{slug}/submit-abstract";
 
+    var programUrl = string.IsNullOrWhiteSpace(slug)
+        ? "#"
+        : $"/{slug}/program";
+
     var isRegisteredToThisConference = Model.Conference != null
         && registeredIds.Contains(Model.Conference.Id);
 
@@ -71,29 +81,36 @@
         ? submitAbstractUrl
         : registrationUrl;
 
-    var mainActionText = isRegisteredToThisConference
-        ? L("SubmitAbstractButton", "Bildiri Gönder")
-        : L("RegisterAndSubmitButton", "Kayıt Ol / Bildiri Gönder");
+    var heroCardActionText = L("HeroCardContinueButton", "Başvuruya Devam Et");
 
-    var mainActionIcon = isRegisteredToThisConference
-        ? "fa-paper-plane"
-        : "fa-user-plus";
-
-    var circleButtonIcon = isRegisteredToThisConference
-        ? "fa-paper-plane"
-        : "fa-cloud-upload-alt";
-
-    var circleLine1 = isRegisteredToThisConference
-        ? L("SubmitAbstractText_Line1", "BİLDİRİ")
-        : L("RegisterAndSubmitText_Line1", "KAYIT OL");
-
-    var circleLine2 = isRegisteredToThisConference
-        ? L("SubmitAbstractText_Line2", "GÖNDER")
-        : L("RegisterAndSubmitText_Line2", "BİLDİRİ GÖNDER");
-
+    var heroCardActionIcon = "fa-arrow-right";
     var finalHeroBg = !string.IsNullOrWhiteSpace(Model.Conference?.BannerPath)
-        ? Model.Conference.BannerPath
+        ? ResolveAssetUrl(Model.Conference.BannerPath)
         : "https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80";
+
+    var heroTitle = !string.IsNullOrWhiteSpace(heroBlock?.Title)
+        ? heroBlock.Title
+        : Model.Conference?.Title ?? "";
+
+    var heroSubtitle = !string.IsNullOrWhiteSpace(heroBlock?.Subtitle)
+        ? heroBlock.Subtitle
+        : L(
+            "ConferenceHeroDefaultSubtitle",
+            "Bilimsel paylaşımı, akademik iş birliğini ve yenilikçi fikirleri aynı platformda buluşturan kongre deneyimi.");
+
+    var cityText = !string.IsNullOrWhiteSpace(Model.Conference?.City)
+        ? Model.Conference.City
+        : L("OnlineConferenceText", "Çevrimiçi");
+
+    var conferenceDateText = Model.Conference != null
+        ? Model.Conference.StartDate.ToString("dd MMMM yyyy")
+        : "";
+
+    var endDateText = Model.Conference != null
+        ? Model.Conference.EndDate.ToString("dd MMMM yyyy")
+        : "";
+
+    var suggestedConferences = Model.SuggestedConferences?.ToList() ?? new List<Conference>();
 }
 
 @if (Model.Conference == null)
@@ -109,24 +126,362 @@
     :root {
         --theme-primary: #0f172a;
         --theme-accent: #00aeef;
+        --theme-accent-dark: #0d6efd;
         --theme-danger: #ef4444;
+        --theme-muted: #64748b;
+        --theme-border: #e2e8f0;
+        --theme-soft: #f8fafc;
     }
 
-    .conf-hero-modern {
+    body {
+        background: #f6f8fb;
+    }
+
+    .conference-top-strip {
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid #edf2f7;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
         position: relative;
+        z-index: 100;
+    }
+
+    .conference-top-title {
+        color: #0f172a;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        line-height: 1.35;
+    }
+
+        .conference-top-title i {
+            color: var(--theme-accent-dark);
+        }
+
+    .social-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 999px;
+        background: #f8fafc;
+        color: var(--theme-accent-dark);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+        .social-circle:hover {
+            background: rgba(0, 174, 239, 0.10);
+            color: var(--theme-accent);
+            transform: translateY(-2px);
+        }
+
+    .top-action-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        border-radius: 999px;
+        background: #0f172a;
+        color: #ffffff;
+        padding: 0 1.15rem;
+        text-decoration: none;
+        font-weight: 900;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+        transition: all 0.2s ease;
+    }
+
+        .top-action-btn:hover {
+            color: #ffffff;
+            background: var(--theme-accent);
+            transform: translateY(-2px);
+        }
+
+    .conference-hero {
+        position: relative;
+        min-height: 610px;
+        display: flex;
+        align-items: center;
+        color: #ffffff;
         background-size: cover;
         background-position: center;
-        background-attachment: fixed;
-        padding: 160px 0 100px 0;
-        color: white;
+        overflow: hidden;
         border-bottom: 5px solid var(--theme-accent);
     }
 
-    .hero-glass-overlay {
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(135deg, rgba(15,23,42,0.85) 0%, rgba(15,23,42,0.6) 100%);
-        backdrop-filter: blur(3px);
+        .conference-hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 18% 18%, rgba(0, 174, 239, 0.26), transparent 28%), radial-gradient(circle at 88% 16%, rgba(255, 255, 255, 0.12), transparent 22%), linear-gradient(120deg, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.58));
+            backdrop-filter: blur(2px);
+        }
+
+        .conference-hero::after {
+            content: "";
+            position: absolute;
+            width: 520px;
+            height: 520px;
+            border-radius: 999px;
+            right: -180px;
+            bottom: -220px;
+            background: rgba(0, 174, 239, 0.16);
+            filter: blur(4px);
+        }
+
+    .hero-inner {
+        position: relative;
+        z-index: 2;
+        padding: 5.5rem 0;
+    }
+
+    .hero-badge {
+        width: fit-content;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.55rem 0.9rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.20);
+        backdrop-filter: blur(14px);
+        color: #ffffff;
+        font-size: 0.82rem;
+        font-weight: 900;
+        margin-bottom: 1.1rem;
+    }
+
+        .hero-badge i {
+            color: #38bdf8;
+        }
+
+    .hero-title {
+        color: #ffffff;
+        font-size: clamp(2.5rem, 5vw, 4.9rem);
+        font-weight: 900;
+        line-height: 1.05;
+        letter-spacing: -0.075em;
+        margin-bottom: 1rem;
+        max-width: 920px;
+    }
+
+    .hero-subtitle {
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 1.05rem;
+        font-weight: 600;
+        line-height: 1.8;
+        max-width: 760px;
+        margin-bottom: 1.45rem;
+    }
+
+    .hero-meta-list {
+        display: flex;
+        align-items: stretch;
+        flex-wrap: wrap;
+        gap: 0.85rem;
+        margin-bottom: 1.7rem;
+    }
+
+    .hero-meta-item {
+        min-width: 180px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.82rem 1rem;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.13);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(16px);
+    }
+
+    .hero-meta-icon {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        border-radius: 14px;
+        background: rgba(0, 174, 239, 0.20);
+        color: #38bdf8;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .hero-meta-item small {
+        display: block;
+        color: rgba(255, 255, 255, 0.60);
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 0.1rem;
+    }
+
+    .hero-meta-item strong {
+        display: block;
+        color: #ffffff;
+        font-size: 0.92rem;
+        font-weight: 900;
+        line-height: 1.25;
+    }
+
+    .hero-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.9rem;
+    }
+
+    .hero-primary-btn,
+    .hero-secondary-btn {
+        min-height: 54px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.65rem;
+        padding: 0 1.45rem;
+        border-radius: 999px;
+        font-weight: 900;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .hero-primary-btn {
+        background: linear-gradient(135deg, var(--theme-accent), var(--theme-accent-dark));
+        color: #ffffff;
+        box-shadow: 0 18px 38px rgba(0, 174, 239, 0.28);
+    }
+
+        .hero-primary-btn:hover {
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 22px 48px rgba(0, 174, 239, 0.36);
+        }
+
+    .hero-secondary-btn {
+        background: rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.24);
+        backdrop-filter: blur(14px);
+    }
+
+        .hero-secondary-btn:hover {
+            background: #ffffff;
+            color: #0f172a;
+            transform: translateY(-2px);
+        }
+
+    .hero-info-card {
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid rgba(255, 255, 255, 0.58);
+        border-radius: 34px;
+        padding: 1.4rem;
+        color: #0f172a;
+        box-shadow: 0 28px 75px rgba(15, 23, 42, 0.30);
+        backdrop-filter: blur(18px);
+    }
+
+    .hero-info-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.1rem;
+    }
+
+        .hero-info-card-header span {
+            display: block;
+            color: #64748b;
+            font-size: 0.75rem;
+            font-weight: 900;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            margin-bottom: 0.18rem;
+        }
+
+        .hero-info-card-header h3 {
+            color: #0f172a;
+            font-size: 1.25rem;
+            font-weight: 900;
+            margin: 0;
+            letter-spacing: -0.04em;
+        }
+
+    .hero-info-icon {
+        width: 54px;
+        height: 54px;
+        min-width: 54px;
+        border-radius: 18px;
+        background: rgba(0, 174, 239, 0.12);
+        color: var(--theme-accent);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+
+    .hero-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.85rem;
+        margin-bottom: 1rem;
+    }
+
+        .hero-info-grid div {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 0.95rem;
+        }
+
+        .hero-info-grid small {
+            display: block;
+            color: #64748b;
+            font-size: 0.72rem;
+            font-weight: 900;
+            margin-bottom: 0.25rem;
+        }
+
+        .hero-info-grid strong {
+            display: block;
+            color: #0f172a;
+            font-size: 0.9rem;
+            font-weight: 900;
+            line-height: 1.25;
+        }
+
+    .hero-card-cta {
+        min-height: 54px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        border-radius: 999px;
+        padding: 0 1rem 0 1.15rem;
+        background: #0f172a;
+        color: #ffffff;
+        text-decoration: none;
+        font-weight: 900;
+        transition: all 0.2s ease;
+    }
+
+        .hero-card-cta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+        }
+
+        .hero-card-cta:hover {
+            color: #ffffff;
+            background: var(--theme-accent);
+            transform: translateY(-1px);
+        }
+
+    .conference-page-shell {
+        background: radial-gradient(circle at 12% 8%, rgba(0, 174, 239, 0.08), transparent 28%), radial-gradient(circle at 88% 15%, rgba(13, 110, 253, 0.06), transparent 26%), #f6f8fb;
+        padding: 3rem 0;
     }
 
     .sticky-sidebar {
@@ -136,48 +491,80 @@
     }
 
     .modern-menu-list {
-        background: #fff;
-        border-radius: 20px;
+        background: #ffffff;
+        border-radius: 24px;
         padding: 10px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-        border: 1px solid #f1f5f9;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        border: 1px solid #eef2f7;
+    }
+
+    .modern-menu-title {
+        color: #0f172a;
+        font-size: 0.82rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        padding: 12px 14px 8px;
     }
 
     .modern-menu-item {
         color: #475569 !important;
-        font-weight: 600;
-        padding: 14px 20px !important;
+        font-weight: 800;
+        padding: 14px 16px !important;
         margin-bottom: 5px;
-        border-radius: 12px !important;
-        transition: all 0.3s ease;
+        border-radius: 16px !important;
+        transition: all 0.25s ease;
         border: none !important;
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
     }
+
+        .modern-menu-item i {
+            width: 30px;
+            height: 30px;
+            min-width: 30px;
+            border-radius: 11px;
+            background: rgba(0, 174, 239, 0.09);
+            color: var(--theme-accent);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.72rem;
+            transition: all 0.25s ease;
+        }
 
         .modern-menu-item:hover,
         .modern-menu-item.active {
-            background-color: var(--theme-accent) !important;
-            color: #fff !important;
-            transform: translateX(5px);
-            box-shadow: 0 4px 10px rgba(0, 174, 239, 0.2);
+            background-color: rgba(0, 174, 239, 0.09) !important;
+            color: var(--theme-accent) !important;
+            transform: translateX(4px);
         }
 
+            .modern-menu-item:hover i,
+            .modern-menu-item.active i {
+                background: var(--theme-accent);
+                color: #ffffff;
+            }
+
     .content-card {
-        background: #fff;
-        border-radius: 24px;
+        background: #ffffff;
+        border-radius: 28px;
         padding: 40px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.03);
-        border: 1px solid rgba(0,0,0,0.02);
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        border: 1px solid #eef2f7;
         margin-bottom: 40px;
         scroll-margin-top: 40px;
     }
 
     .content-title {
         color: var(--theme-primary);
-        font-weight: 800;
+        font-weight: 900;
         font-size: 1.75rem;
         margin-bottom: 25px;
         position: relative;
         padding-bottom: 15px;
+        letter-spacing: -0.04em;
     }
 
         .content-title::after {
@@ -185,390 +572,728 @@
             position: absolute;
             bottom: 0;
             left: 0;
-            width: 60px;
+            width: 68px;
             height: 4px;
-            background: var(--theme-accent);
-            border-radius: 2px;
+            background: linear-gradient(135deg, var(--theme-accent), var(--theme-accent-dark));
+            border-radius: 999px;
         }
 
     .content-text {
         color: #475569;
-        font-size: 1.1rem;
+        font-size: 1.02rem;
         line-height: 1.9;
-        text-align: justify;
     }
 
-    .modern-red-pulse-btn {
-        display: flex;
-        flex-direction: column;
+    .empty-content-card {
+        background: #ffffff;
+        border-radius: 28px;
+        padding: 48px 28px;
+        text-align: center;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        border: 1px solid #eef2f7;
+    }
+
+    .empty-content-icon {
+        width: 76px;
+        height: 76px;
+        border-radius: 26px;
+        background: rgba(0, 174, 239, 0.10);
+        color: var(--theme-accent);
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 100%;
-        aspect-ratio: 1/1;
-        max-height: 240px;
-        background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
-        border-radius: 50%;
-        text-decoration: none;
-        color: white;
-        box-shadow: 0 15px 35px rgba(255, 75, 43, 0.3);
-        transition: all 0.4s ease;
-        position: relative;
-        overflow: hidden;
-        border: 8px solid rgba(255,255,255,0.5);
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
     }
 
-        .modern-red-pulse-btn:hover {
-            transform: scale(1.05) translateY(-5px);
-            color: white;
-            box-shadow: 0 20px 40px rgba(255, 75, 43, 0.4);
-            border-color: #fff;
+    .action-card {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 35%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e8eef6;
+        border-radius: 30px;
+        padding: 1.25rem;
+        box-shadow: 0 22px 55px rgba(15, 23, 42, 0.08);
+        margin-bottom: 1.5rem;
+    }
+
+    .action-card-badge {
+        width: fit-content;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.38rem 0.72rem;
+        border-radius: 999px;
+        background: rgba(34, 197, 94, 0.10);
+        color: #16a34a;
+        font-size: 0.72rem;
+        font-weight: 900;
+        margin-bottom: 0.75rem;
+    }
+
+    .action-card-icon {
+        width: 58px;
+        height: 58px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, var(--theme-accent), var(--theme-accent-dark));
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
+        margin-bottom: 1rem;
+    }
+
+    .action-card h4 {
+        color: #0f172a;
+        font-size: 1.32rem;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        margin-bottom: 0.55rem;
+    }
+
+    .action-card p {
+        color: #64748b;
+        font-size: 0.88rem;
+        font-weight: 600;
+        line-height: 1.65;
+        margin-bottom: 1rem;
+    }
+
+    .action-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.65rem;
+        margin-bottom: 1rem;
+    }
+
+    .action-info-item {
+        background: #ffffff;
+        border: 1px solid #edf2f7;
+        border-radius: 18px;
+        padding: 0.8rem;
+    }
+
+        .action-info-item span {
+            display: block;
+            color: #64748b;
+            font-size: 0.7rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.25rem;
         }
 
-        .modern-red-pulse-btn i {
-            transition: transform 0.3s;
+        .action-info-item strong {
+            display: block;
+            color: #0f172a;
+            font-size: 0.88rem;
+            font-weight: 900;
+            line-height: 1.25;
         }
 
-        .modern-red-pulse-btn:hover i {
-            transform: translateY(-5px);
+    .action-primary-btn,
+    .action-secondary-btn {
+        min-height: 48px;
+        width: 100%;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        text-decoration: none;
+        font-weight: 900;
+        transition: all 0.2s ease;
+    }
+
+    .action-primary-btn {
+        background: linear-gradient(135deg, var(--theme-accent), var(--theme-accent-dark));
+        color: #ffffff;
+        box-shadow: 0 14px 30px rgba(0, 174, 239, 0.22);
+        margin-bottom: 0.65rem;
+    }
+
+        .action-primary-btn:hover {
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 18px 38px rgba(0, 174, 239, 0.30);
+        }
+
+    .action-secondary-btn {
+        background: #ffffff;
+        border: 1px solid #dbe3ef;
+        color: #334155;
+    }
+
+        .action-secondary-btn:hover {
+            color: var(--theme-accent);
+            border-color: rgba(0, 174, 239, 0.30);
+            background: #f8fbff;
+        }
+
+    .documents-card {
+        background: #ffffff;
+        border: 1px solid #eef2f7;
+        border-radius: 28px;
+        padding: 1.2rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+    }
+
+    .documents-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.85rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.85rem;
+        border-bottom: 1px solid #edf2f7;
+    }
+
+        .documents-card-header h5 {
+            color: #0f172a;
+            font-size: 1rem;
+            font-weight: 900;
+            margin: 0;
+        }
+
+        .documents-card-header span {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border-radius: 15px;
+            background: rgba(0, 174, 239, 0.10);
+            color: var(--theme-accent);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
     .word-doc-card {
         display: flex;
         align-items: center;
         text-decoration: none;
-        padding: 15px;
-        background: #fff;
-        border-radius: 16px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        padding: 0.9rem;
+        background: #f8fafc;
+        border-radius: 18px;
+        border: 1px solid #edf2f7;
+        transition: all 0.25s ease;
+        margin-bottom: 0.75rem;
     }
 
         .word-doc-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 25px rgba(0,0,0,0.06);
-            border-color: #2b579a;
+            transform: translateY(-3px);
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.07);
+            border-color: rgba(0, 174, 239, 0.28);
+            background: #ffffff;
         }
 
     .word-icon-wrapper {
-        width: 50px;
-        height: 50px;
-        border-radius: 12px;
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
         display: flex;
         align-items: center;
         justify-content: center;
         background: linear-gradient(135deg, #2b579a 0%, #1e3c6b 100%);
         color: white;
-        margin-right: 15px;
-        font-size: 1.5rem;
+        margin-right: 0.85rem;
+        font-size: 1.35rem;
         flex-shrink: 0;
     }
 
     .word-text-wrapper h6 {
         color: #1e293b;
-        font-weight: 700;
-        font-size: 0.95rem;
+        font-weight: 900;
+        font-size: 0.92rem;
         margin: 0 0 4px 0;
         line-height: 1.3;
     }
 
     .word-text-wrapper small {
         color: #64748b;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
+        font-size: 0.74rem;
+        font-weight: 700;
     }
 
-    .modern-bottom-cta {
-        background: var(--theme-primary);
+    .bottom-cta {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.25), transparent 30%), linear-gradient(135deg, #0f172a 0%, #172554 100%);
         padding: 80px 0;
         position: relative;
         overflow: hidden;
+        color: #ffffff;
     }
 
-        .modern-bottom-cta::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -10%;
-            width: 500px;
-            height: 500px;
-            background: var(--theme-accent);
-            border-radius: 50%;
-            filter: blur(100px);
-            opacity: 0.2;
+        .bottom-cta h2 {
+            color: #ffffff;
+            font-weight: 900;
+            letter-spacing: -0.05em;
         }
+
+        .bottom-cta p {
+            color: rgba(255, 255, 255, 0.70);
+        }
+
+    .suggested-section {
+        background: radial-gradient(circle at 10% 0%, rgba(0, 174, 239, 0.08), transparent 30%), #ffffff;
+        border-top: 1px solid #e8eef6;
+    }
+
+    .suggested-card {
+        border: none;
+        border-radius: 26px;
+        overflow: hidden;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+        transition: all 0.25s ease;
+        height: 100%;
+        background: #ffffff;
+    }
+
+        .suggested-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+        }
+
+        .suggested-card img {
+            height: 320px;
+            object-fit: cover;
+            width: 100%;
+        }
+
+    @@media (max-width: 992px) {
+        .conference-hero {
+            min-height: auto;
+        }
+
+        .hero-inner {
+            padding: 4rem 0;
+        }
+
+        .hero-info-card {
+            margin-top: 1.25rem;
+        }
+
+        .sticky-sidebar {
+            position: static;
+        }
+
+        .action-info-grid,
+        .hero-info-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .conference-top-strip {
+            display: none;
+        }
+
+        .content-card {
+            padding: 24px;
+            border-radius: 24px;
+        }
+
+        .hero-meta-item,
+        .hero-actions a {
+            width: 100%;
+        }
+    }
 </style>
 
-<div class="bg-white py-2 border-bottom d-none d-md-block shadow-sm position-relative" style="z-index: 100;">
+<div class="conference-top-strip py-2 d-none d-md-block">
     <div class="container d-flex justify-content-between align-items-center">
-        <div class="fw-bold text-dark d-flex align-items-center">
-            <i class="fas fa-university text-primary me-2"></i>
+        <div class="conference-top-title">
+            <i class="fas fa-university"></i>
             @Model.Conference.Title
         </div>
 
         <div class="d-flex align-items-center gap-3">
             <div class="d-flex gap-2">
-                <a href="#" class="btn btn-sm btn-light rounded-circle text-primary">
+                <a href="#" class="social-circle" aria-label="Facebook">
                     <i class="fab fa-facebook-f"></i>
                 </a>
 
-                <a href="#" class="btn btn-sm btn-light rounded-circle text-info">
+                <a href="#" class="social-circle" aria-label="Twitter">
                     <i class="fab fa-twitter"></i>
                 </a>
 
-                <a href="#" class="btn btn-sm btn-light rounded-circle text-primary">
+                <a href="#" class="social-circle" aria-label="LinkedIn">
                     <i class="fab fa-linkedin-in"></i>
                 </a>
             </div>
-
-            <a href="@mainActionUrl" class="btn btn-dark btn-sm rounded-pill px-4 fw-bold shadow-sm">
-                <i class="fas @mainActionIcon me-2 text-info"></i>
-                @mainActionText
-            </a>
         </div>
     </div>
 </div>
 
-<div class="conf-hero-modern" style="background-image: url('@finalHeroBg');">
-    <div class="hero-glass-overlay"></div>
+<section class="conference-hero" style="background-image: url('@finalHeroBg');">
+    <div class="container hero-inner">
+        <div class="row align-items-center g-4">
 
-    <div class="container position-relative z-2">
-        <div class="row align-items-center">
-            <div class="col-lg-8">
-                <span class="badge bg-white text-dark px-3 py-2 rounded-pill mb-3 fw-bold tracking-widest shadow-sm">
-                    <i class="fas fa-satellite-dish text-danger me-1 animate__animated animate__flash animate__infinite"></i>
-                    @(Model.Conference.City ?? Localizer["OnlineConferenceText"].Value)
-                </span>
+            <div class="col-xl-7 col-lg-7">
+                <div class="hero-badge">
+                    <i class="fas fa-calendar-check"></i>
+                    @L("HeroBadge", "Güncel Bilimsel Etkinlik")
+                </div>
 
-                <h1 class="display-4 fw-extrabold mb-4 lh-sm">
-                    @(heroBlock?.Title ?? Model.Conference.Title)
+                <h1 class="hero-title">
+                    @heroTitle
                 </h1>
 
-                <div class="d-flex flex-wrap gap-4 fs-5 text-white-50 fw-medium mb-4">
-                    <div class="d-flex align-items-center">
-                        <i class="far fa-calendar-alt me-2 text-info"></i>
-                        @Model.Conference.StartDate.ToString("d MMMM yyyy")
+                <p class="hero-subtitle">
+                    @heroSubtitle
+                </p>
+
+                <div class="hero-meta-list">
+                    <div class="hero-meta-item">
+                        <div class="hero-meta-icon">
+                            <i class="fas fa-location-dot"></i>
+                        </div>
+
+                        <div>
+                            <small>Konum</small>
+                            <strong>@cityText</strong>
+                        </div>
+                    </div>
+
+                    <div class="hero-meta-item">
+                        <div class="hero-meta-icon">
+                            <i class="fas fa-calendar-days"></i>
+                        </div>
+
+                        <div>
+                            <small>Başlangıç</small>
+                            <strong>@conferenceDateText</strong>
+                        </div>
+                    </div>
+
+                    <div class="hero-meta-item">
+                        <div class="hero-meta-icon">
+                            <i class="fas fa-flag-checkered"></i>
+                        </div>
+
+                        <div>
+                            <small>Bitiş</small>
+                            <strong>@endDateText</strong>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
 
-<div class="container py-5" style="margin-top: -30px; position: relative; z-index: 5;">
-    <div class="row g-4 g-lg-5">
-
-        <div class="col-lg-3 d-none d-lg-block">
-            <div class="sticky-sidebar">
-                <div class="modern-menu-list list-group">
-                    @if (!activeBlocks.Any(b => b.BlockType != ConferencePageBlockType.Hero))
-                    {
-                        <div class="p-3 text-muted text-center small">
-                            <i class="fas fa-info-circle mb-2 fa-2x opacity-25"></i><br>
-                            @Localizer["MenusWillBeAddedText"]
+            <div class="col-xl-5 col-lg-5">
+                <div class="hero-info-card">
+                    <div class="hero-info-card-header">
+                        <div>
+                            <span>Kongre Bilgileri</span>
+                            <h3>Başvuru ve Katılım</h3>
                         </div>
-                    }
 
-                    @foreach (var b in activeBlocks.Where(x => x.BlockType != ConferencePageBlockType.Hero))
-                    {
-                        <a href="#block-@b.Id" class="list-group-item modern-menu-item">
-                            <i class="fas fa-chevron-right me-2 opacity-50" style="font-size: 0.7rem;"></i>
-                            @b.Title
-                        </a>
-                    }
+                        <div class="hero-info-icon">
+                            <i class="fas fa-paper-plane"></i>
+                        </div>
+                    </div>
+
+                    <div class="hero-info-grid">
+                        <div>
+                            <small>Kayıt Durumu</small>
+                            <strong>Açık</strong>
+                        </div>
+
+                        <div>
+                            <small>Bildiri Gönderimi</small>
+                            <strong>Aktif</strong>
+                        </div>
+
+                        <div>
+                            <small>Konum</small>
+                            <strong>@cityText</strong>
+                        </div>
+
+                        <div>
+                            <small>Tarih</small>
+                            <strong>@conferenceDateText</strong>
+                        </div>
+                    </div>
+
+                    <a href="@mainActionUrl" class="hero-card-cta">
+                        <span>
+                            <i class="fas @heroCardActionIcon"></i>
+                            @heroCardActionText
+                        </span>
+
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
             </div>
+
         </div>
+    </div>
+</section>
 
-        <div class="col-lg-6">
-            @if (!activeBlocks.Any(b => b.BlockType != ConferencePageBlockType.Hero))
-            {
-                <div class="content-card text-center py-5">
-                    <img src="https://illustrations.popsy.co/amber/web-design.svg"
-                         alt="@Localizer["UnderConstructionAlt"]"
-                         style="width: 200px; opacity: 0.5;">
+<div class="conference-page-shell">
+    <div class="container">
+        <div class="row g-4 g-lg-5">
 
-                    <h4 class="text-muted mt-4 fw-bold">
-                        @Localizer["ContentsPreparingTitle"]
-                    </h4>
+            <div class="col-lg-3 d-none d-lg-block">
+                <div class="sticky-sidebar">
+                    <div class="modern-menu-list list-group">
+                        <div class="modern-menu-title">
+                            Hızlı Erişim
+                        </div>
 
-                    <p class="text-muted">
-                        @Localizer["ContentsPreparingText"]
-                    </p>
+                        @if (!contentBlocks.Any())
+                        {
+                            <div class="p-3 text-muted text-center small">
+                                <i class="fas fa-info-circle mb-2 fa-2x opacity-25"></i><br>
+                                @Localizer["MenusWillBeAddedText"]
+                            </div>
+                        }
+
+                        @foreach (var b in contentBlocks)
+                        {
+                            <a href="#block-@b.Id" class="list-group-item modern-menu-item">
+                                <i class="fas fa-chevron-right"></i>
+                                @b.Title
+                            </a>
+                        }
+                    </div>
                 </div>
-            }
+            </div>
 
-            @foreach (var b in activeBlocks.Where(x => x.BlockType != ConferencePageBlockType.Hero))
-            {
-                <div id="block-@b.Id" class="content-card">
-                    <h3 class="content-title">@b.Title</h3>
+            <div class="col-lg-6">
+                @if (!contentBlocks.Any())
+                {
+                    <div class="empty-content-card">
+                        <div class="empty-content-icon">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
 
-                    @if (b.BlockType == ConferencePageBlockType.About && !string.IsNullOrWhiteSpace(b.ContentJson))
-                    {
-                        AboutBlockContent? aboutContent = null;
+                        <h4 class="text-dark fw-bold">
+                            @Localizer["ContentsPreparingTitle"]
+                        </h4>
 
-                        try
+                        <p class="text-muted mb-0">
+                            @Localizer["ContentsPreparingText"]
+                        </p>
+                    </div>
+                }
+
+                @foreach (var b in contentBlocks)
+                {
+                    <div id="block-@b.Id" class="content-card">
+                        <h3 class="content-title">
+                            @b.Title
+                        </h3>
+
+                        @if (b.BlockType == ConferencePageBlockType.About && !string.IsNullOrWhiteSpace(b.ContentJson))
                         {
-                            aboutContent = JsonSerializer.Deserialize<AboutBlockContent>(
-                            b.ContentJson,
-                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                        }
-                        catch
-                        {
-                        }
+                            AboutBlockContent? aboutContent = null;
 
-                        if (aboutContent != null)
+                            try
+                            {
+                                aboutContent = JsonSerializer.Deserialize<AboutBlockContent>(
+                                b.ContentJson,
+                                new JsonSerializerOptions
+                                {
+                                    PropertyNameCaseInsensitive = true
+                                });
+                            }
+                            catch
+                            {
+                            }
+
+                            if (aboutContent != null)
+                            {
+                                <div class="content-text">
+                                    @Html.Raw(aboutContent.Description?.Replace("\n", "<br/>"))
+                                </div>
+
+                                @if (aboutContent.Features != null && aboutContent.Features.Any(f => !string.IsNullOrWhiteSpace(f)))
+                                {
+                                    <div class="row mt-4 g-3">
+                                        @foreach (var f in aboutContent.Features.Where(f => !string.IsNullOrWhiteSpace(f)))
+                                        {
+                                            <div class="col-sm-12">
+                                                <div class="d-flex align-items-center bg-light p-3 rounded-3 border">
+                                                    <i class="fas fa-check-circle text-success fs-4 me-3"></i>
+                                                    <span class="fw-bold text-dark">@f</span>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+                        }
+                        else
                         {
                             <div class="content-text">
-                                @Html.Raw(aboutContent.Description?.Replace("\n", "<br/>"))
+                                @if (!string.IsNullOrEmpty(b.Subtitle))
+                                {
+                                    @Html.Raw(b.Subtitle.Replace("\n", "<br/>"))
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="col-lg-3">
+                <div class="sticky-sidebar">
+
+                    <div class="action-card">
+                        <div class="action-card-badge">
+                            <i class="fas fa-circle"></i>
+                            Başvurular Açık
+                        </div>
+
+                        <div class="action-card-icon">
+                            <i class="fas fa-paper-plane"></i>
+                        </div>
+
+                        <h4>
+                            Kayıt ve Bildiri İşlemleri
+                        </h4>
+
+                        <p>
+                            Kongreye kayıt olabilir, kayıt sonrası bildirinizin özetini sistem üzerinden gönderebilirsiniz.
+                        </p>
+
+                        <div class="action-info-grid">
+                            <div class="action-info-item">
+                                <span>Katılım</span>
+                                <strong>@cityText</strong>
                             </div>
 
-                            @if (aboutContent.Features != null && aboutContent.Features.Any(f => !string.IsNullOrWhiteSpace(f)))
-                            {
-                                <div class="row mt-4 g-3">
-                                    @foreach (var f in aboutContent.Features.Where(f => !string.IsNullOrWhiteSpace(f)))
-                                    {
-                                        <div class="col-sm-12">
-                                            <div class="d-flex align-items-center bg-light p-3 rounded-3 border">
-                                                <i class="fas fa-check-circle text-success fs-4 me-3"></i>
-                                                <span class="fw-bold text-dark">@f</span>
-                                            </div>
-                                        </div>
-                                    }
+                            <div class="action-info-item">
+                                <span>Durum</span>
+                                <strong>Aktif</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="documents-card">
+                        <div class="documents-card-header">
+                            <h5>
+                                @Localizer["DocumentsAndTemplatesTitle"]
+                            </h5>
+
+                            <span>
+                                <i class="fas fa-file-lines"></i>
+                            </span>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(Model.Conference.WritingRulesPath))
+                        {
+                            <a href="@ResolveAssetUrl(Model.Conference.WritingRulesPath)" target="_blank" class="word-doc-card">
+                                <div class="word-icon-wrapper">
+                                    <i class="fas fa-file-word"></i>
                                 </div>
-                            }
+
+                                <div class="word-text-wrapper">
+                                    <h6>@Localizer["WritingRulesTitle"]</h6>
+                                    <small>@Localizer["WritingRulesSubtitle"]</small>
+                                </div>
+                            </a>
                         }
-                    }
-                    else
-                    {
-                        <div class="content-text">
-                            @if (!string.IsNullOrEmpty(b.Subtitle))
-                            {
-                                @Html.Raw(b.Subtitle.Replace("\n", "<br/>"))
-                            }
-                        </div>
-                    }
+
+                        @if (!string.IsNullOrWhiteSpace(Model.Conference.AbstractTemplatePath))
+                        {
+                            <a href="@ResolveAssetUrl(Model.Conference.AbstractTemplatePath)" target="_blank" class="word-doc-card" download>
+                                <div class="word-icon-wrapper">
+                                    <i class="fas fa-file-word"></i>
+                                </div>
+
+                                <div class="word-text-wrapper">
+                                    <h6>@Localizer["SampleAbstractFormatTitle"]</h6>
+                                    <small>@Localizer["DocxDownloadText"]</small>
+                                </div>
+                            </a>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(Model.Conference.FullTextTemplatePath))
+                        {
+                            <a href="@ResolveAssetUrl(Model.Conference.FullTextTemplatePath)" target="_blank" class="word-doc-card" download>
+                                <div class="word-icon-wrapper">
+                                    <i class="fas fa-file-word"></i>
+                                </div>
+
+                                <div class="word-text-wrapper">
+                                    <h6>@Localizer["FullTextFormatTitle"]</h6>
+                                    <small>@Localizer["DocxDownloadText"]</small>
+                                </div>
+                            </a>
+                        }
+
+                        @if (string.IsNullOrWhiteSpace(Model.Conference.WritingRulesPath) &&
+                                                string.IsNullOrWhiteSpace(Model.Conference.AbstractTemplatePath) &&
+                                                string.IsNullOrWhiteSpace(Model.Conference.FullTextTemplatePath))
+                        {
+                            <div class="alert alert-light border text-muted small rounded-3 mb-0">
+                                <i class="fas fa-info-circle me-1"></i>
+                                @Localizer["TemplatesNotUploaded"]
+                            </div>
+                        }
+                    </div>
+
                 </div>
-            }
-        </div>
-
-        <div class="col-lg-3">
-            <div class="sticky-sidebar">
-
-                <div class="d-flex justify-content-center mb-5 mx-auto" style="max-width: 240px;">
-                    <a href="@mainActionUrl" class="modern-red-pulse-btn">
-                        <i class="fas @circleButtonIcon fa-3x mb-2 opacity-75"></i>
-
-                        <span class="fs-6 fw-bold mb-1 opacity-75">
-                            @L("OnlineLabel", "ÇEVRİMİÇİ")
-                        </span>
-
-                        <span class="fs-4 fw-bolder lh-1 text-center">
-                            @circleLine1<br />
-                            @circleLine2
-                        </span>
-                    </a>
-                </div>
-
-                <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
-                    @Localizer["DocumentsAndTemplatesTitle"]
-                </h5>
-
-                <div class="d-flex flex-column gap-3 mb-5">
-                    <a href="#" class="word-doc-card">
-                        <div class="word-icon-wrapper">
-                            <i class="fas fa-file-word"></i>
-                        </div>
-
-                        <div class="word-text-wrapper">
-                            <h6>@Localizer["WritingRulesTitle"]</h6>
-                            <small>@Localizer["WritingRulesSubtitle"]</small>
-                        </div>
-                    </a>
-
-                    <a href="#" class="word-doc-card">
-                        <div class="word-icon-wrapper">
-                            <i class="fas fa-file-word"></i>
-                        </div>
-
-                        <div class="word-text-wrapper">
-                            <h6>@Localizer["SampleAbstractFormatTitle"]</h6>
-                            <small>@Localizer["DocxDownloadText"]</small>
-                        </div>
-                    </a>
-
-                    <a href="#" class="word-doc-card">
-                        <div class="word-icon-wrapper">
-                            <i class="fas fa-file-word"></i>
-                        </div>
-
-                        <div class="word-text-wrapper">
-                            <h6>@Localizer["FullTextFormatTitle"]</h6>
-                            <small>@Localizer["DocxDownloadText"]</small>
-                        </div>
-                    </a>
-                </div>
-
             </div>
-        </div>
 
+        </div>
     </div>
 </div>
 
-<div class="modern-bottom-cta">
+<div class="bottom-cta">
     <div class="container text-center position-relative z-2">
         <h2 class="display-6 fw-bold mb-4">
             @Localizer["BottomCtaTitle"]
         </h2>
 
-        <p class="lead text-white-50 mb-5 mw-600 mx-auto">
+        <p class="lead mb-5 mx-auto" style="max-width: 720px;">
             @Localizer["BottomCtaText"]
         </p>
 
-        @if (isRegisteredToThisConference)
-        {
-            <a href="@submitAbstractUrl"
-               class="btn btn-light btn-lg rounded-pill px-5 py-3 fw-bold text-primary shadow-lg">
-                <i class="fas fa-paper-plane me-2"></i>
-                @L("SubmitAbstractButton", "Bildiri Gönder")
-            </a>
-        }
-        else
-        {
-            <a href="@registrationUrl"
-               class="btn btn-info btn-lg rounded-pill px-5 py-3 fw-bold text-white shadow-lg border-0"
-               style="background-color: var(--theme-accent);">
-                <i class="fas fa-user-plus me-2"></i>
-                @L("RegisterAndSubmitButton", "Kayıt Ol / Bildiri Gönder")
-            </a>
-        }
     </div>
 </div>
 
-<div class="bg-light py-5 border-top">
-    <div class="container py-4">
-        <h3 class="text-center fw-bold text-dark mb-5">
-            @Localizer["SuggestedConferencesTitle"]
-        </h3>
+@if (suggestedConferences.Any())
+{
+    <div class="suggested-section py-5">
+        <div class="container py-4">
+            <h3 class="text-center fw-bold text-dark mb-5">
+                @Localizer["SuggestedConferencesTitle"]
+            </h3>
 
-        <div class="row g-4 justify-content-center">
-            @for (int i = 1; i <= 4; i++)
-            {
-                <div class="col-md-3 col-sm-6">
-                    <a href="#" class="text-decoration-none">
-                        <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden transition-all"
-                             style="transition: transform 0.3s; cursor: pointer;"
-                             onmouseover="this.style.transform='translateY(-10px)'"
-                             onmouseout="this.style.transform='translateY(0)'">
+            <div class="row g-4 justify-content-center">
+                @foreach (var conf in suggestedConferences)
+                {
+                    var suggestedSlug = conf.Tenant?.Slug ?? conf.Slug ?? "";
 
-                            <img src="https://placehold.co/300x400/e2e8f0/64748b?text=Kongre+Afişi+@i"
-                                 class="card-img-top"
-                                 alt="@Localizer["ConferencePosterAlt"]">
-                        </div>
-                    </a>
-                </div>
-            }
+                    var bannerUrl = !string.IsNullOrWhiteSpace(conf.BannerPath)
+                    ? ResolveAssetUrl(conf.BannerPath)
+                    : $"https://placehold.co/300x400/e2e8f0/64748b?text={Uri.EscapeDataString(conf.Title ?? "Kongre")}";
+
+                    <div class="col-md-3 col-sm-6">
+                        <a href="/@suggestedSlug" class="text-decoration-none">
+                            <div class="suggested-card">
+                                <div class="position-relative">
+                                    <img src="@bannerUrl"
+                                         alt="@conf.Title" />
+
+                                    <div class="position-absolute bottom-0 start-0 w-100 p-3"
+                                         style="background: linear-gradient(to top, rgba(0,0,0,0.88), transparent);">
+                                        <h6 class="text-white fw-bold mb-1"
+                                            style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                            @conf.Title
+                                        </h6>
+
+                                        <small class="text-info fw-bold">
+                                            <i class="far fa-calendar-alt me-1"></i>
+                                            @conf.StartDate.ToString("dd MMM yyyy")
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
         </div>
     </div>
-</div>
+}

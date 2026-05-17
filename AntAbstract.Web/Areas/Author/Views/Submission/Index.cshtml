@@ -22,6 +22,8 @@
         return $"/{slug}{cleanPath}";
     }
 
+    var hasSubmissions = Model != null && Model.Any();
+
     var allSubmissionsUrl = "/Submission/Index";
 
     var indexUrl = BuildConferenceUrl(
@@ -33,34 +35,123 @@
         "/submit-abstract",
         "/Submission/Create"
     );
+
+    var paymentUrl = BuildConferenceUrl(
+        "/registration",
+        "/Home/Congresses"
+    );
 }
 
 <style>
+    .submissions-page {
+        padding: 2rem 1.5rem 4rem;
+    }
+
+    .submissions-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .submissions-title {
+        color: #0f172a;
+        font-size: 1.8rem;
+        font-weight: 900;
+        letter-spacing: -0.5px;
+        margin-bottom: 0.35rem;
+    }
+
+    .submissions-lead {
+        color: #64748b;
+        font-size: 1rem;
+        margin-bottom: 0;
+    }
+
+    .conference-filter-badge {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        border-radius: 999px;
+        border: 1px solid rgba(0, 174, 239, 0.45);
+        background: rgba(0, 174, 239, 0.08);
+        color: #0284c7;
+        font-size: 0.78rem;
+        font-weight: 900;
+        padding: 0 0.9rem;
+        max-width: 360px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .btn-view-all {
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 800;
+        text-decoration: none;
+        margin-left: 0.65rem;
+    }
+
+        .btn-view-all:hover {
+            color: #0d6efd;
+            text-decoration: none;
+        }
+
+    .btn-new-submission {
+        min-height: 50px;
+        border: none;
+        border-radius: 999px;
+        padding: 0 1.45rem;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.65rem;
+        text-decoration: none;
+        box-shadow: 0 14px 30px rgba(13, 110, 253, 0.22);
+        transition: all 0.22s ease;
+        white-space: nowrap;
+    }
+
+        .btn-new-submission:hover {
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 18px 38px rgba(13, 110, 253, 0.32);
+            text-decoration: none;
+        }
+
     .submission-card {
         background: #fff;
-        border: 1px solid #f0f0f0;
-        border-radius: 16px;
-        transition: all 0.3s ease;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        transition: all 0.28s ease;
         height: 100%;
         display: flex;
         flex-direction: column;
         position: relative;
         overflow: hidden;
+        box-shadow: 0 14px 36px rgba(15, 23, 42, 0.04);
     }
 
         .submission-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.06);
-            border-color: #e2e8f0;
+            transform: translateY(-6px);
+            box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
+            border-color: rgba(0, 174, 239, 0.35);
         }
 
     .status-badge {
-        font-size: 0.75rem;
-        font-weight: 700;
-        padding: 6px 12px;
-        border-radius: 30px;
+        font-size: 0.72rem;
+        font-weight: 900;
+        padding: 7px 13px;
+        border-radius: 999px;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.4px;
+        white-space: nowrap;
     }
 
     .status-new {
@@ -94,10 +185,10 @@
     }
 
     .card-icon-box {
-        width: 45px;
-        height: 45px;
-        border-radius: 12px;
-        background-color: #f8fafc;
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, rgba(0, 174, 239, 0.12), rgba(13, 110, 253, 0.08));
         color: #00aeef;
         display: flex;
         align-items: center;
@@ -106,75 +197,215 @@
         flex-shrink: 0;
     }
 
+    .submission-card-title {
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 900;
+        line-height: 1.35;
+        max-width: 260px;
+    }
+
     .meta-text {
         font-size: 0.85rem;
         color: #64748b;
     }
 
+    .submission-tag {
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: #64748b;
+        border-radius: 10px;
+        font-size: 0.78rem;
+        font-weight: 800;
+        padding: 0.35rem 0.55rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
     .card-actions {
         margin-top: auto;
-        padding-top: 15px;
+        padding-top: 16px;
         border-top: 1px dashed #e2e8f0;
         display: flex;
+        flex-wrap: wrap;
         gap: 10px;
     }
 
     .btn-card-action {
-        flex: 1;
-        font-size: 0.85rem;
-        font-weight: 600;
-        border-radius: 8px;
-        padding: 8px;
+        flex: 1 1 31%;
+        font-size: 0.84rem;
+        font-weight: 900;
+        border-radius: 12px;
+        padding: 9px 10px;
+        min-width: 92px;
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        transition: all 0.2s ease;
     }
 
-    .hover-scale {
-        transition: transform 0.2s;
-    }
-
-        .hover-scale:hover {
-            transform: translateY(-3px);
+        .btn-card-action:hover {
+            transform: translateY(-1px);
         }
+
+    .btn-payment-action {
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        border: none;
+        color: #ffffff;
+        box-shadow: 0 8px 18px rgba(13, 110, 253, 0.18);
+    }
+
+        .btn-payment-action:hover {
+            color: #ffffff;
+            box-shadow: 0 12px 24px rgba(13, 110, 253, 0.25);
+        }
+
+    .empty-submission-state {
+        min-height: 480px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .empty-icon-circle {
+        width: 132px;
+        height: 132px;
+        border-radius: 999px;
+        background: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.05);
+        margin-bottom: 1.35rem;
+    }
+
+        .empty-icon-circle i {
+            color: #cbd5e1;
+            font-size: 4.2rem;
+        }
+
+    .empty-title {
+        color: #0f172a;
+        font-size: 1.45rem;
+        font-weight: 900;
+        margin-bottom: 0.6rem;
+    }
+
+    .empty-message {
+        color: #64748b;
+        font-size: 1rem;
+        max-width: 620px;
+        margin: 0 auto 1.6rem;
+    }
+
+    .btn-first-submission {
+        min-height: 56px;
+        border-radius: 999px;
+        padding: 0 2rem;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.65rem;
+        text-decoration: none;
+        box-shadow: 0 16px 34px rgba(13, 110, 253, 0.22);
+        transition: all 0.22s ease;
+    }
+
+        .btn-first-submission:hover {
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 20px 42px rgba(13, 110, 253, 0.32);
+            text-decoration: none;
+        }
+
+    @@media (max-width: 992px) {
+        .submissions-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .submissions-header-actions {
+            display: flex;
+            justify-content: flex-start;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .submissions-page {
+            padding: 1.5rem 1rem 3rem;
+        }
+
+        .submissions-title {
+            font-size: 1.55rem;
+        }
+
+        .conference-filter-area {
+            display: none;
+        }
+
+        .btn-new-submission {
+            width: 100%;
+        }
+
+        .empty-submission-state {
+            min-height: 420px;
+        }
+    }
 </style>
 
-<div class="container-fluid py-4">
+<div class="container-fluid submissions-page">
 
-    <div class="d-flex justify-content-between align-items-center mb-5">
+    <div class="submissions-header">
         <div>
-            <h3 class="fw-bold text-dark mb-1">
+            <h3 class="submissions-title">
                 @Localizer["PageTitle"]
             </h3>
 
-            <p class="text-muted mb-0">
+            <p class="submissions-lead">
                 @Localizer["PageLead"]
             </p>
         </div>
 
         @if (ViewBag.CurrentConferenceTitle != null)
         {
-            <div class="d-none d-md-block ms-4 me-auto">
-                <span class="badge bg-info bg-opacity-10 text-info border border-info px-3 py-2 rounded-pill">
-                    <i class="fas fa-filter me-1"></i>
-                    @ViewBag.CurrentConferenceTitle
+            <div class="conference-filter-area d-none d-md-flex align-items-center ms-md-3 me-md-auto">
+                <span class="conference-filter-badge">
+                    <i class="fas fa-filter"></i>
+                    <span class="text-truncate">
+                        @ViewBag.CurrentConferenceTitle
+                    </span>
                 </span>
 
                 <a href="@allSubmissionsUrl"
-                   class="btn btn-link btn-sm text-decoration-none text-muted ms-1">
+                   class="btn-view-all">
                     @Localizer["ViewAllButton"]
                 </a>
             </div>
         }
 
-        <a href="@createUrl"
-           class="btn btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm hover-scale">
-            <i class="fas fa-plus-circle me-2"></i>
-            @Localizer["NewSubmissionButton"]
-        </a>
+        @if (hasSubmissions)
+        {
+            <div class="submissions-header-actions">
+                <a href="@createUrl"
+                   class="btn-new-submission">
+                    <i class="fas fa-plus-circle"></i>
+                    @Localizer["NewSubmissionButton"]
+                </a>
+            </div>
+        }
     </div>
 
-    @if (Model != null && Model.Any())
+    @if (hasSubmissions)
     {
         <div class="row g-4">
-            @foreach (var item in Model)
+            @foreach (var item in Model!)
             {
                 SubmissionStatus statusEnum = SubmissionStatus.New;
                 Enum.TryParse<SubmissionStatus>(item.Status, out statusEnum);
@@ -242,15 +473,14 @@
                                 <i class="fas fa-file-alt"></i>
                             </div>
 
-                            <div>
-                                <h6 class="fw-bold text-dark mb-1 text-truncate"
-                                    style="max-width: 250px;"
+                            <div class="min-w-0">
+                                <h6 class="submission-card-title text-truncate"
                                     title="@item.Title">
                                     @item.Title
                                 </h6>
 
                                 <p class="mb-0 small text-muted text-truncate"
-                                   style="max-width: 250px;">
+                                   style="max-width: 260px;">
                                     <i class="fas fa-globe me-1 text-secondary opacity-50"></i>
                                     @(item.ConferenceTitle ?? Localizer["ConferenceNotSpecified"].Value)
                                 </p>
@@ -259,15 +489,15 @@
 
                         <div class="mb-3">
                             <div class="d-flex flex-wrap gap-2">
-                                <span class="badge bg-light text-secondary border fw-normal">
-                                    <i class="fas fa-users me-1"></i>
+                                <span class="submission-tag">
+                                    <i class="fas fa-users"></i>
                                     @(item.Authors?.Count ?? 0) @Localizer["AuthorsLabel"]
                                 </span>
 
                                 @if (!string.IsNullOrWhiteSpace(item.Topic))
                                 {
-                                    <span class="badge bg-light text-secondary border fw-normal">
-                                        <i class="fas fa-layer-group me-1"></i>
+                                    <span class="submission-tag">
+                                        <i class="fas fa-layer-group"></i>
                                         @item.Topic
                                     </span>
                                 }
@@ -275,8 +505,8 @@
                                 {
                                     var firstKey = item.Keywords.Split(',')[0];
 
-                                    <span class="badge bg-light text-secondary border fw-normal">
-                                        <i class="fas fa-tag me-1"></i>
+                                    <span class="submission-tag">
+                                        <i class="fas fa-tag"></i>
                                         @firstKey
                                     </span>
                                 }
@@ -286,7 +516,7 @@
                         <div class="card-actions">
                             <a href="@detailsUrl"
                                class="btn btn-light border btn-card-action text-dark">
-                                <i class="fas fa-eye me-1 text-primary"></i>
+                                <i class="fas fa-eye text-primary"></i>
                                 @Localizer["DetailButton"]
                             </a>
 
@@ -294,22 +524,31 @@
                             {
                                 <a href="@editUrl"
                                    class="btn btn-light border btn-card-action text-dark">
-                                    <i class="fas fa-edit me-1 text-warning"></i>
+                                    <i class="fas fa-edit text-warning"></i>
                                     @Localizer["EditButton"]
                                 </a>
 
                                 <a href="@deleteUrl"
                                    class="btn btn-light border btn-card-action text-dark">
-                                    <i class="fas fa-trash-alt me-1 text-danger"></i>
+                                    <i class="fas fa-trash-alt text-danger"></i>
                                     @Localizer["DeleteButton"]
                                 </a>
                             }
                             else if (statusEnum == SubmissionStatus.Accepted || statusEnum == SubmissionStatus.Presented)
                             {
+                                @if (statusEnum == SubmissionStatus.Accepted)
+                                {
+                                    <a href="@paymentUrl"
+                                       class="btn btn-payment-action btn-card-action">
+                                        <i class="fas fa-credit-card"></i>
+                                        Ödeme Yap
+                                    </a>
+                                }
+
                                 <a href="@acceptanceLetterUrl"
                                    class="btn btn-success btn-card-action text-white"
                                    target="_blank">
-                                    <i class="fas fa-certificate me-1"></i>
+                                    <i class="fas fa-certificate"></i>
                                     @Localizer["DocumentButton"]
                                 </a>
                             }
@@ -322,24 +561,23 @@
     }
     else
     {
-        <div class="row justify-content-center mt-5">
-            <div class="col-md-6 text-center">
-                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-4"
-                     style="width: 120px; height: 120px;">
-                    <i class="fas fa-folder-open fa-4x text-muted opacity-25"></i>
+        <div class="empty-submission-state">
+            <div>
+                <div class="empty-icon-circle">
+                    <i class="fas fa-folder-open"></i>
                 </div>
 
-                <h4 class="fw-bold text-dark">
+                <h4 class="empty-title">
                     @Localizer["EmptyTitle"]
                 </h4>
 
-                <p class="text-muted mb-4">
+                <p class="empty-message">
                     @Localizer["EmptyMessage"]
                 </p>
 
                 <a href="@createUrl"
-                   class="btn btn-primary px-5 py-3 rounded-pill fw-bold shadow-sm hover-scale">
-                    <i class="fas fa-paper-plane me-2"></i>
+                   class="btn-first-submission">
+                    <i class="fas fa-paper-plane"></i>
                     @Localizer["FirstSubmissionButton"]
                 </a>
             </div>
@@ -348,9 +586,9 @@
 </div>
 
 <script>
-    document.querySelectorAll('.hover-scale').forEach(el => {
+    document.querySelectorAll('.btn-new-submission, .btn-first-submission, .btn-card-action').forEach(el => {
         el.addEventListener('mouseenter', () => el.style.transform = 'translateY(-2px)');
         el.addEventListener('mouseleave', () => el.style.transform = 'translateY(0)');
-        el.style.transition = 'transform 0.2s';
+        el.style.transition = 'all 0.2s ease';
     });
 </script>

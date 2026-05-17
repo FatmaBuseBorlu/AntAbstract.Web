@@ -5,6 +5,7 @@
 @using System.Globalization
 
 @inject UserManager<AppUser> UserManager
+@inject SignInManager<AppUser> SignInManager
 @inject IViewLocalizer Localizer
 
 @{
@@ -16,20 +17,82 @@
 
     var user = await UserManager.GetUserAsync(User);
 
+    var roles = user != null
+        ? await UserManager.GetRolesAsync(user)
+        : new List<string>();
+
+    var isSuperAdmin = roles.Contains("SuperAdmin");
+    var isAdmin = roles.Contains("Admin");
+    var isAuthor = roles.Contains("Author");
+    var isReferee = roles.Contains("Referee");
+    var isListener = roles.Contains("Listener");
+
+    var roleText = isSuperAdmin
+        ? "SÜPER ADMİN"
+        : isAdmin
+            ? "ADMİN"
+            : isReferee
+                ? "HAKEM"
+                : isAuthor
+                    ? "YAZAR"
+                    : isListener
+                        ? "DİNLEYİCİ"
+                        : "KULLANICI";
+
+    var panelText = isSuperAdmin
+        ? "Süper Admin Paneli"
+        : isAdmin
+            ? "Yönetici Paneli"
+            : isReferee
+                ? "Hakem Paneli"
+                : isAuthor
+                    ? "Yazar Paneli"
+                    : "Panelim";
+
+    var panelUrl = isSuperAdmin
+        ? "/Dashboard/SuperAdmin"
+        : "/Dashboard/MyConferences";
+
     var fullName = user != null
-        ? $"{user.FirstName} {user.LastName}"
+        ? $"{user.FirstName} {user.LastName}".Trim()
         : (User.Identity?.Name ?? L("DefaultUser", "Kullanıcı"));
+
+    if (string.IsNullOrWhiteSpace(fullName))
+    {
+        fullName = user?.UserName ?? L("DefaultUser", "Kullanıcı");
+    }
+
+    var email = user?.Email ?? "";
+
+    string initials = "U";
+
+    if (!string.IsNullOrWhiteSpace(fullName))
+    {
+        var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length >= 2)
+        {
+            initials = $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        }
+        else
+        {
+            initials = fullName.Substring(0, 1).ToUpper();
+        }
+    }
 
     var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
         ? user.ProfileImagePath
-        : $"https://ui-avatars.com/api/?name={fullName}&background=00aeef&color=fff&size=128&bold=true";
+        : "";
 
     var requestCulture = Context.Features.Get<IRequestCultureFeature>();
-    var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? "tr-TR";
+    var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? CultureInfo.CurrentUICulture.Name;
 
     var currentReturnUrl = string.IsNullOrEmpty(Context.Request.Path)
         ? "/Dashboard/MyConferences"
         : $"{Context.Request.Path}{Context.Request.QueryString}";
+
+    var isTr = currentCulture.StartsWith("tr", StringComparison.OrdinalIgnoreCase);
+    var isEn = currentCulture.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 }
 
 <!DOCTYPE html>
@@ -40,7 +103,7 @@
 
     <title>@ViewData["Title"] - AntAbstract</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -48,10 +111,18 @@
         :root {
             --primary-color: #00aeef;
             --primary-dark: #0984e3;
+            --primary-blue: #0d6efd;
             --bg-color: #f8fafc;
             --border-color: #e2e8f0;
-            --text-dark: #1e293b;
+            --text-dark: #0f172a;
+            --text-soft: #334155;
             --text-muted: #64748b;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
@@ -60,126 +131,402 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            color: var(--text-dark);
         }
 
         .selection-navbar {
-            background-color: #fff;
+            height: 82px;
+            padding: 0 2rem;
+            background: rgba(255, 255, 255, 0.96);
             border-bottom: 1px solid var(--border-color);
-            padding: 1rem 2rem;
-            height: 80px;
             position: sticky;
             top: 0;
-            z-index: 100;
+            z-index: 1000;
+            backdrop-filter: blur(18px);
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.035);
         }
 
         .brand-logo {
             font-size: 1.5rem;
-            font-weight: 800;
+            font-weight: 900;
             color: var(--text-dark);
             text-decoration: none;
-            letter-spacing: -0.5px;
+            letter-spacing: -0.7px;
+            display: inline-flex;
+            align-items: center;
+            line-height: 1;
         }
 
             .brand-logo:hover {
                 color: var(--text-dark);
+                text-decoration: none;
             }
 
-        .language-switcher {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px;
-            border: 1px solid var(--border-color);
-            border-radius: 999px;
-            background: #fff;
-            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
-        }
-
-            .language-switcher form {
-                margin: 0;
-            }
-
-        .lang-btn {
-            border: none;
-            background: transparent;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            font-weight: 700;
-            padding: 8px 14px;
-            border-radius: 999px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            line-height: 1;
-        }
-
-            .lang-btn:hover {
-                background: #f1f5f9;
+            .brand-logo span {
                 color: var(--primary-color);
             }
 
-            .lang-btn.active {
-                background: var(--primary-color);
-                color: white;
-                box-shadow: 0 4px 12px rgba(0, 174, 239, 0.25);
-            }
-
-        .user-chip {
+        .selection-top-actions {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 6px 6px 6px 16px;
-            background: #f1f5f9;
-            border-radius: 50px;
-            transition: all 0.2s;
-            text-decoration: none;
-            color: #334155;
-            cursor: pointer;
-            border: 1px solid transparent;
+            gap: 0.9rem;
         }
 
-            .user-chip:hover {
-                background: #fff;
-                border-color: var(--border-color);
-                box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-                color: #334155;
+        .selection-language-switch {
+            min-height: 48px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.35rem;
+            border-radius: 999px;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+        }
+
+            .selection-language-switch form {
+                margin: 0;
             }
 
-        .user-avatar {
+        .selection-language-item {
+            min-width: 44px;
+            height: 35px;
+            border: none;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0.85rem;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            font-weight: 900;
+            line-height: 1;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+            .selection-language-item:hover {
+                color: var(--primary-blue);
+                background: rgba(13, 110, 253, 0.08);
+            }
+
+            .selection-language-item.active {
+                color: #ffffff;
+                background: linear-gradient(135deg, var(--primary-color), var(--primary-blue));
+                box-shadow: 0 8px 18px rgba(13, 110, 253, 0.28);
+            }
+
+        .selection-account-menu {
+            position: relative;
+        }
+
+        .selection-account-button {
+            min-height: 52px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.7rem;
+            border: 1px solid #dbeafe;
+            border-radius: 999px;
+            padding: 0.45rem 0.55rem 0.45rem 1.15rem;
+            background: #ffffff;
+            color: var(--text-dark);
+            font-size: 0.9rem;
+            font-weight: 900;
+            text-decoration: none;
+            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+            .selection-account-button:hover,
+            .selection-account-button.show {
+                background: #f8fbff;
+                border-color: rgba(13, 110, 253, 0.35);
+                color: var(--text-dark);
+                text-decoration: none;
+                transform: translateY(-1px);
+                box-shadow: 0 14px 34px rgba(15, 23, 42, 0.09);
+            }
+
+        .selection-account-name {
+            max-width: 190px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .selection-account-avatar,
+        .selection-account-avatar-img {
             width: 38px;
             height: 38px;
-            border-radius: 50%;
-            border: 2px solid #fff;
-            object-fit: cover;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+            min-width: 38px;
+            border-radius: 999px;
         }
+
+        .selection-account-avatar {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-blue));
+            color: #ffffff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.82rem;
+            font-weight: 900;
+            box-shadow: 0 10px 22px rgba(13, 110, 253, 0.25);
+            border: 2px solid #ffffff;
+        }
+
+        .selection-account-avatar-img {
+            object-fit: cover;
+            border: 2px solid #ffffff;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+        }
+
+        .selection-account-chevron {
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            margin-right: 0.25rem;
+            transition: transform 0.2s ease;
+        }
+
+        .selection-account-button.show .selection-account-chevron {
+            transform: rotate(180deg);
+        }
+
+        .selection-account-dropdown {
+            width: 315px;
+            padding: 0;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            border-radius: 22px;
+            box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
+            margin-top: 0.7rem !important;
+            background: #ffffff;
+        }
+
+        .selection-account-summary {
+            display: flex;
+            align-items: center;
+            gap: 0.95rem;
+            padding: 1.15rem 1.15rem;
+            background: linear-gradient(135deg, #e0f7ff 0%, #eef9ff 48%, #dff7ff 100%);
+            border-bottom: 1px solid #dbeafe;
+        }
+
+        .selection-summary-avatar,
+        .selection-summary-avatar-img {
+            width: 58px;
+            height: 58px;
+            min-width: 58px;
+            border-radius: 999px;
+        }
+
+        .selection-summary-avatar {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-blue));
+            color: #ffffff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: 900;
+            border: 4px solid #ffffff;
+            box-shadow: 0 12px 26px rgba(13, 110, 253, 0.25);
+        }
+
+        .selection-summary-avatar-img {
+            object-fit: cover;
+            border: 4px solid #ffffff;
+            box-shadow: 0 12px 26px rgba(15, 23, 42, 0.14);
+        }
+
+        .selection-summary-name {
+            color: var(--text-dark);
+            font-size: 1rem;
+            font-weight: 900;
+            line-height: 1.15;
+            margin-bottom: 0.3rem;
+        }
+
+        .selection-summary-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            flex-wrap: wrap;
+        }
+
+        .selection-role-badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 22px;
+            padding: 0 0.5rem;
+            border-radius: 999px;
+            background: #ffffff;
+            color: var(--primary-blue);
+            font-size: 0.7rem;
+            font-weight: 900;
+            box-shadow: 0 6px 14px rgba(13, 110, 253, 0.08);
+        }
+
+        .selection-summary-email {
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            font-weight: 700;
+            max-width: 190px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            display: block;
+            margin-top: 0.22rem;
+        }
+
+        .selection-dropdown-body {
+            padding: 0.8rem;
+        }
+
+        .selection-dropdown-item {
+            width: 100%;
+            min-height: 52px;
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            padding: 0 0.75rem;
+            border-radius: 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-soft);
+            font-size: 0.92rem;
+            font-weight: 900;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+            .selection-dropdown-item:hover {
+                background: #f8fafc;
+                color: var(--primary-blue);
+                text-decoration: none;
+            }
+
+        .selection-dropdown-icon {
+            width: 38px;
+            min-width: 38px;
+            height: 38px;
+            border-radius: 14px;
+            color: var(--primary-blue);
+            background: rgba(13, 110, 253, 0.10);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.92rem;
+            transition: all 0.2s ease;
+        }
+
+        .selection-dropdown-item:hover .selection-dropdown-icon {
+            background: rgba(13, 110, 253, 0.14);
+            transform: translateY(-1px);
+        }
+
+        .selection-dropdown-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 0.75rem 0;
+        }
+
+        .selection-logout-form {
+            margin: 0;
+        }
+
+        .selection-dropdown-logout {
+            color: var(--danger-color);
+            cursor: pointer;
+        }
+
+            .selection-dropdown-logout .selection-dropdown-icon {
+                color: var(--danger-color);
+                background: rgba(239, 68, 68, 0.10);
+            }
+
+            .selection-dropdown-logout:hover {
+                color: #dc2626;
+                background: rgba(239, 68, 68, 0.08);
+            }
+
+                .selection-dropdown-logout:hover .selection-dropdown-icon {
+                    color: #dc2626;
+                    background: rgba(239, 68, 68, 0.13);
+                }
 
         .selection-main {
             flex-grow: 1;
             width: 100%;
         }
 
+        .selection-alert {
+            border: none;
+            border-radius: 18px;
+            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+            font-weight: 700;
+        }
+
         @@media (max-width: 768px) {
             .selection-navbar {
-                padding: 1rem;
+                height: 72px;
+                padding: 0 1rem;
             }
 
             .brand-logo {
                 font-size: 1.25rem;
             }
 
-            .language-switcher {
+            .selection-language-switch {
+                min-height: 42px;
+                padding: 0.25rem;
+            }
+
+            .selection-language-item {
+                min-width: 38px;
+                height: 31px;
+                padding: 0 0.65rem;
+                font-size: 0.75rem;
+            }
+
+            .selection-account-name {
                 display: none;
             }
 
-            .user-chip {
-                padding: 4px;
-                gap: 0;
+            .selection-account-button {
+                min-height: 46px;
+                padding: 0.35rem 0.45rem;
+                gap: 0.35rem;
             }
 
-                .user-chip span,
-                .user-chip i {
-                    display: none !important;
-                }
+            .selection-account-chevron {
+                display: none;
+            }
+
+            .selection-account-avatar,
+            .selection-account-avatar-img {
+                width: 36px;
+                height: 36px;
+                min-width: 36px;
+            }
+
+            .selection-account-dropdown {
+                width: 295px;
+            }
+        }
+
+        @@media (max-width: 480px) {
+            .selection-top-actions {
+                gap: 0.45rem;
+            }
+
+            .selection-language-switch {
+                display: none;
+            }
+
+            .selection-account-dropdown {
+                width: 285px;
+            }
         }
     </style>
 
@@ -189,16 +536,17 @@
 
     <nav class="selection-navbar d-flex justify-content-between align-items-center">
         <a href="/" class="brand-logo">
-            ANT<span style="color: var(--primary-color);">ABSTRACT</span>
+            ANT<span>ABSTRACT</span>
         </a>
 
-        <div class="d-flex align-items-center gap-3">
-            <div class="language-switcher">
+        <div class="selection-top-actions">
+            <div class="selection-language-switch">
                 <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
                     <input type="hidden" name="culture" value="tr-TR" />
                     <input type="hidden" name="returnUrl" value="@currentReturnUrl" />
 
-                    <button type="submit" class="lang-btn @(currentCulture == "tr-TR" ? "active" : "")">
+                    <button type="submit"
+                            class="selection-language-item @(isTr ? "active" : "")">
                         TR
                     </button>
                 </form>
@@ -207,54 +555,121 @@
                     <input type="hidden" name="culture" value="en-US" />
                     <input type="hidden" name="returnUrl" value="@currentReturnUrl" />
 
-                    <button type="submit" class="lang-btn @(currentCulture == "en-US" ? "active" : "")">
+                    <button type="submit"
+                            class="selection-language-item @(isEn ? "active" : "")">
                         EN
                     </button>
                 </form>
             </div>
 
-            <div class="dropdown">
-                <a href="#" class="user-chip" data-bs-toggle="dropdown" aria-expanded="false">
-                    <span class="fw-bold small d-none d-sm-block">@fullName</span>
-                    <img src="@profileImg" class="user-avatar" alt="@fullName">
-                    <i class="fas fa-chevron-down small text-muted ms-1"></i>
-                </a>
+            @if (SignInManager.IsSignedIn(User))
+            {
+                <div class="selection-account-menu dropdown">
+                    <button type="button"
+                            class="selection-account-button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                        <span class="selection-account-name">
+                            @fullName
+                        </span>
 
-                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 rounded-4 p-2" style="width: 220px;">
-                    <li>
-                        <h6 class="dropdown-header small fw-bold">
-                            @L("MyAccount", "Hesabım")
-                        </h6>
-                    </li>
+                        @if (!string.IsNullOrWhiteSpace(profileImg))
+                        {
+                            <img src="@profileImg"
+                                 class="selection-account-avatar-img"
+                                 alt="@fullName" />
+                        }
+                        else
+                        {
+                            <span class="selection-account-avatar">
+                                @initials
+                            </span>
+                        }
 
-                    <li>
-                        <a class="dropdown-item rounded-2 py-2" href="/Identity/Account/Manage">
-                            <i class="fas fa-user-cog me-2 text-muted"></i>
-                            @L("Settings", "Ayarlar")
-                        </a>
-                    </li>
+                        <i class="fas fa-chevron-down selection-account-chevron"></i>
+                    </button>
 
-                    <li>
-                        <a class="dropdown-item rounded-2 py-2" href="/Dashboard/MyConferences">
-                            <i class="fas fa-exchange-alt me-2 text-muted"></i>
-                            @L("ConferenceSelection", "Kongre Seçimi")
-                        </a>
-                    </li>
+                    <div class="dropdown-menu dropdown-menu-end selection-account-dropdown">
+                        <div class="selection-account-summary">
+                            @if (!string.IsNullOrWhiteSpace(profileImg))
+                            {
+                                <img src="@profileImg"
+                                     class="selection-summary-avatar-img"
+                                     alt="@fullName" />
+                            }
+                            else
+                            {
+                                <span class="selection-summary-avatar">
+                                    @initials
+                                </span>
+                            }
 
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
+                            <div class="min-w-0">
+                                <div class="selection-summary-name">
+                                    @fullName
+                                </div>
 
-                    <li>
-                        <form asp-controller="Dashboard" asp-action="CustomLogout" method="post">
-                            <button type="submit" class="dropdown-item rounded-2 text-danger fw-bold py-2">
-                                <i class="fas fa-sign-out-alt me-2"></i>
-                                @L("Logout", "Çıkış Yap")
-                            </button>
-                        </form>
-                    </li>
-                </ul>
-            </div>
+                                <div class="selection-summary-meta">
+                                    <span class="selection-role-badge">
+                                        @roleText
+                                    </span>
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(email))
+                                {
+                                    <span class="selection-summary-email">
+                                        @email
+                                    </span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="selection-dropdown-body">
+                            <a href="@panelUrl"
+                               class="selection-dropdown-item">
+                                <span class="selection-dropdown-icon">
+                                    <i class="fas fa-file-alt"></i>
+                                </span>
+
+                                <span>
+                                    @panelText
+                                </span>
+                            </a>
+
+                            <a href="/Identity/Account/Manage"
+                               class="selection-dropdown-item">
+                                <span class="selection-dropdown-icon">
+                                    <i class="fas fa-user-cog"></i>
+                                </span>
+
+                                <span>
+                                    @L("Settings", "Hesap Ayarları")
+                                </span>
+                            </a>
+
+                            <div class="selection-dropdown-divider"></div>
+
+                            <form asp-controller="Dashboard"
+                                  asp-action="CustomLogout"
+                                  method="post"
+                                  class="selection-logout-form">
+                                @Html.AntiForgeryToken()
+
+                                <button type="submit"
+                                        class="selection-dropdown-item selection-dropdown-logout">
+                                    <span class="selection-dropdown-icon">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                    </span>
+
+                                    <span>
+                                        @L("Logout", "Çıkış Yap")
+                                    </span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
     </nav>
 
@@ -262,7 +677,7 @@
         @if (TempData["SuccessMessage"] != null)
         {
             <div class="container mt-4">
-                <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3">
+                <div class="alert alert-success alert-dismissible fade show selection-alert">
                     <i class="fas fa-check-circle me-2"></i>
                     @TempData["SuccessMessage"]
 
@@ -274,7 +689,7 @@
         @if (TempData["ErrorMessage"] != null)
         {
             <div class="container mt-4">
-                <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3">
+                <div class="alert alert-danger alert-dismissible fade show selection-alert">
                     <i class="fas fa-times-circle me-2"></i>
                     @TempData["ErrorMessage"]
 
@@ -286,7 +701,7 @@
         @if (TempData["InfoMessage"] != null)
         {
             <div class="container mt-4">
-                <div class="alert alert-info alert-dismissible fade show border-0 shadow-sm rounded-3">
+                <div class="alert alert-info alert-dismissible fade show selection-alert">
                     <i class="fas fa-info-circle me-2"></i>
                     @TempData["InfoMessage"]
 

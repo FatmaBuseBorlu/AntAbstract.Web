@@ -1,0 +1,1042 @@
+﻿@using AntAbstract.Web.Models.ViewModels.Admin.Reports
+@using System
+@using System.Linq
+@using System.Collections.Generic
+
+@model SystemReportsIndexViewModel
+
+@{
+    ViewData["Title"] = "Sistem Raporları";
+    ViewData["HideSelectedConferenceBar"] = true;
+    Layout = "_LayoutDashboard";
+
+    var recentUsers = Model.RecentUsers ?? new List<RecentUserReportItem>();
+    var recentConferences = Model.RecentConferences ?? new List<RecentConferenceReportItem>();
+    var conferenceReports = Model.ConferenceSubmissionReports ?? new List<ConferenceSubmissionReportItem>();
+    var tenantReports = Model.TenantConferenceReports ?? new List<TenantConferenceReportItem>();
+
+    var maxSubmissionCount = conferenceReports.Any()
+        ? Math.Max(1, conferenceReports.Max(x => x.SubmissionCount))
+        : 1;
+
+    var maxTenantConferenceCount = tenantReports.Any()
+        ? Math.Max(1, tenantReports.Max(x => x.ConferenceCount))
+        : 1;
+
+    string BarWidth(int value, int max)
+    {
+        if (value <= 0 || max <= 0)
+        {
+            return "0%";
+        }
+
+        var percent = (int)Math.Round((value * 100.0) / max);
+
+        if (percent < 8)
+        {
+            percent = 8;
+        }
+
+        return $"{percent}%";
+    }
+
+    string Money(decimal amount)
+    {
+        return amount.ToString("N2") + " ₺";
+    }
+}
+
+<div class="container-fluid system-reports-page">
+
+    <div class="system-report-hero-card mb-4">
+        <div class="system-report-hero-left">
+            <div class="system-report-hero-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+
+            <div>
+                <div class="system-report-section-label">
+                    Süper Admin Paneli
+                </div>
+
+                <h2 class="system-report-title">
+                    Sistem Raporları
+                </h2>
+
+                <p class="system-report-description">
+                    Kurumlar, kongreler, kullanıcılar, bildiriler ve kayıt süreçlerine ait genel sistem özetini buradan takip edebilirsiniz.
+                </p>
+            </div>
+        </div>
+
+        <div class="system-report-hero-actions">
+            <a href="/Admin"
+               class="btn report-light-btn">
+                <i class="fas fa-arrow-left me-2"></i>
+                Panele Dön
+            </a>
+
+            <a href="/Admin/SystemReports"
+               class="btn report-primary-btn">
+                <i class="fas fa-rotate me-2"></i>
+                Yenile
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-xl-3 col-md-6">
+            <div class="report-stat-card">
+                <div class="report-stat-icon stat-blue">
+                    <i class="fas fa-building"></i>
+                </div>
+
+                <div>
+                    <div class="report-stat-number">@Model.TotalInstitutions</div>
+                    <div class="report-stat-label">Toplam Kurum</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="report-stat-card">
+                <div class="report-stat-icon stat-cyan">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+
+                <div>
+                    <div class="report-stat-number">@Model.TotalConferences</div>
+                    <div class="report-stat-label">Toplam Kongre</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="report-stat-card">
+                <div class="report-stat-icon stat-purple">
+                    <i class="fas fa-users"></i>
+                </div>
+
+                <div>
+                    <div class="report-stat-number">@Model.TotalUsers</div>
+                    <div class="report-stat-label">Toplam Kullanıcı</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="report-stat-card">
+                <div class="report-stat-icon stat-orange">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+
+                <div>
+                    <div class="report-stat-number">@Model.TotalAdmins</div>
+                    <div class="report-stat-label">Admin</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="report-stat-card">
+                <div class="report-stat-icon stat-green">
+                    <i class="fas fa-user-pen"></i>
+                </div>
+
+                <div>
+                    <div class="report-stat-number">@Model.TotalAuthors</div>
+                    <div class="report-stat-label">Yazar</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="report-stat-card">
+                <div class="report-stat-icon stat-teal">
+                    <i class="fas fa-user-check"></i>
+                </div>
+
+                <div>
+                    <div class="report-stat-number">@Model.TotalReviewers</div>
+                    <div class="report-stat-label">Hakem</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="report-stat-card">
+                <div class="report-stat-icon stat-red">
+                    <i class="fas fa-file-lines"></i>
+                </div>
+
+                <div>
+                    <div class="report-stat-number">@Model.TotalSubmissions</div>
+                    <div class="report-stat-label">Toplam Bildiri</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="report-stat-card">
+                <div class="report-stat-icon stat-yellow">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+
+                <div>
+                    <div class="report-stat-number">@Model.TotalRegistrations</div>
+                    <div class="report-stat-label">Toplam Kayıt</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row g-4 mb-4">
+
+        <div class="col-xl-4">
+            <div class="report-mini-card payment-summary-card h-100">
+                <div class="report-card-header">
+                    <div>
+                        <span>Kayıt & Ödeme</span>
+                        <h5>Ödeme Özeti</h5>
+                    </div>
+
+                    <div class="report-card-icon stat-green">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                </div>
+
+                <div class="payment-summary-grid">
+                    <div>
+                        <span>Ödeme Yapan</span>
+                        <strong>@Model.PaidRegistrations</strong>
+                    </div>
+
+                    <div>
+                        <span>Bekleyen</span>
+                        <strong>@Model.PendingPayments</strong>
+                    </div>
+                </div>
+
+                <div class="revenue-box">
+                    <span>Toplam Gelir</span>
+                    <strong>@Money(Model.TotalRevenue)</strong>
+                    <small>
+                        Tamamlanan ödemeler ve ödenmiş kayıtlar üzerinden hesaplanır.
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-8">
+            <div class="report-mini-card h-100">
+                <div class="report-card-header">
+                    <div>
+                        <span>Kongre Analizi</span>
+                        <h5>Kongrelere Göre Bildiri Sayıları</h5>
+                    </div>
+
+                    <div class="report-card-icon stat-blue">
+                        <i class="fas fa-chart-simple"></i>
+                    </div>
+                </div>
+
+                @if (!conferenceReports.Any())
+                {
+                    <div class="report-empty-mini">
+                        <i class="fas fa-file-circle-question"></i>
+                        <strong>Bildiri raporu bulunamadı</strong>
+                        <span>Kongrelere bildiri eklendikçe burada görünecek.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="bar-report-list">
+                        @foreach (var item in conferenceReports)
+                        {
+                            var siteUrl = string.IsNullOrWhiteSpace(item.Slug)
+                            ? "#"
+                            : $"/{item.Slug}";
+
+                            <div class="bar-report-item">
+                                <div class="bar-report-top">
+                                    <div>
+                                        <strong>@item.ConferenceTitle</strong>
+                                        <span>@item.TenantName</span>
+                                    </div>
+
+                                    <div class="bar-report-count">
+                                        @item.SubmissionCount bildiri
+                                    </div>
+                                </div>
+
+                                <div class="bar-track">
+                                    <div class="bar-fill" style="width:@BarWidth(item.SubmissionCount, maxSubmissionCount)"></div>
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(item.Slug))
+                                {
+                                    <a href="@siteUrl" target="_blank" class="mini-link">
+                                        /@item.Slug sitesini gör
+                                    </a>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row g-4">
+
+        <div class="col-xl-6">
+            <div class="report-mini-card h-100">
+                <div class="report-card-header">
+                    <div>
+                        <span>Kurum Analizi</span>
+                        <h5>Kurumlara Göre Kongre Dağılımı</h5>
+                    </div>
+
+                    <div class="report-card-icon stat-cyan">
+                        <i class="fas fa-building-columns"></i>
+                    </div>
+                </div>
+
+                @if (!tenantReports.Any())
+                {
+                    <div class="report-empty-mini">
+                        <i class="fas fa-building-circle-exclamation"></i>
+                        <strong>Kurum raporu bulunamadı</strong>
+                        <span>Kurum ve kongre verileri oluştukça burada görünecek.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="tenant-report-list">
+                        @foreach (var item in tenantReports)
+                        {
+                            <div class="tenant-report-item">
+                                <div class="tenant-main">
+                                    <div class="tenant-avatar">
+                                        @(string.IsNullOrWhiteSpace(item.TenantName) ? "K" : item.TenantName.Substring(0, 1).ToUpper())
+                                    </div>
+
+                                    <div>
+                                        <strong>@item.TenantName</strong>
+                                        <span>/@item.Slug</span>
+                                    </div>
+                                </div>
+
+                                <div class="tenant-stats">
+                                    <div>
+                                        <strong>@item.ConferenceCount</strong>
+                                        <span>Kongre</span>
+                                    </div>
+
+                                    <div>
+                                        <strong>@item.UserCount</strong>
+                                        <span>Kullanıcı</span>
+                                    </div>
+                                </div>
+
+                                <div class="bar-track tenant-track">
+                                    <div class="bar-fill" style="width:@BarWidth(item.ConferenceCount, maxTenantConferenceCount)"></div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-xl-6">
+            <div class="report-mini-card h-100">
+                <div class="report-card-header">
+                    <div>
+                        <span>Son Hareketler</span>
+                        <h5>Son Eklenen Kongreler</h5>
+                    </div>
+
+                    <div class="report-card-icon stat-purple">
+                        <i class="fas fa-calendar-plus"></i>
+                    </div>
+                </div>
+
+                @if (!recentConferences.Any())
+                {
+                    <div class="report-empty-mini">
+                        <i class="fas fa-calendar-xmark"></i>
+                        <strong>Henüz kongre yok</strong>
+                        <span>Yeni kongre oluşturulduğunda burada listelenecek.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="recent-list">
+                        @foreach (var item in recentConferences)
+                        {
+                            var siteUrl = string.IsNullOrWhiteSpace(item.Slug)
+                            ? "#"
+                            : $"/{item.Slug}";
+
+                            <div class="recent-list-item">
+                                <div class="recent-date-box">
+                                    <strong>@item.StartDate.ToString("dd")</strong>
+                                    <span>@item.StartDate.ToString("MMM").ToUpper()</span>
+                                </div>
+
+                                <div class="recent-content">
+                                    <strong>@item.Title</strong>
+                                    <span>@item.TenantName</span>
+                                    <small>@item.StartDate.ToString("dd.MM.yyyy") - @item.EndDate.ToString("dd.MM.yyyy")</small>
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(item.Slug))
+                                {
+                                    <a href="@siteUrl" target="_blank" class="recent-action">
+                                        <i class="fas fa-arrow-up-right-from-square"></i>
+                                    </a>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-xl-12">
+            <div class="report-mini-card">
+                <div class="report-card-header">
+                    <div>
+                        <span>Kullanıcı Hareketleri</span>
+                        <h5>Son Kullanıcılar</h5>
+                    </div>
+
+                    <div class="report-card-icon stat-orange">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                </div>
+
+                @if (!recentUsers.Any())
+                {
+                    <div class="report-empty-mini">
+                        <i class="fas fa-user-slash"></i>
+                        <strong>Henüz kullanıcı bulunamadı</strong>
+                        <span>Kullanıcı kayıtları oluştukça burada görünecek.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="recent-user-grid">
+                        @foreach (var user in recentUsers)
+                        {
+                            <div class="recent-user-card">
+                                <div class="user-avatar">
+                                    @(string.IsNullOrWhiteSpace(user.FullName) ? "U" : user.FullName.Substring(0, 1).ToUpper())
+                                </div>
+
+                                <div class="user-info">
+                                    <strong>@user.FullName</strong>
+                                    <span>@user.Email</span>
+                                    <small>@user.TenantName</small>
+                                </div>
+
+                                <div class="user-date">
+                                    @(user.CreatedDate.HasValue? user.CreatedDate.Value.ToString("dd.MM.yyyy") : "Tarih yok")
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<style>
+    .system-reports-page {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .system-report-hero-card {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e8eef6;
+        border-radius: 28px;
+        padding: 1.55rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+    }
+
+    .system-report-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 300px;
+        flex: 1;
+    }
+
+    .system-report-hero-icon {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.55rem;
+        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.22);
+    }
+
+    .system-report-section-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .system-report-title {
+        margin: 0 0 0.35rem;
+        color: #0f172a;
+        font-size: 2rem;
+        font-weight: 900;
+        letter-spacing: -0.05em;
+    }
+
+    .system-report-description {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.96rem;
+        font-weight: 600;
+        line-height: 1.65;
+        max-width: 900px;
+    }
+
+    .system-report-hero-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .report-primary-btn,
+    .report-light-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0 1.15rem;
+        text-decoration: none;
+        font-weight: 900;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+    }
+
+    .report-primary-btn {
+        border: none;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        box-shadow: 0 14px 28px rgba(13, 110, 253, 0.22);
+    }
+
+        .report-primary-btn:hover {
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+    .report-light-btn {
+        border: 1px solid #dbe3ef;
+        background: #ffffff;
+        color: #334155;
+    }
+
+        .report-light-btn:hover {
+            color: #0d6efd;
+            background: #f8fbff;
+            border-color: rgba(13, 110, 253, 0.25);
+        }
+
+    .report-stat-card {
+        min-height: 104px;
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 24px;
+        padding: 1.15rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+        transition: all 0.2s ease;
+    }
+
+        .report-stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+        }
+
+    .report-stat-icon,
+    .report-card-icon {
+        width: 50px;
+        height: 50px;
+        min-width: 50px;
+        border-radius: 17px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+    }
+
+    .report-stat-number {
+        color: #0f172a;
+        font-size: 1.65rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .report-stat-label {
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 800;
+        margin-top: 0.3rem;
+    }
+
+    .stat-blue {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .stat-cyan {
+        background: rgba(0, 174, 239, 0.12);
+        color: #00aeef;
+    }
+
+    .stat-purple {
+        background: rgba(124, 58, 237, 0.10);
+        color: #7c3aed;
+    }
+
+    .stat-orange {
+        background: rgba(245, 158, 11, 0.12);
+        color: #f59e0b;
+    }
+
+    .stat-green {
+        background: rgba(34, 197, 94, 0.10);
+        color: #16a34a;
+    }
+
+    .stat-teal {
+        background: rgba(20, 184, 166, 0.12);
+        color: #14b8a6;
+    }
+
+    .stat-red {
+        background: rgba(239, 68, 68, 0.10);
+        color: #ef4444;
+    }
+
+    .stat-yellow {
+        background: rgba(234, 179, 8, 0.14);
+        color: #ca8a04;
+    }
+
+    .report-mini-card {
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 26px;
+        padding: 1.35rem;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+    }
+
+    .report-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.2rem;
+    }
+
+        .report-card-header span {
+            color: #64748b;
+            font-size: 0.76rem;
+            font-weight: 900;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+        }
+
+        .report-card-header h5 {
+            color: #0f172a;
+            font-size: 1.18rem;
+            font-weight: 900;
+            margin: 0.2rem 0 0;
+        }
+
+    .payment-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.85rem;
+        margin-bottom: 1rem;
+    }
+
+        .payment-summary-grid div,
+        .revenue-box {
+            background: #f8fafc;
+            border: 1px solid #edf2f7;
+            border-radius: 20px;
+            padding: 1rem;
+        }
+
+            .payment-summary-grid span,
+            .revenue-box span {
+                display: block;
+                color: #64748b;
+                font-size: 0.8rem;
+                font-weight: 900;
+                margin-bottom: 0.35rem;
+            }
+
+        .payment-summary-grid strong {
+            color: #0f172a;
+            font-size: 1.7rem;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+    .revenue-box strong {
+        display: block;
+        color: #0f172a;
+        font-size: 1.8rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .revenue-box small {
+        display: block;
+        color: #94a3b8;
+        font-size: 0.76rem;
+        font-weight: 700;
+        line-height: 1.5;
+        margin-top: 0.6rem;
+    }
+
+    .bar-report-list,
+    .tenant-report-list,
+    .recent-list {
+        display: grid;
+        gap: 0.9rem;
+    }
+
+    .bar-report-item,
+    .tenant-report-item,
+    .recent-list-item,
+    .recent-user-card {
+        background: #f8fafc;
+        border: 1px solid #edf2f7;
+        border-radius: 20px;
+        padding: 1rem;
+    }
+
+    .bar-report-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.75rem;
+    }
+
+        .bar-report-top strong {
+            display: block;
+            color: #0f172a;
+            font-weight: 900;
+            line-height: 1.35;
+        }
+
+        .bar-report-top span,
+        .tenant-main span,
+        .recent-content span,
+        .recent-content small,
+        .user-info span,
+        .user-info small {
+            display: block;
+            color: #64748b;
+            font-size: 0.82rem;
+            font-weight: 700;
+            margin-top: 0.15rem;
+        }
+
+    .bar-report-count {
+        min-width: fit-content;
+        color: #0d6efd;
+        font-size: 0.82rem;
+        font-weight: 900;
+        background: rgba(13, 110, 253, 0.08);
+        border-radius: 999px;
+        padding: 0.35rem 0.7rem;
+    }
+
+    .bar-track {
+        height: 9px;
+        border-radius: 999px;
+        background: #e2e8f0;
+        overflow: hidden;
+    }
+
+    .bar-fill {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+    }
+
+    .mini-link {
+        display: inline-flex;
+        margin-top: 0.7rem;
+        color: #0d6efd;
+        font-size: 0.82rem;
+        font-weight: 900;
+        text-decoration: none;
+    }
+
+        .mini-link:hover {
+            text-decoration: underline;
+        }
+
+    .tenant-main {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        margin-bottom: 0.85rem;
+    }
+
+    .tenant-avatar,
+    .user-avatar {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        border-radius: 17px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        box-shadow: 0 12px 24px rgba(13, 110, 253, 0.16);
+    }
+
+    .tenant-main strong,
+    .recent-content strong,
+    .user-info strong {
+        display: block;
+        color: #0f172a;
+        font-weight: 900;
+        line-height: 1.35;
+    }
+
+    .tenant-stats {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.7rem;
+        margin-bottom: 0.85rem;
+    }
+
+        .tenant-stats div {
+            border-radius: 16px;
+            background: #ffffff;
+            border: 1px solid #edf2f7;
+            padding: 0.75rem;
+        }
+
+        .tenant-stats strong {
+            display: block;
+            color: #0f172a;
+            font-size: 1.25rem;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .tenant-stats span {
+            color: #64748b;
+            font-size: 0.76rem;
+            font-weight: 800;
+        }
+
+    .recent-list-item {
+        display: grid;
+        grid-template-columns: 58px 1fr 42px;
+        align-items: center;
+        gap: 0.9rem;
+    }
+
+    .recent-date-box {
+        width: 54px;
+        height: 54px;
+        border-radius: 18px;
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+        .recent-date-box strong {
+            font-size: 1.18rem;
+            font-weight: 900;
+        }
+
+        .recent-date-box span {
+            margin-top: 0.2rem;
+            font-size: 0.68rem;
+            font-weight: 900;
+        }
+
+    .recent-action {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        background: #ffffff;
+        border: 1px solid #dbe3ef;
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+    }
+
+        .recent-action:hover {
+            background: #0d6efd;
+            color: #ffffff;
+        }
+
+    .recent-user-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.9rem;
+    }
+
+    .recent-user-card {
+        display: grid;
+        grid-template-columns: 48px 1fr auto;
+        align-items: center;
+        gap: 0.85rem;
+    }
+
+    .user-info {
+        min-width: 0;
+    }
+
+        .user-info strong,
+        .user-info span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+    .user-date {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .report-empty-mini {
+        min-height: 180px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 22px;
+        background: #f8fafc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        color: #64748b;
+        text-align: center;
+        padding: 1.5rem;
+    }
+
+        .report-empty-mini i {
+            color: #0d6efd;
+            font-size: 2rem;
+            margin-bottom: 0.85rem;
+        }
+
+        .report-empty-mini strong {
+            color: #0f172a;
+            font-weight: 900;
+            margin-bottom: 0.25rem;
+        }
+
+        .report-empty-mini span {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+    @@media (max-width: 1200px) {
+        .recent-user-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 992px) {
+        .system-report-hero-card {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .system-report-hero-left {
+            align-items: flex-start;
+        }
+
+        .system-report-hero-actions,
+        .system-report-hero-actions .btn {
+            width: 100%;
+        }
+
+        .system-report-title {
+            font-size: 1.65rem;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .system-report-hero-left {
+            flex-direction: column;
+        }
+
+        .recent-user-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .recent-user-card {
+            grid-template-columns: 48px 1fr;
+        }
+
+        .user-date {
+            grid-column: 1 / -1;
+        }
+
+        .recent-list-item {
+            grid-template-columns: 54px 1fr;
+        }
+
+        .recent-action {
+            grid-column: 1 / -1;
+            width: 100%;
+        }
+
+        .payment-summary-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

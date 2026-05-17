@@ -40,11 +40,71 @@
     var availableConferences = ViewBag.AvailableConferences as IEnumerable<Conference>
         ?? Enumerable.Empty<Conference>();
 
+    var submissionAvailableConferences = ViewBag.SubmissionAvailableConferences as IEnumerable<Conference>
+        ?? Enumerable.Empty<Conference>();
+
+    var registrationAvailableConferences = ViewBag.RegistrationAvailableConferences as IEnumerable<Conference>
+        ?? availableConferences;
+
     var availableConferenceList = availableConferences.ToList();
+    var submissionAvailableConferenceList = submissionAvailableConferences.ToList();
+    var registrationAvailableConferenceList = registrationAvailableConferences.ToList();
 
     var hasRegisteredConferences = registeredConferences.Any();
-    var hasAvailableConferences = availableConferenceList.Any();
-    var hasAnyConference = hasRegisteredConferences || hasAvailableConferences;
+    var hasSubmissionAvailableConferences = submissionAvailableConferenceList.Any();
+    var hasRegistrationAvailableConferences = registrationAvailableConferenceList.Any();
+
+    var hasAnyConference =
+        hasRegisteredConferences ||
+        hasSubmissionAvailableConferences ||
+        hasRegistrationAvailableConferences;
+
+    string GetConferenceSlug(Conference conference)
+    {
+        return conference.Tenant?.Slug ?? conference.Slug ?? "";
+    }
+
+    string GetWebsiteUrl(string tenantSlug)
+    {
+        return string.IsNullOrWhiteSpace(tenantSlug)
+            ? "/"
+            : $"/{tenantSlug}";
+    }
+
+    string GetSubmissionIndexUrl(string tenantSlug)
+    {
+        return string.IsNullOrWhiteSpace(tenantSlug)
+            ? "/Dashboard/MyConferences"
+            : $"/{tenantSlug}/Submission/Index";
+    }
+
+    string GetSubmissionCreateUrl(string tenantSlug)
+    {
+        return string.IsNullOrWhiteSpace(tenantSlug)
+            ? "/Dashboard/MyConferences"
+            : $"/{tenantSlug}/Submission/Create";
+    }
+
+    string GetRegistrationUrl(string tenantSlug)
+    {
+        return string.IsNullOrWhiteSpace(tenantSlug)
+            ? "/Home/Congresses"
+            : $"/{tenantSlug}/registration";
+    }
+
+    string GetCityText(Conference conference)
+    {
+        return !string.IsNullOrWhiteSpace(conference.City)
+            ? conference.City
+            : L("OnlineVirtual", "Online / Sanal");
+    }
+
+    string GetFirstLetter(Conference conference)
+    {
+        return !string.IsNullOrWhiteSpace(conference.Title)
+            ? conference.Title.Substring(0, 1).ToUpper()
+            : "A";
+    }
 }
 
 @section Styles {
@@ -82,7 +142,7 @@
             background-color: #fff;
             font-size: 1rem;
             transition: all 0.3s;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
         }
 
             .search-input:focus {
@@ -172,7 +232,7 @@
 
             .conf-card:hover {
                 transform: translateY(-8px);
-                box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
                 border-color: #00aeef;
             }
 
@@ -215,6 +275,11 @@
             border-radius: 20px;
             box-shadow: 0 4px 10px rgba(37, 99, 235, 0.18);
             z-index: 2;
+        }
+
+        .submission-badge {
+            background: #16a34a;
+            box-shadow: 0 4px 10px rgba(22, 163, 74, 0.18);
         }
 
         .logo-wrapper {
@@ -279,72 +344,128 @@
             gap: 12px;
         }
 
-        .btn-select {
-            background: linear-gradient(135deg, #00aeef 0%, #0984e3 100%);
-            color: white;
+        .btn-select,
+        .btn-select-start,
+        .btn-register,
+        .btn-submit-paper,
+        .btn-secondary-custom {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-select,
+        .btn-select-start,
+        .btn-register,
+        .btn-submit-paper {
+            color: #fff;
             border: none;
-            font-weight: 700;
-            padding: 12px;
-            border-radius: 14px;
+            font-weight: 800;
+            padding: 12px 16px;
+            border-radius: 16px;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 174, 239, 0.3);
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            font-size: 0.95rem;
+            font-size: 0.96rem;
             width: 100%;
             text-decoration: none;
+            min-height: 50px;
+            letter-spacing: 0.1px;
+        }
+
+        .btn-select {
+            background: linear-gradient(135deg, #00aeef 0%, #0984e3 100%);
+            box-shadow: 0 6px 18px rgba(0, 174, 239, 0.25);
         }
 
             .btn-select:hover {
                 transform: translateY(-2px);
-                box-shadow: 0 8px 25px rgba(0, 174, 239, 0.4);
+                box-shadow: 0 10px 26px rgba(0, 174, 239, 0.35);
                 color: white;
             }
 
             .btn-select.active-btn {
                 background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-                box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+                box-shadow: 0 6px 18px rgba(16, 185, 129, 0.25);
                 cursor: pointer;
                 opacity: 1;
             }
 
                 .btn-select.active-btn:hover {
                     transform: translateY(-2px);
-                    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+                    box-shadow: 0 10px 26px rgba(16, 185, 129, 0.35);
+                }
+
+        .btn-select-start {
+            background: linear-gradient(135deg, #0b1026 0%, #1e1b4b 45%, #2563eb 100%);
+            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22);
+        }
+
+            .btn-select-start:hover {
+                transform: translateY(-2px);
+                color: #fff;
+                box-shadow: 0 14px 30px rgba(37, 99, 235, 0.32);
+                background: linear-gradient(135deg, #0f172a 0%, #312e81 45%, #1d4ed8 100%);
+            }
+
+            .btn-select-start.active-btn {
+                background: linear-gradient(135deg, #047857 0%, #10b981 100%);
+                box-shadow: 0 8px 22px rgba(16, 185, 129, 0.25);
+            }
+
+                .btn-select-start.active-btn:hover {
+                    box-shadow: 0 12px 28px rgba(16, 185, 129, 0.35);
                 }
 
         .btn-register {
-            background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
-            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.25);
+            background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 55%, #06b6d4 100%);
+            box-shadow: 0 10px 24px rgba(14, 165, 233, 0.22);
         }
 
             .btn-register:hover {
-                box-shadow: 0 8px 25px rgba(37, 99, 235, 0.35);
+                transform: translateY(-2px);
+                color: #fff;
+                box-shadow: 0 14px 30px rgba(14, 165, 233, 0.32);
+                background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 55%, #0891b2 100%);
+            }
+
+        .btn-submit-paper {
+            background: linear-gradient(135deg, #059669 0%, #10b981 55%, #22c55e 100%);
+            box-shadow: 0 10px 24px rgba(16, 185, 129, 0.22);
+        }
+
+            .btn-submit-paper:hover {
+                transform: translateY(-2px);
+                color: #fff;
+                box-shadow: 0 14px 30px rgba(16, 185, 129, 0.32);
+                background: linear-gradient(135deg, #047857 0%, #059669 55%, #16a34a 100%);
             }
 
         .btn-secondary-custom {
-            background-color: #f8fafc;
-            color: #64748b;
-            border: 1px solid #e2e8f0;
-            font-weight: 600;
-            padding: 10px;
-            border-radius: 14px;
-            transition: all 0.2s;
-            font-size: 0.9rem;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            color: #475569;
+            border: 1px solid #dbe4ef;
+            font-weight: 700;
+            padding: 11px 14px;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            font-size: 0.93rem;
             text-decoration: none;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            min-height: 48px;
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
         }
 
             .btn-secondary-custom:hover {
-                background-color: #fff;
-                color: #334155;
+                background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+                color: #0f172a;
                 border-color: #cbd5e1;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+                transform: translateY(-2px);
+                box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
             }
 
         .no-results {
@@ -472,36 +593,13 @@
                 <div class="row g-4 justify-content-center conference-grid">
                     @foreach (var kongre in registeredConferences)
                     {
-                        var tenantSlug = kongre.Tenant?.Slug ?? kongre.Slug ?? "";
-
-                        var fallbackReturnUrl = string.IsNullOrWhiteSpace(tenantSlug)
-                        ? "/Dashboard"
-                        : $"/{tenantSlug}/Dashboard";
-
-                        var effectiveReturnUrl = fallbackReturnUrl;
-
-                        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
-                        {
-                            if (returnUrl.Contains("/Dashboard"))
-                            {
-                                effectiveReturnUrl = returnUrl;
-                            }
-                        }
-
+                        var tenantSlug = GetConferenceSlug(kongre);
+                        var effectiveReturnUrl = GetSubmissionIndexUrl(tenantSlug);
                         var isSelected = selectedConferenceId.HasValue && selectedConferenceId.Value == kongre.Id;
                         var hasLogo = !string.IsNullOrWhiteSpace(kongre.LogoPath);
-
-                        var firstLetter = !string.IsNullOrWhiteSpace(kongre.Title)
-                        ? kongre.Title.Substring(0, 1).ToUpper()
-                        : "A";
-
-                        var cityText = !string.IsNullOrWhiteSpace(kongre.City)
-                        ? kongre.City
-                        : L("OnlineVirtual", "Online / Sanal");
-
-                        var websiteUrl = string.IsNullOrWhiteSpace(tenantSlug)
-                        ? "/"
-                        : $"/{tenantSlug}";
+                        var firstLetter = GetFirstLetter(kongre);
+                        var cityText = GetCityText(kongre);
+                        var websiteUrl = GetWebsiteUrl(tenantSlug);
 
                         <div class="col-md-6 col-lg-4 col-xl-4 conf-item">
                             <div class="conf-card p-4 @(isSelected ? "active" : "")">
@@ -554,9 +652,7 @@
                                 </div>
 
                                 <div class="footer-actions">
-                                    <form asp-controller="Dashboard"
-                                          asp-action="SelectConferencePost"
-                                          asp-route-slug="@tenantSlug"
+                                    <form action="/Dashboard/SelectConferencePost"
                                           method="post"
                                           class="d-grid">
 
@@ -565,10 +661,10 @@
                                         <input type="hidden" name="conferenceId" value="@kongre.Id" />
                                         <input type="hidden" name="returnUrl" value="@effectiveReturnUrl" />
 
-                                        <button type="submit" class="btn-select @(isSelected ? "active-btn" : "")">
+                                        <button type="submit" class="btn-select-start @(isSelected ? "active-btn" : "")">
                                             @if (isSelected)
                                             {
-                                                <span>@L("ReturnToPanelActive", "Panele Dön (Aktif)")</span>
+                                                <span>@L("ReturnToPanelActive", "Panele Dön")</span>
                                                 <i class="fas fa-sign-in-alt"></i>
                                             }
                                             else
@@ -591,7 +687,101 @@
             </section>
         }
 
-        @if (hasAvailableConferences)
+        @if (hasSubmissionAvailableConferences)
+        {
+            <section class="section-block conference-section">
+                <div class="section-header">
+                    <div>
+                        <h3 class="section-title">
+                            @L("SubmissionAvailableConferencesTitle", "Bildiri Gönderebileceğim Kongreler")
+                        </h3>
+
+                        <p class="section-subtitle">
+                            @L("SubmissionAvailableConferencesDescription", "Bu kongrelere ödeme yapmadan önce bildiri göndererek değerlendirme sürecinizi başlatabilirsiniz.")
+                        </p>
+                    </div>
+
+                    <span class="section-count">
+                        @submissionAvailableConferenceList.Count @L("ConferenceCountText", "Kongre")
+                    </span>
+                </div>
+
+                <div class="row g-4 justify-content-center conference-grid">
+                    @foreach (var kongre in submissionAvailableConferenceList)
+                    {
+                        var tenantSlug = GetConferenceSlug(kongre);
+                        var hasLogo = !string.IsNullOrWhiteSpace(kongre.LogoPath);
+                        var firstLetter = GetFirstLetter(kongre);
+                        var cityText = GetCityText(kongre);
+                        var websiteUrl = GetWebsiteUrl(tenantSlug);
+                        var submissionCreateUrl = GetSubmissionCreateUrl(tenantSlug);
+
+                        <div class="col-md-6 col-lg-4 col-xl-4 conf-item">
+                            <div class="conf-card available p-4">
+
+                                <span class="available-badge submission-badge">
+                                    @L("SubmissionOpen", "Başvuru Açık")
+                                </span>
+
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="logo-wrapper">
+                                        @if (hasLogo)
+                                        {
+                                            <img src="@kongre.LogoPath" alt="@kongre.Title" />
+                                        }
+                                        else
+                                        {
+                                            <span class="logo-placeholder">@firstLetter</span>
+                                        }
+                                    </div>
+
+                                    @if (!string.IsNullOrWhiteSpace(tenantSlug))
+                                    {
+                                        <span class="badge bg-light text-secondary border rounded-pill px-3 tenant-badge">
+                                            @tenantSlug
+                                        </span>
+                                    }
+                                </div>
+
+                                <h5 class="fw-bold mb-3 conf-title">
+                                    @kongre.Title
+                                </h5>
+
+                                <div class="card-meta">
+                                    <i class="far fa-calendar-alt text-primary"></i>
+
+                                    <span class="fw-bold text-dark">
+                                        @kongre.StartDate.ToString("dd MMMM yyyy", CultureInfo.CurrentUICulture)
+                                    </span>
+                                </div>
+
+                                <div class="card-meta">
+                                    <i class="fas fa-map-marker-alt text-danger"></i>
+
+                                    <span>
+                                        @cityText
+                                    </span>
+                                </div>
+
+                                <div class="footer-actions">
+                                    <a href="@submissionCreateUrl" class="btn-submit-paper">
+                                        <span>@L("SubmitPaper", "Bildiri Gönder")</span>
+                                        <i class="fas fa-paper-plane"></i>
+                                    </a>
+
+                                    <a href="@websiteUrl" target="_blank" class="btn-secondary-custom">
+                                        <i class="fas fa-external-link-alt small"></i>
+                                        <span>@L("Website", "Web Sitesi")</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </section>
+        }
+
+        @if (hasRegistrationAvailableConferences)
         {
             <section class="section-block conference-section">
                 <div class="section-header">
@@ -601,34 +791,24 @@
                         </h3>
 
                         <p class="section-subtitle">
-                            @L("AvailableConferencesDescription", "Bu kongrelerin web sitesine giderek kayıt sürecinizi başlatabilirsiniz.")
+                            @L("AvailableConferencesDescription", "Bu kongrelere kayıt olarak başvuru sürecinizi başlatabilirsiniz.")
                         </p>
                     </div>
 
                     <span class="section-count">
-                        @availableConferenceList.Count @L("ConferenceCountText", "Kongre")
+                        @registrationAvailableConferenceList.Count @L("ConferenceCountText", "Kongre")
                     </span>
                 </div>
 
                 <div class="row g-4 justify-content-center conference-grid">
-                    @foreach (var kongre in availableConferenceList)
+                    @foreach (var kongre in registrationAvailableConferenceList)
                     {
-                        var tenantSlug = kongre.Tenant?.Slug ?? kongre.Slug ?? "";
+                        var tenantSlug = GetConferenceSlug(kongre);
                         var hasLogo = !string.IsNullOrWhiteSpace(kongre.LogoPath);
-
-                        var firstLetter = !string.IsNullOrWhiteSpace(kongre.Title)
-                        ? kongre.Title.Substring(0, 1).ToUpper()
-                        : "A";
-
-                        var cityText = !string.IsNullOrWhiteSpace(kongre.City)
-                        ? kongre.City
-                        : L("OnlineVirtual", "Online / Sanal");
-
-                        var websiteUrl = string.IsNullOrWhiteSpace(tenantSlug)
-                        ? "/"
-                        : $"/{tenantSlug}";
-
-                        var registerUrl = websiteUrl;
+                        var firstLetter = GetFirstLetter(kongre);
+                        var cityText = GetCityText(kongre);
+                        var websiteUrl = GetWebsiteUrl(tenantSlug);
+                        var registerUrl = GetRegistrationUrl(tenantSlug);
 
                         <div class="col-md-6 col-lg-4 col-xl-4 conf-item">
                             <div class="conf-card available p-4">
@@ -678,9 +858,9 @@
                                 </div>
 
                                 <div class="footer-actions">
-                                    <a href="@registerUrl" class="btn-select btn-register">
-                                        <span>@L("GoToRegistrationPage", "Kayıt Sayfasına Git")</span>
-                                        <i class="fas fa-arrow-right"></i>
+                                    <a href="@registerUrl" class="btn-register">
+                                        <span>@L("GoToRegistrationPage", "Kayıt Ol")</span>
+                                        <i class="fas fa-user-plus"></i>
                                     </a>
 
                                     <a href="@websiteUrl" target="_blank" class="btn-secondary-custom">
@@ -741,7 +921,10 @@
                 });
 
                 sections.forEach(function (section) {
-                    const visibleCards = section.querySelectorAll('.conference-grid .conf-item:not([style*="display: none"])');
+                    const visibleCards = Array.from(section.querySelectorAll('.conference-grid .conf-item'))
+                        .filter(function (item) {
+                            return item.style.display !== 'none';
+                        });
 
                     if (visibleCards.length > 0 || input === '') {
                         section.style.display = '';

@@ -238,7 +238,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
                 if (!string.IsNullOrWhiteSpace(canonicalSlug))
                 {
-                    return Redirect(BuildUrl(canonicalSlug, "/register"));
+                    return Redirect(BuildUrl(canonicalSlug, "/registration"));
                 }
 
                 return Redirect("/Dashboard/MyConferences");
@@ -324,6 +324,15 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [HttpGet("/{slug}/my-submissions")]
         public async Task<IActionResult> Index(string? slug = null)
         {
+            if (string.IsNullOrWhiteSpace(slug))
+            {
+                TempData["InfoMessage"] = T(
+                    "SelectConferenceBeforeSubmissionList",
+                    "Bildiri işlemleri için önce bir kongre seçmelisiniz.");
+
+                return Redirect("/Dashboard/MyConferences");
+            }
+
             var user = await _userManager.GetUserAsync(User);
 
             if (user == null)
@@ -331,25 +340,28 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 return Challenge();
             }
 
+            var conference = await ResolveConferenceAsync(slug);
+
+            if (conference == null)
+            {
+                TempData["InfoMessage"] = T(
+                    "SelectConferenceBeforeSubmissionList",
+                    "Bildiri işlemleri için önce bir kongre seçmelisiniz.");
+
+                return Redirect("/Dashboard/MyConferences");
+            }
+
+            var canonicalSlug = GetCanonicalSlug(conference, slug);
+
+            SetSelectedConferenceSession(conference, canonicalSlug);
+
+            ViewBag.CurrentConferenceTitle = conference.Title;
+
             var submissionDtos = await _submissionService.GetMySubmissionsAsync(user.Id);
 
-            if (!string.IsNullOrWhiteSpace(slug))
-            {
-                var conference = await ResolveConferenceAsync(slug);
-
-                if (conference != null)
-                {
-                    var canonicalSlug = GetCanonicalSlug(conference, slug);
-
-                    SetSelectedConferenceSession(conference, canonicalSlug);
-
-                    ViewBag.CurrentConferenceTitle = conference.Title;
-
-                    submissionDtos = submissionDtos
-                        .Where(s => s.ConferenceId == conference.Id)
-                        .ToList();
-                }
-            }
+            submissionDtos = submissionDtos
+                .Where(s => s.ConferenceId == conference.Id)
+                .ToList();
 
             return View(submissionDtos);
         }
@@ -381,6 +393,12 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             }
 
             var canonical = GetCanonicalSlug(submissionEntity.Conference!, slug);
+
+            if (string.IsNullOrWhiteSpace(slug))
+            {
+                return Redirect(BuildUrl(canonical, $"/my-submissions/{id}"));
+            }
+
             SetSelectedConferenceSession(submissionEntity.Conference!, canonical);
 
             var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
@@ -398,6 +416,15 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [HttpGet("/{slug}/submit-abstract")]
         public async Task<IActionResult> Create(string? slug = null)
         {
+            if (string.IsNullOrWhiteSpace(slug))
+            {
+                TempData["InfoMessage"] = T(
+                    "SelectConferenceBeforeSubmission",
+                    "Bildiri göndermeden önce bir kongre seçmelisiniz.");
+
+                return Redirect("/Dashboard/MyConferences");
+            }
+
             var user = await _userManager.GetUserAsync(User);
 
             if (user == null)
@@ -441,6 +468,15 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(SubmissionCreateViewModel model, string? slug = null)
         {
+            if (string.IsNullOrWhiteSpace(slug))
+            {
+                TempData["InfoMessage"] = T(
+                    "SelectConferenceBeforeSubmission",
+                    "Bildiri göndermeden önce bir kongre seçmelisiniz.");
+
+                return Redirect("/Dashboard/MyConferences");
+            }
+
             var user = await _userManager.GetUserAsync(User);
 
             if (user == null)
@@ -647,6 +683,11 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             }
 
             var canonicalSlug = GetCanonicalSlug(conference, slug);
+
+            if (string.IsNullOrWhiteSpace(slug))
+            {
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/edit"));
+            }
 
             SetSelectedConferenceSession(conference, canonicalSlug);
 
@@ -923,6 +964,13 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/delete"));
             }
 
+            if (string.IsNullOrWhiteSpace(slug))
+            {
+                var canonicalSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
+
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/delete"));
+            }
+
             if (submissionEntity.Status != SubmissionStatus.New)
             {
                 TempData["ErrorMessage"] = T(
@@ -1006,6 +1054,13 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             }
 
             if (!SlugMatches(submissionEntity.Conference, slug))
+            {
+                var canonicalSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
+
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/revision"));
+            }
+
+            if (string.IsNullOrWhiteSpace(slug))
             {
                 var canonicalSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
 

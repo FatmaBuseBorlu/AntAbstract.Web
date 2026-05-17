@@ -1,18 +1,75 @@
-﻿@{
+﻿@using AntAbstract.Web.Models.ViewModels.Admin.ConferenceFlow
+@using System
+@using System.Linq
+
+@model RegistrationsAndPaymentsViewModel
+
+@{
     ViewData["Title"] = "Kayıtlar ve Ödemeler";
     ViewData["HideSelectedConferenceBar"] = true;
     Layout = "_LayoutDashboard";
 
-    var conferenceId = ViewBag.ConferenceId;
-    var conferenceTitle = ViewBag.ConferenceTitle as string ?? "";
-    var slug = ViewBag.Slug as string ?? "";
+    var conferenceId = Model.ConferenceId;
+    var conferenceTitle = Model.ConferenceTitle ?? "";
+    var slug = Model.Slug ?? "";
 
     var backUrl = string.IsNullOrWhiteSpace(slug)
         ? $"/Admin/ConferenceFlow?conferenceId={conferenceId}"
         : $"/{slug}/Admin/ConferenceFlow?conferenceId={conferenceId}";
+
+    var listUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/ConferenceFlow/RegistrationsAndPayments?conferenceId={conferenceId}"
+        : $"/{slug}/Admin/ConferenceFlow/RegistrationsAndPayments?conferenceId={conferenceId}";
+
+    var approvePaymentUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Admin/ConferenceFlow/RegistrationsAndPayments/ApprovePayment"
+        : $"/{slug}/Admin/ConferenceFlow/RegistrationsAndPayments/ApprovePayment";
+
+    var currentUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+
+    string Money(decimal amount, string currency = "TRY")
+    {
+        return amount.ToString("N2") + " " + currency;
+    }
+
+    string PaymentStatusText(bool isPaid)
+    {
+        return isPaid ? "Ödendi" : "Bekliyor";
+    }
+
+    string PaymentStatusClass(bool isPaid)
+    {
+        return isPaid ? "payment-paid" : "payment-pending";
+    }
+
+    var totalFilteredCount = Model.Items?.Count ?? 0;
 }
 
 <div class="container-fluid registration-payment-page">
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert operation-alert operation-alert-success mb-4">
+            <i class="fas fa-circle-check"></i>
+            <span>@TempData["SuccessMessage"]</span>
+        </div>
+    }
+
+    @if (TempData["InfoMessage"] != null)
+    {
+        <div class="alert operation-alert operation-alert-info mb-4">
+            <i class="fas fa-circle-info"></i>
+            <span>@TempData["InfoMessage"]</span>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert operation-alert operation-alert-error mb-4">
+            <i class="fas fa-triangle-exclamation"></i>
+            <span>@TempData["ErrorMessage"]</span>
+        </div>
+    }
 
     <div class="operation-header-card mb-4">
         <div class="operation-header-left">
@@ -56,7 +113,7 @@
                 </div>
 
                 <div>
-                    <div class="operation-stat-number">0</div>
+                    <div class="operation-stat-number">@Model.TotalRegistrations</div>
                     <div class="operation-stat-label">Toplam Kayıt</div>
                 </div>
             </div>
@@ -69,7 +126,7 @@
                 </div>
 
                 <div>
-                    <div class="operation-stat-number">0</div>
+                    <div class="operation-stat-number">@Model.PaidRegistrations</div>
                     <div class="operation-stat-label">Ödeme Tamamlandı</div>
                 </div>
             </div>
@@ -82,7 +139,7 @@
                 </div>
 
                 <div>
-                    <div class="operation-stat-number">0</div>
+                    <div class="operation-stat-number">@Model.PendingPayments</div>
                     <div class="operation-stat-label">Ödeme Bekliyor</div>
                 </div>
             </div>
@@ -90,13 +147,15 @@
 
         <div class="col-xl-3 col-md-6">
             <div class="operation-stat-card">
-                <div class="operation-stat-icon stat-red">
-                    <i class="fas fa-circle-xmark"></i>
+                <div class="operation-stat-icon stat-purple">
+                    <i class="fas fa-wallet"></i>
                 </div>
 
                 <div>
-                    <div class="operation-stat-number">0</div>
-                    <div class="operation-stat-label">İptal / Başarısız</div>
+                    <div class="operation-stat-number revenue-number">
+                        @Money(Model.TotalRevenue)
+                    </div>
+                    <div class="operation-stat-label">Toplam Gelir</div>
                 </div>
             </div>
         </div>
@@ -104,55 +163,119 @@
     </div>
 
     <div class="operation-filter-card mb-4">
-        <div class="row g-3 align-items-end">
+        <form method="get" action="@listUrl">
+            <input type="hidden" name="conferenceId" value="@conferenceId" />
 
-            <div class="col-xl-5 col-lg-5">
-                <label class="operation-label">
-                    Arama
-                </label>
+            <div class="row g-3 align-items-end">
 
-                <div class="operation-input-wrap">
-                    <i class="fas fa-search"></i>
+                <div class="col-xl-4 col-lg-4">
+                    <label class="operation-label">
+                        Arama
+                    </label>
 
-                    <input type="text"
-                           id="registrationSearchInput"
-                           placeholder="Ad, soyad, e-posta veya kayıt tipi ara..." />
+                    <div class="operation-input-wrap">
+                        <i class="fas fa-search"></i>
+
+                        <input type="text"
+                               name="search"
+                               id="registrationSearchInput"
+                               value="@Model.Search"
+                               placeholder="Ad, soyad, e-posta, kayıt tipi veya işlem ID ara..." />
+                    </div>
                 </div>
+
+                <div class="col-xl-3 col-lg-3">
+                    <label class="operation-label">
+                        Ödeme Durumu
+                    </label>
+
+                    <select name="paymentStatus"
+                            id="paymentStatusFilter"
+                            class="operation-select">
+                        @if (string.IsNullOrWhiteSpace(Model.PaymentStatus))
+                        {
+                            <option value="" selected>Tüm Durumlar</option>
+                        }
+                        else
+                        {
+                            <option value="">Tüm Durumlar</option>
+                        }
+
+                        @if (Model.PaymentStatus == "paid")
+                        {
+                            <option value="paid" selected>Ödendi</option>
+                        }
+                        else
+                        {
+                            <option value="paid">Ödendi</option>
+                        }
+
+                        @if (Model.PaymentStatus == "pending")
+                        {
+                            <option value="pending" selected>Bekliyor</option>
+                        }
+                        else
+                        {
+                            <option value="pending">Bekliyor</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-xl-3 col-lg-3">
+                    <label class="operation-label">
+                        Kayıt Türü
+                    </label>
+
+                    <select name="registrationTypeId"
+                            id="registrationTypeFilter"
+                            class="operation-select">
+                        @if (!Model.RegistrationTypeId.HasValue)
+                        {
+                            <option value="" selected>Tüm Kayıt Türleri</option>
+                        }
+                        else
+                        {
+                            <option value="">Tüm Kayıt Türleri</option>
+                        }
+
+                        @foreach (var type in Model.RegistrationTypes)
+                        {
+                            if (Model.RegistrationTypeId.HasValue && Model.RegistrationTypeId.Value == type.Id)
+                            {
+                                <option value="@type.Id" selected>
+                                    @type.Name - @Money(type.Price, type.Currency)
+                                </option>
+                            }
+                            else
+                            {
+                                <option value="@type.Id">
+                                    @type.Name - @Money(type.Price, type.Currency)
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-xl-1 col-lg-1">
+                    <button type="submit"
+                            id="filterRegistrationButton"
+                            class="btn operation-primary-btn w-100"
+                            title="Filtrele">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+
+                <div class="col-xl-1 col-lg-1">
+                    <a href="@listUrl"
+                       id="resetRegistrationButton"
+                       class="btn operation-reset-btn w-100"
+                       title="Temizle">
+                        <i class="fas fa-rotate-left"></i>
+                    </a>
+                </div>
+
             </div>
-
-            <div class="col-xl-3 col-lg-3">
-                <label class="operation-label">
-                    Ödeme Durumu
-                </label>
-
-                <select id="paymentStatusFilter" class="operation-select">
-                    <option value="">Tüm Durumlar</option>
-                    <option value="paid">Ödendi</option>
-                    <option value="pending">Bekliyor</option>
-                    <option value="failed">Başarısız</option>
-                    <option value="cancelled">İptal</option>
-                </select>
-            </div>
-
-            <div class="col-xl-2 col-lg-2">
-                <button type="button"
-                        id="filterRegistrationButton"
-                        class="btn operation-primary-btn w-100">
-                    <i class="fas fa-search me-2"></i>
-                    Filtrele
-                </button>
-            </div>
-
-            <div class="col-xl-2 col-lg-2">
-                <button type="button"
-                        id="resetRegistrationButton"
-                        class="btn operation-reset-btn w-100">
-                    <i class="fas fa-rotate-left me-2"></i>
-                    Temizle
-                </button>
-            </div>
-
-        </div>
+        </form>
     </div>
 
     <div class="operation-main-card">
@@ -163,56 +286,202 @@
                 </h5>
 
                 <p>
-                    Seçili kongreye yapılan katılımcı kayıtları burada listelenecek.
+                    Seçili kongreye yapılan katılımcı kayıtları ve ödeme detayları.
                 </p>
             </div>
 
             <div class="operation-header-actions">
+                <span class="operation-count-pill">
+                    @totalFilteredCount kayıt
+                </span>
+
                 <button type="button"
-                        class="btn operation-light-btn">
+                        class="btn operation-light-btn"
+                        disabled>
                     <i class="fas fa-file-excel me-2"></i>
                     Excel Aktar
                 </button>
 
                 <button type="button"
-                        class="btn operation-primary-btn">
+                        class="btn operation-primary-btn"
+                        disabled>
                     <i class="fas fa-plus me-2"></i>
                     Manuel Kayıt Ekle
                 </button>
             </div>
         </div>
 
-        <div class="operation-empty-state" id="registrationEmptyState">
-            <div class="empty-state-icon">
-                <i class="fas fa-receipt"></i>
-            </div>
+        @if (Model.Items == null || !Model.Items.Any())
+        {
+            <div class="operation-empty-state" id="registrationEmptyState">
+                <div class="empty-state-icon">
+                    <i class="fas fa-receipt"></i>
+                </div>
 
-            <h4>
-                Henüz kayıt bulunamadı
-            </h4>
+                <h4>
+                    Kayıt bulunamadı
+                </h4>
 
-            <p>
-                Bu kongreye ait katılımcı kaydı oluştuğunda kayıt ve ödeme detayları burada görüntülenecek.
-            </p>
+                <p>
+                    Bu kongreye ait kayıt oluştuğunda veya filtreye uygun sonuç bulunduğunda kayıt ve ödeme detayları burada görüntülenecek.
+                </p>
 
-            <div class="empty-state-actions">
-                <a href="@backUrl"
-                   class="btn operation-light-btn">
-                    <i class="fas fa-arrow-left me-2"></i>
-                    Kongre Akışına Dön
-                </a>
-
-                @if (!string.IsNullOrWhiteSpace(slug))
-                {
-                    <a href="/@slug"
-                       target="_blank"
-                       class="btn operation-primary-btn">
-                        <i class="fas fa-external-link-alt me-2"></i>
-                        Kongre Sitesini Gör
+                <div class="empty-state-actions">
+                    <a href="@backUrl"
+                       class="btn operation-light-btn">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Kongre Akışına Dön
                     </a>
-                }
+
+                    <a href="@listUrl"
+                       class="btn operation-primary-btn">
+                        <i class="fas fa-rotate-left me-2"></i>
+                        Filtreleri Temizle
+                    </a>
+                </div>
             </div>
-        </div>
+        }
+        else
+        {
+            <div class="registration-table-wrap">
+                <table class="registration-table">
+                    <thead>
+                        <tr>
+                            <th>Kayıt Tarihi</th>
+                            <th>Katılımcı</th>
+                            <th>Kayıt Türü</th>
+                            <th>Tutar</th>
+                            <th>Ödeme Durumu</th>
+                            <th>İşlem</th>
+                            <th>Ödeme Tarihi</th>
+                            <th>Fatura / İşlem</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="date-box">
+                                        <strong>@item.RegistrationDate.ToString("dd.MM.yyyy")</strong>
+                                        <span>@item.RegistrationDate.ToString("HH:mm")</span>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="participant-cell">
+                                        <div class="participant-avatar">
+                                            @(string.IsNullOrWhiteSpace(item.FullName) ? "K" : item.FullName.Substring(0, 1).ToUpper())
+                                        </div>
+
+                                        <div class="participant-info">
+                                            <strong>@item.FullName</strong>
+                                            <span>@(string.IsNullOrWhiteSpace(item.Email) ? "E-posta yok" : item.Email)</span>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="registration-type-pill">
+                                        <i class="fas fa-tag"></i>
+                                        @item.RegistrationTypeName
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="amount-cell">
+                                        <strong>@Money(item.Amount, item.Currency)</strong>
+                                        <span>@item.Currency</span>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <span class="payment-status @PaymentStatusClass(item.IsPaid)">
+                                        <i class="fas @(item.IsPaid ? "fa-circle-check" : "fa-clock")"></i>
+                                        @PaymentStatusText(item.IsPaid)
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <div class="payment-action-cell">
+                                        @if (!item.IsPaid)
+                                        {
+                                            <form method="post"
+                                                  action="@approvePaymentUrl"
+                                                  onsubmit="return confirm('Bu kaydın ödemesini onaylamak istediğinize emin misiniz?');">
+
+                                                @Html.AntiForgeryToken()
+
+                                                <input type="hidden" name="registrationId" value="@item.RegistrationId" />
+                                                <input type="hidden" name="conferenceId" value="@conferenceId" />
+                                                <input type="hidden" name="returnUrl" value="@currentUrl" />
+
+                                                <button type="submit" class="approve-payment-btn">
+                                                    <i class="fas fa-circle-check"></i>
+                                                    Ödemeyi Onayla
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <span class="payment-approved-pill">
+                                                <i class="fas fa-check"></i>
+                                                Onaylandı
+                                            </span>
+                                        }
+                                    </div>
+                                </td>
+
+                                <td>
+                                    @if (item.PaymentDate.HasValue)
+                                    {
+                                        <div class="date-box">
+                                            <strong>@item.PaymentDate.Value.ToString("dd.MM.yyyy")</strong>
+                                            <span>@item.PaymentDate.Value.ToString("HH:mm")</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="muted-pill">
+                                            Ödeme yok
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <div class="billing-cell">
+                                        <strong>
+                                            @(string.IsNullOrWhiteSpace(item.BillingName) ? "Fatura adı yok" : item.BillingName)
+                                        </strong>
+
+                                        @if (!string.IsNullOrWhiteSpace(item.PaymentTransactionId))
+                                        {
+                                            <span>
+                                                İşlem ID: @item.PaymentTransactionId
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span>
+                                                İşlem ID yok
+                                            </span>
+                                        }
+
+                                        @if (!string.IsNullOrWhiteSpace(item.TaxNumber))
+                                        {
+                                            <small>
+                                                Vergi / T.C.: @item.TaxNumber
+                                            </small>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
     </div>
 
 </div>
@@ -220,6 +489,39 @@
 <style>
     .registration-payment-page {
         font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .operation-alert {
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-radius: 18px;
+        border: 1px solid transparent;
+        font-weight: 800;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+    }
+
+        .operation-alert i {
+            font-size: 1rem;
+        }
+
+    .operation-alert-success {
+        background: rgba(34, 197, 94, 0.10);
+        border-color: rgba(34, 197, 94, 0.20);
+        color: #15803d;
+    }
+
+    .operation-alert-info {
+        background: rgba(13, 110, 253, 0.10);
+        border-color: rgba(13, 110, 253, 0.20);
+        color: #0d6efd;
+    }
+
+    .operation-alert-error {
+        background: rgba(239, 68, 68, 0.10);
+        border-color: rgba(239, 68, 68, 0.20);
+        color: #dc2626;
     }
 
     .operation-header-card {
@@ -297,7 +599,13 @@
         align-items: center;
         gap: 1rem;
         box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+        transition: all 0.2s ease;
     }
+
+        .operation-stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+        }
 
     .operation-stat-icon {
         width: 50px;
@@ -325,9 +633,9 @@
         color: #f59e0b;
     }
 
-    .stat-red {
-        background: rgba(239, 68, 68, 0.10);
-        color: #ef4444;
+    .stat-purple {
+        background: rgba(124, 58, 237, 0.10);
+        color: #7c3aed;
     }
 
     .operation-stat-number {
@@ -335,6 +643,10 @@
         font-size: 1.65rem;
         font-weight: 900;
         line-height: 1;
+    }
+
+    .revenue-number {
+        font-size: 1.25rem;
     }
 
     .operation-stat-label {
@@ -423,12 +735,19 @@
         font-weight: 900;
         padding: 0 1.15rem;
         box-shadow: 0 10px 22px rgba(13, 110, 253, 0.18);
+        text-decoration: none;
     }
 
         .operation-primary-btn:hover {
             color: #ffffff;
             background: #0b5ed7;
             box-shadow: 0 14px 28px rgba(13, 110, 253, 0.24);
+        }
+
+        .operation-primary-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            box-shadow: none;
         }
 
     .operation-reset-btn,
@@ -443,6 +762,7 @@
         color: #334155;
         font-weight: 900;
         padding: 0 1.15rem;
+        text-decoration: none;
     }
 
         .operation-reset-btn:hover,
@@ -450,6 +770,11 @@
             color: #0d6efd;
             background: #f8fbff;
             border-color: rgba(13, 110, 253, 0.25);
+        }
+
+        .operation-light-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
         }
 
     .operation-main-card {
@@ -489,6 +814,205 @@
         align-items: center;
         gap: 0.7rem;
         flex-wrap: wrap;
+    }
+
+    .operation-count-pill {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        padding: 0 0.85rem;
+        border-radius: 999px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 0.82rem;
+        font-weight: 900;
+    }
+
+    .registration-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .registration-table {
+        width: 100%;
+        min-width: 1180px;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+        .registration-table thead th {
+            padding: 1rem 1.35rem;
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 0.76rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-bottom: 1px solid #edf2f7;
+            white-space: nowrap;
+        }
+
+        .registration-table tbody td {
+            padding: 1rem 1.35rem;
+            border-bottom: 1px solid #edf2f7;
+            vertical-align: middle;
+        }
+
+        .registration-table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+            .registration-table tbody tr:hover {
+                background: #f8fbff;
+            }
+
+            .registration-table tbody tr:last-child td {
+                border-bottom: none;
+            }
+
+    .date-box strong,
+    .amount-cell strong,
+    .billing-cell strong {
+        display: block;
+        color: #0f172a;
+        font-size: 0.9rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .date-box span,
+    .amount-cell span,
+    .billing-cell span,
+    .billing-cell small {
+        display: block;
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 700;
+        margin-top: 0.2rem;
+        white-space: nowrap;
+    }
+
+    .participant-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: 220px;
+    }
+
+    .participant-avatar {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        box-shadow: 0 12px 24px rgba(13, 110, 253, 0.16);
+    }
+
+    .participant-info {
+        min-width: 0;
+    }
+
+        .participant-info strong {
+            display: block;
+            color: #0f172a;
+            font-size: 0.94rem;
+            font-weight: 900;
+            line-height: 1.25;
+        }
+
+        .participant-info span {
+            display: block;
+            color: #64748b;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-top: 0.2rem;
+        }
+
+    .registration-type-pill,
+    .payment-status,
+    .muted-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        min-height: 32px;
+        padding: 0 0.75rem;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .registration-type-pill {
+        background: rgba(13, 110, 253, 0.08);
+        color: #0d6efd;
+    }
+
+    .payment-paid {
+        background: rgba(34, 197, 94, 0.10);
+        color: #16a34a;
+    }
+
+    .payment-pending {
+        background: rgba(245, 158, 11, 0.12);
+        color: #f59e0b;
+    }
+
+    .muted-pill {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    .billing-cell {
+        min-width: 190px;
+    }
+
+    .payment-action-cell {
+        min-width: 170px;
+    }
+
+    .approve-payment-btn {
+        min-height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        border: none;
+        border-radius: 999px;
+        padding: 0 0.85rem;
+        background: linear-gradient(135deg, #16a34a, #22c55e);
+        color: #ffffff;
+        font-size: 0.78rem;
+        font-weight: 900;
+        white-space: nowrap;
+        box-shadow: 0 10px 22px rgba(34, 197, 94, 0.20);
+        transition: all 0.2s ease;
+    }
+
+        .approve-payment-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 28px rgba(34, 197, 94, 0.28);
+        }
+
+    .payment-approved-pill {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.42rem;
+        border-radius: 999px;
+        padding: 0 0.78rem;
+        background: rgba(34, 197, 94, 0.10);
+        color: #16a34a;
+        font-size: 0.78rem;
+        font-weight: 900;
+        white-space: nowrap;
     }
 
     .operation-empty-state {
@@ -552,36 +1076,9 @@
             width: 100%;
         }
 
-            .operation-header-actions .btn {
+            .operation-header-actions .btn,
+            .operation-header-actions .operation-count-pill {
                 width: 100%;
             }
     }
 </style>
-
-@section Scripts {
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const searchInput = document.getElementById("registrationSearchInput");
-            const statusFilter = document.getElementById("paymentStatusFilter");
-            const filterButton = document.getElementById("filterRegistrationButton");
-            const resetButton = document.getElementById("resetRegistrationButton");
-
-            if (filterButton) {
-                filterButton.addEventListener("click", function () {
-                });
-            }
-
-            if (resetButton) {
-                resetButton.addEventListener("click", function () {
-                    if (searchInput) {
-                        searchInput.value = "";
-                    }
-
-                    if (statusFilter) {
-                        statusFilter.value = "";
-                    }
-                });
-            }
-        });
-    </script>
-}
