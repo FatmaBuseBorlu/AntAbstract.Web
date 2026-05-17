@@ -1,336 +1,1021 @@
-﻿@using AntAbstract.Application.DTOs.Submission
-@using AntAbstract.Domain.Entities
-@using AntAbstract.Application.DTOs.Review
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
-@model SubmissionDto
+﻿@using AntAbstract.Domain.Entities
+@using System.Linq
+
+@model Submission
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"].Value;
-    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    ViewData["Title"] = "Bildiri İnceleme";
+    ViewData["HideSelectedConferenceBar"] = true;
+    Layout = "_LayoutDashboard";
 
-    string localizedStatus = Model.Status switch
+    var slug = ViewBag.Slug as string ?? Model.Conference?.Tenant?.Slug ?? "";
+    var conferenceId = ViewBag.ConferenceId is Guid vbConferenceId
+        ? vbConferenceId
+        : Model.ConferenceId;
+
+    var conferenceTitle = ViewBag.ConferenceTitle as string ?? Model.Conference?.Title ?? "";
+    var returnUrl = ViewBag.ReturnUrl as string;
+
+    var listUrl = !string.IsNullOrWhiteSpace(returnUrl)
+        ? returnUrl
+        : string.IsNullOrWhiteSpace(slug)
+            ? $"/Admin/Submissions?conferenceId={conferenceId}"
+            : $"/{slug}/Admin/Submissions?conferenceId={conferenceId}";
+
+    var changeStatusUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Admin/Submissions/ChangeStatus"
+        : $"/{slug}/Admin/Submissions/ChangeStatus";
+
+    var deleteUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Admin/Submissions/Delete"
+        : $"/{slug}/Admin/Submissions/Delete";
+
+    var assignUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Assignment/Assign/{Model.Id}?conferenceId={conferenceId}"
+        : $"/{slug}/Admin/Assignment/Assign/{Model.Id}?conferenceId={conferenceId}";
+
+    string StatusLabel(SubmissionStatus status)
     {
-        "New" => Localizer["Status_New"].Value,
-        "UnderReview" => Localizer["Status_UnderReview"].Value,
-        "Accepted" => Localizer["Status_Accepted"].Value,
-        "Rejected" => Localizer["Status_Rejected"].Value,
-        "RevisionRequired" => Localizer["Status_RevisionRequired"].Value,
-        "Pending" => Localizer["Status_Pending"].Value,
-        "Presented" => Localizer["Status_Presented"].Value,
-        _ => Model.Status
-    };
+        return status switch
+        {
+            SubmissionStatus.New => "Yeni",
+            SubmissionStatus.Pending => "Beklemede",
+            SubmissionStatus.UnderReview => "Hakem Değerlendirmesinde",
+            SubmissionStatus.Accepted => "Kabul Edildi",
+            SubmissionStatus.Rejected => "Reddedildi",
+            SubmissionStatus.RevisionRequired => "Revizyon Gerekli",
+            SubmissionStatus.Presented => "Sunuldu",
+            _ => status.ToString()
+        };
+    }
+
+    string StatusClass(SubmissionStatus status)
+    {
+        return status switch
+        {
+            SubmissionStatus.New => "status-new",
+            SubmissionStatus.Pending => "status-pending",
+            SubmissionStatus.UnderReview => "status-review",
+            SubmissionStatus.Accepted => "status-accepted",
+            SubmissionStatus.Rejected => "status-rejected",
+            SubmissionStatus.RevisionRequired => "status-revision",
+            SubmissionStatus.Presented => "status-presented",
+            _ => "status-default"
+        };
+    }
+
+    var authorFullName = Model.Author == null
+        ? "Yazar bilgisi yok"
+        : $"{Model.Author.FirstName} {Model.Author.LastName}".Trim();
+
+    if (string.IsNullOrWhiteSpace(authorFullName))
+    {
+        authorFullName = Model.Author?.Email ?? "Yazar bilgisi yok";
+    }
+
+    var files = Model.Files?.ToList() ?? new List<SubmissionFile>();
+    var authors = Model.SubmissionAuthors?.OrderBy(x => x.Order).ToList() ?? new List<SubmissionAuthor>();
+    var assignments = Model.ReviewAssignments?.ToList() ?? new List<ReviewAssignment>();
 }
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-    var successMsg = '@Html.Raw(TempData["SuccessMessage"])';
-    var errorMsg = '@Html.Raw(TempData["ErrorMessage"])';
+<div class="container-fluid submission-detail-page">
 
-    if (successMsg) {
-        Swal.fire('@Localizer["AlertSuccessTitle"]', successMsg, 'success');
-    }
+    <div class="detail-hero-card mb-4">
+        <div class="detail-hero-left">
+            <div class="detail-hero-icon">
+                <i class="fas fa-magnifying-glass-chart"></i>
+            </div>
 
-    if (errorMsg) {
-        Swal.fire('@Localizer["AlertErrorTitle"]', errorMsg, 'error');
-    }
-</script>
+            <div>
+                <div class="detail-section-label">
+                    Bildiri İnceleme
+                </div>
 
-<div class="container-fluid px-4">
-    <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
-        <div>
-            <h4 class="fw-bold text-primary mb-0">
-                <i class="fas fa-search me-2"></i>@Localizer["PageHeading"]
-            </h4>
-            <small class="text-muted">@Localizer["ReferenceLabel"] #@Model.Id.ToString().Substring(0, 8).ToUpper()</small>
+                <h2 class="detail-page-title">
+                    @Model.Title
+                </h2>
+
+                <p class="detail-page-description">
+                    Ref: #@Model.Id.ToString().Substring(0, 8).ToUpper()
+                    @if (!string.IsNullOrWhiteSpace(conferenceTitle))
+                    {
+                        <span> · @conferenceTitle</span>
+                    }
+                </p>
+
+                @if (!string.IsNullOrWhiteSpace(slug))
+                {
+                    <div class="detail-slug-badge">
+                        /@slug
+                    </div>
+                }
+            </div>
         </div>
 
-        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-1"></i> @Localizer["BackToListButton"]
-        </a>
+        <div class="detail-hero-actions">
+            <a href="@listUrl" class="btn detail-light-btn">
+                <i class="fas fa-arrow-left me-2"></i>
+                Listeye Dön
+            </a>
+
+            <a href="@assignUrl" class="btn detail-primary-btn">
+                <i class="fas fa-user-check me-2"></i>
+                Hakem Ata
+            </a>
+        </div>
     </div>
 
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-white py-3">
-                    <ul class="nav nav-tabs card-header-tabs" id="adminTabs" role="tablist">
-                        <li class="nav-item">
-                            <button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#ozet">
-                                @Localizer["TabSummary"]
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#yazar">
-                                @Localizer["TabAuthors"]
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#dosya">
-                                @Localizer["TabFiles"]
-                            </button>
-                        </li>
-                    </ul>
-                </div>
+    <div class="row g-4">
+        <div class="col-xl-8">
+            <div class="detail-card">
+                <div class="modern-tabs">
+                    <button type="button" class="modern-tab active" data-tab-target="summary">
+                        <i class="fas fa-file-lines"></i>
+                        Özet
+                    </button>
 
-                <div class="card-body">
-                    <div class="tab-content">
-                        <div class="tab-pane fade show active" id="ozet">
-                            <h5 class="fw-bold text-dark">@Model.Title</h5>
+                    <button type="button" class="modern-tab" data-tab-target="authors">
+                        <i class="fas fa-users"></i>
+                        Yazarlar
+                    </button>
 
-                            <div class="p-3 bg-light rounded border mt-3">
-                                <p class="mb-0" style="white-space: pre-wrap;">@Model.Abstract</p>
-                            </div>
-
-                            <div class="mt-3">
-                                <span class="badge bg-secondary">@Localizer["KeywordsLabel"]</span>
-                                <span class="text-muted">@Model.Keywords</span>
-                            </div>
-                        </div>
-
-                        <div class="tab-pane fade" id="yazar">
-                            <table class="table table-hover align-middle">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>@Localizer["AuthorsTableOrder"]</th>
-                                        <th>@Localizer["AuthorsTableFullName"]</th>
-                                        <th>@Localizer["AuthorsTableInstitution"]</th>
-                                        <th>@Localizer["AuthorsTableEmail"]</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @if (Model.Authors != null)
-                                    {
-                                        foreach (var author in Model.Authors.OrderBy(a => a.Order))
-                                        {
-                                            <tr>
-                                                <td>@author.Order</td>
-                                                <td class="fw-bold">@author.FirstName @author.LastName</td>
-                                                <td>@author.Institution</td>
-                                                <td>
-                                                    @author.Email
-                                                    @if (author.IsCorrespondingAuthor)
-                                                    {
-                                                        <span class="badge bg-info text-dark">@Localizer["CorrespondingAuthorBadge"]</span>
-                                                    }
-                                                </td>
-                                            </tr>
-                                        }
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="tab-pane fade" id="dosya">
-                            <table class="table table-bordered align-middle">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>@Localizer["FilesTableFileName"]</th>
-                                        <th>@Localizer["FilesTableDate"]</th>
-                                        <th>@Localizer["FilesTableAction"]</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @if (Model.Files != null && Model.Files.Any())
-                                    {
-                                        foreach (var file in Model.Files)
-                                        {
-                                            <tr>
-                                                <td>@file.FileName</td>
-                                                <td>@file.UploadedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
-                                                <td>
-                                                    <a href="@file.FilePath" target="_blank" class="btn btn-sm btn-primary">
-                                                        @Localizer["DownloadButton"]
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        <tr>
-                                            <td colspan="3" class="text-center text-muted">@Localizer["NoFilesMessage"]</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-            <div class="card shadow-sm border-0 mb-4 border-start border-5 border-primary">
-                <div class="card-body">
-                    <h6 class="fw-bold text-uppercase text-muted mb-3">@Localizer["StatusManagementHeader"]</h6>
-
-                    <div class="mb-3 text-center">
-                        <h2 class="fw-bold
-                            @(Model.Status == "Accepted" ? "text-success" :
-                                                          Model.Status == "Rejected" ? "text-danger" :
-                                                          Model.Status == "UnderReview" ? "text-warning" : "text-primary")">
-                            @localizedStatus
-                        </h2>
-                        <div class="text-muted small">@Localizer["CurrentStatusLabel"]</div>
-                    </div>
-
-                    <form asp-action="ChangeStatus" method="post">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="id" value="@Model.Id" />
-
-                        <div class="d-grid">
-                            <button type="button" class="btn btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown">
-                                @Localizer["ChangeStatusButton"]
-                            </button>
-
-                            <ul class="dropdown-menu w-100">
-                                <li>
-                                    <button class="dropdown-item" type="submit" name="status" value="UnderReview">
-                                        🟡 @Localizer["MoveToReviewAction"]
-                                    </button>
-                                </li>
-                                <li>
-                                    <button class="dropdown-item text-success fw-bold" type="submit" name="status" value="Accepted">
-                                        🟢 @Localizer["AcceptAction"]
-                                    </button>
-                                </li>
-                                <li>
-                                    <button class="dropdown-item text-danger fw-bold" type="submit" name="status" value="Rejected">
-                                        🔴 @Localizer["RejectAction"]
-                                    </button>
-                                </li>
-                            </ul>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-body">
-                    <h6 class="fw-bold text-uppercase text-muted mb-3">@Localizer["ReviewerEvaluationsHeader"]</h6>
-
-                    @if (ViewBag.Reviews != null)
-                    {
-                        var reviews = (List<ReviewAssignmentDto>)ViewBag.Reviews;
-
-                        if (reviews.Any())
-                        {
-                            <div class="table-responsive mb-3">
-                                <table class="table table-sm table-bordered" style="font-size: 0.85rem;">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>@Localizer["ReviewsTableReviewer"]</th>
-                                            <th>@Localizer["ReviewsTableStatus"]</th>
-                                            <th>@Localizer["ReviewsTableScore"]</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var rev in reviews)
-                                        {
-                                            <tr>
-                                                <td>@rev.ReviewerName</td>
-                                                <td>
-                                                    @if (rev.IsReviewed)
-                                                    {
-                                                        <span class="badge bg-success">@Localizer["ReviewCompletedBadge"]</span>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="badge bg-warning text-dark">@Localizer["ReviewPendingBadge"]</span>
-                                                    }
-                                                </td>
-                                                <td class="fw-bold text-center">
-                                                    @(rev.Score.HasValue? rev.Score.ToString() : "-")
-                                                </td>
-                                            </tr>
-
-                                            @if (rev.IsReviewed && (!string.IsNullOrEmpty(rev.Recommendation) || !string.IsNullOrEmpty(rev.CommentsToAuthor)))
-                                            {
-                                                <tr>
-                                                    <td colspan="3" class="bg-light text-muted fst-italic p-2">
-                                                        @if (!string.IsNullOrEmpty(rev.Recommendation))
-                                                        {
-                                                            <div class="mb-1">
-                                                                <strong class="text-dark">@Localizer["ReviewDecisionLabel"]</strong> @rev.Recommendation
-                                                            </div>
-                                                        }
-
-                                                        @if (!string.IsNullOrEmpty(rev.CommentsToAuthor))
-                                                        {
-                                                            <div>
-                                                                <strong class="text-dark">@Localizer["ReviewNoteLabel"]</strong>
-                                                                @(rev.CommentsToAuthor.Length > 60 ? rev.CommentsToAuthor.Substring(0, 60) + "..." : rev.CommentsToAuthor)
-                                                            </div>
-                                                        }
-                                                    </td>
-                                                </tr>
-                                            }
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="alert alert-light border text-center small mb-3">
-                                @Localizer["NoAssignmentsYetMessage"]
-                            </div>
-                        }
-                    }
-
-                    <button type="button" class="btn btn-outline-primary w-100 btn-sm" data-bs-toggle="modal" data-bs-target="#assignReviewerModal">
-                        <i class="fas fa-plus me-1"></i> @Localizer["AssignNewReviewerButton"]
+                    <button type="button" class="modern-tab" data-tab-target="files">
+                        <i class="fas fa-paperclip"></i>
+                        Dosyalar
                     </button>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-@{
-    var currentSlug = (string?)ViewContext.RouteData.Values["slug"] ?? "";
-}
+                <div class="tab-panel active" id="summary">
+                    <div class="submission-summary-box">
+                        <h3>@Model.Title</h3>
 
-<div class="modal fade" id="assignReviewerModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form asp-area="Admin" asp-controller="Assignment" asp-action="AssignPost" asp-route-slug="@currentSlug" method="post">
-                @Html.AntiForgeryToken()
+                        <div class="summary-meta-grid">
+                            <div>
+                                <span>Konu</span>
+                                <strong>@(string.IsNullOrWhiteSpace(Model.Topic) ? "Belirtilmedi" : Model.Topic)</strong>
+                            </div>
 
-                <div class="modal-header bg-light">
-                    <h5 class="modal-title fw-bold">@Localizer["AssignReviewerModalTitle"]</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
+                            <div>
+                                <span>Sunum Türü</span>
+                                <strong>@Model.PresentationType</strong>
+                            </div>
 
-                <div class="modal-body">
-                    <input type="hidden" name="submissionId" value="@Model.Id" />
+                            <div>
+                                <span>Gönderim Tarihi</span>
+                                <strong>@Model.CreatedDate.ToString("dd.MM.yyyy HH:mm")</strong>
+                            </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">@Localizer["SelectReviewerLabel"]</label>
-                        <select name="reviewerId" class="form-select" required>
-                            <option value="">@Localizer["SelectReviewerPlaceholder"]</option>
-                            @if (ViewBag.Referees != null)
+                            <div>
+                                <span>Mevcut Durum</span>
+                                <strong>@StatusLabel(Model.Status)</strong>
+                            </div>
+                        </div>
+
+                        <div class="abstract-box">
+                            <div class="content-label">
+                                Bildiri Özeti
+                            </div>
+
+                            <p>
+                                @(string.IsNullOrWhiteSpace(Model.Abstract) ? "Özet bilgisi bulunmuyor." : Model.Abstract)
+                            </p>
+                        </div>
+
+                        <div class="keywords-box">
+                            <span>Anahtar Kelimeler</span>
+
+                            @if (string.IsNullOrWhiteSpace(Model.Keywords))
                             {
-                                foreach (var referee in (IList<AntAbstract.Domain.Entities.AppUser>)ViewBag.Referees)
+                                <strong>Belirtilmedi</strong>
+                            }
+                            else
+                            {
+                                var keywords = Model.Keywords.Split(',', StringSplitOptions.RemoveEmptyEntries);
+
+                                foreach (var keyword in keywords)
                                 {
-                                    <option value="@referee.Id">
-                                        @referee.FirstName @referee.LastName (@referee.Email)
-                                    </option>
+                                    <strong>@keyword.Trim()</strong>
                                 }
                             }
-                        </select>
-
-                        <div class="form-text small mt-1">
-                            @Localizer["ReviewerRoleHelpText"]
                         </div>
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@Localizer["CancelButton"]</button>
-                    <button type="submit" class="btn btn-primary">@Localizer["CompleteAssignmentButton"]</button>
+                <div class="tab-panel" id="authors">
+                    @if (!authors.Any())
+                    {
+                        <div class="mini-empty">
+                            <i class="fas fa-user-slash"></i>
+                            <strong>Yazar bilgisi bulunamadı</strong>
+                            <span>Bu bildiriye ait yazar listesi henüz oluşmamış.</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="author-list">
+                            @foreach (var author in authors)
+                            {
+                                <div class="author-list-item">
+                                    <div class="author-avatar">
+                                        @(string.IsNullOrWhiteSpace(author.FirstName) ? "Y" : author.FirstName.Substring(0, 1).ToUpper())
+                                    </div>
+
+                                    <div class="author-info">
+                                        <strong>@author.FirstName @author.LastName</strong>
+                                        <span>@author.Email</span>
+                                        <small>@author.Institution</small>
+                                    </div>
+
+                                    @if (author.IsCorrespondingAuthor)
+                                    {
+                                        <div class="corresponding-badge">
+                                            Sorumlu Yazar
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
                 </div>
-            </form>
+
+                <div class="tab-panel" id="files">
+                    @if (!files.Any())
+                    {
+                        <div class="mini-empty">
+                            <i class="fas fa-file-circle-xmark"></i>
+                            <strong>Dosya bulunamadı</strong>
+                            <span>Bu bildiriye ait yüklenmiş dosya yok.</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="file-list">
+                            @foreach (var file in files)
+                            {
+                                <div class="file-list-item">
+                                    <div class="file-icon">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </div>
+
+                                    <div class="file-info">
+                                        <strong>@file.FileName</strong>
+                                        <span>@file.UploadedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                                    </div>
+
+                                    <a href="@file.FilePath" target="_blank" class="btn file-view-btn">
+                                        <i class="fas fa-download me-2"></i>
+                                        Aç
+                                    </a>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <div class="side-card status-side-card mb-4">
+                <div class="side-card-header">
+                    <div>
+                        <span>Durum Yönetimi</span>
+                        <h5>Bildiri Durumu</h5>
+                    </div>
+
+                    <div class="status-icon">
+                        <i class="fas fa-sliders"></i>
+                    </div>
+                </div>
+
+                <div class="current-status-box @StatusClass(Model.Status)">
+                    <span>Mevcut Durum</span>
+                    <strong>@StatusLabel(Model.Status)</strong>
+                </div>
+
+                <form method="post" action="@changeStatusUrl" class="status-form">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="conferenceId" value="@conferenceId" />
+                    <input type="hidden" name="returnUrl" value="@listUrl" />
+
+                    <label>Durumu Değiştir</label>
+
+                    <select name="status" class="detail-select">
+                        @foreach (SubmissionStatus statusItem in Enum.GetValues(typeof(SubmissionStatus)))
+                        {
+                            if (Model.Status == statusItem)
+                            {
+                                <option value="@statusItem" selected>@StatusLabel(statusItem)</option>
+                            }
+                            else
+                            {
+                                <option value="@statusItem">@StatusLabel(statusItem)</option>
+                            }
+                        }
+                    </select>
+
+                    <button type="submit" class="btn detail-primary-btn w-100 mt-3">
+                        <i class="fas fa-save me-2"></i>
+                        Durumu Kaydet
+                    </button>
+                </form>
+            </div>
+
+            <div class="side-card mb-4">
+                <div class="side-card-header">
+                    <div>
+                        <span>Hakem Değerlendirmeleri</span>
+                        <h5>Atama Durumu</h5>
+                    </div>
+
+                    <div class="status-icon review-icon">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                </div>
+
+                @if (!assignments.Any())
+                {
+                    <div class="review-empty">
+                        <i class="fas fa-user-clock"></i>
+                        <strong>Henüz atama yapılmamış</strong>
+                        <span>Bu bildiriye henüz hakem atanmamış.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="review-list">
+                        @foreach (var assignment in assignments)
+                        {
+                            var reviewerName = assignment.Reviewer == null
+                            ? "Hakem bilgisi yok"
+                            : $"{assignment.Reviewer.FirstName} {assignment.Reviewer.LastName}".Trim();
+
+                            if (string.IsNullOrWhiteSpace(reviewerName))
+                            {
+                                reviewerName = assignment.Reviewer?.Email ?? "Hakem bilgisi yok";
+                            }
+
+                            <div class="review-list-item">
+                                <div class="reviewer-avatar">
+                                    <i class="fas fa-user-check"></i>
+                                </div>
+
+                                <div>
+                                    <strong>@reviewerName</strong>
+                                    <span>
+                                        @(assignment.Review == null ? "Değerlendirme bekliyor" : "Değerlendirildi")
+                                    </span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+                <a href="@assignUrl" class="btn detail-light-btn w-100 mt-3">
+                    <i class="fas fa-plus me-2"></i>
+                    Yeni Hakem Ata
+                </a>
+            </div>
+
+            <div class="side-card danger-card">
+                <div class="side-card-header">
+                    <div>
+                        <span>Silme İşlemi</span>
+                        <h5>Bildiri Sil</h5>
+                    </div>
+
+                    <div class="status-icon danger-icon">
+                        <i class="fas fa-trash"></i>
+                    </div>
+                </div>
+
+                <p>
+                    Bu işlem geri alınamaz. Bildiri ve ilişkili dosya kayıtları silinebilir.
+                </p>
+
+                <form method="post" action="@deleteUrl" onsubmit="return confirm('Bu bildiriyi silmek istediğinize emin misiniz?');">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="conferenceId" value="@conferenceId" />
+                    <input type="hidden" name="returnUrl" value="@listUrl" />
+
+                    <button type="submit" class="btn danger-delete-btn w-100">
+                        <i class="fas fa-trash me-2"></i>
+                        Bildiriyi Sil
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
+
 </div>
+
+<style>
+    .submission-detail-page {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .detail-hero-card {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e8eef6;
+        border-radius: 28px;
+        padding: 1.55rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.2rem;
+        flex-wrap: wrap;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+    }
+
+    .detail-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 300px;
+        flex: 1;
+    }
+
+    .detail-hero-icon {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.55rem;
+        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.22);
+    }
+
+    .detail-section-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .detail-page-title {
+        margin: 0 0 0.35rem;
+        color: #0f172a;
+        font-size: 2rem;
+        font-weight: 900;
+        letter-spacing: -0.05em;
+        line-height: 1.2;
+    }
+
+    .detail-page-description {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.96rem;
+        font-weight: 700;
+        line-height: 1.65;
+    }
+
+    .detail-slug-badge {
+        width: fit-content;
+        margin-top: 0.55rem;
+        padding: 0.38rem 0.8rem;
+        border-radius: 999px;
+        background: rgba(13, 110, 253, 0.09);
+        color: #0d6efd;
+        font-size: 0.78rem;
+        font-weight: 900;
+    }
+
+    .detail-hero-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .detail-primary-btn,
+    .detail-light-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        font-weight: 900;
+        padding: 0 1.1rem;
+        text-decoration: none;
+    }
+
+    .detail-primary-btn {
+        border: none;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        box-shadow: 0 12px 28px rgba(13, 110, 253, 0.22);
+    }
+
+        .detail-primary-btn:hover {
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+    .detail-light-btn {
+        border: 1px solid #dbe3ef;
+        background: #ffffff;
+        color: #334155;
+    }
+
+        .detail-light-btn:hover {
+            color: #0d6efd;
+            background: #f8fbff;
+            border-color: rgba(13, 110, 253, 0.25);
+        }
+
+    .detail-card,
+    .side-card {
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 26px;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+
+    .modern-tabs {
+        padding: 1rem;
+        border-bottom: 1px solid #edf2f7;
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        flex-wrap: wrap;
+    }
+
+    .modern-tab {
+        min-height: 42px;
+        border: 1px solid #dbe3ef;
+        border-radius: 999px;
+        background: #ffffff;
+        color: #475569;
+        font-weight: 900;
+        padding: 0 1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+        .modern-tab.active,
+        .modern-tab:hover {
+            border-color: rgba(13, 110, 253, 0.30);
+            background: rgba(13, 110, 253, 0.08);
+            color: #0d6efd;
+        }
+
+    .tab-panel {
+        display: none;
+        padding: 1.5rem;
+    }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+    .submission-summary-box h3 {
+        color: #0f172a;
+        font-size: 1.35rem;
+        font-weight: 900;
+        margin-bottom: 1rem;
+    }
+
+    .summary-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.8rem;
+        margin-bottom: 1.2rem;
+    }
+
+        .summary-meta-grid div {
+            background: #f8fafc;
+            border: 1px solid #edf2f7;
+            border-radius: 18px;
+            padding: 0.95rem;
+        }
+
+        .summary-meta-grid span {
+            display: block;
+            color: #64748b;
+            font-size: 0.76rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.35rem;
+        }
+
+        .summary-meta-grid strong {
+            color: #0f172a;
+            font-size: 0.9rem;
+            font-weight: 900;
+        }
+
+    .abstract-box {
+        background: #f8fafc;
+        border: 1px solid #edf2f7;
+        border-radius: 20px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .content-label {
+        color: #0d6efd;
+        font-size: 0.8rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 0.55rem;
+    }
+
+    .abstract-box p {
+        margin: 0;
+        color: #334155;
+        font-weight: 600;
+        line-height: 1.8;
+    }
+
+    .keywords-box {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+    }
+
+        .keywords-box span {
+            color: #64748b;
+            font-size: 0.84rem;
+            font-weight: 900;
+        }
+
+        .keywords-box strong {
+            display: inline-flex;
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+            background: rgba(13, 110, 253, 0.08);
+            color: #0d6efd;
+            font-size: 0.8rem;
+            font-weight: 900;
+        }
+
+    .author-list,
+    .file-list,
+    .review-list {
+        display: grid;
+        gap: 0.8rem;
+    }
+
+    .author-list-item,
+    .file-list-item,
+    .review-list-item {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        background: #f8fafc;
+        border: 1px solid #edf2f7;
+        border-radius: 18px;
+        padding: 1rem;
+    }
+
+    .author-avatar,
+    .file-icon,
+    .reviewer-avatar {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+    }
+
+    .author-avatar {
+        background: rgba(0, 174, 239, 0.12);
+        color: #00aeef;
+    }
+
+    .file-icon {
+        background: rgba(239, 68, 68, 0.10);
+        color: #ef4444;
+    }
+
+    .reviewer-avatar {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .author-info,
+    .file-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+        .author-info strong,
+        .file-info strong,
+        .review-list-item strong {
+            display: block;
+            color: #0f172a;
+            font-weight: 900;
+        }
+
+        .author-info span,
+        .file-info span,
+        .review-list-item span {
+            display: block;
+            color: #64748b;
+            font-size: 0.84rem;
+            font-weight: 700;
+        }
+
+        .author-info small {
+            display: block;
+            color: #94a3b8;
+            font-size: 0.78rem;
+            font-weight: 700;
+            margin-top: 0.15rem;
+        }
+
+    .corresponding-badge {
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        background: rgba(34, 197, 94, 0.10);
+        color: #16a34a;
+        font-size: 0.75rem;
+        font-weight: 900;
+    }
+
+    .file-view-btn {
+        min-height: 38px;
+        border-radius: 12px;
+        background: rgba(13, 110, 253, 0.08);
+        color: #0d6efd;
+        font-weight: 900;
+        border: 1px solid rgba(13, 110, 253, 0.22);
+    }
+
+        .file-view-btn:hover {
+            background: #0d6efd;
+            color: #ffffff;
+        }
+
+    .side-card {
+        padding: 1.25rem;
+    }
+
+    .side-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+        .side-card-header span {
+            color: #64748b;
+            font-size: 0.76rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .side-card-header h5 {
+            color: #0f172a;
+            font-size: 1.05rem;
+            font-weight: 900;
+            margin: 0.2rem 0 0;
+        }
+
+    .status-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 16px;
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .review-icon {
+        background: rgba(34, 197, 94, 0.10);
+        color: #16a34a;
+    }
+
+    .danger-icon {
+        background: rgba(239, 68, 68, 0.10);
+        color: #ef4444;
+    }
+
+    .current-status-box {
+        border-radius: 22px;
+        padding: 1.2rem;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+
+        .current-status-box span {
+            display: block;
+            color: inherit;
+            opacity: 0.78;
+            font-size: 0.8rem;
+            font-weight: 900;
+            margin-bottom: 0.25rem;
+        }
+
+        .current-status-box strong {
+            display: block;
+            font-size: 1.9rem;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+        }
+
+    .status-form label {
+        display: block;
+        color: #0f172a;
+        font-size: 0.86rem;
+        font-weight: 900;
+        margin-bottom: 0.45rem;
+    }
+
+    .detail-select {
+        width: 100%;
+        min-height: 46px;
+        border: 1px solid #dbe3ef;
+        border-radius: 16px;
+        padding: 0 1rem;
+        color: #0f172a;
+        font-weight: 800;
+        outline: none;
+    }
+
+    .status-new {
+        background: rgba(0, 174, 239, 0.12);
+        color: #00aeef;
+    }
+
+    .status-pending {
+        background: rgba(245, 158, 11, 0.12);
+        color: #f59e0b;
+    }
+
+    .status-review {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .status-accepted {
+        background: rgba(34, 197, 94, 0.10);
+        color: #16a34a;
+    }
+
+    .status-rejected {
+        background: rgba(239, 68, 68, 0.10);
+        color: #ef4444;
+    }
+
+    .status-revision {
+        background: rgba(124, 58, 237, 0.10);
+        color: #7c3aed;
+    }
+
+    .status-presented {
+        background: rgba(20, 184, 166, 0.12);
+        color: #14b8a6;
+    }
+
+    .status-default {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .review-empty,
+    .mini-empty {
+        border: 1px dashed #cbd5e1;
+        background: #f8fafc;
+        border-radius: 18px;
+        padding: 1.4rem;
+        text-align: center;
+        color: #64748b;
+    }
+
+        .review-empty i,
+        .mini-empty i {
+            display: block;
+            color: #0d6efd;
+            font-size: 1.7rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .review-empty strong,
+        .mini-empty strong {
+            display: block;
+            color: #0f172a;
+            font-weight: 900;
+            margin-bottom: 0.25rem;
+        }
+
+        .review-empty span,
+        .mini-empty span {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+    .danger-card p {
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 600;
+        line-height: 1.65;
+        margin-bottom: 1rem;
+    }
+
+    .danger-delete-btn {
+        min-height: 44px;
+        border: none;
+        border-radius: 999px;
+        background: #ef4444;
+        color: #ffffff;
+        font-weight: 900;
+    }
+
+        .danger-delete-btn:hover {
+            color: #ffffff;
+            background: #dc2626;
+        }
+
+    @@media (max-width: 1200px) {
+        .summary-meta-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 992px) {
+        .detail-hero-card {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .detail-hero-actions,
+        .detail-hero-actions .btn {
+            width: 100%;
+        }
+
+        .detail-page-title {
+            font-size: 1.55rem;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .summary-meta-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .author-list-item,
+        .file-list-item,
+        .review-list-item {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .file-view-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const tabButtons = Array.from(document.querySelectorAll(".modern-tab"));
+            const panels = Array.from(document.querySelectorAll(".tab-panel"));
+
+            tabButtons.forEach(function (button) {
+                button.addEventListener("click", function () {
+                    const target = button.getAttribute("data-tab-target");
+
+                    tabButtons.forEach(function (item) {
+                        item.classList.remove("active");
+                    });
+
+                    panels.forEach(function (panel) {
+                        panel.classList.remove("active");
+                    });
+
+                    button.classList.add("active");
+
+                    const targetPanel = document.getElementById(target);
+
+                    if (targetPanel) {
+                        targetPanel.classList.add("active");
+                    }
+                });
+            });
+        });
+    </script>
+}

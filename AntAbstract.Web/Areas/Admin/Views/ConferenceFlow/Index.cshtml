@@ -27,13 +27,21 @@
         ? "/Admin/Referee"
         : $"/{slug}/Admin/Referee?conferenceId={Model.ConferenceId}";
 
+    /*
+        Eski:
+        /Admin/Registrations
+        /Admin/Session
+
+        Yeni:
+        ConferenceFlowController içindeki yeni action'lara gidiyor.
+    */
     var registrationsUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Admin/Registrations"
-        : $"/{slug}/Admin/Registrations?conferenceId={Model.ConferenceId}";
+        ? $"/Admin/ConferenceFlow/RegistrationsAndPayments?conferenceId={Model.ConferenceId}"
+        : $"/{slug}/Admin/ConferenceFlow/RegistrationsAndPayments?conferenceId={Model.ConferenceId}";
 
     var sessionsUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Admin/Session"
-        : $"/{slug}/Admin/Session?conferenceId={Model.ConferenceId}";
+        ? $"/Admin/ConferenceFlow/ProgramSessions?conferenceId={Model.ConferenceId}"
+        : $"/{slug}/Admin/ConferenceFlow/ProgramSessions?conferenceId={Model.ConferenceId}";
 }
 
 <div class="container-fluid">
@@ -277,6 +285,10 @@
                                     Gönderilen bildirileri incele.
                                 </div>
                             </div>
+
+                            <div class="quick-action-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
                         </a>
 
                         <a href="@assignmentUrl" class="quick-action-card">
@@ -292,6 +304,10 @@
                                 <div class="text-muted small">
                                     Bildirilere hakem ata.
                                 </div>
+                            </div>
+
+                            <div class="quick-action-arrow">
+                                <i class="fas fa-arrow-right"></i>
                             </div>
                         </a>
 
@@ -309,6 +325,10 @@
                                     Kabul, ret veya revizyon kararı ver.
                                 </div>
                             </div>
+
+                            <div class="quick-action-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
                         </a>
 
                         <a href="@reviewersUrl" class="quick-action-card">
@@ -324,6 +344,10 @@
                                 <div class="text-muted small">
                                     Hakem listesini yönet.
                                 </div>
+                            </div>
+
+                            <div class="quick-action-arrow">
+                                <i class="fas fa-arrow-right"></i>
                             </div>
                         </a>
 
@@ -341,6 +365,10 @@
                                     Katılımcı kayıtlarını kontrol et.
                                 </div>
                             </div>
+
+                            <div class="quick-action-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
                         </a>
 
                         <a href="@sessionsUrl" class="quick-action-card">
@@ -356,6 +384,10 @@
                                 <div class="text-muted small">
                                     Kongre programını düzenle.
                                 </div>
+                            </div>
+
+                            <div class="quick-action-arrow">
+                                <i class="fas fa-arrow-right"></i>
                             </div>
                         </a>
 
@@ -544,7 +576,8 @@
     }
 
     .quick-action-card {
-        display: flex;
+        display: grid;
+        grid-template-columns: 42px 1fr 32px;
         align-items: center;
         gap: 0.85rem;
         padding: 0.95rem;
@@ -569,6 +602,25 @@
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+
+    .quick-action-arrow {
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        background-color: #ffffff;
+        color: #94a3b8;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        transition: all 0.2s ease;
+    }
+
+    .quick-action-card:hover .quick-action-arrow {
+        background-color: #0d6efd;
+        color: #ffffff;
+        transform: translateX(2px);
     }
 
     @@media (max-width: 992px) {

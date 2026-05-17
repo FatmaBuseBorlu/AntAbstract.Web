@@ -144,6 +144,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     c.Tenant != null &&
                     c.Tenant.Slug == slug);
             }
+
             if (_tenantContext.Current == null)
             {
                 return null;
@@ -178,6 +179,49 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             HttpContext.Session.SetString($"SelectedConferenceId:{tenantId}", conference.Id.ToString());
             HttpContext.Session.SetString($"SelectedConferenceSlug:{tenantId}", slug);
             HttpContext.Session.SetString($"SelectedConferenceTitle:{tenantId}", conference.Title ?? "");
+        }
+
+        private async Task<IActionResult> RedirectToSelectedConferenceOperationAsync(
+            Guid? conferenceId,
+            string operationAction)
+        {
+            Guid? selectedConferenceId = null;
+
+            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
+            {
+                selectedConferenceId = conferenceId.Value;
+            }
+            else
+            {
+                selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
+            }
+
+            if (!selectedConferenceId.HasValue || selectedConferenceId.Value == Guid.Empty)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_SelectedConferenceRequired",
+                    "Lütfen önce bir kongre seçin.");
+
+                return RedirectToAction(nameof(SelectConference));
+            }
+
+            var query = await GetAccessibleConferenceQueryAsync();
+
+            var conference = await query
+                .FirstOrDefaultAsync(c => c.Id == selectedConferenceId.Value);
+
+            if (conference == null || conference.Tenant == null || string.IsNullOrWhiteSpace(conference.Tenant.Slug))
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_SelectedConferenceNotFound",
+                    "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+
+                return RedirectToAction(nameof(SelectConference));
+            }
+
+            SetConferenceSession(conference);
+
+            return Redirect($"/{conference.Tenant.Slug}/Admin/ConferenceFlow/{operationAction}?conferenceId={conference.Id}");
         }
 
         [HttpGet("/Admin/ConferenceFlow")]
@@ -329,6 +373,68 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             };
 
             return View("~/Areas/Admin/Views/ConferenceFlow/Index.cshtml", vm);
+        }
+
+        [HttpGet("/Admin/ConferenceFlow/RegistrationsAndPayments")]
+        public async Task<IActionResult> RegistrationsAndPaymentsRoot(Guid? conferenceId)
+        {
+            return await RedirectToSelectedConferenceOperationAsync(
+                conferenceId,
+                nameof(RegistrationsAndPayments));
+        }
+
+        [HttpGet("/{slug}/Admin/ConferenceFlow/RegistrationsAndPayments")]
+        public async Task<IActionResult> RegistrationsAndPayments(string slug, Guid? conferenceId)
+        {
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_InvalidTenant",
+                    "Lütfen yetkili olduğunuz geçerli bir kongre seçiniz.");
+
+                return RedirectToAction(nameof(SelectConference));
+            }
+
+            SetConferenceSession(conference);
+
+            ViewBag.ConferenceId = conference.Id;
+            ViewBag.ConferenceTitle = conference.Title ?? "";
+            ViewBag.Slug = slug;
+
+            return View("~/Areas/Admin/Views/ConferenceFlow/RegistrationsAndPayments.cshtml");
+        }
+
+        [HttpGet("/Admin/ConferenceFlow/ProgramSessions")]
+        public async Task<IActionResult> ProgramSessionsRoot(Guid? conferenceId)
+        {
+            return await RedirectToSelectedConferenceOperationAsync(
+                conferenceId,
+                nameof(ProgramSessions));
+        }
+
+        [HttpGet("/{slug}/Admin/ConferenceFlow/ProgramSessions")]
+        public async Task<IActionResult> ProgramSessions(string slug, Guid? conferenceId)
+        {
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_InvalidTenant",
+                    "Lütfen yetkili olduğunuz geçerli bir kongre seçiniz.");
+
+                return RedirectToAction(nameof(SelectConference));
+            }
+
+            SetConferenceSession(conference);
+
+            ViewBag.ConferenceId = conference.Id;
+            ViewBag.ConferenceTitle = conference.Title ?? "";
+            ViewBag.Slug = slug;
+
+            return View("~/Areas/Admin/Views/ConferenceFlow/ProgramSessions.cshtml");
         }
 
         [HttpGet("/ConferenceFlow/Index")]
