@@ -20,7 +20,7 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public class SubmissionsController : Controller
     {
         private readonly AppDbContext _context;
@@ -61,6 +61,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 : value.Value;
         }
 
+        private bool IsSuperAdminUser()
+        {
+            return User.IsInRole("SuperAdmin");
+        }
+
         private async Task<AppUser?> GetCurrentUserAsync()
         {
             return await _userManager.GetUserAsync(User);
@@ -70,27 +75,35 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             var user = await GetCurrentUserAsync();
 
-            if (user == null || !user.TenantId.HasValue)
+            return user?.TenantId;
+        }
+
+        private async Task<bool> CurrentAdminHasTenantAsync()
+        {
+            if (IsSuperAdminUser())
             {
-                return null;
+                return true;
             }
 
-            return user.TenantId.Value;
+            var tenantId = await GetCurrentAdminTenantIdAsync();
+
+            return tenantId.HasValue;
         }
 
         private async Task<bool> CanAccessCurrentTenantAsync(string? slug)
         {
+            if (IsSuperAdminUser())
+            {
+                return true;
+            }
+
             if (_tenantContext.Current == null)
             {
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(slug))
-            {
-                return false;
-            }
-
-            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(slug) &&
+                !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
@@ -107,12 +120,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync()
         {
-            var tenantId = await GetCurrentAdminTenantIdAsync();
-
             var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .AsQueryable();
+
+            if (IsSuperAdminUser())
+            {
+                return query;
+            }
+
+            var tenantId = await GetCurrentAdminTenantIdAsync();
 
             if (!tenantId.HasValue)
             {
@@ -142,22 +160,124 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return null;
             }
 
-            var query = await GetAccessibleConferenceQueryAsync();
+            var query = _context.Conferences
+                .AsNoTracking()
+                .Include(c => c.Tenant)
+                .AsQueryable();
+
+            if (IsSuperAdminUser())
+            {
+                if (!string.IsNullOrWhiteSpace(slug))
+                {
+                    return await query.FirstOrDefaultAsync(c =>
+                        c.Id == selectedConferenceId.Value &&
+                        c.Tenant != null &&
+                        c.Tenant.Slug == slug);
+                }
+
+                return await query.FirstOrDefaultAsync(c =>
+                    c.Id == selectedConferenceId.Value);
+            }
+
+            var tenantId = await GetCurrentAdminTenantIdAsync();
+
+            if (!tenantId.HasValue)
+            {
+                return null;
+            }
+
+            if (!await CanAccessCurrentTenantAsync(slug))
+            {
+                return null;
+            }
 
             if (!string.IsNullOrWhiteSpace(slug))
             {
-                if (_tenantContext.Current == null ||
-                    !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase) ||
-                    !await CanAccessCurrentTenantAsync(slug))
-                {
-                    return null;
-                }
-
-                query = query.Where(c => c.TenantId == _tenantContext.Current.Id);
+                return await query.FirstOrDefaultAsync(c =>
+                    c.Id == selectedConferenceId.Value &&
+                    c.TenantId == tenantId.Value &&
+                    c.Tenant != null &&
+                    c.Tenant.Slug == slug);
             }
 
-            return await query
-                .FirstOrDefaultAsync(c => c.Id == selectedConferenceId.Value);
+            return await query.FirstOrDefaultAsync(c =>
+                c.Id == selectedConferenceId.Value &&
+                c.TenantId == tenantId.Value);
+        }
+
+        private async Task<Submission?> GetAccessibleSubmissionAsync(
+            Guid submissionId,
+            string? slug = null,
+            Guid? conferenceId = null,
+            bool asNoTracking = true)
+        {
+            var query = _context.Submissions
+                .Include(s => s.Conference)
+                    .ThenInclude(c => c.Tenant)
+                .Include(s => s.Author)
+                .AsQueryable();
+
+            if (asNoTracking)
+            {
+                query = query.AsNoTracking();
+            }
+
+            if (IsSuperAdminUser())
+            {
+                if (!string.IsNullOrWhiteSpace(slug))
+                {
+                    query = query.Where(s =>
+                        s.Conference != null &&
+                        s.Conference.Tenant != null &&
+                        s.Conference.Tenant.Slug == slug);
+                }
+
+                if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
+                {
+                    query = query.Where(s => s.ConferenceId == conferenceId.Value);
+                }
+
+                return await query.FirstOrDefaultAsync(s => s.Id == submissionId);
+            }
+
+            var tenantId = await GetCurrentAdminTenantIdAsync();
+
+            if (!tenantId.HasValue)
+            {
+                return null;
+            }
+
+            query = query.Where(s =>
+                s.Conference != null &&
+                s.Conference.TenantId == tenantId.Value);
+
+            if (!string.IsNullOrWhiteSpace(slug))
+            {
+                query = query.Where(s =>
+                    s.Conference != null &&
+                    s.Conference.Tenant != null &&
+                    s.Conference.Tenant.Slug == slug);
+            }
+
+            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
+            {
+                query = query.Where(s => s.ConferenceId == conferenceId.Value);
+            }
+
+            return await query.FirstOrDefaultAsync(s => s.Id == submissionId);
+        }
+
+        private async Task<bool> CanAccessSubmissionAsync(
+            Guid submissionId,
+            string? slug = null,
+            Guid? conferenceId = null)
+        {
+            var submission = await GetAccessibleSubmissionAsync(
+                submissionId,
+                slug,
+                conferenceId);
+
+            return submission != null;
         }
 
         private async Task LoadAvailableConferencesAsync(SubmissionCreateViewModel model)
@@ -193,22 +313,35 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             HttpContext.Session.SetString($"SelectedConferenceTitle:{tenantId}", conference.Title ?? "");
         }
 
-        private async Task<bool> CanAccessSubmissionAsync(Guid submissionId)
+        private string BuildSubmissionsUrl(string? slug, Guid? conferenceId)
         {
-            var tenantId = await GetCurrentAdminTenantIdAsync();
-
-            if (!tenantId.HasValue)
+            if (!string.IsNullOrWhiteSpace(slug) &&
+                conferenceId.HasValue &&
+                conferenceId.Value != Guid.Empty)
             {
-                return false;
+                return $"/{slug}/Admin/Submissions?conferenceId={conferenceId.Value}";
             }
 
-            return await _context.Submissions
-                .AsNoTracking()
-                .Include(s => s.Conference)
-                .AnyAsync(s =>
-                    s.Id == submissionId &&
-                    s.Conference != null &&
-                    s.Conference.TenantId == tenantId.Value);
+            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
+            {
+                return $"/Admin/Submissions?conferenceId={conferenceId.Value}";
+            }
+
+            return "/Admin/Submissions";
+        }
+
+        private string BuildSubmissionDetailsUrl(string? slug, Guid submissionId, Guid? conferenceId)
+        {
+            if (!string.IsNullOrWhiteSpace(slug))
+            {
+                var query = conferenceId.HasValue && conferenceId.Value != Guid.Empty
+                    ? $"?conferenceId={conferenceId.Value}"
+                    : "";
+
+                return $"/{slug}/Admin/Submissions/Details/{submissionId}{query}";
+            }
+
+            return $"/Admin/Submissions/Details/{submissionId}";
         }
 
         [HttpGet("/Admin/Submissions/Create")]
@@ -221,7 +354,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             await LoadAvailableConferencesAsync(model);
 
-            if (!string.IsNullOrWhiteSpace(slug))
+            if (!string.IsNullOrWhiteSpace(slug) ||
+                (conferenceId.HasValue && conferenceId.Value != Guid.Empty))
             {
                 var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
 
@@ -256,7 +390,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return Challenge();
             }
 
-            if (!currentUser.TenantId.HasValue)
+            if (!IsSuperAdminUser() && !currentUser.TenantId.HasValue)
             {
                 ModelState.AddModelError(
                     "ConferenceId",
@@ -370,16 +504,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var redirectSlug = conference.Tenant?.Slug ?? slug;
 
-            if (!string.IsNullOrWhiteSpace(redirectSlug))
-            {
-                return RedirectToAction(nameof(Index), new
-                {
-                    slug = redirectSlug,
-                    conferenceId = conference.Id
-                });
-            }
-
-            return RedirectToAction(nameof(SelectConference));
+            return Redirect(BuildSubmissionsUrl(redirectSlug, conference.Id));
         }
 
         [HttpGet("/Admin/Submissions")]
@@ -387,6 +512,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             Guid? conferenceId = null,
             string? returnUrl = null)
         {
+            if (!await CurrentAdminHasTenantAsync())
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_AdminTenantNotFound",
+                    "Admin hesabınıza bağlı kurum bulunamadı.");
+
+                return Redirect("/Dashboard/MyConferences");
+            }
+
             if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
             {
                 var selectableQuery = await GetAccessibleConferenceQueryAsync();
@@ -418,13 +552,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         return LocalRedirect(returnUrl);
                     }
 
-                    return RedirectToAction(
-                        nameof(Index),
-                        new
-                        {
-                            slug = selectedConference.Tenant.Slug,
-                            conferenceId = selectedConference.Id
-                        });
+                    return Redirect(BuildSubmissionsUrl(
+                        selectedConference.Tenant.Slug,
+                        selectedConference.Id));
                 }
             }
 
@@ -434,10 +564,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
+            if (!conferences.Any())
+            {
+                TempData["ErrorMessage"] = IsSuperAdminUser()
+                    ? "Sistemde görüntülenebilecek kongre bulunamadı."
+                    : "Kurumunuza bağlı görüntülenebilecek kongre bulunamadı.";
+            }
+
             var vm = new SelectConferenceViewModel
             {
                 Title = T("SelectConference_Title", "Kongre Seç"),
-                Lead = T("SelectConference_Lead", "Başvuruları yönetmek için önce kongre seçiniz."),
+                Lead = IsSuperAdminUser()
+                    ? "SuperAdmin olarak sistemdeki tüm kongreleri görebilirsiniz. Başvurularını incelemek istediğiniz kongreyi seçiniz."
+                    : T("SelectConference_Lead", "Başvuruları yönetmek için önce kongre seçiniz."),
                 PostUrl = "/Admin/Submissions/Select",
                 SubmitText = T("SelectConference_Submit", "Devam Et"),
                 Conferences = conferences,
@@ -485,13 +624,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return LocalRedirect(returnUrl);
             }
 
-            return RedirectToAction(
-                nameof(Index),
-                new
-                {
-                    slug = conference.Tenant.Slug,
-                    conferenceId = conference.Id
-                });
+            return Redirect(BuildSubmissionsUrl(
+                conference.Tenant.Slug,
+                conference.Id));
         }
 
         [HttpGet("/{slug}/Admin/Submissions")]
@@ -576,9 +711,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Details(
             Guid id,
             string? slug = null,
+            Guid? conferenceId = null,
             string? returnUrl = null)
         {
-            if (!await CanAccessSubmissionAsync(id))
+            var accessibleSubmission = await GetAccessibleSubmissionAsync(
+                id,
+                slug,
+                conferenceId);
+
+            if (accessibleSubmission == null)
             {
                 TempData["ErrorMessage"] = T(
                     "Error_UnauthorizedView",
@@ -586,7 +727,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                 if (!string.IsNullOrWhiteSpace(slug))
                 {
-                    return RedirectToAction(nameof(Index), new { slug });
+                    return Redirect(BuildSubmissionsUrl(slug, conferenceId));
                 }
 
                 return RedirectToAction(nameof(SelectConference));
@@ -599,16 +740,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return NotFound();
             }
 
-            var tenantId = await GetCurrentAdminTenantIdAsync();
+            var targetTenantId = accessibleSubmission.Conference?.TenantId;
+            var effectiveSlug = accessibleSubmission.Conference?.Tenant?.Slug ?? slug ?? "";
+            var effectiveConferenceId = accessibleSubmission.ConferenceId;
 
             var referees = await _userManager.GetUsersInRoleAsync("Referee");
 
-            if (tenantId.HasValue)
+            if (targetTenantId.HasValue)
             {
                 referees = referees
                     .Where(r =>
                         r.TenantId.HasValue &&
-                        r.TenantId.Value == tenantId.Value)
+                        r.TenantId.Value == targetTenantId.Value)
                     .ToList();
             }
             else
@@ -620,17 +763,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             ViewBag.Referees = referees;
             ViewBag.Reviews = await _reviewService.GetReviewsBySubmissionIdAsync(id);
+            ViewBag.Slug = effectiveSlug;
+            ViewBag.ConferenceId = effectiveConferenceId;
+            ViewBag.ConferenceTitle = accessibleSubmission.Conference?.Title ?? "";
 
             var effectiveReturnUrl = !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
                 ? returnUrl
-                : $"{Request.PathBase}{Request.Path}{Request.QueryString}";
-
-            if (string.IsNullOrWhiteSpace(effectiveReturnUrl))
-            {
-                effectiveReturnUrl = string.IsNullOrWhiteSpace(slug)
-                    ? "/Admin/Submissions"
-                    : $"/{slug}/Admin/Submissions";
-            }
+                : BuildSubmissionsUrl(effectiveSlug, effectiveConferenceId);
 
             ViewBag.ReturnUrl = effectiveReturnUrl;
 
@@ -644,9 +783,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             Guid id,
             string status,
             string? slug = null,
+            Guid? conferenceId = null,
             string? returnUrl = null)
         {
-            if (!await CanAccessSubmissionAsync(id))
+            var accessibleSubmission = await GetAccessibleSubmissionAsync(
+                id,
+                slug,
+                conferenceId);
+
+            if (accessibleSubmission == null)
             {
                 TempData["ErrorMessage"] = T(
                     "Error_UnauthorizedChangeStatus",
@@ -654,7 +799,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                 if (!string.IsNullOrWhiteSpace(slug))
                 {
-                    return RedirectToAction(nameof(Index), new { slug });
+                    return Redirect(BuildSubmissionsUrl(slug, conferenceId));
                 }
 
                 return RedirectToAction(nameof(SelectConference));
@@ -682,12 +827,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return Redirect(returnUrl);
             }
 
-            if (!string.IsNullOrWhiteSpace(slug))
-            {
-                return RedirectToAction(nameof(Index), new { slug });
-            }
+            var effectiveSlug = accessibleSubmission.Conference?.Tenant?.Slug ?? slug;
+            var effectiveConferenceId = accessibleSubmission.ConferenceId;
 
-            return RedirectToAction(nameof(SelectConference));
+            return Redirect(BuildSubmissionsUrl(effectiveSlug, effectiveConferenceId));
         }
 
         [HttpPost("/Admin/Submissions/Delete")]
@@ -696,9 +839,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Delete(
             Guid id,
             string? slug = null,
+            Guid? conferenceId = null,
             string? returnUrl = null)
         {
-            if (!await CanAccessSubmissionAsync(id))
+            var accessibleSubmission = await GetAccessibleSubmissionAsync(
+                id,
+                slug,
+                conferenceId);
+
+            if (accessibleSubmission == null)
             {
                 TempData["ErrorMessage"] = T(
                     "Error_UnauthorizedDelete",
@@ -706,7 +855,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                 if (!string.IsNullOrWhiteSpace(slug))
                 {
-                    return RedirectToAction(nameof(Index), new { slug });
+                    return Redirect(BuildSubmissionsUrl(slug, conferenceId));
                 }
 
                 return RedirectToAction(nameof(SelectConference));
@@ -723,12 +872,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return Redirect(returnUrl);
             }
 
-            if (!string.IsNullOrWhiteSpace(slug))
-            {
-                return RedirectToAction(nameof(Index), new { slug });
-            }
+            var effectiveSlug = accessibleSubmission.Conference?.Tenant?.Slug ?? slug;
+            var effectiveConferenceId = accessibleSubmission.ConferenceId;
 
-            return RedirectToAction(nameof(SelectConference));
+            return Redirect(BuildSubmissionsUrl(effectiveSlug, effectiveConferenceId));
         }
 
         private string GetLocalizedSubmissionStatus(SubmissionStatus status)

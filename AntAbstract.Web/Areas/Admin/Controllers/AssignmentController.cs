@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public class AssignmentController : Controller
     {
         private readonly AppDbContext _context;
@@ -57,6 +57,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 : value.Value;
         }
 
+        private bool IsSuperAdminUser()
+        {
+            return User.IsInRole("SuperAdmin");
+        }
+
         private async Task<AppUser?> GetCurrentUserAsync()
         {
             return await _userManager.GetUserAsync(User);
@@ -64,6 +69,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private async Task<bool> CurrentAdminHasTenantAsync()
         {
+            if (IsSuperAdminUser())
+            {
+                return true;
+            }
+
             var user = await GetCurrentUserAsync();
 
             return user != null && user.TenantId.HasValue;
@@ -78,6 +88,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private async Task<bool> CanAccessCurrentTenantAsync()
         {
+            if (IsSuperAdminUser())
+            {
+                return true;
+            }
+
             if (_tenantContext.Current == null)
             {
                 return false;
@@ -95,12 +110,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync()
         {
-            var tenantId = await GetCurrentAdminTenantIdAsync();
-
             var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .AsQueryable();
+
+            if (IsSuperAdminUser())
+            {
+                return query;
+            }
+
+            var tenantId = await GetCurrentAdminTenantIdAsync();
 
             if (!tenantId.HasValue)
             {
@@ -114,21 +134,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             string slug,
             Guid? conferenceId)
         {
-            if (_tenantContext.Current == null)
-            {
-                return null;
-            }
-
-            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
-            {
-                return null;
-            }
-
-            if (!await CanAccessCurrentTenantAsync())
-            {
-                return null;
-            }
-
             Guid? selectedConferenceId = null;
 
             if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
@@ -145,12 +150,37 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return null;
             }
 
-            return await _context.Conferences
+            var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
-                .FirstOrDefaultAsync(c =>
+                .AsQueryable();
+
+            if (IsSuperAdminUser())
+            {
+                return await query.FirstOrDefaultAsync(c =>
                     c.Id == selectedConferenceId.Value &&
-                    c.TenantId == _tenantContext.Current.Id);
+                    c.Tenant != null &&
+                    c.Tenant.Slug == slug);
+            }
+
+            if (_tenantContext.Current == null)
+            {
+                return null;
+            }
+
+            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            if (!await CanAccessCurrentTenantAsync())
+            {
+                return null;
+            }
+
+            return await query.FirstOrDefaultAsync(c =>
+                c.Id == selectedConferenceId.Value &&
+                c.TenantId == _tenantContext.Current.Id);
         }
 
         private async Task<Submission?> GetAccessibleSubmissionAsync(
@@ -158,11 +188,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             Guid conferenceId,
             bool asNoTracking = true)
         {
-            if (_tenantContext.Current == null)
-            {
-                return null;
-            }
-
             var query = _context.Submissions
                 .Include(s => s.Author)
                 .Include(s => s.Conference)
@@ -176,6 +201,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 query = query.AsNoTracking();
             }
 
+            if (IsSuperAdminUser())
+            {
+                return await query.FirstOrDefaultAsync(s =>
+                    s.Id == submissionId &&
+                    s.ConferenceId == conferenceId);
+            }
+
+            if (_tenantContext.Current == null)
+            {
+                return null;
+            }
+
             return await query.FirstOrDefaultAsync(s =>
                 s.Id == submissionId &&
                 s.ConferenceId == conferenceId &&
@@ -183,8 +220,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 s.Conference.TenantId == _tenantContext.Current.Id);
         }
 
-        private async Task<List<AppUser>> GetAccessibleRefereesAsync()
+        private async Task<List<AppUser>> GetAccessibleRefereesAsync(Conference conference)
         {
+            var referees = await _userManager.GetUsersInRoleAsync("Referee");
+
+            if (IsSuperAdminUser())
+            {
+                return referees
+                    .Where(r =>
+                        r.TenantId.HasValue &&
+                        r.TenantId.Value == conference.TenantId)
+                    .ToList();
+            }
+
             var currentUser = await GetCurrentUserAsync();
 
             if (currentUser?.TenantId == null)
@@ -192,12 +240,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return new List<AppUser>();
             }
 
-            var referees = await _userManager.GetUsersInRoleAsync("Referee");
-
             return referees
                 .Where(r =>
                     r.TenantId.HasValue &&
-                    r.TenantId.Value == currentUser.TenantId.Value)
+                    r.TenantId.Value == currentUser.TenantId.Value &&
+                    conference.TenantId == currentUser.TenantId.Value)
                 .ToList();
         }
 
@@ -217,6 +264,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return false;
             }
 
+            if (!reviewer.TenantId.HasValue)
+            {
+                return false;
+            }
+
+            if (IsSuperAdminUser())
+            {
+                return reviewer.TenantId.Value == conference.TenantId;
+            }
+
             var currentUser = await GetCurrentUserAsync();
 
             if (currentUser?.TenantId == null)
@@ -224,8 +281,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return false;
             }
 
-            return reviewer.TenantId.HasValue &&
-                   reviewer.TenantId.Value == currentUser.TenantId.Value &&
+            return reviewer.TenantId.Value == currentUser.TenantId.Value &&
                    conference.TenantId == currentUser.TenantId.Value;
         }
 
@@ -296,10 +352,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
+            if (!conferences.Any())
+            {
+                TempData["ErrorMessage"] = IsSuperAdminUser()
+                    ? "Sistemde görüntülenebilecek kongre bulunamadı."
+                    : "Kurumunuza bağlı görüntülenebilecek kongre bulunamadı.";
+            }
+
             var vm = new SelectConferenceViewModel
             {
                 Title = T("SelectConference_Title", "Kongre Seç"),
-                Lead = T("SelectConference_Lead", "Hakem ataması yapmak için önce kongre seçiniz."),
+                Lead = IsSuperAdminUser()
+                    ? "SuperAdmin olarak sistemdeki tüm kongreleri görebilirsiniz. Hakem ataması yapmak istediğiniz kongreyi seçiniz."
+                    : T("SelectConference_Lead", "Hakem ataması yapmak için önce kongre seçiniz."),
                 PostUrl = "/Admin/Assignment/Select",
                 SubmitText = T("SelectConference_Submit", "Devam Et"),
                 Conferences = conferences,
@@ -418,7 +483,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return Redirect(BuildAssignmentUrl(slug, conference.Id));
             }
 
-            var accessibleReferees = await GetAccessibleRefereesAsync();
+            var accessibleReferees = await GetAccessibleRefereesAsync(conference);
 
             var accessibleReviewerIds = accessibleReferees
                 .Select(r => r.Id)
@@ -616,6 +681,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var assignment = await _context.ReviewAssignments
                 .Include(ra => ra.Submission)
+                .Include(ra => ra.Review)
                 .FirstOrDefaultAsync(ra =>
                     ra.Id == assignmentId &&
                     ra.Submission != null &&

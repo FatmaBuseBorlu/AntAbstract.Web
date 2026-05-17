@@ -1,299 +1,1131 @@
 ﻿@using AntAbstract.Domain.Entities
 @using AntAbstract.Web.Models.ViewModels.Admin.Decision
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@using System
+@using System.Collections.Generic
+@using System.Linq
+
 @model DecisionIndexViewModel
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"].Value;
-    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
-    var slug = (ViewBag.Slug as string) ?? Context.GetRouteValue("slug")?.ToString() ?? "";
+    ViewData["Title"] = "Bildiri Karar Ekranı";
+    ViewData["HideSelectedConferenceBar"] = true;
+    Layout = "_LayoutDashboard";
+
+    var awaitingDecision = Model?.AwaitingDecision?.ToList() ?? new List<Submission>();
+    var alreadyDecided = Model?.AlreadyDecided?.ToList() ?? new List<Submission>();
+
+    var conferenceId = ViewBag.ConferenceId is Guid vbConferenceId
+        ? vbConferenceId
+        : Guid.Empty;
+
+    var conferenceTitle = ViewBag.ConferenceTitle as string ?? "";
+    var slug = ViewBag.Slug as string ?? "";
+
+    var flowUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/ConferenceFlow?conferenceId={conferenceId}"
+        : $"/{slug}/Admin/ConferenceFlow?conferenceId={conferenceId}";
+
+    var changeConferenceUrl = "/Admin/Decision";
+
+    var decisionPostUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Admin/Decision/MakeDecision"
+        : $"/{slug}/Admin/Decision/MakeDecision";
+
+    string StatusLabel(SubmissionStatus status)
+    {
+        return status switch
+        {
+            SubmissionStatus.New => "Yeni",
+            SubmissionStatus.Pending => "Beklemede",
+            SubmissionStatus.UnderReview => "Hakem Değerlendirmesinde",
+            SubmissionStatus.Accepted => "Kabul Edildi",
+            SubmissionStatus.Rejected => "Reddedildi",
+            SubmissionStatus.RevisionRequired => "Revizyon Gerekli",
+            SubmissionStatus.Presented => "Sunuldu",
+            _ => status.ToString()
+        };
+    }
+
+    string StatusClass(SubmissionStatus status)
+    {
+        return status switch
+        {
+            SubmissionStatus.New => "status-new",
+            SubmissionStatus.Pending => "status-pending",
+            SubmissionStatus.UnderReview => "status-review",
+            SubmissionStatus.Accepted => "status-accepted",
+            SubmissionStatus.Rejected => "status-rejected",
+            SubmissionStatus.RevisionRequired => "status-revision",
+            SubmissionStatus.Presented => "status-presented",
+            _ => "status-default"
+        };
+    }
+
+    string GetAuthorName(Submission submission)
+    {
+        if (submission.Author == null)
+        {
+            return "Yazar bilgisi yok";
+        }
+
+        var fullName = $"{submission.Author.FirstName} {submission.Author.LastName}".Trim();
+
+        if (!string.IsNullOrWhiteSpace(fullName))
+        {
+            return fullName;
+        }
+
+        return submission.Author.Email ?? "Yazar bilgisi yok";
+    }
+
+    string GetAuthorInitial(Submission submission)
+    {
+        var name = GetAuthorName(submission);
+
+        return string.IsNullOrWhiteSpace(name)
+            ? "Y"
+            : name.Substring(0, 1).ToUpper();
+    }
+
+    string GetReviewerInfo(Submission submission)
+    {
+        var assignments = submission.ReviewAssignments?.ToList() ?? new List<ReviewAssignment>();
+        var reviewCount = assignments.Count(x => x.Review != null);
+        var totalReviewerCount = assignments.Count;
+
+        if (totalReviewerCount == 0)
+        {
+            return "Hakem atanmamış";
+        }
+
+        return $"{reviewCount} / {totalReviewerCount} değerlendirme";
+    }
+
+    var waitingCount = awaitingDecision.Count;
+    var decidedCount = alreadyDecided.Count;
+    var acceptedCount = alreadyDecided.Count(x => x.Status == SubmissionStatus.Accepted);
+    var rejectedCount = alreadyDecided.Count(x => x.Status == SubmissionStatus.Rejected);
 }
 
-<div class="container-fluid">
+<div class="container-fluid decision-page">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h4 class="fw-bold mb-1">@Localizer["PageHeading"]</h4>
-            <p class="text-muted small mb-0">@Localizer["ConferenceLabel"] <strong>@ViewBag.ConferenceTitle</strong></p>
+    <div class="decision-hero-card mb-4">
+        <div class="decision-hero-left">
+            <div class="decision-hero-icon">
+                <i class="fas fa-gavel"></i>
+            </div>
+
+            <div>
+                <div class="decision-section-label">
+                    Kongre Operasyonları
+                </div>
+
+                <h2 class="decision-page-title">
+                    Bildiri Karar Ekranı
+                </h2>
+
+                <p class="decision-page-description">
+                    <strong>@conferenceTitle</strong> kongresine ait bildirilerin kabul, ret veya revizyon kararlarını buradan yönetebilirsiniz.
+                </p>
+
+                @if (!string.IsNullOrWhiteSpace(slug))
+                {
+                    <div class="selected-conference-pill">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Seçili Kongre:</span>
+                        <strong>@conferenceTitle</strong>
+                        <em>/@slug</em>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="decision-hero-actions">
+            <a href="@flowUrl"
+               class="btn decision-light-btn">
+                <i class="fas fa-arrow-left me-2"></i>
+                Kongre Akışına Dön
+            </a>
+
+            <a href="@changeConferenceUrl"
+               class="btn decision-outline-btn">
+                <i class="fas fa-exchange-alt me-2"></i>
+                Kongre Değiştir
+            </a>
         </div>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success border-0 shadow-sm">
-            <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-4 mb-4">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
 
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger border-0 shadow-sm">
-            <i class="fas fa-times-circle me-2"></i> @TempData["ErrorMessage"]
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-4 mb-4">
+            <i class="fas fa-times-circle me-2"></i>
+            @TempData["ErrorMessage"]
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
 
-    <ul class="nav nav-tabs mb-4" id="decisionTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active fw-bold" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">
-                <i class="fas fa-hourglass-half me-2 text-warning"></i> @Localizer["PendingDecisionsTab"]
-                <span class="badge bg-warning text-dark ms-2">@Model.AwaitingDecision.Count</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link fw-bold text-muted" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab">
-                <i class="fas fa-check-circle me-2 text-success"></i> @Localizer["CompletedTab"]
-                <span class="badge bg-light text-dark border ms-2">@Model.AlreadyDecided.Count</span>
-            </button>
-        </li>
-    </ul>
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="decision-stat-card">
+                <div class="stat-icon stat-orange">
+                    <i class="fas fa-hourglass-half"></i>
+                </div>
 
-    <div class="tab-content" id="decisionTabsContent">
-
-        <div class="tab-pane fade show active" id="pending" role="tabpanel">
-            <div class="card border-0 shadow-sm">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="ps-4">@Localizer["TableHeaderSubmission"]</th>
-                                <th>@Localizer["TableHeaderReviewerScores"]</th>
-                                <th>@Localizer["TableHeaderAverage"]</th>
-                                <th class="text-end pe-4">@Localizer["TableHeaderAction"]</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (Model.AwaitingDecision.Any())
-                            {
-                                foreach (var item in Model.AwaitingDecision)
-                                {
-                                    var reviews = item.ReviewAssignments
-                                    .Where(ra => ra.Review != null)
-                                    .Select(ra => ra.Review)
-                                    .ToList();
-
-                                    double avgScore = reviews.Any() ? reviews.Average(r => r.Score) : 0;
-                                    string scoreColor = avgScore >= 70 ? "text-success" : (avgScore >= 50 ? "text-warning" : "text-danger");
-
-                                    <tr>
-                                        <td class="ps-4">
-                                            <div class="fw-bold text-truncate" style="max-width: 350px;">@item.Title</div>
-                                            <small class="text-muted">@item.Author?.FirstName @item.Author?.LastName</small>
-                                            <span class="badge bg-light text-dark border ms-2">@item.Status</span>
-                                        </td>
-
-                                        <td>
-                                            @if (item.ReviewAssignments.Any())
-                                            {
-                                                <div class="d-flex gap-1">
-                                                    @foreach (var assign in item.ReviewAssignments)
-                                                    {
-                                                        var reviewerName = assign.Reviewer?.FirstName ?? Localizer["ReviewerFallback"].Value;
-
-                                                        if (assign.Review != null)
-                                                        {
-                                                            <span class="badge bg-light text-dark border" title="@($"{reviewerName}: {assign.Review.Score}")">
-                                                                @assign.Review.Score
-                                                            </span>
-                                                        }
-                                                        else
-                                                        {
-                                                            <span class="badge bg-secondary opacity-25" title="@($"{reviewerName} ({Localizer["WaitingLabel"]})")">-</span>
-                                                        }
-                                                    }
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted small fst-italic">@Localizer["NoReviewer"]</span>
-                                            }
-                                        </td>
-
-                                        <td>
-                                            @if (reviews.Any())
-                                            {
-                                                <span class="fw-bold fs-5 @scoreColor">@avgScore.ToString("0.0")</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted">-</span>
-                                            }
-                                        </td>
-
-                                        <td class="text-end pe-4">
-                                            <button class="btn btn-sm btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#decisionModal-@item.Id">
-                                                @Localizer["MakeDecisionButton"]
-                                            </button>
-
-                                            <div class="modal fade" id="decisionModal-@item.Id" tabindex="-1">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content text-start">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title fw-bold">@Localizer["DecisionModalTitle"] @item.SubmissionIdCode</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                        </div>
-
-                                                        <form asp-area="Admin"
-                                                              asp-controller="Decision"
-                                                              asp-action="MakeDecision"
-                                                              asp-route-slug="@slug"
-                                                              method="post">
-                                                            @Html.AntiForgeryToken()
-
-                                                            <div class="modal-body">
-                                                                <input type="hidden" name="submissionId" value="@item.Id" />
-
-                                                                <div class="mb-3">
-                                                                    <label class="form-label fw-bold small text-muted">@Localizer["AdminNoteLabel"]</label>
-                                                                    <textarea name="note" class="form-control" rows="3" placeholder="@Localizer["AdminNotePlaceholder"]"></textarea>
-                                                                </div>
-
-                                                                <div class="d-grid gap-2">
-                                                                    <button type="submit" name="decision" value="Accept" class="btn btn-success fw-bold">
-                                                                        <i class="fas fa-check me-2"></i> @Localizer["AcceptButton"]
-                                                                    </button>
-                                                                    <button type="submit" name="decision" value="Revision" class="btn btn-warning fw-bold text-dark">
-                                                                        <i class="fas fa-edit me-2"></i> @Localizer["RevisionButton"]
-                                                                    </button>
-                                                                    <button type="submit" name="decision" value="Reject" class="btn btn-danger fw-bold">
-                                                                        <i class="fas fa-times me-2"></i> @Localizer["RejectButton"]
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        </form>
-
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            }
-                            else
-                            {
-                                <tr>
-                                    <td colspan="4" class="text-center py-5 text-muted">
-                                        <i class="fas fa-clipboard-check fa-3x mb-3 opacity-25"></i>
-                                        <p>@Localizer["NoPendingSubmission"]</p>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                <div>
+                    <div class="stat-number">@waitingCount</div>
+                    <div class="stat-label">Bekleyen Karar</div>
                 </div>
             </div>
         </div>
 
-        <div class="tab-pane fade" id="completed" role="tabpanel">
-            <div class="card border-0 shadow-sm">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="ps-4">@Localizer["TableHeaderSubmission"]</th>
-                                <th>@Localizer["TableHeaderReviewerScores"]</th>
-                                <th>@Localizer["TableHeaderAverage"]</th>
-                                <th>@Localizer["TableHeaderFinalDecision"]</th>
-                                <th>@Localizer["TableHeaderDecisionDate"]</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (Model.AlreadyDecided.Any())
-                            {
-                                foreach (var item in Model.AlreadyDecided)
-                                {
-                                    var reviews = item.ReviewAssignments
-                                    .Where(ra => ra.Review != null)
-                                    .Select(ra => ra.Review)
-                                    .ToList();
+        <div class="col-xl-3 col-md-6">
+            <div class="decision-stat-card">
+                <div class="stat-icon stat-green">
+                    <i class="fas fa-circle-check"></i>
+                </div>
 
-                                    double avgScore = reviews.Any() ? reviews.Average(r => r.Score) : 0;
-                                    string scoreColor = avgScore >= 70 ? "text-success" : (avgScore >= 50 ? "text-warning" : "text-danger");
-
-                                    <tr>
-                                        <td class="ps-4">
-                                            <div class="fw-bold text-truncate" style="max-width: 350px;">@item.Title</div>
-                                            <small class="text-muted">@item.Author?.FirstName @item.Author?.LastName</small>
-                                        </td>
-
-                                        <td>
-                                            @if (item.ReviewAssignments.Any())
-                                            {
-                                                <div class="d-flex gap-1 flex-wrap">
-                                                    @foreach (var assign in item.ReviewAssignments)
-                                                    {
-                                                        var reviewerName = assign.Reviewer?.FirstName ?? Localizer["ReviewerFallback"].Value;
-
-                                                        if (assign.Review != null)
-                                                        {
-                                                            <span class="badge bg-light text-dark border" title="@($"{reviewerName}: {assign.Review.Score}")">
-                                                                @assign.Review.Score
-                                                            </span>
-                                                        }
-                                                        else
-                                                        {
-                                                            <span class="badge bg-secondary opacity-25" title="@($"{reviewerName} ({Localizer["WaitingLabel"]})")">-</span>
-                                                        }
-                                                    }
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted small fst-italic">@Localizer["NoReviewer"]</span>
-                                            }
-                                        </td>
-
-                                        <td>
-                                            @if (reviews.Any())
-                                            {
-                                                <span class="fw-bold fs-6 @scoreColor">@avgScore.ToString("0.0")</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted">-</span>
-                                            }
-                                        </td>
-
-                                        <td>
-                                            @{
-                                                var statusClass = item.Status == SubmissionStatus.Accepted
-                                                ? "bg-success"
-                                                : item.Status == SubmissionStatus.Rejected
-                                                ? "bg-danger"
-                                                : "bg-warning text-dark";
-                                            }
-
-                                            <span class="badge @statusClass">
-                                                @item.Status
-                                            </span>
-                                        </td>
-
-                                        <td>
-                                            @if (item.DecisionDate != null)
-                                            {
-                                                <span>@item.DecisionDate.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted">-</span>
-                                            }
-                                        </td>
-                                    </tr>
-                                }
-                            }
-                            else
-                            {
-                                <tr>
-                                    <td colspan="5" class="text-center py-5 text-muted">
-                                        <i class="fas fa-inbox fa-3x mb-3 opacity-25"></i>
-                                        <p>@Localizer["NoCompletedSubmission"]</p>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                <div>
+                    <div class="stat-number">@decidedCount</div>
+                    <div class="stat-label">Sonuçlanan</div>
                 </div>
             </div>
         </div>
 
+        <div class="col-xl-3 col-md-6">
+            <div class="decision-stat-card">
+                <div class="stat-icon stat-blue">
+                    <i class="fas fa-thumbs-up"></i>
+                </div>
+
+                <div>
+                    <div class="stat-number">@acceptedCount</div>
+                    <div class="stat-label">Kabul Edilen</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="decision-stat-card">
+                <div class="stat-icon stat-red">
+                    <i class="fas fa-circle-xmark"></i>
+                </div>
+
+                <div>
+                    <div class="stat-number">@rejectedCount</div>
+                    <div class="stat-label">Reddedilen</div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <div class="decision-tabs-card mb-4">
+        <button type="button"
+                class="decision-tab active"
+                data-tab-target="waitingPanel">
+            <i class="fas fa-hourglass-half"></i>
+            Bekleyen Kararlar
+            <span>@waitingCount</span>
+        </button>
+
+        <button type="button"
+                class="decision-tab"
+                data-tab-target="decidedPanel">
+            <i class="fas fa-check-circle"></i>
+            Sonuçlananlar
+            <span>@decidedCount</span>
+        </button>
+    </div>
+
+    <div class="decision-panel active" id="waitingPanel">
+        <div class="decision-list-card">
+            <div class="decision-list-header">
+                <div>
+                    <h5>Karar Bekleyen Bildiriler</h5>
+                    <p>Hakem sürecinden gelen bildiriler için karar işlemi yapabilirsiniz.</p>
+                </div>
+
+                <div class="decision-count-pill">
+                    @waitingCount bildiri
+                </div>
+            </div>
+
+            @if (!awaitingDecision.Any())
+            {
+                <div class="decision-empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+
+                    <h4>Şu an karar bekleyen bildiri yok</h4>
+
+                    <p>
+                        Karar aşamasına gelen bildiriler olduğunda burada listelenecek.
+                    </p>
+
+                    <a href="@flowUrl" class="btn decision-light-btn">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Kongre Akışına Dön
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="decision-table-wrap">
+                    <table class="decision-table">
+                        <thead>
+                            <tr>
+                                <th>Bildiri</th>
+                                <th>Yazar</th>
+                                <th>Hakem Durumu</th>
+                                <th>Mevcut Durum</th>
+                                <th class="text-end">Karar</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var item in awaitingDecision)
+                            {
+                                var detailUrl = string.IsNullOrWhiteSpace(slug)
+                                ? $"/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}"
+                                : $"/{slug}/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}";
+
+                                <tr>
+                                    <td>
+                                        <div class="submission-title-cell">
+                                            <div class="submission-mini-icon">
+                                                <i class="fas fa-file-lines"></i>
+                                            </div>
+
+                                            <div>
+                                                <strong>@item.Title</strong>
+                                                <span>Ref: #@item.Id.ToString().Substring(0, 8).ToUpper()</span>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <div class="author-cell">
+                                            <div class="author-avatar">
+                                                @GetAuthorInitial(item)
+                                            </div>
+
+                                            <span>@GetAuthorName(item)</span>
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <span class="review-info-pill">
+                                            <i class="fas fa-user-check"></i>
+                                            @GetReviewerInfo(item)
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <span class="decision-status @StatusClass(item.Status)">
+                                            @StatusLabel(item.Status)
+                                        </span>
+                                    </td>
+
+                                    <td class="text-end">
+                                        <div class="decision-actions">
+                                            <a href="@detailUrl"
+                                               class="btn decision-view-btn">
+                                                <i class="fas fa-eye me-2"></i>
+                                                İncele
+                                            </a>
+
+                                            <form method="post"
+                                                  action="@decisionPostUrl"
+                                                  class="d-inline decision-form"
+                                                  onsubmit="return confirm('Bu bildiriyi kabul etmek istediğinize emin misiniz?');">
+                                                @Html.AntiForgeryToken()
+
+                                                <input type="hidden" name="submissionId" value="@item.Id" />
+                                                <input type="hidden" name="decision" value="Accept" />
+                                                <input type="hidden" name="note" value="" />
+
+                                                <button type="submit" class="btn decision-accept-btn">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </form>
+
+                                            <form method="post"
+                                                  action="@decisionPostUrl"
+                                                  class="d-inline decision-form"
+                                                  onsubmit="return confirm('Bu bildiri için revizyon istemek istediğinize emin misiniz?');">
+                                                @Html.AntiForgeryToken()
+
+                                                <input type="hidden" name="submissionId" value="@item.Id" />
+                                                <input type="hidden" name="decision" value="Revision" />
+                                                <input type="hidden" name="note" value="" />
+
+                                                <button type="submit" class="btn decision-revision-btn">
+                                                    <i class="fas fa-rotate"></i>
+                                                </button>
+                                            </form>
+
+                                            <form method="post"
+                                                  action="@decisionPostUrl"
+                                                  class="d-inline decision-form"
+                                                  onsubmit="return confirm('Bu bildiriyi reddetmek istediğinize emin misiniz?');">
+                                                @Html.AntiForgeryToken()
+
+                                                <input type="hidden" name="submissionId" value="@item.Id" />
+                                                <input type="hidden" name="decision" value="Reject" />
+                                                <input type="hidden" name="note" value="" />
+
+                                                <button type="submit" class="btn decision-reject-btn">
+                                                    <i class="fas fa-xmark"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="decision-panel" id="decidedPanel">
+        <div class="decision-list-card">
+            <div class="decision-list-header">
+                <div>
+                    <h5>Sonuçlanan Bildiriler</h5>
+                    <p>Kabul, ret veya revizyon kararı verilmiş bildiriler.</p>
+                </div>
+
+                <div class="decision-count-pill">
+                    @decidedCount bildiri
+                </div>
+            </div>
+
+            @if (!alreadyDecided.Any())
+            {
+                <div class="decision-empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-folder-open"></i>
+                    </div>
+
+                    <h4>Henüz sonuçlanan bildiri yok</h4>
+
+                    <p>
+                        Karar verilen bildiriler burada listelenecek.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="decision-table-wrap">
+                    <table class="decision-table">
+                        <thead>
+                            <tr>
+                                <th>Bildiri</th>
+                                <th>Yazar</th>
+                                <th>Hakem Durumu</th>
+                                <th>Karar</th>
+                                <th class="text-end">İşlem</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var item in alreadyDecided)
+                            {
+                                var detailUrl = string.IsNullOrWhiteSpace(slug)
+                                ? $"/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}"
+                                : $"/{slug}/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}";
+
+                                <tr>
+                                    <td>
+                                        <div class="submission-title-cell">
+                                            <div class="submission-mini-icon">
+                                                <i class="fas fa-file-lines"></i>
+                                            </div>
+
+                                            <div>
+                                                <strong>@item.Title</strong>
+                                                <span>
+                                                    Ref: #@item.Id.ToString().Substring(0, 8).ToUpper()
+                                                    @if (item.DecisionDate.HasValue)
+                                                    {
+                                                        <text> · @item.DecisionDate.Value.ToString("dd.MM.yyyy HH:mm")</text>
+                                                    }
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <div class="author-cell">
+                                            <div class="author-avatar">
+                                                @GetAuthorInitial(item)
+                                            </div>
+
+                                            <span>@GetAuthorName(item)</span>
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <span class="review-info-pill">
+                                            <i class="fas fa-user-check"></i>
+                                            @GetReviewerInfo(item)
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <span class="decision-status @StatusClass(item.Status)">
+                                            @StatusLabel(item.Status)
+                                        </span>
+                                    </td>
+
+                                    <td class="text-end">
+                                        <a href="@detailUrl"
+                                           class="btn decision-view-btn">
+                                            <i class="fas fa-eye me-2"></i>
+                                            İncele
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
 </div>
+
+<style>
+    .decision-page {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .decision-hero-card {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.15), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e8eef6;
+        border-radius: 28px;
+        padding: 1.55rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+    }
+
+    .decision-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 300px;
+        flex: 1;
+    }
+
+    .decision-hero-icon {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.55rem;
+        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.22);
+    }
+
+    .decision-section-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .decision-page-title {
+        margin: 0 0 0.35rem;
+        color: #0f172a;
+        font-size: 2rem;
+        font-weight: 900;
+        letter-spacing: -0.05em;
+    }
+
+    .decision-page-description {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.96rem;
+        font-weight: 600;
+        line-height: 1.65;
+    }
+
+    .selected-conference-pill {
+        width: fit-content;
+        margin-top: 0.75rem;
+        display: inline-flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 0.5rem 0.85rem;
+        border-radius: 999px;
+        background: rgba(0, 174, 239, 0.10);
+        border: 1px solid rgba(0, 174, 239, 0.22);
+        color: #0d6efd;
+        font-size: 0.82rem;
+        font-weight: 900;
+    }
+
+        .selected-conference-pill em {
+            color: #64748b;
+            font-style: normal;
+            font-weight: 900;
+        }
+
+    .decision-hero-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .decision-light-btn,
+    .decision-outline-btn,
+    .decision-view-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0 1.2rem;
+        text-decoration: none;
+        font-weight: 900;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+    }
+
+    .decision-light-btn {
+        border: 1px solid #dbe3ef;
+        background: #ffffff;
+        color: #334155;
+    }
+
+        .decision-light-btn:hover {
+            color: #0d6efd;
+            border-color: rgba(13, 110, 253, 0.28);
+            background: #f8fbff;
+            transform: translateY(-1px);
+        }
+
+    .decision-outline-btn {
+        border: 1px solid #94a3b8;
+        background: #ffffff;
+        color: #475569;
+    }
+
+        .decision-outline-btn:hover {
+            color: #0f172a;
+            border-color: #64748b;
+            background: #f8fafc;
+            transform: translateY(-1px);
+        }
+
+    .decision-stat-card {
+        min-height: 104px;
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 24px;
+        padding: 1.15rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        min-width: 50px;
+        border-radius: 17px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+    }
+
+    .stat-orange {
+        background: rgba(245, 158, 11, 0.12);
+        color: #f59e0b;
+    }
+
+    .stat-green {
+        background: rgba(34, 197, 94, 0.10);
+        color: #16a34a;
+    }
+
+    .stat-blue {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .stat-red {
+        background: rgba(239, 68, 68, 0.10);
+        color: #ef4444;
+    }
+
+    .stat-number {
+        color: #0f172a;
+        font-size: 1.65rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .stat-label {
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 800;
+        margin-top: 0.3rem;
+    }
+
+    .decision-tabs-card {
+        width: fit-content;
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 999px;
+        padding: 0.45rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+    }
+
+    .decision-tab {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        border: none;
+        border-radius: 999px;
+        background: transparent;
+        color: #475569;
+        font-weight: 900;
+        padding: 0 1rem;
+        transition: all 0.2s ease;
+    }
+
+        .decision-tab span {
+            min-width: 26px;
+            min-height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: #0f172a;
+            font-size: 0.76rem;
+            font-weight: 900;
+        }
+
+        .decision-tab.active {
+            background: linear-gradient(135deg, #0d6efd, #00aeef);
+            color: #ffffff;
+            box-shadow: 0 10px 22px rgba(13, 110, 253, 0.20);
+        }
+
+            .decision-tab.active span {
+                background: rgba(255, 255, 255, 0.18);
+                color: #ffffff;
+            }
+
+    .decision-panel {
+        display: none;
+    }
+
+        .decision-panel.active {
+            display: block;
+        }
+
+    .decision-list-card {
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 28px;
+        overflow: hidden;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+    }
+
+    .decision-list-header {
+        padding: 1.4rem 1.5rem;
+        border-bottom: 1px solid #edf2f7;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+        .decision-list-header h5 {
+            margin: 0 0 0.25rem;
+            color: #0f172a;
+            font-size: 1.25rem;
+            font-weight: 900;
+        }
+
+        .decision-list-header p {
+            margin: 0;
+            color: #64748b;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+    .decision-count-pill {
+        padding: 0.45rem 0.85rem;
+        border-radius: 999px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 0.8rem;
+        font-weight: 900;
+    }
+
+    .decision-table-wrap {
+        overflow-x: auto;
+    }
+
+    .decision-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+        .decision-table thead th {
+            padding: 1rem 1.5rem;
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 0.78rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-bottom: 1px solid #edf2f7;
+            white-space: nowrap;
+        }
+
+        .decision-table tbody td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #edf2f7;
+            vertical-align: middle;
+        }
+
+        .decision-table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+            .decision-table tbody tr:hover {
+                background: #f8fbff;
+            }
+
+            .decision-table tbody tr:last-child td {
+                border-bottom: none;
+            }
+
+    .submission-title-cell,
+    .author-cell,
+    .decision-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .submission-mini-icon {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 16px;
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .submission-title-cell strong {
+        display: block;
+        color: #0f172a;
+        font-size: 0.95rem;
+        font-weight: 900;
+        line-height: 1.35;
+    }
+
+    .submission-title-cell span {
+        display: block;
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 700;
+        margin-top: 0.2rem;
+    }
+
+    .author-avatar {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        box-shadow: 0 12px 24px rgba(13, 110, 253, 0.16);
+    }
+
+    .author-cell span {
+        color: #334155;
+        font-size: 0.9rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .review-info-pill,
+    .decision-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        min-height: 32px;
+        padding: 0 0.75rem;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .review-info-pill {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+    }
+
+        .review-info-pill i {
+            color: #0d6efd;
+        }
+
+    .status-new {
+        background: rgba(0, 174, 239, 0.12);
+        color: #00aeef;
+    }
+
+    .status-pending {
+        background: rgba(245, 158, 11, 0.12);
+        color: #f59e0b;
+    }
+
+    .status-review {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .status-accepted {
+        background: rgba(34, 197, 94, 0.10);
+        color: #16a34a;
+    }
+
+    .status-rejected {
+        background: rgba(239, 68, 68, 0.10);
+        color: #ef4444;
+    }
+
+    .status-revision {
+        background: rgba(124, 58, 237, 0.10);
+        color: #7c3aed;
+    }
+
+    .status-presented {
+        background: rgba(20, 184, 166, 0.12);
+        color: #14b8a6;
+    }
+
+    .status-default {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .decision-view-btn {
+        border: 1px solid rgba(13, 110, 253, 0.22);
+        background: rgba(13, 110, 253, 0.07);
+        color: #0d6efd;
+        min-height: 40px;
+        padding: 0 0.95rem;
+    }
+
+        .decision-view-btn:hover {
+            background: #0d6efd;
+            color: #ffffff;
+        }
+
+    .decision-form {
+        display: inline-flex;
+    }
+
+    .decision-accept-btn,
+    .decision-revision-btn,
+    .decision-reject-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        font-weight: 900;
+    }
+
+    .decision-accept-btn {
+        background: rgba(34, 197, 94, 0.10);
+        color: #16a34a;
+    }
+
+        .decision-accept-btn:hover {
+            background: #16a34a;
+            color: #ffffff;
+        }
+
+    .decision-revision-btn {
+        background: rgba(124, 58, 237, 0.10);
+        color: #7c3aed;
+    }
+
+        .decision-revision-btn:hover {
+            background: #7c3aed;
+            color: #ffffff;
+        }
+
+    .decision-reject-btn {
+        background: rgba(239, 68, 68, 0.10);
+        color: #ef4444;
+    }
+
+        .decision-reject-btn:hover {
+            background: #ef4444;
+            color: #ffffff;
+        }
+
+    .decision-empty-state {
+        padding: 4rem 1.5rem;
+        text-align: center;
+    }
+
+    .empty-icon {
+        width: 76px;
+        height: 76px;
+        margin: 0 auto 1rem;
+        border-radius: 26px;
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.9rem;
+    }
+
+    .decision-empty-state h4 {
+        color: #0f172a;
+        font-size: 1.28rem;
+        font-weight: 900;
+        margin-bottom: 0.45rem;
+    }
+
+    .decision-empty-state p {
+        color: #64748b;
+        font-weight: 600;
+        margin: 0 auto 1.25rem;
+        max-width: 520px;
+        line-height: 1.65;
+    }
+
+    @@media (max-width: 992px) {
+        .decision-hero-card {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .decision-hero-left {
+            align-items: flex-start;
+        }
+
+        .decision-hero-actions,
+        .decision-hero-actions .btn {
+            width: 100%;
+        }
+
+        .decision-page-title {
+            font-size: 1.65rem;
+        }
+
+        .decision-tabs-card {
+            width: 100%;
+            border-radius: 24px;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .decision-tab {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .decision-hero-left {
+            flex-direction: column;
+        }
+
+        .decision-actions {
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const tabButtons = Array.from(document.querySelectorAll(".decision-tab"));
+            const panels = Array.from(document.querySelectorAll(".decision-panel"));
+
+            tabButtons.forEach(function (button) {
+                button.addEventListener("click", function () {
+                    const target = button.getAttribute("data-tab-target");
+
+                    tabButtons.forEach(function (item) {
+                        item.classList.remove("active");
+                    });
+
+                    panels.forEach(function (panel) {
+                        panel.classList.remove("active");
+                    });
+
+                    button.classList.add("active");
+
+                    const targetPanel = document.getElementById(target);
+
+                    if (targetPanel) {
+                        targetPanel.classList.add("active");
+                    }
+                });
+            });
+        });
+    </script>
+}

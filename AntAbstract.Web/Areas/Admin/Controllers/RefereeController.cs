@@ -1,9 +1,14 @@
 ﻿using AntAbstract.Domain.Entities;
+using AntAbstract.Infrastructure.Context;
+using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.ViewModels.Admin.Referee;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,21 +16,29 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
-    [Route("Admin/Referee/{action=Index}/{id?}")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public class RefereeController : Controller
     {
+        private readonly AppDbContext _context;
+        private readonly TenantContext _tenantContext;
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly IStringLocalizer<RefereeController> _localizer;
 
         public RefereeController(
+            AppDbContext context,
+            TenantContext tenantContext,
             UserManager<AppUser> userManager,
             RoleManager<IdentityRole> roleManager,
+            ISelectedConferenceService selectedConferenceService,
             IStringLocalizer<RefereeController> localizer)
         {
+            _context = context;
+            _tenantContext = tenantContext;
             _userManager = userManager;
             _roleManager = roleManager;
+            _selectedConferenceService = selectedConferenceService;
             _localizer = localizer;
         }
 
@@ -38,28 +51,185 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 : value.Value;
         }
 
+        private bool IsSuperAdminUser()
+        {
+            return User.IsInRole("SuperAdmin");
+        }
+
         private async Task<AppUser?> GetCurrentUserAsync()
         {
             return await _userManager.GetUserAsync(User);
         }
 
-        private async Task<bool> CurrentAdminHasTenantAsync()
+        private async Task<Guid?> GetCurrentAdminTenantIdAsync()
         {
             var currentUser = await GetCurrentUserAsync();
 
-            return currentUser != null && currentUser.TenantId.HasValue;
+            return currentUser?.TenantId;
         }
 
-        public async Task<IActionResult> Index()
+        private async Task<Conference?> GetAccessibleConferenceAsync(
+            string? slug,
+            Guid? conferenceId)
         {
-            var currentUser = await GetCurrentUserAsync();
+            Guid? selectedConferenceId = null;
 
-            if (currentUser == null)
+            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
             {
-                return Challenge();
+                selectedConferenceId = conferenceId.Value;
+            }
+            else
+            {
+                selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
             }
 
-            if (!currentUser.TenantId.HasValue)
+            if (!selectedConferenceId.HasValue || selectedConferenceId.Value == Guid.Empty)
+            {
+                return null;
+            }
+
+            var query = _context.Conferences
+                .AsNoTracking()
+                .Include(c => c.Tenant)
+                .AsQueryable();
+
+            if (IsSuperAdminUser())
+            {
+                if (!string.IsNullOrWhiteSpace(slug))
+                {
+                    return await query.FirstOrDefaultAsync(c =>
+                        c.Id == selectedConferenceId.Value &&
+                        c.Tenant != null &&
+                        c.Tenant.Slug == slug);
+                }
+
+                return await query.FirstOrDefaultAsync(c =>
+                    c.Id == selectedConferenceId.Value);
+            }
+
+            var adminTenantId = await GetCurrentAdminTenantIdAsync();
+
+            if (!adminTenantId.HasValue)
+            {
+                return null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(slug))
+            {
+                return await query.FirstOrDefaultAsync(c =>
+                    c.Id == selectedConferenceId.Value &&
+                    c.TenantId == adminTenantId.Value &&
+                    c.Tenant != null &&
+                    c.Tenant.Slug == slug);
+            }
+
+            return await query.FirstOrDefaultAsync(c =>
+                c.Id == selectedConferenceId.Value &&
+                c.TenantId == adminTenantId.Value);
+        }
+
+        private void SetSelectedConferenceSession(Conference conference)
+        {
+            var slug = conference.Tenant?.Slug ?? _tenantContext.Current?.Slug ?? "";
+
+            _selectedConferenceService.SetSelectedConferenceId(conference.Id);
+
+            HttpContext.Session.SetString("SelectedConferenceId", conference.Id.ToString());
+            HttpContext.Session.SetString("SelectedConferenceSlug", slug);
+            HttpContext.Session.SetString("SelectedConferenceTitle", conference.Title ?? "");
+
+            HttpContext.Session.SetString($"SelectedConferenceId:{conference.TenantId}", conference.Id.ToString());
+            HttpContext.Session.SetString($"SelectedConferenceSlug:{conference.TenantId}", slug);
+            HttpContext.Session.SetString($"SelectedConferenceTitle:{conference.TenantId}", conference.Title ?? "");
+        }
+
+        private async Task<Guid?> GetTargetTenantIdAsync(
+            string? slug,
+            Guid? conferenceId)
+        {
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
+
+            if (conference != null)
+            {
+                SetSelectedConferenceSession(conference);
+
+                ViewBag.ConferenceId = conference.Id;
+                ViewBag.ConferenceTitle = conference.Title ?? "";
+                ViewBag.Slug = conference.Tenant?.Slug ?? slug ?? "";
+
+                return conference.TenantId;
+            }
+
+            if (IsSuperAdminUser())
+            {
+                return null;
+            }
+
+            return await GetCurrentAdminTenantIdAsync();
+        }
+
+        private string BuildRefereeIndexUrl(string? slug, Guid? conferenceId)
+        {
+            if (!string.IsNullOrWhiteSpace(slug) &&
+                conferenceId.HasValue &&
+                conferenceId.Value != Guid.Empty)
+            {
+                return $"/{slug}/Admin/Referee?conferenceId={conferenceId.Value}";
+            }
+
+            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
+            {
+                return $"/Admin/Referee?conferenceId={conferenceId.Value}";
+            }
+
+            return "/Admin/Referee";
+        }
+
+        private async Task<List<AppUser>> GetRefereeListAsync(Guid? targetTenantId)
+        {
+            var referees = await _userManager.GetUsersInRoleAsync("Referee");
+
+            if (targetTenantId.HasValue)
+            {
+                return referees
+                    .Where(r =>
+                        r.TenantId.HasValue &&
+                        r.TenantId.Value == targetTenantId.Value)
+                    .OrderBy(r => r.FirstName)
+                    .ThenBy(r => r.LastName)
+                    .ToList();
+            }
+
+            if (IsSuperAdminUser())
+            {
+                return referees
+                    .OrderBy(r => r.FirstName)
+                    .ThenBy(r => r.LastName)
+                    .ToList();
+            }
+
+            return new List<AppUser>();
+        }
+
+        [HttpGet("/Admin/Referee")]
+        public async Task<IActionResult> Index(Guid? conferenceId = null)
+        {
+            var conference = await GetAccessibleConferenceAsync(null, conferenceId);
+
+            if (conference != null &&
+                conference.Tenant != null &&
+                !string.IsNullOrWhiteSpace(conference.Tenant.Slug))
+            {
+                SetSelectedConferenceSession(conference);
+
+                return Redirect(BuildRefereeIndexUrl(
+                    conference.Tenant.Slug,
+                    conference.Id));
+            }
+
+            var targetTenantId = await GetTargetTenantIdAsync(null, conferenceId);
+
+            if (!targetTenantId.HasValue && !IsSuperAdminUser())
             {
                 TempData["ErrorMessage"] = T(
                     "Error_AdminTenantNotFound",
@@ -68,57 +238,161 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return View(new List<AppUser>());
             }
 
-            var referees = await _userManager.GetUsersInRoleAsync("Referee");
+            if (!targetTenantId.HasValue && IsSuperAdminUser())
+            {
+                ViewBag.ConferenceId = null;
+                ViewBag.ConferenceTitle = "";
+                ViewBag.Slug = "";
+            }
 
-            var filteredReferees = referees
-                .Where(r =>
-                    r.TenantId.HasValue &&
-                    r.TenantId.Value == currentUser.TenantId.Value)
-                .OrderBy(r => r.FirstName)
-                .ThenBy(r => r.LastName)
-                .ToList();
+            var filteredReferees = await GetRefereeListAsync(targetTenantId);
 
             return View(filteredReferees);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Create()
+        [HttpGet("/{slug}/Admin/Referee")]
+        public async Task<IActionResult> TenantIndex(
+            string slug,
+            Guid? conferenceId = null)
         {
-            if (!await CurrentAdminHasTenantAsync())
+            var targetTenantId = await GetTargetTenantIdAsync(slug, conferenceId);
+
+            if (!targetTenantId.HasValue)
             {
                 TempData["ErrorMessage"] = T(
-                    "Error_AdminTenantNotFound",
-                    "Hakem oluşturmak için admin hesabınıza bağlı bir kurum bulunmalıdır.");
+                    "Error_SelectValidConferenceFirst",
+                    "Lütfen yetkili olduğunuz geçerli bir kongre seçiniz.");
+
+                return Redirect("/Admin/ConferenceFlow");
+            }
+
+            var filteredReferees = await GetRefereeListAsync(targetTenantId);
+
+            return View("Index", filteredReferees);
+        }
+
+        [HttpGet("/Admin/Referee/Create")]
+        public async Task<IActionResult> Create(Guid? conferenceId = null)
+        {
+            var conference = await GetAccessibleConferenceAsync(null, conferenceId);
+
+            if (conference != null &&
+                conference.Tenant != null &&
+                !string.IsNullOrWhiteSpace(conference.Tenant.Slug))
+            {
+                SetSelectedConferenceSession(conference);
+
+                return Redirect($"/{conference.Tenant.Slug}/Admin/Referee/Create?conferenceId={conference.Id}");
+            }
+
+            var targetTenantId = await GetTargetTenantIdAsync(null, conferenceId);
+
+            if (!targetTenantId.HasValue)
+            {
+                TempData["ErrorMessage"] = IsSuperAdminUser()
+                    ? T("Error_SelectConferenceForRefereeCreate", "Hakem oluşturmak için önce bir kongre seçiniz.")
+                    : T("Error_AdminTenantNotFound", "Hakem oluşturmak için admin hesabınıza bağlı bir kurum bulunmalıdır.");
 
                 return RedirectToAction(nameof(Index));
             }
+
+            ViewBag.TargetTenantId = targetTenantId.Value;
 
             return View();
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(RefereeCreateViewModel model)
+        [HttpGet("/{slug}/Admin/Referee/Create")]
+        public async Task<IActionResult> CreateForConference(
+            string slug,
+            Guid? conferenceId = null)
         {
-            var currentUser = await GetCurrentUserAsync();
+            var targetTenantId = await GetTargetTenantIdAsync(slug, conferenceId);
 
-            if (currentUser == null)
-            {
-                return Challenge();
-            }
-
-            if (!currentUser.TenantId.HasValue)
+            if (!targetTenantId.HasValue)
             {
                 TempData["ErrorMessage"] = T(
-                    "Error_AdminTenantNotFound",
-                    "Hakem oluşturmak için admin hesabınıza bağlı bir kurum bulunmalıdır.");
+                    "Error_SelectValidConferenceFirst",
+                    "Lütfen yetkili olduğunuz geçerli bir kongre seçiniz.");
+
+                return Redirect("/Admin/ConferenceFlow");
+            }
+
+            ViewBag.TargetTenantId = targetTenantId.Value;
+
+            return View("Create");
+        }
+
+        [HttpPost("/Admin/Referee/Create")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(
+            RefereeCreateViewModel model,
+            Guid? conferenceId = null)
+        {
+            var conference = await GetAccessibleConferenceAsync(null, conferenceId);
+
+            if (conference != null &&
+                conference.Tenant != null &&
+                !string.IsNullOrWhiteSpace(conference.Tenant.Slug))
+            {
+                return await CreateForConferencePost(
+                    conference.Tenant.Slug,
+                    model,
+                    conference.Id);
+            }
+
+            var targetTenantId = await GetTargetTenantIdAsync(null, conferenceId);
+
+            if (!targetTenantId.HasValue)
+            {
+                TempData["ErrorMessage"] = IsSuperAdminUser()
+                    ? T("Error_SelectConferenceForRefereeCreate", "Hakem oluşturmak için önce bir kongre seçiniz.")
+                    : T("Error_AdminTenantNotFound", "Hakem oluşturmak için admin hesabınıza bağlı bir kurum bulunmalıdır.");
 
                 return RedirectToAction(nameof(Index));
             }
 
+            return await CreateRefereeAsync(
+                model,
+                targetTenantId.Value,
+                null,
+                conferenceId);
+        }
+
+        [HttpPost("/{slug}/Admin/Referee/Create")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateForConferencePost(
+            string slug,
+            RefereeCreateViewModel model,
+            Guid? conferenceId = null)
+        {
+            var targetTenantId = await GetTargetTenantIdAsync(slug, conferenceId);
+
+            if (!targetTenantId.HasValue)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_SelectValidConferenceFirst",
+                    "Lütfen yetkili olduğunuz geçerli bir kongre seçiniz.");
+
+                return Redirect("/Admin/ConferenceFlow");
+            }
+
+            return await CreateRefereeAsync(
+                model,
+                targetTenantId.Value,
+                slug,
+                conferenceId);
+        }
+
+        private async Task<IActionResult> CreateRefereeAsync(
+            RefereeCreateViewModel model,
+            Guid targetTenantId,
+            string? slug,
+            Guid? conferenceId)
+        {
             if (!ModelState.IsValid)
             {
-                return View(model);
+                ViewBag.TargetTenantId = targetTenantId;
+                return View("Create", model);
             }
 
             if (!await _roleManager.RoleExistsAsync("Referee"))
@@ -134,7 +408,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     string.Empty,
                     T("Error_EmailAlreadyExists", "Bu e-posta adresiyle kayıtlı bir kullanıcı zaten var."));
 
-                return View(model);
+                ViewBag.TargetTenantId = targetTenantId;
+                return View("Create", model);
             }
 
             var refereeUser = new AppUser
@@ -144,7 +419,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 FirstName = model.FirstName,
                 LastName = model.LastName,
                 Institution = model.Institution,
-                TenantId = currentUser.TenantId.Value,
+                TenantId = targetTenantId,
                 EmailConfirmed = true
             };
 
@@ -157,7 +432,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     ModelState.AddModelError(string.Empty, error.Description);
                 }
 
-                return View(model);
+                ViewBag.TargetTenantId = targetTenantId;
+                return View("Create", model);
             }
 
             var roleResult = await _userManager.AddToRoleAsync(refereeUser, "Referee");
@@ -169,19 +445,65 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     ModelState.AddModelError(string.Empty, error.Description);
                 }
 
-                return View(model);
+                ViewBag.TargetTenantId = targetTenantId;
+                return View("Create", model);
             }
 
             TempData["SuccessMessage"] = T(
                 "Success_RefereeCreated",
                 "Hakem başarıyla oluşturuldu.");
 
-            return RedirectToAction(nameof(Index));
+            return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
         }
 
-        [HttpPost]
+        [HttpPost("/Admin/Referee/Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(
+            string id,
+            Guid? conferenceId = null)
+        {
+            var conference = await GetAccessibleConferenceAsync(null, conferenceId);
+
+            if (conference != null &&
+                conference.Tenant != null &&
+                !string.IsNullOrWhiteSpace(conference.Tenant.Slug))
+            {
+                return await DeleteForConference(
+                    conference.Tenant.Slug,
+                    id,
+                    conference.Id);
+            }
+
+            var targetTenantId = await GetTargetTenantIdAsync(null, conferenceId);
+
+            return await DeleteRefereeAsync(
+                id,
+                targetTenantId,
+                null,
+                conferenceId);
+        }
+
+        [HttpPost("/{slug}/Admin/Referee/Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteForConference(
+            string slug,
+            string id,
+            Guid? conferenceId = null)
+        {
+            var targetTenantId = await GetTargetTenantIdAsync(slug, conferenceId);
+
+            return await DeleteRefereeAsync(
+                id,
+                targetTenantId,
+                slug,
+                conferenceId);
+        }
+
+        private async Task<IActionResult> DeleteRefereeAsync(
+            string id,
+            Guid? targetTenantId,
+            string? slug,
+            Guid? conferenceId)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -189,7 +511,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_InvalidUser",
                     "Geçersiz kullanıcı.");
 
-                return RedirectToAction(nameof(Index));
+                return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
             }
 
             var currentUser = await GetCurrentUserAsync();
@@ -197,15 +519,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (currentUser == null)
             {
                 return Challenge();
-            }
-
-            if (!currentUser.TenantId.HasValue)
-            {
-                TempData["ErrorMessage"] = T(
-                    "Error_AdminTenantNotFound",
-                    "Admin hesabınıza bağlı kurum bulunamadı.");
-
-                return RedirectToAction(nameof(Index));
             }
 
             var refereeUser = await _userManager.FindByIdAsync(id);
@@ -216,7 +529,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_UserNotFound",
                     "Kullanıcı bulunamadı.");
 
-                return RedirectToAction(nameof(Index));
+                return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
             }
 
             if (refereeUser.Id == currentUser.Id)
@@ -225,17 +538,41 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_CannotDeleteOwnAccount",
                     "Kendi hesabınızı bu ekrandan silemezsiniz.");
 
-                return RedirectToAction(nameof(Index));
+                return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
             }
 
-            if (!refereeUser.TenantId.HasValue ||
-                refereeUser.TenantId.Value != currentUser.TenantId.Value)
+            if (!IsSuperAdminUser())
             {
-                TempData["ErrorMessage"] = T(
-                    "Error_UnauthorizedDelete",
-                    "Bu hakemi silme yetkiniz yok.");
+                if (!targetTenantId.HasValue)
+                {
+                    TempData["ErrorMessage"] = T(
+                        "Error_AdminTenantNotFound",
+                        "Admin hesabınıza bağlı kurum bulunamadı.");
 
-                return RedirectToAction(nameof(Index));
+                    return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
+                }
+
+                if (!refereeUser.TenantId.HasValue ||
+                    refereeUser.TenantId.Value != targetTenantId.Value)
+                {
+                    TempData["ErrorMessage"] = T(
+                        "Error_UnauthorizedDelete",
+                        "Bu hakemi silme yetkiniz yok.");
+
+                    return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
+                }
+            }
+            else if (targetTenantId.HasValue)
+            {
+                if (!refereeUser.TenantId.HasValue ||
+                    refereeUser.TenantId.Value != targetTenantId.Value)
+                {
+                    TempData["ErrorMessage"] = T(
+                        "Error_UnauthorizedDelete",
+                        "Bu hakem seçili kongrenin kurumuna bağlı değil.");
+
+                    return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
+                }
             }
 
             var isReferee = await _userManager.IsInRoleAsync(refereeUser, "Referee");
@@ -246,7 +583,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_UserIsNotReferee",
                     "Bu kullanıcı hakem rolüne sahip değil.");
 
-                return RedirectToAction(nameof(Index));
+                return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
             }
 
             var targetIsSuperAdmin = await _userManager.IsInRoleAsync(refereeUser, "SuperAdmin");
@@ -258,7 +595,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_CannotDeleteManagementUser",
                     "Yönetici rolündeki kullanıcıları bu ekrandan silemezsiniz.");
 
-                return RedirectToAction(nameof(Index));
+                return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
             }
 
             var deleteResult = await _userManager.DeleteAsync(refereeUser);
@@ -269,14 +606,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_RefereeDeleteFailed",
                     "Hakem silinirken bir hata oluştu.");
 
-                return RedirectToAction(nameof(Index));
+                return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
             }
 
             TempData["SuccessMessage"] = T(
                 "Success_RefereeDeleted",
                 "Hakem başarıyla silindi.");
 
-            return RedirectToAction(nameof(Index));
+            return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
         }
     }
 }

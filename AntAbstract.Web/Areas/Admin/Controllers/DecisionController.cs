@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public class DecisionController : Controller
     {
         private readonly AppDbContext _context;
@@ -48,6 +48,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 : value.Value;
         }
 
+        private bool IsSuperAdminUser()
+        {
+            return User.IsInRole("SuperAdmin");
+        }
+
         private async Task<AppUser?> GetCurrentUserAsync()
         {
             return await _userManager.GetUserAsync(User);
@@ -57,16 +62,28 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             var user = await GetCurrentUserAsync();
 
-            if (user == null || !user.TenantId.HasValue)
+            return user?.TenantId;
+        }
+
+        private async Task<bool> CurrentAdminHasTenantAsync()
+        {
+            if (IsSuperAdminUser())
             {
-                return null;
+                return true;
             }
 
-            return user.TenantId.Value;
+            var tenantId = await GetCurrentAdminTenantIdAsync();
+
+            return tenantId.HasValue;
         }
 
         private async Task<bool> CanAccessCurrentTenantAsync()
         {
+            if (IsSuperAdminUser())
+            {
+                return true;
+            }
+
             if (_tenantContext.Current == null)
             {
                 return false;
@@ -84,12 +101,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync()
         {
-            var tenantId = await GetCurrentAdminTenantIdAsync();
-
             var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .AsQueryable();
+
+            if (IsSuperAdminUser())
+            {
+                return query;
+            }
+
+            var tenantId = await GetCurrentAdminTenantIdAsync();
 
             if (!tenantId.HasValue)
             {
@@ -103,21 +125,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             string slug,
             Guid? conferenceId)
         {
-            if (_tenantContext.Current == null)
-            {
-                return null;
-            }
-
-            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
-            {
-                return null;
-            }
-
-            if (!await CanAccessCurrentTenantAsync())
-            {
-                return null;
-            }
-
             Guid? selectedConferenceId = null;
 
             if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
@@ -134,12 +141,37 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return null;
             }
 
-            return await _context.Conferences
+            var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
-                .FirstOrDefaultAsync(c =>
+                .AsQueryable();
+
+            if (IsSuperAdminUser())
+            {
+                return await query.FirstOrDefaultAsync(c =>
                     c.Id == selectedConferenceId.Value &&
-                    c.TenantId == _tenantContext.Current.Id);
+                    c.Tenant != null &&
+                    c.Tenant.Slug == slug);
+            }
+
+            if (_tenantContext.Current == null)
+            {
+                return null;
+            }
+
+            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            if (!await CanAccessCurrentTenantAsync())
+            {
+                return null;
+            }
+
+            return await query.FirstOrDefaultAsync(c =>
+                c.Id == selectedConferenceId.Value &&
+                c.TenantId == _tenantContext.Current.Id);
         }
 
         private void SetSelectedConferenceSession(Conference conference)
@@ -158,30 +190,59 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             HttpContext.Session.SetString($"SelectedConferenceTitle:{tenantId}", conference.Title ?? "");
         }
 
-        private async Task<bool> CanAccessSubmissionAsync(Guid submissionId)
+        private string BuildDecisionUrl(string slug, Guid conferenceId)
         {
+            return $"/{slug}/Admin/Decision?conferenceId={conferenceId}";
+        }
+
+        private async Task<Submission?> GetAccessibleSubmissionForDecisionAsync(
+            string slug,
+            Guid submissionId)
+        {
+            var query = _context.Submissions
+                .Include(s => s.Author)
+                .Include(s => s.Conference)
+                    .ThenInclude(c => c.Tenant)
+                .AsQueryable();
+
+            if (IsSuperAdminUser())
+            {
+                return await query.FirstOrDefaultAsync(s =>
+                    s.Id == submissionId &&
+                    s.Conference != null &&
+                    s.Conference.Tenant != null &&
+                    s.Conference.Tenant.Slug == slug);
+            }
+
+            if (_tenantContext.Current == null)
+            {
+                return null;
+            }
+
+            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
             var tenantId = await GetCurrentAdminTenantIdAsync();
 
             if (!tenantId.HasValue)
             {
-                return false;
+                return null;
             }
 
-            return await _context.Submissions
-                .AsNoTracking()
-                .Include(s => s.Conference)
-                .AnyAsync(s =>
-                    s.Id == submissionId &&
-                    s.Conference != null &&
-                    s.Conference.TenantId == tenantId.Value);
+            return await query.FirstOrDefaultAsync(s =>
+                s.Id == submissionId &&
+                s.Conference != null &&
+                s.Conference.TenantId == tenantId.Value &&
+                s.Conference.Tenant != null &&
+                s.Conference.Tenant.Slug == slug);
         }
 
         [HttpGet("/Admin/Decision")]
         public async Task<IActionResult> SelectConference(string? returnUrl = null)
         {
-            var tenantId = await GetCurrentAdminTenantIdAsync();
-
-            if (!tenantId.HasValue)
+            if (!await CurrentAdminHasTenantAsync())
             {
                 TempData["ErrorMessage"] = T(
                     "Error_AdminTenantNotFound",
@@ -208,7 +269,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         return LocalRedirect(returnUrl);
                     }
 
-                    return Redirect($"/{selectedConference.Tenant.Slug}/Admin/Decision?conferenceId={selectedConference.Id}");
+                    return Redirect(BuildDecisionUrl(
+                        selectedConference.Tenant.Slug,
+                        selectedConference.Id));
                 }
             }
 
@@ -218,10 +281,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
+            if (!conferences.Any())
+            {
+                TempData["ErrorMessage"] = IsSuperAdminUser()
+                    ? "Sistemde görüntülenebilecek kongre bulunamadı."
+                    : "Kurumunuza bağlı görüntülenebilecek kongre bulunamadı.";
+            }
+
             var vm = new SelectConferenceViewModel
             {
                 Title = T("SelectConference_Title", "Kongre Seç"),
-                Lead = T("SelectConference_Lead", "Karar ekranını görüntülemek için önce kongre seçiniz."),
+                Lead = IsSuperAdminUser()
+                    ? "SuperAdmin olarak sistemdeki tüm kongreleri görebilirsiniz. Karar ekranını incelemek istediğiniz kongreyi seçiniz."
+                    : T("SelectConference_Lead", "Karar ekranını görüntülemek için önce kongre seçiniz."),
                 PostUrl = "/Admin/Decision/Select",
                 SubmitText = T("SelectConference_Submit", "Devam Et"),
                 Conferences = conferences,
@@ -233,7 +305,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         [HttpPost("/Admin/Decision/Select")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SelectConferencePost(Guid conferenceId, string? returnUrl = null)
+        public async Task<IActionResult> SelectConferencePost(
+            Guid conferenceId,
+            string? returnUrl = null)
         {
             if (conferenceId == Guid.Empty)
             {
@@ -267,11 +341,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return LocalRedirect(returnUrl);
             }
 
-            return Redirect($"/{conference.Tenant.Slug}/Admin/Decision?conferenceId={conference.Id}");
+            return Redirect(BuildDecisionUrl(
+                conference.Tenant.Slug,
+                conference.Id));
         }
 
         [HttpGet("/{slug}/Admin/Decision")]
-        public async Task<IActionResult> Index(string slug, Guid? conferenceId)
+        public async Task<IActionResult> Index(
+            string slug,
+            Guid? conferenceId)
         {
             var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
 
@@ -343,18 +421,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             string decision,
             string? note = null)
         {
-            if (_tenantContext.Current == null ||
-                !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase) ||
-                !await CanAccessCurrentTenantAsync())
-            {
-                TempData["ErrorMessage"] = T(
-                    "Error_TenantMismatch",
-                    "Bu kongre için karar verme yetkiniz yok.");
+            var submission = await GetAccessibleSubmissionForDecisionAsync(
+                slug,
+                submissionId);
 
-                return RedirectToAction(nameof(SelectConference));
-            }
-
-            if (!await CanAccessSubmissionAsync(submissionId))
+            if (submission == null || submission.Conference == null)
             {
                 TempData["ErrorMessage"] = T(
                     "Error_SubmissionNotLinkedToTenantConference",
@@ -363,28 +434,35 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return Redirect($"/{slug}/Admin/Decision");
             }
 
-            var submission = await _context.Submissions
-                .Include(s => s.Conference)
-                .FirstOrDefaultAsync(s =>
-                    s.Id == submissionId &&
-                    s.Conference != null &&
-                    s.Conference.TenantId == _tenantContext.Current.Id);
-
-            if (submission == null)
-            {
-                return NotFound();
-            }
-
             var conference = await _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .FirstOrDefaultAsync(c =>
                     c.Id == submission.ConferenceId &&
-                    c.TenantId == _tenantContext.Current.Id);
+                    c.Tenant != null &&
+                    c.Tenant.Slug == slug);
 
             if (conference == null)
             {
-                return NotFound();
+                TempData["ErrorMessage"] = T(
+                    "Error_ConferenceNotFound",
+                    "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+
+                return Redirect("/Admin/Decision");
+            }
+
+            if (!IsSuperAdminUser())
+            {
+                var adminTenantId = await GetCurrentAdminTenantIdAsync();
+
+                if (!adminTenantId.HasValue || conference.TenantId != adminTenantId.Value)
+                {
+                    TempData["ErrorMessage"] = T(
+                        "Error_TenantMismatch",
+                        "Bu kongre için karar verme yetkiniz yok.");
+
+                    return RedirectToAction(nameof(SelectConference));
+                }
             }
 
             SetSelectedConferenceSession(conference);
@@ -412,7 +490,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_InvalidDecision",
                     "Geçersiz karar seçimi.");
 
-                return Redirect($"/{slug}/Admin/Decision?conferenceId={submission.ConferenceId}");
+                return Redirect(BuildDecisionUrl(slug, submission.ConferenceId));
             }
 
             submission.DecisionDate = DateTime.UtcNow;
@@ -423,7 +501,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "Success_SubmissionDecisionSaved",
                 $"Bildiri kararı kaydedildi: {decisionText}");
 
-            return Redirect($"/{slug}/Admin/Decision?conferenceId={submission.ConferenceId}");
+            return Redirect(BuildDecisionUrl(slug, submission.ConferenceId));
         }
     }
 }

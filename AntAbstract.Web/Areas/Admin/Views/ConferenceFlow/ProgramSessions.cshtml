@@ -1,0 +1,701 @@
+﻿@{
+    ViewData["Title"] = "Program / Oturumlar";
+    ViewData["HideSelectedConferenceBar"] = true;
+    Layout = "_LayoutDashboard";
+
+    var conferenceId = ViewBag.ConferenceId;
+    var conferenceTitle = ViewBag.ConferenceTitle as string ?? "";
+    var slug = ViewBag.Slug as string ?? "";
+
+    var backUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/ConferenceFlow?conferenceId={conferenceId}"
+        : $"/{slug}/Admin/ConferenceFlow?conferenceId={conferenceId}";
+}
+
+<div class="container-fluid program-session-page">
+
+    <div class="operation-header-card mb-4">
+        <div class="operation-header-left">
+            <div class="operation-section-label">
+                Kongre Operasyonları
+            </div>
+
+            <h2 class="operation-title">
+                Program / Oturumlar
+            </h2>
+
+            <p class="operation-description">
+                <strong>@conferenceTitle</strong> kongresine ait program akışını, oturumları, salon bilgilerini ve konuşmacı planlamasını buradan yönetebilirsiniz.
+            </p>
+
+            @if (!string.IsNullOrWhiteSpace(slug))
+            {
+                <div class="mt-2">
+                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
+                        /@slug
+                    </span>
+                </div>
+            }
+        </div>
+
+        <div class="operation-header-right">
+            <a href="@backUrl"
+               class="btn btn-outline-secondary rounded-pill px-4 operation-back-btn">
+                <i class="fas fa-arrow-left me-2"></i>
+                Kongre Akışına Dön
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-xl-3 col-md-6">
+            <div class="operation-stat-card">
+                <div class="operation-stat-icon stat-blue">
+                    <i class="fas fa-calendar-days"></i>
+                </div>
+
+                <div>
+                    <div class="operation-stat-number">0</div>
+                    <div class="operation-stat-label">Toplam Oturum</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="operation-stat-card">
+                <div class="operation-stat-icon stat-green">
+                    <i class="fas fa-microphone"></i>
+                </div>
+
+                <div>
+                    <div class="operation-stat-number">0</div>
+                    <div class="operation-stat-label">Konuşmacı</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="operation-stat-card">
+                <div class="operation-stat-icon stat-orange">
+                    <i class="fas fa-door-open"></i>
+                </div>
+
+                <div>
+                    <div class="operation-stat-number">0</div>
+                    <div class="operation-stat-label">Salon</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="operation-stat-card">
+                <div class="operation-stat-icon stat-purple">
+                    <i class="fas fa-clock"></i>
+                </div>
+
+                <div>
+                    <div class="operation-stat-number">0</div>
+                    <div class="operation-stat-label">Program Günü</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="operation-filter-card mb-4">
+        <div class="row g-3 align-items-end">
+
+            <div class="col-xl-5 col-lg-5">
+                <label class="operation-label">
+                    Arama
+                </label>
+
+                <div class="operation-input-wrap">
+                    <i class="fas fa-search"></i>
+
+                    <input type="text"
+                           id="sessionSearchInput"
+                           placeholder="Oturum adı, salon, konuşmacı veya moderatör ara..." />
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-lg-3">
+                <label class="operation-label">
+                    Program Günü
+                </label>
+
+                <select id="sessionDayFilter" class="operation-select">
+                    <option value="">Tüm Günler</option>
+                    <option value="1">1. Gün</option>
+                    <option value="2">2. Gün</option>
+                    <option value="3">3. Gün</option>
+                </select>
+            </div>
+
+            <div class="col-xl-2 col-lg-2">
+                <button type="button"
+                        id="filterSessionButton"
+                        class="btn operation-primary-btn w-100">
+                    <i class="fas fa-search me-2"></i>
+                    Filtrele
+                </button>
+            </div>
+
+            <div class="col-xl-2 col-lg-2">
+                <button type="button"
+                        id="resetSessionButton"
+                        class="btn operation-reset-btn w-100">
+                    <i class="fas fa-rotate-left me-2"></i>
+                    Temizle
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="operation-main-card">
+        <div class="operation-main-card-header">
+            <div>
+                <h5>
+                    Oturum Listesi
+                </h5>
+
+                <p>
+                    Kongre programına ait oturumlar, salonlar ve saat aralıkları burada listelenecek.
+                </p>
+            </div>
+
+            <div class="operation-header-actions">
+                <button type="button"
+                        class="btn operation-light-btn">
+                    <i class="fas fa-file-export me-2"></i>
+                    Programı Dışa Aktar
+                </button>
+
+                <button type="button"
+                        class="btn operation-primary-btn">
+                    <i class="fas fa-plus me-2"></i>
+                    Yeni Oturum Ekle
+                </button>
+            </div>
+        </div>
+
+        <div class="program-timeline-preview">
+            <div class="timeline-day-card">
+                <div class="timeline-day-header">
+                    <span class="timeline-day-badge">
+                        1. Gün
+                    </span>
+
+                    <span class="timeline-day-date">
+                        Program akışı oluşturulmadı
+                    </span>
+                </div>
+
+                <div class="timeline-empty-line">
+                    <span></span>
+                    <div></div>
+                </div>
+
+                <div class="timeline-empty-line short">
+                    <span></span>
+                    <div></div>
+                </div>
+            </div>
+
+            <div class="timeline-day-card">
+                <div class="timeline-day-header">
+                    <span class="timeline-day-badge">
+                        2. Gün
+                    </span>
+
+                    <span class="timeline-day-date">
+                        Program akışı oluşturulmadı
+                    </span>
+                </div>
+
+                <div class="timeline-empty-line">
+                    <span></span>
+                    <div></div>
+                </div>
+
+                <div class="timeline-empty-line short">
+                    <span></span>
+                    <div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="operation-empty-state" id="sessionEmptyState">
+            <div class="empty-state-icon">
+                <i class="fas fa-calendar-plus"></i>
+            </div>
+
+            <h4>
+                Henüz oturum eklenmedi
+            </h4>
+
+            <p>
+                Bu kongreye ait program, oturum, salon veya konuşmacı bilgisi eklendiğinde burada görüntülenecek.
+            </p>
+
+            <div class="empty-state-actions">
+                <a href="@backUrl"
+                   class="btn operation-light-btn">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Kongre Akışına Dön
+                </a>
+
+                @if (!string.IsNullOrWhiteSpace(slug))
+                {
+                    <a href="/@slug"
+                       target="_blank"
+                       class="btn operation-primary-btn">
+                        <i class="fas fa-external-link-alt me-2"></i>
+                        Kongre Sitesini Gör
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .program-session-page {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .operation-header-card {
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 24px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.2rem;
+        flex-wrap: wrap;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+    }
+
+    .operation-header-left {
+        flex: 1 1 680px;
+        min-width: 300px;
+    }
+
+    .operation-header-right {
+        flex: 0 0 auto;
+    }
+
+    .operation-section-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 0.45rem;
+    }
+
+    .operation-title {
+        color: #0f172a;
+        font-size: 2rem;
+        font-weight: 900;
+        letter-spacing: -0.05em;
+        margin: 0 0 0.4rem;
+    }
+
+    .operation-description {
+        color: #64748b;
+        font-size: 0.96rem;
+        font-weight: 600;
+        margin: 0;
+        max-width: 860px;
+        line-height: 1.65;
+    }
+
+    .operation-back-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        border-color: #dbe3ef;
+        color: #334155;
+        background: #ffffff;
+    }
+
+        .operation-back-btn:hover {
+            color: #0d6efd;
+            background: #f8fbff;
+            border-color: rgba(13, 110, 253, 0.25);
+        }
+
+    .operation-stat-card {
+        min-height: 104px;
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 22px;
+        padding: 1.15rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+    }
+
+    .operation-stat-icon {
+        width: 50px;
+        height: 50px;
+        min-width: 50px;
+        border-radius: 17px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+    }
+
+    .stat-blue {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .stat-green {
+        background: rgba(34, 197, 94, 0.10);
+        color: #16a34a;
+    }
+
+    .stat-orange {
+        background: rgba(245, 158, 11, 0.12);
+        color: #f59e0b;
+    }
+
+    .stat-purple {
+        background: rgba(124, 58, 237, 0.10);
+        color: #7c3aed;
+    }
+
+    .operation-stat-number {
+        color: #0f172a;
+        font-size: 1.65rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .operation-stat-label {
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 800;
+        margin-top: 0.3rem;
+    }
+
+    .operation-filter-card {
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 22px;
+        padding: 1.2rem;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+    }
+
+    .operation-label {
+        display: block;
+        color: #0f172a;
+        font-size: 0.86rem;
+        font-weight: 900;
+        margin-bottom: 0.45rem;
+    }
+
+    .operation-input-wrap {
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0 1rem;
+        border: 1px solid #dbe3ef;
+        border-radius: 14px;
+        background: #ffffff;
+        transition: all 0.2s ease;
+    }
+
+        .operation-input-wrap:focus-within {
+            border-color: rgba(13, 110, 253, 0.45);
+            box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.08);
+        }
+
+        .operation-input-wrap i {
+            color: #94a3b8;
+        }
+
+        .operation-input-wrap input {
+            width: 100%;
+            border: none;
+            outline: none;
+            color: #0f172a;
+            font-weight: 600;
+            background: transparent;
+        }
+
+            .operation-input-wrap input::placeholder {
+                color: #94a3b8;
+            }
+
+    .operation-select {
+        width: 100%;
+        min-height: 48px;
+        border: 1px solid #dbe3ef;
+        border-radius: 14px;
+        padding: 0 1rem;
+        color: #0f172a;
+        font-weight: 700;
+        background: #ffffff;
+        outline: none;
+    }
+
+        .operation-select:focus {
+            border-color: rgba(13, 110, 253, 0.45);
+            box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.08);
+        }
+
+    .operation-primary-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        border-radius: 999px;
+        background: #0d6efd;
+        color: #ffffff;
+        font-weight: 900;
+        padding: 0 1.15rem;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.18);
+    }
+
+        .operation-primary-btn:hover {
+            color: #ffffff;
+            background: #0b5ed7;
+            box-shadow: 0 14px 28px rgba(13, 110, 253, 0.24);
+        }
+
+    .operation-reset-btn,
+    .operation-light-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        border: 1px solid #dbe3ef;
+        background: #ffffff;
+        color: #334155;
+        font-weight: 900;
+        padding: 0 1.15rem;
+    }
+
+        .operation-reset-btn:hover,
+        .operation-light-btn:hover {
+            color: #0d6efd;
+            background: #f8fbff;
+            border-color: rgba(13, 110, 253, 0.25);
+        }
+
+    .operation-main-card {
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+    }
+
+    .operation-main-card-header {
+        padding: 1.4rem 1.5rem;
+        border-bottom: 1px solid #edf2f7;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+        .operation-main-card-header h5 {
+            color: #0f172a;
+            font-size: 1.25rem;
+            font-weight: 900;
+            margin: 0 0 0.25rem;
+        }
+
+        .operation-main-card-header p {
+            color: #64748b;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+    .operation-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        flex-wrap: wrap;
+    }
+
+    .program-timeline-preview {
+        padding: 1.4rem 1.5rem 0;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .timeline-day-card {
+        background: #f8fafc;
+        border: 1px solid #edf2f7;
+        border-radius: 20px;
+        padding: 1rem;
+    }
+
+    .timeline-day-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .timeline-day-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 30px;
+        padding: 0 0.8rem;
+        border-radius: 999px;
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        font-size: 0.78rem;
+        font-weight: 900;
+    }
+
+    .timeline-day-date {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 800;
+    }
+
+    .timeline-empty-line {
+        display: grid;
+        grid-template-columns: 42px 1fr;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.8rem;
+    }
+
+        .timeline-empty-line span {
+            height: 24px;
+            border-radius: 999px;
+            background: #e2e8f0;
+        }
+
+        .timeline-empty-line div {
+            height: 24px;
+            border-radius: 999px;
+            background: #e2e8f0;
+        }
+
+        .timeline-empty-line.short div {
+            width: 70%;
+        }
+
+    .operation-empty-state {
+        padding: 3rem 1.5rem 4rem;
+        text-align: center;
+    }
+
+    .empty-state-icon {
+        width: 76px;
+        height: 76px;
+        margin: 0 auto 1rem;
+        border-radius: 26px;
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.9rem;
+    }
+
+    .operation-empty-state h4 {
+        color: #0f172a;
+        font-size: 1.28rem;
+        font-weight: 900;
+        margin-bottom: 0.45rem;
+    }
+
+    .operation-empty-state p {
+        color: #64748b;
+        font-weight: 600;
+        margin: 0 auto;
+        max-width: 520px;
+        line-height: 1.65;
+    }
+
+    .empty-state-actions {
+        margin-top: 1.3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    @@media (max-width: 992px) {
+        .operation-header-card {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .operation-header-right,
+        .operation-back-btn {
+            width: 100%;
+        }
+
+        .operation-title {
+            font-size: 1.65rem;
+        }
+
+        .operation-header-actions {
+            width: 100%;
+        }
+
+            .operation-header-actions .btn {
+                width: 100%;
+            }
+
+        .program-timeline-preview {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const searchInput = document.getElementById("sessionSearchInput");
+            const dayFilter = document.getElementById("sessionDayFilter");
+            const filterButton = document.getElementById("filterSessionButton");
+            const resetButton = document.getElementById("resetSessionButton");
+
+            if (filterButton) {
+                filterButton.addEventListener("click", function () {
+                });
+            }
+
+            if (resetButton) {
+                resetButton.addEventListener("click", function () {
+                    if (searchInput) {
+                        searchInput.value = "";
+                    }
+
+                    if (dayFilter) {
+                        dayFilter.value = "";
+                    }
+                });
+            }
+        });
+    </script>
+}
