@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public class SessionController : Controller
     {
         private readonly AppDbContext _context;
@@ -48,6 +48,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 : value.Value;
         }
 
+        private bool IsSuperAdminUser()
+        {
+            return User.IsInRole("SuperAdmin");
+        }
+
         private async Task<AppUser?> GetCurrentUserAsync()
         {
             return await _userManager.GetUserAsync(User);
@@ -55,6 +60,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private async Task<Guid?> GetCurrentAdminTenantIdAsync()
         {
+            if (IsSuperAdminUser())
+            {
+                return null;
+            }
+
             var user = await GetCurrentUserAsync();
 
             if (user == null || !user.TenantId.HasValue)
@@ -82,6 +92,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return false;
             }
 
+            if (IsSuperAdminUser())
+            {
+                return true;
+            }
+
             var tenantId = await GetCurrentAdminTenantIdAsync();
 
             if (!tenantId.HasValue)
@@ -94,12 +109,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync()
         {
-            var tenantId = await GetCurrentAdminTenantIdAsync();
-
             var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .AsQueryable();
+
+            if (IsSuperAdminUser())
+            {
+                return query;
+            }
+
+            var tenantId = await GetCurrentAdminTenantIdAsync();
 
             if (!tenantId.HasValue)
             {
@@ -148,26 +168,42 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return null;
             }
 
-            return await _context.Conferences
+            var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
-                .FirstOrDefaultAsync(c =>
-                    c.Id == selectedConferenceId.Value &&
-                    c.TenantId == _tenantContext.Current!.Id);
+                .Where(c => c.Id == selectedConferenceId.Value);
+
+            if (IsSuperAdminUser())
+            {
+                query = query.Where(c =>
+                    c.Tenant != null &&
+                    c.Tenant.Slug == slug);
+            }
+            else
+            {
+                query = query.Where(c =>
+                    _tenantContext.Current != null &&
+                    c.TenantId == _tenantContext.Current.Id);
+            }
+
+            return await query.FirstOrDefaultAsync();
         }
 
         [HttpGet("/Admin/Session")]
         public async Task<IActionResult> SelectConference(string? returnUrl = null)
         {
-            var tenantId = await GetCurrentAdminTenantIdAsync();
-
-            if (!tenantId.HasValue)
+            if (!IsSuperAdminUser())
             {
-                TempData["ErrorMessage"] = T(
-                    "Error_AdminTenantNotFound",
-                    "Admin hesabınıza bağlı kurum bulunamadı.");
+                var tenantId = await GetCurrentAdminTenantIdAsync();
 
-                return Redirect("/Dashboard/MyConferences");
+                if (!tenantId.HasValue)
+                {
+                    TempData["ErrorMessage"] = T(
+                        "Error_AdminTenantNotFound",
+                        "Admin hesabınıza bağlı kurum bulunamadı.");
+
+                    return Redirect("/Dashboard/MyConferences");
+                }
             }
 
             var selectedId = _selectedConferenceService.GetSelectedConferenceId();
@@ -275,6 +311,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .Where(s => s.ConferenceId == conference.Id)
                 .Include(s => s.Submissions)
                 .OrderBy(s => s.SessionDate)
+                .ThenBy(s => s.StartTime)
+                .ThenBy(s => s.SortOrder)
                 .ToListAsync();
 
             ViewBag.ConferenceId = conference.Id;
@@ -314,7 +352,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 Slug = slug,
                 ConferenceId = conference.Id,
                 ConferenceTitle = conference.Title,
-                SessionDate = DateTime.Now,
+                SessionDate = DateTime.Today,
+                StartTime = new TimeSpan(9, 0, 0),
+                EndTime = new TimeSpan(10, 0, 0),
+                IsActive = true,
+                SortOrder = 0,
                 ReturnUrl = effectiveReturnUrl
             };
 
@@ -353,6 +395,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             model.ConferenceId = conference.Id;
             model.ConferenceTitle = conference.Title;
 
+            if (model.EndTime <= model.StartTime)
+            {
+                ModelState.AddModelError(nameof(model.EndTime), "Bitiş saati başlangıç saatinden sonra olmalıdır.");
+            }
+
             if (!ModelState.IsValid)
             {
                 ViewBag.ConferenceId = conference.Id;
@@ -366,11 +413,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 Id = Guid.NewGuid(),
                 ConferenceId = conference.Id,
-                Title = (model.Title ?? "").Trim(),
-                SessionDate = model.SessionDate,
-                Location = string.IsNullOrWhiteSpace(model.Location)
-                    ? null
-                    : model.Location.Trim()
+                Title = model.Title.Trim(),
+                TitleEn = string.IsNullOrWhiteSpace(model.TitleEn) ? null : model.TitleEn.Trim(),
+                Description = string.IsNullOrWhiteSpace(model.Description) ? null : model.Description.Trim(),
+                DescriptionEn = string.IsNullOrWhiteSpace(model.DescriptionEn) ? null : model.DescriptionEn.Trim(),
+                SessionDate = model.SessionDate.Date,
+                StartTime = model.StartTime,
+                EndTime = model.EndTime,
+                Location = string.IsNullOrWhiteSpace(model.Location) ? null : model.Location.Trim(),
+                SpeakerName = string.IsNullOrWhiteSpace(model.SpeakerName) ? null : model.SpeakerName.Trim(),
+                PresentationTitle = string.IsNullOrWhiteSpace(model.PresentationTitle) ? null : model.PresentationTitle.Trim(),
+                PresentationTitleEn = string.IsNullOrWhiteSpace(model.PresentationTitleEn) ? null : model.PresentationTitleEn.Trim(),
+                SortOrder = model.SortOrder,
+                IsActive = model.IsActive,
+                CreatedDate = DateTime.UtcNow
             };
 
             _context.Sessions.Add(entity);
@@ -451,6 +507,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             SetSelectedConferenceSession(conference);
 
+            ModelState.Remove(nameof(Session.Conference));
+            ModelState.Remove(nameof(Session.Submissions));
+
+            if (session.EndTime <= session.StartTime)
+            {
+                ModelState.AddModelError(nameof(session.EndTime), "Bitiş saati başlangıç saatinden sonra olmalıdır.");
+            }
+
             if (!ModelState.IsValid)
             {
                 ViewBag.ConferenceId = conference.Id;
@@ -471,10 +535,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             existingSession.Title = (session.Title ?? "").Trim();
-            existingSession.Location = string.IsNullOrWhiteSpace(session.Location)
-                ? null
-                : session.Location.Trim();
-            existingSession.SessionDate = session.SessionDate;
+            existingSession.TitleEn = string.IsNullOrWhiteSpace(session.TitleEn) ? null : session.TitleEn.Trim();
+            existingSession.Description = string.IsNullOrWhiteSpace(session.Description) ? null : session.Description.Trim();
+            existingSession.DescriptionEn = string.IsNullOrWhiteSpace(session.DescriptionEn) ? null : session.DescriptionEn.Trim();
+            existingSession.SessionDate = session.SessionDate.Date;
+            existingSession.StartTime = session.StartTime;
+            existingSession.EndTime = session.EndTime;
+            existingSession.Location = string.IsNullOrWhiteSpace(session.Location) ? null : session.Location.Trim();
+            existingSession.SpeakerName = string.IsNullOrWhiteSpace(session.SpeakerName) ? null : session.SpeakerName.Trim();
+            existingSession.PresentationTitle = string.IsNullOrWhiteSpace(session.PresentationTitle) ? null : session.PresentationTitle.Trim();
+            existingSession.PresentationTitleEn = string.IsNullOrWhiteSpace(session.PresentationTitleEn) ? null : session.PresentationTitleEn.Trim();
+            existingSession.SortOrder = session.SortOrder;
+            existingSession.IsActive = session.IsActive;
+            existingSession.UpdatedDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 

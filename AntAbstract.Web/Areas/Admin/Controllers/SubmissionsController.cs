@@ -215,6 +215,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .Include(s => s.Conference)
                     .ThenInclude(c => c.Tenant)
                 .Include(s => s.Author)
+                .Include(s => s.Files)
+                .Include(s => s.SubmissionAuthors)
+                .Include(s => s.ReviewAssignments)
+                    .ThenInclude(ra => ra.Reviewer)
+                .Include(s => s.ReviewAssignments)
+                    .ThenInclude(ra => ra.Review)
                 .AsQueryable();
 
             if (asNoTracking)
@@ -714,12 +720,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             Guid? conferenceId = null,
             string? returnUrl = null)
         {
-            var accessibleSubmission = await GetAccessibleSubmissionAsync(
+            var submission = await GetAccessibleSubmissionAsync(
                 id,
                 slug,
                 conferenceId);
 
-            if (accessibleSubmission == null)
+            if (submission == null)
             {
                 TempData["ErrorMessage"] = T(
                     "Error_UnauthorizedView",
@@ -733,16 +739,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(SelectConference));
             }
 
-            var submission = await _submissionService.GetSubmissionByIdAsync(id);
-
-            if (submission == null)
-            {
-                return NotFound();
-            }
-
-            var targetTenantId = accessibleSubmission.Conference?.TenantId;
-            var effectiveSlug = accessibleSubmission.Conference?.Tenant?.Slug ?? slug ?? "";
-            var effectiveConferenceId = accessibleSubmission.ConferenceId;
+            var targetTenantId = submission.Conference?.TenantId;
+            var effectiveSlug = submission.Conference?.Tenant?.Slug ?? slug ?? "";
+            var effectiveConferenceId = submission.ConferenceId;
 
             var referees = await _userManager.GetUsersInRoleAsync("Referee");
 
@@ -765,7 +764,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ViewBag.Reviews = await _reviewService.GetReviewsBySubmissionIdAsync(id);
             ViewBag.Slug = effectiveSlug;
             ViewBag.ConferenceId = effectiveConferenceId;
-            ViewBag.ConferenceTitle = accessibleSubmission.Conference?.Title ?? "";
+            ViewBag.ConferenceTitle = submission.Conference?.Title ?? "";
 
             var effectiveReturnUrl = !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
                 ? returnUrl
@@ -811,9 +810,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                 var localizedStatus = GetLocalizedSubmissionStatus(newStatus);
 
-                TempData["SuccessMessage"] = T(
-                    "Success_SubmissionStatusUpdated",
-                    $"Bildiri durumu güncellendi: {localizedStatus}");
+                TempData["SuccessMessage"] = $"Bildiri durumu başarıyla güncellendi: {localizedStatus}";
             }
             else
             {

@@ -5,213 +5,774 @@
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
-    var inboxMessages = ViewBag.Inbox as List<AntAbstract.Domain.Entities.Message>;
-    var sentMessages = ViewBag.Sent as List<AntAbstract.Domain.Entities.Message>;
+    var inboxMessages = ViewBag.Inbox as List<AntAbstract.Domain.Entities.Message> ?? new List<AntAbstract.Domain.Entities.Message>();
+    var sentMessages = ViewBag.Sent as List<AntAbstract.Domain.Entities.Message> ?? new List<AntAbstract.Domain.Entities.Message>();
+
+    var unreadCount = inboxMessages.Count(x => !x.IsRead);
+    var totalCount = inboxMessages.Count + sentMessages.Count;
 }
 
 <style>
-    .message-nav .list-group-item {
-        border: none;
-        border-radius: 12px !important;
-        margin-bottom: 5px;
-        padding: 12px 18px;
-        color: #64748b;
-        font-weight: 600;
-        transition: all 0.2s;
+    .messages-page {
+        padding: 2rem 1.5rem 4rem;
     }
 
-        .message-nav .list-group-item.active {
-            background-color: #e0f2fe !important;
-            color: #00aeef !important;
-            box-shadow: none;
-        }
+    .messages-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.15), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        padding: 1.35rem 1.5rem;
+        margin-bottom: 1.6rem;
+        box-shadow: 0 16px 38px rgba(15, 23, 42, 0.055);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.25rem;
+    }
+    .messages-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 0;
+    }
 
-        .message-nav .list-group-item:hover:not(.active) {
-            background-color: #f8fafc;
-            color: #00aeef;
-        }
+    .messages-hero-icon {
+        width: 56px;
+        height: 56px;
+        min-width: 56px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 12px 26px rgba(0, 174, 239, 0.24);
+        font-size: 1.35rem;
+    }
 
-    .message-card {
+    .messages-title {
+        font-size: 1.75rem;
+        font-weight: 900;
+        color: #0f172a;
+        margin-bottom: 0.25rem;
+        letter-spacing: -0.6px;
+    }
+
+    .messages-lead {
+        color: #64748b;
+        font-size: 0.98rem;
+        font-weight: 600;
+        margin-bottom: 0;
+    }
+
+    .btn-compose-modern {
+        min-height: 52px;
         border: none;
+        border-radius: 999px;
+        padding: 0 1.4rem;
+        background: linear-gradient(135deg, #00aeef 0%, #0d6efd 100%);
+        color: #ffffff;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.65rem;
+        text-decoration: none;
+        box-shadow: 0 14px 30px rgba(0, 174, 239, 0.24);
+        transition: all 0.22s ease;
+        white-space: nowrap;
+    }
+
+        .btn-compose-modern:hover {
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 18px 38px rgba(0, 174, 239, 0.34);
+            text-decoration: none;
+        }
+
+    .messages-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.6rem;
+    }
+
+    .message-stat-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        padding: 1.1rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+    }
+
+    .message-stat-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .stat-blue {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .stat-cyan {
+        background: rgba(0, 174, 239, 0.10);
+        color: #00aeef;
+    }
+
+    .stat-orange {
+        background: rgba(245, 158, 11, 0.12);
+        color: #f59e0b;
+    }
+
+    .message-stat-value {
+        font-size: 1.35rem;
+        font-weight: 900;
+        color: #0f172a;
+        line-height: 1.1;
+    }
+
+    .message-stat-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 800;
+    }
+
+    .messages-shell {
+        display: grid;
+        grid-template-columns: 290px minmax(0, 1fr);
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    .message-sidebar-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        padding: 0.85rem;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.045);
+        position: sticky;
+        top: 92px;
+    }
+
+    .message-nav-item {
+        border: none !important;
+        border-radius: 18px !important;
+        min-height: 58px;
+        padding: 0.85rem 0.95rem;
+        color: #64748b;
+        font-weight: 900;
+        transition: all 0.2s ease;
+        margin-bottom: 0.45rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        text-decoration: none;
+    }
+
+        .message-nav-item:hover {
+            background: #f8fafc;
+            color: #00aeef;
+            transform: translateX(3px);
+        }
+
+        .message-nav-item.active {
+            background: linear-gradient(135deg, rgba(0, 174, 239, 0.12), rgba(13, 110, 253, 0.10)) !important;
+            color: #0d6efd !important;
+            box-shadow: inset 0 0 0 1px rgba(0, 174, 239, 0.16);
+        }
+
+    .message-nav-left {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+    }
+
+    .message-nav-icon {
+        width: 34px;
+        height: 34px;
+        min-width: 34px;
+        border-radius: 13px;
+        background: #f1f5f9;
+        color: #64748b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .message-nav-item.active .message-nav-icon {
+        background: #ffffff;
+        color: #0d6efd;
+        box-shadow: 0 8px 18px rgba(13, 110, 253, 0.10);
+    }
+
+    .message-count-badge {
+        min-width: 30px;
+        height: 28px;
+        border-radius: 999px;
+        padding: 0 0.65rem;
+        background: #f1f5f9;
+        color: #64748b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 900;
+    }
+
+    .message-nav-item.active .message-count-badge {
+        background: #0d6efd;
+        color: #ffffff;
+    }
+
+    .message-info-box {
+        margin-top: 1rem;
         border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.04);
-        background: #fff;
+        padding: 1rem;
+        background: linear-gradient(135deg, rgba(0, 174, 239, 0.10), rgba(13, 110, 253, 0.08));
+        border: 1px solid rgba(0, 174, 239, 0.16);
+        color: #0369a1;
+        font-size: 0.82rem;
+        font-weight: 750;
+        line-height: 1.5;
+    }
+
+    .message-content-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
         overflow: hidden;
     }
 
-    .msg-item {
-        border-left: 4px solid transparent;
-        transition: all 0.2s;
+    .message-list-header {
+        padding: 1.2rem 1.35rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
     }
 
-        .msg-item.unread {
-            background-color: #f0f9ff;
-            border-left-color: #00aeef;
-        }
+    .message-list-title {
+        font-size: 1rem;
+        font-weight: 900;
+        color: #0f172a;
+        margin: 0;
+    }
 
-        .msg-item:hover {
-            background-color: #f8fafc;
-            transform: translateX(5px);
-        }
+    .message-list-subtitle {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 700;
+        margin-top: 0.2rem;
+    }
 
-    .msg-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
+    .message-row {
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        background-color: #00aeef;
-        color: white;
-        flex-shrink: 0;
+        gap: 1rem;
+        padding: 1.1rem 1.35rem;
+        border-bottom: 1px solid #eef2f7;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.2s ease;
+        position: relative;
     }
 
-    .btn-compose {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        border: none;
-        padding: 12px 25px;
-        border-radius: 12px;
-        font-weight: 600;
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-    }
-
-        .btn-compose:hover {
-            transform: translateY(-2px);
-            color: white;
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        .message-row:last-child {
+            border-bottom: none;
         }
+
+        .message-row:hover {
+            background: #f8fafc;
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .message-row.unread {
+            background: rgba(0, 174, 239, 0.055);
+        }
+
+            .message-row.unread::before {
+                content: "";
+                width: 4px;
+                height: 100%;
+                background: #00aeef;
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+
+    .message-avatar {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        border-radius: 17px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        box-shadow: 0 10px 22px rgba(0, 174, 239, 0.22);
+    }
+
+        .message-avatar.sent {
+            background: linear-gradient(135deg, #64748b, #334155);
+            box-shadow: 0 10px 22px rgba(51, 65, 85, 0.14);
+        }
+
+    .message-main {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .message-topline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .message-subject {
+        color: #0f172a;
+        font-size: 0.95rem;
+        font-weight: 900;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin: 0;
+    }
+
+    .message-time {
+        color: #94a3b8;
+        font-size: 0.76rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .message-preview {
+        color: #64748b;
+        font-size: 0.84rem;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 0.3rem;
+        max-width: 760px;
+    }
+
+    .message-meta {
+        color: #0284c7;
+        font-size: 0.76rem;
+        font-weight: 850;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+        .message-meta.muted {
+            color: #64748b;
+        }
+
+    .unread-pill {
+        min-height: 24px;
+        padding: 0 0.55rem;
+        border-radius: 999px;
+        background: #00aeef;
+        color: #ffffff;
+        font-size: 0.68rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 0.55rem;
+    }
+
+    .empty-message-state {
+        padding: 4.2rem 1.5rem;
+        text-align: center;
+    }
+
+    .empty-message-icon {
+        width: 112px;
+        height: 112px;
+        border-radius: 999px;
+        background: #f8fafc;
+        color: #cbd5e1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3.5rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .empty-message-title {
+        color: #0f172a;
+        font-size: 1.15rem;
+        font-weight: 900;
+        margin-bottom: 0.4rem;
+    }
+
+    .empty-message-text {
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0;
+    }
+
+    @@media (max-width: 992px) {
+        .messages-shell {
+            grid-template-columns: 1fr;
+        }
+
+        .message-sidebar-card {
+            position: static;
+        }
+
+        .messages-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .messages-hero {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .btn-compose-modern {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .messages-page {
+            padding: 1.5rem 1rem 3rem;
+        }
+
+        .messages-title {
+            font-size: 1.45rem;
+        }
+
+        .message-row {
+            align-items: flex-start;
+        }
+
+        .message-topline {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+    }
 </style>
 
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h3 class="fw-bold text-dark mb-1">@Localizer["PageHeading"]</h3>
-            <p class="text-muted small mb-0">@Localizer["PageDescription"]</p>
+<div class="messages-page">
+
+    <div class="messages-hero">
+        <div class="messages-hero-left">
+            <div class="messages-hero-icon">
+                <i class="fas fa-envelope-open-text"></i>
+            </div>
+
+            <div>
+                <h3 class="messages-title">
+                    @Localizer["PageHeading"]
+                </h3>
+
+                <p class="messages-lead">
+                    @Localizer["PageDescription"]
+                </p>
+            </div>
         </div>
-        <a href="/Message/Create" class="btn btn-compose text-white">
-            <i class="fas fa-plus me-2"></i> @Localizer["NewMessageButton"]
+
+        <a href="/Message/Create" class="btn-compose-modern">
+            <i class="fas fa-pen-nib"></i>
+            @Localizer["NewMessageButton"]
         </a>
     </div>
 
-    <div class="row">
-        <div class="col-lg-3 mb-4">
-            <div class="list-group message-nav shadow-sm bg-white p-2 rounded-4 border-0">
-                <a class="list-group-item list-group-item-action active" id="list-inbox-list" data-bs-toggle="list" href="#list-inbox" role="tab">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-inbox me-2"></i> @Localizer["InboxTab"]</span>
-                        <span class="badge rounded-pill bg-primary">@inboxMessages?.Count</span>
-                    </div>
-                </a>
-                <a class="list-group-item list-group-item-action" id="list-sent-list" data-bs-toggle="list" href="#list-sent" role="tab">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-paper-plane me-2"></i> @Localizer["SentTab"]</span>
-                        <span class="badge rounded-pill bg-secondary bg-opacity-25 text-secondary">@sentMessages?.Count</span>
-                    </div>
-                </a>
-                <a href="#" class="list-group-item list-group-item-action disabled text-muted opacity-50">
-                    <i class="fas fa-trash-alt me-2"></i> @Localizer["TrashTab"]
-                </a>
+    <div class="messages-stats">
+        <div class="message-stat-card">
+            <div class="message-stat-icon stat-blue">
+                <i class="fas fa-inbox"></i>
             </div>
 
-            <div class="mt-4 p-3 bg-primary bg-opacity-10 rounded-4 text-primary small">
-                <i class="fas fa-info-circle me-2"></i> @Localizer["InfoBoxText"]
+            <div>
+                <div class="message-stat-value">
+                    @inboxMessages.Count
+                </div>
+
+                <div class="message-stat-label">
+                    @Localizer["InboxTab"]
+                </div>
             </div>
         </div>
 
-        <div class="col-lg-9">
-            <div class="tab-content" id="nav-tabContent">
+        <div class="message-stat-card">
+            <div class="message-stat-icon stat-cyan">
+                <i class="fas fa-paper-plane"></i>
+            </div>
 
-                <div class="tab-pane fade show active" id="list-inbox" role="tabpanel">
-                    <div class="message-card">
-                        <div class="card-header bg-white p-3 border-bottom-0">
-                            <h6 class="fw-bold m-0 text-dark">@Localizer["InboxMessagesHeader"]</h6>
-                        </div>
-                        <div class="list-group list-group-flush">
-                            @if (inboxMessages != null && inboxMessages.Any())
-                            {
-                                @foreach (var msg in inboxMessages)
-                                {
-                                    <a asp-action="Details" asp-route-id="@msg.Id" class="list-group-item list-group-item-action p-4 msg-item @(msg.IsRead ? "" : "unread")">
-                                        <div class="d-flex align-items-center">
-                                            <div class="msg-avatar me-3">
-                                                @(msg.Sender?.FirstName?.Substring(0, 1).ToUpper() ?? "S")
-                                            </div>
-                                            <div class="flex-grow-1">
-                                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                                    <h6 class="mb-0 fw-bold @(msg.IsRead ? "text-dark" : "text-primary")">@msg.Subject</h6>
-                                                    <small class="text-muted">@msg.SentDate.ToString("dd MMM HH:mm")</small>
-                                                </div>
-                                                <p class="mb-1 text-muted small text-truncate" style="max-width: 500px;">@msg.Content</p>
-                                                <small class="text-primary fw-600">
-                                                    <i class="fas fa-user-circle me-1"></i>
-                                                    @(msg.Sender != null
-                                                                                                ? $"{msg.Sender.FirstName} {msg.Sender.LastName}"
-                                                                                                : Localizer["SystemSender"].Value)
-                                        </small>
-                                    </div>
-                                </div>
-                            </a>
-                                                        }
-                            }
-                            else
-                            {
-                                <div class="text-center p-5">
-                                    <div class="mb-3">
-                                        <i class="fas fa-envelope-open-text fa-4x text-muted opacity-25"></i>
-                                    </div>
-                                    <h6 class="text-dark fw-bold">@Localizer["InboxEmptyTitle"]</h6>
-                                    <p class="text-muted small">@Localizer["InboxEmptyText"]</p>
-                                </div>
-                            }
-                        </div>
-                    </div>
+            <div>
+                <div class="message-stat-value">
+                    @sentMessages.Count
                 </div>
 
-                <div class="tab-pane fade" id="list-sent" role="tabpanel">
-                    <div class="message-card">
-                        <div class="card-header bg-white p-3 border-bottom-0">
-                            <h6 class="fw-bold m-0 text-dark">@Localizer["SentMessagesHeader"]</h6>
+                <div class="message-stat-label">
+                    @Localizer["SentTab"]
+                </div>
+            </div>
+        </div>
+
+        <div class="message-stat-card">
+            <div class="message-stat-icon stat-orange">
+                <i class="fas fa-circle"></i>
+            </div>
+
+            <div>
+                <div class="message-stat-value">
+                    @unreadCount
+                </div>
+
+                <div class="message-stat-label">
+                    Okunmamış
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="messages-shell">
+        <div class="message-sidebar-card">
+            <div class="list-group message-nav" id="messageTab" role="tablist">
+                <a class="message-nav-item active"
+                   id="list-inbox-list"
+                   data-bs-toggle="list"
+                   href="#list-inbox"
+                   role="tab">
+                    <span class="message-nav-left">
+                        <span class="message-nav-icon">
+                            <i class="fas fa-inbox"></i>
+                        </span>
+
+                        <span>
+                            @Localizer["InboxTab"]
+                        </span>
+                    </span>
+
+                    <span class="message-count-badge">
+                        @inboxMessages.Count
+                    </span>
+                </a>
+
+                <a class="message-nav-item"
+                   id="list-sent-list"
+                   data-bs-toggle="list"
+                   href="#list-sent"
+                   role="tab">
+                    <span class="message-nav-left">
+                        <span class="message-nav-icon">
+                            <i class="fas fa-paper-plane"></i>
+                        </span>
+
+                        <span>
+                            @Localizer["SentTab"]
+                        </span>
+                    </span>
+
+                    <span class="message-count-badge">
+                        @sentMessages.Count
+                    </span>
+                </a>
+            </div>
+
+            <div class="message-info-box">
+                <i class="fas fa-info-circle me-2"></i>
+                @Localizer["InfoBoxText"]
+            </div>
+        </div>
+
+        <div class="tab-content" id="nav-tabContent">
+            <div class="tab-pane fade show active" id="list-inbox" role="tabpanel">
+                <div class="message-content-card">
+                    <div class="message-list-header">
+                        <div>
+                            <h6 class="message-list-title">
+                                @Localizer["InboxMessagesHeader"]
+                            </h6>
+
+                            <div class="message-list-subtitle">
+                                Gelen mesajlarınızı buradan takip edebilirsiniz.
+                            </div>
                         </div>
-                        <div class="list-group list-group-flush">
-                            @if (sentMessages != null && sentMessages.Any())
+
+                        @if (unreadCount > 0)
+                        {
+                            <span class="message-count-badge">
+                                @unreadCount yeni
+                            </span>
+                        }
+                    </div>
+
+                    @if (inboxMessages.Any())
+                    {
+                        <div class="message-list">
+                            @foreach (var msg in inboxMessages)
                             {
-                                @foreach (var msg in sentMessages)
+                                var senderName = msg.Sender != null
+                                ? $"{msg.Sender.FirstName} {msg.Sender.LastName}".Trim()
+                                : Localizer["SystemSender"].Value;
+
+                                if (string.IsNullOrWhiteSpace(senderName))
                                 {
-                                    <div class="list-group-item list-group-item-action p-4 msg-item">
-                                        <div class="d-flex align-items-center">
-                                            <div class="msg-avatar bg-secondary me-3">
-                                                <i class="fas fa-paper-plane"></i>
-                                            </div>
-                                            <div class="flex-grow-1">
-                                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                                    <h6 class="mb-0 fw-bold text-dark">@msg.Subject</h6>
-                                                    <small class="text-muted">@msg.SentDate.ToString("dd MMM HH:mm")</small>
-                                                </div>
-                                                <p class="mb-1 text-muted small text-truncate" style="max-width: 500px;">@msg.Content</p>
-                                                <small class="text-muted">
-                                                    <i class="fas fa-user-check me-1"></i>
-                                                    @Localizer["RecipientLabel"] @(msg.Receiver?.FirstName ?? Localizer["DefaultRecipient"].Value)
-                                                </small>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    senderName = Localizer["SystemSender"].Value;
                                 }
-                            }
-                            else
-                            {
-                                <div class="text-center p-5">
-                                    <div class="mb-3 text-muted opacity-25">
-                                        <i class="fas fa-paper-plane fa-4x"></i>
+
+                                var initial = senderName.Substring(0, 1).ToUpper();
+
+                                <a asp-action="Details"
+                                   asp-route-id="@msg.Id"
+                                   class="message-row @(msg.IsRead ? "" : "unread")">
+
+                                    <div class="message-avatar">
+                                        @initial
                                     </div>
-                                    <h6 class="text-dark fw-bold">@Localizer["SentEmptyTitle"]</h6>
-                                    <p class="text-muted small">@Localizer["SentEmptyText"]</p>
+
+                                    <div class="message-main">
+                                        <div class="message-topline">
+                                            <h6 class="message-subject">
+                                                @msg.Subject
+
+                                                @if (!msg.IsRead)
+                                                {
+                                                    <span class="unread-pill">
+                                                        Yeni
+                                                    </span>
+                                                }
+                                            </h6>
+
+                                            <span class="message-time">
+                                                @msg.SentDate.ToLocalTime().ToString("dd MMM HH:mm")
+                                            </span>
+                                        </div>
+
+                                        <div class="message-preview">
+                                            @msg.Content
+                                        </div>
+
+                                        <span class="message-meta">
+                                            <i class="fas fa-user-circle"></i>
+                                            @senderName
+                                        </span>
+                                    </div>
+                                </a>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="empty-message-state">
+                            <div class="empty-message-icon">
+                                <i class="fas fa-envelope-open"></i>
+                            </div>
+
+                            <h6 class="empty-message-title">
+                                @Localizer["InboxEmptyTitle"]
+                            </h6>
+
+                            <p class="empty-message-text">
+                                @Localizer["InboxEmptyText"]
+                            </p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="list-sent" role="tabpanel">
+                <div class="message-content-card">
+                    <div class="message-list-header">
+                        <div>
+                            <h6 class="message-list-title">
+                                @Localizer["SentMessagesHeader"]
+                            </h6>
+
+                            <div class="message-list-subtitle">
+                                Gönderdiğiniz mesajları buradan görebilirsiniz.
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (sentMessages.Any())
+                    {
+                        <div class="message-list">
+                            @foreach (var msg in sentMessages)
+                            {
+                                var receiverName = msg.Receiver != null
+                                ? $"{msg.Receiver.FirstName} {msg.Receiver.LastName}".Trim()
+                                : Localizer["DefaultRecipient"].Value;
+
+                                if (string.IsNullOrWhiteSpace(receiverName))
+                                {
+                                    receiverName = Localizer["DefaultRecipient"].Value;
+                                }
+
+                                <div class="message-row">
+                                    <div class="message-avatar sent">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </div>
+
+                                    <div class="message-main">
+                                        <div class="message-topline">
+                                            <h6 class="message-subject">
+                                                @msg.Subject
+                                            </h6>
+
+                                            <span class="message-time">
+                                                @msg.SentDate.ToLocalTime().ToString("dd MMM HH:mm")
+                                            </span>
+                                        </div>
+
+                                        <div class="message-preview">
+                                            @msg.Content
+                                        </div>
+
+                                        <span class="message-meta muted">
+                                            <i class="fas fa-user-check"></i>
+                                            @Localizer["RecipientLabel"] @receiverName
+                                        </span>
+                                    </div>
                                 </div>
                             }
                         </div>
-                    </div>
-                </div>
+                    }
+                    else
+                    {
+                        <div class="empty-message-state">
+                            <div class="empty-message-icon">
+                                <i class="fas fa-paper-plane"></i>
+                            </div>
 
+                            <h6 class="empty-message-title">
+                                @Localizer["SentEmptyTitle"]
+                            </h6>
+
+                            <p class="empty-message-text">
+                                @Localizer["SentEmptyText"]
+                            </p>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
     </div>

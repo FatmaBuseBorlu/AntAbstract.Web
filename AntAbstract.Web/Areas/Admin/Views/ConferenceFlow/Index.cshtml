@@ -27,14 +27,6 @@
         ? "/Admin/Referee"
         : $"/{slug}/Admin/Referee?conferenceId={Model.ConferenceId}";
 
-    /*
-        Eski:
-        /Admin/Registrations
-        /Admin/Session
-
-        Yeni:
-        ConferenceFlowController içindeki yeni action'lara gidiyor.
-    */
     var registrationsUrl = string.IsNullOrWhiteSpace(slug)
         ? $"/Admin/ConferenceFlow/RegistrationsAndPayments?conferenceId={Model.ConferenceId}"
         : $"/{slug}/Admin/ConferenceFlow/RegistrationsAndPayments?conferenceId={Model.ConferenceId}";
@@ -42,6 +34,10 @@
     var sessionsUrl = string.IsNullOrWhiteSpace(slug)
         ? $"/Admin/ConferenceFlow/ProgramSessions?conferenceId={Model.ConferenceId}"
         : $"/{slug}/Admin/ConferenceFlow/ProgramSessions?conferenceId={Model.ConferenceId}";
+
+    var proceedingBookUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/ProceedingBook?conferenceId={Model.ConferenceId}"
+        : $"/{slug}/Admin/ProceedingBook?conferenceId={Model.ConferenceId}";
 }
 
 <div class="container-fluid">
@@ -81,7 +77,7 @@
             </h2>
 
             <p class="text-muted mb-0 page-header-desc">
-                <strong>@Model.ConferenceTitle</strong> kongresinin bildiri, hakem atama ve karar süreçlerini buradan takip edebilirsiniz.
+                <strong>@Model.ConferenceTitle</strong> kongresinin bildiri, hakem atama, karar, program ve bildiri kitabı süreçlerini buradan takip edebilirsiniz.
             </p>
 
             @if (!string.IsNullOrWhiteSpace(Model.Slug))
@@ -249,7 +245,7 @@
 
                     <div class="flow-note mt-4">
                         <i class="fas fa-circle-info me-2"></i>
-                        Akışın tamamlanması için tüm bildirilerin hakeme atanması ve karar ekranından sonuçlandırılması gerekir.
+                        Akışın tamamlanması için bildirilerin hakeme atanması, karar ekranından sonuçlandırılması ve kabul edilen bildirilerin program/bildiri kitabı süreçlerine alınması gerekir.
                     </div>
 
                 </div>
@@ -383,6 +379,26 @@
 
                                 <div class="text-muted small">
                                     Kongre programını düzenle.
+                                </div>
+                            </div>
+
+                            <div class="quick-action-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </a>
+
+                        <a href="@proceedingBookUrl" class="quick-action-card quick-action-highlight">
+                            <div class="quick-action-icon proceeding-book-icon">
+                                <i class="fas fa-book-open"></i>
+                            </div>
+
+                            <div>
+                                <div class="fw-bold text-dark">
+                                    Bildiri Kitabı
+                                </div>
+
+                                <div class="text-muted small">
+                                    Kabul edilen bildirilerden PDF oluştur veya mevcut kitabı yönet.
                                 </div>
                             </div>
 
@@ -594,6 +610,16 @@
             transform: translateY(-1px);
         }
 
+    .quick-action-highlight {
+        background: linear-gradient(135deg, rgba(0, 174, 239, 0.10), #f8fafc);
+        border-color: rgba(0, 174, 239, 0.24);
+    }
+
+        .quick-action-highlight:hover {
+            background: #ffffff;
+            border-color: rgba(13, 110, 253, 0.32);
+        }
+
     .quick-action-icon {
         width: 42px;
         height: 42px;
@@ -602,6 +628,11 @@
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+
+    .proceeding-book-icon {
+        background: rgba(0, 174, 239, 0.12);
+        color: #00aeef;
     }
 
     .quick-action-arrow {

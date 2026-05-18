@@ -1,15 +1,89 @@
-﻿@{
+﻿@model IEnumerable<AntAbstract.Domain.Entities.Session>
+@using System
+@using AntAbstract.Domain.Entities
+
+@{
     ViewData["Title"] = "Program / Oturumlar";
     ViewData["HideSelectedConferenceBar"] = true;
     Layout = "_LayoutDashboard";
+
+    var sessions = Model?.ToList() ?? new List<Session>();
 
     var conferenceId = ViewBag.ConferenceId;
     var conferenceTitle = ViewBag.ConferenceTitle as string ?? "";
     var slug = ViewBag.Slug as string ?? "";
 
+    var totalSessions = ViewBag.TotalSessions as int? ?? sessions.Count;
+
+    var speakerCount = ViewBag.SpeakerCount as int? ?? sessions
+        .Where(x => !string.IsNullOrWhiteSpace(x.SpeakerName))
+        .Select(x => x.SpeakerName!.Trim().ToLower())
+        .Distinct()
+        .Count();
+
+    var hallCount = ViewBag.HallCount as int? ?? sessions
+        .Where(x => !string.IsNullOrWhiteSpace(x.Location))
+        .Select(x => x.Location!.Trim().ToLower())
+        .Distinct()
+        .Count();
+
+    var programDayCount = ViewBag.ProgramDayCount as int? ?? sessions
+        .Select(x => x.SessionDate.Date)
+        .Distinct()
+        .Count();
+
+    var conferenceIdText = conferenceId?.ToString() ?? Context.Request.Query["conferenceId"].ToString();
+
     var backUrl = string.IsNullOrWhiteSpace(slug)
-        ? $"/Admin/ConferenceFlow?conferenceId={conferenceId}"
-        : $"/{slug}/Admin/ConferenceFlow?conferenceId={conferenceId}";
+        ? $"/Admin/ConferenceFlow?conferenceId={conferenceIdText}"
+        : $"/{slug}/Admin/ConferenceFlow?conferenceId={conferenceIdText}";
+
+    var currentUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+
+    var createSessionUrl = !string.IsNullOrWhiteSpace(slug)
+        ? string.IsNullOrWhiteSpace(conferenceIdText)
+            ? $"/{slug}/Admin/Session/Create?returnUrl={Uri.EscapeDataString(currentUrl)}"
+            : $"/{slug}/Admin/Session/Create?conferenceId={conferenceIdText}&returnUrl={Uri.EscapeDataString(currentUrl)}"
+        : string.IsNullOrWhiteSpace(conferenceIdText)
+            ? $"/Admin/Session"
+            : $"/Admin/Session?conferenceId={conferenceIdText}";
+
+    var printProgramUrl = !string.IsNullOrWhiteSpace(slug)
+        ? string.IsNullOrWhiteSpace(conferenceIdText)
+            ? $"/{slug}/Admin/ConferenceFlow/ProgramSessions/Print"
+            : $"/{slug}/Admin/ConferenceFlow/ProgramSessions/Print?conferenceId={conferenceIdText}"
+        : string.IsNullOrWhiteSpace(conferenceIdText)
+            ? "/Admin/ConferenceFlow/ProgramSessions/Print"
+            : $"/Admin/ConferenceFlow/ProgramSessions/Print?conferenceId={conferenceIdText}";
+
+    var deleteSessionUrl = string.IsNullOrWhiteSpace(slug)
+        ? string.IsNullOrWhiteSpace(conferenceIdText)
+            ? "/Admin/Session/Delete"
+            : $"/Admin/Session/Delete?conferenceId={conferenceIdText}"
+        : string.IsNullOrWhiteSpace(conferenceIdText)
+            ? $"/{slug}/Admin/Session/Delete"
+            : $"/{slug}/Admin/Session/Delete?conferenceId={conferenceIdText}";
+
+    var groupedSessions = sessions
+        .OrderBy(x => x.SessionDate)
+        .ThenBy(x => x.StartTime)
+        .ThenBy(x => x.SortOrder)
+        .GroupBy(x => x.SessionDate.Date)
+        .ToList();
+
+    string BuildSessionUrl(string path)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+        {
+            return string.IsNullOrWhiteSpace(conferenceIdText)
+                ? path
+                : $"{path}?conferenceId={conferenceIdText}";
+        }
+
+        return string.IsNullOrWhiteSpace(conferenceIdText)
+            ? $"/{slug}{path}"
+            : $"/{slug}{path}?conferenceId={conferenceIdText}";
+    }
 }
 
 <div class="container-fluid program-session-page">
@@ -56,7 +130,7 @@
                 </div>
 
                 <div>
-                    <div class="operation-stat-number">0</div>
+                    <div class="operation-stat-number">@totalSessions</div>
                     <div class="operation-stat-label">Toplam Oturum</div>
                 </div>
             </div>
@@ -69,7 +143,7 @@
                 </div>
 
                 <div>
-                    <div class="operation-stat-number">0</div>
+                    <div class="operation-stat-number">@speakerCount</div>
                     <div class="operation-stat-label">Konuşmacı</div>
                 </div>
             </div>
@@ -82,7 +156,7 @@
                 </div>
 
                 <div>
-                    <div class="operation-stat-number">0</div>
+                    <div class="operation-stat-number">@hallCount</div>
                     <div class="operation-stat-label">Salon</div>
                 </div>
             </div>
@@ -95,7 +169,7 @@
                 </div>
 
                 <div>
-                    <div class="operation-stat-number">0</div>
+                    <div class="operation-stat-number">@programDayCount</div>
                     <div class="operation-stat-label">Program Günü</div>
                 </div>
             </div>
@@ -116,7 +190,7 @@
 
                     <input type="text"
                            id="sessionSearchInput"
-                           placeholder="Oturum adı, salon, konuşmacı veya moderatör ara..." />
+                           placeholder="Oturum adı, salon, konuşmacı veya sunum başlığı ara..." />
                 </div>
             </div>
 
@@ -127,9 +201,11 @@
 
                 <select id="sessionDayFilter" class="operation-select">
                     <option value="">Tüm Günler</option>
-                    <option value="1">1. Gün</option>
-                    <option value="2">2. Gün</option>
-                    <option value="3">3. Gün</option>
+
+                    @for (int i = 0; i < groupedSessions.Count; i++)
+                    {
+                        <option value="@(i + 1)">@(i + 1). Gün</option>
+                    }
                 </select>
             </div>
 
@@ -162,104 +238,339 @@
                 </h5>
 
                 <p>
-                    Kongre programına ait oturumlar, salonlar ve saat aralıkları burada listelenecek.
+                    Kongre programına ait oturumlar, salonlar ve saat aralıkları burada listelenir.
                 </p>
             </div>
 
             <div class="operation-header-actions">
-                <button type="button"
-                        class="btn operation-light-btn">
-                    <i class="fas fa-file-export me-2"></i>
-                    Programı Dışa Aktar
-                </button>
-
-                <button type="button"
-                        class="btn operation-primary-btn">
-                    <i class="fas fa-plus me-2"></i>
-                    Yeni Oturum Ekle
-                </button>
-            </div>
-        </div>
-
-        <div class="program-timeline-preview">
-            <div class="timeline-day-card">
-                <div class="timeline-day-header">
-                    <span class="timeline-day-badge">
-                        1. Gün
-                    </span>
-
-                    <span class="timeline-day-date">
-                        Program akışı oluşturulmadı
-                    </span>
-                </div>
-
-                <div class="timeline-empty-line">
-                    <span></span>
-                    <div></div>
-                </div>
-
-                <div class="timeline-empty-line short">
-                    <span></span>
-                    <div></div>
-                </div>
-            </div>
-
-            <div class="timeline-day-card">
-                <div class="timeline-day-header">
-                    <span class="timeline-day-badge">
-                        2. Gün
-                    </span>
-
-                    <span class="timeline-day-date">
-                        Program akışı oluşturulmadı
-                    </span>
-                </div>
-
-                <div class="timeline-empty-line">
-                    <span></span>
-                    <div></div>
-                </div>
-
-                <div class="timeline-empty-line short">
-                    <span></span>
-                    <div></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="operation-empty-state" id="sessionEmptyState">
-            <div class="empty-state-icon">
-                <i class="fas fa-calendar-plus"></i>
-            </div>
-
-            <h4>
-                Henüz oturum eklenmedi
-            </h4>
-
-            <p>
-                Bu kongreye ait program, oturum, salon veya konuşmacı bilgisi eklendiğinde burada görüntülenecek.
-            </p>
-
-            <div class="empty-state-actions">
-                <a href="@backUrl"
+                <a href="@printProgramUrl"
+                   target="_blank"
                    class="btn operation-light-btn">
-                    <i class="fas fa-arrow-left me-2"></i>
-                    Kongre Akışına Dön
+                    <i class="fas fa-file-pdf me-2"></i>
+                    PDF Olarak Aktar
                 </a>
 
-                @if (!string.IsNullOrWhiteSpace(slug))
+                <a href="@createSessionUrl"
+                   class="btn operation-primary-btn">
+                    <i class="fas fa-plus me-2"></i>
+                    Yeni Oturum Ekle
+                </a>
+            </div>
+        </div>
+
+        @if (groupedSessions.Any())
+        {
+            <div class="program-timeline-list">
+                @for (int i = 0; i < groupedSessions.Count; i++)
                 {
-                    <a href="/@slug"
-                       target="_blank"
-                       class="btn operation-primary-btn">
-                        <i class="fas fa-external-link-alt me-2"></i>
-                        Kongre Sitesini Gör
-                    </a>
+                    var dayGroup = groupedSessions[i];
+                    var dayNumber = i + 1;
+
+                    <div class="timeline-day-card real-day-card session-day-item"
+                         data-day="@dayNumber">
+                        <div class="timeline-day-header">
+                            <div>
+                                <span class="timeline-day-badge">
+                                    @dayNumber. Gün
+                                </span>
+
+                                <span class="timeline-day-date">
+                                    @dayGroup.Key.ToString("dd MMMM yyyy")
+                                </span>
+                            </div>
+
+                            <span class="day-session-count">
+                                @dayGroup.Count() oturum
+                            </span>
+                        </div>
+
+                        <div class="session-timeline-items">
+                            @foreach (var item in dayGroup.OrderBy(x => x.StartTime).ThenBy(x => x.SortOrder))
+                            {
+                                var manageUrl = BuildSessionUrl($"/Admin/Session/Manage/{item.Id}");
+                                var editUrl = BuildSessionUrl($"/Admin/Session/Edit/{item.Id}");
+                                var submissionCount = item.Submissions?.Count ?? 0;
+
+                                var searchableText = $"{item.Title} {item.TitleEn} {item.Location} {item.SpeakerName} {item.PresentationTitle} {item.Description}".ToLower();
+
+                                <div class="session-row-item"
+                                     data-search="@searchableText"
+                                     data-day="@dayNumber">
+                                    <div class="session-time-column">
+                                        <div class="session-time-range">
+                                            @item.StartTime.ToString(@"hh\:mm")
+                                            <span></span>
+                                            @item.EndTime.ToString(@"hh\:mm")
+                                        </div>
+
+                                        <div class="session-status @(item.IsActive ? "active" : "passive")">
+                                            @(item.IsActive ? "Aktif" : "Pasif")
+                                        </div>
+                                    </div>
+
+                                    <div class="session-content-column">
+                                        <div class="session-title-row">
+                                            <h6>
+                                                @item.Title
+                                            </h6>
+
+                                            @if (item.SortOrder > 0)
+                                            {
+                                                <span class="sort-badge">
+                                                    Sıra @item.SortOrder
+                                                </span>
+                                            }
+                                        </div>
+
+                                        @if (!string.IsNullOrWhiteSpace(item.Description))
+                                        {
+                                            <p class="session-description">
+                                                @item.Description
+                                            </p>
+                                        }
+                                        else if (!string.IsNullOrWhiteSpace(item.PresentationTitle))
+                                        {
+                                            <p class="session-description">
+                                                @item.PresentationTitle
+                                            </p>
+                                        }
+
+                                        <div class="session-meta-list">
+                                            <span class="session-meta">
+                                                <i class="fas fa-location-dot"></i>
+                                                @(string.IsNullOrWhiteSpace(item.Location) ? "Konum belirtilmedi" : item.Location)
+                                            </span>
+
+                                            @if (!string.IsNullOrWhiteSpace(item.SpeakerName))
+                                            {
+                                                <span class="session-meta">
+                                                    <i class="fas fa-microphone"></i>
+                                                    @item.SpeakerName
+                                                </span>
+                                            }
+
+                                            <span class="session-meta">
+                                                <i class="fas fa-file-lines"></i>
+                                                @submissionCount bildiri
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="session-action-column">
+                                        <a href="@manageUrl"
+                                           class="btn session-action-btn manage">
+                                            <i class="fas fa-list-check"></i>
+                                            Yönet
+                                        </a>
+
+                                        <a href="@editUrl"
+                                           class="btn session-action-btn edit">
+                                            <i class="fas fa-pen"></i>
+                                            Düzenle
+                                        </a>
+
+                                        <button type="button"
+                                                class="btn session-action-btn delete js-open-delete-session-modal"
+                                                data-session-id="@item.Id"
+                                                data-session-title="@item.Title"
+                                                data-session-date="@item.SessionDate.ToString("dd MMMM yyyy")"
+                                                data-session-time="@item.StartTime.ToString(@"hh\:mm") - @item.EndTime.ToString(@"hh\:mm")">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
                 }
+            </div>
+
+            <div class="operation-empty-state d-none" id="sessionNoResultState">
+                <div class="empty-state-icon">
+                    <i class="fas fa-magnifying-glass"></i>
+                </div>
+
+                <h4>
+                    Aramaya uygun oturum bulunamadı
+                </h4>
+
+                <p>
+                    Arama metnini veya gün filtresini değiştirerek tekrar deneyebilirsiniz.
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="program-timeline-preview">
+                <div class="timeline-day-card">
+                    <div class="timeline-day-header">
+                        <span class="timeline-day-badge">
+                            1. Gün
+                        </span>
+
+                        <span class="timeline-day-date">
+                            Program akışı oluşturulmadı
+                        </span>
+                    </div>
+
+                    <div class="timeline-empty-line">
+                        <span></span>
+                        <div></div>
+                    </div>
+
+                    <div class="timeline-empty-line short">
+                        <span></span>
+                        <div></div>
+                    </div>
+                </div>
+
+                <div class="timeline-day-card">
+                    <div class="timeline-day-header">
+                        <span class="timeline-day-badge">
+                            2. Gün
+                        </span>
+
+                        <span class="timeline-day-date">
+                            Program akışı oluşturulmadı
+                        </span>
+                    </div>
+
+                    <div class="timeline-empty-line">
+                        <span></span>
+                        <div></div>
+                    </div>
+
+                    <div class="timeline-empty-line short">
+                        <span></span>
+                        <div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="operation-empty-state" id="sessionEmptyState">
+                <div class="empty-state-icon">
+                    <i class="fas fa-calendar-plus"></i>
+                </div>
+
+                <h4>
+                    Henüz oturum eklenmedi
+                </h4>
+
+                <p>
+                    Bu kongreye ait program, oturum, salon veya konuşmacı bilgisi eklendiğinde burada görüntülenecek.
+                </p>
+
+                <div class="empty-state-actions">
+                    <a href="@backUrl"
+                       class="btn operation-light-btn">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Kongre Akışına Dön
+                    </a>
+
+                    <a href="@createSessionUrl"
+                       class="btn operation-primary-btn">
+                        <i class="fas fa-plus me-2"></i>
+                        İlk Oturumu Ekle
+                    </a>
+
+                    @if (!string.IsNullOrWhiteSpace(slug))
+                    {
+                        <a href="/@slug"
+                           target="_blank"
+                           class="btn operation-light-btn">
+                            <i class="fas fa-external-link-alt me-2"></i>
+                            Kongre Sitesini Gör
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+</div>
+
+<div class="modal fade session-delete-modal"
+     id="deleteSessionModal"
+     tabindex="-1"
+     aria-labelledby="deleteSessionModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content session-delete-modal-content">
+            <div class="modal-header session-delete-modal-header">
+                <div class="session-delete-icon">
+                    <i class="fas fa-trash"></i>
+                </div>
+
+                <div>
+                    <h5 class="modal-title" id="deleteSessionModalLabel">
+                        Oturumu Sil
+                    </h5>
+
+                    <p class="session-delete-subtitle">
+                        Bu işlem geri alınamaz.
+                    </p>
+                </div>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Kapat"></button>
+            </div>
+
+            <div class="modal-body session-delete-modal-body">
+                <p class="session-delete-text">
+                    Aşağıdaki oturumu silmek istediğinize emin misiniz?
+                </p>
+
+                <div class="session-delete-preview">
+                    <div class="session-delete-preview-icon">
+                        <i class="fas fa-calendar-xmark"></i>
+                    </div>
+
+                    <div>
+                        <div class="session-delete-preview-title" id="deleteSessionTitle">
+                            -
+                        </div>
+
+                        <div class="session-delete-preview-meta">
+                            <span id="deleteSessionDate">-</span>
+                            <span>•</span>
+                            <span id="deleteSessionTime">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="session-delete-warning">
+                    <i class="fas fa-circle-info"></i>
+                    <span>
+                        Oturum silinir; bu oturuma bağlı bildiriler silinmez, sadece oturum bağlantıları kaldırılır.
+                    </span>
+                </div>
+            </div>
+
+            <div class="modal-footer session-delete-modal-footer">
+                <button type="button"
+                        class="btn session-delete-cancel-btn"
+                        data-bs-dismiss="modal">
+                    Vazgeç
+                </button>
+
+                <form action="@deleteSessionUrl"
+                      method="post"
+                      class="m-0">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" name="id" id="deleteSessionId" />
+
+                    <button type="submit"
+                            class="btn session-delete-confirm-btn">
+                        <i class="fas fa-trash me-2"></i>
+                        Evet, Sil
+                    </button>
+                </form>
             </div>
         </div>
     </div>
-
 </div>
 
 <style>
@@ -468,12 +779,14 @@
         font-weight: 900;
         padding: 0 1.15rem;
         box-shadow: 0 10px 22px rgba(13, 110, 253, 0.18);
+        text-decoration: none;
     }
 
         .operation-primary-btn:hover {
             color: #ffffff;
             background: #0b5ed7;
             box-shadow: 0 14px 28px rgba(13, 110, 253, 0.24);
+            text-decoration: none;
         }
 
     .operation-reset-btn,
@@ -488,6 +801,7 @@
         color: #334155;
         font-weight: 900;
         padding: 0 1.15rem;
+        text-decoration: none;
     }
 
         .operation-reset-btn:hover,
@@ -495,6 +809,7 @@
             color: #0d6efd;
             background: #f8fbff;
             border-color: rgba(13, 110, 253, 0.25);
+            text-decoration: none;
         }
 
     .operation-main-card {
@@ -536,8 +851,9 @@
         flex-wrap: wrap;
     }
 
-    .program-timeline-preview {
-        padding: 1.4rem 1.5rem 0;
+    .program-timeline-preview,
+    .program-timeline-list {
+        padding: 1.4rem 1.5rem;
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 1rem;
@@ -548,6 +864,12 @@
         border: 1px solid #edf2f7;
         border-radius: 20px;
         padding: 1rem;
+    }
+
+    .real-day-card {
+        background: #ffffff;
+        border-color: #e2e8f0;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
     }
 
     .timeline-day-header {
@@ -569,12 +891,25 @@
         color: #0d6efd;
         font-size: 0.78rem;
         font-weight: 900;
+        margin-right: 0.5rem;
     }
 
     .timeline-day-date {
         color: #64748b;
         font-size: 0.78rem;
         font-weight: 800;
+    }
+
+    .day-session-count {
+        min-height: 30px;
+        display: inline-flex;
+        align-items: center;
+        padding: 0 0.75rem;
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 900;
     }
 
     .timeline-empty-line {
@@ -585,12 +920,7 @@
         margin-bottom: 0.8rem;
     }
 
-        .timeline-empty-line span {
-            height: 24px;
-            border-radius: 999px;
-            background: #e2e8f0;
-        }
-
+        .timeline-empty-line span,
         .timeline-empty-line div {
             height: 24px;
             border-radius: 999px;
@@ -599,6 +929,339 @@
 
         .timeline-empty-line.short div {
             width: 70%;
+        }
+
+    .session-timeline-items {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
+    .session-row-item {
+        display: grid;
+        grid-template-columns: 105px minmax(0, 1fr) auto;
+        gap: 1rem;
+        padding: 1rem;
+        border-radius: 18px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s ease;
+    }
+
+        .session-row-item:hover {
+            background: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.055);
+        }
+
+    .session-time-column {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .session-time-range {
+        color: #0d6efd;
+        font-size: 0.82rem;
+        font-weight: 900;
+        line-height: 1.35;
+        display: flex;
+        flex-direction: column;
+    }
+
+        .session-time-range span {
+            width: 32px;
+            height: 2px;
+            border-radius: 999px;
+            background: rgba(13, 110, 253, 0.25);
+            margin: 0.25rem 0;
+        }
+
+    .session-status {
+        width: fit-content;
+        min-height: 24px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 0 0.55rem;
+        font-size: 0.66rem;
+        font-weight: 900;
+    }
+
+        .session-status.active {
+            background: rgba(34, 197, 94, 0.12);
+            color: #16a34a;
+        }
+
+        .session-status.passive {
+            background: rgba(100, 116, 139, 0.12);
+            color: #64748b;
+        }
+
+    .session-content-column {
+        min-width: 0;
+    }
+
+    .session-title-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.35rem;
+    }
+
+        .session-title-row h6 {
+            color: #0f172a;
+            font-size: 0.98rem;
+            font-weight: 900;
+            margin: 0;
+            line-height: 1.35;
+        }
+
+    .sort-badge {
+        min-height: 24px;
+        border-radius: 999px;
+        background: rgba(124, 58, 237, 0.10);
+        color: #7c3aed;
+        padding: 0 0.55rem;
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.66rem;
+        font-weight: 900;
+    }
+
+    .session-description {
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 650;
+        line-height: 1.5;
+        margin-bottom: 0.65rem;
+    }
+
+    .session-meta-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+    }
+
+    .session-meta {
+        min-height: 28px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        color: #64748b;
+        border-radius: 999px;
+        padding: 0 0.65rem;
+        font-size: 0.72rem;
+        font-weight: 850;
+    }
+
+        .session-meta i {
+            color: #0d6efd;
+        }
+
+    .session-action-column {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .session-action-btn {
+        min-height: 36px;
+        border-radius: 999px;
+        padding: 0 0.75rem;
+        font-size: 0.72rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        text-decoration: none;
+    }
+
+        .session-action-btn.manage {
+            background: rgba(34, 197, 94, 0.10);
+            color: #16a34a;
+            border: 1px solid rgba(34, 197, 94, 0.18);
+        }
+
+        .session-action-btn.edit {
+            background: rgba(13, 110, 253, 0.10);
+            color: #0d6efd;
+            border: 1px solid rgba(13, 110, 253, 0.18);
+        }
+
+        .session-action-btn.delete {
+            background: rgba(239, 68, 68, 0.10);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.18);
+        }
+
+        .session-action-btn:hover {
+            transform: translateY(-1px);
+            text-decoration: none;
+        }
+
+    .session-delete-modal-content {
+        border: none;
+        border-radius: 28px;
+        overflow: hidden;
+        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.28);
+    }
+
+    .session-delete-modal-header {
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        padding: 1.35rem 1.45rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+        .session-delete-modal-header .btn-close {
+            margin-left: auto;
+        }
+
+    .session-delete-icon {
+        width: 52px;
+        height: 52px;
+        min-width: 52px;
+        border-radius: 18px;
+        background: rgba(239, 68, 68, 0.10);
+        color: #ef4444;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+
+    .session-delete-modal-header .modal-title {
+        color: #0f172a;
+        font-size: 1.15rem;
+        font-weight: 900;
+        margin: 0;
+    }
+
+    .session-delete-subtitle {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 700;
+        margin: 0.15rem 0 0;
+    }
+
+    .session-delete-modal-body {
+        padding: 1.45rem;
+    }
+
+    .session-delete-text {
+        color: #475569;
+        font-size: 0.92rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+
+    .session-delete-preview {
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        border-radius: 20px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        margin-bottom: 1rem;
+    }
+
+    .session-delete-preview-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 16px;
+        background: #ffffff;
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.08);
+    }
+
+    .session-delete-preview-title {
+        color: #0f172a;
+        font-size: 0.98rem;
+        font-weight: 900;
+        line-height: 1.35;
+    }
+
+    .session-delete-preview-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 800;
+        margin-top: 0.25rem;
+    }
+
+    .session-delete-warning {
+        border: 1px solid rgba(245, 158, 11, 0.24);
+        background: rgba(245, 158, 11, 0.08);
+        color: #92400e;
+        border-radius: 18px;
+        padding: 0.9rem 1rem;
+        display: flex;
+        gap: 0.65rem;
+        font-size: 0.82rem;
+        font-weight: 800;
+        line-height: 1.45;
+    }
+
+        .session-delete-warning i {
+            margin-top: 0.15rem;
+        }
+
+    .session-delete-modal-footer {
+        border-top: 1px solid #e2e8f0;
+        background: #ffffff;
+        padding: 1rem 1.45rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+    }
+
+    .session-delete-cancel-btn {
+        min-height: 44px;
+        border-radius: 999px;
+        border: 1px solid #dbe3ef;
+        background: #ffffff;
+        color: #334155;
+        font-weight: 900;
+        padding: 0 1.15rem;
+    }
+
+        .session-delete-cancel-btn:hover {
+            color: #0d6efd;
+            background: #f8fbff;
+            border-color: rgba(13, 110, 253, 0.25);
+        }
+
+    .session-delete-confirm-btn {
+        min-height: 44px;
+        border-radius: 999px;
+        border: none;
+        background: #ef4444;
+        color: #ffffff;
+        font-weight: 900;
+        padding: 0 1.15rem;
+        box-shadow: 0 12px 26px rgba(239, 68, 68, 0.24);
+    }
+
+        .session-delete-confirm-btn:hover {
+            background: #dc2626;
+            color: #ffffff;
+            box-shadow: 0 16px 34px rgba(239, 68, 68, 0.32);
         }
 
     .operation-empty-state {
@@ -643,6 +1306,22 @@
         flex-wrap: wrap;
     }
 
+    @@media (max-width: 1200px) {
+        .program-timeline-list,
+        .program-timeline-preview {
+            grid-template-columns: 1fr;
+        }
+
+        .session-row-item {
+            grid-template-columns: 95px minmax(0, 1fr);
+        }
+
+        .session-action-column {
+            grid-column: 1 / -1;
+            justify-content: flex-start;
+        }
+    }
+
     @@media (max-width: 992px) {
         .operation-header-card {
             align-items: flex-start;
@@ -662,13 +1341,39 @@
             width: 100%;
         }
 
-            .operation-header-actions .btn {
+            .operation-header-actions .btn,
+            .operation-header-actions a {
                 width: 100%;
             }
+    }
 
-        .program-timeline-preview {
+    @@media (max-width: 768px) {
+        .session-row-item {
             grid-template-columns: 1fr;
         }
+
+        .session-action-column {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+            .session-action-btn,
+            .session-action-column form,
+            .session-action-column button {
+                width: 100%;
+                justify-content: center;
+            }
+
+        .session-delete-modal-footer {
+            flex-direction: column-reverse;
+            align-items: stretch;
+        }
+
+            .session-delete-cancel-btn,
+            .session-delete-confirm-btn,
+            .session-delete-modal-footer form {
+                width: 100%;
+            }
     }
 </style>
 
@@ -679,10 +1384,57 @@
             const dayFilter = document.getElementById("sessionDayFilter");
             const filterButton = document.getElementById("filterSessionButton");
             const resetButton = document.getElementById("resetSessionButton");
+            const noResultState = document.getElementById("sessionNoResultState");
+
+            const filterSessions = function () {
+                const searchText = searchInput ? searchInput.value.trim().toLowerCase() : "";
+                const selectedDay = dayFilter ? dayFilter.value : "";
+
+                const sessionRows = document.querySelectorAll(".session-row-item");
+                const dayCards = document.querySelectorAll(".session-day-item");
+
+                let visibleSessionCount = 0;
+
+                sessionRows.forEach(function (row) {
+                    const rowText = row.dataset.search || "";
+                    const rowDay = row.dataset.day || "";
+
+                    const searchMatch = !searchText || rowText.includes(searchText);
+                    const dayMatch = !selectedDay || rowDay === selectedDay;
+
+                    const isVisible = searchMatch && dayMatch;
+
+                    row.classList.toggle("d-none", !isVisible);
+
+                    if (isVisible) {
+                        visibleSessionCount++;
+                    }
+                });
+
+                dayCards.forEach(function (card) {
+                    const visibleRows = card.querySelectorAll(".session-row-item:not(.d-none)");
+                    card.classList.toggle("d-none", visibleRows.length === 0);
+                });
+
+                if (noResultState) {
+                    noResultState.classList.toggle("d-none", visibleSessionCount !== 0);
+                }
+            };
 
             if (filterButton) {
-                filterButton.addEventListener("click", function () {
+                filterButton.addEventListener("click", filterSessions);
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener("keyup", function (event) {
+                    if (event.key === "Enter") {
+                        filterSessions();
+                    }
                 });
+            }
+
+            if (dayFilter) {
+                dayFilter.addEventListener("change", filterSessions);
             }
 
             if (resetButton) {
@@ -694,6 +1446,45 @@
                     if (dayFilter) {
                         dayFilter.value = "";
                     }
+
+                    filterSessions();
+                });
+            }
+
+            const deleteModalElement = document.getElementById("deleteSessionModal");
+            const deleteSessionIdInput = document.getElementById("deleteSessionId");
+            const deleteSessionTitle = document.getElementById("deleteSessionTitle");
+            const deleteSessionDate = document.getElementById("deleteSessionDate");
+            const deleteSessionTime = document.getElementById("deleteSessionTime");
+
+            if (deleteModalElement) {
+                const deleteModal = new bootstrap.Modal(deleteModalElement);
+
+                document.querySelectorAll(".js-open-delete-session-modal").forEach(function (button) {
+                    button.addEventListener("click", function () {
+                        const sessionId = button.dataset.sessionId || "";
+                        const sessionTitle = button.dataset.sessionTitle || "-";
+                        const sessionDate = button.dataset.sessionDate || "-";
+                        const sessionTime = button.dataset.sessionTime || "-";
+
+                        if (deleteSessionIdInput) {
+                            deleteSessionIdInput.value = sessionId;
+                        }
+
+                        if (deleteSessionTitle) {
+                            deleteSessionTitle.textContent = sessionTitle;
+                        }
+
+                        if (deleteSessionDate) {
+                            deleteSessionDate.textContent = sessionDate;
+                        }
+
+                        if (deleteSessionTime) {
+                            deleteSessionTime.textContent = sessionTime;
+                        }
+
+                        deleteModal.show();
+                    });
                 });
             }
         });

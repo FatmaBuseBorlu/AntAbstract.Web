@@ -1,0 +1,1378 @@
+﻿@model AntAbstract.Web.Models.ViewModels.Admin.ProceedingBooks.ProceedingBookViewModel
+
+@{
+    ViewData["Title"] = "Bildiri Kitabı Yönetimi";
+    ViewData["HideSelectedConferenceBar"] = true;
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+
+    var slug = !string.IsNullOrWhiteSpace(Model.Slug)
+        ? Model.Slug
+        : Context.GetRouteValue("slug")?.ToString() ?? "";
+
+    var conferenceIdText = Model.ConferenceId == Guid.Empty
+        ? Context.Request.Query["conferenceId"].ToString()
+        : Model.ConferenceId.ToString();
+
+    var backUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/ConferenceFlow?conferenceId={conferenceIdText}"
+        : $"/{slug}/Admin/ConferenceFlow?conferenceId={conferenceIdText}";
+
+    var postUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Admin/ProceedingBook"
+        : $"/{slug}/Admin/ProceedingBook";
+
+    var removeFileUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Admin/ProceedingBook/RemoveFile"
+        : $"/{slug}/Admin/ProceedingBook/RemoveFile";
+
+    var generateUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Admin/ProceedingBook/Generate"
+        : $"/{slug}/Admin/ProceedingBook/Generate";
+
+    var hasFile = !string.IsNullOrWhiteSpace(Model.ProceedingBookFilePath);
+
+    var publishedDateText = Model.ProceedingBookPublishedDate.HasValue
+        ? Model.ProceedingBookPublishedDate.Value.ToString("dd MMMM yyyy HH:mm")
+        : "Henüz yayınlanmadı";
+}
+
+<style>
+    .proceeding-page {
+        padding: 2rem 1.5rem 4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .proceeding-shell {
+        max-width: 1180px;
+        margin: 0 auto;
+    }
+
+    .proceeding-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.18), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        padding: 1.5rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.055);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.4rem;
+        flex-wrap: wrap;
+    }
+
+    .proceeding-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 280px;
+    }
+
+    .proceeding-hero-icon {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.45rem;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
+    }
+
+    .proceeding-title {
+        color: #0f172a;
+        font-size: 1.8rem;
+        font-weight: 900;
+        letter-spacing: -0.055em;
+        margin-bottom: 0.25rem;
+    }
+
+    .proceeding-lead {
+        color: #64748b;
+        font-size: 0.95rem;
+        font-weight: 650;
+        margin: 0;
+        line-height: 1.55;
+    }
+
+    .proceeding-back-btn {
+        min-height: 48px;
+        border-radius: 999px;
+        padding: 0 1.2rem;
+        color: #334155;
+        background: #ffffff;
+        border: 1px solid #dbe4ef;
+        font-weight: 900;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+        white-space: nowrap;
+    }
+
+        .proceeding-back-btn:hover {
+            color: #0d6efd;
+            border-color: rgba(13, 110, 253, 0.28);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(13, 110, 253, 0.10);
+            text-decoration: none;
+        }
+
+    .proceeding-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    .proceeding-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.055);
+        overflow: hidden;
+    }
+
+    .proceeding-card-header {
+        padding: 1.35rem 1.55rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .proceeding-card-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+    }
+
+    .proceeding-step-icon {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        box-shadow: 0 12px 24px rgba(0, 174, 239, 0.22);
+    }
+
+    .proceeding-card-title {
+        color: #0f172a;
+        font-size: 1.08rem;
+        font-weight: 900;
+        margin-bottom: 0.15rem;
+    }
+
+    .proceeding-card-subtitle {
+        color: #64748b;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .proceeding-card-body {
+        padding: 1.7rem;
+    }
+
+    .conference-mini-card {
+        border-radius: 20px;
+        border: 1px solid rgba(0, 174, 239, 0.16);
+        background: linear-gradient(135deg, rgba(0, 174, 239, 0.08), rgba(13, 110, 253, 0.06));
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        margin-bottom: 1.35rem;
+    }
+
+    .conference-mini-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 16px;
+        background: #ffffff;
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.10);
+    }
+
+    .conference-mini-label {
+        color: #64748b;
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.35px;
+        margin-bottom: 0.15rem;
+    }
+
+    .conference-mini-title {
+        color: #0f172a;
+        font-size: 0.95rem;
+        font-weight: 900;
+        line-height: 1.35;
+    }
+
+    .auto-generate-card {
+        border: 1px solid rgba(13, 110, 253, 0.18);
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.12), transparent 32%), linear-gradient(135deg, #ffffff, #f8fbff);
+        border-radius: 22px;
+        padding: 1rem;
+        margin-bottom: 1.35rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .auto-generate-left {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .auto-generate-icon {
+        width: 52px;
+        height: 52px;
+        min-width: 52px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        box-shadow: 0 14px 30px rgba(0, 174, 239, 0.22);
+    }
+
+    .auto-generate-title {
+        color: #0f172a;
+        font-size: 0.98rem;
+        font-weight: 900;
+        margin-bottom: 0.15rem;
+    }
+
+    .auto-generate-text {
+        color: #64748b;
+        font-size: 0.8rem;
+        font-weight: 700;
+        line-height: 1.45;
+    }
+
+    .auto-generate-btn {
+        min-height: 44px;
+        border: none;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        font-weight: 900;
+        padding: 0 1.1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        box-shadow: 0 12px 26px rgba(0, 174, 239, 0.24);
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+        .auto-generate-btn:hover {
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 16px 34px rgba(0, 174, 239, 0.32);
+        }
+
+    .current-file-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        background: #f8fafc;
+        padding: 1rem;
+        margin-bottom: 1.35rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .current-file-left {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        min-width: 0;
+    }
+
+    .current-file-icon {
+        width: 50px;
+        height: 50px;
+        min-width: 50px;
+        border-radius: 17px;
+        background: rgba(239, 68, 68, 0.10);
+        color: #ef4444;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+
+    .current-file-title {
+        color: #0f172a;
+        font-size: 0.95rem;
+        font-weight: 900;
+        margin-bottom: 0.15rem;
+    }
+
+    .current-file-path {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 700;
+        max-width: 440px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .current-file-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .file-view-btn,
+    .file-remove-btn {
+        min-height: 40px;
+        border-radius: 999px;
+        padding: 0 0.95rem;
+        font-size: 0.78rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        text-decoration: none;
+        border: 1px solid transparent;
+    }
+
+    .file-view-btn {
+        color: #0d6efd;
+        background: rgba(13, 110, 253, 0.08);
+        border-color: rgba(13, 110, 253, 0.18);
+    }
+
+        .file-view-btn:hover {
+            color: #0b5ed7;
+            background: rgba(13, 110, 253, 0.12);
+            text-decoration: none;
+        }
+
+    .file-remove-btn {
+        color: #ef4444;
+        background: rgba(239, 68, 68, 0.08);
+        border-color: rgba(239, 68, 68, 0.18);
+    }
+
+        .file-remove-btn:hover {
+            color: #dc2626;
+            background: rgba(239, 68, 68, 0.12);
+        }
+
+    .pdf-preview-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        background: #ffffff;
+        margin-bottom: 1.35rem;
+        overflow: hidden;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.045);
+    }
+
+    .pdf-preview-header {
+        padding: 1rem 1.1rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .pdf-preview-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .pdf-preview-icon {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 16px;
+        background: rgba(239, 68, 68, 0.10);
+        color: #ef4444;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+    }
+
+    .pdf-preview-title strong {
+        display: block;
+        color: #0f172a;
+        font-size: 0.98rem;
+        font-weight: 900;
+    }
+
+    .pdf-preview-title span {
+        display: block;
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 700;
+        margin-top: 0.1rem;
+    }
+
+    .pdf-preview-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .pdf-preview-btn {
+        min-height: 38px;
+        border-radius: 999px;
+        padding: 0 0.9rem;
+        border: 1px solid #dbe4ef;
+        background: #ffffff;
+        color: #334155;
+        font-size: 0.78rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        text-decoration: none;
+    }
+
+        .pdf-preview-btn:hover {
+            color: #0d6efd;
+            background: #f8fbff;
+            border-color: rgba(13, 110, 253, 0.25);
+            text-decoration: none;
+        }
+
+    .pdf-preview-body {
+        background: #f8fafc;
+        padding: 1rem;
+    }
+
+    .pdf-preview-frame {
+        width: 100%;
+        height: 720px;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        background: #ffffff;
+    }
+
+    .no-file-card {
+        border: 1px dashed #cbd5e1;
+        border-radius: 22px;
+        background: #f8fafc;
+        padding: 1.25rem;
+        margin-bottom: 1.35rem;
+        text-align: center;
+    }
+
+    .no-file-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 999px;
+        background: #ffffff;
+        color: #cbd5e1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin-bottom: 0.85rem;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+    }
+
+    .no-file-title {
+        color: #0f172a;
+        font-weight: 900;
+        margin-bottom: 0.25rem;
+    }
+
+    .no-file-text {
+        color: #64748b;
+        font-size: 0.84rem;
+        font-weight: 650;
+        margin: 0;
+    }
+
+    .form-label-modern {
+        color: #475569;
+        font-size: 0.84rem;
+        font-weight: 900;
+        margin-bottom: 0.55rem;
+    }
+
+    .file-upload-box {
+        border: 1px solid #dbe4ef;
+        border-radius: 22px;
+        background: #ffffff;
+        padding: 1.1rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.025);
+    }
+
+        .file-upload-box:focus-within {
+            border-color: #00aeef;
+            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.12);
+        }
+
+    .file-upload-help {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 700;
+        margin-top: 0.55rem;
+        line-height: 1.45;
+    }
+
+    .form-control-modern {
+        width: 100%;
+        min-height: 54px;
+        border-radius: 16px;
+        border: 1px solid #dbe4ef;
+        background: #ffffff;
+        color: #0f172a;
+        font-size: 0.94rem;
+        font-weight: 700;
+        padding: 0.85rem 1rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.025);
+    }
+
+        .form-control-modern:focus {
+            outline: none;
+            border-color: #00aeef;
+            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.12);
+        }
+
+    .modern-switch-card {
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 1.2rem;
+    }
+
+    .modern-switch-title {
+        color: #0f172a;
+        font-size: 0.93rem;
+        font-weight: 900;
+        margin-bottom: 0.15rem;
+    }
+
+    .modern-switch-text {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 700;
+        line-height: 1.45;
+    }
+
+    .form-check-input {
+        width: 3rem;
+        height: 1.55rem;
+        cursor: pointer;
+    }
+
+    .proceeding-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 1.4rem;
+        padding-top: 1.3rem;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .save-btn {
+        min-height: 54px;
+        border: none;
+        border-radius: 999px;
+        padding: 0 1.55rem;
+        color: #ffffff;
+        background: linear-gradient(135deg, #00aeef 0%, #0d6efd 100%);
+        box-shadow: 0 14px 30px rgba(0, 174, 239, 0.24);
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.65rem;
+        transition: all 0.2s ease;
+    }
+
+        .save-btn:hover {
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 18px 38px rgba(0, 174, 239, 0.34);
+        }
+
+    .cancel-btn {
+        min-height: 54px;
+        border-radius: 999px;
+        padding: 0 1.45rem;
+        color: #334155;
+        background: #ffffff;
+        border: 1px solid #dbe4ef;
+        font-weight: 900;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        transition: all 0.2s ease;
+    }
+
+        .cancel-btn:hover {
+            color: #0d6efd;
+            background: #f8fbff;
+            border-color: rgba(13, 110, 253, 0.28);
+            text-decoration: none;
+        }
+
+    .side-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        padding: 1.25rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
+        position: sticky;
+        top: 92px;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        min-height: 34px;
+        border-radius: 999px;
+        padding: 0 0.85rem;
+        font-size: 0.78rem;
+        font-weight: 900;
+        margin-bottom: 1rem;
+    }
+
+    .status-published {
+        color: #059669;
+        background: rgba(16, 185, 129, 0.12);
+        border: 1px solid rgba(16, 185, 129, 0.20);
+    }
+
+    .status-draft {
+        color: #f59e0b;
+        background: rgba(245, 158, 11, 0.12);
+        border: 1px solid rgba(245, 158, 11, 0.22);
+    }
+
+    .side-title {
+        color: #0f172a;
+        font-size: 1.05rem;
+        font-weight: 900;
+        margin-bottom: 0.45rem;
+    }
+
+    .side-text {
+        color: #64748b;
+        font-size: 0.84rem;
+        font-weight: 650;
+        line-height: 1.55;
+        margin-bottom: 1rem;
+    }
+
+    .info-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+        .info-list li {
+            display: flex;
+            gap: 0.65rem;
+            color: #475569;
+            font-size: 0.82rem;
+            font-weight: 750;
+            margin-bottom: 0.85rem;
+            line-height: 1.45;
+        }
+
+            .info-list li i {
+                color: #00aeef;
+                margin-top: 0.15rem;
+            }
+
+    .validation-summary-errors {
+        border: none;
+        border-radius: 18px;
+        background: rgba(239, 68, 68, 0.08);
+        color: #b91c1c;
+        font-weight: 800;
+        padding: 1rem 1.1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .remove-modal-content {
+        border: none;
+        border-radius: 28px;
+        overflow: hidden;
+        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.28);
+    }
+
+    .remove-modal-header {
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        padding: 1.35rem 1.45rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+        .remove-modal-header .btn-close {
+            margin-left: auto;
+        }
+
+    .remove-modal-icon {
+        width: 52px;
+        height: 52px;
+        min-width: 52px;
+        border-radius: 18px;
+        background: rgba(239, 68, 68, 0.10);
+        color: #ef4444;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+
+    .remove-modal-title {
+        color: #0f172a;
+        font-size: 1.15rem;
+        font-weight: 900;
+        margin: 0;
+    }
+
+    .remove-modal-subtitle {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 700;
+        margin: 0.15rem 0 0;
+    }
+
+    .remove-modal-body {
+        padding: 1.45rem;
+    }
+
+    .remove-warning {
+        border: 1px solid rgba(245, 158, 11, 0.24);
+        background: rgba(245, 158, 11, 0.08);
+        color: #92400e;
+        border-radius: 18px;
+        padding: 0.9rem 1rem;
+        display: flex;
+        gap: 0.65rem;
+        font-size: 0.82rem;
+        font-weight: 800;
+        line-height: 1.45;
+    }
+
+    .remove-modal-footer {
+        border-top: 1px solid #e2e8f0;
+        background: #ffffff;
+        padding: 1rem 1.45rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+    }
+
+    .remove-cancel-btn {
+        min-height: 44px;
+        border-radius: 999px;
+        border: 1px solid #dbe3ef;
+        background: #ffffff;
+        color: #334155;
+        font-weight: 900;
+        padding: 0 1.15rem;
+    }
+
+    .remove-confirm-btn {
+        min-height: 44px;
+        border-radius: 999px;
+        border: none;
+        background: #ef4444;
+        color: #ffffff;
+        font-weight: 900;
+        padding: 0 1.15rem;
+        box-shadow: 0 12px 26px rgba(239, 68, 68, 0.24);
+    }
+
+        .remove-confirm-btn:hover {
+            background: #dc2626;
+            color: #ffffff;
+        }
+
+    @@media (max-width: 992px) {
+        .proceeding-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .side-card {
+            position: static;
+        }
+
+        .proceeding-hero {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .proceeding-back-btn {
+            width: 100%;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .proceeding-page {
+            padding: 1.5rem 1rem 3rem;
+        }
+
+        .proceeding-title {
+            font-size: 1.45rem;
+        }
+
+        .proceeding-card-body {
+            padding: 1.2rem;
+        }
+
+        .auto-generate-card {
+            align-items: stretch;
+        }
+
+            .auto-generate-card form,
+            .auto-generate-btn {
+                width: 100%;
+            }
+
+        .proceeding-actions {
+            flex-direction: column-reverse;
+            align-items: stretch;
+        }
+
+        .save-btn,
+        .cancel-btn {
+            width: 100%;
+        }
+
+        .current-file-actions,
+        .file-view-btn,
+        .file-remove-btn {
+            width: 100%;
+        }
+
+        .pdf-preview-frame {
+            height: 520px;
+        }
+
+        .pdf-preview-actions,
+        .pdf-preview-btn {
+            width: 100%;
+        }
+
+        .remove-modal-footer {
+            flex-direction: column-reverse;
+            align-items: stretch;
+        }
+
+            .remove-modal-footer form,
+            .remove-cancel-btn,
+            .remove-confirm-btn {
+                width: 100%;
+            }
+    }
+</style>
+
+<div class="proceeding-page">
+    <div class="proceeding-shell">
+
+        <div class="proceeding-hero">
+            <div class="proceeding-hero-left">
+                <div class="proceeding-hero-icon">
+                    <i class="fas fa-book-open"></i>
+                </div>
+
+                <div>
+                    <h3 class="proceeding-title">
+                        Bildiri Kitabı Yönetimi
+                    </h3>
+
+                    <p class="proceeding-lead">
+                        Kongreye ait bildiri kitabı PDF dosyasını yükleyebilir, yayına alabilir veya yayından kaldırabilirsiniz.
+                    </p>
+                </div>
+            </div>
+
+            <a href="@backUrl" class="proceeding-back-btn">
+                <i class="fas fa-arrow-left"></i>
+                Kongre Akışına Dön
+            </a>
+        </div>
+
+        <div class="proceeding-grid">
+            <div class="proceeding-card">
+                <div class="proceeding-card-header">
+                    <div class="proceeding-card-title-wrap">
+                        <div class="proceeding-step-icon">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+
+                        <div>
+                            <div class="proceeding-card-title">
+                                PDF ve Yayın Ayarları
+                            </div>
+
+                            <div class="proceeding-card-subtitle">
+                                Bildiri kitabı dosyasını yükleyin, otomatik oluşturun ve yazar panelinde görünürlüğünü yönetin.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="proceeding-card-body">
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div asp-validation-summary="All" class="validation-summary-errors"></div>
+                    }
+
+                    <div class="conference-mini-card">
+                        <div class="conference-mini-icon">
+                            <i class="fas fa-building-columns"></i>
+                        </div>
+
+                        <div>
+                            <div class="conference-mini-label">
+                                Seçili Kongre
+                            </div>
+
+                            <div class="conference-mini-title">
+                                @Model.ConferenceTitle
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="auto-generate-card">
+                        <div class="auto-generate-left">
+                            <div class="auto-generate-icon">
+                                <i class="fas fa-wand-magic-sparkles"></i>
+                            </div>
+
+                            <div>
+                                <div class="auto-generate-title">
+                                    Sistemden Otomatik Bildiri Kitabı Oluştur
+                                </div>
+
+                                <div class="auto-generate-text">
+                                    Sistem bu kongreye ait kabul edilmiş bildirileri alır ve otomatik PDF bildiri kitabı oluşturur.
+                                    Mevcut PDF varsa yeni oluşturulan dosya ile değiştirilir.
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="button"
+                                class="auto-generate-btn"
+                                data-bs-toggle="modal"
+                                data-bs-target="#generateProceedingBookModal">
+                            <i class="fas fa-file-circle-plus"></i>
+                            Otomatik Oluştur
+                        </button>
+                    </div>
+
+                    @if (hasFile)
+                    {
+                        <div class="current-file-card">
+                            <div class="current-file-left">
+                                <div class="current-file-icon">
+                                    <i class="fas fa-file-pdf"></i>
+                                </div>
+
+                                <div class="min-w-0">
+                                    <div class="current-file-title">
+                                        Mevcut bildiri kitabı PDF’i yüklü
+                                    </div>
+
+                                    <div class="current-file-path">
+                                        @Model.ProceedingBookFilePath
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="current-file-actions">
+                                <a href="@Model.ProceedingBookFilePath"
+                                   target="_blank"
+                                   class="file-view-btn">
+                                    <i class="fas fa-eye"></i>
+                                    Görüntüle
+                                </a>
+
+                                <button type="button"
+                                        class="file-remove-btn"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#removeProceedingBookModal">
+                                    <i class="fas fa-trash"></i>
+                                    Kaldır
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="pdf-preview-card">
+                            <div class="pdf-preview-header">
+                                <div class="pdf-preview-title">
+                                    <div class="pdf-preview-icon">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </div>
+
+                                    <div>
+                                        <strong>Bildiri Kitabı Önizleme</strong>
+                                        <span>Oluşturulan veya yüklenen PDF dosyasını buradan kontrol edebilirsiniz.</span>
+                                    </div>
+                                </div>
+
+                                <div class="pdf-preview-actions">
+                                    <a href="@Model.ProceedingBookFilePath"
+                                       target="_blank"
+                                       class="pdf-preview-btn">
+                                        <i class="fas fa-up-right-from-square"></i>
+                                        Yeni Sekmede Aç
+                                    </a>
+
+                                    <a href="@Model.ProceedingBookFilePath"
+                                       download
+                                       class="pdf-preview-btn">
+                                        <i class="fas fa-download"></i>
+                                        İndir
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="pdf-preview-body">
+                                <iframe src="@($"{Model.ProceedingBookFilePath}#toolbar=1&navpanes=0&scrollbar=1")"
+                                        class="pdf-preview-frame">
+                                </iframe>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="no-file-card">
+                            <div class="no-file-icon">
+                                <i class="fas fa-file-circle-xmark"></i>
+                            </div>
+
+                            <div class="no-file-title">
+                                Henüz PDF yüklenmedi
+                            </div>
+
+                            <p class="no-file-text">
+                                PDF dosyasını manuel yükleyebilir veya kabul edilmiş bildirilerden otomatik bildiri kitabı oluşturabilirsiniz.
+                            </p>
+                        </div>
+                    }
+
+                    <form action="@postUrl"
+                          method="post"
+                          enctype="multipart/form-data">
+
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden" asp-for="ConferenceId" />
+                        <input type="hidden" asp-for="Slug" />
+                        <input type="hidden" asp-for="ConferenceTitle" />
+                        <input type="hidden" asp-for="ProceedingBookFilePath" />
+                        <input type="hidden" asp-for="ProceedingBookPublishedDate" />
+                        <input type="hidden" asp-for="ReturnUrl" />
+
+                        <div class="mb-4">
+                            <label asp-for="ProceedingBookFile" class="form-label-modern">
+                                Yeni PDF Dosyası
+                            </label>
+
+                            <div class="file-upload-box">
+                                <input asp-for="ProceedingBookFile"
+                                       type="file"
+                                       accept="application/pdf,.pdf"
+                                       class="form-control form-control-modern" />
+
+                                <div class="file-upload-help">
+                                    Sadece PDF dosyası yükleyiniz. Maksimum dosya boyutu 50 MB olarak kontrol edilir.
+                                    Yeni PDF yüklerseniz eski dosya otomatik olarak değiştirilecektir.
+                                </div>
+                            </div>
+
+                            <span asp-validation-for="ProceedingBookFile" class="text-danger small fw-bold"></span>
+                        </div>
+
+                        <div class="modern-switch-card">
+                            <div>
+                                <div class="modern-switch-title">
+                                    Bildiri kitabı yayında olsun
+                                </div>
+
+                                <div class="modern-switch-text">
+                                    Bu seçenek aktif olduğunda yazar panelindeki Bildiri Kitabı ekranında PDF görüntülenir ve indirilebilir.
+                                </div>
+                            </div>
+
+                            <div class="form-check form-switch m-0">
+                                <input asp-for="IsProceedingBookPublished"
+                                       class="form-check-input"
+                                       type="checkbox" />
+                            </div>
+                        </div>
+
+                        <span asp-validation-for="IsProceedingBookPublished" class="text-danger small fw-bold"></span>
+
+                        <div class="proceeding-actions">
+                            <a href="@backUrl" class="cancel-btn">
+                                <i class="fas fa-times"></i>
+                                Vazgeç
+                            </a>
+
+                            <button type="submit" class="save-btn">
+                                <i class="fas fa-save"></i>
+                                Kaydet
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <aside class="side-card">
+                @if (Model.IsProceedingBookPublished)
+                {
+                    <div class="status-badge status-published">
+                        <i class="fas fa-circle-check"></i>
+                        Yayında
+                    </div>
+                }
+                else
+                {
+                    <div class="status-badge status-draft">
+                        <i class="fas fa-clock"></i>
+                        Yayında Değil
+                    </div>
+                }
+
+                <h5 class="side-title">
+                    Yayın Bilgisi
+                </h5>
+
+                <p class="side-text">
+                    Bildiri kitabı yayınlandığında yazar ve katılımcılar ilgili kongre panelinden PDF dosyasına erişebilir.
+                </p>
+
+                <ul class="info-list">
+                    <li>
+                        <i class="fas fa-calendar-check"></i>
+                        <span>
+                            Yayın Tarihi:
+                            <strong>@publishedDateText</strong>
+                        </span>
+                    </li>
+
+                    <li>
+                        <i class="fas fa-file-pdf"></i>
+                        <span>
+                            Dosya Durumu:
+                            <strong>@(hasFile ? "PDF yüklü" : "PDF yüklenmedi")</strong>
+                        </span>
+                    </li>
+
+                    <li>
+                        <i class="fas fa-eye"></i>
+                        <span>
+                            Görünürlük:
+                            <strong>@(Model.IsProceedingBookPublished ? "Yazar panelinde görünür" : "Yazar panelinde gizli")</strong>
+                        </span>
+                    </li>
+
+                    <li>
+                        <i class="fas fa-circle-info"></i>
+                        <span>
+                            Yayına almak için manuel PDF yükleyebilir veya otomatik oluşturma seçeneğini kullanabilirsiniz.
+                        </span>
+                    </li>
+                </ul>
+            </aside>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal fade"
+     id="generateProceedingBookModal"
+     tabindex="-1"
+     aria-labelledby="generateProceedingBookModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content remove-modal-content">
+            <div class="modal-header remove-modal-header">
+                <div class="remove-modal-icon" style="background: rgba(13, 110, 253, 0.10); color: #0d6efd;">
+                    <i class="fas fa-wand-magic-sparkles"></i>
+                </div>
+
+                <div>
+                    <h5 class="remove-modal-title" id="generateProceedingBookModalLabel">
+                        Otomatik Bildiri Kitabı Oluştur
+                    </h5>
+
+                    <p class="remove-modal-subtitle">
+                        Sistem kabul edilmiş bildirilerden PDF oluşturacak.
+                    </p>
+                </div>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Kapat"></button>
+            </div>
+
+            <div class="modal-body remove-modal-body">
+                <p class="mb-3 fw-bold text-secondary">
+                    Bu kongreye ait kabul edilmiş bildirilerden otomatik bildiri kitabı oluşturulsun mu?
+                </p>
+
+                <div class="remove-warning">
+                    <i class="fas fa-circle-info"></i>
+                    <span>
+                        Mevcut PDF varsa yeni oluşturulan dosya ile değiştirilecektir.
+                        Sadece kabul edilmiş bildiriler bildiri kitabına eklenir.
+                    </span>
+                </div>
+            </div>
+
+            <div class="modal-footer remove-modal-footer">
+                <button type="button"
+                        class="btn remove-cancel-btn"
+                        data-bs-dismiss="modal">
+                    Vazgeç
+                </button>
+
+                <form action="@generateUrl"
+                      method="post"
+                      class="m-0">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
+
+                    <button type="submit"
+                            class="btn remove-confirm-btn"
+                            style="background: #0d6efd; box-shadow: 0 12px 26px rgba(13, 110, 253, 0.24);">
+                        <i class="fas fa-file-circle-plus me-2"></i>
+                        Evet, Oluştur
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (hasFile)
+{
+    <div class="modal fade"
+         id="removeProceedingBookModal"
+         tabindex="-1"
+         aria-labelledby="removeProceedingBookModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content remove-modal-content">
+                <div class="modal-header remove-modal-header">
+                    <div class="remove-modal-icon">
+                        <i class="fas fa-trash"></i>
+                    </div>
+
+                    <div>
+                        <h5 class="remove-modal-title" id="removeProceedingBookModalLabel">
+                            PDF Dosyasını Kaldır
+                        </h5>
+
+                        <p class="remove-modal-subtitle">
+                            Bu işlem mevcut bildiri kitabını yayından kaldırır.
+                        </p>
+                    </div>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Kapat"></button>
+                </div>
+
+                <div class="modal-body remove-modal-body">
+                    <p class="mb-3 fw-bold text-secondary">
+                        Mevcut bildiri kitabı PDF dosyasını kaldırmak istediğinize emin misiniz?
+                    </p>
+
+                    <div class="remove-warning">
+                        <i class="fas fa-circle-info"></i>
+                        <span>
+                            PDF dosyası kaldırılırsa bildiri kitabı otomatik olarak yayından kaldırılır.
+                            Yazar panelinde artık görüntülenmez.
+                        </span>
+                    </div>
+                </div>
+
+                <div class="modal-footer remove-modal-footer">
+                    <button type="button"
+                            class="btn remove-cancel-btn"
+                            data-bs-dismiss="modal">
+                        Vazgeç
+                    </button>
+
+                    <form action="@removeFileUrl"
+                          method="post"
+                          class="m-0">
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
+
+                        <button type="submit" class="btn remove-confirm-btn">
+                            <i class="fas fa-trash me-2"></i>
+                            Evet, Kaldır
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

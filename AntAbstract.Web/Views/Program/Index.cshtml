@@ -1,40 +1,615 @@
 ﻿@model IEnumerable<AntAbstract.Domain.Entities.Session>
+@using System.Globalization
+@using AntAbstract.Domain.Entities
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
-    Layout = "_Layout";
+    Layout = "_LayoutDashboard";
 
-    var groups = Model.GroupBy(x => x.SessionDate.Date).OrderBy(x => x.Key).ToList();
+    var sessions = Model?.ToList() ?? new List<Session>();
+
+    var groups = sessions
+        .OrderBy(x => x.SessionDate)
+        .ThenBy(x => x.StartTime)
+        .ThenBy(x => x.SortOrder)
+        .GroupBy(x => x.SessionDate.Date)
+        .ToList();
+
+    var slug = ViewBag.Slug as string ?? "";
+    var conferenceName = ViewBag.ConferenceName as string ?? "";
+
+    var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+
+    string L(string key, string tr, string en)
+    {
+        var value = Localizer[key].Value;
+
+        if (string.Equals(value, key, StringComparison.OrdinalIgnoreCase))
+        {
+            return isEnglish ? en : tr;
+        }
+
+        return value;
+    }
+
+    string GetSessionTitle(Session session)
+    {
+        if (isEnglish && !string.IsNullOrWhiteSpace(session.TitleEn))
+        {
+            return session.TitleEn;
+        }
+
+        return session.Title;
+    }
+
+    string? GetSessionDescription(Session session)
+    {
+        if (isEnglish && !string.IsNullOrWhiteSpace(session.DescriptionEn))
+        {
+            return session.DescriptionEn;
+        }
+
+        return session.Description;
+    }
+
+    string? GetPresentationTitle(Session session)
+    {
+        if (isEnglish && !string.IsNullOrWhiteSpace(session.PresentationTitleEn))
+        {
+            return session.PresentationTitleEn;
+        }
+
+        return session.PresentationTitle;
+    }
+
+    string GetAuthorName(Submission submission)
+    {
+        var authorName = $"{submission.Author?.FirstName} {submission.Author?.LastName}".Trim();
+
+        if (string.IsNullOrWhiteSpace(authorName))
+        {
+            return L("AuthorNotSpecified", "Yazar belirtilmedi", "Author not specified");
+        }
+
+        return authorName;
+    }
 }
 
-<div class="container py-5 mt-4">
-    <div class="text-center mb-5">
-        <h6 class="text-primary fw-bold text-uppercase ls-2">@Localizer["CalendarLabel"]</h6>
-        <h2 class="fw-bold">@Localizer["PageHeading"]</h2>
-        <p class="text-muted">@ViewBag.ConferenceName</p>
+<style>
+    .program-page {
+        padding: 2rem 1.5rem 4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .program-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        padding: 1.45rem 1.55rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.055);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+    }
+
+    .program-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 0;
+    }
+
+    .program-hero-icon {
+        width: 62px;
+        height: 62px;
+        min-width: 62px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.45rem;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
+    }
+
+    .program-title {
+        color: #0f172a;
+        font-size: 1.65rem;
+        font-weight: 900;
+        letter-spacing: -0.6px;
+        margin-bottom: 0.25rem;
+    }
+
+    .program-lead {
+        color: #64748b;
+        font-size: 0.95rem;
+        font-weight: 650;
+        margin-bottom: 0;
+    }
+
+    .program-conference-pill {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border-radius: 999px;
+        background: #ffffff;
+        border: 1px solid #dbe4ef;
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 900;
+        padding: 0 0.95rem;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.045);
+        max-width: 380px;
+    }
+
+        .program-conference-pill span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+    .program-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.4rem;
+    }
+
+    .program-stat-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        padding: 1.05rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+    }
+
+    .program-stat-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .stat-blue {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .stat-cyan {
+        background: rgba(0, 174, 239, 0.10);
+        color: #00aeef;
+    }
+
+    .stat-green {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+    }
+
+    .program-stat-value {
+        color: #0f172a;
+        font-size: 1.3rem;
+        font-weight: 900;
+        line-height: 1.1;
+    }
+
+    .program-stat-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 850;
+    }
+
+    .program-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .program-tab-btn {
+        min-height: 44px;
+        border-radius: 999px;
+        border: 1px solid #dbe4ef;
+        background: #ffffff;
+        color: #64748b;
+        padding: 0 1rem;
+        font-weight: 900;
+        transition: all 0.2s ease;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+    }
+
+        .program-tab-btn:hover {
+            color: #0d6efd;
+            transform: translateY(-1px);
+        }
+
+        .program-tab-btn.active {
+            border-color: transparent;
+            background: linear-gradient(135deg, #00aeef, #0d6efd);
+            color: #ffffff;
+            box-shadow: 0 12px 28px rgba(0, 174, 239, 0.24);
+        }
+
+    .program-day-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
+        overflow: hidden;
+        margin-bottom: 1.25rem;
+    }
+
+    .program-day-header {
+        padding: 1.1rem 1.35rem;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .program-day-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 900;
+        margin: 0;
+    }
+
+        .program-day-title i {
+            width: 38px;
+            height: 38px;
+            border-radius: 14px;
+            background: rgba(0, 174, 239, 0.10);
+            color: #00aeef;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+    .program-day-count {
+        min-height: 30px;
+        display: inline-flex;
+        align-items: center;
+        padding: 0 0.85rem;
+        border-radius: 999px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .program-session-list {
+        padding: 0.85rem;
+    }
+
+    .program-session-item {
+        display: grid;
+        grid-template-columns: 155px minmax(0, 1fr);
+        gap: 1rem;
+        padding: 1rem;
+        border-radius: 20px;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+    }
+
+        .program-session-item + .program-session-item {
+            margin-top: 0.65rem;
+        }
+
+        .program-session-item:hover {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+            transform: translateY(-1px);
+        }
+
+    .program-time-box {
+        border-radius: 18px;
+        background: linear-gradient(135deg, rgba(0, 174, 239, 0.10), rgba(13, 110, 253, 0.08));
+        border: 1px solid rgba(0, 174, 239, 0.16);
+        padding: 0.9rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .program-time {
+        color: #0d6efd;
+        font-size: 0.98rem;
+        font-weight: 900;
+        line-height: 1.2;
+    }
+
+    .program-time-label {
+        color: #64748b;
+        font-size: 0.74rem;
+        font-weight: 800;
+        margin-top: 0.35rem;
+    }
+
+    .program-session-title {
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 900;
+        line-height: 1.35;
+        margin-bottom: 0.4rem;
+    }
+
+    .program-session-desc {
+        color: #64748b;
+        font-size: 0.84rem;
+        font-weight: 650;
+        line-height: 1.45;
+        margin-bottom: 0.65rem;
+    }
+
+    .program-meta-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .program-meta {
+        min-height: 31px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        color: #64748b;
+        border-radius: 999px;
+        padding: 0 0.75rem;
+        font-size: 0.76rem;
+        font-weight: 850;
+    }
+
+        .program-meta i {
+            color: #00aeef;
+        }
+
+    .presentation-list {
+        margin-top: 0.85rem;
+        border-top: 1px dashed #e2e8f0;
+        padding-top: 0.85rem;
+    }
+
+    .presentation-item {
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 0.85rem;
+        margin-bottom: 0.65rem;
+    }
+
+        .presentation-item:last-child {
+            margin-bottom: 0;
+        }
+
+    .presentation-title {
+        color: #0f172a;
+        font-size: 0.88rem;
+        font-weight: 900;
+        line-height: 1.35;
+        margin-bottom: 0.35rem;
+    }
+
+    .presentation-author {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .empty-program-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
+        padding: 4rem 1.5rem;
+        text-align: center;
+    }
+
+    .empty-program-icon {
+        width: 116px;
+        height: 116px;
+        border-radius: 999px;
+        background: #f8fafc;
+        color: #cbd5e1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3.6rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .empty-program-title {
+        color: #0f172a;
+        font-size: 1.25rem;
+        font-weight: 900;
+        margin-bottom: 0.45rem;
+    }
+
+    .empty-program-text {
+        color: #64748b;
+        font-size: 0.92rem;
+        font-weight: 650;
+        max-width: 560px;
+        margin: 0 auto;
+    }
+
+    @@media (max-width: 992px) {
+        .program-hero {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .program-conference-pill {
+            max-width: 100%;
+        }
+
+        .program-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .program-session-item {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .program-page {
+            padding: 1.5rem 1rem 3rem;
+        }
+
+        .program-title {
+            font-size: 1.45rem;
+        }
+
+        .program-day-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+</style>
+
+<div class="program-page">
+
+    <div class="program-hero">
+        <div class="program-hero-left">
+            <div class="program-hero-icon">
+                <i class="fas fa-calendar-days"></i>
+            </div>
+
+            <div>
+                <h3 class="program-title">
+                    @L("PageHeading", "Kongre Programı", "Congress Program")
+                </h3>
+
+                <p class="program-lead">
+                    @L(
+                    "PageLead",
+                                        "Kongre oturumlarını, sunum saatlerini ve programa alınan bildirileri buradan takip edebilirsiniz.",
+                                        "You can follow congress sessions, presentation times and scheduled abstracts here."
+                                        )
+                </p>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(conferenceName))
+        {
+            <div class="program-conference-pill">
+                <i class="fas fa-calendar-check text-primary"></i>
+                <span>@conferenceName</span>
+            </div>
+        }
     </div>
 
-    @if (!Model.Any())
-    {
-        <div class="alert alert-light text-center border py-5">
-            <i class="far fa-calendar-times fa-3x text-muted mb-3 opacity-50"></i>
-            <p class="text-muted">@Localizer["EmptyProgramText"]</p>
+    <div class="program-stats">
+        <div class="program-stat-card">
+            <div class="program-stat-icon stat-blue">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+
+            <div>
+                <div class="program-stat-value">
+                    @sessions.Count
+                </div>
+
+                <div class="program-stat-label">
+                    @L("Stat_TotalSessions", "Toplam Oturum", "Total Sessions")
+                </div>
+            </div>
         </div>
-    }
+
+        <div class="program-stat-card">
+            <div class="program-stat-icon stat-cyan">
+                <i class="fas fa-calendar-day"></i>
+            </div>
+
+            <div>
+                <div class="program-stat-value">
+                    @groups.Count
+                </div>
+
+                <div class="program-stat-label">
+                    @L("Stat_TotalDays", "Program Günü", "Program Days")
+                </div>
+            </div>
+        </div>
+
+        <div class="program-stat-card">
+            <div class="program-stat-icon stat-green">
+                <i class="fas fa-file-lines"></i>
+            </div>
+
+            <div>
+                <div class="program-stat-value">
+                    @sessions.Sum(x => x.Submissions?.Count ?? 0)
+                </div>
+
+                <div class="program-stat-label">
+                    @L("Stat_TotalPresentations", "Programa Ekli Bildiri", "Scheduled Abstracts")
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!sessions.Any())
+    {
+        <div class="empty-program-card">
+            <div class="empty-program-icon">
+                <i class="fas fa-calendar-xmark"></i>
+            </div>
+
+            <h5 class="empty-program-title">
+                @L("EmptyTitle", "Program henüz yayınlanmadı", "Program has not been published yet")
+            </h5>
+
+            <p class="empty-program-text">
+                @L(
+                "EmptyProgramText",
+                        "Bu kongre için henüz aktif program oturumu oluşturulmamış.",
+                        "No active program sessions have been created for this congress yet."
+                        )
+        </p>
+    </div>
+        }
     else
     {
-        <ul class="nav nav-pills justify-content-center mb-5" id="program-tabs" role="tablist">
+        <ul class="nav program-tabs" id="program-tabs" role="tablist">
             @for (int i = 0; i < groups.Count; i++)
             {
                 var group = groups[i];
-                <li class="nav-item mx-1" role="presentation">
-                    <button class="nav-link px-4 py-2 fw-bold @(i == 0 ? "active" : "") shadow-sm"
+
+                <li class="nav-item" role="presentation">
+                    <button class="program-tab-btn @(i == 0 ? "active" : "")"
                             id="tab-@i"
                             data-bs-toggle="pill"
                             data-bs-target="#content-@i"
                             type="button"
-                            role="tab">
+                            role="tab"
+                            aria-controls="content-@i"
+                            aria-selected="@(i == 0 ? "true" : "false")">
                         @group.Key.ToString("dd MMMM dddd")
                     </button>
                 </li>
@@ -45,74 +620,130 @@
             @for (int i = 0; i < groups.Count; i++)
             {
                 var group = groups[i];
-                <div class="tab-pane fade @(i == 0 ? "show active" : "")" id="content-@i" role="tabpanel">
 
-                    <div class="row g-4">
-                        @foreach (var session in group.OrderBy(s => s.SessionDate))
-                        {
-                            <div class="col-lg-6">
-                                <div class="card h-100 border-0 shadow-sm hover-shadow transition-all">
-                                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <span class="badge bg-primary bg-opacity-10 text-primary mb-2">
-                                                    <i class="far fa-clock me-1"></i> @session.SessionDate.ToString("HH:mm")
-                                                </span>
-                                                <span class="badge bg-secondary bg-opacity-10 text-secondary mb-2 ms-1">
-                                                    <i class="fas fa-map-marker-alt me-1"></i> @(session.Location ?? Localizer["LocationNotSpecified"].Value)
-                                                </span>
-                                            </div>
+                <div class="tab-pane fade @(i == 0 ? "show active" : "")"
+                     id="content-@i"
+                     role="tabpanel"
+                     aria-labelledby="tab-@i">
+
+                    <div class="program-day-card">
+                        <div class="program-day-header">
+                            <h5 class="program-day-title">
+                                <i class="fas fa-calendar-day"></i>
+                                @group.Key.ToString("dd MMMM yyyy")
+                            </h5>
+
+                            <span class="program-day-count">
+                                @group.Count() @L("SessionCountText", "oturum", "sessions")
+                            </span>
+                        </div>
+
+                        <div class="program-session-list">
+                            @foreach (var session in group.OrderBy(s => s.StartTime).ThenBy(s => s.SortOrder))
+                            {
+                                var sessionTitle = GetSessionTitle(session);
+                                var sessionDescription = GetSessionDescription(session);
+                                var presentationTitle = GetPresentationTitle(session);
+                                var submissionCount = session.Submissions?.Count ?? 0;
+
+                                <div class="program-session-item">
+                                    <div class="program-time-box">
+                                        <div class="program-time">
+                                            @session.StartTime.ToString(@"hh\:mm") - @session.EndTime.ToString(@"hh\:mm")
                                         </div>
-                                        <h5 class="card-title fw-bold text-dark mt-2 mb-1">@session.Title</h5>
+
+                                        <div class="program-time-label">
+                                            @L("TimeRangeLabel", "Oturum Saati", "Session Time")
+                                        </div>
                                     </div>
 
-                                    <div class="card-body px-4">
-                                        <hr class="text-muted opacity-10 my-3">
+                                    <div>
+                                        <h5 class="program-session-title">
+                                            @sessionTitle
+                                        </h5>
+
+                                        @if (!string.IsNullOrWhiteSpace(sessionDescription))
+                                        {
+                                            <div class="program-session-desc">
+                                                @sessionDescription
+                                            </div>
+                                        }
+
+                                    <div class="program-meta-list">
+                                        <span class="program-meta">
+                                            <i class="fas fa-location-dot"></i>
+                                            @(string.IsNullOrWhiteSpace(session.Location)
+                                                                                ? L("LocationNotSpecified", "Konum belirtilmedi", "Location not specified")
+                                                                                : session.Location)
+                                </span>
+
+                                @if (!string.IsNullOrWhiteSpace(session.SpeakerName))
+                                            {
+                                                <span class="program-meta">
+                                                    <i class="fas fa-microphone"></i>
+                                                    @session.SpeakerName
+                                                </span>
+                                            }
+
+                                            <span class="program-meta">
+                                                <i class="fas fa-file-lines"></i>
+                                                @submissionCount @L("SubmissionText", "bildiri", "abstracts")
+                                            </span>
+                                        </div>
+
+                                        @if (!string.IsNullOrWhiteSpace(presentationTitle))
+                                        {
+                                            <div class="presentation-item">
+                                                <div class="presentation-title">
+                                                    @presentationTitle
+                                                </div>
+
+                                                @if (!string.IsNullOrWhiteSpace(session.SpeakerName))
+                                                {
+                                                    <div class="presentation-author">
+                                                        <i class="fas fa-user-circle"></i>
+                                                        @session.SpeakerName
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
 
                                         @if (session.Submissions != null && session.Submissions.Any())
                                         {
-                                            <ul class="list-unstyled mb-0">
-                                                @foreach (var sub in session.Submissions)
+                                            <div class="presentation-list">
+                                                @foreach (var submission in session.Submissions.OrderBy(x => x.Title))
                                                 {
-                                                    <li class="mb-3 pb-3 border-bottom border-light last-no-border">
-                                                        <div class="fw-bold text-dark small mb-1">@sub.Title</div>
-                                                        <div class="text-muted small fst-italic">
-                                                            <i class="fas fa-user-circle me-1 text-primary opacity-50"></i>
-                                                            @sub.Author?.FirstName @sub.Author?.LastName
+                                                    <div class="presentation-item">
+                                                        <div class="presentation-title">
+                                                            @submission.Title
                                                         </div>
-                                                    </li>
+
+                                                        <div class="presentation-author">
+                                                            <i class="fas fa-user-circle"></i>
+                                                            @GetAuthorName(submission)
+                                                        </div>
+                                                    </div>
                                                 }
-                                            </ul>
+                                            </div>
                                         }
-                                        else
+                                        else if (string.IsNullOrWhiteSpace(presentationTitle))
                                         {
-                                            <p class="text-muted small fst-italic mb-0">@Localizer["DetailsComingSoonText"]</p>
-                                        }
-                                    </div>
-                                </div>
+                                            <div class="program-session-desc mb-0">
+                                                @L(
+                                                "DetailsComingSoonText",
+                                                                "Oturum detayları yakında eklenecektir.",
+                                                                "Session details will be added soon."
+                                                                )
                             </div>
-                        }
+                                                        }
+                        </div>
                     </div>
-
+                                        }
                 </div>
-            }
+            </div>
+
         </div>
-    }
+                }
+    </div>
+        }
 </div>
-
-<style>
-    .hover-shadow:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
-    }
-
-    .transition-all {
-        transition: all 0.3s ease;
-    }
-
-    .last-no-border:last-child {
-        border-bottom: none !important;
-        margin-bottom: 0 !important;
-        padding-bottom: 0 !important;
-    }
-</style>
