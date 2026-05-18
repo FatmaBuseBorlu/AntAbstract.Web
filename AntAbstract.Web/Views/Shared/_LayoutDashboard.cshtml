@@ -28,6 +28,13 @@
         displayName = user?.Email ?? "Kullanıcı";
     }
 
+    var shortDisplayName = displayName;
+
+    if (!string.IsNullOrWhiteSpace(shortDisplayName) && shortDisplayName.Length > 22)
+    {
+        shortDisplayName = shortDisplayName.Substring(0, 22).Trim() + "...";
+    }
+
     var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
         ? user.ProfileImagePath
         : $"https://ui-avatars.com/api/?name={Uri.EscapeDataString(displayName)}&background=00aeef&color=fff&size=128&bold=true";
@@ -629,29 +636,49 @@
         }
 
         .user-menu-btn {
-            width: 46px;
-            height: 46px;
-            min-width: 46px;
+            min-height: 48px;
+            max-width: 250px;
             display: inline-flex;
             align-items: center;
-            justify-content: center;
+            gap: 0.65rem;
             cursor: pointer;
-            padding: 0;
+            padding: 0.35rem 0.45rem 0.35rem 1rem;
             border-radius: 999px;
             background-color: #ffffff;
             border: 1px solid #dbe3ef;
             transition: all 0.2s ease;
             box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
             position: relative;
+            color: var(--text-dark);
         }
 
-            .user-menu-btn:hover {
+            .user-menu-btn:hover,
+            .user-menu-btn.show {
                 border-color: rgba(0, 174, 239, 0.32);
                 box-shadow: 0 12px 28px rgba(0, 174, 239, 0.12);
                 transform: translateY(-1px);
+                background-color: #ffffff;
             }
 
-            .user-menu-btn::after {
+        .user-menu-name {
+            max-width: 145px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.86rem;
+            font-weight: 900;
+            color: var(--text-dark);
+            line-height: 1;
+        }
+
+        .user-avatar-wrapper {
+            position: relative;
+            width: 38px;
+            height: 38px;
+            min-width: 38px;
+        }
+
+            .user-avatar-wrapper::after {
                 content: "";
                 width: 10px;
                 height: 10px;
@@ -659,8 +686,8 @@
                 background-color: #22c55e;
                 border: 2px solid #ffffff;
                 position: absolute;
-                right: 3px;
-                bottom: 4px;
+                right: 0;
+                bottom: 1px;
             }
 
         .user-avatar {
@@ -670,6 +697,17 @@
             object-fit: cover;
             border: 3px solid #ffffff;
             box-shadow: 0 4px 12px rgba(15, 23, 42, 0.10);
+        }
+
+        .user-menu-chevron {
+            color: #64748b;
+            font-size: 0.72rem;
+            margin-right: 0.15rem;
+            transition: transform 0.2s ease;
+        }
+
+        .user-menu-btn.show .user-menu-chevron {
+            transform: rotate(180deg);
         }
 
         .user-role-badge {
@@ -685,32 +723,32 @@
         }
 
         .account-dropdown-menu {
-            width: 272px;
+            width: 315px;
             padding: 0;
             border: none !important;
-            border-radius: 22px !important;
+            border-radius: 24px !important;
             overflow: hidden;
             background-color: #ffffff;
-            box-shadow: 0 22px 55px rgba(15, 23, 42, 0.16);
+            box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
             margin-top: 12px !important;
         }
 
         .account-dropdown-header {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            padding: 0.95rem;
-            background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.18), transparent 35%), linear-gradient(135deg, rgba(0, 174, 239, 0.08), #ffffff);
+            gap: 0.9rem;
+            padding: 1.05rem;
+            background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.20), transparent 38%), linear-gradient(135deg, rgba(0, 174, 239, 0.10), #ffffff);
         }
 
         .account-dropdown-avatar {
-            width: 46px;
-            height: 46px;
-            min-width: 46px;
+            width: 56px;
+            height: 56px;
+            min-width: 56px;
             border-radius: 50%;
             object-fit: cover;
-            border: 3px solid #ffffff;
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.11);
+            border: 4px solid #ffffff;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.13);
         }
 
         .account-dropdown-user-info {
@@ -718,38 +756,39 @@
         }
 
         .account-dropdown-name {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             font-weight: 900;
             color: #0f172a;
             line-height: 1.2;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 175px;
+            max-width: 210px;
         }
 
         .account-dropdown-role {
             display: inline-flex;
             align-items: center;
-            margin-top: 0.23rem;
-            padding: 0.15rem 0.5rem;
+            margin-top: 0.28rem;
+            padding: 0.18rem 0.55rem;
             border-radius: 999px;
             background-color: rgba(0, 174, 239, 0.12);
             color: var(--primary-color);
-            font-size: 0.58rem;
+            font-size: 0.6rem;
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
 
         .account-dropdown-email {
-            margin-top: 0.24rem;
+            margin-top: 0.3rem;
             color: #64748b;
-            font-size: 0.69rem;
+            font-size: 0.74rem;
+            font-weight: 700;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 175px;
+            max-width: 210px;
         }
 
         .account-dropdown-divider {
@@ -759,16 +798,16 @@
         }
 
         .account-dropdown-body {
-            padding: 0.45rem;
+            padding: 0.55rem;
         }
 
         .account-dropdown-item {
             width: 100%;
             display: flex;
             align-items: center;
-            gap: 0.65rem;
-            padding: 0.65rem 0.7rem;
-            border-radius: 15px;
+            gap: 0.75rem;
+            padding: 0.72rem 0.75rem;
+            border-radius: 16px;
             border: none;
             background-color: transparent;
             color: #334155;
@@ -783,14 +822,14 @@
             }
 
         .account-dropdown-item-icon {
-            width: 34px;
-            height: 34px;
-            min-width: 34px;
-            border-radius: 12px;
+            width: 38px;
+            height: 38px;
+            min-width: 38px;
+            border-radius: 14px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.9rem;
+            font-size: 0.92rem;
         }
 
         .account-icon-primary {
@@ -814,7 +853,7 @@
 
         .account-dropdown-item-title {
             display: block;
-            font-size: 0.86rem;
+            font-size: 0.88rem;
             font-weight: 900;
             line-height: 1.2;
         }
@@ -822,7 +861,7 @@
         .account-dropdown-item-desc {
             display: block;
             margin-top: 0.16rem;
-            font-size: 0.68rem;
+            font-size: 0.7rem;
             color: #64748b;
             line-height: 1.25;
         }
@@ -843,12 +882,12 @@
         }
 
         .selected-conference-banner {
-            border: 1px solid rgba(0, 174, 239, 0.18);
-            background: linear-gradient(135deg, rgba(0, 174, 239, 0.10), rgba(255, 255, 255, 0.95));
-            border-radius: 18px;
-            padding: 1rem 1.2rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
+            border: 1px solid rgba(0, 174, 239, 0.20);
+            background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(239, 248, 255, 0.96));
+            border-radius: 24px;
+            padding: 1.35rem 1.5rem;
+            margin-bottom: 1.75rem;
+            box-shadow: 0 16px 38px rgba(15, 23, 42, 0.055);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -856,28 +895,32 @@
         }
 
         .selected-conference-icon {
-            width: 42px;
-            height: 42px;
-            border-radius: 14px;
-            background-color: var(--primary-color);
+            width: 54px;
+            height: 54px;
+            min-width: 54px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #00aeef, #0d6efd);
             color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            box-shadow: 0 8px 18px rgba(0, 174, 239, 0.25);
+            box-shadow: 0 12px 26px rgba(0, 174, 239, 0.24);
+            font-size: 1.15rem;
         }
 
         .selected-conference-title {
-            font-weight: 800;
+            font-weight: 900;
             color: #0f172a;
             margin-bottom: 2px;
+            font-size: 1rem;
+            line-height: 1.25;
         }
 
         .selected-conference-subtitle {
-            font-size: 0.78rem;
+            font-size: 0.82rem;
             color: #64748b;
-            font-weight: 600;
+            font-weight: 800;
         }
 
         .sidebar-overlay {
@@ -934,17 +977,31 @@
             }
 
             .user-menu-btn {
+                min-height: 42px;
+                max-width: 42px;
                 width: 42px;
                 height: 42px;
-                min-width: 42px;
+                padding: 0.2rem;
                 border: none;
                 background: transparent;
                 box-shadow: none;
+                gap: 0;
+            }
+
+            .user-menu-name,
+            .user-menu-chevron {
+                display: none;
+            }
+
+            .user-avatar-wrapper {
+                width: 38px;
+                height: 38px;
+                min-width: 38px;
             }
 
             .user-avatar {
-                width: 36px;
-                height: 36px;
+                width: 38px;
+                height: 38px;
                 border-width: 2px;
             }
 
@@ -954,7 +1011,7 @@
             }
 
             .account-dropdown-menu {
-                width: 255px;
+                width: 295px;
             }
         }
     </style>
@@ -1141,6 +1198,7 @@
                     </a>
                 }
             }
+
             @if (!isSuperAdmin && isManagementTeam)
             {
                 @if (hasSelectedConference)
@@ -1355,7 +1413,16 @@
                             data-bs-toggle="dropdown"
                             aria-expanded="false"
                             aria-label="@L("Common_AccountMenu", "Hesap menüsü")">
-                        <img src="@profileImg" class="user-avatar" alt="@displayName">
+
+                        <span class="user-menu-name">
+                            @shortDisplayName
+                        </span>
+
+                        <span class="user-avatar-wrapper">
+                            <img src="@profileImg" class="user-avatar" alt="@displayName">
+                        </span>
+
+                        <i class="fas fa-chevron-down user-menu-chevron"></i>
                     </button>
 
                     <div class="dropdown-menu dropdown-menu-end account-dropdown-menu">
@@ -1383,6 +1450,83 @@
                         <div class="account-dropdown-divider"></div>
 
                         <div class="account-dropdown-body">
+                            @if (isSuperAdmin)
+                            {
+                                <a class="account-dropdown-item"
+                                   href="/Dashboard/SuperAdmin">
+                                    <span class="account-dropdown-item-icon account-icon-info">
+                                        <i class="fas fa-shield-alt"></i>
+                                    </span>
+
+                                    <span class="account-dropdown-item-content">
+                                        <span class="account-dropdown-item-title">
+                                            @L("Dropdown_SuperAdminPanel", "Süper Admin Paneli")
+                                        </span>
+
+                                        <span class="account-dropdown-item-desc">
+                                            @L("Dropdown_SuperAdminPanelDescription", "Sistem yönetimine dön")
+                                        </span>
+                                    </span>
+                                </a>
+                            }
+                            else if (isAdmin)
+                            {
+                                <a class="account-dropdown-item"
+                                   href="@dashboardUrl">
+                                    <span class="account-dropdown-item-icon account-icon-info">
+                                        <i class="fas fa-user-shield"></i>
+                                    </span>
+
+                                    <span class="account-dropdown-item-content">
+                                        <span class="account-dropdown-item-title">
+                                            @L("Dropdown_AdminPanel", "Yönetici Paneli")
+                                        </span>
+
+                                        <span class="account-dropdown-item-desc">
+                                            @L("Dropdown_AdminPanelDescription", "Kongre yönetimine dön")
+                                        </span>
+                                    </span>
+                                </a>
+                            }
+                            else if (isAuthor)
+                            {
+                                <a class="account-dropdown-item"
+                                   href="@dashboardMyConferencesUrl">
+                                    <span class="account-dropdown-item-icon account-icon-info">
+                                        <i class="fas fa-file-alt"></i>
+                                    </span>
+
+                                    <span class="account-dropdown-item-content">
+                                        <span class="account-dropdown-item-title">
+                                            @L("Dropdown_AuthorPanel", "Yazar Paneli")
+                                        </span>
+
+                                        <span class="account-dropdown-item-desc">
+                                            @L("Dropdown_AuthorPanelDescription", "Kongre ve başvurularına dön")
+                                        </span>
+                                    </span>
+                                </a>
+                            }
+                            else if (isReferee)
+                            {
+                                <a class="account-dropdown-item"
+                                   href="@reviewIndexUrl">
+                                    <span class="account-dropdown-item-icon account-icon-info">
+                                        <i class="fas fa-gavel"></i>
+                                    </span>
+
+                                    <span class="account-dropdown-item-content">
+                                        <span class="account-dropdown-item-title">
+                                            @L("Dropdown_RefereePanel", "Hakem Paneli")
+                                        </span>
+
+                                        <span class="account-dropdown-item-desc">
+                                            @L("Dropdown_RefereePanelDescription", "Hakem görevlerine dön")
+                                        </span>
+                                    </span>
+                                </a>
+                            }
+
                             <a class="account-dropdown-item"
                                href="/Identity/Account/Manage">
                                 <span class="account-dropdown-item-icon account-icon-primary">

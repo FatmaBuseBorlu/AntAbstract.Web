@@ -5,65 +5,508 @@
     Layout = "_LayoutDashboard";
 }
 
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold m-0">
-            <i class="fas fa-pen-nib me-2 text-primary"></i>@Localizer["PageHeading"]
-        </h4>
-        <a href="/Message/Index" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-1"></i> @Localizer["BackButton"]
+<style>
+    .compose-page {
+        padding: 2rem 1.5rem 4rem;
+        max-width: 1180px;
+        margin: 0 auto;
+    }
+
+    .compose-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.18), transparent 35%), linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        padding: 1.6rem;
+        margin-bottom: 1.6rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.055);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+    }
+
+    .compose-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 0;
+    }
+
+    .compose-hero-icon {
+        width: 62px;
+        height: 62px;
+        min-width: 62px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
+        font-size: 1.55rem;
+    }
+
+    .compose-title {
+        font-size: 1.75rem;
+        font-weight: 900;
+        color: #0f172a;
+        margin-bottom: 0.25rem;
+        letter-spacing: -0.6px;
+    }
+
+    .compose-lead {
+        color: #64748b;
+        font-size: 0.98rem;
+        font-weight: 600;
+        margin-bottom: 0;
+    }
+
+    .btn-back-modern {
+        min-height: 46px;
+        border-radius: 999px;
+        padding: 0 1.1rem;
+        color: #64748b;
+        background: #ffffff;
+        border: 1px solid #dbe4ef;
+        font-weight: 900;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+        white-space: nowrap;
+    }
+
+        .btn-back-modern:hover {
+            color: #0d6efd;
+            border-color: rgba(13, 110, 253, 0.28);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(13, 110, 253, 0.10);
+            text-decoration: none;
+        }
+
+    .compose-shell {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 330px;
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    .compose-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.055);
+        overflow: hidden;
+    }
+
+    .compose-card-header {
+        padding: 1.35rem 1.55rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+    }
+
+    .compose-step-icon {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 12px 24px rgba(0, 174, 239, 0.22);
+    }
+
+    .compose-card-title {
+        color: #0f172a;
+        font-size: 1.05rem;
+        font-weight: 900;
+        margin-bottom: 0.15rem;
+    }
+
+    .compose-card-subtitle {
+        color: #64748b;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .compose-card-body {
+        padding: 1.7rem;
+    }
+
+    .form-label-modern {
+        color: #475569;
+        font-size: 0.84rem;
+        font-weight: 900;
+        margin-bottom: 0.55rem;
+    }
+
+    .input-modern {
+        width: 100%;
+        min-height: 54px;
+        border-radius: 16px;
+        border: 1px solid #dbe4ef;
+        background: #ffffff;
+        color: #0f172a;
+        font-size: 0.94rem;
+        font-weight: 700;
+        padding: 0.85rem 1rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.025);
+    }
+
+        .input-modern::placeholder {
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .input-modern:focus {
+            outline: none;
+            border-color: #00aeef;
+            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.12);
+        }
+
+    textarea.input-modern {
+        min-height: 220px;
+        resize: vertical;
+        line-height: 1.6;
+    }
+
+    .receiver-card {
+        min-height: 64px;
+        border-radius: 18px;
+        border: 1px solid rgba(0, 174, 239, 0.16);
+        background: linear-gradient(135deg, rgba(0, 174, 239, 0.08), rgba(13, 110, 253, 0.06));
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 0.85rem;
+    }
+
+    .receiver-icon {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 16px;
+        background: #ffffff;
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.10);
+    }
+
+    .receiver-label {
+        color: #64748b;
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.35px;
+        margin-bottom: 0.15rem;
+    }
+
+    .receiver-name {
+        color: #0f172a;
+        font-size: 0.95rem;
+        font-weight: 900;
+    }
+
+    .compose-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 1.4rem;
+    }
+
+    .btn-submit-message {
+        min-height: 54px;
+        border: none;
+        border-radius: 18px;
+        padding: 0 1.45rem;
+        color: #ffffff;
+        background: linear-gradient(135deg, #00aeef 0%, #0d6efd 100%);
+        box-shadow: 0 14px 30px rgba(0, 174, 239, 0.24);
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.65rem;
+        transition: all 0.2s ease;
+    }
+
+        .btn-submit-message:hover {
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 18px 38px rgba(0, 174, 239, 0.34);
+        }
+
+    .compose-side-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        padding: 1.25rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
+    }
+
+    .compose-side-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 19px;
+        background: rgba(0, 174, 239, 0.10);
+        color: #00aeef;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        margin-bottom: 1rem;
+    }
+
+    .compose-side-title {
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 900;
+        margin-bottom: 0.45rem;
+    }
+
+    .compose-side-text {
+        color: #64748b;
+        font-size: 0.84rem;
+        font-weight: 650;
+        line-height: 1.55;
+        margin-bottom: 1rem;
+    }
+
+    .compose-tip-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+        .compose-tip-list li {
+            display: flex;
+            gap: 0.55rem;
+            color: #475569;
+            font-size: 0.8rem;
+            font-weight: 750;
+            margin-bottom: 0.7rem;
+        }
+
+            .compose-tip-list li i {
+                color: #00aeef;
+                margin-top: 0.15rem;
+            }
+
+    @@media (max-width: 992px) {
+        .compose-shell {
+            grid-template-columns: 1fr;
+        }
+
+        .compose-hero {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .btn-back-modern {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .compose-page {
+            padding: 1.5rem 1rem 3rem;
+        }
+
+        .compose-title {
+            font-size: 1.45rem;
+        }
+
+        .compose-actions {
+            flex-direction: column-reverse;
+            align-items: stretch;
+        }
+
+        .btn-submit-message {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<div class="compose-page">
+    <div class="compose-hero">
+        <div class="compose-hero-left">
+            <div class="compose-hero-icon">
+                <i class="fas fa-pen-nib"></i>
+            </div>
+
+            <div>
+                <h3 class="compose-title">
+                    @Localizer["PageHeading"]
+                </h3>
+
+                <p class="compose-lead">
+                    Mesajınızı kongre yönetimine hızlı ve güvenli şekilde iletin.
+                </p>
+            </div>
+        </div>
+
+        <a href="/Message/Index" class="btn-back-modern">
+            <i class="fas fa-arrow-left"></i>
+            @Localizer["BackButton"]
         </a>
     </div>
 
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-4">
+    <div class="compose-shell">
+        <div class="compose-card">
+            <div class="compose-card-header">
+                <div class="compose-step-icon">
+                    <i class="fas fa-paper-plane"></i>
+                </div>
 
-                    <form asp-action="Create" method="post">
-                        @Html.AntiForgeryToken()
+                <div>
+                    <div class="compose-card-title">
+                        Yeni Mesaj Bilgileri
+                    </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-muted small">@Localizer["ToLabel"]</label>
-
-                            <div class="input-group">
-                                <span class="input-group-text border-0 bg-light">
-                                    <i class="fas fa-user-shield text-primary"></i>
-                                </span>
-                                <input type="text" class="form-control bg-light border-0 fw-bold" value="@ViewBag.ReceiverName" readonly />
-                            </div>
-
-                            <input type="hidden" name="receiverId" value="@ViewBag.ReceiverId" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-muted small">@Localizer["SubjectLabel"]</label>
-                            <input type="text"
-                                   name="subject"
-                                   class="form-control bg-light border-0"
-                                   placeholder="@Localizer["SubjectPlaceholder"]"
-                                   required />
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label fw-bold text-muted small">@Localizer["MessageLabel"]</label>
-                            <textarea name="content"
-                                      class="form-control bg-light border-0"
-                                      rows="8"
-                                      placeholder="@Localizer["MessagePlaceholder"]"
-                                      required></textarea>
-                        </div>
-
-                        <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary px-4 py-2 fw-bold">
-                                <i class="fas fa-paper-plane me-2"></i> @Localizer["SendButton"]
-                            </button>
-                        </div>
-
-                    </form>
-
+                    <div class="compose-card-subtitle">
+                        Konu ve mesaj içeriğini doldurarak gönderim yapabilirsiniz.
+                    </div>
                 </div>
             </div>
+
+            <div class="compose-card-body">
+                <form asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-4">
+                        <label class="form-label-modern">
+                            @Localizer["ToLabel"]
+                        </label>
+
+                        <div class="receiver-card">
+                            <div class="receiver-icon">
+                                <i class="fas fa-user-shield"></i>
+                            </div>
+
+                            <div>
+                                <div class="receiver-label">
+                                    Alıcı
+                                </div>
+
+                                <div class="receiver-name">
+                                    @ViewBag.ReceiverName
+                                </div>
+                            </div>
+                        </div>
+
+                        <input type="hidden" name="receiverId" value="@ViewBag.ReceiverId" />
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label-modern">
+                            @Localizer["SubjectLabel"]
+                            <span class="text-danger">*</span>
+                        </label>
+
+                        <input type="text"
+                               name="subject"
+                               class="input-modern"
+                               placeholder="@Localizer["SubjectPlaceholder"]"
+                               required />
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label-modern">
+                            @Localizer["MessageLabel"]
+                            <span class="text-danger">*</span>
+                        </label>
+
+                        <textarea name="content"
+                                  id="messageContent"
+                                  class="input-modern"
+                                  rows="8"
+                                  maxlength="3000"
+                                  placeholder="@Localizer["MessagePlaceholder"]"
+                                  required></textarea>
+
+                        <div class="d-flex justify-content-end mt-2">
+                            <span id="messageCounter" class="badge rounded-pill bg-light text-secondary border fw-bold">
+                                0 / 3000
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="compose-actions">
+                        <a href="/Message/Index" class="btn-back-modern">
+                            <i class="fas fa-times"></i>
+                            Vazgeç
+                        </a>
+
+                        <button type="submit" class="btn-submit-message">
+                            <i class="fas fa-paper-plane"></i>
+                            @Localizer["SendButton"]
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
+
+        <aside class="compose-side-card">
+            <div class="compose-side-icon">
+                <i class="fas fa-circle-info"></i>
+            </div>
+
+            <h5 class="compose-side-title">
+                Mesaj Gönderimi
+            </h5>
+
+            <p class="compose-side-text">
+                Bu mesaj kongre yönetimine iletilir. Başvuru, ödeme veya teknik destek gibi konularda iletişim kurabilirsiniz.
+            </p>
+
+            <ul class="compose-tip-list">
+                <li>
+                    <i class="fas fa-check-circle"></i>
+                    <span>Konu alanını kısa ve açıklayıcı yazın.</span>
+                </li>
+
+                <li>
+                    <i class="fas fa-check-circle"></i>
+                    <span>Mesajınızda ilgili kongre veya başvuru bilgisini belirtin.</span>
+                </li>
+
+                <li>
+                    <i class="fas fa-check-circle"></i>
+                    <span>Gönderilen mesajlarınızı mesaj kutunuzdan takip edebilirsiniz.</span>
+                </li>
+            </ul>
+        </aside>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const messageInput = document.getElementById("messageContent");
+            const counter = document.getElementById("messageCounter");
+
+            if (!messageInput || !counter) {
+                return;
+            }
+
+            const updateCounter = function () {
+                counter.innerText = messageInput.value.length + " / 3000";
+            };
+
+            messageInput.addEventListener("input", updateCounter);
+            updateCounter();
+        });
+    </script>
+}

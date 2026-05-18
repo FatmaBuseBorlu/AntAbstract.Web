@@ -225,6 +225,47 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return Redirect($"/{conference.Tenant.Slug}/Admin/ConferenceFlow/{operationAction}?conferenceId={conference.Id}");
         }
 
+        private async Task<IActionResult> RedirectToProgramSessionsPrintAsync(Guid? conferenceId)
+        {
+            Guid? selectedConferenceId = null;
+
+            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
+            {
+                selectedConferenceId = conferenceId.Value;
+            }
+            else
+            {
+                selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
+            }
+
+            if (!selectedConferenceId.HasValue || selectedConferenceId.Value == Guid.Empty)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_SelectedConferenceRequired",
+                    "Lütfen önce bir kongre seçin.");
+
+                return RedirectToAction(nameof(SelectConference));
+            }
+
+            var query = await GetAccessibleConferenceQueryAsync();
+
+            var conference = await query
+                .FirstOrDefaultAsync(c => c.Id == selectedConferenceId.Value);
+
+            if (conference == null || conference.Tenant == null || string.IsNullOrWhiteSpace(conference.Tenant.Slug))
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_SelectedConferenceNotFound",
+                    "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+
+                return RedirectToAction(nameof(SelectConference));
+            }
+
+            SetConferenceSession(conference);
+
+            return Redirect($"/{conference.Tenant.Slug}/Admin/ConferenceFlow/ProgramSessions/Print?conferenceId={conference.Id}");
+        }
+
         [HttpGet("/Admin/ConferenceFlow")]
         public async Task<IActionResult> SelectConference(string? returnUrl = null, bool forceSelect = false)
         {
@@ -667,11 +708,86 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             SetConferenceSession(conference);
 
+            var sessions = await _context.Sessions
+                .AsNoTracking()
+                .Include(x => x.Submissions)
+                    .ThenInclude(x => x.Author)
+                .Where(x => x.ConferenceId == conference.Id)
+                .OrderBy(x => x.SessionDate)
+                .ThenBy(x => x.StartTime)
+                .ThenBy(x => x.SortOrder)
+                .ToListAsync();
+
+            var totalSessions = sessions.Count;
+
+            var speakerCount = sessions
+                .Where(x => !string.IsNullOrWhiteSpace(x.SpeakerName))
+                .Select(x => x.SpeakerName!.Trim().ToLower())
+                .Distinct()
+                .Count();
+
+            var hallCount = sessions
+                .Where(x => !string.IsNullOrWhiteSpace(x.Location))
+                .Select(x => x.Location!.Trim().ToLower())
+                .Distinct()
+                .Count();
+
+            var programDayCount = sessions
+                .Select(x => x.SessionDate.Date)
+                .Distinct()
+                .Count();
+
             ViewBag.ConferenceId = conference.Id;
             ViewBag.ConferenceTitle = conference.Title ?? "";
             ViewBag.Slug = slug;
 
-            return View("~/Areas/Admin/Views/ConferenceFlow/ProgramSessions.cshtml");
+            ViewBag.TotalSessions = totalSessions;
+            ViewBag.SpeakerCount = speakerCount;
+            ViewBag.HallCount = hallCount;
+            ViewBag.ProgramDayCount = programDayCount;
+
+            return View("~/Areas/Admin/Views/ConferenceFlow/ProgramSessions.cshtml", sessions);
+        }
+
+        [HttpGet("/Admin/ConferenceFlow/ProgramSessions/Print")]
+        public async Task<IActionResult> ProgramSessionsPrintRoot(Guid? conferenceId)
+        {
+            return await RedirectToProgramSessionsPrintAsync(conferenceId);
+        }
+
+        [HttpGet("/{slug}/Admin/ConferenceFlow/ProgramSessions/Print")]
+        public async Task<IActionResult> ProgramSessionsPrint(string slug, Guid? conferenceId)
+        {
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_InvalidTenant",
+                    "Lütfen yetkili olduğunuz geçerli bir kongre seçiniz.");
+
+                return RedirectToAction(nameof(SelectConference));
+            }
+
+            SetConferenceSession(conference);
+
+            var sessions = await _context.Sessions
+                .AsNoTracking()
+                .Include(x => x.Submissions)
+                    .ThenInclude(x => x.Author)
+                .Where(x =>
+                    x.ConferenceId == conference.Id &&
+                    x.IsActive)
+                .OrderBy(x => x.SessionDate)
+                .ThenBy(x => x.StartTime)
+                .ThenBy(x => x.SortOrder)
+                .ToListAsync();
+
+            ViewBag.ConferenceId = conference.Id;
+            ViewBag.ConferenceTitle = conference.Title ?? "";
+            ViewBag.Slug = slug;
+
+            return View("~/Areas/Admin/Views/ConferenceFlow/ProgramSessionsPrint.cshtml", sessions);
         }
 
         [HttpGet("/ConferenceFlow/Index")]

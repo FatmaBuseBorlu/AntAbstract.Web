@@ -17,6 +17,7 @@ using Stripe;
 using System.Globalization;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Localization;
+using AntAbstract.Infrastructure.Services.ProceedingBooks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -126,6 +127,7 @@ builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration, builder.Environment);
 
 builder.Services.AddScoped<PdfCertificateService>();
+builder.Services.AddScoped<IProceedingBookPdfService, ProceedingBookPdfService>();
 
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();

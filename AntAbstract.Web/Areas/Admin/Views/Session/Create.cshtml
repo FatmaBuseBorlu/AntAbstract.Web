@@ -5,31 +5,520 @@
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
-    var baseUrl = string.IsNullOrWhiteSpace(Model.Slug)
-        ? "/Admin/Session"
-        : $"/{Model.Slug}/Admin/Session";
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
 
-    var backUrl = Model.ConferenceId == Guid.Empty
-        ? baseUrl
-        : $"{baseUrl}?conferenceId={Model.ConferenceId}";
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
+
+    var conferenceIdText = Model.ConferenceId == Guid.Empty
+        ? Context.Request.Query["conferenceId"].ToString()
+        : Model.ConferenceId.ToString();
+
+    var flowUrl = string.IsNullOrWhiteSpace(Model.Slug)
+        ? $"/Admin/ConferenceFlow/ProgramSessions?conferenceId={conferenceIdText}"
+        : $"/{Model.Slug}/Admin/ConferenceFlow/ProgramSessions?conferenceId={conferenceIdText}";
+
+    var backUrl = !string.IsNullOrWhiteSpace(Model.ReturnUrl)
+        ? Model.ReturnUrl
+        : flowUrl;
 }
 
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-center justify-content-between mb-4">
-                        <h4 class="fw-bold mb-0">@Localizer["CardTitle"]</h4>
-                        <a href="@backUrl" class="btn btn-light border" title="@Localizer["BackButton"]">
-                            <i class="fas fa-arrow-left"></i>
-                        </a>
-                    </div>
+<style>
+    .session-create-page {
+        padding: 2rem 1.5rem 4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
 
+    .session-create-shell {
+        max-width: 1180px;
+        margin: 0 auto;
+    }
+
+    .session-create-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.18), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        padding: 1.5rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.055);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.4rem;
+        flex-wrap: wrap;
+    }
+
+    .session-create-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 280px;
+    }
+
+    .session-create-hero-icon {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.45rem;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
+    }
+
+    .session-create-title {
+        color: #0f172a;
+        font-size: 1.8rem;
+        font-weight: 900;
+        letter-spacing: -0.055em;
+        margin-bottom: 0.25rem;
+    }
+
+    .session-create-lead {
+        color: #64748b;
+        font-size: 0.95rem;
+        font-weight: 650;
+        margin: 0;
+    }
+
+    .session-back-btn {
+        min-height: 48px;
+        border-radius: 999px;
+        padding: 0 1.2rem;
+        color: #334155;
+        background: #ffffff;
+        border: 1px solid #dbe4ef;
+        font-weight: 900;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+        white-space: nowrap;
+    }
+
+        .session-back-btn:hover {
+            color: #0d6efd;
+            border-color: rgba(13, 110, 253, 0.28);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(13, 110, 253, 0.10);
+            text-decoration: none;
+        }
+
+    .session-create-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    .session-form-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.055);
+        overflow: hidden;
+    }
+
+    .session-form-header {
+        padding: 1.35rem 1.55rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .session-form-header-left {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+    }
+
+    .session-form-step {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        box-shadow: 0 12px 24px rgba(0, 174, 239, 0.22);
+    }
+
+    .session-form-heading {
+        color: #0f172a;
+        font-size: 1.08rem;
+        font-weight: 900;
+        margin-bottom: 0.15rem;
+    }
+
+    .session-form-subtitle {
+        color: #64748b;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .session-form-body {
+        padding: 1.7rem;
+    }
+
+    .conference-mini-card {
+        border-radius: 20px;
+        border: 1px solid rgba(0, 174, 239, 0.16);
+        background: linear-gradient(135deg, rgba(0, 174, 239, 0.08), rgba(13, 110, 253, 0.06));
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        margin-bottom: 1.35rem;
+    }
+
+    .conference-mini-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 16px;
+        background: #ffffff;
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.10);
+    }
+
+    .conference-mini-label {
+        color: #64748b;
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.35px;
+        margin-bottom: 0.15rem;
+    }
+
+    .conference-mini-title {
+        color: #0f172a;
+        font-size: 0.95rem;
+        font-weight: 900;
+    }
+
+    .form-label-modern {
+        color: #475569;
+        font-size: 0.84rem;
+        font-weight: 900;
+        margin-bottom: 0.55rem;
+    }
+
+    .form-control-modern {
+        width: 100%;
+        min-height: 54px;
+        border-radius: 16px;
+        border: 1px solid #dbe4ef;
+        background: #ffffff;
+        color: #0f172a;
+        font-size: 0.94rem;
+        font-weight: 700;
+        padding: 0.85rem 1rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.025);
+    }
+
+        .form-control-modern::placeholder {
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .form-control-modern:focus {
+            outline: none;
+            border-color: #00aeef;
+            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.12);
+        }
+
+    textarea.form-control-modern {
+        min-height: 128px;
+        resize: vertical;
+        line-height: 1.55;
+    }
+
+    .modern-switch-card {
+        border-radius: 18px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .modern-switch-title {
+        color: #0f172a;
+        font-size: 0.9rem;
+        font-weight: 900;
+        margin-bottom: 0.15rem;
+    }
+
+    .modern-switch-text {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .form-check-input {
+        width: 3rem;
+        height: 1.55rem;
+        cursor: pointer;
+    }
+
+    .session-form-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 1.4rem;
+        padding-top: 1.3rem;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .session-save-btn {
+        min-height: 54px;
+        border: none;
+        border-radius: 999px;
+        padding: 0 1.55rem;
+        color: #ffffff;
+        background: linear-gradient(135deg, #00aeef 0%, #0d6efd 100%);
+        box-shadow: 0 14px 30px rgba(0, 174, 239, 0.24);
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.65rem;
+        transition: all 0.2s ease;
+    }
+
+        .session-save-btn:hover {
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 18px 38px rgba(0, 174, 239, 0.34);
+        }
+
+    .session-cancel-btn {
+        min-height: 54px;
+        border-radius: 999px;
+        padding: 0 1.45rem;
+        color: #334155;
+        background: #ffffff;
+        border: 1px solid #dbe4ef;
+        font-weight: 900;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        transition: all 0.2s ease;
+    }
+
+        .session-cancel-btn:hover {
+            color: #0d6efd;
+            background: #f8fbff;
+            border-color: rgba(13, 110, 253, 0.28);
+            text-decoration: none;
+        }
+
+    .session-side-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        padding: 1.25rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
+        position: sticky;
+        top: 92px;
+    }
+
+    .session-side-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 19px;
+        background: rgba(0, 174, 239, 0.10);
+        color: #00aeef;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        margin-bottom: 1rem;
+    }
+
+    .session-side-title {
+        color: #0f172a;
+        font-size: 1.05rem;
+        font-weight: 900;
+        margin-bottom: 0.45rem;
+    }
+
+    .session-side-text {
+        color: #64748b;
+        font-size: 0.84rem;
+        font-weight: 650;
+        line-height: 1.55;
+        margin-bottom: 1rem;
+    }
+
+    .session-tip-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+        .session-tip-list li {
+            display: flex;
+            gap: 0.55rem;
+            color: #475569;
+            font-size: 0.8rem;
+            font-weight: 750;
+            margin-bottom: 0.7rem;
+        }
+
+            .session-tip-list li i {
+                color: #00aeef;
+                margin-top: 0.15rem;
+            }
+
+    .validation-summary-errors {
+        border: none;
+        border-radius: 18px;
+        background: rgba(239, 68, 68, 0.08);
+        color: #b91c1c;
+        font-weight: 800;
+        padding: 1rem 1.1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    @@media (max-width: 992px) {
+        .session-create-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .session-side-card {
+            position: static;
+        }
+
+        .session-create-hero {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .session-back-btn {
+            width: 100%;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .session-create-page {
+            padding: 1.5rem 1rem 3rem;
+        }
+
+        .session-create-title {
+            font-size: 1.45rem;
+        }
+
+        .session-form-body {
+            padding: 1.2rem;
+        }
+
+        .session-form-actions {
+            flex-direction: column-reverse;
+            align-items: stretch;
+        }
+
+        .session-save-btn,
+        .session-cancel-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="session-create-page">
+    <div class="session-create-shell">
+
+        <div class="session-create-hero">
+            <div class="session-create-hero-left">
+                <div class="session-create-hero-icon">
+                    <i class="fas fa-calendar-plus"></i>
+                </div>
+
+                <div>
+                    <h3 class="session-create-title">
+                        @L("PageTitle", "Yeni Oturum Oluştur")
+                    </h3>
+
+                    <p class="session-create-lead">
+                        @L("PageLead", "Kongre programına yeni bir oturum, konuşmacı veya sunum bölümü ekleyin.")
+                    </p>
+                </div>
+            </div>
+
+            <a href="@backUrl" class="session-back-btn">
+                <i class="fas fa-arrow-left"></i>
+                @L("BackButton", "Program Ekranına Dön")
+            </a>
+        </div>
+
+        <div class="session-create-grid">
+            <div class="session-form-card">
+                <div class="session-form-header">
+                    <div class="session-form-header-left">
+                        <div class="session-form-step">
+                            1
+                        </div>
+
+                        <div>
+                            <div class="session-form-heading">
+                                @L("CardTitle", "Oturum Bilgileri")
+                            </div>
+
+                            <div class="session-form-subtitle">
+                                @L("CardSubtitle", "Oturum tarihi, saati ve içerik bilgilerini girin.")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="session-form-body">
                     @if (!ViewData.ModelState.IsValid)
                     {
-                        <div class="text-danger small mb-2">
-                            @Html.ValidationSummary(false)
+                        <div asp-validation-summary="All" class="validation-summary-errors"></div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.ConferenceTitle))
+                    {
+                        <div class="conference-mini-card">
+                            <div class="conference-mini-icon">
+                                <i class="fas fa-building-columns"></i>
+                            </div>
+
+                            <div>
+                                <div class="conference-mini-label">
+                                    @L("ConferenceLabel", "Seçili Kongre")
+                                </div>
+
+                                <div class="conference-mini-title">
+                                    @Model.ConferenceTitle
+                                </div>
+                            </div>
                         </div>
                     }
 
@@ -37,41 +526,235 @@
                           asp-controller="Session"
                           asp-action="Create"
                           asp-route-slug="@Model.Slug"
+                          asp-route-conferenceId="@Model.ConferenceId"
                           method="post">
+
                         @Html.AntiForgeryToken()
 
+                        <input type="hidden" asp-for="Slug" />
                         <input type="hidden" asp-for="ConferenceId" />
+                        <input type="hidden" asp-for="ConferenceTitle" />
                         <input type="hidden" asp-for="ReturnUrl" />
 
-                        <div class="mb-3">
-                            <label class="form-label text-muted small fw-bold">@Localizer["TitleLabel"]</label>
-                            <input asp-for="Title" class="form-control" placeholder="@Localizer["TitlePlaceholder"]" />
-                            <span asp-validation-for="Title" class="text-danger small"></span>
+                        <div class="row g-4">
+                            <div class="col-md-8">
+                                <label asp-for="Title" class="form-label-modern">
+                                    @L("TitleLabel", "Oturum Başlığı") <span class="text-danger">*</span>
+                                </label>
+
+                                <input asp-for="Title"
+                                       class="form-control-modern"
+                                       placeholder="@L("TitlePlaceholder", "Örn: Açılış Oturumu")" />
+
+                                <span asp-validation-for="Title" class="text-danger small fw-bold"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="SortOrder" class="form-label-modern">
+                                    @L("SortOrderLabel", "Sıralama")
+                                </label>
+
+                                <input asp-for="SortOrder"
+                                       type="number"
+                                       class="form-control-modern"
+                                       placeholder="0" />
+
+                                <span asp-validation-for="SortOrder" class="text-danger small fw-bold"></span>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label asp-for="TitleEn" class="form-label-modern">
+                                    @L("TitleEnLabel", "İngilizce Oturum Başlığı")
+                                </label>
+
+                                <input asp-for="TitleEn"
+                                       class="form-control-modern"
+                                       placeholder="@L("TitleEnPlaceholder", "Example: Opening Session")" />
+
+                                <span asp-validation-for="TitleEn" class="text-danger small fw-bold"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="SessionDate" class="form-label-modern">
+                                    @L("SessionDateLabel", "Oturum Tarihi") <span class="text-danger">*</span>
+                                </label>
+
+                                <input asp-for="SessionDate"
+                                       type="date"
+                                       class="form-control-modern"
+                                       value="@(Model.SessionDate == default ? DateTime.Today.ToString("yyyy-MM-dd") : Model.SessionDate.ToString("yyyy-MM-dd"))" />
+
+                                <span asp-validation-for="SessionDate" class="text-danger small fw-bold"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="StartTime" class="form-label-modern">
+                                    @L("StartTimeLabel", "Başlangıç Saati") <span class="text-danger">*</span>
+                                </label>
+
+                                <input asp-for="StartTime"
+                                       type="time"
+                                       class="form-control-modern"
+                                       value="@Model.StartTime.ToString(@"hh\:mm")" />
+
+                                <span asp-validation-for="StartTime" class="text-danger small fw-bold"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="EndTime" class="form-label-modern">
+                                    @L("EndTimeLabel", "Bitiş Saati") <span class="text-danger">*</span>
+                                </label>
+
+                                <input asp-for="EndTime"
+                                       type="time"
+                                       class="form-control-modern"
+                                       value="@Model.EndTime.ToString(@"hh\:mm")" />
+
+                                <span asp-validation-for="EndTime" class="text-danger small fw-bold"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Location" class="form-label-modern">
+                                    @L("LocationLabel", "Salon / Konum")
+                                </label>
+
+                                <input asp-for="Location"
+                                       class="form-control-modern"
+                                       placeholder="@L("LocationPlaceholder", "Örn: Ana Salon")" />
+
+                                <span asp-validation-for="Location" class="text-danger small fw-bold"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="SpeakerName" class="form-label-modern">
+                                    @L("SpeakerNameLabel", "Konuşmacı")
+                                </label>
+
+                                <input asp-for="SpeakerName"
+                                       class="form-control-modern"
+                                       placeholder="@L("SpeakerNamePlaceholder", "Örn: Prof. Dr. Ayşe Yılmaz")" />
+
+                                <span asp-validation-for="SpeakerName" class="text-danger small fw-bold"></span>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label asp-for="PresentationTitle" class="form-label-modern">
+                                    @L("PresentationTitleLabel", "Sunum / Bildiri Başlığı")
+                                </label>
+
+                                <input asp-for="PresentationTitle"
+                                       class="form-control-modern"
+                                       placeholder="@L("PresentationTitlePlaceholder", "Örn: Yapay Zeka ve Akademik Üretkenlik")" />
+
+                                <span asp-validation-for="PresentationTitle" class="text-danger small fw-bold"></span>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label asp-for="PresentationTitleEn" class="form-label-modern">
+                                    @L("PresentationTitleEnLabel", "İngilizce Sunum / Bildiri Başlığı")
+                                </label>
+
+                                <input asp-for="PresentationTitleEn"
+                                       class="form-control-modern"
+                                       placeholder="@L("PresentationTitleEnPlaceholder", "Example: Artificial Intelligence and Academic Productivity")" />
+
+                                <span asp-validation-for="PresentationTitleEn" class="text-danger small fw-bold"></span>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label asp-for="Description" class="form-label-modern">
+                                    @L("DescriptionLabel", "Açıklama")
+                                </label>
+
+                                <textarea asp-for="Description"
+                                          class="form-control-modern"
+                                          placeholder="@L("DescriptionPlaceholder", "Oturum hakkında kısa açıklama yazabilirsiniz.")"></textarea>
+
+                                <span asp-validation-for="Description" class="text-danger small fw-bold"></span>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label asp-for="DescriptionEn" class="form-label-modern">
+                                    @L("DescriptionEnLabel", "İngilizce Açıklama")
+                                </label>
+
+                                <textarea asp-for="DescriptionEn"
+                                          class="form-control-modern"
+                                          placeholder="@L("DescriptionEnPlaceholder", "You can write a short description about the session.")"></textarea>
+
+                                <span asp-validation-for="DescriptionEn" class="text-danger small fw-bold"></span>
+                            </div>
+
+                            <div class="col-md-12">
+                                <div class="modern-switch-card">
+                                    <div>
+                                        <div class="modern-switch-title">
+                                            @L("IsActiveLabel", "Oturum aktif olsun")
+                                        </div>
+
+                                        <div class="modern-switch-text">
+                                            @L("IsActiveHelp", "Aktif oturumlar yazar ve katılımcı program ekranlarında görünür.")
+                                        </div>
+                                    </div>
+
+                                    <div class="form-check form-switch m-0">
+                                        <input asp-for="IsActive"
+                                               class="form-check-input"
+                                               type="checkbox" />
+                                    </div>
+                                </div>
+
+                                <span asp-validation-for="IsActive" class="text-danger small fw-bold"></span>
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label text-muted small fw-bold">@Localizer["SessionDateLabel"]</label>
-                            <input asp-for="SessionDate"
-                                   class="form-control"
-                                   type="datetime-local"
-                                   value="@(Model.SessionDate == default ? "" : Model.SessionDate.ToString("yyyy-MM-ddTHH:mm"))" />
-                            <span asp-validation-for="SessionDate" class="text-danger small"></span>
-                        </div>
+                        <div class="session-form-actions">
+                            <a href="@backUrl" class="session-cancel-btn">
+                                <i class="fas fa-times"></i>
+                                @L("CancelButton", "Vazgeç")
+                            </a>
 
-                        <div class="mb-3">
-                            <label class="form-label text-muted small fw-bold">@Localizer["LocationLabel"]</label>
-                            <input asp-for="Location" class="form-control" placeholder="@Localizer["LocationPlaceholder"]" />
-                            <span asp-validation-for="Location" class="text-danger small"></span>
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary fw-bold">@Localizer["CreateButton"]</button>
-                            <a href="@backUrl" class="btn btn-outline-secondary">@Localizer["CancelButton"]</a>
+                            <button type="submit" class="session-save-btn">
+                                <i class="fas fa-save"></i>
+                                @L("CreateButton", "Oturumu Kaydet")
+                            </button>
                         </div>
                     </form>
                 </div>
             </div>
+
+            <aside class="session-side-card">
+                <div class="session-side-icon">
+                    <i class="fas fa-circle-info"></i>
+                </div>
+
+                <h5 class="session-side-title">
+                    @L("SideTitle", "Program Oturumu")
+                </h5>
+
+                <p class="session-side-text">
+                    @L("SideText", "Oturumlar kongre programının temel parçalarıdır. Kabul edilen bildirileri daha sonra bu oturumlara bağlayabilirsiniz.")
+                </p>
+
+                <ul class="session-tip-list">
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>@L("Tip1", "Tarih ve saat bilgilerini net girin.")</span>
+                    </li>
+
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>@L("Tip2", "Salon / konum alanı katılımcılar için önemlidir.")</span>
+                    </li>
+
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>@L("Tip3", "Pasif oturumlar program ekranında gösterilmez.")</span>
+                    </li>
+                </ul>
+            </aside>
         </div>
+
     </div>
 </div>
 

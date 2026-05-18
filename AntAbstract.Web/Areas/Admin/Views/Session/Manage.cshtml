@@ -8,121 +8,782 @@
 
     var slug = Context.GetRouteValue("slug")?.ToString() ?? "";
     var conferenceId = ViewBag.ConferenceId;
-    var unassigned = ViewBag.UnassignedSubmissions as List<Submission>;
+    var conferenceIdText = conferenceId?.ToString() ?? Context.Request.Query["conferenceId"].ToString();
+
+    var unassigned = ViewBag.UnassignedSubmissions as List<Submission> ?? new List<Submission>();
+    var assignedSubmissions = Model.Submissions?.ToList() ?? new List<Submission>();
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
 
     var backUrl = string.IsNullOrWhiteSpace(slug)
-        ? (conferenceId == null
-            ? "/Admin/Session"
-            : $"/Admin/Session?conferenceId={conferenceId}")
-        : (conferenceId == null
-            ? $"/{slug}/Admin/Session"
-            : $"/{slug}/Admin/Session?conferenceId={conferenceId}");
+        ? $"/Admin/ConferenceFlow/ProgramSessions?conferenceId={conferenceIdText}"
+        : $"/{slug}/Admin/ConferenceFlow/ProgramSessions?conferenceId={conferenceIdText}";
+
+    var sessionDateText = Model.SessionDate == default
+        ? L("DateNotSpecified", "Tarih belirtilmedi")
+        : Model.SessionDate.ToString("dd MMMM yyyy");
+
+    var sessionTimeText = $"{Model.StartTime:hh\\:mm} - {Model.EndTime:hh\\:mm}";
 }
 
-<div class="container-fluid">
-    <div class="d-flex align-items-center mb-4">
-        <a href="@backUrl" class="btn btn-light border me-3" title="@Localizer["BackButton"]">
-            <i class="fas fa-arrow-left"></i>
-        </a>
-        <div>
-            <h4 class="fw-bold mb-0">@Localizer["PageTitle"]: @Model.Title</h4>
-            <small class="text-muted">@Model.SessionDate.ToString("dd MMMM yyyy HH:mm") - @Model.Location</small>
-        </div>
-    </div>
+<style>
+    .session-manage-page {
+        padding: 2rem 1.5rem 4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
 
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-success text-white py-3">
-                    <h6 class="mb-0 fw-bold">
-                        <i class="fas fa-check-circle me-2"></i> @Localizer["AssignedSubmissionsHeader"]
-                    </h6>
+    .session-manage-shell {
+        max-width: 1320px;
+        margin: 0 auto;
+    }
+
+    .session-manage-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.18), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        padding: 1.5rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.055);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.4rem;
+        flex-wrap: wrap;
+    }
+
+    .session-manage-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 280px;
+    }
+
+    .session-manage-hero-icon {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.45rem;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
+    }
+
+    .session-manage-title {
+        color: #0f172a;
+        font-size: 1.8rem;
+        font-weight: 900;
+        letter-spacing: -0.055em;
+        margin-bottom: 0.25rem;
+    }
+
+    .session-manage-lead {
+        color: #64748b;
+        font-size: 0.95rem;
+        font-weight: 650;
+        margin: 0;
+    }
+
+    .session-back-btn {
+        min-height: 48px;
+        border-radius: 999px;
+        padding: 0 1.2rem;
+        color: #334155;
+        background: #ffffff;
+        border: 1px solid #dbe4ef;
+        font-weight: 900;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+        white-space: nowrap;
+    }
+
+        .session-back-btn:hover {
+            color: #0d6efd;
+            border-color: rgba(13, 110, 253, 0.28);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(13, 110, 253, 0.10);
+            text-decoration: none;
+        }
+
+    .session-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.4rem;
+    }
+
+    .session-summary-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        padding: 1.05rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        min-width: 0;
+    }
+
+    .session-summary-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .summary-blue {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .summary-cyan {
+        background: rgba(0, 174, 239, 0.10);
+        color: #00aeef;
+    }
+
+    .summary-green {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+    }
+
+    .summary-orange {
+        background: rgba(245, 158, 11, 0.12);
+        color: #f59e0b;
+    }
+
+    .session-summary-value {
+        color: #0f172a;
+        font-size: 0.95rem;
+        font-weight: 900;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .session-summary-label {
+        color: #64748b;
+        font-size: 0.74rem;
+        font-weight: 850;
+        margin-top: 0.1rem;
+    }
+
+    .manage-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    .manage-panel {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
+        overflow: hidden;
+        min-height: 420px;
+    }
+
+    .manage-panel-header {
+        padding: 1.2rem 1.35rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .manage-panel-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: 0;
+    }
+
+    .manage-panel-icon {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+
+    .icon-assigned {
+        color: #059669;
+        background: rgba(16, 185, 129, 0.12);
+    }
+
+    .icon-pending {
+        color: #0d6efd;
+        background: rgba(13, 110, 253, 0.10);
+    }
+
+    .manage-panel-heading {
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 900;
+        margin: 0;
+        line-height: 1.25;
+    }
+
+    .manage-panel-subtitle {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 700;
+        margin-top: 0.15rem;
+    }
+
+    .manage-count-pill {
+        min-height: 30px;
+        display: inline-flex;
+        align-items: center;
+        padding: 0 0.85rem;
+        border-radius: 999px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .submission-list {
+        padding: 0.9rem;
+    }
+
+    .submission-item {
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        transition: all 0.2s ease;
+    }
+
+        .submission-item + .submission-item {
+            margin-top: 0.75rem;
+        }
+
+        .submission-item:hover {
+            background: #f8fafc;
+            transform: translateY(-1px);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.045);
+        }
+
+    .submission-info {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .submission-title {
+        color: #0f172a;
+        font-size: 0.94rem;
+        font-weight: 900;
+        line-height: 1.35;
+        margin-bottom: 0.4rem;
+    }
+
+    .submission-meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+    }
+
+    .submission-meta {
+        min-height: 28px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: #64748b;
+        border-radius: 999px;
+        padding: 0 0.65rem;
+        font-size: 0.72rem;
+        font-weight: 850;
+    }
+
+        .submission-meta i {
+            color: #00aeef;
+        }
+
+    .btn-add-submission,
+    .btn-remove-submission {
+        min-height: 40px;
+        border-radius: 999px;
+        padding: 0 0.95rem;
+        font-size: 0.78rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        border: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .btn-add-submission {
+        color: #ffffff;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        box-shadow: 0 10px 22px rgba(0, 174, 239, 0.20);
+    }
+
+        .btn-add-submission:hover {
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 14px 28px rgba(0, 174, 239, 0.30);
+        }
+
+    .btn-remove-submission {
+        color: #ef4444;
+        background: rgba(239, 68, 68, 0.08);
+        border: 1px solid rgba(239, 68, 68, 0.20);
+    }
+
+        .btn-remove-submission:hover {
+            color: #dc2626;
+            background: rgba(239, 68, 68, 0.12);
+            transform: translateY(-1px);
+        }
+
+    .empty-list-state {
+        min-height: 280px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 2rem 1rem;
+    }
+
+    .empty-list-icon {
+        width: 92px;
+        height: 92px;
+        border-radius: 999px;
+        background: #f8fafc;
+        color: #cbd5e1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.8rem;
+        margin-bottom: 1rem;
+    }
+
+    .empty-list-title {
+        color: #0f172a;
+        font-size: 1.05rem;
+        font-weight: 900;
+        margin-bottom: 0.35rem;
+    }
+
+    .empty-list-text {
+        color: #64748b;
+        font-size: 0.86rem;
+        font-weight: 650;
+        max-width: 360px;
+        margin: 0 auto;
+    }
+
+    @@media (max-width: 1200px) {
+        .session-summary-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .manage-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .session-manage-page {
+            padding: 1.5rem 1rem 3rem;
+        }
+
+        .session-manage-hero {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .session-manage-title {
+            font-size: 1.45rem;
+        }
+
+        .session-back-btn {
+            width: 100%;
+        }
+
+        .session-summary-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .manage-panel-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .submission-item {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .btn-add-submission,
+        .btn-remove-submission {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="session-manage-page">
+    <div class="session-manage-shell">
+
+        <div class="session-manage-hero">
+            <div class="session-manage-hero-left">
+                <div class="session-manage-hero-icon">
+                    <i class="fas fa-list-check"></i>
                 </div>
-                <div class="card-body p-0">
-                    <ul class="list-group list-group-flush">
-                        @if (Model.Submissions != null && Model.Submissions.Any())
-                        {
-                            foreach (var sub in Model.Submissions)
-                            {
-                                <li class="list-group-item d-flex justify-content-between align-items-center p-3">
-                                    <div>
-                                        <div class="fw-bold">@sub.Title</div>
-                                        <small class="text-muted">@sub.Author?.FirstName @sub.Author?.LastName</small>
-                                    </div>
 
-                                    <form asp-area="Admin"
-                                          asp-controller="Session"
-                                          asp-action="RemoveSubmission"
-                                          asp-route-slug="@slug"
-                                          asp-route-conferenceId="@conferenceId"
-                                          method="post">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="sessionId" value="@Model.Id" />
-                                        <input type="hidden" name="submissionId" value="@sub.Id" />
+                <div>
+                    <h3 class="session-manage-title">
+                        @L("PageTitle", "Oturum Planlama"): @Model.Title
+                    </h3>
 
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="@Localizer["RemoveFromSessionTitle"]">
-                                            <i class="fas fa-minus"></i>
-                                        </button>
-                                    </form>
-                                </li>
-                            }
-                        }
-                        else
-                        {
-                            <li class="list-group-item text-center text-muted py-5">
-                                @Localizer["NoSubmissionInSession"]
-                            </li>
-                        }
-                    </ul>
+                    <p class="session-manage-lead">
+                        @L("PageLead", "Kabul edilen bildirileri bu oturuma ekleyebilir veya oturumdan çıkarabilirsiniz.")
+                    </p>
+                </div>
+            </div>
+
+            <a href="@backUrl" class="session-back-btn">
+                <i class="fas fa-arrow-left"></i>
+                @L("BackButton", "Program Ekranına Dön")
+            </a>
+        </div>
+
+        <div class="session-summary-grid">
+            <div class="session-summary-card">
+                <div class="session-summary-icon summary-blue">
+                    <i class="fas fa-calendar-day"></i>
+                </div>
+
+                <div class="min-w-0">
+                    <div class="session-summary-value">
+                        @sessionDateText
+                    </div>
+
+                    <div class="session-summary-label">
+                        @L("SessionDateLabel", "Oturum Tarihi")
+                    </div>
+                </div>
+            </div>
+
+            <div class="session-summary-card">
+                <div class="session-summary-icon summary-cyan">
+                    <i class="fas fa-clock"></i>
+                </div>
+
+                <div class="min-w-0">
+                    <div class="session-summary-value">
+                        @sessionTimeText
+                    </div>
+
+                    <div class="session-summary-label">
+                        @L("SessionTimeLabel", "Oturum Saati")
+                    </div>
+                </div>
+            </div>
+
+            <div class="session-summary-card">
+                <div class="session-summary-icon summary-orange">
+                    <i class="fas fa-location-dot"></i>
+                </div>
+
+                <div class="min-w-0">
+                    <div class="session-summary-value">
+                        @(string.IsNullOrWhiteSpace(Model.Location) ? L("NotSpecified", "Konum belirtilmedi") : Model.Location)
+                    </div>
+
+                    <div class="session-summary-label">
+                        @L("LocationLabel", "Salon / Konum")
+                    </div>
+                </div>
+            </div>
+
+            <div class="session-summary-card">
+                <div class="session-summary-icon summary-green">
+                    <i class="fas fa-file-lines"></i>
+                </div>
+
+                <div class="min-w-0">
+                    <div class="session-summary-value">
+                        @assignedSubmissions.Count
+                    </div>
+
+                    <div class="session-summary-label">
+                        @L("AssignedSubmissionCount", "Ekli Bildiri")
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-secondary text-white py-3">
-                    <h6 class="mb-0 fw-bold">
-                        <i class="fas fa-inbox me-2"></i> @Localizer["PendingAcceptedSubmissionsHeader"]
-                    </h6>
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success border-0 shadow-sm rounded-4 fw-bold mb-4">
+                <i class="fas fa-check-circle me-2"></i>
+                @TempData["SuccessMessage"]
+            </div>
+        }
+
+        @if (TempData["InfoMessage"] != null)
+        {
+            <div class="alert alert-info border-0 shadow-sm rounded-4 fw-bold mb-4">
+                <i class="fas fa-info-circle me-2"></i>
+                @TempData["InfoMessage"]
+            </div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger border-0 shadow-sm rounded-4 fw-bold mb-4">
+                <i class="fas fa-triangle-exclamation me-2"></i>
+                @TempData["ErrorMessage"]
+            </div>
+        }
+
+        <div class="manage-grid">
+            <section class="manage-panel">
+                <div class="manage-panel-header">
+                    <div class="manage-panel-title">
+                        <div class="manage-panel-icon icon-assigned">
+                            <i class="fas fa-circle-check"></i>
+                        </div>
+
+                        <div>
+                            <h5 class="manage-panel-heading">
+                                @L("AssignedSubmissionsHeader", "Bu Oturuma Atanan Bildiriler")
+                            </h5>
+
+                            <div class="manage-panel-subtitle">
+                                @L("AssignedSubmissionsSubtitle", "Bu oturumda programa alınmış bildiriler.")
+                            </div>
+                        </div>
+                    </div>
+
+                    <span class="manage-count-pill">
+                        @assignedSubmissions.Count @L("SubmissionText", "bildiri")
+                    </span>
                 </div>
-                <div class="card-body p-0">
-                    <ul class="list-group list-group-flush">
-                        @if (unassigned != null && unassigned.Any())
+
+                <div class="submission-list">
+                    @if (assignedSubmissions.Any())
+                    {
+                        foreach (var sub in assignedSubmissions.OrderBy(x => x.Title))
                         {
-                            foreach (var sub in unassigned)
+                            var authorName = $"{sub.Author?.FirstName} {sub.Author?.LastName}".Trim();
+
+                            if (string.IsNullOrWhiteSpace(authorName))
                             {
-                                <li class="list-group-item d-flex justify-content-between align-items-center p-3">
-                                    <div>
-                                        <div class="fw-bold">@sub.Title</div>
-                                        <small class="text-muted">@sub.Author?.FirstName @sub.Author?.LastName</small>
+                                authorName = L("AuthorNotSpecified", "Yazar belirtilmedi");
+                            }
+
+                            <div class="submission-item">
+                                <div class="submission-info">
+                                    <div class="submission-title">
+                                        @sub.Title
                                     </div>
 
-                                    <form asp-area="Admin"
-                                          asp-controller="Session"
-                                          asp-action="AddSubmission"
-                                          asp-route-slug="@slug"
-                                          asp-route-conferenceId="@conferenceId"
-                                          method="post">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="sessionId" value="@Model.Id" />
-                                        <input type="hidden" name="submissionId" value="@sub.Id" />
+                                    <div class="submission-meta-row">
+                                        <span class="submission-meta">
+                                            <i class="fas fa-user"></i>
+                                            @authorName
+                                        </span>
 
-                                        <button type="submit" class="btn btn-sm btn-success fw-bold">
-                                            @Localizer["AddButton"] <i class="fas fa-arrow-left ms-1"></i>
-                                        </button>
-                                    </form>
-                                </li>
-                            }
+                                        @if (!string.IsNullOrWhiteSpace(sub.Topic))
+                                        {
+                                            <span class="submission-meta">
+                                                <i class="fas fa-layer-group"></i>
+                                                @sub.Topic
+                                            </span>
+                                        }
+
+                                        <span class="submission-meta">
+                                            <i class="fas fa-check-circle"></i>
+                                            @sub.Status
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <form asp-area="Admin"
+                                      asp-controller="Session"
+                                      asp-action="RemoveSubmission"
+                                      asp-route-slug="@slug"
+                                      asp-route-conferenceId="@conferenceIdText"
+                                      method="post"
+                                      class="m-0">
+                                    @Html.AntiForgeryToken()
+
+                                    <input type="hidden" name="sessionId" value="@Model.Id" />
+                                    <input type="hidden" name="submissionId" value="@sub.Id" />
+
+                                    <button type="submit"
+                                            class="btn-remove-submission"
+                                            title="@L("RemoveFromSessionTitle", "Oturumdan çıkar")">
+                                        <i class="fas fa-minus-circle"></i>
+                                        @L("RemoveButton", "Çıkar")
+                                    </button>
+                                </form>
+                            </div>
                         }
-                        else
-                        {
-                            <li class="list-group-item text-center text-muted py-5">
-                                @Localizer["NoUnassignedSubmission"]
-                            </li>
-                        }
-                    </ul>
+                    }
+                    else
+                    {
+                        <div class="empty-list-state">
+                            <div>
+                                <div class="empty-list-icon">
+                                    <i class="fas fa-folder-open"></i>
+                                </div>
+
+                                <h6 class="empty-list-title">
+                                    @L("NoSubmissionInSession", "Bu oturuma henüz bildiri eklenmedi.")
+                                </h6>
+
+                                <p class="empty-list-text">
+                                    @L("NoSubmissionInSessionHelp", "Sağ taraftaki kabul edilmiş bildirilerden seçim yaparak bu oturuma ekleyebilirsiniz.")
+                                </p>
+                            </div>
+                        </div>
+                    }
                 </div>
-            </div>
+            </section>
+
+            <section class="manage-panel">
+                <div class="manage-panel-header">
+                    <div class="manage-panel-title">
+                        <div class="manage-panel-icon icon-pending">
+                            <i class="fas fa-inbox"></i>
+                        </div>
+
+                        <div>
+                            <h5 class="manage-panel-heading">
+                                @L("PendingAcceptedSubmissionsHeader", "Bekleyen Kabul Edilmiş Bildiriler")
+                            </h5>
+
+                            <div class="manage-panel-subtitle">
+                                @L("PendingAcceptedSubmissionsSubtitle", "Programa alınmamış kabul edilen bildiriler.")
+                            </div>
+                        </div>
+                    </div>
+
+                    <span class="manage-count-pill">
+                        @unassigned.Count @L("SubmissionText", "bildiri")
+                    </span>
+                </div>
+
+                <div class="submission-list">
+                    @if (unassigned.Any())
+                    {
+                        foreach (var sub in unassigned.OrderBy(x => x.Title))
+                        {
+                            var authorName = $"{sub.Author?.FirstName} {sub.Author?.LastName}".Trim();
+
+                            if (string.IsNullOrWhiteSpace(authorName))
+                            {
+                                authorName = L("AuthorNotSpecified", "Yazar belirtilmedi");
+                            }
+
+                            <div class="submission-item">
+                                <div class="submission-info">
+                                    <div class="submission-title">
+                                        @sub.Title
+                                    </div>
+
+                                    <div class="submission-meta-row">
+                                        <span class="submission-meta">
+                                            <i class="fas fa-user"></i>
+                                            @authorName
+                                        </span>
+
+                                        @if (!string.IsNullOrWhiteSpace(sub.Topic))
+                                        {
+                                            <span class="submission-meta">
+                                                <i class="fas fa-layer-group"></i>
+                                                @sub.Topic
+                                            </span>
+                                        }
+
+                                        <span class="submission-meta">
+                                            <i class="fas fa-check-circle"></i>
+                                            @sub.Status
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <form asp-area="Admin"
+                                      asp-controller="Session"
+                                      asp-action="AddSubmission"
+                                      asp-route-slug="@slug"
+                                      asp-route-conferenceId="@conferenceIdText"
+                                      method="post"
+                                      class="m-0">
+                                    @Html.AntiForgeryToken()
+
+                                    <input type="hidden" name="sessionId" value="@Model.Id" />
+                                    <input type="hidden" name="submissionId" value="@sub.Id" />
+
+                                    <button type="submit" class="btn-add-submission">
+                                        <i class="fas fa-plus-circle"></i>
+                                        @L("AddButton", "Ekle")
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="empty-list-state">
+                            <div>
+                                <div class="empty-list-icon">
+                                    <i class="fas fa-check-double"></i>
+                                </div>
+
+                                <h6 class="empty-list-title">
+                                    @L("NoUnassignedSubmission", "Eklenmeyi bekleyen bildiri yok.")
+                                </h6>
+
+                                <p class="empty-list-text">
+                                    @L("NoUnassignedSubmissionHelp", "Kabul edilen tüm bildiriler programa alınmış olabilir veya henüz kabul edilmiş bildiri bulunmayabilir.")
+                                </p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </section>
         </div>
+
     </div>
 </div>

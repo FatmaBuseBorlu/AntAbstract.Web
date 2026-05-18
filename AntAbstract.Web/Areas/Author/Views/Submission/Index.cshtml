@@ -24,8 +24,6 @@
 
     var hasSubmissions = Model != null && Model.Any();
 
-    var allSubmissionsUrl = "/Submission/Index";
-
     var indexUrl = BuildConferenceUrl(
         "/my-submissions",
         "/Submission/Index"
@@ -68,37 +66,6 @@
         font-size: 1rem;
         margin-bottom: 0;
     }
-
-    .conference-filter-badge {
-        min-height: 34px;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.45rem;
-        border-radius: 999px;
-        border: 1px solid rgba(0, 174, 239, 0.45);
-        background: rgba(0, 174, 239, 0.08);
-        color: #0284c7;
-        font-size: 0.78rem;
-        font-weight: 900;
-        padding: 0 0.9rem;
-        max-width: 360px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .btn-view-all {
-        color: #64748b;
-        font-size: 0.82rem;
-        font-weight: 800;
-        text-decoration: none;
-        margin-left: 0.65rem;
-    }
-
-        .btn-view-all:hover {
-            color: #0d6efd;
-            text-decoration: none;
-        }
 
     .btn-new-submission {
         min-height: 50px;
@@ -346,9 +313,6 @@
             font-size: 1.55rem;
         }
 
-        .conference-filter-area {
-            display: none;
-        }
 
         .btn-new-submission {
             width: 100%;
@@ -373,22 +337,6 @@
             </p>
         </div>
 
-        @if (ViewBag.CurrentConferenceTitle != null)
-        {
-            <div class="conference-filter-area d-none d-md-flex align-items-center ms-md-3 me-md-auto">
-                <span class="conference-filter-badge">
-                    <i class="fas fa-filter"></i>
-                    <span class="text-truncate">
-                        @ViewBag.CurrentConferenceTitle
-                    </span>
-                </span>
-
-                <a href="@allSubmissionsUrl"
-                   class="btn-view-all">
-                    @Localizer["ViewAllButton"]
-                </a>
-            </div>
-        }
 
         @if (hasSubmissions)
         {
