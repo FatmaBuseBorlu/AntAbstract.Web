@@ -1,4 +1,5 @@
-﻿using AntAbstract.Domain.Entities;
+﻿using AntAbstract.Application.Interfaces;
+using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Infrastructure.Services.ProceedingBooks;
@@ -26,6 +27,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly IProceedingBookPdfService _proceedingBookPdfService;
+        private readonly INotificationService _notificationService;
 
         public ProceedingBookController(
             AppDbContext context,
@@ -33,7 +35,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ISelectedConferenceService selectedConferenceService,
             UserManager<AppUser> userManager,
             IWebHostEnvironment webHostEnvironment,
-            IProceedingBookPdfService proceedingBookPdfService)
+            IProceedingBookPdfService proceedingBookPdfService,
+            INotificationService notificationService)
         {
             _context = context;
             _tenantContext = tenantContext;
@@ -41,6 +44,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _userManager = userManager;
             _webHostEnvironment = webHostEnvironment;
             _proceedingBookPdfService = proceedingBookPdfService;
+            _notificationService = notificationService;
         }
 
         private bool IsSuperAdminUser()
@@ -265,6 +269,80 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
         }
 
+        private async Task CreateProceedingBookPublishedNotificationsAsync(Conference conference)
+        {
+            if (conference == null || conference.Id == Guid.Empty)
+            {
+                return;
+            }
+
+            var registeredUserIds = await _context.Registrations
+                .AsNoTracking()
+                .Where(x => x.ConferenceId == conference.Id)
+                .Select(x => x.AppUserId)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToListAsync();
+
+            if (!registeredUserIds.Any())
+            {
+                return;
+            }
+
+            var registeredUsers = await _context.Users
+                .Where(x => registeredUserIds.Contains(x.Id))
+                .ToListAsync();
+
+            if (!registeredUsers.Any())
+            {
+                return;
+            }
+
+            var slug = conference.Tenant?.Slug ?? conference.Slug ?? "";
+
+            var link = !string.IsNullOrWhiteSpace(slug)
+                ? $"/{slug}/Proceedings/Index"
+                : "/Proceedings/Index";
+
+            var title = "Bildiri Kitabı Yayınlandı";
+            var message = $"{conference.Title} bildiri kitabı yayınlandı. PDF dosyasını görüntüleyebilir ve indirebilirsiniz.";
+
+            foreach (var user in registeredUsers)
+            {
+                if (user == null || string.IsNullOrWhiteSpace(user.Id))
+                {
+                    continue;
+                }
+
+                var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+                var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
+
+                if (isAdmin || isSuperAdmin)
+                {
+                    continue;
+                }
+
+                var alreadyExists = await _context.Notifications.AnyAsync(x =>
+                    x.UserId == user.Id &&
+                    x.Title == title &&
+                    x.Message == message &&
+                    x.Link == link);
+
+                if (alreadyExists)
+                {
+                    continue;
+                }
+
+                await _notificationService.CreateAsync(
+                    userId: user.Id,
+                    title: title,
+                    message: message,
+                    icon: "fas fa-book-open",
+                    color: "primary",
+                    link: link);
+            }
+        }
+
         [HttpGet("/Admin/ProceedingBook")]
         public async Task<IActionResult> IndexRoot(Guid? conferenceId)
         {
@@ -316,6 +394,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 : conference.Tenant.Slug ?? conference.Slug ?? "";
 
             SetConferenceSession(conference);
+
+            var wasPublishedBefore = conference.IsProceedingBookPublished;
 
             if (model.ProceedingBookFile != null && model.ProceedingBookFile.Length > 0)
             {
@@ -369,9 +449,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             conference.IsProceedingBookPublished = model.IsProceedingBookPublished;
 
-            if (conference.IsProceedingBookPublished)
+            if (conference.IsProceedingBookPublished && !string.IsNullOrWhiteSpace(conference.ProceedingBookFilePath))
             {
                 conference.ProceedingBookPublishedDate ??= DateTime.UtcNow;
+
+                if (!wasPublishedBefore)
+                {
+                    await CreateProceedingBookPublishedNotificationsAsync(conference);
+                }
             }
             else
             {
@@ -451,9 +536,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 conference.IsProceedingBookPublished = true;
                 conference.ProceedingBookPublishedDate = DateTime.UtcNow;
 
+                await CreateProceedingBookPublishedNotificationsAsync(conference);
+
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = $"Bildiri kitabı otomatik oluşturuldu ve yayına alındı. Toplam {acceptedSubmissions.Count} kabul edilmiş bildiri eklendi.";
+                TempData["SuccessMessage"] =
+                    $"Bildiri kitabı otomatik oluşturuldu ve yayına alındı. Toplam {acceptedSubmissions.Count} kabul edilmiş bildiri eklendi.";
             }
             catch (Exception ex)
             {

@@ -3,6 +3,8 @@
 @using System
 @using System.Globalization
 @using System.Linq
+@using System.Net
+@using System.Text.RegularExpressions
 
 @{
     ViewData["Title"] = "Kongreler";
@@ -73,6 +75,25 @@
         return string.IsNullOrWhiteSpace(text)
             ? fallback
             : text;
+    }
+
+    string CleanHtmlText(string? text, int maxLength = 110)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return "";
+        }
+
+        var withoutTags = Regex.Replace(text, "<.*?>", " ");
+        var decoded = WebUtility.HtmlDecode(withoutTags);
+        var cleaned = Regex.Replace(decoded, @"\s+", " ").Trim();
+
+        if (cleaned.Length > maxLength)
+        {
+            return cleaned.Substring(0, maxLength).Trim() + "...";
+        }
+
+        return cleaned;
     }
 
     DateTime? GetDate(object? item, params string[] propertyNames)
@@ -338,21 +359,18 @@
 
                         var monthText = GetMonthShort(startDate);
 
-                        var description = GetText(
-                        item,
-                        !string.IsNullOrWhiteSpace(tenantName)
-                        ? $"{tenantName} tarafından düzenlenen bilimsel kongre."
-                        : "Bilimsel program, bildiri süreçleri ve kayıt bilgilerini inceleyebilirsiniz.",
-                        "Description",
-                        "ShortDescription",
-                        "Summary",
-                        "About"
-                        );
+var rawDescription = GetText(
+    item,
+    !string.IsNullOrWhiteSpace(tenantName)
+        ? $"{tenantName} tarafından düzenlenen bilimsel kongre."
+        : "Bilimsel program, bildiri süreçleri ve kayıt bilgilerini inceleyebilirsiniz.",
+    "Description",
+    "ShortDescription",
+    "Summary",
+    "About"
+);
 
-                        if (description.Length > 110)
-                        {
-                            description = description.Substring(0, 110).Trim() + "...";
-                        }
+var description = CleanHtmlText(rawDescription, 110);
 
                         var logoUrl = NormalizeUrl(GetText(item, "", "LogoUrl", "LogoPath", "ImageUrl", "ImagePath", "CoverImageUrl", "CoverImagePath"));
                         var logoText = GetLogoText(title, slug);

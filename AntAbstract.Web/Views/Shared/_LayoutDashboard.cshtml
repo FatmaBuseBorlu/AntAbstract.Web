@@ -385,6 +385,7 @@
             transition: all 0.3s ease-in-out;
             display: flex;
             flex-direction: column;
+            overflow-x: hidden;
         }
 
         body.sidebar-closed .main-content {
@@ -516,6 +517,11 @@
                 box-shadow: 0 10px 24px rgba(0, 174, 239, 0.10);
                 transform: translateY(-1px);
             }
+
+        .language-dropdown {
+            display: inline-flex;
+            align-items: center;
+        }
 
         .language-dropdown-btn {
             min-height: 42px;
@@ -710,18 +716,6 @@
             transform: rotate(180deg);
         }
 
-        .user-role-badge {
-            font-size: 0.6rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--primary-color);
-            background-color: rgba(0, 174, 239, 0.1);
-            padding: 2px 8px;
-            border-radius: 10px;
-            display: inline-block;
-        }
-
         .account-dropdown-menu {
             width: 315px;
             padding: 0;
@@ -877,8 +871,10 @@
             }
 
         .content-wrapper {
-            padding: 2rem;
+            padding: 1.5rem 1.75rem;
             flex-grow: 1;
+            max-width: 100%;
+            overflow-x: hidden;
         }
 
         .selected-conference-banner {
@@ -1358,17 +1354,13 @@
                     <span>@L("Header_Site", "Site")</span>
                 </a>
 
-                <div class="dropdown language-dropdown d-none d-sm-block">
+                <div class="dropdown language-dropdown d-none d-sm-inline-flex">
                     <button class="language-dropdown-btn"
                             type="button"
                             data-bs-toggle="dropdown"
                             aria-expanded="false">
                         <i class="fas fa-globe"></i>
-
-                        <span>
-                            @currentShortCulture
-                        </span>
-
+                        <span>@currentShortCulture</span>
                         <i class="fas fa-chevron-down language-chevron"></i>
                     </button>
 
@@ -1397,7 +1389,7 @@
 
                                 <button type="submit"
                                         class="dropdown-item language-dropdown-item @(isEnglishCulture ? "active" : "")">
-                                    <span class="language-code">GB</span>
+                                    <span class="language-code">EN</span>
                                     <span class="language-name">English</span>
                                 </button>
                             </form>

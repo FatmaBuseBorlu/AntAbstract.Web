@@ -1,5 +1,8 @@
-﻿using Microsoft.AspNetCore.Localization;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Linq;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -15,7 +18,7 @@ namespace AntAbstract.Web.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult ChangeLanguage(string culture, string returnUrl)
         {
-            if (!SupportedCultures.Contains(culture))
+            if (string.IsNullOrWhiteSpace(culture) || !SupportedCultures.Contains(culture))
             {
                 culture = "tr-TR";
             }
