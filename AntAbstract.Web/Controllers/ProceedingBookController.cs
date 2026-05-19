@@ -284,16 +284,65 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .Distinct()
                 .ToListAsync();
 
-            if (!registeredUserIds.Any())
+            var acceptedSubmissionAuthorIds = await _context.Submissions
+                .AsNoTracking()
+                .Where(x =>
+                    x.ConferenceId == conference.Id &&
+                    x.Status == SubmissionStatus.Accepted)
+                .Select(x => x.AuthorId)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToListAsync();
+
+            var acceptedSubmissionAuthorEmails = await _context.Submissions
+                .AsNoTracking()
+                .Where(x =>
+                    x.ConferenceId == conference.Id &&
+                    x.Status == SubmissionStatus.Accepted)
+                .SelectMany(x => x.SubmissionAuthors)
+                .Select(x => x.Email)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToListAsync();
+
+            var acceptedSubmissionAuthorEmailsNormalized = acceptedSubmissionAuthorEmails
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x!.Trim().ToLower())
+                .Distinct()
+                .ToList();
+
+            var userIdsMatchedByEmail = new List<string>();
+
+            if (acceptedSubmissionAuthorEmailsNormalized.Any())
+            {
+                userIdsMatchedByEmail = await _context.Users
+                    .AsNoTracking()
+                    .Where(x =>
+                        x.Email != null &&
+                        acceptedSubmissionAuthorEmailsNormalized.Contains(x.Email.ToLower()))
+                    .Select(x => x.Id)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct()
+                    .ToListAsync();
+            }
+
+            var targetUserIds = registeredUserIds
+                .Concat(acceptedSubmissionAuthorIds)
+                .Concat(userIdsMatchedByEmail)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToList();
+
+            if (!targetUserIds.Any())
             {
                 return;
             }
 
-            var registeredUsers = await _context.Users
-                .Where(x => registeredUserIds.Contains(x.Id))
+            var targetUsers = await _context.Users
+                .Where(x => targetUserIds.Contains(x.Id))
                 .ToListAsync();
 
-            if (!registeredUsers.Any())
+            if (!targetUsers.Any())
             {
                 return;
             }
@@ -307,7 +356,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var title = "Bildiri Kitabı Yayınlandı";
             var message = $"{conference.Title} bildiri kitabı yayınlandı. PDF dosyasını görüntüleyebilir ve indirebilirsiniz.";
 
-            foreach (var user in registeredUsers)
+            foreach (var user in targetUsers)
             {
                 if (user == null || string.IsNullOrWhiteSpace(user.Id))
                 {
@@ -322,13 +371,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     continue;
                 }
 
-                var alreadyExists = await _context.Notifications.AnyAsync(x =>
+                var unreadAlreadyExists = await _context.Notifications.AnyAsync(x =>
                     x.UserId == user.Id &&
                     x.Title == title &&
                     x.Message == message &&
-                    x.Link == link);
+                    x.Link == link &&
+                    !x.IsRead);
 
-                if (alreadyExists)
+                if (unreadAlreadyExists)
                 {
                     continue;
                 }

@@ -172,8 +172,8 @@
         : $"/{slug}/Program/Index";
 
     var proceedingsUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Proceedings/Index"
-        : $"/{slug}/Proceedings/Index";
+        ? "/Dashboard/ProceedingBook"
+        : $"/{slug}/Dashboard/ProceedingBook";
 
     var conferenceFlowUrl = isSuperAdmin
         ? hasSelectedConference && selectedConferenceId.HasValue && !string.IsNullOrWhiteSpace(slug)
@@ -1170,7 +1170,7 @@
                     </a>
 
                     <a href="@proceedingsUrl"
-                       class="nav-link @(currentController == "Proceedings" ? "active" : "")">
+                       class="nav-link @(currentController == "Dashboard" && currentAction == "ProceedingBook" ? "active" : "")">
                         <i class="fas fa-book" style="color: #6f42c1;"></i>
                         @L("Congress_Proceedings", "Bildiri Kitabı")
                     </a>
@@ -1337,8 +1337,8 @@
 
                     <div class="dashboard-subtitle">
                         @(string.IsNullOrWhiteSpace(headerBadgeText)
-                                                ? L("Header_ManagementPanel", "Yönetim Paneli")
-                                                : headerBadgeText)
+                            ? L("Header_ManagementPanel", "Yönetim Paneli")
+                            : headerBadgeText)
                     </div>
                 </div>
             </div>
@@ -1442,83 +1442,6 @@
                         <div class="account-dropdown-divider"></div>
 
                         <div class="account-dropdown-body">
-                            @if (isSuperAdmin)
-                            {
-                                <a class="account-dropdown-item"
-                                   href="/Dashboard/SuperAdmin">
-                                    <span class="account-dropdown-item-icon account-icon-info">
-                                        <i class="fas fa-shield-alt"></i>
-                                    </span>
-
-                                    <span class="account-dropdown-item-content">
-                                        <span class="account-dropdown-item-title">
-                                            @L("Dropdown_SuperAdminPanel", "Süper Admin Paneli")
-                                        </span>
-
-                                        <span class="account-dropdown-item-desc">
-                                            @L("Dropdown_SuperAdminPanelDescription", "Sistem yönetimine dön")
-                                        </span>
-                                    </span>
-                                </a>
-                            }
-                            else if (isAdmin)
-                            {
-                                <a class="account-dropdown-item"
-                                   href="@dashboardUrl">
-                                    <span class="account-dropdown-item-icon account-icon-info">
-                                        <i class="fas fa-user-shield"></i>
-                                    </span>
-
-                                    <span class="account-dropdown-item-content">
-                                        <span class="account-dropdown-item-title">
-                                            @L("Dropdown_AdminPanel", "Yönetici Paneli")
-                                        </span>
-
-                                        <span class="account-dropdown-item-desc">
-                                            @L("Dropdown_AdminPanelDescription", "Kongre yönetimine dön")
-                                        </span>
-                                    </span>
-                                </a>
-                            }
-                            else if (isAuthor)
-                            {
-                                <a class="account-dropdown-item"
-                                   href="@dashboardMyConferencesUrl">
-                                    <span class="account-dropdown-item-icon account-icon-info">
-                                        <i class="fas fa-file-alt"></i>
-                                    </span>
-
-                                    <span class="account-dropdown-item-content">
-                                        <span class="account-dropdown-item-title">
-                                            @L("Dropdown_AuthorPanel", "Yazar Paneli")
-                                        </span>
-
-                                        <span class="account-dropdown-item-desc">
-                                            @L("Dropdown_AuthorPanelDescription", "Kongre ve başvurularına dön")
-                                        </span>
-                                    </span>
-                                </a>
-                            }
-                            else if (isReferee)
-                            {
-                                <a class="account-dropdown-item"
-                                   href="@reviewIndexUrl">
-                                    <span class="account-dropdown-item-icon account-icon-info">
-                                        <i class="fas fa-gavel"></i>
-                                    </span>
-
-                                    <span class="account-dropdown-item-content">
-                                        <span class="account-dropdown-item-title">
-                                            @L("Dropdown_RefereePanel", "Hakem Paneli")
-                                        </span>
-
-                                        <span class="account-dropdown-item-desc">
-                                            @L("Dropdown_RefereePanelDescription", "Hakem görevlerine dön")
-                                        </span>
-                                    </span>
-                                </a>
-                            }
-
                             <a class="account-dropdown-item"
                                href="/Identity/Account/Manage">
                                 <span class="account-dropdown-item-icon account-icon-primary">
