@@ -1,6 +1,7 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Web.Models.ViewModels.Admin.Dashboard;
+using AntAbstract.Web.Models.ViewModels.Proceedings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -296,6 +297,26 @@ namespace AntAbstract.Web.Controllers
             dict["conferenceId"] = conferenceId.ToString();
 
             return QueryHelpers.AddQueryString(newPath, dict);
+        }
+
+        private static string NormalizeProceedingBookFileUrl(string? filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                return "#";
+            }
+
+            if (filePath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            {
+                return filePath;
+            }
+
+            if (filePath.StartsWith("/"))
+            {
+                return filePath;
+            }
+
+            return "/" + filePath.TrimStart('/');
         }
 
         [HttpGet]
@@ -610,6 +631,85 @@ namespace AntAbstract.Web.Controllers
             };
 
             return View(viewModel);
+        }
+
+        [Authorize(Roles = "Author,Listener")]
+        [HttpGet("/Dashboard/ProceedingBook")]
+        [HttpGet("/{slug}/Dashboard/ProceedingBook")]
+        public async Task<IActionResult> ProceedingBook(string? slug = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            var selectedConferenceId = GetSelectedConferenceId();
+
+            if (!selectedConferenceId.HasValue || selectedConferenceId.Value == Guid.Empty)
+            {
+                TempData["InfoMessage"] = T(
+                    "ProceedingBook_SelectConferenceFirst",
+                    "Bildiri kitabını görüntülemek için önce bir kongre seçmelisiniz.");
+
+                return RedirectToAction(nameof(MyConferences));
+            }
+
+            var conference = await GetSelectedConferenceForCurrentContextAsync(
+                user,
+                selectedConferenceId.Value);
+
+            if (conference == null)
+            {
+                ClearSelectedConference();
+
+                TempData["ErrorMessage"] = T(
+                    "ProceedingBook_ConferenceNotFound",
+                    "Bildiri kitabı görüntülenecek kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+
+                return RedirectToAction(nameof(MyConferences));
+            }
+
+            var effectiveSlug = !string.IsNullOrWhiteSpace(slug)
+                ? slug
+                : conference.Tenant?.Slug ?? conference.Slug ?? GetSlug();
+
+            SaveSelectedConference(
+                conference.TenantId,
+                conference.Id,
+                effectiveSlug,
+                conference.Title);
+
+            var model = new ProceedingBookPageViewModel
+            {
+                ConferenceId = conference.Id,
+                Slug = effectiveSlug,
+                ConferenceTitle = conference.Title ?? "",
+                ProceedingBookFilePath = conference.ProceedingBookFilePath,
+                IsProceedingBookPublished = conference.IsProceedingBookPublished,
+                ProceedingBookPublishedDate = conference.ProceedingBookPublishedDate,
+                IsSingleConferencePage = true
+            };
+
+            if (conference.IsProceedingBookPublished &&
+                !string.IsNullOrWhiteSpace(conference.ProceedingBookFilePath))
+            {
+                model.Books.Add(new ProceedingBookItemViewModel
+                {
+                    ConferenceId = conference.Id,
+                    ConferenceTitle = conference.Title ?? "",
+                    Slug = effectiveSlug,
+                    FileUrl = NormalizeProceedingBookFileUrl(conference.ProceedingBookFilePath),
+                    DownloadUrl = $"/Proceedings/Download/{conference.Id}",
+                    Year = conference.StartDate.Year,
+                    PublishedDate = conference.ProceedingBookPublishedDate,
+                    StatusText = "Yayında",
+                    CategoryText = "Bildiri Kitabı"
+                });
+            }
+
+            return View("~/Views/Dashboard/ProceedingBook.cshtml", model);
         }
 
         public async Task<IActionResult> MyConferences()

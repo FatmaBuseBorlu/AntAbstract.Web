@@ -1,0 +1,450 @@
+﻿@model AntAbstract.Web.Models.ViewModels.Proceedings.ProceedingBookPageViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
+@{
+    ViewData["Title"] = "Bildiri Kitabı";
+    Layout = "_LayoutDashboard";
+
+    var hasBook = Model != null
+        && Model.IsProceedingBookPublished
+        && Model.Books != null
+        && Model.Books.Any();
+
+    var book = hasBook
+        ? Model.Books.First()
+        : null;
+
+    var publishedDateText = Model?.ProceedingBookPublishedDate.HasValue == true
+        ? Model.ProceedingBookPublishedDate.Value.ToString("dd MMMM yyyy")
+        : "Henüz yayınlanmadı";
+}
+
+<style>
+    .author-proceeding-page {
+        padding: 1.25rem 1.25rem 3rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .author-proceeding-shell {
+        max-width: 1120px;
+        margin: 0 auto;
+    }
+
+    .author-proceeding-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.18), transparent 34%), linear-gradient(135deg, #ffffff, #f8fbff);
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        padding: 1.35rem;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 16px 38px rgba(15, 23, 42, 0.055);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .author-proceeding-hero-icon {
+        width: 58px;
+        height: 58px;
+        min-width: 58px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        box-shadow: 0 14px 30px rgba(0, 174, 239, 0.22);
+    }
+
+    .author-proceeding-kicker {
+        color: #64748b;
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.22rem;
+    }
+
+    .author-proceeding-title {
+        color: #0f172a;
+        font-size: 1.65rem;
+        font-weight: 900;
+        letter-spacing: -0.045em;
+        margin: 0;
+        line-height: 1.18;
+    }
+
+    .author-proceeding-lead {
+        color: #64748b;
+        font-size: 0.92rem;
+        font-weight: 600;
+        margin: 0.35rem 0 0;
+        line-height: 1.55;
+    }
+
+    .author-proceeding-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.8fr);
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    .author-proceeding-card,
+    .author-proceeding-side-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        box-shadow: 0 16px 38px rgba(15, 23, 42, 0.055);
+        overflow: hidden;
+    }
+
+    .author-proceeding-card-body {
+        padding: 1.35rem;
+    }
+
+    .book-preview-box {
+        border: 1px dashed #cbd5e1;
+        border-radius: 22px;
+        min-height: 260px;
+        background: linear-gradient(135deg, #f8fafc, #ffffff);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .book-cover-mini {
+        width: 170px;
+        height: 220px;
+        border-radius: 24px;
+        background: linear-gradient(145deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        box-shadow: 0 24px 45px rgba(13, 110, 253, 0.22);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .book-cover-mini i {
+            font-size: 2.3rem;
+            margin-bottom: 0.9rem;
+        }
+
+    .book-cover-mini-title {
+        font-size: 1.05rem;
+        font-weight: 900;
+    }
+
+    .book-cover-mini-year {
+        margin-top: 0.65rem;
+        font-size: 0.9rem;
+        font-weight: 800;
+        opacity: 0.92;
+    }
+
+    .author-proceeding-empty-icon {
+        width: 82px;
+        height: 82px;
+        border-radius: 999px;
+        background: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #cbd5e1;
+        font-size: 2.2rem;
+        box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+        margin-bottom: 1rem;
+    }
+
+    .author-proceeding-empty-title {
+        color: #0f172a;
+        font-size: 1.1rem;
+        font-weight: 900;
+        margin-bottom: 0.4rem;
+    }
+
+    .author-proceeding-empty-text {
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 600;
+        max-width: 520px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    .book-info-title {
+        color: #0f172a;
+        font-size: 1.12rem;
+        font-weight: 900;
+        margin-bottom: 0.5rem;
+    }
+
+    .book-info-text {
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 600;
+        line-height: 1.65;
+        margin-bottom: 1rem;
+    }
+
+    .book-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 1.15rem;
+    }
+
+    .book-action-btn {
+        min-height: 44px;
+        border-radius: 14px;
+        padding: 0 1rem;
+        font-size: 0.86rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .book-view-btn {
+        background: rgba(13, 110, 253, 0.08);
+        border: 1px solid rgba(13, 110, 253, 0.22);
+        color: #0d6efd;
+    }
+
+    .book-download-btn {
+        background: rgba(239, 68, 68, 0.08);
+        border: 1px solid rgba(239, 68, 68, 0.24);
+        color: #ef4444;
+    }
+
+    .book-action-btn:hover {
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .book-view-btn:hover {
+        color: #0d6efd;
+        background: rgba(13, 110, 253, 0.12);
+    }
+
+    .book-download-btn:hover {
+        color: #ef4444;
+        background: rgba(239, 68, 68, 0.12);
+    }
+
+    .side-card-body {
+        padding: 1.25rem;
+    }
+
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.42rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 900;
+        margin-bottom: 1rem;
+    }
+
+    .status-published {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .status-unpublished {
+        background: #fff7ed;
+        color: #f59e0b;
+    }
+
+    .side-info-list {
+        display: grid;
+        gap: 0.85rem;
+    }
+
+    .side-info-item {
+        display: flex;
+        gap: 0.7rem;
+        align-items: flex-start;
+        color: #475569;
+        font-size: 0.86rem;
+        font-weight: 700;
+        line-height: 1.45;
+    }
+
+        .side-info-item i {
+            color: #00aeef;
+            margin-top: 0.12rem;
+            width: 18px;
+            text-align: center;
+        }
+
+    @@media (max-width: 992px) {
+        .author-proceeding-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .author-proceeding-hero {
+            align-items: flex-start;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .author-proceeding-page {
+            padding: 1rem 1rem 3rem;
+        }
+
+        .author-proceeding-hero {
+            flex-direction: column;
+        }
+
+        .author-proceeding-title {
+            font-size: 1.35rem;
+        }
+
+        .book-actions {
+            flex-direction: column;
+        }
+
+        .book-action-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="author-proceeding-page">
+    <div class="author-proceeding-shell">
+
+        <div class="author-proceeding-hero">
+            <div class="author-proceeding-hero-icon">
+                <i class="fas fa-book-open"></i>
+            </div>
+
+            <div>
+                <div class="author-proceeding-kicker">
+                    Kongre
+                </div>
+
+                <h3 class="author-proceeding-title">
+                    Bildiri Kitabı
+                </h3>
+
+                <p class="author-proceeding-lead">
+                    <strong>@Model.ConferenceTitle</strong> kongresine ait bildiri kitabını buradan görüntüleyebilir ve indirebilirsiniz.
+                </p>
+            </div>
+        </div>
+
+        <div class="author-proceeding-grid">
+            <div class="author-proceeding-card">
+                <div class="author-proceeding-card-body">
+                    @if (hasBook && book != null)
+                    {
+                        <div class="book-preview-box">
+                            <div class="book-cover-mini">
+                                <i class="fas fa-file-pdf"></i>
+
+                                <div class="book-cover-mini-title">
+                                    Bildiri Kitabı
+                                </div>
+
+                                <div class="book-cover-mini-year">
+                                    @book.Year
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <h4 class="book-info-title">
+                                @book.ConferenceTitle
+                            </h4>
+
+                            <p class="book-info-text">
+                                Bildiri kitabı yayındadır. PDF dosyasını tarayıcıda görüntüleyebilir veya bilgisayarınıza indirebilirsiniz.
+                            </p>
+
+                            <div class="book-actions">
+                                <a href="@book.FileUrl"
+                                   target="_blank"
+                                   class="book-action-btn book-view-btn">
+                                    <i class="fas fa-eye"></i>
+                                    Kitabı Gör
+                                </a>
+
+                                <a href="@book.DownloadUrl"
+                                   class="book-action-btn book-download-btn">
+                                    <i class="fas fa-download"></i>
+                                    PDF Olarak İndir
+                                </a>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="book-preview-box">
+                            <div>
+                                <div class="author-proceeding-empty-icon">
+                                    <i class="fas fa-file-circle-xmark"></i>
+                                </div>
+
+                                <h4 class="author-proceeding-empty-title">
+                                    Bildiri kitabı henüz yayınlanmadı
+                                </h4>
+
+                                <p class="author-proceeding-empty-text">
+                                    Bu kongreye ait bildiri kitabı yayınlandığında buradan PDF dosyasını görüntüleyebilir ve indirebilirsiniz.
+                                </p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <aside class="author-proceeding-side-card">
+                <div class="side-card-body">
+                    @if (hasBook)
+                    {
+                        <span class="status-pill status-published">
+                            <i class="fas fa-circle-check"></i>
+                            Yayında
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="status-pill status-unpublished">
+                            <i class="fas fa-clock"></i>
+                            Yayında Değil
+                        </span>
+                    }
+
+                    <div class="side-info-list">
+                        <div class="side-info-item">
+                            <i class="fas fa-calendar-check"></i>
+                            <span>Yayın Tarihi: @publishedDateText</span>
+                        </div>
+
+                        <div class="side-info-item">
+                            <i class="fas fa-book"></i>
+                            <span>Kongre: @Model.ConferenceTitle</span>
+                        </div>
+
+                        <div class="side-info-item">
+                            <i class="fas fa-file-pdf"></i>
+                            <span>Dosya Durumu: @(hasBook ? "PDF hazır" : "PDF henüz yayınlanmadı")</span>
+                        </div>
+
+                        <div class="side-info-item">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Bu alan sadece seçili kongreye ait bildiri kitabını gösterir.</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+    </div>
+</div>
