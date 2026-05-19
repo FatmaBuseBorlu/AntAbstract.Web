@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc.Rendering;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace AntAbstract.Web.Models.ViewModels.Admin.Tenants
@@ -6,20 +8,27 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Tenants
     public class TenantAssignManagerViewModel
     {
         public Guid TenantId { get; set; }
+
         public string? TenantName { get; set; }
 
-        [Required(ErrorMessage = "Ad alanı zorunludur.")]
-        public string FirstName { get; set; }
+        public string AssignmentMode { get; set; } = "Existing";
 
-        [Required(ErrorMessage = "Soyad alanı zorunludur.")]
-        public string LastName { get; set; }
+        public string? ExistingUserId { get; set; }
 
-        [Required(ErrorMessage = "E-posta alanı zorunludur.")]
+        public List<SelectListItem> AvailableUsers { get; set; } = new();
+
+        [Display(Name = "Ad")]
+        public string? FirstName { get; set; }
+
+        [Display(Name = "Soyad")]
+        public string? LastName { get; set; }
+
         [EmailAddress(ErrorMessage = "Geçerli bir e-posta adresi giriniz.")]
-        public string Email { get; set; }
+        [Display(Name = "E-posta")]
+        public string? Email { get; set; }
 
-        [Required(ErrorMessage = "Şifre zorunludur.")]
         [MinLength(6, ErrorMessage = "Şifre en az 6 karakter olmalıdır.")]
-        public string Password { get; set; }
+        [Display(Name = "Şifre")]
+        public string? Password { get; set; }
     }
 }
