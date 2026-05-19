@@ -1,8 +1,10 @@
 ﻿using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
+using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using System;
 using System.Threading.Tasks;
@@ -15,24 +17,40 @@ namespace AntAbstract.Web.Controllers
         private readonly ICertificateService _certificateService;
         private readonly UserManager<AppUser> _userManager;
         private readonly IStringLocalizer<CertificatesController> _localizer;
+        private readonly AppDbContext _context;
 
         public CertificatesController(
             ICertificateService certificateService,
             UserManager<AppUser> userManager,
-            IStringLocalizer<CertificatesController> localizer)
+            IStringLocalizer<CertificatesController> localizer,
+            AppDbContext context)
         {
             _certificateService = certificateService;
             _userManager = userManager;
             _localizer = localizer;
+            _context = context;
         }
 
         private string T(string key, string fallback)
         {
             var value = _localizer[key];
 
-            return value.ResourceNotFound
+            return value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
                 ? fallback
                 : value.Value;
+        }
+
+        private async Task<bool> HasCompletedConferenceAttendanceAsync(string userId, Guid conferenceId)
+        {
+            return await _context.ConferenceAttendances
+                .AsNoTracking()
+                .AnyAsync(x =>
+                    x.UserId == userId &&
+                    x.ConferenceId == conferenceId &&
+                    (
+                        x.CompletedAt.HasValue ||
+                        x.TotalSeconds >= x.RequiredSeconds
+                    ));
         }
 
         [HttpGet("/Certificates")]
@@ -65,6 +83,35 @@ namespace AntAbstract.Web.Controllers
             if (user == null)
             {
                 return Challenge();
+            }
+
+            var certificate = await _context.Certificates
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x =>
+                    x.Id == id &&
+                    x.UserId == user.Id);
+
+            if (certificate == null)
+            {
+                return NotFound(T(
+                    "CertificateNotFound",
+                    "Sertifika bulunamadı veya bu sertifikayı indirme yetkiniz yok."));
+            }
+
+            if (certificate.Type == CertificateType.Author)
+            {
+                var hasCompletedAttendance = await HasCompletedConferenceAttendanceAsync(
+                    user.Id,
+                    certificate.ConferenceId);
+
+                if (!hasCompletedAttendance)
+                {
+                    TempData["ErrorMessage"] = T(
+                        "CertificateAttendanceRequired",
+                        "Katılım belgeniz henüz hazır değil. Belge oluşturulabilmesi için kongre katılımınızın tamamlanması gerekir.");
+
+                    return RedirectToAction(nameof(Index));
+                }
             }
 
             var bytes = await _certificateService.GetCertificateFileAsync(id, user.Id);

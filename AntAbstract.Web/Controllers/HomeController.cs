@@ -328,9 +328,10 @@ namespace AntAbstract.Web.Controllers
             return View();
         }
 
+        [HttpGet("/proceedings")]
         public IActionResult Proceedings()
         {
-            return View();
+            return Redirect("/Proceedings/Index");
         }
 
         [HttpPost]

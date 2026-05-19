@@ -96,27 +96,6 @@ namespace AntAbstract.Infrastructure.Services.ProceedingBooks
                     return;
                 }
 
-                column.Item()
-                    .BorderBottom(1)
-                    .BorderColor(Colors.Grey.Lighten2)
-                    .PaddingBottom(10)
-                    .Row(row =>
-                    {
-                        row.RelativeItem().Column(title =>
-                        {
-                            title.Item().Text("Kabul Edilen Bildiriler")
-                                .FontSize(18)
-                                .Bold()
-                                .FontColor(Colors.Grey.Darken4);
-
-                            title.Item().PaddingTop(4).Text($"{submissions.Count} bildiri")
-                                .FontSize(10)
-                                .FontColor(Colors.Grey.Darken1);
-                        });
-                    });
-
-                column.Item().PaddingTop(18);
-
                 for (var i = 0; i < submissions.Count; i++)
                 {
                     var submission = submissions[i];
@@ -182,7 +161,7 @@ namespace AntAbstract.Infrastructure.Services.ProceedingBooks
                 .AlignCenter()
                 .Column(column =>
                 {
-                    column.Item().Text("Bu kongre için kabul edilmiş bildiri bulunamadı.")
+                    column.Item().Text("Bu kongre için bildiri bulunamadı.")
                         .FontSize(13)
                         .Bold()
                         .FontColor(Colors.Grey.Darken2);
@@ -297,10 +276,11 @@ namespace AntAbstract.Infrastructure.Services.ProceedingBooks
                     }
                 });
         }
+
         private static void ComposeInfoBox(
-    IContainer container,
-    string label,
-    string value)
+            IContainer container,
+            string label,
+            string value)
         {
             container
                 .Background(Colors.Grey.Lighten5)

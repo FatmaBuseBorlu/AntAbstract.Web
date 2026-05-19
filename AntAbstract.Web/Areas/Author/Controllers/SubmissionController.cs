@@ -357,6 +357,18 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             ViewBag.CurrentConferenceTitle = conference.Title;
 
+            var hasCompletedAttendance = await _context.ConferenceAttendances
+                .AsNoTracking()
+                .AnyAsync(x =>
+                    x.ConferenceId == conference.Id &&
+                    x.UserId == user.Id &&
+                    (
+                        x.CompletedAt.HasValue ||
+                        x.TotalSeconds >= x.RequiredSeconds
+                    ));
+
+            ViewBag.CanDownloadAuthorCertificate = hasCompletedAttendance;
+
             var submissionDtos = await _submissionService.GetMySubmissionsAsync(user.Id);
 
             submissionDtos = submissionDtos

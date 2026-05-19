@@ -1,6 +1,8 @@
 ﻿@using AntAbstract.Web.Models.ViewModels
 @using AntAbstract.Domain.Entities
 @using Microsoft.AspNetCore.Identity
+@using System.Net
+@using System.Text.RegularExpressions
 @inject SignInManager<AppUser> SignInManager
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
@@ -17,6 +19,25 @@
         return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
             ? fallback
             : value;
+    }
+
+    string CleanHtmlText(string? text, int maxLength = 130)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return "";
+        }
+
+        var withoutTags = Regex.Replace(text, "<.*?>", " ");
+        var decoded = WebUtility.HtmlDecode(withoutTags);
+        var cleaned = Regex.Replace(decoded, @"\s+", " ").Trim();
+
+        if (cleaned.Length > maxLength)
+        {
+            return cleaned.Substring(0, maxLength).Trim() + "...";
+        }
+
+        return cleaned;
     }
 
     var activeCongresses = Model.ActiveCongresses ?? new List<CongressCardDto>();
@@ -1120,9 +1141,11 @@
                         ? L("OnlineConferenceText", "Çevrimiçi")
                         : item.Location;
 
-                        var descriptionText = string.IsNullOrWhiteSpace(item.Description)
+                        var rawDescriptionText = string.IsNullOrWhiteSpace(item.Description)
                         ? L("CongressDefaultDescription", "Kongre detaylarını inceleyebilir, kayıt ve bildiri gönderim sürecine devam edebilirsiniz.")
                         : item.Description;
+
+                        var descriptionText = CleanHtmlText(rawDescriptionText, 130);
 
                         <div class="col-md-6 col-lg-4">
                             <article class="modern-congress-card">

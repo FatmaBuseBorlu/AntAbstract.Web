@@ -2,7 +2,12 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    int unreadCount = ViewBag.UnreadCount ?? 0;
+    var unreadNotifications = Model?
+        .Where(x => !x.IsRead)
+        .OrderByDescending(x => x.CreatedDate)
+        .ToList() ?? new List<AntAbstract.Domain.Entities.Notification>();
+
+    int unreadCount = unreadNotifications.Count;
 }
 
 <style>
@@ -40,13 +45,13 @@
 
     .notif-item {
         display: flex;
-        align-items: start;
+        align-items: flex-start;
         gap: 12px;
         padding: 12px 16px;
         text-decoration: none;
         color: #334155;
         border-bottom: 1px solid #f1f5f9;
-        transition: background 0.2s;
+        transition: background 0.2s, color 0.2s;
     }
 
         .notif-item:hover {
@@ -68,11 +73,15 @@
         justify-content: center;
     }
 
-    .notif-content p {
-        margin: 0;
-        font-size: 0.85rem;
-        line-height: 1.4;
+    .notif-content {
+        min-width: 0;
     }
+
+        .notif-content p {
+            margin: 0;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
 
     .notif-time {
         font-size: 0.7rem;
@@ -80,77 +89,226 @@
         margin-top: 4px;
         display: block;
     }
+
+    .notif-empty-state {
+        text-align: center;
+        padding: 42px 18px;
+        color: #64748b;
+    }
+
+        .notif-empty-state i {
+            font-size: 2rem;
+            color: #cbd5e1;
+            margin-bottom: 12px;
+        }
+
+        .notif-empty-state p {
+            margin: 0;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+    .notif-view-all {
+        display: block;
+        width: 100%;
+        padding: 12px 14px;
+        text-align: center;
+        background: #f8fafc;
+        color: #64748b;
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 800;
+        border-top: 1px solid #e2e8f0;
+        transition: all 0.2s ease;
+    }
+
+        .notif-view-all:hover {
+            background: #eef6ff;
+            color: #0d6efd;
+        }
 </style>
 
 <div class="dropdown">
-    <a href="#" class="header-icon-btn position-relative" data-bs-toggle="dropdown" aria-expanded="false" id="notifDropdownBtn">
+    @Html.AntiForgeryToken()
+
+    <a href="#"
+       class="header-icon-btn position-relative"
+       data-bs-toggle="dropdown"
+       aria-expanded="false"
+       id="notifDropdownBtn">
         <i class="far fa-bell fa-lg"></i>
+
         @if (unreadCount > 0)
         {
             <span class="badge-dot badge-pulse" id="notifBadge"></span>
         }
     </a>
 
-    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-3 rounded-4 p-0 overflow-hidden" aria-labelledby="notifDropdownBtn" style="width: 320px;">
+    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-3 rounded-4 p-0 overflow-hidden"
+        aria-labelledby="notifDropdownBtn"
+        style="width: 340px;">
+
         <li class="p-3 border-bottom d-flex justify-content-between align-items-center bg-white">
-            <h6 class="fw-bold mb-0 text-dark">@Localizer["HeaderTitle"]</h6>
+            <h6 class="fw-bold mb-0 text-dark">
+                Bildirimler
+            </h6>
+
             @if (unreadCount > 0)
             {
-                <button onclick="markAllRead()" class="btn btn-link btn-sm p-0 text-decoration-none text-primary fw-bold" style="font-size: 0.75rem;">
-                    @Localizer["MarkAllReadButton"]
+                <button type="button"
+                        onclick="markAllRead()"
+                        id="markAllReadBtn"
+                        class="btn btn-link btn-sm p-0 text-decoration-none text-primary fw-bold"
+                        style="font-size: 0.78rem;">
+                    Tümünü Okundu Yap
                 </button>
             }
         </li>
 
-        <div style="max-height: 350px; overflow-y: auto;">
-            @if (Model != null && Model.Any())
+        <div id="notificationList" style="max-height: 350px; overflow-y: auto;">
+            @if (unreadNotifications.Any())
             {
-                foreach (var item in Model)
+                foreach (var item in unreadNotifications)
                 {
-                    <a href="@(item.Link ?? "#")"
-                       onclick="markRead('@item.Id', this)"
-                       class="notif-item @(item.IsRead ? "" : "unread")">
+                    var link = string.IsNullOrWhiteSpace(item.Link)
+                    ? "#"
+                    : item.Link;
 
-                        <div class="notif-icon bg-@item.Color bg-opacity-10 text-@item.Color">
-                            <i class="@item.Icon"></i>
+                    var icon = string.IsNullOrWhiteSpace(item.Icon)
+                    ? "fas fa-info-circle"
+                    : item.Icon;
+
+                    var color = string.IsNullOrWhiteSpace(item.Color)
+                    ? "primary"
+                    : item.Color;
+
+                    <a href="@link"
+                       onclick="markRead('@item.Id', this)"
+                       class="notif-item unread">
+
+                        <div class="notif-icon bg-@color bg-opacity-10 text-@color">
+                            <i class="@icon"></i>
                         </div>
 
                         <div class="notif-content">
                             <p>
-                                <strong>@item.Title</strong> <br>
+                                <strong>@item.Title</strong>
+                                <br />
                                 <span class="text-muted">@item.Message</span>
                             </p>
-                            <span class="notif-time">@item.CreatedDate.ToString("dd MMM HH:mm")</span>
+
+                            <span class="notif-time">
+                                @item.CreatedDate.ToString("dd MMM HH:mm")
+                            </span>
                         </div>
                     </a>
                 }
             }
             else
             {
-                <div class="text-center py-5 text-muted">
-                    <i class="far fa-bell-slash fa-2x mb-3 opacity-25"></i>
-                    <p class="small mb-0">@Localizer["EmptyStateText"]</p>
+                <div class="notif-empty-state" id="notificationEmptyState">
+                    <i class="far fa-bell-slash"></i>
+                    <p>Okunmamış bildiriminiz yok.</p>
                 </div>
             }
         </div>
 
-        <li class="p-2 text-center bg-light border-top">
-            <a href="#" class="small fw-bold text-decoration-none text-muted">@Localizer["ViewAllLink"]</a>
+        <li>
+            <a href="/Notification/Index" class="notif-view-all">
+                Tümünü Gör
+            </a>
         </li>
     </ul>
 </div>
 
 <script>
+    function getAntiForgeryToken() {
+        const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenInput ? tokenInput.value : "";
+    }
+
+    function updateNotificationBadgeVisibility() {
+        const unreadItems = document.querySelectorAll('.notif-item.unread');
+        const badge = document.getElementById('notifBadge');
+        const markAllReadBtn = document.getElementById('markAllReadBtn');
+
+        if (unreadItems.length === 0) {
+            if (badge) {
+                badge.style.display = 'none';
+            }
+
+            if (markAllReadBtn) {
+                markAllReadBtn.style.display = 'none';
+            }
+
+            showEmptyNotificationState();
+        }
+    }
+
+    function showEmptyNotificationState() {
+        const notificationList = document.getElementById('notificationList');
+
+        if (!notificationList) {
+            return;
+        }
+
+        const existingEmptyState = document.getElementById('notificationEmptyState');
+
+        if (existingEmptyState) {
+            existingEmptyState.classList.remove('d-none');
+            return;
+        }
+
+        notificationList.innerHTML = `
+            <div class="notif-empty-state" id="notificationEmptyState">
+                <i class="far fa-bell-slash"></i>
+                <p>Okunmamış bildiriminiz yok.</p>
+            </div>
+        `;
+    }
+
     function markRead(id, element) {
-        element.classList.remove('unread');
-        fetch('/Notification/MarkRead?id=' + id, { method: 'POST' });
+        if (!id || !element) {
+            return;
+        }
+
+        const token = getAntiForgeryToken();
+
+        fetch('/Notification/MarkRead?id=' + encodeURIComponent(id), {
+            method: 'POST',
+            headers: {
+                'RequestVerificationToken': token
+            }
+        }).then(response => {
+            if (!response.ok) {
+                return;
+            }
+
+            element.classList.remove('unread');
+            element.remove();
+
+            updateNotificationBadgeVisibility();
+        });
     }
 
     function markAllRead() {
-        fetch('/Notification/MarkAllRead', { method: 'POST' }).then(() => {
-            document.querySelectorAll('.notif-item.unread').forEach(el => el.classList.remove('unread'));
-            var badge = document.getElementById('notifBadge');
-            if (badge) badge.style.display = 'none';
+        const token = getAntiForgeryToken();
+
+        fetch('/Notification/MarkAllRead', {
+            method: 'POST',
+            headers: {
+                'RequestVerificationToken': token
+            }
+        }).then(response => {
+            if (!response.ok) {
+                return;
+            }
+
+            document.querySelectorAll('.notif-item.unread').forEach(element => {
+                element.remove();
+            });
+
+            updateNotificationBadgeVisibility();
         });
     }
 </script>

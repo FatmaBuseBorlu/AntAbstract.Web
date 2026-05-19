@@ -12,6 +12,7 @@
         ?? Context.Session.GetString("SelectedConferenceSlug")
         ?? "";
 
+
     string BuildConferenceUrl(string cleanPath, string fallbackPath)
     {
         if (string.IsNullOrWhiteSpace(slug))
@@ -38,6 +39,8 @@
         "/registration",
         "/Home/Congresses"
     );
+
+    var canDownloadAuthorCertificate = ViewBag.CanDownloadAuthorCertificate as bool? ?? false;
 }
 
 <style>
@@ -228,6 +231,19 @@
         .btn-payment-action:hover {
             color: #ffffff;
             box-shadow: 0 12px 24px rgba(13, 110, 253, 0.25);
+        }
+
+    .btn-certificate-disabled {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        color: #94a3b8;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+        .btn-certificate-disabled:hover {
+            color: #94a3b8;
+            transform: none;
         }
 
     .empty-submission-state {
@@ -493,12 +509,25 @@
                                     </a>
                                 }
 
-                                <a href="@acceptanceLetterUrl"
-                                   class="btn btn-success btn-card-action text-white"
-                                   target="_blank">
-                                    <i class="fas fa-certificate"></i>
-                                    @Localizer["DocumentButton"]
-                                </a>
+                                @if (canDownloadAuthorCertificate)
+                                {
+                                    <a href="@acceptanceLetterUrl"
+                                       class="btn btn-success btn-card-action text-white"
+                                       target="_blank">
+                                        <i class="fas fa-certificate"></i>
+                                        @Localizer["DocumentButton"]
+                                    </a>
+                                }
+                                else
+                                {
+                                    <button type="button"
+                                            class="btn btn-certificate-disabled btn-card-action"
+                                            disabled
+                                            title="Katılım belgesi, kongre katılımınız tamamlandıktan sonra oluşturulur.">
+                                        <i class="fas fa-lock"></i>
+                                        Belge Hazır Değil
+                                    </button>
+                                }
                             }
                         </div>
 
