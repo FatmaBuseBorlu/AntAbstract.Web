@@ -305,9 +305,24 @@
         white-space: nowrap;
     }
 
+        .role-back-btn:hover {
+            background: #f8fafc;
+            color: var(--role-blue);
+            border-color: rgba(13, 110, 253, 0.25);
+            transform: translateY(-1px);
+        }
+
     .role-header-line {
         height: 5px;
         background: linear-gradient(90deg, var(--role-blue), #38bdf8);
+    }
+
+    .role-panel {
+        background: #ffffff;
+        border: 1px solid var(--role-border);
+        border-radius: var(--role-radius);
+        overflow: hidden;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.055);
     }
 
     .role-panel-body {
@@ -351,6 +366,20 @@
         gap: 0.85rem;
     }
 
+    .role-card-wrapper {
+        position: relative;
+    }
+
+    .role-checkbox {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+        width: 0;
+        height: 0;
+        margin: 0;
+        padding: 0;
+    }
+
     .role-card {
         position: relative;
         min-height: 128px;
@@ -363,7 +392,20 @@
         overflow: hidden;
         transition: all 0.22s ease;
         height: 100%;
+        user-select: none;
     }
+
+        .role-card:hover {
+            border-color: rgba(13, 110, 253, 0.35);
+            box-shadow: 0 14px 30px rgba(13, 110, 253, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .role-card.selected {
+            border-color: rgba(13, 110, 253, 0.55);
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            box-shadow: 0 16px 34px rgba(13, 110, 253, 0.11);
+        }
 
     .role-card-top {
         position: relative;
@@ -439,6 +481,7 @@
         opacity: 0.7;
         transition: all 0.22s ease;
     }
+
     .role-card.selected .role-card-check {
         background: var(--role-blue);
         color: #ffffff;
@@ -504,6 +547,13 @@
     .role-empty-state p {
         margin: 0;
         font-weight: 600;
+    }
+
+    .role-alert {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.055);
+        font-weight: 700;
     }
 
     .role-panel-footer {

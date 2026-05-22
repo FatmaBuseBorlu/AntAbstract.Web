@@ -682,6 +682,20 @@
         ? "EN"
         : "TR";
 
+        Func<string, string, string, string> T = (key, trFallback, enFallback) =>
+        {
+            var value = Localizer[key].Value;
+
+            if (!string.Equals(value, key, StringComparison.OrdinalIgnoreCase))
+            {
+                return value;
+            }
+
+            return currentCulture.StartsWith("en", StringComparison.OrdinalIgnoreCase)
+            ? enFallback
+            : trFallback;
+        };
+
         var returnUrl = string.IsNullOrEmpty(Context.Request.Path.Value)
         ? "/"
         : $"{Context.Request.Path}{Context.Request.QueryString}";
@@ -1022,7 +1036,11 @@
                     </h5>
 
                     <p class="mb-4" style="line-height: 1.8;">
-                        @Localizer["Footer_Description"]
+                        @T(
+                        "Footer_Description",
+                                                "Akademik süreçlerinizi dijitalleştirin. Özet toplama, hakem değerlendirme ve katılımcı kayıt süreçlerinde güvenilir çözüm ortağınız.",
+                                                "Digitize your academic processes. Your reliable solution partner for abstract submission, peer review and participant registration processes."
+                                                )
                     </p>
 
                     <div class="d-flex">
@@ -1046,43 +1064,43 @@
 
                 <div class="col-lg-2 col-md-6">
                     <h6 class="footer-title">
-                        @Localizer["Footer_QuickLinks"]
+                        @T("Footer_QuickLinks", "Hızlı Bağlantılar", "Quick Links")
                     </h6>
 
                     <a href="/" class="footer-link">
                         <i class="fas fa-chevron-right me-2 small text-primary"></i>
-                        @Localizer["Menu_Home"]
+                        @T("Menu_Home", "Ana Sayfa", "Home")
                     </a>
 
                     <a href="/about" class="footer-link">
                         <i class="fas fa-chevron-right me-2 small text-primary"></i>
-                        @Localizer["Menu_About"]
+                        @T("Menu_About", "Hakkımızda", "About")
                     </a>
 
                     <a href="/congresses" class="footer-link">
                         <i class="fas fa-chevron-right me-2 small text-primary"></i>
-                        @Localizer["Menu_Congresses"]
+                        @T("Menu_Congresses", "Kongreler", "Congresses")
                     </a>
 
                     <a href="/Proceedings/Index" class="footer-link">
                         <i class="fas fa-chevron-right me-2 small text-primary"></i>
-                        @Localizer["Menu_Proceedings"]
+                        @T("Menu_Proceedings", "Bildiri Kitabı", "Proceedings")
                     </a>
 
                     <a href="/contact" class="footer-link">
                         <i class="fas fa-chevron-right me-2 small text-primary"></i>
-                        @Localizer["Menu_Contact"]
+                        @T("Menu_Contact", "İletişim", "Contact")
                     </a>
                 </div>
 
                 <div class="col-lg-3 col-md-6">
                     <h6 class="footer-title">
-                        @Localizer["Footer_Legal"]
+                        @T("Footer_Legal", "Yasal", "Legal")
                     </h6>
 
                     <a href="/privacy" class="footer-link">
                         <i class="fas fa-shield-alt me-2 text-primary"></i>
-                        @Localizer["PrivacyPolicy"]
+                        @T("PrivacyPolicy", "Gizlilik Politikası", "Privacy Policy")
                     </a>
 
                     <a href="/kvkk" class="footer-link">
@@ -1092,23 +1110,29 @@
 
                     <a href="/cookies" class="footer-link">
                         <i class="fas fa-cookie-bite me-2 text-primary"></i>
-                        @Localizer["CookiePolicy"]
+                        @T("CookiePolicy", "Çerez Politikası", "Cookie Policy")
                     </a>
 
                     <a href="/terms" class="footer-link">
                         <i class="fas fa-file-contract me-2 text-primary"></i>
-                        @Localizer["TermsOfUse"]
+                        @T("TermsOfUse", "Kullanım Şartları", "Terms of Use")
                     </a>
                 </div>
 
                 <div class="col-lg-3 col-md-6">
                     <h6 class="footer-title">
-                        @Localizer["Footer_ContactUs"]
+                        @T("Footer_ContactUs", "Bize Ulaşın", "Contact Us")
                     </h6>
 
                     <div class="d-flex mb-3">
                         <i class="fas fa-map-marker-alt text-primary mt-1 me-3"></i>
-                        <span>@Localizer["Footer_Address"]</span>
+                        <span>
+                            @T(
+                                                        "Footer_Address",
+                                                        "Teknokent Binası, Ar-Ge Blokları No:12, Antalya / Türkiye",
+                                                        "Teknokent Building, R&D Blocks No:12, Antalya / Türkiye"
+                                                        )
+                        </span>
                     </div>
 
                     <div class="d-flex mb-3">
@@ -1128,7 +1152,8 @@
 
             <div class="row align-items-center">
                 <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
-                    &copy; @DateTime.Now.Year <strong>AntAbstract</strong>. @Localizer["Footer_AllRightsReserved"]
+                    &copy; @DateTime.Now.Year <strong>AntAbstract</strong>.
+                    @T("Footer_AllRightsReserved", "Tüm hakları saklıdır.", "All rights reserved.")
                 </div>
 
                 <div class="col-md-6 text-center text-md-end">

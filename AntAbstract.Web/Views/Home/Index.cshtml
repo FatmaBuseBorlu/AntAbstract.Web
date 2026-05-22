@@ -40,6 +40,23 @@
         return cleaned;
     }
 
+    string GetAuthorInitials(string? authorName)
+    {
+        if (string.IsNullOrWhiteSpace(authorName))
+        {
+            return "A";
+        }
+
+        var parts = authorName
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2)
+            .Select(x => x.Substring(0, 1).ToUpper());
+
+        var initials = string.Join("", parts);
+
+        return string.IsNullOrWhiteSpace(initials) ? "A" : initials;
+    }
+
     var activeCongresses = Model.ActiveCongresses ?? new List<CongressCardDto>();
     var lastSubmissions = Model.LastSubmissions ?? new List<SubmissionCardDto>();
 }
@@ -629,6 +646,17 @@
             transform: translateY(-2px);
         }
 
+    .registered-congress-btn {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        box-shadow: 0 10px 24px rgba(16, 185, 129, 0.22);
+    }
+
+        .registered-congress-btn:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: #ffffff;
+            box-shadow: 0 14px 30px rgba(16, 185, 129, 0.32);
+        }
+
     .workflow-section {
         background: #0f172a;
         color: #ffffff;
@@ -721,19 +749,146 @@
         margin-bottom: 0;
     }
 
+    .latest-submissions-section {
+        background: #f8fafc;
+    }
+
     .submission-card-modern {
         height: 100%;
-        border: 1px solid #e2e8f0;
-        border-radius: 24px;
-        padding: 22px;
+        min-height: 275px;
+        border: 1px solid #e8eef6;
+        border-radius: 26px;
+        padding: 1.35rem;
         background: #ffffff;
-        box-shadow: 0 15px 42px rgba(15,23,42,0.05);
+        box-shadow: 0 16px 42px rgba(15, 23, 42, 0.055);
         transition: all 0.24s ease;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
 
         .submission-card-modern:hover {
             transform: translateY(-7px);
-            box-shadow: 0 24px 64px rgba(15,23,42,0.10);
+            box-shadow: 0 26px 68px rgba(15, 23, 42, 0.105);
+            border-color: rgba(0, 174, 239, 0.32);
+        }
+
+    .submission-author-row {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        margin-bottom: 1rem;
+        min-width: 0;
+    }
+
+    .submission-author-avatar {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        border-radius: 50%;
+        object-fit: cover;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.10);
+        background: #f8fafc;
+    }
+
+    .submission-author-placeholder {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #fde68a, #fdba74);
+        color: #0f172a;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        font-size: 1rem;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.10);
+    }
+
+    .submission-author-info {
+        min-width: 0;
+    }
+
+    .submission-author-name {
+        color: #0f172a;
+        font-size: 0.98rem;
+        font-weight: 900;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .submission-author-university {
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 600;
+        margin: 0.15rem 0 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .submission-conference-badge {
+        max-width: 100%;
+        width: fit-content;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.38rem 0.65rem;
+        border-radius: 999px;
+        background: rgba(13, 110, 253, 0.08);
+        border: 1px solid rgba(13, 110, 253, 0.16);
+        color: #0d6efd;
+        font-size: 0.74rem;
+        font-weight: 900;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 1rem;
+    }
+
+        .submission-conference-badge span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+    .submission-card-title {
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 900;
+        line-height: 1.4;
+        margin-bottom: 0.65rem;
+        min-height: 44px;
+    }
+
+    .submission-card-description {
+        color: #64748b;
+        font-size: 0.88rem;
+        line-height: 1.65;
+        font-weight: 600;
+        margin-bottom: 0;
+    }
+
+    .submission-card-footer {
+        margin-top: auto;
+        padding-top: 1rem;
+    }
+
+    .submission-detail-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        color: #0284c7;
+        font-size: 0.82rem;
+        font-weight: 900;
+        text-decoration: none;
+    }
+
+        .submission-detail-link:hover {
+            color: #0d6efd;
+            text-decoration: none;
         }
 
     .line-clamp-2 {
@@ -1135,7 +1290,7 @@
                     @foreach (var item in activeCongresses)
                     {
                         var vitrinUrl = $"/{item.Slug}";
-                        var detailText = L("ViewDetailsButton", "Detayları Gör");
+                        var panelUrl = "/Dashboard/MyConferences";
 
                         var locationText = string.IsNullOrWhiteSpace(item.Location)
                         ? L("OnlineConferenceText", "Çevrimiçi")
@@ -1198,10 +1353,20 @@
                                             @item.StartDate.Year
                                         </span>
 
-                                        <a href="@vitrinUrl" class="modern-detail-btn">
-                                            @detailText
-                                            <i class="fas fa-arrow-right"></i>
-                                        </a>
+                                        @if (item.IsRegistered)
+                                        {
+                                            <a href="@panelUrl" class="modern-detail-btn registered-congress-btn">
+                                                <i class="fas fa-check-circle"></i>
+                                                @L("AlreadyRegisteredButton", "Kayıtlısınız")
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <a href="@vitrinUrl" class="modern-detail-btn">
+                                                @L("RegisterButton", "Kayıt Ol")
+                                                <i class="fas fa-paper-plane"></i>
+                                            </a>
+                                        }
                                     </div>
                                 </div>
                             </article>
@@ -1362,7 +1527,7 @@
         </div>
     </section>
 
-    <section class="py-5 bg-light">
+    <section class="latest-submissions-section py-5">
         <div class="container py-5">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-5">
                 <div>
@@ -1387,37 +1552,56 @@
                 {
                     @foreach (var sub in lastSubmissions)
                     {
-                        <div class="col-md-6 col-lg-3">
-                            <article class="submission-card-modern">
-                                <div class="d-flex align-items-center mb-3">
-                                    <img src="@sub.AuthorImageUrl"
-                                         alt="@sub.AuthorName"
-                                         class="rounded-circle me-3 shadow-sm"
-                                         width="48"
-                                         height="48">
+                        var authorInitials = GetAuthorInitials(sub.AuthorName);
 
-                                    <div class="overflow-hidden">
-                                        <h6 class="fw-bold mb-0 text-truncate text-dark">
+                        <div class="col-md-6 col-lg-4">
+                            <article class="submission-card-modern">
+
+                                <div class="submission-author-row">
+                                    @if (!string.IsNullOrWhiteSpace(sub.AuthorImageUrl))
+                                    {
+                                        <img src="@sub.AuthorImageUrl"
+                                             alt="@sub.AuthorName"
+                                             class="submission-author-avatar">
+                                    }
+                                    else
+                                    {
+                                        <div class="submission-author-placeholder">
+                                            @authorInitials
+                                        </div>
+                                    }
+
+                                    <div class="submission-author-info">
+                                        <h6 class="submission-author-name">
                                             @sub.AuthorName
                                         </h6>
-                                        <small class="text-muted text-truncate d-block">
+
+                                        <p class="submission-author-university">
                                             @sub.University
-                                        </small>
+                                        </p>
                                     </div>
                                 </div>
 
-                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-10 mb-3">
-                                    <i class="fas fa-hashtag me-1"></i>
-                                    @sub.ConferenceName
-                                </span>
+                                <div class="submission-conference-badge" title="@sub.ConferenceName">
+                                    <i class="fas fa-hashtag"></i>
+                                    <span>@sub.ConferenceName</span>
+                                </div>
 
-                                <h6 class="fw-bold text-dark mb-2 line-clamp-2" style="min-height: 42px;">
+                                <h6 class="submission-card-title line-clamp-2">
                                     @sub.Title
                                 </h6>
 
-                                <p class="text-muted small line-clamp-3 mb-0">
+                                <p class="submission-card-description line-clamp-3">
                                     @sub.AbstractSnippet
                                 </p>
+
+                                <div class="submission-card-footer">
+                                    <a href="/congresses" class="submission-detail-link">
+                                        @L("ViewDetailsButton", "Detayları Gör")
+                                        <i class="fas fa-arrow-right"></i>
+                                    </a>
+                                </div>
+
                             </article>
                         </div>
                     }

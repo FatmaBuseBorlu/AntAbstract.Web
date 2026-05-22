@@ -8,6 +8,7 @@
     Layout = "_LayoutDashboard";
 
     var slug = Model.Slug ?? "";
+    var isSuperAdmin = User.IsInRole("SuperAdmin");
 
     var changeConferenceUrl = "/Admin/ConferenceFlow?forceSelect=true";
 
@@ -38,64 +39,54 @@
     var proceedingBookUrl = string.IsNullOrWhiteSpace(slug)
         ? $"/Admin/ProceedingBook?conferenceId={Model.ConferenceId}"
         : $"/{slug}/Admin/ProceedingBook?conferenceId={Model.ConferenceId}";
+
+    var conferenceFlowReturnUrl = $"/Admin/ConferenceFlow?conferenceId={Model.ConferenceId}";
+
+    var tenantAdminAssignUrl = $"/Admin/Tenants/AssignManager/{Model.TenantId}?returnUrl={Uri.EscapeDataString(conferenceFlowReturnUrl)}";
 }
 
-<div class="container-fluid">
+<div class="container-fluid conference-flow-page">
 
-    <div class="selected-conference-card mb-4">
-        <div class="selected-conference-left">
-            <div class="selected-conference-icon">
-                <i class="fas fa-calendar-check"></i>
+    <div class="flow-hero-card mb-4">
+        <div class="flow-hero-left">
+            <div class="flow-hero-icon">
+                <i class="fas fa-stream"></i>
             </div>
 
             <div>
-                <div class="selected-label">
-                    Seçili Kongre
+                <div class="flow-section-label">
+                    Kongre Operasyonları
                 </div>
 
-                <div class="selected-title">
-                    @Model.ConferenceTitle
-                </div>
-            </div>
-        </div>
+                <h2 class="flow-page-title">
+                    Kongre Akışı
+                </h2>
 
-        <a href="@changeConferenceUrl"
-           class="btn btn-primary rounded-pill px-4 selected-change-btn">
-            <i class="fas fa-exchange-alt me-2"></i>
-            Kongre Değiştir
-        </a>
-    </div>
+                <p class="flow-page-description">
+                    <strong>@Model.ConferenceTitle</strong> kongresinin bildiri, hakem atama, karar, program ve bildiri kitabı süreçlerini buradan takip edebilirsiniz.
+                </p>
 
-    <div class="page-header-wrap mb-4">
-        <div class="page-header-left">
-            <div class="text-uppercase text-muted fw-bold small mb-1">
-                Kongre Operasyonları
-            </div>
-
-            <h2 class="fw-bold mb-2 text-dark">
-                Kongre Akışı
-            </h2>
-
-            <p class="text-muted mb-0 page-header-desc">
-                <strong>@Model.ConferenceTitle</strong> kongresinin bildiri, hakem atama, karar, program ve bildiri kitabı süreçlerini buradan takip edebilirsiniz.
-            </p>
-
-            @if (!string.IsNullOrWhiteSpace(Model.Slug))
-            {
-                <div class="mt-2">
-                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
+                @if (!string.IsNullOrWhiteSpace(Model.Slug))
+                {
+                    <div class="flow-slug-badge">
                         /@Model.Slug
-                    </span>
-                </div>
-            }
+                    </div>
+                }
+            </div>
         </div>
 
-        <div class="page-header-right">
+        <div class="flow-hero-actions">
+            <a href="@changeConferenceUrl"
+               class="btn flow-outline-btn">
+                <i class="fas fa-exchange-alt me-2"></i>
+                Kongre Değiştir
+            </a>
+
             @if (!string.IsNullOrWhiteSpace(slug))
             {
                 <a href="/@slug"
                    target="_blank"
-                   class="btn btn-primary rounded-pill px-4 header-action-btn">
+                   class="btn flow-primary-btn">
                     <i class="fas fa-external-link-alt me-2"></i>
                     Siteyi Gör
                 </a>
@@ -179,7 +170,7 @@
 
     <div class="row g-4 mb-4">
 
-        <div class="col-lg-7">
+        <div class="@(isSuperAdmin ? "col-lg-7" : "col-12")">
             <div class="card border-0 shadow-sm rounded-4 h-100">
                 <div class="card-header bg-white border-0 px-4 py-3">
                     <h5 class="fw-bold mb-1">
@@ -252,270 +243,318 @@
             </div>
         </div>
 
-        <div class="col-lg-5">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-                <div class="card-header bg-white border-0 px-4 py-3">
-                    <h5 class="fw-bold mb-1">
-                        Hızlı İşlemler
-                    </h5>
+        @if (isSuperAdmin)
+        {
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-header bg-white border-0 px-4 py-3">
+                        <h5 class="fw-bold mb-1">
+                            Hızlı İşlemler
+                        </h5>
 
-                    <p class="text-muted small mb-0">
-                        Seçili kongreyle ilgili operasyon ekranlarına hızlı geçiş yapabilirsiniz.
-                    </p>
-                </div>
+                        <p class="text-muted small mb-0">
+                            Seçili kongreyle ilgili operasyon ekranlarına hızlı geçiş yapabilirsiniz.
+                        </p>
+                    </div>
 
-                <div class="card-body p-4">
-                    <div class="quick-actions-grid">
+                    <div class="card-body p-4">
+                        <div class="quick-actions-grid">
 
-                        <a href="@submissionUrl" class="quick-action-card">
-                            <div class="quick-action-icon bg-primary bg-opacity-10 text-primary">
-                                <i class="fas fa-file-alt"></i>
-                            </div>
-
-                            <div>
-                                <div class="fw-bold text-dark">
-                                    Bildiri Yönetimi
+                            <a href="@submissionUrl" class="quick-action-card">
+                                <div class="quick-action-icon bg-primary bg-opacity-10 text-primary">
+                                    <i class="fas fa-file-alt"></i>
                                 </div>
 
-                                <div class="text-muted small">
-                                    Gönderilen bildirileri incele.
-                                </div>
-                            </div>
+                                <div>
+                                    <div class="fw-bold text-dark">
+                                        Bildiri Yönetimi
+                                    </div>
 
-                            <div class="quick-action-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </a>
-
-                        <a href="@assignmentUrl" class="quick-action-card">
-                            <div class="quick-action-icon bg-success bg-opacity-10 text-success">
-                                <i class="fas fa-tasks"></i>
-                            </div>
-
-                            <div>
-                                <div class="fw-bold text-dark">
-                                    Hakem Atama
+                                    <div class="text-muted small">
+                                        Gönderilen bildirileri incele.
+                                    </div>
                                 </div>
 
-                                <div class="text-muted small">
-                                    Bildirilere hakem ata.
+                                <div class="quick-action-arrow">
+                                    <i class="fas fa-arrow-right"></i>
                                 </div>
-                            </div>
+                            </a>
 
-                            <div class="quick-action-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </a>
-
-                        <a href="@decisionUrl" class="quick-action-card">
-                            <div class="quick-action-icon bg-danger bg-opacity-10 text-danger">
-                                <i class="fas fa-gavel"></i>
-                            </div>
-
-                            <div>
-                                <div class="fw-bold text-dark">
-                                    Karar Ekranı
+                            <a href="@assignmentUrl" class="quick-action-card">
+                                <div class="quick-action-icon bg-success bg-opacity-10 text-success">
+                                    <i class="fas fa-tasks"></i>
                                 </div>
 
-                                <div class="text-muted small">
-                                    Kabul, ret veya revizyon kararı ver.
-                                </div>
-                            </div>
+                                <div>
+                                    <div class="fw-bold text-dark">
+                                        Hakem Atama
+                                    </div>
 
-                            <div class="quick-action-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </a>
-
-                        <a href="@reviewersUrl" class="quick-action-card">
-                            <div class="quick-action-icon bg-warning bg-opacity-10 text-warning">
-                                <i class="fas fa-user-check"></i>
-                            </div>
-
-                            <div>
-                                <div class="fw-bold text-dark">
-                                    Hakemler
+                                    <div class="text-muted small">
+                                        Bildirilere hakem ata.
+                                    </div>
                                 </div>
 
-                                <div class="text-muted small">
-                                    Hakem listesini yönet.
+                                <div class="quick-action-arrow">
+                                    <i class="fas fa-arrow-right"></i>
                                 </div>
-                            </div>
+                            </a>
 
-                            <div class="quick-action-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </a>
-
-                        <a href="@registrationsUrl" class="quick-action-card">
-                            <div class="quick-action-icon bg-info bg-opacity-10 text-info">
-                                <i class="fas fa-credit-card"></i>
-                            </div>
-
-                            <div>
-                                <div class="fw-bold text-dark">
-                                    Kayıtlar ve Ödemeler
+                            <a href="@decisionUrl" class="quick-action-card">
+                                <div class="quick-action-icon bg-danger bg-opacity-10 text-danger">
+                                    <i class="fas fa-gavel"></i>
                                 </div>
 
-                                <div class="text-muted small">
-                                    Katılımcı kayıtlarını kontrol et.
-                                </div>
-                            </div>
+                                <div>
+                                    <div class="fw-bold text-dark">
+                                        Karar Ekranı
+                                    </div>
 
-                            <div class="quick-action-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </a>
-
-                        <a href="@sessionsUrl" class="quick-action-card">
-                            <div class="quick-action-icon bg-secondary bg-opacity-10 text-secondary">
-                                <i class="fas fa-microphone-alt"></i>
-                            </div>
-
-                            <div>
-                                <div class="fw-bold text-dark">
-                                    Program / Oturumlar
+                                    <div class="text-muted small">
+                                        Kabul, ret veya revizyon kararı ver.
+                                    </div>
                                 </div>
 
-                                <div class="text-muted small">
-                                    Kongre programını düzenle.
+                                <div class="quick-action-arrow">
+                                    <i class="fas fa-arrow-right"></i>
                                 </div>
-                            </div>
+                            </a>
 
-                            <div class="quick-action-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </a>
-
-                        <a href="@proceedingBookUrl" class="quick-action-card quick-action-highlight">
-                            <div class="quick-action-icon proceeding-book-icon">
-                                <i class="fas fa-book-open"></i>
-                            </div>
-
-                            <div>
-                                <div class="fw-bold text-dark">
-                                    Bildiri Kitabı
+                            <a href="@reviewersUrl" class="quick-action-card">
+                                <div class="quick-action-icon bg-warning bg-opacity-10 text-warning">
+                                    <i class="fas fa-user-check"></i>
                                 </div>
 
-                                <div class="text-muted small">
-                                    Kabul edilen bildirilerden PDF oluştur veya mevcut kitabı yönet.
+                                <div>
+                                    <div class="fw-bold text-dark">
+                                        Hakemler
+                                    </div>
+
+                                    <div class="text-muted small">
+                                        Hakem listesini yönet.
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div class="quick-action-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </a>
+                                <div class="quick-action-arrow">
+                                    <i class="fas fa-arrow-right"></i>
+                                </div>
+                            </a>
 
+                            <a href="@registrationsUrl" class="quick-action-card">
+                                <div class="quick-action-icon bg-info bg-opacity-10 text-info">
+                                    <i class="fas fa-credit-card"></i>
+                                </div>
+
+                                <div>
+                                    <div class="fw-bold text-dark">
+                                        Kayıtlar ve Ödemeler
+                                    </div>
+
+                                    <div class="text-muted small">
+                                        Katılımcı kayıtlarını kontrol et.
+                                    </div>
+                                </div>
+
+                                <div class="quick-action-arrow">
+                                    <i class="fas fa-arrow-right"></i>
+                                </div>
+                            </a>
+
+                            <a href="@tenantAdminAssignUrl" class="quick-action-card">
+                                <div class="quick-action-icon bg-dark bg-opacity-10 text-dark">
+                                    <i class="fas fa-user-shield"></i>
+                                </div>
+
+                                <div>
+                                    <div class="fw-bold text-dark">
+                                        Kurum Yöneticisi Ata
+                                    </div>
+
+                                    <div class="text-muted small">
+                                        Bu kongrenin bağlı olduğu kuruma admin ata.
+                                    </div>
+                                </div>
+
+                                <div class="quick-action-arrow">
+                                    <i class="fas fa-arrow-right"></i>
+                                </div>
+                            </a>
+
+                            <a href="@sessionsUrl" class="quick-action-card">
+                                <div class="quick-action-icon bg-secondary bg-opacity-10 text-secondary">
+                                    <i class="fas fa-microphone-alt"></i>
+                                </div>
+
+                                <div>
+                                    <div class="fw-bold text-dark">
+                                        Program / Oturumlar
+                                    </div>
+
+                                    <div class="text-muted small">
+                                        Kongre programını düzenle.
+                                    </div>
+                                </div>
+
+                                <div class="quick-action-arrow">
+                                    <i class="fas fa-arrow-right"></i>
+                                </div>
+                            </a>
+
+                            <a href="@proceedingBookUrl" class="quick-action-card quick-action-highlight">
+                                <div class="quick-action-icon proceeding-book-icon">
+                                    <i class="fas fa-book-open"></i>
+                                </div>
+
+                                <div>
+                                    <div class="fw-bold text-dark">
+                                        Bildiri Kitabı
+                                    </div>
+
+                                    <div class="text-muted small">
+                                        Kabul edilen bildirilerden PDF oluştur veya mevcut kitabı yönet.
+                                    </div>
+                                </div>
+
+                                <div class="quick-action-arrow">
+                                    <i class="fas fa-arrow-right"></i>
+                                </div>
+                            </a>
+
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        }
 
     </div>
 
 </div>
 
 <style>
-    .selected-conference-card {
-        background: linear-gradient(135deg, rgba(0, 174, 239, 0.14) 0%, rgba(255, 255, 255, 0.95) 75%);
-        border: 1px solid rgba(0, 174, 239, 0.25);
-        border-radius: 1.25rem;
-        padding: 1.1rem 1.4rem;
+    .conference-flow-page {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .flow-hero-card {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e8eef6;
+        border-radius: 24px;
+        padding: 1.25rem;
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 1rem;
-        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+        flex-wrap: wrap;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.055);
     }
 
-    .selected-conference-left {
+    .flow-hero-left {
         display: flex;
         align-items: center;
         gap: 0.9rem;
-        min-width: 0;
+        min-width: 300px;
+        flex: 1;
     }
 
-    .selected-conference-icon {
-        width: 54px;
-        height: 54px;
-        min-width: 54px;
-        border-radius: 17px;
-        background-color: #00aeef;
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.25rem;
-        box-shadow: 0 10px 22px rgba(0, 174, 239, 0.22);
-    }
-
-    .selected-label {
-        color: #64748b;
-        font-size: 0.82rem;
-        font-weight: 800;
-        margin-bottom: 0.15rem;
-    }
-
-    .selected-title {
-        color: #0f172a;
-        font-size: 1.05rem;
-        font-weight: 800;
-        line-height: 1.25;
-        word-break: break-word;
-    }
-
-    .selected-change-btn {
-        min-height: 42px;
+    .flow-hero-icon {
+        width: 56px;
+        height: 56px;
+        min-width: 56px;
+        border-radius: 19px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        white-space: nowrap;
-        font-weight: 700;
-        font-size: 0.95rem;
-        box-shadow: 0 8px 18px rgba(13, 110, 253, 0.18);
+        font-size: 1.35rem;
+        box-shadow: 0 14px 28px rgba(13, 110, 253, 0.20);
     }
 
-    .page-header-wrap {
+    .flow-section-label {
+        color: #64748b;
+        font-size: 0.74rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.3rem;
+    }
+
+    .flow-page-title {
+        margin: 0 0 0.25rem;
+        color: #0f172a;
+        font-size: 1.65rem;
+        font-weight: 900;
+        letter-spacing: -0.045em;
+        line-height: 1.2;
+    }
+
+    .flow-page-description {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 600;
+        line-height: 1.55;
+    }
+
+    .flow-slug-badge {
+        width: fit-content;
+        margin-top: 0.45rem;
+        padding: 0.32rem 0.7rem;
+        border-radius: 999px;
+        background: rgba(13, 110, 253, 0.09);
+        color: #0d6efd;
+        font-size: 0.74rem;
+        font-weight: 900;
+    }
+
+    .flow-hero-actions {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        gap: 1.5rem;
-        flex-wrap: wrap;
-    }
-
-    .page-header-left {
-        flex: 1 1 620px;
-        min-width: 320px;
-    }
-
-    .page-header-right {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
         gap: 0.65rem;
         flex-wrap: wrap;
-        flex: 0 0 auto;
     }
 
-    .header-action-btn {
+    .flow-primary-btn,
+    .flow-outline-btn {
         min-height: 42px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        border-radius: 999px;
+        font-weight: 900;
+        padding: 0 1rem;
+        text-decoration: none;
+        font-size: 0.88rem;
+        transition: all 0.2s ease;
         white-space: nowrap;
-        font-weight: 700;
-        font-size: 0.95rem;
-        box-shadow: none;
     }
 
-        .header-action-btn.btn-primary {
-            box-shadow: 0 8px 18px rgba(13, 110, 253, 0.18);
+    .flow-primary-btn {
+        border: none;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        box-shadow: 0 10px 24px rgba(13, 110, 253, 0.20);
+    }
+
+        .flow-primary-btn:hover {
+            color: #ffffff;
+            transform: translateY(-1px);
         }
 
-    .page-header-desc {
-        max-width: 780px;
+    .flow-outline-btn {
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #334155;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.045);
     }
+
+        .flow-outline-btn:hover {
+            color: #0d6efd;
+            border-color: rgba(13, 110, 253, 0.32);
+            background: #ffffff;
+            box-shadow: 0 12px 26px rgba(13, 110, 253, 0.10);
+            transform: translateY(-1px);
+        }
 
     .info-card {
         background-color: #fff;
@@ -655,22 +694,20 @@
     }
 
     @@media (max-width: 992px) {
-        .selected-conference-card {
-            align-items: flex-start;
-            flex-direction: column;
+        .flow-hero-card {
+            padding: 1rem;
         }
 
-        .selected-change-btn {
+        .flow-hero-left {
+            min-width: 100%;
+        }
+
+        .flow-hero-actions {
             width: 100%;
         }
 
-        .page-header-wrap {
-            align-items: flex-start;
-        }
-
-        .page-header-right {
-            width: 100%;
-            justify-content: flex-start;
-        }
+            .flow-hero-actions .btn {
+                width: 100%;
+            }
     }
 </style>

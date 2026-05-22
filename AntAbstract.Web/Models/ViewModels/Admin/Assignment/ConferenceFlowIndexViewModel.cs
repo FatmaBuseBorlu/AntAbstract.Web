@@ -6,6 +6,8 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Assignment
     {
         public Guid ConferenceId { get; set; }
 
+        public Guid TenantId { get; set; }
+
         public string ConferenceTitle { get; set; } = string.Empty;
 
         public string Slug { get; set; } = string.Empty;

@@ -20,6 +20,8 @@
         ? $"/Admin/ConferenceFlow?conferenceId={conferenceId}"
         : $"/{slug}/Admin/ConferenceFlow?conferenceId={conferenceId}";
 
+    var forceSelectUrl = "/Admin/ConferenceFlow?forceSelect=true";
+
     var siteUrl = string.IsNullOrWhiteSpace(slug)
         ? "#"
         : $"/{slug}";
@@ -94,9 +96,9 @@
         </div>
 
         <div class="submission-hero-actions">
-            <a href="@flowUrl" class="btn submission-light-btn">
-                <i class="fas fa-arrow-left me-2"></i>
-                Kongre Akışına Dön
+            <a href="@forceSelectUrl" class="btn submission-outline-btn">
+                <i class="fas fa-exchange-alt me-2"></i>
+                Kongre Değiştir
             </a>
 
             @if (!string.IsNullOrWhiteSpace(slug))
@@ -384,6 +386,35 @@
         font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
+    .selected-conference-card {
+        background: linear-gradient(135deg, rgba(0, 174, 239, 0.14) 0%, rgba(255, 255, 255, 0.95) 75%);
+        border: 1px solid rgba(0, 174, 239, 0.25);
+        border-radius: 1.25rem;
+        padding: 1.1rem 1.4rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+    }
+
+    .selected-conference-left {
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        min-width: 0;
+    }
+    .selected-change-btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        font-weight: 700;
+        font-size: 0.95rem;
+        box-shadow: 0 8px 18px rgba(13, 110, 253, 0.18);
+    }
+
     .submission-hero-card {
         background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
         border: 1px solid #e8eef6;
@@ -523,7 +554,7 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.05rem;
+        font-size: 1.1rem;
     }
 
     .stat-blue {
@@ -542,22 +573,22 @@
     }
 
     .stat-green {
-        background: rgba(34, 197, 94, 0.10);
-        color: #16a34a;
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
     }
 
     .stat-number {
         color: #0f172a;
-        font-size: 1.45rem;
+        font-size: 2rem;
         font-weight: 900;
         line-height: 1;
+        margin-bottom: 0.2rem;
     }
 
     .stat-label {
         color: #64748b;
-        font-size: 0.78rem;
-        font-weight: 800;
-        margin-top: 0.25rem;
+        font-size: 0.94rem;
+        font-weight: 700;
     }
 
     .submission-filter-card,
@@ -565,7 +596,7 @@
         background: #ffffff;
         border: 1px solid #e8eef6;
         border-radius: 24px;
-        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.055);
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
     }
 
     .submission-filter-card {
@@ -574,332 +605,99 @@
 
     .submission-label {
         display: block;
+        margin-bottom: 0.55rem;
         color: #0f172a;
-        font-size: 0.84rem;
+        font-size: 0.88rem;
         font-weight: 900;
-        margin-bottom: 0.4rem;
     }
 
     .submission-input-wrap {
-        min-height: 46px;
-        display: flex;
-        align-items: center;
-        gap: 0.7rem;
-        padding: 0 0.95rem;
-        border: 1px solid #dbe3ef;
-        border-radius: 15px;
-        background: #ffffff;
-        transition: all 0.2s ease;
+        position: relative;
     }
 
-        .submission-input-wrap:focus-within {
-            border-color: rgba(13, 110, 253, 0.45);
-            box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.08);
+        .submission-input-wrap i {
+            position: absolute;
+            top: 50%;
+            left: 1rem;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 0.92rem;
         }
 
-        .submission-input-wrap i {
-            color: #94a3b8;
+        .submission-input-wrap input,
+        .submission-select {
+            width: 100%;
+            min-height: 50px;
+            border-radius: 18px;
+            border: 1px solid #dbe3ef;
+            background: #ffffff;
+            color: #0f172a;
+            font-size: 0.92rem;
+            font-weight: 700;
+            padding: 0.75rem 1rem;
+            outline: none;
+            transition: all 0.18s ease;
         }
 
         .submission-input-wrap input {
-            width: 100%;
-            border: none;
-            outline: none;
-            background: transparent;
-            color: #0f172a;
-            font-weight: 700;
-            font-size: 0.9rem;
+            padding-left: 2.65rem;
         }
 
-    .submission-select {
-        width: 100%;
-        min-height: 46px;
-        border: 1px solid #dbe3ef;
-        border-radius: 15px;
-        padding: 0 0.95rem;
-        background: #ffffff;
-        color: #0f172a;
-        font-weight: 800;
-        outline: none;
-        font-size: 0.9rem;
-    }
-
-    .submission-list-card {
-        overflow: hidden;
-    }
+            .submission-input-wrap input:focus,
+            .submission-select:focus {
+                border-color: rgba(13, 110, 253, 0.28);
+                box-shadow: 0 0 0 0.22rem rgba(13, 110, 253, 0.10);
+            }
 
     .submission-list-header {
-        padding: 1.2rem 1.35rem;
-        border-bottom: 1px solid #edf2f7;
+        padding: 1.2rem 1.2rem 0.85rem;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 1rem;
+        gap: 0.8rem;
         flex-wrap: wrap;
     }
 
         .submission-list-header h5 {
-            margin: 0 0 0.2rem;
+            margin: 0 0 0.15rem;
             color: #0f172a;
-            font-size: 1.15rem;
+            font-size: 1.25rem;
             font-weight: 900;
         }
 
         .submission-list-header p {
             margin: 0;
             color: #64748b;
-            font-size: 0.86rem;
+            font-size: 0.9rem;
             font-weight: 600;
         }
 
     .submission-count-pill {
-        padding: 0.4rem 0.75rem;
+        padding: 0.55rem 0.95rem;
         border-radius: 999px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        border: 1px solid #dbe3ef;
+        background: #f8fbff;
         color: #475569;
-        font-size: 0.78rem;
-        font-weight: 900;
-    }
-
-    .submission-table-wrap {
-        overflow-x: auto;
-    }
-
-    .submission-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-    }
-
-        .submission-table thead th {
-            padding: 0.9rem 1.25rem;
-            background: #f8fafc;
-            color: #64748b;
-            font-size: 0.74rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            border-bottom: 1px solid #edf2f7;
-            white-space: nowrap;
-        }
-
-        .submission-table tbody td {
-            padding: 0.85rem 1.25rem;
-            border-bottom: 1px solid #edf2f7;
-            vertical-align: middle;
-        }
-
-        .submission-table tbody tr {
-            transition: all 0.2s ease;
-        }
-
-            .submission-table tbody tr:hover {
-                background: #f8fbff;
-            }
-
-    .date-box strong {
-        display: block;
-        color: #0f172a;
         font-size: 0.84rem;
         font-weight: 900;
     }
 
-    .date-box span {
-        color: #64748b;
-        font-size: 0.74rem;
-        font-weight: 700;
-    }
-
-    .submission-title-cell,
-    .author-cell,
-    .submission-actions {
-        display: flex;
-        align-items: center;
-        gap: 0.65rem;
-    }
-
-    .submission-actions {
-        justify-content: flex-end;
-    }
-
-    .submission-mini-icon,
-    .author-avatar {
-        width: 38px;
-        height: 38px;
-        min-width: 38px;
-        border-radius: 14px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.88rem;
-    }
-
-    .submission-mini-icon {
-        background: rgba(13, 110, 253, 0.10);
-        color: #0d6efd;
-    }
-
-    .author-avatar {
-        background: rgba(0, 174, 239, 0.10);
-        color: #00aeef;
-    }
-
-    .submission-title-cell strong {
-        display: block;
-        color: #0f172a;
-        font-size: 0.9rem;
-        font-weight: 900;
-        line-height: 1.35;
-    }
-
-    .submission-title-cell span {
-        color: #64748b;
-        font-size: 0.74rem;
-        font-weight: 700;
-    }
-
-    .author-cell span {
-        color: #334155;
-        font-size: 0.88rem;
-        font-weight: 800;
-        white-space: nowrap;
-    }
-
-    .submission-status {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 28px;
-        padding: 0 0.7rem;
-        border-radius: 999px;
-        font-size: 0.72rem;
-        font-weight: 900;
-        white-space: nowrap;
-    }
-
-    .status-new {
-        background: rgba(0, 174, 239, 0.12);
-        color: #00aeef;
-    }
-
-    .status-pending {
-        background: rgba(245, 158, 11, 0.12);
-        color: #f59e0b;
-    }
-
-    .status-review {
-        background: rgba(13, 110, 253, 0.10);
-        color: #0d6efd;
-    }
-
-    .status-accepted {
-        background: rgba(34, 197, 94, 0.10);
-        color: #16a34a;
-    }
-
-    .status-rejected {
-        background: rgba(239, 68, 68, 0.10);
-        color: #ef4444;
-    }
-
-    .status-revision {
-        background: rgba(124, 58, 237, 0.10);
-        color: #7c3aed;
-    }
-
-    .status-presented {
-        background: rgba(20, 184, 166, 0.12);
-        color: #14b8a6;
-    }
-
-    .status-default {
-        background: #f1f5f9;
-        color: #475569;
-    }
-
-    .action-view-btn {
-        min-height: 34px;
-        padding: 0 0.75rem;
-        border-radius: 11px;
-        border: 1px solid rgba(13, 110, 253, 0.22);
-        background: rgba(13, 110, 253, 0.06);
-        color: #0d6efd;
-        font-size: 0.78rem;
-        font-weight: 900;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.35rem;
-        line-height: 1;
-        white-space: nowrap;
-    }
-
-        .action-view-btn i {
-            font-size: 0.78rem;
-            margin: 0 !important;
-        }
-
-        .action-view-btn:hover {
-            background: #0d6efd;
-            color: #ffffff;
-        }
-
-    .action-more-btn {
-        width: 34px;
-        height: 34px;
-        min-width: 34px;
-        border-radius: 11px;
-        border: 1px solid #dbe3ef;
-        background: #ffffff;
-        color: #64748b;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-        .action-more-btn:hover {
-            color: #0d6efd;
-            background: #f8fbff;
-            border-color: rgba(13, 110, 253, 0.25);
-        }
-
-    .modern-dropdown {
-        border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.10);
-        padding: 0.45rem;
-    }
-
-        .modern-dropdown .dropdown-item {
-            border-radius: 12px;
-            font-weight: 800;
-            color: #334155;
-            padding: 0.65rem 0.75rem;
-            font-size: 0.86rem;
-        }
-
-            .modern-dropdown .dropdown-item:hover {
-                background: #f8fbff;
-                color: #0d6efd;
-            }
-
     .submission-empty-state {
-        padding: 4rem 1.5rem;
+        padding: 2.2rem 1.5rem 2rem;
         text-align: center;
     }
 
     .empty-icon {
-        width: 76px;
-        height: 76px;
+        width: 72px;
+        height: 72px;
         margin: 0 auto 1rem;
-        border-radius: 26px;
+        border-radius: 24px;
         background: rgba(13, 110, 253, 0.10);
         color: #0d6efd;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.9rem;
+        font-size: 1.75rem;
     }
 
     .submission-empty-state h4 {
@@ -910,26 +708,257 @@
     }
 
     .submission-empty-state p {
-        color: #64748b;
-        font-weight: 600;
-        margin: 0 auto 1.25rem;
         max-width: 520px;
+        margin: 0 auto 1rem;
+        color: #64748b;
+        font-size: 0.92rem;
+        font-weight: 600;
         line-height: 1.65;
     }
 
-    @@media (max-width: 992px) {
-        .submission-hero-card {
-            align-items: flex-start;
-            flex-direction: column;
+    .submission-table-wrap {
+        overflow-x: auto;
+    }
+
+    .submission-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 900px;
+    }
+
+        .submission-table thead th {
+            padding: 0.95rem 1.2rem;
+            background: #f8fbff;
+            color: #64748b;
+            font-size: 0.82rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-top: 1px solid #eef2f7;
+            border-bottom: 1px solid #eef2f7;
         }
 
-        .submission-hero-actions,
-        .submission-hero-actions .btn {
+        .submission-table tbody td {
+            padding: 1rem 1.2rem;
+            vertical-align: middle;
+            border-bottom: 1px solid #eef2f7;
+        }
+
+        .submission-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+    .date-box {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+    }
+
+        .date-box strong {
+            color: #0f172a;
+            font-size: 0.98rem;
+            font-weight: 900;
+        }
+
+        .date-box span {
+            color: #64748b;
+            font-size: 0.88rem;
+            font-weight: 700;
+        }
+
+    .submission-title-cell,
+    .author-cell,
+    .submission-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .submission-mini-icon,
+    .author-avatar {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+    }
+
+    .submission-mini-icon {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .author-avatar {
+        background: rgba(0, 174, 239, 0.10);
+        color: #00aeef;
+        border-radius: 50%;
+    }
+
+    .submission-title-cell strong,
+    .author-cell span {
+        color: #0f172a;
+        font-size: 0.95rem;
+        font-weight: 900;
+    }
+
+    .submission-title-cell span {
+        display: block;
+        color: #64748b;
+        font-size: 0.83rem;
+        font-weight: 700;
+        margin-top: 0.15rem;
+    }
+
+    .submission-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 32px;
+        padding: 0 0.85rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .submission-outline-btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        font-weight: 900;
+        padding: 0 1rem;
+        text-decoration: none;
+        font-size: 0.88rem;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #334155;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.045);
+    }
+
+        .submission-outline-btn:hover {
+            color: #0d6efd;
+            background: #ffffff;
+            border-color: rgba(13, 110, 253, 0.32);
+            transform: translateY(-1px);
+        }
+    .status-new {
+        background: rgba(14, 165, 233, 0.12);
+        color: #0284c7;
+    }
+
+    .status-pending {
+        background: rgba(245, 158, 11, 0.12);
+        color: #d97706;
+    }
+
+    .status-review {
+        background: rgba(139, 92, 246, 0.12);
+        color: #7c3aed;
+    }
+
+    .status-accepted {
+        background: rgba(16, 185, 129, 0.12);
+        color: #059669;
+    }
+
+    .status-rejected {
+        background: rgba(239, 68, 68, 0.12);
+        color: #dc2626;
+    }
+
+    .status-revision {
+        background: rgba(244, 114, 182, 0.12);
+        color: #db2777;
+    }
+
+    .status-presented {
+        background: rgba(99, 102, 241, 0.12);
+        color: #4f46e5;
+    }
+
+    .status-default {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .action-view-btn,
+    .action-more-btn {
+        min-height: 42px;
+        border-radius: 14px;
+        font-size: 0.86rem;
+        font-weight: 900;
+    }
+
+    .action-view-btn {
+        border: 1px solid rgba(13, 110, 253, 0.22);
+        background: rgba(13, 110, 253, 0.06);
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0 0.85rem;
+    }
+
+        .action-view-btn:hover {
+            color: #ffffff;
+            background: linear-gradient(135deg, #0d6efd, #00aeef);
+            border-color: transparent;
+        }
+
+    .action-more-btn {
+        min-width: 42px;
+        border: 1px solid #dbe3ef;
+        background: #ffffff;
+        color: #64748b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .action-more-btn:hover {
+            color: #0d6efd;
+            border-color: rgba(13, 110, 253, 0.22);
+            background: #f8fbff;
+        }
+
+    .modern-dropdown {
+        border: 1px solid #e8eef6;
+        border-radius: 16px;
+        box-shadow: 0 18px 36px rgba(15, 23, 42, 0.10);
+        padding: 0.45rem;
+    }
+
+        .modern-dropdown .dropdown-item {
+            border-radius: 12px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #334155;
+            padding: 0.7rem 0.85rem;
+        }
+
+            .modern-dropdown .dropdown-item:hover {
+                background: #f8fbff;
+                color: #0d6efd;
+            }
+
+    @@media (max-width: 991.98px) {
+
+        .submission-hero-card {
+            padding: 1rem;
+        }
+
+        .submission-hero-actions {
             width: 100%;
         }
 
-        .submission-page-title {
-            font-size: 1.45rem;
-        }
+            .submission-hero-actions .btn {
+                width: 100%;
+            }
     }
 </style>
