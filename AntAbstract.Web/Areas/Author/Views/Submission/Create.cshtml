@@ -48,40 +48,80 @@
     .submission-page {
         max-width: 1320px;
         margin: 0 auto;
-        padding: 2.2rem 1.5rem 4rem;
+        padding: 1.25rem 1.5rem 4rem;
     }
 
-    .submission-hero {
-        text-align: center;
-        margin-top: 0.5rem;
-        margin-bottom: 2rem;
+    .submission-hero-card {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e8eef6;
+        border-radius: 24px;
+        padding: 1.35rem 1.45rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.055);
+        margin-bottom: 1.4rem;
+    }
+
+    .submission-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 0.95rem;
+        min-width: 300px;
+        flex: 1;
     }
 
     .submission-hero-icon {
         width: 64px;
         height: 64px;
+        min-width: 64px;
         border-radius: 22px;
-        background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(0, 174, 239, 0.14));
-        color: #2563eb;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 1rem;
-        box-shadow: 0 18px 40px rgba(37, 99, 235, 0.08);
+        font-size: 1.55rem;
+        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.22);
     }
 
-    .submission-hero h2 {
-        font-size: 2.15rem;
-        font-weight: 900;
-        color: #0f172a;
-        letter-spacing: -0.8px;
-        margin-bottom: 0.45rem;
-    }
-
-    .submission-hero p {
+    .submission-section-label {
         color: #64748b;
-        font-size: 1rem;
-        margin-bottom: 0;
+        font-size: 0.76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .submission-hero-title {
+        margin: 0 0 0.3rem;
+        color: #0f172a;
+        font-size: 1.75rem;
+        font-weight: 900;
+        letter-spacing: -0.045em;
+        line-height: 1.15;
+    }
+
+    .submission-hero-text {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.94rem;
+        font-weight: 600;
+        line-height: 1.55;
+    }
+
+    .submission-slug-badge {
+        width: fit-content;
+        margin-top: 0.55rem;
+        padding: 0.34rem 0.75rem;
+        border-radius: 999px;
+        background: rgba(13, 110, 253, 0.09);
+        color: #0d6efd;
+        font-size: 0.76rem;
+        font-weight: 900;
     }
 
     .submission-card {
@@ -376,8 +416,8 @@
         border-radius: 18px;
         padding: 0 1.65rem;
         color: #fff;
-        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 45%, #2563eb 100%);
-        box-shadow: 0 16px 34px rgba(37, 99, 235, 0.24);
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        box-shadow: 0 16px 34px rgba(13, 110, 253, 0.24);
         font-weight: 900;
         display: inline-flex;
         align-items: center;
@@ -388,7 +428,7 @@
         .btn-submit-modern:hover {
             transform: translateY(-2px);
             color: #fff;
-            box-shadow: 0 20px 44px rgba(37, 99, 235, 0.32);
+            box-shadow: 0 20px 44px rgba(13, 110, 253, 0.32);
         }
 
     .validation-summary-errors {
@@ -401,12 +441,22 @@
 
     @@media (max-width: 768px) {
         .submission-page {
-            padding: 1.5rem 1rem 3rem;
+            padding: 1rem 1rem 3rem;
             max-width: 100%;
         }
 
-        .submission-hero h2 {
-            font-size: 1.65rem;
+        .submission-hero-card {
+            padding: 1.15rem;
+        }
+
+        .submission-hero-left {
+            align-items: flex-start;
+            flex-direction: column;
+            min-width: 100%;
+        }
+
+        .submission-hero-title {
+            font-size: 1.45rem;
         }
 
         .submission-card-header {
@@ -461,18 +511,33 @@
         </div>
     }
 
-    <div class="submission-hero">
-        <div class="submission-hero-icon">
-            <i class="fas fa-paper-plane fs-3"></i>
+    <div class="submission-hero-card">
+        <div class="submission-hero-left">
+            <div class="submission-hero-icon">
+                <i class="fas fa-paper-plane"></i>
+            </div>
+
+            <div>
+                <div class="submission-section-label">
+                    @L("HeroSectionLabel", "Başvuru İşlemleri", "Submission Operations")
+                </div>
+
+                <h2 class="submission-hero-title">
+                    @L("PageHeading", "Yeni Bildiri Gönder", "Submit New Abstract")
+                </h2>
+
+                <p class="submission-hero-text">
+                    @L("PageLead", "Bildirinizi seçili kongre için oluşturun ve değerlendirme sürecine gönderin.", "Create your abstract for the selected congress and submit it for review.")
+                </p>
+
+                @if (!string.IsNullOrWhiteSpace(slug))
+                {
+                    <div class="submission-slug-badge">
+                        /@slug
+                    </div>
+                }
+            </div>
         </div>
-
-        <h2>
-            @L("PageHeading", "Yeni Bildiri Gönder", "Submit New Abstract")
-        </h2>
-
-        <p>
-            @L("PageLead", "Bildirinizi seçili kongre için oluşturun ve değerlendirme sürecine gönderin.", "Create your abstract for the selected congress and submit it for review.")
-        </p>
     </div>
 
     <form action="@submitUrl"

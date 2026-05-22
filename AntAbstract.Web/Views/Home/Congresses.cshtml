@@ -1,10 +1,12 @@
 ﻿@model IEnumerable<object>
 
 @using System
+@using System.Collections.Generic
 @using System.Globalization
 @using System.Linq
 @using System.Net
 @using System.Text.RegularExpressions
+@using AntAbstract.Domain.Entities
 
 @{
     ViewData["Title"] = "Kongreler";
@@ -12,9 +14,14 @@
 
     var conferences = Model?.ToList() ?? new List<object>();
 
+    var registrationsByConference = ViewBag.RegistrationsByConference as Dictionary<Guid, Registration>
+        ?? new Dictionary<Guid, Registration>();
+
     var isSuperAdmin = User.Identity?.IsAuthenticated == true && User.IsInRole("SuperAdmin");
     var isAdmin = User.Identity?.IsAuthenticated == true && User.IsInRole("Admin");
     var isAuthor = User.Identity?.IsAuthenticated == true && User.IsInRole("Author");
+    var isListener = User.Identity?.IsAuthenticated == true && User.IsInRole("Listener");
+    var isReferee = User.Identity?.IsAuthenticated == true && User.IsInRole("Referee");
 
     var isSystemUser = isSuperAdmin || isAdmin;
 
@@ -75,6 +82,28 @@
         return string.IsNullOrWhiteSpace(text)
             ? fallback
             : text;
+    }
+
+    Guid? GetGuid(object? item, params string[] propertyNames)
+    {
+        var value = GetPropertyValue(item, propertyNames);
+
+        if (value == null)
+        {
+            return null;
+        }
+
+        if (value is Guid guidValue)
+        {
+            return guidValue;
+        }
+
+        if (Guid.TryParse(value.ToString(), out var parsedGuid))
+        {
+            return parsedGuid;
+        }
+
+        return null;
     }
 
     string CleanHtmlText(string? text, int maxLength = 110)
@@ -334,6 +363,9 @@
                     {
                         var item = conferences[i];
 
+                        var conferenceId = GetGuid(item, "Id", "ConferenceId", "CongressId");
+                        var isRegistered = conferenceId.HasValue && registrationsByConference.ContainsKey(conferenceId.Value);
+
                         var title = GetText(item, "Kongre", "Title", "ConferenceTitle", "Name", "CongressName");
                         var slug = GetSlug(item);
 
@@ -359,18 +391,18 @@
 
                         var monthText = GetMonthShort(startDate);
 
-var rawDescription = GetText(
-    item,
-    !string.IsNullOrWhiteSpace(tenantName)
-        ? $"{tenantName} tarafından düzenlenen bilimsel kongre."
-        : "Bilimsel program, bildiri süreçleri ve kayıt bilgilerini inceleyebilirsiniz.",
-    "Description",
-    "ShortDescription",
-    "Summary",
-    "About"
-);
+                        var rawDescription = GetText(
+                        item,
+                        !string.IsNullOrWhiteSpace(tenantName)
+                        ? $"{tenantName} tarafından düzenlenen bilimsel kongre."
+                        : "Bilimsel program, bildiri süreçleri ve kayıt bilgilerini inceleyebilirsiniz.",
+                        "Description",
+                        "ShortDescription",
+                        "Summary",
+                        "About"
+                        );
 
-var description = CleanHtmlText(rawDescription, 110);
+                        var description = CleanHtmlText(rawDescription, 110);
 
                         var logoUrl = NormalizeUrl(GetText(item, "", "LogoUrl", "LogoPath", "ImageUrl", "ImagePath", "CoverImageUrl", "CoverImagePath"));
                         var logoText = GetLogoText(title, slug);
@@ -384,9 +416,9 @@ var description = CleanHtmlText(rawDescription, 110);
                         ? $"/{slug}/registration"
                         : "#";
 
-                        var submissionUrl = !string.IsNullOrWhiteSpace(slug)
-                        ? $"/{slug}/Submission/Create"
-                        : "#";
+                        var panelUrl = !string.IsNullOrWhiteSpace(slug)
+                        ? $"/{slug}/Dashboard"
+                        : "/Dashboard/MyConferences";
 
                         string actionUrl;
                         string actionText;
@@ -400,25 +432,33 @@ var description = CleanHtmlText(rawDescription, 110);
                             actionIcon = "fas fa-external-link-alt";
                             actionClass = "btn-site-view";
                         }
-                        else if (isAuthor)
+                        else if (isRegistered)
                         {
-                            actionUrl = submissionUrl;
-                            actionText = "Bildiri Gönder";
-                            actionIcon = "fas fa-paper-plane";
-                            actionClass = "btn-submit-paper";
+                            actionUrl = panelUrl;
+                            actionText = "Panelime Git";
+                            actionIcon = "fas fa-check-circle";
+                            actionClass = "btn-registered-congress";
                         }
                         else
                         {
                             actionUrl = registrationUrl;
-                            actionText = "Kongreye Kayıt Ol";
-                            actionIcon = "fas fa-user-plus";
+                            actionText = "Kayıt Ol";
+                            actionIcon = "fas fa-paper-plane";
                             actionClass = "btn-register-congress";
                         }
 
                         var searchText = $"{title} {slug} {tenantName} {city} {country} {description}".ToLowerInvariant();
 
-                        <article class="congress-card @accentClass"
+                        <article class="congress-card @accentClass @(isRegistered ? "registered-card" : "")"
                                  data-search="@searchText">
+
+                            @if (isRegistered && !isSystemUser)
+                            {
+                                <div class="registered-ribbon">
+                                    <i class="fas fa-check-circle"></i>
+                                    Kayıtlı
+                                </div>
+                            }
 
                             <div class="congress-card-media">
                                 <div class="congress-logo-box">
@@ -771,6 +811,27 @@ var description = CleanHtmlText(rawDescription, 110);
             box-shadow: 0 26px 60px rgba(15, 23, 42, 0.11);
         }
 
+    .registered-card {
+        border-color: rgba(34, 197, 94, 0.35);
+    }
+
+    .registered-ribbon {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        z-index: 5;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.45rem 0.7rem;
+        border-radius: 999px;
+        background: rgba(22, 163, 74, 0.95);
+        color: #ffffff;
+        font-size: 0.74rem;
+        font-weight: 900;
+        box-shadow: 0 12px 26px rgba(22, 163, 74, 0.22);
+    }
+
     .congress-card-media {
         position: relative;
         min-height: 220px;
@@ -951,18 +1012,30 @@ var description = CleanHtmlText(rawDescription, 110);
         transition: all 0.2s ease;
     }
 
-    .btn-register-congress,
-    .btn-submit-paper {
+    .btn-register-congress {
         color: #00aeef;
         border-color: #dbe3ef;
     }
 
-        .btn-register-congress:hover,
-        .btn-submit-paper:hover {
+        .btn-register-congress:hover {
             color: #ffffff;
             background: linear-gradient(135deg, #0d6efd, #00aeef);
             border-color: transparent;
             box-shadow: 0 14px 28px rgba(13, 110, 253, 0.22);
+            transform: translateY(-1px);
+        }
+
+    .btn-registered-congress {
+        color: #16a34a;
+        border-color: rgba(34, 197, 94, 0.25);
+        background: rgba(34, 197, 94, 0.08);
+    }
+
+        .btn-registered-congress:hover {
+            color: #ffffff;
+            background: linear-gradient(135deg, #16a34a, #22c55e);
+            border-color: transparent;
+            box-shadow: 0 14px 28px rgba(34, 197, 94, 0.24);
             transform: translateY(-1px);
         }
 

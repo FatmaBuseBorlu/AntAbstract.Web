@@ -407,6 +407,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var vm = new ConferenceFlowIndexViewModel
             {
                 ConferenceId = conference.Id,
+                TenantId = conference.TenantId,
                 ConferenceTitle = conference.Title ?? "",
                 Slug = slug,
                 SubmissionCount = submissionCount,

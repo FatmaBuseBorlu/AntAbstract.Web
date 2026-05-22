@@ -14,6 +14,7 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Tenants
         public string AssignmentMode { get; set; } = "Existing";
 
         public string? ExistingUserId { get; set; }
+        public string? ReturnUrl { get; set; }
 
         public List<SelectListItem> AvailableUsers { get; set; } = new();
 

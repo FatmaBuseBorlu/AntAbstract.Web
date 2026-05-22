@@ -204,7 +204,7 @@ namespace AntAbstract.Web.Controllers
 
                     University = s.Author != null
                         ? s.Author.Institution ?? institutionNotSpecifiedText
-                        : "",
+                        : institutionNotSpecifiedText,
 
                     ConferenceName = s.Conference.Title,
 
@@ -223,6 +223,7 @@ namespace AntAbstract.Web.Controllers
                 ActiveCongresses = conferences.Select(c => new CongressCardDto
                 {
                     Id = c.Id,
+
                     Title = c.Title,
 
                     Description = Shorten(
@@ -234,15 +235,19 @@ namespace AntAbstract.Web.Controllers
 
                     StartDate = c.StartDate,
 
-                    Location = string.IsNullOrEmpty(c.City)
+                    Location = string.IsNullOrWhiteSpace(c.City)
                         ? onlineText
-                        : $"{c.City}{(c.Country != null ? " / " + c.Country : "")}",
+                        : $"{c.City}{(string.IsNullOrWhiteSpace(c.Country) ? "" : " / " + c.Country)}",
 
-                    ImageUrl = string.IsNullOrEmpty(c.BannerPath)
+                    ImageUrl = string.IsNullOrWhiteSpace(c.BannerPath)
                         ? "/abstract/upload/img/resimyok3.png"
                         : c.BannerPath,
 
-                    Slug = c.Tenant?.Slug ?? c.Slug ?? c.Id.ToString(),
+                    Slug = c.Tenant != null && !string.IsNullOrWhiteSpace(c.Tenant.Slug)
+                        ? c.Tenant.Slug
+                        : !string.IsNullOrWhiteSpace(c.Slug)
+                            ? c.Slug
+                            : c.Id.ToString(),
 
                     IsRegistered = registeredIds.Contains(c.Id)
                 }).ToList(),
