@@ -42,8 +42,11 @@
 
     var conferenceFlowReturnUrl = $"/Admin/ConferenceFlow?conferenceId={Model.ConferenceId}";
 
-    var tenantAdminAssignUrl = $"/Admin/Tenants/AssignManager/{Model.TenantId}?returnUrl={Uri.EscapeDataString(conferenceFlowReturnUrl)}";
-}
+    var currentFlowUrl = $"/Admin/ConferenceFlow?conferenceId={Model.ConferenceId}";
+
+    var encodedReturnUrl = System.Net.WebUtility.UrlEncode(currentFlowUrl);
+
+    var tenantAdminAssignUrl = $"/Admin/Tenants/AssignManager/{Model.TenantId}?returnUrl={encodedReturnUrl}";}
 
 <div class="container-fluid conference-flow-page">
 
