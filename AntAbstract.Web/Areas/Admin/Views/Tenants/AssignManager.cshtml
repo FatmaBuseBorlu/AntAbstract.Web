@@ -283,11 +283,11 @@
             </p>
         </div>
 
-        <a asp-action="Index"
-           class="btn btn-light border rounded-pill fw-bold px-4">
-            <i class="fas fa-arrow-left me-2"></i>
-            Listeye Dön
-        </a>
+<a href="@(string.IsNullOrWhiteSpace(Model.ReturnUrl) ? Url.Action("Index", "Tenants", new { area = "Admin" }) : Model.ReturnUrl)"
+   class="btn btn-light border rounded-pill fw-bold px-4">
+    <i class="fas fa-arrow-left me-2"></i>
+    Listeye Dön
+</a>
     </div>
 
     <div class="tenant-manager-grid">
@@ -298,6 +298,7 @@
 
                     <input type="hidden" asp-for="TenantId" />
                     <input type="hidden" asp-for="TenantName" />
+<                   input type="hidden" asp-for="ReturnUrl" />
 
                     <div asp-validation-summary="ModelOnly"></div>
 

@@ -14,7 +14,6 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Tenants
         public string AssignmentMode { get; set; } = "Existing";
 
         public string? ExistingUserId { get; set; }
-        public string? ReturnUrl { get; set; }
 
         public List<SelectListItem> AvailableUsers { get; set; } = new();
 
@@ -31,5 +30,6 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Tenants
         [MinLength(6, ErrorMessage = "Şifre en az 6 karakter olmalıdır.")]
         [Display(Name = "Şifre")]
         public string? Password { get; set; }
+        public string? ReturnUrl { get; set; }
     }
 }

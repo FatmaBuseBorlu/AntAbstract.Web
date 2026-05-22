@@ -433,249 +433,275 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> AssignManager(Guid id)
+public async Task<IActionResult> AssignManager(Guid id, string? returnUrl = null)
+{
+    if (id == Guid.Empty)
+    {
+        return NotFound();
+    }
+
+    var tenant = await _context.Tenants
+        .AsNoTracking()
+        .FirstOrDefaultAsync(x => x.Id == id);
+
+    if (tenant == null)
+    {
+        return NotFound();
+    }
+
+    var model = new TenantAssignManagerViewModel
+    {
+        TenantId = tenant.Id,
+        TenantName = tenant.Name,
+        AssignmentMode = "Existing",
+        ReturnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : null
+    };
+
+    await FillAssignableAdminUsersAsync(model);
+
+    return View(model);
+}
+
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> AssignManager(TenantAssignManagerViewModel model)
+{
+    var tenant = await _context.Tenants
+        .FirstOrDefaultAsync(x => x.Id == model.TenantId);
+
+    if (tenant == null)
+    {
+        return NotFound();
+    }
+
+    model.TenantName = tenant.Name;
+
+    var safeReturnUrl = !string.IsNullOrWhiteSpace(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl)
+        ? model.ReturnUrl
+        : null;
+
+    var assignmentMode = string.IsNullOrWhiteSpace(model.AssignmentMode)
+        ? "Existing"
+        : model.AssignmentMode;
+
+    if (assignmentMode == "Existing")
+    {
+        ModelState.Remove(nameof(model.FirstName));
+        ModelState.Remove(nameof(model.LastName));
+        ModelState.Remove(nameof(model.Email));
+        ModelState.Remove(nameof(model.Password));
+
+        if (string.IsNullOrWhiteSpace(model.ExistingUserId))
         {
-            if (id == Guid.Empty)
-            {
-                return NotFound();
-            }
-
-            var tenant = await _context.Tenants
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == id);
-
-            if (tenant == null)
-            {
-                return NotFound();
-            }
-
-            var model = new TenantAssignManagerViewModel
-            {
-                TenantId = tenant.Id,
-                TenantName = tenant.Name,
-                AssignmentMode = "Existing"
-            };
-
-            await FillAssignableAdminUsersAsync(model);
-
-            return View(model);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AssignManager(TenantAssignManagerViewModel model)
-        {
-            var tenant = await _context.Tenants
-                .FirstOrDefaultAsync(x => x.Id == model.TenantId);
-
-            if (tenant == null)
-            {
-                return NotFound();
-            }
-
-            model.TenantName = tenant.Name;
-
-            var assignmentMode = string.IsNullOrWhiteSpace(model.AssignmentMode)
-                ? "Existing"
-                : model.AssignmentMode;
-
-            if (assignmentMode == "Existing")
-            {
-                ModelState.Remove(nameof(model.FirstName));
-                ModelState.Remove(nameof(model.LastName));
-                ModelState.Remove(nameof(model.Email));
-                ModelState.Remove(nameof(model.Password));
-
-                if (string.IsNullOrWhiteSpace(model.ExistingUserId))
-                {
-                    ModelState.AddModelError(
-                        nameof(model.ExistingUserId),
-                        T("Error_SelectUserRequired", "Lütfen admin yapılacak kullanıcıyı seçiniz."));
-                }
-
-                if (!ModelState.IsValid)
-                {
-                    await FillAssignableAdminUsersAsync(model);
-                    return View(model);
-                }
-
-                var existingUser = await _userManager.FindByIdAsync(model.ExistingUserId!);
-
-                if (existingUser == null)
-                {
-                    ModelState.AddModelError(
-                        nameof(model.ExistingUserId),
-                        T("Error_UserNotFound", "Seçilen kullanıcı bulunamadı."));
-
-                    await FillAssignableAdminUsersAsync(model);
-                    return View(model);
-                }
-
-                var isSuperAdmin = await _userManager.IsInRoleAsync(existingUser, "SuperAdmin");
-
-                if (isSuperAdmin)
-                {
-                    ModelState.AddModelError(
-                        nameof(model.ExistingUserId),
-                        T("Error_SuperAdminCannotBeTenantAdmin", "Süper Admin kullanıcıları kurum admini olarak atanamaz."));
-
-                    await FillAssignableAdminUsersAsync(model);
-                    return View(model);
-                }
-
-                existingUser.TenantId = tenant.Id;
-                existingUser.EmailConfirmed = true;
-
-                var updateResult = await _userManager.UpdateAsync(existingUser);
-
-                if (!updateResult.Succeeded)
-                {
-                    foreach (var error in updateResult.Errors)
-                    {
-                        ModelState.AddModelError(string.Empty, error.Description);
-                    }
-
-                    await FillAssignableAdminUsersAsync(model);
-                    return View(model);
-                }
-
-                if (!await _roleManager.RoleExistsAsync("Admin"))
-                {
-                    await _roleManager.CreateAsync(new IdentityRole("Admin"));
-                }
-
-                if (!await _userManager.IsInRoleAsync(existingUser, "Admin"))
-                {
-                    var addRoleResult = await _userManager.AddToRoleAsync(existingUser, "Admin");
-
-                    if (!addRoleResult.Succeeded)
-                    {
-                        foreach (var error in addRoleResult.Errors)
-                        {
-                            ModelState.AddModelError(string.Empty, error.Description);
-                        }
-
-                        await FillAssignableAdminUsersAsync(model);
-                        return View(model);
-                    }
-                }
-
-                var fullName = $"{existingUser.FirstName} {existingUser.LastName}".Trim();
-
-                if (string.IsNullOrWhiteSpace(fullName))
-                {
-                    fullName = existingUser.Email ?? existingUser.UserName ?? "Kullanıcı";
-                }
-
-                TempData["SuccessMessage"] = $"{tenant.Name} kurumuna {fullName} adlı kullanıcı admin olarak atandı.";
-
-                return RedirectToAction(nameof(Index));
-            }
-
-            if (assignmentMode == "New")
-            {
-                ModelState.Remove(nameof(model.ExistingUserId));
-
-                if (string.IsNullOrWhiteSpace(model.FirstName))
-                {
-                    ModelState.AddModelError(
-                        nameof(model.FirstName),
-                        T("Error_FirstNameRequired", "Ad alanı zorunludur."));
-                }
-
-                if (string.IsNullOrWhiteSpace(model.LastName))
-                {
-                    ModelState.AddModelError(
-                        nameof(model.LastName),
-                        T("Error_LastNameRequired", "Soyad alanı zorunludur."));
-                }
-
-                if (string.IsNullOrWhiteSpace(model.Email))
-                {
-                    ModelState.AddModelError(
-                        nameof(model.Email),
-                        T("Error_EmailRequired", "E-posta alanı zorunludur."));
-                }
-
-                if (string.IsNullOrWhiteSpace(model.Password))
-                {
-                    ModelState.AddModelError(
-                        nameof(model.Password),
-                        T("Error_PasswordRequired", "Şifre zorunludur."));
-                }
-
-                if (!ModelState.IsValid)
-                {
-                    await FillAssignableAdminUsersAsync(model);
-                    return View(model);
-                }
-
-                var existingUser = await _userManager.FindByEmailAsync(model.Email!);
-
-                if (existingUser != null)
-                {
-                    ModelState.AddModelError(
-                        nameof(model.Email),
-                        T("Error_EmailAlreadyRegistered", "Bu e-posta adresiyle kayıtlı bir kullanıcı zaten var. Mevcut kullanıcıyı seçerek admin yapabilirsiniz."));
-
-                    await FillAssignableAdminUsersAsync(model);
-                    return View(model);
-                }
-
-                var adminUser = new AppUser
-                {
-                    UserName = model.Email,
-                    Email = model.Email,
-                    FirstName = model.FirstName,
-                    LastName = model.LastName,
-                    TenantId = model.TenantId,
-                    EmailConfirmed = true
-                };
-
-                var createResult = await _userManager.CreateAsync(adminUser, model.Password!);
-
-                if (!createResult.Succeeded)
-                {
-                    foreach (var error in createResult.Errors)
-                    {
-                        ModelState.AddModelError(string.Empty, error.Description);
-                    }
-
-                    await FillAssignableAdminUsersAsync(model);
-                    return View(model);
-                }
-
-                if (!await _roleManager.RoleExistsAsync("Admin"))
-                {
-                    await _roleManager.CreateAsync(new IdentityRole("Admin"));
-                }
-
-                var addRoleResult = await _userManager.AddToRoleAsync(adminUser, "Admin");
-
-                if (!addRoleResult.Succeeded)
-                {
-                    foreach (var error in addRoleResult.Errors)
-                    {
-                        ModelState.AddModelError(string.Empty, error.Description);
-                    }
-
-                    await FillAssignableAdminUsersAsync(model);
-                    return View(model);
-                }
-
-                TempData["SuccessMessage"] = $"{tenant.Name} kurumuna {model.FirstName} {model.LastName} adlı yeni admin oluşturuldu.";
-
-                return RedirectToAction(nameof(Index));
-            }
-
             ModelState.AddModelError(
-                nameof(model.AssignmentMode),
-                T("Error_InvalidAssignmentMode", "Geçersiz admin atama yöntemi."));
+                nameof(model.ExistingUserId),
+                T("Error_SelectUserRequired", "Lütfen admin yapılacak kullanıcıyı seçiniz."));
+        }
 
+        if (!ModelState.IsValid)
+        {
+            model.ReturnUrl = safeReturnUrl;
             await FillAssignableAdminUsersAsync(model);
-
             return View(model);
         }
+
+        var existingUser = await _userManager.FindByIdAsync(model.ExistingUserId!);
+
+        if (existingUser == null)
+        {
+            ModelState.AddModelError(
+                nameof(model.ExistingUserId),
+                T("Error_UserNotFound", "Seçilen kullanıcı bulunamadı."));
+
+            model.ReturnUrl = safeReturnUrl;
+            await FillAssignableAdminUsersAsync(model);
+            return View(model);
+        }
+
+        var isSuperAdmin = await _userManager.IsInRoleAsync(existingUser, "SuperAdmin");
+
+        if (isSuperAdmin)
+        {
+            ModelState.AddModelError(
+                nameof(model.ExistingUserId),
+                T("Error_SuperAdminCannotBeTenantAdmin", "Süper Admin kullanıcıları kurum admini olarak atanamaz."));
+
+            model.ReturnUrl = safeReturnUrl;
+            await FillAssignableAdminUsersAsync(model);
+            return View(model);
+        }
+
+        existingUser.TenantId = tenant.Id;
+        existingUser.EmailConfirmed = true;
+
+        var updateResult = await _userManager.UpdateAsync(existingUser);
+
+        if (!updateResult.Succeeded)
+        {
+            foreach (var error in updateResult.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            model.ReturnUrl = safeReturnUrl;
+            await FillAssignableAdminUsersAsync(model);
+            return View(model);
+        }
+
+        if (!await _roleManager.RoleExistsAsync("Admin"))
+        {
+            await _roleManager.CreateAsync(new IdentityRole("Admin"));
+        }
+
+        if (!await _userManager.IsInRoleAsync(existingUser, "Admin"))
+        {
+            var addRoleResult = await _userManager.AddToRoleAsync(existingUser, "Admin");
+
+            if (!addRoleResult.Succeeded)
+            {
+                foreach (var error in addRoleResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+
+                model.ReturnUrl = safeReturnUrl;
+                await FillAssignableAdminUsersAsync(model);
+                return View(model);
+            }
+        }
+
+        var fullName = $"{existingUser.FirstName} {existingUser.LastName}".Trim();
+
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            fullName = existingUser.Email ?? existingUser.UserName ?? "Kullanıcı";
+        }
+
+        TempData["SuccessMessage"] = $"{tenant.Name} kurumuna {fullName} adlı kullanıcı admin olarak atandı.";
+
+        if (!string.IsNullOrWhiteSpace(safeReturnUrl))
+        {
+            return LocalRedirect(safeReturnUrl);
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    if (assignmentMode == "New")
+    {
+        ModelState.Remove(nameof(model.ExistingUserId));
+
+        if (string.IsNullOrWhiteSpace(model.FirstName))
+        {
+            ModelState.AddModelError(
+                nameof(model.FirstName),
+                T("Error_FirstNameRequired", "Ad alanı zorunludur."));
+        }
+
+        if (string.IsNullOrWhiteSpace(model.LastName))
+        {
+            ModelState.AddModelError(
+                nameof(model.LastName),
+                T("Error_LastNameRequired", "Soyad alanı zorunludur."));
+        }
+
+        if (string.IsNullOrWhiteSpace(model.Email))
+        {
+            ModelState.AddModelError(
+                nameof(model.Email),
+                T("Error_EmailRequired", "E-posta alanı zorunludur."));
+        }
+
+        if (string.IsNullOrWhiteSpace(model.Password))
+        {
+            ModelState.AddModelError(
+                nameof(model.Password),
+                T("Error_PasswordRequired", "Şifre zorunludur."));
+        }
+
+        if (!ModelState.IsValid)
+        {
+            model.ReturnUrl = safeReturnUrl;
+            await FillAssignableAdminUsersAsync(model);
+            return View(model);
+        }
+
+        var existingUser = await _userManager.FindByEmailAsync(model.Email!);
+
+        if (existingUser != null)
+        {
+            ModelState.AddModelError(
+                nameof(model.Email),
+                T("Error_EmailAlreadyRegistered", "Bu e-posta adresiyle kayıtlı bir kullanıcı zaten var. Mevcut kullanıcıyı seçerek admin yapabilirsiniz."));
+
+            model.ReturnUrl = safeReturnUrl;
+            await FillAssignableAdminUsersAsync(model);
+            return View(model);
+        }
+
+        var adminUser = new AppUser
+        {
+            UserName = model.Email,
+            Email = model.Email,
+            FirstName = model.FirstName,
+            LastName = model.LastName,
+            TenantId = model.TenantId,
+            EmailConfirmed = true
+        };
+
+        var createResult = await _userManager.CreateAsync(adminUser, model.Password!);
+
+        if (!createResult.Succeeded)
+        {
+            foreach (var error in createResult.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            model.ReturnUrl = safeReturnUrl;
+            await FillAssignableAdminUsersAsync(model);
+            return View(model);
+        }
+
+        if (!await _roleManager.RoleExistsAsync("Admin"))
+        {
+            await _roleManager.CreateAsync(new IdentityRole("Admin"));
+        }
+
+        var addRoleResult = await _userManager.AddToRoleAsync(adminUser, "Admin");
+
+        if (!addRoleResult.Succeeded)
+        {
+            foreach (var error in addRoleResult.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            model.ReturnUrl = safeReturnUrl;
+            await FillAssignableAdminUsersAsync(model);
+            return View(model);
+        }
+
+        TempData["SuccessMessage"] = $"{tenant.Name} kurumuna {model.FirstName} {model.LastName} adlı yeni admin oluşturuldu.";
+
+        if (!string.IsNullOrWhiteSpace(safeReturnUrl))
+        {
+            return LocalRedirect(safeReturnUrl);
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    ModelState.AddModelError(
+        nameof(model.AssignmentMode),
+        T("Error_InvalidAssignmentMode", "Geçersiz admin atama yöntemi."));
+
+    model.ReturnUrl = safeReturnUrl;
+
+    await FillAssignableAdminUsersAsync(model);
+
+    return View(model);
+}
 
         [HttpGet]
         public IActionResult AddConference(Guid id)
