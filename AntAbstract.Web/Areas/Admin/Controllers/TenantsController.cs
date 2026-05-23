@@ -233,7 +233,30 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return NotFound();
             }
 
-            return View(tenant);
+            var firstConferenceId = await _context.Conferences
+                .AsNoTracking()
+                .Where(x => x.TenantId == tenant.Id)
+                .OrderByDescending(x => x.StartDate)
+                .Select(x => x.Id)
+                .FirstOrDefaultAsync();
+
+            Guid? conferenceId = firstConferenceId == Guid.Empty
+                ? null
+                : firstConferenceId;
+
+            ViewBag.ConferenceId = conferenceId;
+
+            ViewBag.ConferenceFlowUrl = conferenceId.HasValue
+                ? $"/{tenant.Slug}/Admin/ConferenceFlow?conferenceId={conferenceId.Value}"
+                : null;
+
+            ViewBag.AssignManagerReturnUrl = conferenceId.HasValue
+                ? $"/{tenant.Slug}/Admin/ConferenceFlow?conferenceId={conferenceId.Value}"
+                : Url.Action(
+                action: nameof(Index),
+                controller: "Tenants",
+                values: new { area = "Admin" });
+                return View(tenant);
         }
 
         [HttpGet]
