@@ -1,92 +1,256 @@
-﻿@model AntAbstract.Domain.Entities.Tenant
+﻿@using System
+@model AntAbstract.Domain.Entities.Tenant
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
 }
 
-<div class="container-fluid">
-    <div class="d-flex align-items-center justify-content-between mb-4">
+<div class="container-fluid tenant-edit-page">
+    <div class="edit-page-header d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4">
         <div>
-            <h4 class="mb-0 fw-bold text-dark">@Localizer["PageHeading"]</h4>
-            <p class="text-muted small mb-0">
-                <strong>@Model.Name</strong> @Localizer["PageLead"]
-            </p>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item">
+                        <a asp-area="Admin"
+                           asp-controller="Tenants"
+                           asp-action="Index"
+                           class="text-decoration-none">
+                            @L("BreadcrumbInstitutions", "Kurumlar")
+                        </a>
+                    </li>
+
+                    <li class="breadcrumb-item">
+                        <a asp-area="Admin"
+                            asp-controller="Tenants"
+                            asp-action="Index"
+                            class="btn btn-light border shadow-sm rounded-pill px-4 py-2 fw-bold back-btn">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            @L("BackToListButton", "Kurum Listesine Dön")
+                        </a>
+                    </li>
+
+                    <li class="breadcrumb-item active" aria-current="page">
+                        @L("PageHeading", "Kurum Bilgilerini Düzenle")
+                    </li>
+                </ol>
+            </nav>
+
+            <div class="page-title-wrap d-flex align-items-start gap-3">
+                <div class="page-title-icon warning">
+                    <i class="fas fa-pen-to-square"></i>
+                </div>
+
+                <div>
+                    <h1 class="page-title mb-1">
+                        @L("PageHeading", "Kurum Bilgilerini Düzenle")
+                    </h1>
+
+                    <p class="page-subtitle mb-0">
+                        <strong>@Model.Name</strong>
+                        @L("PageLead", "kurumunun temel bilgilerini buradan güncelleyebilirsiniz.")
+                    </p>
+                </div>
+            </div>
         </div>
-        <a asp-action="Index" class="btn btn-light border shadow-sm px-3">
-            <i class="fas fa-arrow-left me-2"></i> @Localizer["BackToListButton"]
+
+        <a asp-area="Admin"
+           asp-controller="Tenants"
+           asp-action="Index"
+           asp-route-id="@Model.Id"
+           class="btn btn-light border shadow-sm rounded-pill px-4 py-2 fw-bold back-btn">
+            <i class="fas fa-arrow-left me-2"></i>
+            @L("BackToTenantButton", "Kurum Listesine Dön")
         </a>
     </div>
 
-    <div class="row">
-        <div class="col-xl-6 col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body p-4 p-md-5">
-                    <form asp-action="Edit" method="post">
+    <div class="row g-4">
+        <div class="col-xl-7">
+            <div class="modern-card edit-form-card h-100">
+                <div class="modern-card-header">
+                    <div class="modern-card-icon soft-warning">
+                        <i class="fas fa-building-pen"></i>
+                    </div>
+
+                    <div>
+                        <h5 class="modern-card-title mb-1">
+                            @L("FormCardTitle", "Kurum Bilgileri")
+                        </h5>
+
+                        <p class="modern-card-text mb-0">
+                            @L("FormCardLead", "Kurum adı ve URL adresini aşağıdaki alandan düzenleyebilirsiniz.")
+                        </p>
+                    </div>
+                </div>
+
+                <div class="modern-card-body">
+                    <form asp-area="Admin"
+                          asp-controller="Tenants"
+                          asp-action="Edit"
+                          method="post">
+
                         @Html.AntiForgeryToken()
 
-                        <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0 shadow-sm rounded-3 small"></div>
+                        <div asp-validation-summary="ModelOnly"
+                             class="alert alert-danger border-0 shadow-sm rounded-4 small">
+                        </div>
 
                         <input type="hidden" asp-for="Id" />
 
-                        <div class="mb-4">
-                            <label asp-for="Name" class="form-label fw-bold text-dark small">@Localizer["NameLabel"]</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white border-end-0 text-muted">
+                        <div class="form-section">
+                            <label asp-for="Name" class="modern-label">
+                                @L("NameLabel", "Kurum Adı")
+                            </label>
+
+                            <div class="modern-input-group">
+                                <span class="modern-input-icon">
                                     <i class="fas fa-university"></i>
                                 </span>
-                                <input asp-for="Name" class="form-control border-start-0 ps-0" placeholder="@Localizer["NamePlaceholder"]" />
+
+                                <input asp-for="Name"
+                                       class="modern-input"
+                                       placeholder="@L("NamePlaceholder", "Kurum adını giriniz")" />
                             </div>
-                            <span asp-validation-for="Name" class="text-danger small mt-1"></span>
+
+                            <span asp-validation-for="Name" class="text-danger small mt-1 d-block"></span>
                         </div>
 
-                        <div class="mb-4">
-                            <label asp-for="Slug" class="form-label fw-bold text-dark small">@Localizer["SlugLabel"]</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white border-end-0 text-muted">
+                        <div class="form-section">
+                            <label asp-for="Slug" class="modern-label">
+                                @L("SlugLabel", "URL Adresi")
+                            </label>
+
+                            <div class="modern-input-group">
+                                <span class="modern-input-icon">
                                     <i class="fas fa-link"></i>
                                 </span>
-                                <input asp-for="Slug" class="form-control border-start-0 ps-0" placeholder="@Localizer["SlugPlaceholder"]" />
+
+                                <span class="slug-prefix">/</span>
+
+                                <input asp-for="Slug"
+                                       class="modern-input slug-input"
+                                       placeholder="@L("SlugPlaceholder", "ornek-kurum")" />
                             </div>
-                            <div class="form-text text-warning small">
-                                <i class="fas fa-exclamation-triangle me-1"></i>
-                                @Localizer["SlugWarningText"]
+
+                            <div class="warning-note mt-3">
+                                <i class="fas fa-exclamation-triangle"></i>
+
+                                <span>
+                                    @L("SlugWarningText", "URL adresi değişirse bu kuruma ait bağlantılar da değişebilir.")
+                                </span>
                             </div>
-                            <span asp-validation-for="Slug" class="text-danger small mt-1"></span>
+
+                            <span asp-validation-for="Slug" class="text-danger small mt-1 d-block"></span>
                         </div>
 
-                        <hr class="my-4 opacity-50">
+                        <div class="current-info-box">
+                            <div class="current-info-icon">
+                                <i class="fas fa-circle-info"></i>
+                            </div>
 
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-warning btn-lg rounded-3 fw-bold shadow flex-grow-1 text-white">
-                                <i class="fas fa-save me-2"></i> @Localizer["SaveButton"]
+                            <div>
+                                <div class="current-info-title">
+                                    @L("CurrentUrlTitle", "Mevcut URL")
+                                </div>
+
+                                <div class="current-info-text">
+                                    /@Model.Slug
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions d-flex flex-column flex-md-row gap-3">
+                            <button type="submit"
+                                    class="btn save-btn rounded-pill fw-bold shadow-sm flex-grow-1">
+                                <i class="fas fa-save me-2"></i>
+                                @L("SaveButton", "Kaydet")
                             </button>
-                            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-light btn-lg rounded-3 border">
-                                @Localizer["CancelButton"]
-                            </a>
+
+                                <a asp-area="Admin"
+                                asp-controller="Tenants"
+                                asp-action="Index"
+                                class="btn cancel-btn rounded-pill border fw-bold px-4">
+                                <i class="fas fa-xmark me-2"></i>
+                                @L("CancelButton", "İptal")
+                                </a>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-4 col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 border-start border-warning border-4 mb-3">
-                <div class="card-body">
-                    <h6 class="fw-bold text-warning mb-2">
-                        <i class="fas fa-shield-alt me-2"></i> @Localizer["SecurityCardTitle"]
-                    </h6>
-                    <p class="small text-muted mb-0">
-                        @Localizer["SecurityCardText"]
-                    </p>
+        <div class="col-xl-5">
+            <div class="modern-card guide-card mb-4">
+                <div class="guide-icon">
+                    <i class="fas fa-shield-halved"></i>
+                </div>
+
+                <h5 class="guide-title">
+                    @L("SecurityCardTitle", "Dikkat")
+                </h5>
+
+                <p class="guide-text">
+                    @L("SecurityCardText", "Kurum adı ve URL adresi sistemdeki yönlendirmeleri etkileyebilir. Değişiklik yapmadan önce kontrol ediniz.")
+                </p>
+
+                <div class="guide-list">
+                    <div class="guide-list-item">
+                        <span class="guide-check warning">
+                            <i class="fas fa-check"></i>
+                        </span>
+
+                        <span>
+                            @L("GuideItem1", "Kurum adı ekranda görünen ana başlıktır.")
+                        </span>
+                    </div>
+
+                    <div class="guide-list-item">
+                        <span class="guide-check warning">
+                            <i class="fas fa-check"></i>
+                        </span>
+
+                        <span>
+                            @L("GuideItem2", "URL adresi kurum bağlantısını doğrudan etkiler.")
+                        </span>
+                    </div>
+
+                    <div class="guide-list-item">
+                        <span class="guide-check danger">
+                            <i class="fas fa-exclamation"></i>
+                        </span>
+
+                        <span>
+                            @L("GuideItem3", "Slug değişirse eski bağlantılar çalışmayabilir.")
+                        </span>
+                    </div>
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm rounded-4 bg-dark text-white p-2">
-                <div class="card-body">
-                    <small class="d-block opacity-50">@Localizer["SystemIdCardTitle"]</small>
-                    <code class="text-info" style="font-size: 0.75rem;">@Model.Id</code>
+            <div class="modern-card system-card">
+                <div class="system-card-header">
+                    <div>
+                        <small class="system-label">
+                            @L("SystemIdCardTitle", "Sistem ID")
+                        </small>
+
+                        <div class="system-id">
+                            @Model.Id
+                        </div>
+                    </div>
+
+                    <div class="system-icon">
+                        <i class="fas fa-fingerprint"></i>
+                    </div>
                 </div>
             </div>
         </div>
@@ -94,17 +258,417 @@
 </div>
 
 <style>
-    .form-control:focus {
-        border-color: #ffc107;
-        box-shadow: none;
+    .tenant-edit-page {
+        padding-bottom: 1rem;
     }
 
-    .input-group-text {
-        border-color: #dee2e6;
+    .breadcrumb-item {
+        font-size: 0.86rem;
+        font-weight: 600;
     }
 
-    .btn-warning:hover {
-        background-color: #eab000;
+    .breadcrumb-item + .breadcrumb-item::before {
+        color: #94a3b8;
+    }
+
+    .breadcrumb-item a {
+        color: #2563eb;
+    }
+
+    .page-title-wrap {
+        max-width: 900px;
+    }
+
+    .page-title-icon {
+        width: 60px;
+        height: 60px;
+        min-width: 60px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+    }
+
+    .page-title-icon.warning {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(251, 191, 36, 0.18));
+        color: #d97706;
+    }
+
+    .page-title {
+        font-size: clamp(1.8rem, 3vw, 2.45rem);
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        color: #0f172a;
+    }
+
+    .page-subtitle {
+        color: #64748b;
+        font-size: 1rem;
+        line-height: 1.75;
+    }
+
+    .back-btn {
+        white-space: nowrap;
+        transition: all 0.25s ease;
+    }
+
+    .back-btn:hover {
         transform: translateY(-2px);
+        background-color: #f8fafc;
+    }
+
+    .modern-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+
+    .modern-card-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.5rem 1.5rem 1.25rem 1.5rem;
+        border-bottom: 1px solid #eef2f7;
+        background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
+    }
+
+    .modern-card-icon {
+        width: 52px;
+        height: 52px;
+        min-width: 52px;
+        border-radius: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+    }
+
+    .modern-card-icon.soft-warning {
+        background: rgba(245, 158, 11, 0.12);
+        color: #d97706;
+    }
+
+    .modern-card-title {
+        font-weight: 900;
+        color: #0f172a;
+        letter-spacing: -0.02em;
+    }
+
+    .modern-card-text {
+        color: #64748b;
+        line-height: 1.65;
+        font-size: 0.94rem;
+    }
+
+    .modern-card-body {
+        padding: 1.5rem;
+    }
+
+    .form-section {
+        margin-bottom: 1.35rem;
+    }
+
+    .modern-label {
+        display: block;
+        color: #0f172a;
+        font-size: 0.82rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.65rem;
+    }
+
+    .modern-input-group {
+        min-height: 58px;
+        display: flex;
+        align-items: center;
+        border: 1px solid #dbe4ef;
+        border-radius: 18px;
+        background: #ffffff;
+        overflow: hidden;
+        transition: all 0.22s ease;
+    }
+
+    .modern-input-group:focus-within {
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12);
+    }
+
+    .modern-input-icon {
+        width: 54px;
+        min-width: 54px;
+        height: 58px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        background: #f8fafc;
+        border-right: 1px solid #eef2f7;
+    }
+
+    .modern-input {
+        width: 100%;
+        min-height: 58px;
+        border: 0;
+        outline: none;
+        padding: 0 1rem;
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 700;
+        background: transparent;
+    }
+
+    .modern-input::placeholder {
+        color: #94a3b8;
+        font-weight: 600;
+    }
+
+    .slug-prefix {
+        color: #f59e0b;
+        font-weight: 900;
+        padding-left: 1rem;
+        font-size: 1.05rem;
+    }
+
+    .slug-input {
+        padding-left: 0.2rem;
+    }
+
+    .warning-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.55rem;
+        padding: 0.85rem 1rem;
+        border-radius: 16px;
+        background: rgba(245, 158, 11, 0.09);
+        border: 1px solid rgba(245, 158, 11, 0.18);
+        color: #92400e;
+        font-size: 0.88rem;
+        font-weight: 700;
+        line-height: 1.55;
+    }
+
+    .warning-note i {
+        margin-top: 0.18rem;
+    }
+
+    .current-info-box {
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        padding: 1rem;
+        border-radius: 20px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        margin-top: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .current-info-icon {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 15px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(245, 158, 11, 0.12);
+        color: #d97706;
+    }
+
+    .current-info-title {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.15rem;
+    }
+
+    .current-info-text {
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 900;
+        word-break: break-all;
+    }
+
+    .form-actions {
+        padding-top: 1.25rem;
+        border-top: 1px solid #eef2f7;
+    }
+
+    .save-btn {
+        min-height: 50px;
+        background: linear-gradient(135deg, #f59e0b, #fbbf24);
+        border: none;
+        color: #ffffff;
+        transition: all 0.25s ease;
+    }
+
+    .save-btn:hover {
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 14px 30px rgba(245, 158, 11, 0.25) !important;
+    }
+
+    .cancel-btn {
+        min-height: 50px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #475569;
+        background: #ffffff;
+        transition: all 0.25s ease;
+    }
+
+    .cancel-btn:hover {
+        color: #0f172a;
+        background: #f8fafc;
+        transform: translateY(-2px);
+    }
+
+    .guide-card {
+        padding: 1.5rem;
+        background:
+            radial-gradient(circle at top right, rgba(245, 158, 11, 0.13), transparent 38%),
+            linear-gradient(180deg, #ffffff 0%, #fffbeb 100%);
+        border-color: rgba(245, 158, 11, 0.18);
+    }
+
+    .guide-icon {
+        width: 62px;
+        height: 62px;
+        border-radius: 22px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        color: #d97706;
+        font-size: 1.45rem;
+        box-shadow: 0 14px 34px rgba(245, 158, 11, 0.14);
+        margin-bottom: 1.2rem;
+    }
+
+    .guide-title {
+        color: #0f172a;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.75rem;
+    }
+
+    .guide-text {
+        color: #64748b;
+        line-height: 1.75;
+        font-weight: 600;
+        margin-bottom: 1.2rem;
+    }
+
+    .guide-list {
+        display: grid;
+        gap: 0.85rem;
+    }
+
+    .guide-list-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.65rem;
+        color: #475569;
+        font-weight: 700;
+        line-height: 1.6;
+    }
+
+    .guide-check {
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.72rem;
+        margin-top: 0.1rem;
+    }
+
+    .guide-check.warning {
+        background: rgba(245, 158, 11, 0.14);
+        color: #d97706;
+    }
+
+    .guide-check.danger {
+        background: rgba(239, 68, 68, 0.12);
+        color: #dc2626;
+    }
+
+    .system-card {
+        padding: 1.25rem;
+        background: #0f172a;
+        border-color: #0f172a;
+    }
+
+    .system-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .system-label {
+        display: block;
+        color: #94a3b8;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.45rem;
+    }
+
+    .system-id {
+        color: #38bdf8;
+        font-size: 0.88rem;
+        font-weight: 800;
+        word-break: break-all;
+        line-height: 1.6;
+    }
+
+    .system-icon {
+        width: 50px;
+        height: 50px;
+        min-width: 50px;
+        border-radius: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(56, 189, 248, 0.12);
+        color: #38bdf8;
+        font-size: 1.2rem;
+    }
+
+    @@media (max-width: 991.98px) {
+        .modern-card-header,
+        .modern-card-body {
+            padding-left: 1.15rem;
+            padding-right: 1.15rem;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .page-title-icon {
+            width: 52px;
+            height: 52px;
+            min-width: 52px;
+            border-radius: 16px;
+        }
+
+        .modern-card-header {
+            flex-direction: column;
+        }
+
+        .modern-input-icon {
+            width: 48px;
+            min-width: 48px;
+        }
     }
 </style>

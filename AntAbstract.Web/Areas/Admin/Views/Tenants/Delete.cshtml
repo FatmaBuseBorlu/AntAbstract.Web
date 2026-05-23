@@ -1,89 +1,514 @@
-﻿@model AntAbstract.Domain.Entities.Tenant
+﻿@using System
+@model AntAbstract.Domain.Entities.Tenant
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
 }
 
-<div class="container-fluid">
-    <div class="d-flex align-items-center justify-content-between mb-4">
+<div class="container-fluid tenant-delete-page">
+    <div class="delete-page-header d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4">
         <div>
-            <h4 class="mb-0 fw-bold text-danger">@Localizer["PageHeading"]</h4>
-            <p class="text-muted small mb-0">@Localizer["PageLead"]</p>
-        </div>
-        <a asp-action="Index" class="btn btn-light border shadow-sm px-3 btn-sm">
-            <i class="fas fa-arrow-left me-2"></i> @Localizer["BackToListButton"]
-        </a>
-    </div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item">
+                        <a asp-area="Admin"
+                           asp-controller="Tenants"
+                           asp-action="Index"
+                           class="text-decoration-none">
+                            @L("BreadcrumbInstitutions", "Kurumlar")
+                        </a>
+                    </li>
 
-    <div class="row justify-content-center">
-        <div class="col-xl-6 col-lg-8">
+                    <li class="breadcrumb-item">
+                        <a asp-area="Admin"
+                           asp-controller="Tenants"
+                           asp-action="Index"
+                           class="text-decoration-none">
+                            @Model.Name
+                        </a>
+                    </li>
 
-            <div class="alert alert-danger border-0 shadow-sm rounded-3 mb-4 p-3 d-flex align-items-start">
-                <i class="fas fa-exclamation-triangle fa-2x me-3 mt-1 opacity-75"></i>
+                    <li class="breadcrumb-item active" aria-current="page">
+                        @L("PageHeading", "Kurum Sil")
+                    </li>
+                </ol>
+            </nav>
+
+            <div class="page-title-wrap d-flex align-items-start gap-3">
+                <div class="page-title-icon danger">
+                    <i class="fas fa-trash-alt"></i>
+                </div>
+
                 <div>
-                    <h6 class="fw-bold mb-1">@Localizer["CriticalWarningTitle"]</h6>
-                    <p class="mb-0 small">
-                        <strong>@Model.Name</strong> @Localizer["CriticalWarningText"]
+                    <h1 class="page-title mb-1">
+                        @L("PageHeading", "Kurum Silme Onayı")
+                    </h1>
+
+                    <p class="page-subtitle mb-0">
+                        @L("PageLead", "Bu işlem geri alınamaz. Silmeden önce kurum bilgilerini dikkatlice kontrol edin.")
                     </p>
                 </div>
             </div>
+        </div>
 
-            <div class="card border-0 shadow-sm rounded-4 border-top border-danger border-3">
-                <div class="card-header bg-white border-bottom py-3">
-                    <h6 class="mb-0 fw-bold text-dark">
-                        <i class="fas fa-building me-2 text-danger"></i> @Localizer["InfoCardTitle"]
-                    </h6>
-                </div>
+        <a asp-area="Admin"
+           asp-controller="Tenants"
+           asp-action="Index"
+           class="btn btn-light border shadow-sm rounded-pill px-4 py-2 fw-bold back-btn">
+            <i class="fas fa-arrow-left me-2"></i>
+            @L("BackToTenantButton", "Kurum Listesine Dön")
+        </a>
+    </div>
 
-                <div class="card-body p-4">
-
-                    <div class="row mb-3 align-items-center border-bottom pb-3">
-                        <div class="col-sm-4 text-muted fw-bold" style="font-size: 0.8rem;">@Localizer["NameLabel"]</div>
-                        <div class="col-sm-8 fw-bold text-dark">@Model.Name</div>
+    <div class="row g-4">
+        <div class="col-xl-5">
+            <div class="modern-card info-card h-100">
+                <div class="modern-card-header">
+                    <div class="modern-card-icon soft-danger">
+                        <i class="fas fa-building"></i>
                     </div>
 
-                    <div class="row mb-3 align-items-center border-bottom pb-3">
-                        <div class="col-sm-4 text-muted fw-bold" style="font-size: 0.8rem;">@Localizer["SlugLabel"]</div>
-                        <div class="col-sm-8">
-                            <code class="text-danger fw-bold px-2 py-1 bg-danger bg-opacity-10 rounded">/@Model.Slug</code>
+                    <div>
+                        <h5 class="modern-card-title mb-1">
+                            @L("InfoCardTitle", "Silinecek Kurum Bilgileri")
+                        </h5>
+
+                        <p class="modern-card-text mb-0">
+                            @L("InfoCardLead", "Silme işlemi uygulanacak kurum bilgileri aşağıda yer alır.")
+                        </p>
+                    </div>
+                </div>
+
+                <div class="modern-card-body">
+                    <div class="info-row">
+                        <span class="info-label">
+                            @L("NameLabel", "Kurum Adı")
+                        </span>
+
+                        <div class="info-value fw-bold text-dark">
+                            @Model.Name
                         </div>
                     </div>
 
-                    <div class="row mb-4 align-items-center">
-                        <div class="col-sm-4 text-muted fw-bold" style="font-size: 0.8rem;">@Localizer["SystemIdLabel"]</div>
-                        <div class="col-sm-8 text-secondary" style="font-size: 0.85rem;">@Model.Id</div>
+                    <div class="info-row">
+                        <span class="info-label">
+                            @L("SlugLabel", "URL Adresi")
+                        </span>
+
+                        <div class="info-value">
+                            <span class="slug-badge">
+                                /@Model.Slug
+                            </span>
+                        </div>
                     </div>
 
-                    <form asp-action="Delete" method="post" class="d-flex justify-content-end gap-2 mt-2">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" asp-for="Id" />
+                    <div class="info-row border-0 pb-0 mb-0">
+                        <span class="info-label">
+                            @L("SystemIdLabel", "Sistem ID")
+                        </span>
 
-                        <a asp-action="Index" class="btn btn-light rounded-3 border fw-bold px-3 py-2">
-                            @Localizer["CancelButton"]
-                        </a>
+                        <div class="info-value system-id">
+                            @Model.Id
+                        </div>
+                    </div>
+                </div>
 
-                        <button type="submit" class="btn btn-danger rounded-3 fw-bold shadow-sm px-4 py-2">
-                            <i class="fas fa-trash-alt me-2"></i> @Localizer["DeleteButton"]
-                        </button>
-                    </form>
-
+                <div class="modern-card-footer">
+                    <a asp-area="Admin"
+                       asp-controller="Tenants"
+                       asp-action="Edit"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-outline-warning rounded-pill px-4 fw-bold">
+                        <i class="fas fa-pen me-2"></i>
+                        @L("EditButton", "Bilgileri Düzenle")
+                    </a>
                 </div>
             </div>
+        </div>
 
+        <div class="col-xl-7">
+            <div class="modern-card delete-action-card h-100">
+                <div class="delete-hero">
+                    <div class="delete-hero-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+
+                    <div>
+                        <h4 class="delete-hero-title mb-2">
+                            @L("CriticalWarningTitle", "Kritik Uyarı")
+                        </h4>
+
+                        <p class="delete-hero-text mb-0">
+                            <strong>@Model.Name</strong>
+                            @L("CriticalWarningText", "kurumunu sistemden kalıcı olarak silmek üzeresiniz. Bu işlem onaylandığında, kurumla ilişkili veriler geri alınamaz şekilde etkilenebilir.")
+                        </p>
+                    </div>
+                </div>
+
+                <div class="impact-box">
+                    <div class="impact-box-header">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>@L("ImpactBoxTitle", "Silme İşlemi Ne Anlama Geliyor?")</span>
+                    </div>
+
+                    <ul class="impact-list">
+                        <li>
+                            @L("Impact1", "Bu işlem geri alınamaz.")
+                        </li>
+
+                        <li>
+                            @L("Impact2", "Kurum bilgileri sistemden kaldırılır.")
+                        </li>
+
+                        <li>
+                            @L("Impact3", "Devam etmeden önce doğru kurumu sildiğinizden emin olun.")
+                        </li>
+                    </ul>
+                </div>
+
+                <form asp-area="Admin"
+                      asp-controller="Tenants"
+                      asp-action="Delete"
+                      method="post"
+                      class="delete-form">
+
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" asp-for="Id" />
+
+                    <div class="delete-confirm-box">
+                        <div class="delete-confirm-title">
+                            <i class="fas fa-trash-can me-2"></i>
+                            @L("DeleteConfirmTitle", "Silme işlemini onaylıyor musunuz?")
+                        </div>
+
+                        <div class="delete-confirm-subtitle">
+                            @L("DeleteConfirmText", "Devam ederseniz kurum kalıcı olarak silinecektir.")
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column flex-md-row justify-content-end gap-3 mt-4">
+                        <a asp-area="Admin"
+                           asp-controller="Tenants"
+                           asp-action="Index"
+                           class="btn btn-light border rounded-pill px-4 py-2 fw-bold cancel-btn">
+                            <i class="fas fa-xmark me-2"></i>
+                            @L("CancelButton", "İptal")
+                        </a>
+
+                        <button type="submit"
+                                class="btn btn-danger rounded-pill px-4 py-2 fw-bold shadow-sm delete-btn">
+                            <i class="fas fa-trash-alt me-2"></i>
+                            @L("DeleteButton", "Kalıcı Olarak Sil")
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
 
 <style>
-    .btn-danger {
-        transition: all 0.3s ease;
+    .tenant-delete-page {
+        padding-bottom: 1rem;
     }
 
-        .btn-danger:hover {
-            background-color: #dc3545;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4) !important;
+    .breadcrumb-item {
+        font-size: 0.86rem;
+        font-weight: 600;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        color: #94a3b8;
+    }
+
+    .breadcrumb-item a {
+        color: #2563eb;
+    }
+
+    .page-title-wrap {
+        max-width: 900px;
+    }
+
+    .page-title-icon {
+        width: 60px;
+        height: 60px;
+        min-width: 60px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+    }
+
+    .page-title-icon.danger {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(248, 113, 113, 0.18));
+        color: #dc2626;
+    }
+
+    .page-title {
+        font-size: clamp(1.8rem, 3vw, 2.45rem);
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        color: #0f172a;
+    }
+
+    .page-subtitle {
+        color: #64748b;
+        font-size: 1rem;
+        line-height: 1.75;
+    }
+
+    .back-btn {
+        white-space: nowrap;
+        transition: all 0.25s ease;
+    }
+
+    .back-btn:hover {
+        transform: translateY(-2px);
+        background-color: #f8fafc;
+    }
+
+    .modern-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+
+    .modern-card-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.5rem 1.5rem 1.25rem 1.5rem;
+        border-bottom: 1px solid #eef2f7;
+        background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
+    }
+
+    .modern-card-icon {
+        width: 52px;
+        height: 52px;
+        min-width: 52px;
+        border-radius: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+    }
+
+    .modern-card-icon.soft-danger {
+        background: rgba(239, 68, 68, 0.10);
+        color: #dc2626;
+    }
+
+    .modern-card-title {
+        font-weight: 900;
+        color: #0f172a;
+        letter-spacing: -0.02em;
+    }
+
+    .modern-card-text {
+        color: #64748b;
+        line-height: 1.65;
+        font-size: 0.94rem;
+    }
+
+    .modern-card-body {
+        padding: 1.5rem;
+    }
+
+    .modern-card-footer {
+        padding: 0 1.5rem 1.5rem 1.5rem;
+    }
+
+    .info-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+        padding-bottom: 1.15rem;
+        margin-bottom: 1.15rem;
+        border-bottom: 1px solid #eef2f7;
+    }
+
+    .info-label {
+        color: #64748b;
+        font-size: 0.8rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .info-value {
+        color: #0f172a;
+        font-size: 1.02rem;
+        line-height: 1.55;
+    }
+
+    .slug-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.55rem 0.85rem;
+        border-radius: 999px;
+        background: rgba(239, 68, 68, 0.08);
+        color: #dc2626;
+        font-weight: 900;
+        font-size: 0.95rem;
+    }
+
+    .system-id {
+        color: #64748b;
+        font-size: 0.95rem;
+        word-break: break-all;
+    }
+
+    .delete-action-card {
+        padding: 1.5rem;
+        background: linear-gradient(180deg, #ffffff 0%, #fffefe 100%);
+    }
+
+    .delete-hero {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.35rem;
+        border-radius: 24px;
+        background: linear-gradient(135deg, rgba(254, 242, 242, 0.95), rgba(255, 228, 230, 0.95));
+        border: 1px solid rgba(239, 68, 68, 0.18);
+        margin-bottom: 1.25rem;
+    }
+
+    .delete-hero-icon {
+        width: 58px;
+        height: 58px;
+        min-width: 58px;
+        border-radius: 18px;
+        background: #ffffff;
+        color: #dc2626;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        box-shadow: 0 10px 25px rgba(239, 68, 68, 0.12);
+    }
+
+    .delete-hero-title {
+        color: #991b1b;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+    }
+
+    .delete-hero-text {
+        color: #7f1d1d;
+        line-height: 1.8;
+        font-size: 1rem;
+    }
+
+    .impact-box {
+        padding: 1.2rem 1.25rem;
+        border-radius: 22px;
+        background: #fff;
+        border: 1px dashed #fca5a5;
+        margin-bottom: 1.35rem;
+    }
+
+    .impact-box-header {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        color: #b91c1c;
+        font-weight: 900;
+        margin-bottom: 0.85rem;
+    }
+
+    .impact-list {
+        margin: 0;
+        padding-left: 1.1rem;
+        color: #64748b;
+        line-height: 1.85;
+    }
+
+    .delete-form {
+        margin-top: 0.25rem;
+    }
+
+    .delete-confirm-box {
+        padding: 1rem 1.1rem;
+        border-radius: 20px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .delete-confirm-title {
+        color: #0f172a;
+        font-weight: 900;
+        font-size: 1rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .delete-confirm-subtitle {
+        color: #64748b;
+        line-height: 1.7;
+        font-size: 0.93rem;
+    }
+
+    .cancel-btn,
+    .delete-btn {
+        transition: all 0.25s ease;
+    }
+
+    .cancel-btn:hover {
+        transform: translateY(-2px);
+        background: #f8fafc;
+    }
+
+    .delete-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 30px rgba(220, 38, 38, 0.25) !important;
+    }
+
+    @@media (max-width: 991.98px) {
+        .delete-action-card {
+            padding: 1.15rem;
         }
+
+        .modern-card-header,
+        .modern-card-body,
+        .modern-card-footer {
+            padding-left: 1.15rem;
+            padding-right: 1.15rem;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .page-title-icon {
+            width: 52px;
+            height: 52px;
+            min-width: 52px;
+            border-radius: 16px;
+        }
+
+        .delete-hero {
+            flex-direction: column;
+        }
+
+        .delete-hero-icon {
+            width: 52px;
+            height: 52px;
+            min-width: 52px;
+            border-radius: 16px;
+        }
+    }
 </style>
