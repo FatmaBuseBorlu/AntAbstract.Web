@@ -283,22 +283,26 @@
             </p>
         </div>
 
-<a href="@(string.IsNullOrWhiteSpace(Model.ReturnUrl) ? Url.Action("Index", "Tenants", new { area = "Admin" }) : Model.ReturnUrl)"
-   class="btn btn-light border rounded-pill fw-bold px-4">
-    <i class="fas fa-arrow-left me-2"></i>
-    Listeye Dön
-</a>
+        <a href="@(string.IsNullOrWhiteSpace(Model.ReturnUrl) ? Url.Action("Index", "Tenants", new { area = "Admin" }) : Model.ReturnUrl)"
+           class="btn btn-light border rounded-pill fw-bold px-4">
+            <i class="fas fa-arrow-left me-2"></i>
+            Listeye Dön
+        </a>
     </div>
 
     <div class="tenant-manager-grid">
         <div class="tenant-manager-card">
             <div class="tenant-manager-card-body">
-                <form asp-action="AssignManager" method="post">
+                <form asp-area="Admin"
+                      asp-controller="Tenants"
+                      asp-action="AssignManager"
+                      method="post">
+
                     @Html.AntiForgeryToken()
 
                     <input type="hidden" asp-for="TenantId" />
                     <input type="hidden" asp-for="TenantName" />
-<                   input type="hidden" asp-for="ReturnUrl" />
+                    <input type="hidden" asp-for="ReturnUrl" />
 
                     <div asp-validation-summary="ModelOnly"></div>
 
@@ -499,7 +503,11 @@
             const checkedMode = document.querySelector('input[name="AssignmentMode"]:checked');
 
             if (!checkedMode) {
-                document.getElementById("modeExisting").checked = true;
+                const existingMode = document.getElementById("modeExisting");
+
+                if (existingMode) {
+                    existingMode.checked = true;
+                }
             }
 
             updateAssignModeSections();
