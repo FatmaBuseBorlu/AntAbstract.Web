@@ -35,6 +35,20 @@ namespace AntAbstract.Domain.Entities
 
         [StringLength(500)]
         public string? ExpertiseAreas { get; set; }
+
+        public DateTime? ReviewerUnavailableStartDate { get; set; }
+
+        public DateTime? ReviewerUnavailableEndDate { get; set; }
+
+        [StringLength(500)]
+        public string? ReviewerUnavailableReason { get; set; }
+
+        [StringLength(1000)]
+        public string? ReviewerConflictInstitutions { get; set; }
+
+        [StringLength(1000)]
+        public string? ReviewerConflictPeople { get; set; }
+
         public string? DisplayName { get; set; }
         public string? ProfileImagePath { get; set; }
 

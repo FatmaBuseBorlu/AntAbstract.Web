@@ -35,7 +35,14 @@ namespace AntAbstract.Infrastructure.Services.ReviewerRecommendation
 
             if (!submissionKeywords.Any()) return new List<AppUser>();
 
-            var allReviewers = await _userManager.GetUsersInRoleAsync("Reviewer");
+            var referees = await _userManager.GetUsersInRoleAsync("Referee");
+            var legacyReviewers = await _userManager.GetUsersInRoleAsync("Reviewer");
+
+            var allReviewers = referees
+                .Concat(legacyReviewers)
+                .GroupBy(user => user.Id)
+                .Select(group => group.First())
+                .ToList();
 
             var recommendations = new Dictionary<AppUser, int>();
 

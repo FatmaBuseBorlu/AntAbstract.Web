@@ -1,4 +1,6 @@
-﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+﻿@using System.Collections.Generic
+@using System.Linq
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -12,6 +14,11 @@
             ? fallback
             : value;
     }
+
+    var conflictInstitutions = ViewBag.ConflictInstitutions as List<string> ?? new List<string>();
+    var conflictPeople = ViewBag.ConflictPeople as List<string> ?? new List<string>();
+    var conflictInstitutionsText = string.Join(", ", conflictInstitutions);
+    var conflictPeopleText = string.Join(", ", conflictPeople);
 }
 
 <style>
@@ -289,6 +296,22 @@
         </div>
 
         <div class="settings-card-body">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success rounded-3 border-0 shadow-sm mb-4">
+                    <i class="fas fa-check-circle me-2"></i>
+                    @TempData["SuccessMessage"]
+                </div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger rounded-3 border-0 shadow-sm mb-4">
+                    <i class="fas fa-times-circle me-2"></i>
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+
             <div class="warning-box">
                 <div class="warning-box-icon">
                     <i class="fas fa-exclamation-triangle"></i>
@@ -305,90 +328,106 @@
                 </div>
             </div>
 
-            <div class="row g-4">
-                <div class="col-md-6">
-                    <div class="conflict-section-card">
-                        <h6 class="conflict-section-title text-primary">
-                            <i class="fas fa-university me-2"></i>
-                            @L("InstitutionRestrictionTitle", "Kurum Kısıtları")
-                        </h6>
+            <form asp-action="Conflicts" method="post">
+                @Html.AntiForgeryToken()
 
-                        <div class="input-group conflict-input-group">
-                            <input type="text"
-                                   class="form-control"
-                                   placeholder="@L("InstitutionPlaceholder", "Örn: Akdeniz Üniversitesi")">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="conflict-section-card">
+                            <h6 class="conflict-section-title text-primary">
+                                <i class="fas fa-university me-2"></i>
+                                @L("InstitutionRestrictionTitle", "Kurum Kısıtları")
+                            </h6>
 
-                            <button class="btn btn-outline-primary fw-bold" type="button">
-                                @L("AddButton", "Ekle")
-                            </button>
+                            <div class="input-group conflict-input-group">
+                                <input type="text"
+                                       name="conflictInstitutions"
+                                       value="@conflictInstitutionsText"
+                                       class="form-control"
+                                       placeholder="@L("InstitutionPlaceholder", "Örn: Akdeniz Üniversitesi, X Kurumu")">
+                            </div>
+
+                            <div class="conflict-list">
+                                @if (conflictInstitutions.Any())
+                                {
+                                    foreach (var institution in conflictInstitutions)
+                                    {
+                                        <div class="conflict-item">
+                                            <div>
+                                                <div class="conflict-name">
+                                                    @institution
+                                                </div>
+
+                                                <div class="conflict-note">
+                                                    @L("InstitutionSavedNote", "Kurum atama kontrolünde dikkate alınır")
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="conflict-item">
+                                        <div class="conflict-note">
+                                            @L("NoInstitutionConflictText", "Kayıtlı kurum kısıtı yok.")
+                                        </div>
+                                    </div>
+                                }
+                            </div>
                         </div>
+                    </div>
 
-                        <div class="conflict-list">
-                            <div class="conflict-item">
-                                <div>
-                                    <div class="conflict-name">
-                                        Akdeniz Üniversitesi
+                    <div class="col-md-6">
+                        <div class="conflict-section-card">
+                            <h6 class="conflict-section-title text-success">
+                                <i class="fas fa-user-friends me-2"></i>
+                                @L("PersonRestrictionTitle", "Kişi Kısıtları")
+                            </h6>
+
+                            <div class="input-group conflict-input-group">
+                                <input type="text"
+                                       name="conflictPeople"
+                                       value="@conflictPeopleText"
+                                       class="form-control"
+                                       placeholder="@L("PersonPlaceholder", "Örn: Prof. Dr. Ahmet Yılmaz, Ayşe Demir")">
+                            </div>
+
+                            <div class="conflict-list">
+                                @if (conflictPeople.Any())
+                                {
+                                    foreach (var person in conflictPeople)
+                                    {
+                                        <div class="conflict-item">
+                                            <div>
+                                                <div class="conflict-name">
+                                                    @person
+                                                </div>
+
+                                                <div class="conflict-note">
+                                                    @L("PersonSavedNote", "Yazar bilgileriyle eşleşirse atama engellenir")
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="conflict-item">
+                                        <div class="conflict-note">
+                                            @L("NoPersonConflictText", "Kayıtlı kişi kısıtı yok.")
+                                        </div>
                                     </div>
-
-                                    <div class="conflict-note">
-                                        @L("InstitutionSampleNote", "Aynı kurum / yakın akademik ilişki")
-                                    </div>
-                                </div>
-
-                                <button class="btn btn-light border text-danger delete-btn"
-                                        type="button"
-                                        title="@L("DeleteTitle", "Sil")">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                                }
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-md-6">
-                    <div class="conflict-section-card">
-                        <h6 class="conflict-section-title text-success">
-                            <i class="fas fa-user-friends me-2"></i>
-                            @L("PersonRestrictionTitle", "Kişi Kısıtları")
-                        </h6>
-
-                        <div class="input-group conflict-input-group">
-                            <input type="text"
-                                   class="form-control"
-                                   placeholder="@L("PersonPlaceholder", "Örn: Prof. Dr. Ahmet Yılmaz")">
-
-                            <button class="btn btn-outline-success fw-bold" type="button">
-                                @L("AddButton", "Ekle")
-                            </button>
-                        </div>
-
-                        <div class="conflict-list">
-                            <div class="conflict-item">
-                                <div>
-                                    <div class="conflict-name">
-                                        Prof. Dr. Ahmet Yılmaz
-                                    </div>
-
-                                    <div class="conflict-note">
-                                        @L("AdvisorNote", "Danışman / ortak çalışma geçmişi")
-                                    </div>
-                                </div>
-
-                                <button class="btn btn-light border text-danger delete-btn"
-                                        type="button"
-                                        title="@L("DeleteTitle", "Sil")">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="coming-soon-box">
-                <i class="fas fa-code-branch me-2 text-primary"></i>
-                @L("StaticNotice", "Bu alan şimdilik arayüz olarak hazırlandı. Bir sonraki adımda çıkar çatışması kayıtlarını veritabanına bağlayabiliriz.")
-            </div>
+                <button class="btn btn-warning fw-bold rounded-pill px-4 mt-4" type="submit">
+                    <i class="fas fa-save me-2"></i>
+                    @L("SaveButton", "Kaydet")
+                </button>
+            </form>
         </div>
     </div>
 </div>
