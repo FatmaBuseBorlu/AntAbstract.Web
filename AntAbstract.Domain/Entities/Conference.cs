@@ -49,5 +49,15 @@ namespace AntAbstract.Domain.Entities
 
         // Bildiri kitabının yayınlanma tarihi
         public DateTime? ProceedingBookPublishedDate { get; set; }
+
+        // Sertifika birinci imza bilgileri
+        public string? CertificateFirstSignerName { get; set; }
+
+        public string? CertificateFirstSignerTitle { get; set; }
+
+        // Sertifika ikinci imza bilgileri
+        public string? CertificateSecondSignerName { get; set; }
+
+        public string? CertificateSecondSignerTitle { get; set; }
     }
 }
