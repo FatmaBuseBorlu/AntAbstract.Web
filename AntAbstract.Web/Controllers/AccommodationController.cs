@@ -42,7 +42,9 @@ namespace AntAbstract.Web.Controllers
         }
 
         [HttpGet("/Accommodation")]
+        [HttpGet("/Accommodation/Index")]
         [HttpGet("/{slug}/Accommodation")]
+        [HttpGet("/{slug}/Accommodation/Index")]
         public async Task<IActionResult> Index(string? slug = null, Guid? conferenceId = null)
         {
             var selectedConferenceId = conferenceId;

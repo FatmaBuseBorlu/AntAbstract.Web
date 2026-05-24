@@ -4,18 +4,403 @@
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
+
+    var conferenceId = ViewBag.ConferenceId;
+    var conferenceTitle = ViewBag.ConferenceTitle as string ?? "";
+    var slug = ViewBag.Slug as string ?? "";
 }
 
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white p-4">
-                    <h3 class="fw-bold text-dark mb-0">
-                        <i class="fas fa-hotel text-warning me-2"></i> @Localizer["HeaderTitle"]
-                    </h3>
-                    <p class="text-muted mb-0 mt-2">@Localizer["HeaderDescription"]</p>
+<style>
+    .accommodation-page {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 1.25rem 1.5rem 4rem;
+    }
+
+    .accommodation-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e8eef6;
+        border-radius: 26px;
+        padding: 1.45rem 1.55rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        box-shadow: 0 16px 38px rgba(15, 23, 42, 0.055);
+        margin-bottom: 1.5rem;
+    }
+
+    .accommodation-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 280px;
+        flex: 1;
+    }
+
+    .accommodation-hero-icon {
+        width: 66px;
+        height: 66px;
+        min-width: 66px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, #f59e0b, #f97316);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+        box-shadow: 0 16px 32px rgba(249, 115, 22, 0.22);
+    }
+
+    .accommodation-kicker {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .accommodation-title {
+        margin: 0 0 0.35rem;
+        color: #0f172a;
+        font-size: 1.8rem;
+        font-weight: 950;
+        letter-spacing: -0.045em;
+        line-height: 1.15;
+    }
+
+    .accommodation-description {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.95rem;
+        font-weight: 650;
+        line-height: 1.6;
+    }
+
+    .conference-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.45rem 0.8rem;
+        border-radius: 999px;
+        background: rgba(13, 110, 253, 0.08);
+        color: #0d6efd;
+        font-size: 0.78rem;
+        font-weight: 900;
+        margin-top: 0.7rem;
+    }
+
+    .hotel-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        background: #ffffff;
+        overflow: hidden;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.065);
+        transition: all 0.24s ease;
+        margin-bottom: 1.6rem;
+    }
+
+        .hotel-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 26px 70px rgba(15, 23, 42, 0.105);
+            border-color: rgba(0, 174, 239, 0.32);
+        }
+
+    .hotel-image-area {
+        height: 100%;
+        min-height: 285px;
+        background: linear-gradient(135deg, #f8fafc, #eef6ff);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+        .hotel-image-area img {
+            width: 100%;
+            height: 100%;
+            min-height: 285px;
+            object-fit: cover;
+        }
+
+    .hotel-image-placeholder {
+        text-align: center;
+        color: #94a3b8;
+        font-weight: 800;
+    }
+
+        .hotel-image-placeholder i {
+            display: block;
+            font-size: 3.5rem;
+            color: #f59e0b;
+            opacity: 0.6;
+            margin-bottom: 0.8rem;
+        }
+
+    .hotel-body {
+        padding: 1.65rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .hotel-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .hotel-name {
+        color: #0f172a;
+        font-weight: 950;
+        letter-spacing: -0.035em;
+        margin-bottom: 0.35rem;
+    }
+
+    .hotel-address {
+        color: #64748b;
+        font-size: 0.88rem;
+        font-weight: 650;
+        line-height: 1.55;
+        margin-bottom: 0;
+    }
+
+        .hotel-address i {
+            color: #ef4444;
+        }
+
+    .partner-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.38rem 0.7rem;
+        border-radius: 999px;
+        background: rgba(0, 174, 239, 0.10);
+        color: #0284c7;
+        font-size: 0.74rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .hotel-description {
+        color: #64748b;
+        line-height: 1.75;
+        font-size: 0.94rem;
+        font-weight: 600;
+        margin-bottom: 1.35rem;
+    }
+
+    .room-table-wrap {
+        margin-top: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .room-table {
+        margin-bottom: 0;
+    }
+
+        .room-table thead th {
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 0.74rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0.9rem 1rem;
+            white-space: nowrap;
+        }
+
+        .room-table tbody td {
+            color: #475569;
+            font-size: 0.9rem;
+            font-weight: 700;
+            padding: 1rem;
+            vertical-align: middle;
+            border-color: #edf2f7;
+        }
+
+    .room-name {
+        color: #0f172a;
+        font-weight: 900;
+    }
+
+    .room-price {
+        color: #0284c7;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .reserve-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        min-height: 36px;
+        padding: 0 0.9rem;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #f59e0b, #f97316);
+        color: #ffffff;
+        border: none;
+        font-size: 0.8rem;
+        font-weight: 900;
+        box-shadow: 0 10px 22px rgba(249, 115, 22, 0.22);
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+        .reserve-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 28px rgba(249, 115, 22, 0.30);
+        }
+
+.empty-state {
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 28px;
+    padding: 3.25rem 2rem;
+    text-align: center;
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+    margin: 0;
+}
+.empty-state-content {
+    max-width: 620px;
+    margin: 0 auto;
+}
+
+    .empty-icon {
+        width: 78px;
+        height: 78px;
+        border-radius: 28px;
+        background: rgba(245, 158, 11, 0.12);
+        color: #f59e0b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .empty-title {
+        color: #0f172a;
+        font-weight: 950;
+        letter-spacing: -0.035em;
+        margin-bottom: 0.55rem;
+    }
+
+    .empty-description {
+        color: #64748b;
+        font-weight: 650;
+        line-height: 1.7;
+        margin-bottom: 0;
+    }
+
+    .developer-box {
+        margin-top: 1.4rem;
+        padding-top: 1.4rem;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .seed-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        border-radius: 999px;
+        font-weight: 900;
+        padding: 0.65rem 1rem;
+    }
+
+    @@media (max-width: 768px) {
+        .accommodation-page {
+            padding: 1rem 1rem 3rem;
+        }
+
+        .accommodation-hero-left {
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 100%;
+        }
+
+        .hotel-header {
+            flex-direction: column;
+        }
+
+        .hotel-image-area,
+        .hotel-image-area img {
+            min-height: 220px;
+        }
+
+        .room-table thead {
+            display: none;
+        }
+
+        .room-table tbody tr {
+            display: block;
+            padding: 0.85rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .room-table tbody td {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            border: none;
+            padding: 0.45rem 0;
+        }
+    }
+</style>
+
+<div class="accommodation-page">
+
+    <div class="accommodation-hero">
+        <div class="accommodation-hero-left">
+            <div class="accommodation-hero-icon">
+                <i class="fas fa-hotel"></i>
+            </div>
+
+            <div>
+                <div class="accommodation-kicker">
+                    @L("HeaderKicker", "Konaklama")
                 </div>
+
+                <h1 class="accommodation-title">
+                    @L("HeaderTitle", "Konaklama Seçenekleri")
+                </h1>
+
+                <p class="accommodation-description">
+                    @L("HeaderDescription", "Kongre katılımcıları için önerilen anlaşmalı otel ve oda seçeneklerini buradan inceleyebilirsiniz.")
+                </p>
+
+                @if (!string.IsNullOrWhiteSpace(conferenceTitle))
+                {
+                    <div class="conference-badge">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>@conferenceTitle</span>
+                    </div>
+                }
+                else if (!string.IsNullOrWhiteSpace(slug))
+                {
+                    <div class="conference-badge">
+                        <i class="fas fa-link"></i>
+                        <span>/@slug</span>
+                    </div>
+                }
             </div>
         </div>
     </div>
@@ -25,94 +410,147 @@
         <div class="row">
             @foreach (var hotel in Model)
             {
-                <div class="col-12 mb-5">
-                    <div class="card shadow border-0 overflow-hidden">
+                <div class="col-12">
+                    <article class="hotel-card">
                         <div class="row g-0">
-                            <div class="col-md-4 bg-light d-flex align-items-center justify-content-center" style="min-height: 250px;">
-                                @if (!string.IsNullOrEmpty(hotel.PhotoPath))
-                                {
-                                    <img src="@hotel.PhotoPath" class="img-fluid" style="object-fit:cover; height:100%; width:100%" alt="@Localizer["HotelImageAlt"]" />
-                                }
-                                else
-                                {
-                                    <div class="text-center text-muted">
-                                        <i class="fas fa-hotel fa-4x mb-3 opacity-50"></i>
-                                        <p>@Localizer["NoImageText"]</p>
-                                    </div>
-                                }
+                            <div class="col-lg-4">
+                                <div class="hotel-image-area">
+                                    @if (!string.IsNullOrWhiteSpace(hotel.PhotoPath))
+                                    {
+                                        <img src="@hotel.PhotoPath"
+                                             alt="@L("HotelImageAlt", "Otel görseli")" />
+                                    }
+                                    else
+                                    {
+                                        <div class="hotel-image-placeholder">
+                                            <i class="fas fa-hotel"></i>
+                                            <p class="mb-0">@L("NoImageText", "Görsel yüklenmedi")</p>
+                                        </div>
+                                    }
+                                </div>
                             </div>
 
-                            <div class="col-md-8">
-                                <div class="card-body p-4 h-100 d-flex flex-column">
-                                    <div class="d-flex justify-content-between align-items-start">
+                            <div class="col-lg-8">
+                                <div class="hotel-body">
+                                    <div class="hotel-header">
                                         <div>
-                                            <h4 class="card-title fw-bold mb-1">@hotel.Name</h4>
-                                            <p class="text-muted small mb-2">
-                                                <i class="fas fa-map-marker-alt me-1 text-danger"></i> @hotel.Address
+                                            <h3 class="hotel-name">
+                                                @hotel.Name
+                                            </h3>
+
+                                            <p class="hotel-address">
+                                                <i class="fas fa-map-marker-alt me-1"></i>
+                                                @hotel.Address
                                             </p>
                                         </div>
-                                        <span class="badge bg-primary">@Localizer["PartnerBadge"]</span>
+
+                                        <span class="partner-badge">
+                                            <i class="fas fa-handshake"></i>
+                                            @L("PartnerBadge", "Anlaşmalı Otel")
+                                        </span>
                                     </div>
 
-                                    <p class="card-text text-secondary mt-3">@hotel.Description</p>
+                                    @if (!string.IsNullOrWhiteSpace(hotel.Description))
+                                    {
+                                        <p class="hotel-description">
+                                            @hotel.Description
+                                        </p>
+                                    }
 
-                                    <div class="table-responsive mt-auto">
-                                        <table class="table table-hover align-middle mb-0">
-                                            <thead class="table-light small text-uppercase text-muted">
+                                    <div class="room-table-wrap table-responsive">
+                                        <table class="table table-hover align-middle room-table">
+                                            <thead>
                                                 <tr>
-                                                    <th>@Localizer["RoomTypeColumn"]</th>
-                                                    <th>@Localizer["CapacityColumn"]</th>
-                                                    <th class="text-end">@Localizer["PricePerNightColumn"]</th>
-                                                    <th></th>
+                                                    <th>@L("RoomTypeColumn", "Oda Tipi")</th>
+                                                    <th>@L("CapacityColumn", "Kapasite")</th>
+                                                    <th class="text-end">@L("PricePerNightColumn", "Gecelik Ücret")</th>
+                                                    <th class="text-end">@L("ActionsColumn", "İşlem")</th>
                                                 </tr>
                                             </thead>
+
                                             <tbody>
-                                                @if (hotel.RoomTypes != null)
+                                                @if (hotel.RoomTypes != null && hotel.RoomTypes.Any())
                                                 {
                                                     foreach (var room in hotel.RoomTypes)
                                                     {
                                                         <tr>
-                                                            <td class="fw-bold text-dark">@room.Name</td>
                                                             <td>
-                                                                <i class="fas fa-user me-1"></i> @room.Capacity @Localizer["PersonCapacityText"]
+                                                                <span class="room-name">
+                                                                    @room.Name
+                                                                </span>
                                                             </td>
-                                                            <td class="text-end fw-bold text-primary">@room.Price @room.Currency</td>
+
+                                                            <td>
+                                                                <i class="fas fa-user me-1 text-muted"></i>
+                                                                @room.Capacity @L("PersonCapacityText", "Kişi")
+                                                            </td>
+
                                                             <td class="text-end">
-                                                                <button class="btn btn-sm btn-warning fw-bold text-white shadow-sm"
-                                                                        style="background-color: #ff9800; border:none;">
-                                                                    @Localizer["SelectReserveButton"]
+                                                                <span class="room-price">
+                                                                    @room.Price @room.Currency
+                                                                </span>
+                                                            </td>
+
+                                                            <td class="text-end">
+                                                                <button type="button"
+                                                                        class="reserve-btn">
+                                                                    <i class="fas fa-check"></i>
+                                                                    @L("SelectReserveButton", "Seç / Rezerve Et")
                                                                 </button>
                                                             </td>
                                                         </tr>
                                                     }
                                                 }
+                                                else
+                                                {
+                                                    <tr>
+                                                        <td colspan="4" class="text-center text-muted fw-bold py-4">
+                                                            <i class="fas fa-info-circle me-1"></i>
+                                                            @L("NoRoomTypesText", "Bu otel için oda tipi tanımlanmamış.")
+                                                        </td>
+                                                    </tr>
+                                                }
                                             </tbody>
                                         </table>
                                     </div>
-
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </article>
                 </div>
             }
         </div>
     }
     else
     {
-        <div class="text-center py-5">
-            <div class="alert alert-light border d-inline-block px-5">
-                <i class="fas fa-info-circle fa-2x text-muted mb-3"></i>
-                <h5>@Localizer["NoHotelsTitle"]</h5>
-                <p class="text-muted">@Localizer["NoHotelsDescription"]</p>
-
-                <div class="mt-3 pt-3 border-top">
-                    <small class="text-danger fw-bold">@Localizer["DeveloperModeLabel"]</small><br>
-                    <a href="/Accommodation/SeedData" class="btn btn-outline-danger btn-sm mt-2">
-                        <i class="fas fa-database me-1"></i> @Localizer["AddTestDataButton"]
-                    </a>
-                </div>
-            </div>
+      <div class="empty-state">
+    <div class="empty-state-content">
+        <div class="empty-icon">
+            <i class="fas fa-circle-info"></i>
         </div>
+
+        <h4 class="empty-title">
+            @L("NoHotelsTitle", "Henüz konaklama seçeneği bulunmuyor.")
+        </h4>
+
+        <p class="empty-description">
+            @L("NoHotelsDescription", "Bu kongre için otel ve oda seçenekleri tanımlandığında burada görüntülenecektir.")
+        </p>
+
+        <div class="developer-box">
+            <small class="text-danger fw-bold">
+                @L("DeveloperModeLabel", "Geliştirici modu")
+            </small>
+
+            <br />
+
+            <a href="/Admin/Accommodation/SeedData?conferenceId=@conferenceId"
+               class="btn btn-outline-danger btn-sm mt-2 seed-btn">
+                <i class="fas fa-database"></i>
+                @L("AddTestDataButton", "Test Verisi Ekle")
+            </a>
+        </div>
+    </div>
+</div>
     }
 </div>

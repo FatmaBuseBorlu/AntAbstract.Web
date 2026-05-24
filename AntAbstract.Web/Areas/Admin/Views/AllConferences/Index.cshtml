@@ -34,11 +34,12 @@
                 Sistemdeki tüm kurumlara bağlı kongreleri buradan görüntüleyebilirsiniz.
             </p>
         </div>
+
         <div class="page-header-right">
-        <a href="/Admin/Tenants" class="btn btn-light border rounded-pill px-4 header-action-btn">
-            <i class="fas fa-building me-2 text-primary"></i>
-            Kurumlara Git
-        </a>
+            <a href="/Admin/Tenants" class="btn btn-light border rounded-pill px-4 header-action-btn">
+                <i class="fas fa-building me-2 text-primary"></i>
+                Kurumlara Git
+            </a>
         </div>
     </div>
 
@@ -160,7 +161,7 @@
             </h5>
 
             <p class="text-muted small mb-0">
-                Bu liste SuperAdmin için genel izleme ekranıdır. Kongre operasyonları kurum adminleri tarafından yapılır.
+                Bu liste SuperAdmin için genel izleme ekranıdır. Kongre ayarlarını ilgili kurum yönetim ekranı üzerinden düzenleyebilirsiniz.
             </p>
         </div>
 
@@ -186,19 +187,19 @@
                     <table class="table table-hover align-middle mb-0 all-conferences-table">
                         <thead class="bg-light">
                             <tr>
-                                <th class="ps-4 py-3 text-muted fw-bold small" style="width: 27%;">
+                                <th class="ps-4 py-3 text-muted fw-bold small" style="width: 25%;">
                                     Kongre Adı
                                 </th>
 
-                                <th class="py-3 text-muted fw-bold small" style="width: 19%;">
+                                <th class="py-3 text-muted fw-bold small" style="width: 18%;">
                                     Kurum
                                 </th>
 
-                                <th class="py-3 text-muted fw-bold small" style="width: 11%;">
+                                <th class="py-3 text-muted fw-bold small" style="width: 10%;">
                                     Konum
                                 </th>
 
-                                <th class="py-3 text-muted fw-bold small" style="width: 12%;">
+                                <th class="py-3 text-muted fw-bold small" style="width: 11%;">
                                     Tarih
                                 </th>
 
@@ -214,7 +215,7 @@
                                     Durum
                                 </th>
 
-                                <th class="pe-4 py-3 text-muted fw-bold small text-end" style="width: 8%; min-width: 135px;">
+                                <th class="pe-4 py-3 text-muted fw-bold small text-end" style="width: 13%; min-width: 230px;">
                                     İşlem
                                 </th>
                             </tr>
@@ -308,12 +309,20 @@
                                     <td class="pe-4 text-end actions-cell">
                                         @if (!string.IsNullOrWhiteSpace(item.TenantSlug))
                                         {
-                                            <a href="/@item.TenantSlug"
-                                               target="_blank"
-                                               class="btn btn-sm btn-outline-primary rounded-3 text-nowrap">
-                                                <i class="fas fa-external-link-alt me-1"></i>
-                                                Siteyi Gör
-                                            </a>
+                                            <div class="d-inline-flex justify-content-end gap-2 flex-wrap">
+                                                <a href="/@item.TenantSlug/Admin/Conferences/Edit/@item.Id"
+                                                   class="btn btn-sm btn-outline-secondary rounded-3 text-nowrap">
+                                                    <i class="fas fa-cog me-1"></i>
+                                                    Ayarlar
+                                                </a>
+
+                                                <a href="/@item.TenantSlug"
+                                                   target="_blank"
+                                                   class="btn btn-sm btn-outline-primary rounded-3 text-nowrap">
+                                                    <i class="fas fa-external-link-alt me-1"></i>
+                                                    Siteyi Gör
+                                                </a>
+                                            </div>
                                         }
                                         else
                                         {
@@ -381,9 +390,9 @@
         border-bottom: 1px solid #f8fafc;
     }
 
-        .all-conferences-table tbody tr:hover {
-            background-color: #fbfcfe !important;
-        }
+    .all-conferences-table tbody tr:hover {
+        background-color: #fbfcfe !important;
+    }
 
     .avatar-sm {
         width: 42px;
@@ -392,18 +401,18 @@
         font-size: 0.95rem;
     }
 
-        .avatar-sm i {
-            font-size: 0.95rem;
-        }
+    .avatar-sm i {
+        font-size: 0.95rem;
+    }
 
     .actions-cell {
-        min-width: 135px;
+        min-width: 230px;
         white-space: nowrap;
     }
 
-        .actions-cell .btn {
-            font-weight: 700;
-        }
+    .actions-cell .btn {
+        font-weight: 700;
+    }
 
     .all-conferences-table td,
     .all-conferences-table th {

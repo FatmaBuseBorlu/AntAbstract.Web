@@ -5,65 +5,634 @@
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
+
+    var slug = ViewBag.Slug as string
+        ?? ViewContext.RouteData.Values["slug"]?.ToString()
+        ?? "";
+
+    string GetCertificateTypeText(CertificateType type)
+    {
+        return type switch
+        {
+            CertificateType.Author => L("Type_Author", "Yazar Sertifikası"),
+            CertificateType.Reviewer => L("Type_Reviewer", "Hakem Sertifikası"),
+            _ => type.ToString()
+        };
+    }
+
+    string GetCertificateTypeIcon(CertificateType type)
+    {
+        return type switch
+        {
+            CertificateType.Author => "fas fa-user-graduate",
+            CertificateType.Reviewer => "fas fa-gavel",
+            _ => "fas fa-award"
+        };
+    }
+
+    string GetCertificateTypeClass(CertificateType type)
+    {
+        return type switch
+        {
+            CertificateType.Author => "author",
+            CertificateType.Reviewer => "reviewer",
+            _ => "default"
+        };
+    }
+
+    string GetDownloadUrl(Guid certificateId)
+    {
+        if (!string.IsNullOrWhiteSpace(slug))
+        {
+            return $"/{slug}/Certificates/Download/{certificateId}";
+        }
+
+        return $"/Certificates/Download/{certificateId}";
+    }
 }
 
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h4 class="mb-0 fw-bold">@Localizer["PageHeading"]</h4>
-            <small class="text-muted">@Localizer["PageDescription"]</small>
+<style>
+    .certificates-page {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 1.25rem 1.5rem 4rem;
+    }
+
+    .certificates-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e8eef6;
+        border-radius: 26px;
+        padding: 1.45rem 1.55rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        box-shadow: 0 16px 38px rgba(15, 23, 42, 0.055);
+        margin-bottom: 1.5rem;
+    }
+
+    .certificates-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 280px;
+        flex: 1;
+    }
+
+    .certificates-hero-icon {
+        width: 66px;
+        height: 66px;
+        min-width: 66px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, #16a34a, #00aeef);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+        box-shadow: 0 16px 32px rgba(22, 163, 74, 0.22);
+    }
+
+    .certificates-kicker {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .certificates-title {
+        margin: 0 0 0.35rem;
+        color: #0f172a;
+        font-size: 1.8rem;
+        font-weight: 950;
+        letter-spacing: -0.045em;
+        line-height: 1.15;
+    }
+
+    .certificates-description {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.95rem;
+        font-weight: 650;
+        line-height: 1.6;
+    }
+
+    .certificates-slug-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.45rem 0.8rem;
+        border-radius: 999px;
+        background: rgba(13, 110, 253, 0.08);
+        color: #0d6efd;
+        font-size: 0.78rem;
+        font-weight: 900;
+        margin-top: 0.7rem;
+    }
+
+    .certificate-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .certificate-summary-card {
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 22px;
+        padding: 1.1rem;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.05);
+        display: flex;
+        align-items: center;
+        gap: 0.95rem;
+    }
+
+    .summary-icon {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        border-radius: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 174, 239, 0.10);
+        color: #0284c7;
+        font-size: 1.2rem;
+    }
+
+    .summary-value {
+        color: #0f172a;
+        font-size: 1.55rem;
+        font-weight: 950;
+        line-height: 1;
+        margin-bottom: 0.2rem;
+    }
+
+    .summary-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+    }
+
+    .certificates-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.065);
+        overflow: hidden;
+    }
+
+    .certificates-card-header {
+        padding: 1.25rem 1.45rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .certificates-card-title {
+        margin: 0;
+        color: #0f172a;
+        font-size: 1.1rem;
+        font-weight: 950;
+        letter-spacing: -0.035em;
+    }
+
+    .certificates-card-subtitle {
+        margin: 0.25rem 0 0;
+        color: #64748b;
+        font-size: 0.86rem;
+        font-weight: 650;
+    }
+
+    .certificates-table {
+        margin-bottom: 0;
+    }
+
+        .certificates-table thead th {
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 0.74rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1rem 1.15rem;
+            white-space: nowrap;
+        }
+
+        .certificates-table tbody td {
+            color: #475569;
+            font-size: 0.92rem;
+            font-weight: 700;
+            padding: 1.1rem 1.15rem;
+            vertical-align: middle;
+            border-color: #edf2f7;
+        }
+
+    .certificate-type-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+        .certificate-type-badge.author {
+            background: rgba(13, 110, 253, 0.09);
+            color: #0d6efd;
+        }
+
+        .certificate-type-badge.reviewer {
+            background: rgba(245, 158, 11, 0.12);
+            color: #b45309;
+        }
+
+        .certificate-type-badge.default {
+            background: rgba(100, 116, 139, 0.10);
+            color: #475569;
+        }
+
+    .conference-id {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        max-width: 230px;
+        padding: 0.45rem 0.7rem;
+        border-radius: 12px;
+        background: #f8fafc;
+        color: #475569;
+        font-size: 0.8rem;
+        font-weight: 850;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .date-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        color: #475569;
+        font-weight: 850;
+        white-space: nowrap;
+    }
+
+        .date-pill i {
+            color: #94a3b8;
+        }
+
+    .generated-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.45rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 950;
+        background: rgba(22, 163, 74, 0.10);
+        color: #15803d;
+        white-space: nowrap;
+    }
+
+    .waiting-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.45rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 950;
+        background: rgba(100, 116, 139, 0.10);
+        color: #64748b;
+        white-space: nowrap;
+    }
+
+    .download-btn {
+        min-height: 38px;
+        border-radius: 999px;
+        padding: 0 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        font-size: 0.82rem;
+        font-weight: 950;
+        color: #ffffff;
+        background: linear-gradient(135deg, #00aeef, #2563eb);
+        border: none;
+        text-decoration: none;
+        box-shadow: 0 10px 22px rgba(37, 99, 235, 0.22);
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+        .download-btn:hover {
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 14px 30px rgba(37, 99, 235, 0.30);
+            text-decoration: none;
+        }
+
+.empty-state {
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 28px;
+    padding: 3.25rem 2rem;
+    text-align: center;
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+    margin: 0;
+}
+
+.empty-state-content {
+    max-width: 620px;
+    margin: 0 auto;
+}
+
+    .empty-icon {
+        width: 82px;
+        height: 82px;
+        border-radius: 28px;
+        background: rgba(0, 174, 239, 0.10);
+        color: #0284c7;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .empty-title {
+        color: #0f172a;
+        font-weight: 950;
+        letter-spacing: -0.035em;
+        margin-bottom: 0.55rem;
+    }
+
+    .empty-description {
+        color: #64748b;
+        font-weight: 650;
+        line-height: 1.7;
+        margin-bottom: 0;
+    }
+
+    @@media (max-width: 991.98px) {
+        .certificate-summary-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .certificates-page {
+            padding: 1rem 1rem 3rem;
+        }
+
+        .certificates-hero-left {
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 100%;
+        }
+
+        .certificates-table thead {
+            display: none;
+        }
+
+        .certificates-table tbody tr {
+            display: block;
+            padding: 0.9rem 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .certificates-table tbody td {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            border: none;
+            padding: 0.45rem 0;
+            text-align: right !important;
+        }
+
+            .certificates-table tbody td::before {
+                content: attr(data-label);
+                color: #64748b;
+                font-size: 0.74rem;
+                font-weight: 950;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                text-align: left;
+            }
+
+        .conference-id {
+            max-width: 180px;
+        }
+    }
+</style>
+
+<div class="certificates-page">
+
+    <div class="certificates-hero">
+        <div class="certificates-hero-left">
+            <div class="certificates-hero-icon">
+                <i class="fas fa-award"></i>
+            </div>
+
+            <div>
+                <div class="certificates-kicker">
+                    @L("HeaderKicker", "Belgelerim")
+                </div>
+
+                <h1 class="certificates-title">
+                    @L("PageHeading", "Sertifikalarım")
+                </h1>
+
+                <p class="certificates-description">
+                    @L("PageDescription", "Hak kazandığınız yazar ve hakem sertifikalarını buradan görüntüleyebilir ve indirebilirsiniz.")
+                </p>
+
+                @if (!string.IsNullOrWhiteSpace(slug))
+                {
+                    <div class="certificates-slug-badge">
+                        <i class="fas fa-link"></i>
+                        <span>/@slug</span>
+                    </div>
+                }
+            </div>
         </div>
     </div>
 
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm rounded-4 fw-bold mb-4">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm rounded-4 fw-bold mb-4">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
     @if (Model == null || !Model.Any())
     {
-        <div class="alert alert-info border-0 shadow-sm rounded-3">
-            @Localizer["NoCertificatesMessage"]
+<div class="empty-state">
+    <div class="empty-state-content">
+        <div class="empty-icon">
+            <i class="fas fa-award"></i>
         </div>
+
+        <h4 class="empty-title">
+            @L("NoCertificatesTitle", "Henüz sertifikanız bulunmuyor.")
+        </h4>
+
+        <p class="empty-description">
+            @L("NoCertificatesMessage", "Sertifika koşullarını sağladığınızda yazar veya hakem sertifikalarınız bu alanda görüntülenecektir.")
+        </p>
+    </div>
+</div>
     }
     else
     {
-        <div class="card border-0 shadow-sm rounded-4">
+        var totalCount = Model.Count;
+        var authorCount = Model.Count(x => x.Type == CertificateType.Author);
+        var reviewerCount = Model.Count(x => x.Type == CertificateType.Reviewer);
+
+        <div class="certificate-summary-grid">
+            <div class="certificate-summary-card">
+                <div class="summary-icon">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+
+                <div>
+                    <div class="summary-value">@totalCount</div>
+                    <div class="summary-label">@L("TotalCertificatesLabel", "Toplam Sertifika")</div>
+                </div>
+            </div>
+
+            <div class="certificate-summary-card">
+                <div class="summary-icon">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+
+                <div>
+                    <div class="summary-value">@authorCount</div>
+                    <div class="summary-label">@L("AuthorCertificatesLabel", "Yazar Sertifikası")</div>
+                </div>
+            </div>
+
+            <div class="certificate-summary-card">
+                <div class="summary-icon">
+                    <i class="fas fa-gavel"></i>
+                </div>
+
+                <div>
+                    <div class="summary-value">@reviewerCount</div>
+                    <div class="summary-label">@L("ReviewerCertificatesLabel", "Hakem Sertifikası")</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="certificates-card">
+            <div class="certificates-card-header">
+                <div>
+                    <h5 class="certificates-card-title">
+                        @L("CertificateListTitle", "Sertifika Listesi")
+                    </h5>
+
+                    <p class="certificates-card-subtitle">
+                        @L("CertificateListDescription", "Hak kazandığınız belgeler aşağıda listelenir.")
+                    </p>
+                </div>
+            </div>
+
             <div class="table-responsive">
-                <table class="table align-middle mb-0">
-                    <thead class="table-light">
+                <table class="table align-middle certificates-table">
+                    <thead>
                         <tr>
-                            <th>@Localizer["TypeColumn"]</th>
-                            <th>@Localizer["ConferenceColumn"]</th>
-                            <th>@Localizer["EligibilityColumn"]</th>
-                            <th>@Localizer["GeneratedAtColumn"]</th>
-                            <th class="text-end">@Localizer["ActionColumn"]</th>
+                            <th>@L("TypeColumn", "Tür")</th>
+                            <th>@L("ConferenceColumn", "Kongre")</th>
+                            <th>@L("EligibilityColumn", "Hak Ediş Tarihi")</th>
+                            <th>@L("GeneratedAtColumn", "Oluşturulma Tarihi")</th>
+                            <th class="text-end">@L("ActionColumn", "İşlem")</th>
                         </tr>
                     </thead>
+
                     <tbody>
-                        @foreach (var c in Model)
+                        @foreach (var certificate in Model.OrderByDescending(x => x.GeneratedAt ?? x.EligibleAt))
                         {
-                            var typeText = c.Type switch
-                            {
-                                CertificateType.Author => Localizer["Type_Author"].Value,
-                                CertificateType.Reviewer => Localizer["Type_Reviewer"].Value,
-                                _ => c.Type.ToString()
-                            };
+                            var typeText = GetCertificateTypeText(certificate.Type);
+                            var typeIcon = GetCertificateTypeIcon(certificate.Type);
+                            var typeClass = GetCertificateTypeClass(certificate.Type);
+                            var downloadUrl = GetDownloadUrl(certificate.Id);
 
                             <tr>
-                                <td>
-                                    <span class="badge bg-secondary">
+                                <td data-label="@L("TypeColumn", "Tür")">
+                                    <span class="certificate-type-badge @typeClass">
+                                        <i class="@typeIcon"></i>
                                         @typeText
                                     </span>
                                 </td>
-                                <td>
-                                    @c.ConferenceId
+
+                                <td data-label="@L("ConferenceColumn", "Kongre")">
+                                    <span class="conference-id" title="@certificate.ConferenceId">
+                                        <i class="fas fa-calendar-check"></i>
+                                        @certificate.ConferenceId
+                                    </span>
                                 </td>
-                                <td>
-                                    @c.EligibleAt.ToString("dd.MM.yyyy")
+
+                                <td data-label="@L("EligibilityColumn", "Hak Ediş Tarihi")">
+                                    <span class="date-pill">
+                                        <i class="fas fa-calendar-day"></i>
+                                        @certificate.EligibleAt.ToString("dd.MM.yyyy")
+                                    </span>
                                 </td>
-                                <td>
-                                    @(c.GeneratedAt?.ToString("dd.MM.yyyy") ?? "-")
+
+                                <td data-label="@L("GeneratedAtColumn", "Oluşturulma Tarihi")">
+                                    @if (certificate.GeneratedAt.HasValue)
+                                    {
+                                        <span class="generated-badge">
+                                            <i class="fas fa-check-circle"></i>
+                                            @certificate.GeneratedAt.Value.ToString("dd.MM.yyyy")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="waiting-badge">
+                                            <i class="fas fa-clock"></i>
+                                            @L("WaitingGenerationText", "Bekliyor")
+                                        </span>
+                                    }
                                 </td>
-                                <td class="text-end">
-                                    <a class="btn btn-sm btn-outline-primary"
-                                       href="@Url.Action("Download", "Certificates", new { id = c.Id, slug = (string?)ViewContext.RouteData.Values["slug"] })">
-                                        <i class="fas fa-download me-1"></i> @Localizer["DownloadButton"]
+
+                                <td data-label="@L("ActionColumn", "İşlem")" class="text-end">
+                                    <a class="download-btn"
+                                       href="@downloadUrl">
+                                        <i class="fas fa-download"></i>
+                                        @L("DownloadButton", "İndir")
                                     </a>
                                 </td>
                             </tr>

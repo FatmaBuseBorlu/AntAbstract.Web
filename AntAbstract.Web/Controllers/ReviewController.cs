@@ -65,6 +65,40 @@ namespace AntAbstract.Web.Controllers
             return value;
         }
 
+        private static string SafeExceptionMessage(
+            Exception exception,
+            string fallbackMessage)
+        {
+            if (exception == null)
+            {
+                return fallbackMessage;
+            }
+
+            if (string.IsNullOrWhiteSpace(exception.Message))
+            {
+                return fallbackMessage;
+            }
+
+            return exception.Message;
+        }
+
+        private static string BuildReviewerName(AppUser user, string fallback)
+        {
+            var reviewerName = $"{user.Title} {user.FirstName} {user.LastName}".Trim();
+
+            if (string.IsNullOrWhiteSpace(reviewerName))
+            {
+                reviewerName = $"{user.FirstName} {user.LastName}".Trim();
+            }
+
+            if (string.IsNullOrWhiteSpace(reviewerName))
+            {
+                reviewerName = user.UserName ?? user.Email ?? fallback;
+            }
+
+            return reviewerName;
+        }
+
         [HttpGet("/Review")]
         [HttpGet("/Review/Index")]
         [HttpGet("/{slug}/Review")]
@@ -154,14 +188,23 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            if (assignmentDto.IsReviewed)
+            {
+                TempData["InfoMessage"] = T(
+                    "ReviewAlreadyCompleted",
+                    "Bu değerlendirme daha önce tamamlanmış. Tekrar gönderim yapılamaz.");
+
+                return RedirectToAction(nameof(Evaluate), new
+                {
+                    id = model.ReviewAssignmentId
+                });
+            }
+
             try
             {
-                var reviewerName = $"{user.FirstName} {user.LastName}".Trim();
-
-                if (string.IsNullOrWhiteSpace(reviewerName))
-                {
-                    reviewerName = user.UserName ?? user.Email ?? T("Reviewer", "Hakem");
-                }
+                var reviewerName = BuildReviewerName(
+                    user,
+                    T("Reviewer", "Hakem"));
 
                 await _reviewService.SubmitReviewAsync(model, reviewerName);
 
@@ -179,8 +222,7 @@ namespace AntAbstract.Web.Controllers
                         conferenceId,
                         user.Id,
                         reviewerName,
-                        user.Email ?? ""
-                    );
+                        user.Email ?? string.Empty);
                 }
 
                 TempData["SuccessMessage"] = T(
@@ -189,11 +231,13 @@ namespace AntAbstract.Web.Controllers
 
                 return RedirectToAction(nameof(Index));
             }
-            catch
+            catch (Exception exception)
             {
-                TempData["ErrorMessage"] = T(
-                    "ReviewSaveFailed",
-                    "Değerlendirme kaydedilirken bir hata oluştu.");
+                TempData["ErrorMessage"] = SafeExceptionMessage(
+                    exception,
+                    T(
+                        "ReviewSaveFailed",
+                        "Değerlendirme kaydedilirken bir hata oluştu."));
 
                 return RedirectToAction(nameof(Evaluate), new
                 {
@@ -237,6 +281,15 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            if (assignmentDto.IsReviewed)
+            {
+                TempData["ErrorMessage"] = T(
+                    "CannotDeclineReviewedAssignment",
+                    "Tamamlanmış değerlendirme görevi iade edilemez.");
+
+                return RedirectToAction(nameof(Index));
+            }
+
             try
             {
                 var reason = NormalizeNullable(Reason, MaxDeclineReasonLength);
@@ -245,18 +298,20 @@ namespace AntAbstract.Web.Controllers
                 await _reviewService.DeclineAssignmentAsync(
                     id,
                     user.Id,
-                    reason ?? "",
-                    note ?? "");
+                    reason ?? string.Empty,
+                    note ?? string.Empty);
 
                 TempData["SuccessMessage"] = T(
                     "AssignmentReturned",
                     "Değerlendirme görevi iade edildi.");
             }
-            catch
+            catch (Exception exception)
             {
-                TempData["ErrorMessage"] = T(
-                    "OperationFailed",
-                    "İşlem sırasında bir hata oluştu.");
+                TempData["ErrorMessage"] = SafeExceptionMessage(
+                    exception,
+                    T(
+                        "OperationFailed",
+                        "İşlem sırasında bir hata oluştu."));
             }
 
             return RedirectToAction(nameof(Index));
@@ -289,7 +344,9 @@ namespace AntAbstract.Web.Controllers
                     "Sertifika bulunamadı."));
             }
 
-            ViewBag.ReviewerName = $"{user.Title} {user.FirstName} {user.LastName}".Trim();
+            ViewBag.ReviewerName = BuildReviewerName(
+                user,
+                T("Reviewer", "Hakem"));
 
             return View("Certificate", assignment);
         }

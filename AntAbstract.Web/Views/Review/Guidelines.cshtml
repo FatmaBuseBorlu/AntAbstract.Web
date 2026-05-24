@@ -3,71 +3,613 @@
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
+
+    var criteria = new[]
+    {
+        new
+        {
+            Icon = "fas fa-lightbulb",
+            ColorClass = "criteria-blue",
+            Title = L("Criterion1Title", "Özgünlük ve Katkı"),
+            Text = L("Criterion1Text", "Çalışmanın literatüre, uygulamaya veya ilgili alana sağladığı yenilik ve katkı değerlendirilmelidir.")
+        },
+        new
+        {
+            Icon = "fas fa-flask",
+            ColorClass = "criteria-green",
+            Title = L("Criterion2Title", "Yöntem ve Bilimsel Tutarlılık"),
+            Text = L("Criterion2Text", "Kullanılan yöntem, veri, analiz ve sonuçların bilimsel açıdan tutarlı olup olmadığı incelenmelidir.")
+        },
+        new
+        {
+            Icon = "fas fa-pen-nib",
+            ColorClass = "criteria-purple",
+            Title = L("Criterion3Title", "Anlatım ve Yazım Kalitesi"),
+            Text = L("Criterion3Text", "Bildiri dili, akademik anlatım, düzen, açıklık ve kaynak gösterimi açısından değerlendirilmelidir.")
+        },
+        new
+        {
+            Icon = "fas fa-balance-scale",
+            ColorClass = "criteria-orange",
+            Title = L("Criterion4Title", "Etik Uygunluk"),
+            Text = L("Criterion4Text", "Çalışmanın etik ilkelere, akademik dürüstlüğe ve tarafsız değerlendirme kurallarına uygunluğu dikkate alınmalıdır.")
+        }
+    };
 }
 
-<div class="container-fluid py-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-                <div class="bg-primary bg-gradient p-5 text-white text-center">
-                    <i class="fas fa-book-reader fa-4x mb-3 opacity-75"></i>
-                    <h2 class="fw-bold">@Localizer["HeroTitle"]</h2>
-                    <p class="opacity-75">@Localizer["HeroDescription"]</p>
-                    <button class="btn btn-light text-primary rounded-pill px-4 fw-bold mt-3 shadow-sm">
-                        <i class="fas fa-file-pdf me-2"></i> @Localizer["DownloadPdfButton"]
-                    </button>
+<style>
+    .review-guide-page {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 1.25rem 1.5rem 4rem;
+    }
+
+    .guide-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.18), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e8eef6;
+        border-radius: 30px;
+        padding: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.065);
+        margin-bottom: 1.5rem;
+    }
+
+    .guide-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1.1rem;
+        min-width: 280px;
+        flex: 1;
+    }
+
+    .guide-hero-icon {
+        width: 76px;
+        height: 76px;
+        min-width: 76px;
+        border-radius: 28px;
+        background: linear-gradient(135deg, #00aeef, #2563eb);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        box-shadow: 0 18px 36px rgba(0, 174, 239, 0.24);
+    }
+
+    .guide-kicker {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .guide-title {
+        margin: 0 0 0.45rem;
+        color: #0f172a;
+        font-size: 2rem;
+        font-weight: 950;
+        letter-spacing: -0.045em;
+        line-height: 1.15;
+    }
+
+    .guide-description {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.98rem;
+        font-weight: 650;
+        line-height: 1.7;
+        max-width: 760px;
+    }
+
+    .download-guide-btn {
+        min-height: 46px;
+        border-radius: 999px;
+        padding: 0 1.25rem;
+        font-weight: 950;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 12px 26px rgba(0, 174, 239, 0.18);
+    }
+
+    .guide-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.065);
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+
+    .guide-card-header {
+        padding: 1.35rem 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+    }
+
+    .guide-card-title {
+        color: #0f172a;
+        font-weight: 950;
+        margin-bottom: 0.25rem;
+    }
+
+    .guide-card-subtitle {
+        color: #64748b;
+        font-size: 0.85rem;
+        font-weight: 650;
+        margin-bottom: 0;
+    }
+
+    .guide-card-body {
+        padding: 1.5rem;
+    }
+
+    .principle-box {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        background: rgba(0, 174, 239, 0.08);
+        border: 1px solid rgba(0, 174, 239, 0.15);
+        border-radius: 24px;
+        padding: 1.15rem 1.2rem;
+        color: #475569;
+        font-weight: 650;
+        line-height: 1.75;
+    }
+
+    .principle-icon {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        border-radius: 18px;
+        background: #ffffff;
+        color: #00aeef;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+        font-size: 1.2rem;
+    }
+
+    .principle-title {
+        color: #0f172a;
+        font-weight: 950;
+        margin-bottom: 0.25rem;
+    }
+
+    .criteria-card {
+        height: 100%;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        padding: 1.25rem;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.045);
+        transition: all 0.2s ease;
+    }
+
+    .criteria-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+    }
+
+    .criteria-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .criteria-blue {
+        background: rgba(0, 174, 239, 0.10);
+        color: #0284c7;
+    }
+
+    .criteria-green {
+        background: rgba(22, 163, 74, 0.11);
+        color: #16a34a;
+    }
+
+    .criteria-purple {
+        background: rgba(124, 58, 237, 0.10);
+        color: #7c3aed;
+    }
+
+    .criteria-orange {
+        background: rgba(245, 158, 11, 0.12);
+        color: #f59e0b;
+    }
+
+    .criteria-title {
+        color: #0f172a;
+        font-weight: 950;
+        margin-bottom: 0.45rem;
+    }
+
+    .criteria-text {
+        color: #64748b;
+        font-size: 0.88rem;
+        font-weight: 650;
+        line-height: 1.65;
+        margin-bottom: 0;
+    }
+
+    .decision-guide {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .decision-item {
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        padding: 1rem;
+        background: #ffffff;
+        min-height: 150px;
+    }
+
+    .decision-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.45rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.76rem;
+        font-weight: 950;
+        margin-bottom: 0.8rem;
+    }
+
+    .decision-accept {
+        background: rgba(22, 163, 74, 0.11);
+        color: #15803d;
+        border: 1px solid rgba(22, 163, 74, 0.18);
+    }
+
+    .decision-minor,
+    .decision-major {
+        background: rgba(245, 158, 11, 0.12);
+        color: #b45309;
+        border: 1px solid rgba(245, 158, 11, 0.18);
+    }
+
+    .decision-reject {
+        background: rgba(239, 68, 68, 0.10);
+        color: #dc2626;
+        border: 1px solid rgba(239, 68, 68, 0.18);
+    }
+
+    .decision-text {
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 650;
+        line-height: 1.6;
+        margin-bottom: 0;
+    }
+
+    .ethics-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.85rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .ethics-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 0.9rem 1rem;
+        color: #475569;
+        font-size: 0.88rem;
+        font-weight: 700;
+        line-height: 1.55;
+    }
+
+    .ethics-item i {
+        color: #00aeef;
+        margin-top: 0.18rem;
+    }
+
+    .support-box {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        background: rgba(245, 158, 11, 0.12);
+        border: 1px solid rgba(245, 158, 11, 0.22);
+        border-radius: 24px;
+        padding: 1.15rem 1.25rem;
+        color: #475569;
+        font-weight: 700;
+        line-height: 1.65;
+    }
+
+    .support-icon {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        border-radius: 18px;
+        background: #ffffff;
+        color: #f59e0b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+    }
+
+    .coming-soon-box {
+        margin-top: 1.5rem;
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        border-radius: 22px;
+        padding: 1rem;
+        color: #64748b;
+        font-size: 0.86rem;
+        font-weight: 700;
+        line-height: 1.6;
+    }
+
+    @@media (max-width: 991.98px) {
+        .decision-guide,
+        .ethics-list {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .review-guide-page {
+            padding: 1rem 1rem 3rem;
+        }
+
+        .guide-hero-left {
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 100%;
+        }
+
+        .guide-title {
+            font-size: 1.55rem;
+        }
+
+        .support-box {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="review-guide-page">
+
+    <div class="guide-hero">
+        <div class="guide-hero-left">
+            <div class="guide-hero-icon">
+                <i class="fas fa-book-reader"></i>
+            </div>
+
+            <div>
+                <div class="guide-kicker">
+                    @L("HeaderKicker", "Hakem Bilgilendirme")
                 </div>
 
-                <div class="card-body p-5">
-                    <h5 class="fw-bold text-dark mb-3">
-                        <i class="fas fa-balance-scale text-primary me-2"></i> @Localizer["Section1Title"]
-                    </h5>
-                    <p class="text-muted mb-4" style="line-height: 1.7;">
-                        @Localizer["Section1Text_Part1"] <strong>@Localizer["ConfidentialityText"]</strong> @Localizer["Section1Text_Part2"]
-                    </p>
+                <h1 class="guide-title">
+                    @L("HeroTitle", "Hakem Rehberi")
+                </h1>
 
-                    <h5 class="fw-bold text-dark mb-3">
-                        <i class="fas fa-clipboard-list text-primary me-2"></i> @Localizer["Section2Title"]
-                    </h5>
+                <p class="guide-description">
+                    @L("HeroDescription", "Değerlendirme sürecinde dikkat edilmesi gereken temel ilkeleri, puanlama yaklaşımını ve karar önerilerini bu sayfadan inceleyebilirsiniz.")
+                </p>
+            </div>
+        </div>
 
-                    <div class="row g-3 mb-5">
-                        <div class="col-md-6">
-                            <div class="p-3 bg-light rounded-3 border h-100">
-                                <h6 class="fw-bold text-dark">@Localizer["Criterion1Title"]</h6>
-                                <p class="small text-muted mb-0">@Localizer["Criterion1Text"]</p>
-                            </div>
-                        </div>
+        <button class="btn btn-primary download-guide-btn" type="button">
+            <i class="fas fa-file-pdf"></i>
+            @L("DownloadPdfButton", "PDF Rehberi İndir")
+        </button>
+    </div>
 
-                        <div class="col-md-6">
-                            <div class="p-3 bg-light rounded-3 border h-100">
-                                <h6 class="fw-bold text-dark">@Localizer["Criterion2Title"]</h6>
-                                <p class="small text-muted mb-0">@Localizer["Criterion2Text"]</p>
-                            </div>
-                        </div>
+    <div class="guide-card">
+        <div class="guide-card-header">
+            <h5 class="guide-card-title">
+                <i class="fas fa-balance-scale text-primary me-2"></i>
+                @L("Section1Title", "Temel Değerlendirme İlkeleri")
+            </h5>
 
-                        <div class="col-md-6">
-                            <div class="p-3 bg-light rounded-3 border h-100">
-                                <h6 class="fw-bold text-dark">@Localizer["Criterion3Title"]</h6>
-                                <p class="small text-muted mb-0">@Localizer["Criterion3Text"]</p>
-                            </div>
-                        </div>
+            <p class="guide-card-subtitle">
+                @L("Section1Subtitle", "Hakemlik süreci tarafsız, gizli ve bilimsel bir değerlendirme yaklaşımı gerektirir.")
+            </p>
+        </div>
 
-                        <div class="col-md-6">
-                            <div class="p-3 bg-light rounded-3 border h-100">
-                                <h6 class="fw-bold text-dark">@Localizer["Criterion4Title"]</h6>
-                                <p class="small text-muted mb-0">@Localizer["Criterion4Text"]</p>
-                            </div>
-                        </div>
+        <div class="guide-card-body">
+            <div class="principle-box">
+                <div class="principle-icon">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+
+                <div>
+                    <div class="principle-title">
+                        @L("ConfidentialityText", "Gizlilik ve tarafsızlık")
                     </div>
 
-                    <div class="alert alert-warning border-0 rounded-3 d-flex align-items-center">
-                        <i class="fas fa-envelope fs-4 me-3"></i>
-                        <div>
-                            @Localizer["SupportText_Part1"] <strong>editor@antabstract.com</strong> @Localizer["SupportText_Part2"]
-                        </div>
+                    <div>
+                        @L("Section1Text_Part1", "Değerlendirme sürecinde size sunulan bildiri içerikleri gizlidir.")
+                        <strong>@L("Section1Text_Strong", "Bildiri dosyaları, yazar bilgileri ve değerlendirme notları üçüncü kişilerle paylaşılmamalıdır.")</strong>
+                        @L("Section1Text_Part2", "Çıkar çatışması olduğunu düşündüğünüz durumlarda değerlendirme görevini iade etmeniz beklenir.")
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+
+    <div class="guide-card">
+        <div class="guide-card-header">
+            <h5 class="guide-card-title">
+                <i class="fas fa-clipboard-list text-primary me-2"></i>
+                @L("Section2Title", "Değerlendirme Kriterleri")
+            </h5>
+
+            <p class="guide-card-subtitle">
+                @L("Section2Subtitle", "Bir bildiriyi değerlendirirken aşağıdaki ana başlıkları dikkate alabilirsiniz.")
+            </p>
+        </div>
+
+        <div class="guide-card-body">
+            <div class="row g-3">
+                @foreach (var criterion in criteria)
+                {
+                    <div class="col-md-6">
+                        <div class="criteria-card">
+                            <div class="criteria-icon @criterion.ColorClass">
+                                <i class="@criterion.Icon"></i>
+                            </div>
+
+                            <h6 class="criteria-title">
+                                @criterion.Title
+                            </h6>
+
+                            <p class="criteria-text">
+                                @criterion.Text
+                            </p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="guide-card">
+        <div class="guide-card-header">
+            <h5 class="guide-card-title">
+                <i class="fas fa-gavel text-primary me-2"></i>
+                @L("DecisionGuideTitle", "Karar Önerileri")
+            </h5>
+
+            <p class="guide-card-subtitle">
+                @L("DecisionGuideSubtitle", "Değerlendirme sonucunda vereceğiniz karar önerisi aşağıdaki anlamlara gelir.")
+            </p>
+        </div>
+
+        <div class="guide-card-body">
+            <div class="decision-guide">
+                <div class="decision-item">
+                    <span class="decision-badge decision-accept">
+                        <i class="fas fa-check-circle"></i>
+                        @L("DecisionAccept", "Kabul")
+                    </span>
+
+                    <p class="decision-text">
+                        @L("DecisionAcceptText", "Bildiri mevcut haliyle bilimsel programa dahil edilebilir.")
+                    </p>
+                </div>
+
+                <div class="decision-item">
+                    <span class="decision-badge decision-minor">
+                        <i class="fas fa-edit"></i>
+                        @L("DecisionMinorRevision", "Küçük Revizyon")
+                    </span>
+
+                    <p class="decision-text">
+                        @L("DecisionMinorRevisionText", "Bildiri küçük düzeltmelerle kabul edilebilir duruma gelebilir.")
+                    </p>
+                </div>
+
+                <div class="decision-item">
+                    <span class="decision-badge decision-major">
+                        <i class="fas fa-sync-alt"></i>
+                        @L("DecisionMajorRevision", "Büyük Revizyon")
+                    </span>
+
+                    <p class="decision-text">
+                        @L("DecisionMajorRevisionText", "Bildiri kapsamlı düzeltme gerektirir; yeniden değerlendirme gerekebilir.")
+                    </p>
+                </div>
+
+                <div class="decision-item">
+                    <span class="decision-badge decision-reject">
+                        <i class="fas fa-times-circle"></i>
+                        @L("DecisionReject", "Ret")
+                    </span>
+
+                    <p class="decision-text">
+                        @L("DecisionRejectText", "Bildiri bilimsel, yöntemsel veya etik nedenlerle kabul için uygun değildir.")
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="guide-card">
+        <div class="guide-card-header">
+            <h5 class="guide-card-title">
+                <i class="fas fa-shield-alt text-primary me-2"></i>
+                @L("EthicsTitle", "Etik ve Kalite Kontrol")
+            </h5>
+
+            <p class="guide-card-subtitle">
+                @L("EthicsSubtitle", "Değerlendirmenizin adil, açık ve yapıcı olması beklenir.")
+            </p>
+        </div>
+
+        <div class="guide-card-body">
+            <ul class="ethics-list">
+                <li class="ethics-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>@L("EthicsItem1", "Yorumlarınızı kişisel ifadelerden uzak, akademik ve yapıcı bir dille yazın.")</span>
+                </li>
+
+                <li class="ethics-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>@L("EthicsItem2", "Çıkar çatışması varsa görevi iade edin ve organizasyon ekibini bilgilendirin.")</span>
+                </li>
+
+                <li class="ethics-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>@L("EthicsItem3", "Bildiri dosyalarını ve değerlendirme içeriklerini üçüncü kişilerle paylaşmayın.")</span>
+                </li>
+
+                <li class="ethics-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>@L("EthicsItem4", "Puan ve karar önerinizin yorumlarınızla tutarlı olmasına dikkat edin.")</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="support-box">
+        <div class="support-icon">
+            <i class="fas fa-envelope"></i>
+        </div>
+
+        <div>
+            @L("SupportText_Part1", "Değerlendirme süreciyle ilgili destek almak için")
+            <strong>editor@antabstract.com</strong>
+            @L("SupportText_Part2", "adresinden organizasyon ekibiyle iletişime geçebilirsiniz.")
+        </div>
+    </div>
+
+    <div class="coming-soon-box">
+        <i class="fas fa-code-branch me-2 text-primary"></i>
+        @L("StaticNotice", "Bu rehber sayfası şimdilik statik olarak hazırlanmıştır. İleride kongreye özel hakem rehberi PDF'i veya dinamik yönergeler eklenebilir.")
     </div>
 </div>

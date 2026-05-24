@@ -3,79 +3,380 @@
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
 }
 
-<div class="container-fluid py-4">
+<style>
+    .review-settings-page {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 1.25rem 1.5rem 4rem;
+    }
+
+    .settings-hero {
+        background: radial-gradient(circle at top right, rgba(239, 68, 68, 0.14), transparent 34%), linear-gradient(135deg, #ffffff 0%, #fff8f8 100%);
+        border: 1px solid #f1dede;
+        border-radius: 26px;
+        padding: 1.45rem 1.55rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        box-shadow: 0 16px 38px rgba(15, 23, 42, 0.055);
+        margin-bottom: 1.5rem;
+    }
+
+    .settings-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 280px;
+        flex: 1;
+    }
+
+    .settings-hero-icon {
+        width: 66px;
+        height: 66px;
+        min-width: 66px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, #ef4444, #f97316);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+        box-shadow: 0 16px 32px rgba(239, 68, 68, 0.20);
+    }
+
+    .settings-kicker {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .settings-title {
+        margin: 0 0 0.35rem;
+        color: #0f172a;
+        font-size: 1.8rem;
+        font-weight: 950;
+        letter-spacing: -0.045em;
+        line-height: 1.15;
+    }
+
+    .settings-description {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.95rem;
+        font-weight: 650;
+        line-height: 1.6;
+    }
+
+    .settings-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.065);
+        overflow: hidden;
+        height: 100%;
+    }
+
+    .settings-card-header {
+        padding: 1.25rem 1.45rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+    }
+
+    .settings-card-title {
+        color: #0f172a;
+        font-weight: 950;
+        margin-bottom: 0.25rem;
+    }
+
+    .settings-card-subtitle {
+        color: #64748b;
+        font-size: 0.84rem;
+        font-weight: 650;
+        margin-bottom: 0;
+    }
+
+    .settings-card-body {
+        padding: 1.5rem;
+    }
+
+    .form-label-custom {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 0.55rem;
+    }
+
+    .form-control-custom {
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        border-radius: 16px;
+        padding: 0.9rem 1rem;
+        font-weight: 700;
+        color: #334155;
+    }
+
+    .form-control-custom:focus {
+        background: #ffffff;
+        border-color: #00aeef;
+        box-shadow: 0 0 0 0.2rem rgba(0, 174, 239, 0.10);
+    }
+
+    .save-btn {
+        min-height: 48px;
+        border-radius: 999px;
+        font-weight: 950;
+        box-shadow: 0 14px 28px rgba(239, 68, 68, 0.18);
+    }
+
+    .availability-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.1rem 1.25rem;
+        border-bottom: 1px solid #edf2f7;
+    }
+
+    .availability-item:last-child {
+        border-bottom: none;
+    }
+
+    .availability-item.upcoming {
+        background: rgba(239, 68, 68, 0.07);
+        border-left: 5px solid #ef4444;
+    }
+
+    .availability-date {
+        color: #0f172a;
+        font-weight: 950;
+        margin-bottom: 0.25rem;
+    }
+
+    .availability-reason {
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 750;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border-radius: 999px;
+        padding: 0.35rem 0.65rem;
+        font-size: 0.72rem;
+        font-weight: 950;
+        margin-bottom: 0.55rem;
+    }
+
+    .status-badge.upcoming {
+        background: #ef4444;
+        color: #ffffff;
+    }
+
+    .status-badge.completed {
+        background: rgba(100, 116, 139, 0.10);
+        color: #64748b;
+        border: 1px solid rgba(100, 116, 139, 0.16);
+    }
+
+    .cancel-btn {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .coming-soon-box {
+        margin-top: 1.5rem;
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        border-radius: 22px;
+        padding: 1rem;
+        color: #64748b;
+        font-size: 0.86rem;
+        font-weight: 700;
+        line-height: 1.6;
+    }
+
+    @@media (max-width: 768px) {
+        .review-settings-page {
+            padding: 1rem 1rem 3rem;
+        }
+
+        .settings-hero-left {
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 100%;
+        }
+
+        .settings-title {
+            font-size: 1.45rem;
+        }
+
+        .availability-item {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="review-settings-page">
+
+    <div class="settings-hero">
+        <div class="settings-hero-left">
+            <div class="settings-hero-icon">
+                <i class="fas fa-calendar-times"></i>
+            </div>
+
+            <div>
+                <div class="settings-kicker">
+                    @L("HeaderKicker", "Hakem Profili")
+                </div>
+
+                <h1 class="settings-title">
+                    @L("PageHeading", "Müsaitlik Durumum")
+                </h1>
+
+                <p class="settings-description">
+                    @L("PageDescription", "Değerlendirme yapamayacağınız tarih aralıklarını buradan belirleyebilirsiniz.")
+                </p>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-4">
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-                <div class="card-header bg-white py-3 px-4 border-bottom-0">
-                    <h5 class="fw-bold mb-0 text-dark">
-                        <i class="fas fa-calendar-plus text-danger me-2"></i> @Localizer["CreateLeaveTitle"]
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <h5 class="settings-card-title">
+                        <i class="fas fa-calendar-plus text-danger me-2"></i>
+                        @L("CreateLeaveTitle", "Müsait Olmadığım Tarih Ekle")
                     </h5>
-                </div>
-                <div class="card-body p-4 pt-0">
-                    <p class="text-muted small mb-4">@Localizer["CreateLeaveDescription"]</p>
 
+                    <p class="settings-card-subtitle">
+                        @L("CreateLeaveDescription", "Bu tarih aralığında size yeni değerlendirme görevi atanmasını istemiyorsanız kayıt oluşturabilirsiniz.")
+                    </p>
+                </div>
+
+                <div class="settings-card-body">
                     <form>
                         <div class="mb-3">
-                            <label class="form-label fw-bold small text-secondary">@Localizer["StartDateLabel"]</label>
-                            <input type="date" class="form-control bg-light border-0 py-2">
+                            <label class="form-label-custom">
+                                @L("StartDateLabel", "Başlangıç Tarihi")
+                            </label>
+
+                            <input type="date" class="form-control form-control-custom">
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold small text-secondary">@Localizer["EndDateLabel"]</label>
-                            <input type="date" class="form-control bg-light border-0 py-2">
+                            <label class="form-label-custom">
+                                @L("EndDateLabel", "Bitiş Tarihi")
+                            </label>
+
+                            <input type="date" class="form-control form-control-custom">
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold small text-secondary">@Localizer["ReasonLabel"]</label>
+                            <label class="form-label-custom">
+                                @L("ReasonLabel", "Açıklama")
+                            </label>
+
                             <input type="text"
-                                   class="form-control bg-light border-0 py-2"
-                                   placeholder="@Localizer["ReasonPlaceholder"]">
+                                   class="form-control form-control-custom"
+                                   placeholder="@L("ReasonPlaceholder", "Örn: Akademik seyahat, yoğunluk, izin...")">
                         </div>
 
-                        <button class="btn btn-danger w-100 rounded-pill fw-bold py-2 shadow-sm">
-                            <i class="fas fa-check-circle me-2"></i> @Localizer["SaveLeaveButton"]
+                        <button class="btn btn-danger w-100 save-btn" type="button">
+                            <i class="fas fa-check-circle me-2"></i>
+                            @L("SaveLeaveButton", "Müsait Değilim Olarak Kaydet")
                         </button>
                     </form>
+
+                    <div class="coming-soon-box">
+                        <i class="fas fa-code-branch me-2 text-primary"></i>
+                        @L("StaticNotice", "Bu alan şimdilik arayüz olarak hazırlandı. Bir sonraki adımda müsaitlik bilgilerini veritabanına bağlayabiliriz.")
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-                <div class="card-header bg-white py-3 px-4 border-bottom">
-                    <h5 class="fw-bold mb-0 text-dark">
-                        <i class="fas fa-history text-secondary me-2"></i> @Localizer["LeaveHistoryTitle"]
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <h5 class="settings-card-title">
+                        <i class="fas fa-history text-secondary me-2"></i>
+                        @L("LeaveHistoryTitle", "Müsaitlik Geçmişi")
                     </h5>
+
+                    <p class="settings-card-subtitle">
+                        @L("LeaveHistoryDescription", "Geçmiş ve yaklaşan müsait olmama kayıtlarınız burada görüntülenir.")
+                    </p>
                 </div>
 
-                <div class="card-body p-0">
-                    <div class="list-group list-group-flush">
-                        <div class="list-group-item p-4 d-flex justify-content-between align-items-center bg-danger bg-opacity-10 border-start border-4 border-danger">
-                            <div>
-                                <span class="badge bg-danger mb-2">@Localizer["UpcomingPlanBadge"]</span>
-                                <h6 class="fw-bold mb-1 text-dark">15 Ocak 2026 - 20 Ocak 2026</h6>
-                                <small class="text-danger fw-bold">
-                                    <i class="fas fa-plane me-1"></i> @Localizer["UpcomingPlanReason"]
-                                </small>
+                <div>
+                    <div class="availability-item upcoming">
+                        <div>
+                            <span class="status-badge upcoming">
+                                <i class="fas fa-clock"></i>
+                                @L("UpcomingPlanBadge", "Yaklaşan")
+                            </span>
+
+                            <h6 class="availability-date">
+                                15 Ocak 2026 - 20 Ocak 2026
+                            </h6>
+
+                            <div class="availability-reason text-danger">
+                                <i class="fas fa-plane me-1"></i>
+                                @L("UpcomingPlanReason", "Akademik seyahat nedeniyle müsait değilim.")
                             </div>
-                            <button class="btn btn-sm btn-white border shadow-sm text-danger" title="@Localizer["CancelTitle"]">
-                                <i class="fas fa-times"></i>
-                            </button>
                         </div>
 
-                        <div class="list-group-item p-4 d-flex justify-content-between align-items-center">
-                            <div>
-                                <span class="badge bg-secondary mb-2 bg-opacity-25 text-secondary border border-secondary border-opacity-25">
-                                    @Localizer["CompletedBadge"]
-                                </span>
-                                <h6 class="fw-bold mb-1 text-muted text-decoration-line-through">10 Aralık 2025 - 15 Aralık 2025</h6>
-                                <small class="text-muted">@Localizer["CompletedReason"]</small>
+                        <button class="btn btn-light border text-danger cancel-btn"
+                                type="button"
+                                title="@L("CancelTitle", "İptal Et")">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div class="availability-item">
+                        <div>
+                            <span class="status-badge completed">
+                                <i class="fas fa-check-circle"></i>
+                                @L("CompletedBadge", "Tamamlandı")
+                            </span>
+
+                            <h6 class="availability-date text-muted text-decoration-line-through">
+                                10 Aralık 2025 - 15 Aralık 2025
+                            </h6>
+
+                            <div class="availability-reason">
+                                @L("CompletedReason", "Yoğun akademik program")
                             </div>
-                            <i class="fas fa-check-circle text-success fs-4 opacity-50"></i>
                         </div>
+
+                        <i class="fas fa-check-circle text-success fs-4 opacity-50"></i>
                     </div>
                 </div>
             </div>

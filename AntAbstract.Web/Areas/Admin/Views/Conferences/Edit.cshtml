@@ -5,6 +5,15 @@
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     var slug = Context.GetRouteValue("slug")?.ToString() ?? "";
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
 }
 
 <div class="container py-4">
@@ -31,52 +40,161 @@
                           enctype="multipart/form-data">
 
                         @Html.AntiForgeryToken()
+
                         <input type="hidden" asp-for="Id" />
                         <input type="hidden" asp-for="TenantId" />
 
                         <h6 class="fw-bold text-dark mb-3">
-                            <i class="fas fa-info-circle text-info me-2"></i> @Localizer["BasicInfoHeader"]
+                            <i class="fas fa-info-circle text-info me-2"></i>
+                            @Localizer["BasicInfoHeader"]
                         </h6>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold small text-muted">@Localizer["TitleLabel"]</label>
+                            <label class="form-label fw-bold small text-muted">
+                                @Localizer["TitleLabel"]
+                            </label>
+
                             <input asp-for="Title" class="form-control form-control-lg" required />
                             <span asp-validation-for="Title" class="text-danger small"></span>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold small text-muted">@Localizer["StartDateLabel"]</label>
+                                <label class="form-label fw-bold small text-muted">
+                                    @Localizer["StartDateLabel"]
+                                </label>
+
                                 <input asp-for="StartDate" type="datetime-local" class="form-control" required />
                                 <span asp-validation-for="StartDate" class="text-danger small"></span>
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold small text-muted">@Localizer["EndDateLabel"]</label>
+                                <label class="form-label fw-bold small text-muted">
+                                    @Localizer["EndDateLabel"]
+                                </label>
+
                                 <input asp-for="EndDate" type="datetime-local" class="form-control" required />
                                 <span asp-validation-for="EndDate" class="text-danger small"></span>
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold small text-muted">@Localizer["VenueLabel"]</label>
+                            <label class="form-label fw-bold small text-muted">
+                                @Localizer["VenueLabel"]
+                            </label>
+
                             <input asp-for="Venue" class="form-control" />
                             <span asp-validation-for="Venue" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold small text-muted">@Localizer["DescriptionLabel"]</label>
+                            <label class="form-label fw-bold small text-muted">
+                                @Localizer["DescriptionLabel"]
+                            </label>
+
                             <textarea asp-for="Description" class="form-control" rows="4"></textarea>
                             <span asp-validation-for="Description" class="text-danger small"></span>
                         </div>
 
                         <hr class="my-5 border-secondary opacity-25" />
 
+                        <div class="p-4 border rounded-4 bg-light bg-opacity-75 mb-5">
+                            <div class="d-flex align-items-start mb-4">
+                                <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center me-3"
+                                     style="width: 46px; height: 46px; min-width: 46px;">
+                                    <i class="fas fa-certificate fs-5"></i>
+                                </div>
+
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-1">
+                                        @L("CertificateSignersHeader", "Sertifika İmza Bilgileri")
+                                    </h6>
+
+                                    <p class="text-muted small mb-0">
+                                        @L("CertificateSignersLead", "Hakem sertifikalarında görünecek imza sahiplerini bu alandan belirleyebilirsiniz. Boş bırakılırsa varsayılan unvanlar kullanılır.")
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="bg-white border rounded-4 p-4 h-100 shadow-sm">
+                                        <h6 class="fw-bold text-primary mb-3">
+                                            <i class="fas fa-signature me-2"></i>
+                                            @L("FirstSignerTitle", "Birinci İmza")
+                                        </h6>
+
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold small text-muted">
+                                                @L("FirstSignerNameLabel", "Ad Soyad")
+                                            </label>
+
+                                            <input asp-for="CertificateFirstSignerName"
+                                                   class="form-control"
+                                                   placeholder="@L("FirstSignerNamePlaceholder", "Örn: Prof. Dr. Mehmet Yılmaz")" />
+
+                                            <span asp-validation-for="CertificateFirstSignerName" class="text-danger small"></span>
+                                        </div>
+
+                                        <div class="mb-0">
+                                            <label class="form-label fw-bold small text-muted">
+                                                @L("FirstSignerTitleLabel", "Unvan / Görev")
+                                            </label>
+
+                                            <input asp-for="CertificateFirstSignerTitle"
+                                                   class="form-control"
+                                                   placeholder="@L("FirstSignerTitlePlaceholder", "Örn: Kongre Başkanı")" />
+
+                                            <span asp-validation-for="CertificateFirstSignerTitle" class="text-danger small"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="bg-white border rounded-4 p-4 h-100 shadow-sm">
+                                        <h6 class="fw-bold text-success mb-3">
+                                            <i class="fas fa-signature me-2"></i>
+                                            @L("SecondSignerTitle", "İkinci İmza")
+                                        </h6>
+
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold small text-muted">
+                                                @L("SecondSignerNameLabel", "Ad Soyad")
+                                            </label>
+
+                                            <input asp-for="CertificateSecondSignerName"
+                                                   class="form-control"
+                                                   placeholder="@L("SecondSignerNamePlaceholder", "Örn: Doç. Dr. Ayşe Demir")" />
+
+                                            <span asp-validation-for="CertificateSecondSignerName" class="text-danger small"></span>
+                                        </div>
+
+                                        <div class="mb-0">
+                                            <label class="form-label fw-bold small text-muted">
+                                                @L("SecondSignerTitleLabel", "Unvan / Görev")
+                                            </label>
+
+                                            <input asp-for="CertificateSecondSignerTitle"
+                                                   class="form-control"
+                                                   placeholder="@L("SecondSignerTitlePlaceholder", "Örn: Bilim Kurulu Başkanı")" />
+
+                                            <span asp-validation-for="CertificateSecondSignerTitle" class="text-danger small"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-5 border-secondary opacity-25" />
+
                         <h6 class="fw-bold text-dark mb-4">
-                            <i class="fas fa-file-word text-primary me-2"></i> @Localizer["DocumentsHeader"]
+                            <i class="fas fa-file-word text-primary me-2"></i>
+                            @Localizer["DocumentsHeader"]
                         </h6>
 
-                        <p class="text-muted small mb-4">@Localizer["DocumentsLead"]</p>
+                        <p class="text-muted small mb-4">
+                            @Localizer["DocumentsLead"]
+                        </p>
 
                         <div class="row g-4 mb-5">
 
@@ -84,14 +202,24 @@
                                 <div class="p-4 border rounded-4 bg-light text-center h-100 d-flex flex-column justify-content-between">
                                     <div>
                                         <i class="fas fa-book-open fa-2x text-secondary mb-3"></i>
-                                        <h6 class="fw-bold text-dark">@Localizer["WritingRulesTitle"]</h6>
-                                        <input type="file" name="WritingRulesFile" class="form-control form-control-sm mb-3 shadow-sm" accept=".doc,.docx,.pdf" />
+
+                                        <h6 class="fw-bold text-dark">
+                                            @Localizer["WritingRulesTitle"]
+                                        </h6>
+
+                                        <input type="file"
+                                               name="WritingRulesFile"
+                                               class="form-control form-control-sm mb-3 shadow-sm"
+                                               accept=".doc,.docx,.pdf" />
                                     </div>
 
                                     @if (!string.IsNullOrEmpty(Model.WritingRulesPath))
                                     {
-                                        <a href="@Model.WritingRulesPath" target="_blank" class="badge bg-success text-decoration-none p-2 w-100 shadow-sm">
-                                            <i class="fas fa-check-circle me-1"></i> @Localizer["UploadedView"]
+                                        <a href="@Model.WritingRulesPath"
+                                           target="_blank"
+                                           class="badge bg-success text-decoration-none p-2 w-100 shadow-sm">
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            @Localizer["UploadedView"]
                                         </a>
                                     }
                                     else
@@ -107,14 +235,24 @@
                                 <div class="p-4 border rounded-4 bg-light text-center h-100 d-flex flex-column justify-content-between">
                                     <div>
                                         <i class="fas fa-file-alt fa-2x text-secondary mb-3"></i>
-                                        <h6 class="fw-bold text-dark">@Localizer["AbstractTemplateTitle"]</h6>
-                                        <input type="file" name="AbstractTemplateFile" class="form-control form-control-sm mb-3 shadow-sm" accept=".doc,.docx,.pdf" />
+
+                                        <h6 class="fw-bold text-dark">
+                                            @Localizer["AbstractTemplateTitle"]
+                                        </h6>
+
+                                        <input type="file"
+                                               name="AbstractTemplateFile"
+                                               class="form-control form-control-sm mb-3 shadow-sm"
+                                               accept=".doc,.docx,.pdf" />
                                     </div>
 
                                     @if (!string.IsNullOrEmpty(Model.AbstractTemplatePath))
                                     {
-                                        <a href="@Model.AbstractTemplatePath" target="_blank" class="badge bg-success text-decoration-none p-2 w-100 shadow-sm">
-                                            <i class="fas fa-check-circle me-1"></i> @Localizer["UploadedView"]
+                                        <a href="@Model.AbstractTemplatePath"
+                                           target="_blank"
+                                           class="badge bg-success text-decoration-none p-2 w-100 shadow-sm">
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            @Localizer["UploadedView"]
                                         </a>
                                     }
                                     else
@@ -130,14 +268,24 @@
                                 <div class="p-4 border rounded-4 bg-light text-center h-100 d-flex flex-column justify-content-between">
                                     <div>
                                         <i class="fas fa-file-word fa-2x text-secondary mb-3"></i>
-                                        <h6 class="fw-bold text-dark">@Localizer["FullTextTemplateTitle"]</h6>
-                                        <input type="file" name="FullTextTemplateFile" class="form-control form-control-sm mb-3 shadow-sm" accept=".doc,.docx,.pdf" />
+
+                                        <h6 class="fw-bold text-dark">
+                                            @Localizer["FullTextTemplateTitle"]
+                                        </h6>
+
+                                        <input type="file"
+                                               name="FullTextTemplateFile"
+                                               class="form-control form-control-sm mb-3 shadow-sm"
+                                               accept=".doc,.docx,.pdf" />
                                     </div>
 
                                     @if (!string.IsNullOrEmpty(Model.FullTextTemplatePath))
                                     {
-                                        <a href="@Model.FullTextTemplatePath" target="_blank" class="badge bg-success text-decoration-none p-2 w-100 shadow-sm">
-                                            <i class="fas fa-check-circle me-1"></i> @Localizer["UploadedView"]
+                                        <a href="@Model.FullTextTemplatePath"
+                                           target="_blank"
+                                           class="badge bg-success text-decoration-none p-2 w-100 shadow-sm">
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            @Localizer["UploadedView"]
                                         </a>
                                     }
                                     else
@@ -161,7 +309,8 @@
                             </a>
 
                             <button type="submit" class="btn btn-primary btn-lg fw-bold px-5 rounded-pill shadow-sm">
-                                <i class="fas fa-save me-2"></i> @Localizer["SaveButton"]
+                                <i class="fas fa-save me-2"></i>
+                                @Localizer["SaveButton"]
                             </button>
                         </div>
                     </form>
