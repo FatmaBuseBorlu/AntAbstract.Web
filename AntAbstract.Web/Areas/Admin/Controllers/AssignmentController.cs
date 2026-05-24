@@ -192,6 +192,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .Include(s => s.Author)
                 .Include(s => s.Conference)
                     .ThenInclude(c => c.Tenant)
+                .Include(s => s.SubmissionAuthors)
                 .Include(s => s.ReviewAssignments)
                     .ThenInclude(ra => ra.Reviewer)
                 .AsQueryable();
@@ -283,6 +284,102 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             return reviewer.TenantId.Value == currentUser.TenantId.Value &&
                    conference.TenantId == currentUser.TenantId.Value;
+        }
+
+        private static List<string> ParseCsv(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return new List<string>();
+            }
+
+            return value
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static bool AnyConflictTermMatches(
+            IEnumerable<string> conflictTerms,
+            IEnumerable<string?> sourceValues)
+        {
+            var values = sourceValues
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x!.Trim())
+                .ToList();
+
+            foreach (var term in conflictTerms)
+            {
+                foreach (var value in values)
+                {
+                    if (term.Length < 3 || value.Length < 3)
+                    {
+                        continue;
+                    }
+
+                    if (value.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                        term.Contains(value, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool ReviewerIsUnavailable(AppUser reviewer)
+        {
+            if (!reviewer.ReviewerUnavailableStartDate.HasValue ||
+                !reviewer.ReviewerUnavailableEndDate.HasValue)
+            {
+                return false;
+            }
+
+            var today = DateTime.Today;
+
+            return reviewer.ReviewerUnavailableStartDate.Value.Date <= today &&
+                   reviewer.ReviewerUnavailableEndDate.Value.Date >= today;
+        }
+
+        private static bool ReviewerHasSubmissionConflict(
+            AppUser reviewer,
+            Submission submission)
+        {
+            var conflictInstitutions = ParseCsv(reviewer.ReviewerConflictInstitutions);
+            var conflictPeople = ParseCsv(reviewer.ReviewerConflictPeople);
+
+            if (!conflictInstitutions.Any() && !conflictPeople.Any())
+            {
+                return false;
+            }
+
+            var institutions = new List<string?>
+            {
+                submission.Author?.Institution
+            };
+
+            institutions.AddRange(submission.SubmissionAuthors
+                .Select(author => author.Institution));
+
+            if (AnyConflictTermMatches(conflictInstitutions, institutions))
+            {
+                return true;
+            }
+
+            var people = new List<string?>
+            {
+                $"{submission.Author?.FirstName} {submission.Author?.LastName}".Trim(),
+                submission.Author?.Email
+            };
+
+            people.AddRange(submission.SubmissionAuthors.Select(author =>
+                $"{author.FirstName} {author.LastName}".Trim()));
+
+            people.AddRange(submission.SubmissionAuthors.Select(author => author.Email));
+
+            return AnyConflictTermMatches(conflictPeople, people);
         }
 
         private void SetSelectedConferenceSession(Conference conference)
@@ -485,6 +582,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var accessibleReferees = await GetAccessibleRefereesAsync(conference);
 
+            accessibleReferees = accessibleReferees
+                .Where(reviewer =>
+                    !ReviewerIsUnavailable(reviewer) &&
+                    !ReviewerHasSubmissionConflict(reviewer, submission))
+                .ToList();
+
             var accessibleReviewerIds = accessibleReferees
                 .Select(r => r.Id)
                 .ToHashSet();
@@ -577,6 +680,24 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 TempData["ErrorMessage"] = T(
                     "Error_ReviewerUnauthorized",
                     "Bu hakemi bu kongreye atama yetkiniz yok.");
+
+                return Redirect(BuildAssignUrl(slug, submissionId, conference.Id));
+            }
+
+            if (ReviewerIsUnavailable(reviewer))
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_ReviewerUnavailable",
+                    "Bu hakem seçtiği tarih aralığında müsait değil.");
+
+                return Redirect(BuildAssignUrl(slug, submissionId, conference.Id));
+            }
+
+            if (ReviewerHasSubmissionConflict(reviewer, submission))
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_ReviewerHasConflict",
+                    "Bu hakemin bildiri yazarları veya kurumlarıyla çıkar çatışması kaydı bulunuyor.");
 
                 return Redirect(BuildAssignUrl(slug, submissionId, conference.Id));
             }

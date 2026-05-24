@@ -61,6 +61,10 @@
         ? "/Review/Guidelines"
         : $"{baseUrl}/Review/Guidelines";
 
+    var assignmentUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Admin/Assignment"
+        : $"{baseUrl}/Admin/Assignment";
+
     var certificatesIndexUrl = isReferee && !isAdmin
         ? "/Certificates"
         : $"{baseUrl}/Certificates";
@@ -531,11 +535,11 @@
                                 @if (isAdmin)
                                 {
                                     <div class="col-md-4">
-                                        <a href="@reviewIndexUrl" class="quick-btn" style="border-left: 4px solid #f59e0b;">
+                                        <a href="@assignmentUrl" class="quick-btn" style="border-left: 4px solid #f59e0b;">
                                             <i class="fas fa-gavel text-warning"></i>
-                                            <span class="fw-bold text-dark">@L("ReviewPanel", "Hakem Paneli")</span>
+                                            <span class="fw-bold text-dark">@L("ReviewAssignmentPanel", "Hakem Atamaları")</span>
                                             <small class="text-muted" style="font-size: 0.7rem;">
-                                                @L("RefereeEntry", "Değerlendirme ekranı")
+                                                @L("ReviewAssignmentEntry", "Değerlendirme sürecini yönetin")
                                             </small>
                                         </a>
                                     </div>

@@ -36,7 +36,7 @@ namespace AntAbstract.Infrastructure.Services.Email
 
         public Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
-            throw new NotImplementedException();
+            return SendAsync(email, subject, htmlMessage);
         }
     }
 }

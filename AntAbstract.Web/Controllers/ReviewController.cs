@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -319,7 +320,7 @@ namespace AntAbstract.Web.Controllers
 
         [HttpGet("/Review/DownloadCertificate/{id:int}")]
         [HttpGet("/{slug}/Review/DownloadCertificate/{id:int}")]
-        public async Task<IActionResult> DownloadCertificate(int id)
+        public async Task<IActionResult> DownloadCertificate(int id, string? slug = null)
         {
             if (id <= 0)
             {
@@ -344,32 +345,250 @@ namespace AntAbstract.Web.Controllers
                     "Sertifika bulunamadı."));
             }
 
-            ViewBag.ReviewerName = BuildReviewerName(
+            var reviewerName = BuildReviewerName(
                 user,
                 T("Reviewer", "Hakem"));
 
-            return View("Certificate", assignment);
+            var conferenceId = await _context.ReviewAssignments
+                .AsNoTracking()
+                .Where(ra =>
+                    ra.Id == id &&
+                    ra.ReviewerId == user.Id)
+                .Select(ra => ra.Submission.ConferenceId)
+                .FirstOrDefaultAsync();
+
+            if (conferenceId == Guid.Empty)
+            {
+                return NotFound(T(
+                    "CertificateNotFound",
+                    "Sertifika bulunamadı."));
+            }
+
+            await _certificateService.EnsureReviewerCertificateAsync(
+                conferenceId,
+                user.Id,
+                reviewerName,
+                user.Email ?? string.Empty);
+
+            var certificate = await _context.Certificates
+                .AsNoTracking()
+                .Where(c =>
+                    c.ConferenceId == conferenceId &&
+                    c.UserId == user.Id &&
+                    c.Type == CertificateType.Reviewer)
+                .OrderByDescending(c => c.GeneratedAt ?? c.EligibleAt)
+                .FirstOrDefaultAsync();
+
+            if (certificate == null)
+            {
+                TempData["ErrorMessage"] = T(
+                    "CertificateNotReady",
+                    "Hakemlik sertifikanız henüz oluşturulamadı.");
+
+                return string.IsNullOrWhiteSpace(slug)
+                    ? RedirectToAction(nameof(Index))
+                    : Redirect($"/{slug}/Review/Index");
+            }
+
+            var bytes = await _certificateService.GetCertificateFileAsync(
+                certificate.Id,
+                user.Id);
+
+            if (bytes == null || bytes.Length == 0)
+            {
+                await _certificateService.RegenerateCertificateFileAsync(certificate.Id);
+
+                bytes = await _certificateService.GetCertificateFileAsync(
+                    certificate.Id,
+                    user.Id);
+            }
+
+            if (bytes == null || bytes.Length == 0)
+            {
+                return NotFound(T(
+                    "CertificateNotFound",
+                    "Sertifika bulunamadı."));
+            }
+
+            Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers["Expires"] = "0";
+
+            return File(
+                bytes,
+                certificate.ContentType ?? "application/pdf",
+                certificate.FileName ?? $"reviewer_certificate_{certificate.Id}.pdf");
         }
 
         [HttpGet("/Review/Interests")]
         [HttpGet("/{slug}/Review/Interests")]
-        public IActionResult Interests()
+        public async Task<IActionResult> Interests()
         {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            ViewBag.ExpertiseAreas = ParseCsv(user.ExpertiseAreas);
+
             return View();
+        }
+
+        [HttpPost("/Review/Interests")]
+        [HttpPost("/{slug}/Review/Interests")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Interests(string? expertiseAreas, string? slug = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            user.ExpertiseAreas = NormalizeCsv(expertiseAreas, 500);
+
+            var result = await _userManager.UpdateAsync(user);
+
+            if (result.Succeeded)
+            {
+                TempData["SuccessMessage"] = T(
+                    "ExpertiseSaved",
+                    "Uzmanlık alanlarınız kaydedildi.");
+            }
+            else
+            {
+                TempData["ErrorMessage"] = T(
+                    "ExpertiseSaveFailed",
+                    "Uzmanlık alanları kaydedilirken bir hata oluştu.");
+            }
+
+            return string.IsNullOrWhiteSpace(slug)
+                ? RedirectToAction(nameof(Interests))
+                : Redirect($"/{slug}/Review/Interests");
         }
 
         [HttpGet("/Review/Availability")]
         [HttpGet("/{slug}/Review/Availability")]
-        public IActionResult Availability()
+        public async Task<IActionResult> Availability()
         {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            ViewBag.UnavailableStartDate = user.ReviewerUnavailableStartDate;
+            ViewBag.UnavailableEndDate = user.ReviewerUnavailableEndDate;
+            ViewBag.UnavailableReason = user.ReviewerUnavailableReason;
+
             return View();
+        }
+
+        [HttpPost("/Review/Availability")]
+        [HttpPost("/{slug}/Review/Availability")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Availability(
+            DateTime? unavailableStartDate,
+            DateTime? unavailableEndDate,
+            string? unavailableReason,
+            string? slug = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            var hasAnyAvailabilityValue =
+                unavailableStartDate.HasValue ||
+                unavailableEndDate.HasValue ||
+                !string.IsNullOrWhiteSpace(unavailableReason);
+
+            if (!hasAnyAvailabilityValue)
+            {
+                user.ReviewerUnavailableStartDate = null;
+                user.ReviewerUnavailableEndDate = null;
+                user.ReviewerUnavailableReason = null;
+            }
+            else if (!unavailableStartDate.HasValue || !unavailableEndDate.HasValue)
+            {
+                TempData["ErrorMessage"] = T(
+                    "AvailabilityDatesRequired",
+                    "Müsait olmadığınız aralık için başlangıç ve bitiş tarihi seçmelisiniz.");
+
+                return RedirectToReviewProfilePage(nameof(Availability), slug);
+            }
+            else if (unavailableEndDate.Value.Date < unavailableStartDate.Value.Date)
+            {
+                TempData["ErrorMessage"] = T(
+                    "AvailabilityInvalidDateRange",
+                    "Bitiş tarihi başlangıç tarihinden önce olamaz.");
+
+                return RedirectToReviewProfilePage(nameof(Availability), slug);
+            }
+            else
+            {
+                user.ReviewerUnavailableStartDate = unavailableStartDate.Value.Date;
+                user.ReviewerUnavailableEndDate = unavailableEndDate.Value.Date;
+                user.ReviewerUnavailableReason = NormalizeNullable(unavailableReason, 500);
+            }
+
+            var result = await _userManager.UpdateAsync(user);
+
+            TempData[result.Succeeded ? "SuccessMessage" : "ErrorMessage"] = result.Succeeded
+                ? T("AvailabilitySaved", "Müsaitlik durumunuz kaydedildi.")
+                : T("AvailabilitySaveFailed", "Müsaitlik durumu kaydedilirken bir hata oluştu.");
+
+            return RedirectToReviewProfilePage(nameof(Availability), slug);
         }
 
         [HttpGet("/Review/Conflicts")]
         [HttpGet("/{slug}/Review/Conflicts")]
-        public IActionResult Conflicts()
+        public async Task<IActionResult> Conflicts()
         {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            ViewBag.ConflictInstitutions = ParseCsv(user.ReviewerConflictInstitutions);
+            ViewBag.ConflictPeople = ParseCsv(user.ReviewerConflictPeople);
+
             return View();
+        }
+
+        [HttpPost("/Review/Conflicts")]
+        [HttpPost("/{slug}/Review/Conflicts")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Conflicts(
+            string? conflictInstitutions,
+            string? conflictPeople,
+            string? slug = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            user.ReviewerConflictInstitutions = NormalizeCsv(conflictInstitutions, 1000);
+            user.ReviewerConflictPeople = NormalizeCsv(conflictPeople, 1000);
+
+            var result = await _userManager.UpdateAsync(user);
+
+            TempData[result.Succeeded ? "SuccessMessage" : "ErrorMessage"] = result.Succeeded
+                ? T("ConflictsSaved", "Çıkar çatışması bilgileriniz kaydedildi.")
+                : T("ConflictsSaveFailed", "Çıkar çatışması bilgileri kaydedilirken bir hata oluştu.");
+
+            return RedirectToReviewProfilePage(nameof(Conflicts), slug);
         }
 
         [HttpGet("/Review/Guidelines")]
@@ -384,6 +603,44 @@ namespace AntAbstract.Web.Controllers
         public IActionResult MyCertificates()
         {
             return RedirectToAction("Index", "Certificates");
+        }
+
+        private static List<string> ParseCsv(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return new List<string>();
+            }
+
+            return value
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static string? NormalizeCsv(string? value, int maxLength)
+        {
+            var normalized = string.Join(", ", ParseCsv(value));
+
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return null;
+            }
+
+            return normalized.Length > maxLength
+                ? normalized.Substring(0, maxLength).Trim().TrimEnd(',')
+                : normalized;
+        }
+
+        private IActionResult RedirectToReviewProfilePage(string actionName, string? slug)
+        {
+            if (string.IsNullOrWhiteSpace(slug))
+            {
+                return RedirectToAction(actionName);
+            }
+
+            return Redirect($"/{slug}/Review/{actionName}");
         }
     }
 }
