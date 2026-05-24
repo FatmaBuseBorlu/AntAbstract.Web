@@ -12,6 +12,14 @@
             ? fallback
             : value;
     }
+
+    DateTime? unavailableStartDate = ViewBag.UnavailableStartDate as DateTime?;
+    DateTime? unavailableEndDate = ViewBag.UnavailableEndDate as DateTime?;
+    string unavailableReason = ViewBag.UnavailableReason as string ?? "";
+    var hasAvailabilityRecord = unavailableStartDate.HasValue && unavailableEndDate.HasValue;
+    var availabilityStart = unavailableStartDate.GetValueOrDefault();
+    var availabilityEnd = unavailableEndDate.GetValueOrDefault();
+    var isUpcomingOrActive = hasAvailabilityRecord && availabilityEnd.Date >= DateTime.Today;
 }
 
 <style>
@@ -220,6 +228,14 @@
         line-height: 1.6;
     }
 
+    .review-empty-card {
+        border: 1px dashed #cbd5e1;
+        border-radius: 22px;
+        padding: 2rem 1rem;
+        text-align: center;
+        background: #f8fafc;
+    }
+
     @@media (max-width: 768px) {
         .review-settings-page {
             padding: 1rem 1rem 3rem;
@@ -281,13 +297,34 @@
                 </div>
 
                 <div class="settings-card-body">
-                    <form>
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success rounded-3 border-0 shadow-sm mb-4">
+                            <i class="fas fa-check-circle me-2"></i>
+                            @TempData["SuccessMessage"]
+                        </div>
+                    }
+
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger rounded-3 border-0 shadow-sm mb-4">
+                            <i class="fas fa-times-circle me-2"></i>
+                            @TempData["ErrorMessage"]
+                        </div>
+                    }
+
+                    <form asp-action="Availability" method="post">
+                        @Html.AntiForgeryToken()
+
                         <div class="mb-3">
                             <label class="form-label-custom">
                                 @L("StartDateLabel", "Başlangıç Tarihi")
                             </label>
 
-                            <input type="date" class="form-control form-control-custom">
+                            <input type="date"
+                                   name="unavailableStartDate"
+                                   value="@(unavailableStartDate?.ToString("yyyy-MM-dd"))"
+                                   class="form-control form-control-custom">
                         </div>
 
                         <div class="mb-3">
@@ -295,7 +332,10 @@
                                 @L("EndDateLabel", "Bitiş Tarihi")
                             </label>
 
-                            <input type="date" class="form-control form-control-custom">
+                            <input type="date"
+                                   name="unavailableEndDate"
+                                   value="@(unavailableEndDate?.ToString("yyyy-MM-dd"))"
+                                   class="form-control form-control-custom">
                         </div>
 
                         <div class="mb-4">
@@ -304,19 +344,21 @@
                             </label>
 
                             <input type="text"
+                                   name="unavailableReason"
+                                   value="@unavailableReason"
                                    class="form-control form-control-custom"
                                    placeholder="@L("ReasonPlaceholder", "Örn: Akademik seyahat, yoğunluk, izin...")">
                         </div>
 
-                        <button class="btn btn-danger w-100 save-btn" type="button">
+                        <button class="btn btn-danger w-100 save-btn" type="submit">
                             <i class="fas fa-check-circle me-2"></i>
                             @L("SaveLeaveButton", "Müsait Değilim Olarak Kaydet")
                         </button>
                     </form>
 
                     <div class="coming-soon-box">
-                        <i class="fas fa-code-branch me-2 text-primary"></i>
-                        @L("StaticNotice", "Bu alan şimdilik arayüz olarak hazırlandı. Bir sonraki adımda müsaitlik bilgilerini veritabanına bağlayabiliriz.")
+                        <i class="fas fa-info-circle me-2 text-primary"></i>
+                        @L("ClearAvailabilityHint", "Kaydı temizlemek için tüm alanları boş bırakıp kaydedebilirsiniz.")
                     </div>
                 </div>
             </div>
@@ -336,48 +378,46 @@
                 </div>
 
                 <div>
-                    <div class="availability-item upcoming">
-                        <div>
-                            <span class="status-badge upcoming">
-                                <i class="fas fa-clock"></i>
-                                @L("UpcomingPlanBadge", "Yaklaşan")
-                            </span>
+                    @if (hasAvailabilityRecord)
+                    {
+                        <div class="availability-item @(isUpcomingOrActive ? "upcoming" : "")">
+                            <div>
+                                <span class="status-badge @(isUpcomingOrActive ? "upcoming" : "completed")">
+                                    <i class="fas @(isUpcomingOrActive ? "fa-clock" : "fa-check-circle")"></i>
+                                    @(isUpcomingOrActive
+                                        ? L("UpcomingPlanBadge", "Yaklaşan / Aktif")
+                                        : L("CompletedBadge", "Tamamlandı"))
+                                </span>
 
-                            <h6 class="availability-date">
-                                15 Ocak 2026 - 20 Ocak 2026
-                            </h6>
+                                <h6 class="availability-date @(isUpcomingOrActive ? "" : "text-muted text-decoration-line-through")">
+                                    @availabilityStart.ToString("dd.MM.yyyy") - @availabilityEnd.ToString("dd.MM.yyyy")
+                                </h6>
 
-                            <div class="availability-reason text-danger">
-                                <i class="fas fa-plane me-1"></i>
-                                @L("UpcomingPlanReason", "Akademik seyahat nedeniyle müsait değilim.")
+                                <div class="availability-reason @(isUpcomingOrActive ? "text-danger" : "")">
+                                    <i class="fas fa-calendar-times me-1"></i>
+                                    @(string.IsNullOrWhiteSpace(unavailableReason)
+                                        ? L("NoReasonText", "Açıklama belirtilmedi.")
+                                        : unavailableReason)
+                                </div>
+                            </div>
+
+                            <i class="fas @(isUpcomingOrActive ? "fa-calendar-times text-danger" : "fa-check-circle text-success") fs-4 opacity-50"></i>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="review-empty-card m-4">
+                            <div class="text-muted">
+                                <i class="fas fa-calendar-check fa-2x mb-3 opacity-50"></i>
+                                <div class="fw-bold">
+                                    @L("NoAvailabilityRecordTitle", "Kayıtlı müsait olmama aralığınız yok")
+                                </div>
+                                <div class="small mt-1">
+                                    @L("NoAvailabilityRecordText", "Yeni atamalarda uygun kabul edilirsiniz.")
+                                </div>
                             </div>
                         </div>
-
-                        <button class="btn btn-light border text-danger cancel-btn"
-                                type="button"
-                                title="@L("CancelTitle", "İptal Et")">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-
-                    <div class="availability-item">
-                        <div>
-                            <span class="status-badge completed">
-                                <i class="fas fa-check-circle"></i>
-                                @L("CompletedBadge", "Tamamlandı")
-                            </span>
-
-                            <h6 class="availability-date text-muted text-decoration-line-through">
-                                10 Aralık 2025 - 15 Aralık 2025
-                            </h6>
-
-                            <div class="availability-reason">
-                                @L("CompletedReason", "Yoğun akademik program")
-                            </div>
-                        </div>
-
-                        <i class="fas fa-check-circle text-success fs-4 opacity-50"></i>
-                    </div>
+                    }
                 </div>
             </div>
         </div>
