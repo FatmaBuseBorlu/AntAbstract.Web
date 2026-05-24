@@ -4,34 +4,309 @@
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
+
+    var isReviewed = Model.IsReviewed;
+    var currentScore = Model.Score ?? 85;
+    var currentRecommendation = Model.Recommendation ?? "";
+    var currentComment = Model.CommentsToAuthor ?? "";
 }
 
 <style>
+    .review-evaluate-page {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 1.25rem 1.5rem 4rem;
+    }
+
+    .evaluate-hero {
+        background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.20), transparent 34%), linear-gradient(135deg, #ffffff 0%, #fffaf2 100%);
+        border: 1px solid #f1e4cf;
+        border-radius: 26px;
+        padding: 1.45rem 1.55rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        box-shadow: 0 16px 38px rgba(15, 23, 42, 0.055);
+        margin-bottom: 1.5rem;
+    }
+
+    .evaluate-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 280px;
+        flex: 1;
+    }
+
+    .evaluate-hero-icon {
+        width: 66px;
+        height: 66px;
+        min-width: 66px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, #f59e0b, #f97316);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+        box-shadow: 0 16px 32px rgba(249, 115, 22, 0.22);
+    }
+
+    .evaluate-kicker {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .evaluate-title {
+        margin: 0 0 0.35rem;
+        color: #0f172a;
+        font-size: 1.75rem;
+        font-weight: 950;
+        letter-spacing: -0.045em;
+        line-height: 1.15;
+    }
+
+    .evaluate-description {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.95rem;
+        font-weight: 650;
+        line-height: 1.6;
+    }
+
+    .back-btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        border-radius: 999px;
+        font-weight: 900;
+        padding: 0 1rem;
+    }
+
     .submission-info-card {
-        background-color: #fff;
-        border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-        border: none;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.065);
         overflow: hidden;
     }
 
+    .submission-info-header {
+        padding: 1.45rem 1.55rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+    }
+
+    .submission-ref-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.65rem;
+        margin-bottom: 1rem;
+    }
+
+    .ref-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.45rem 0.75rem;
+        border-radius: 999px;
+        background: #f8fafc;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+        font-size: 0.75rem;
+        font-weight: 950;
+    }
+
+    .conference-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        max-width: 100%;
+        padding: 0.45rem 0.75rem;
+        border-radius: 999px;
+        background: rgba(13, 110, 253, 0.08);
+        color: #0d6efd;
+        border: 1px solid rgba(13, 110, 253, 0.14);
+        font-size: 0.75rem;
+        font-weight: 950;
+    }
+
+    .conference-badge span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .reviewed-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.45rem 0.75rem;
+        border-radius: 999px;
+        background: rgba(22, 163, 74, 0.10);
+        color: #15803d;
+        border: 1px solid rgba(22, 163, 74, 0.18);
+        font-size: 0.75rem;
+        font-weight: 950;
+    }
+
+    .pending-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.45rem 0.75rem;
+        border-radius: 999px;
+        background: rgba(245, 158, 11, 0.12);
+        color: #b45309;
+        border: 1px solid rgba(245, 158, 11, 0.18);
+        font-size: 0.75rem;
+        font-weight: 950;
+    }
+
+    .submission-title {
+        color: #0f172a;
+        font-weight: 950;
+        letter-spacing: -0.035em;
+        line-height: 1.35;
+        margin-bottom: 0;
+    }
+
+    .submission-info-body {
+        padding: 1.55rem;
+    }
+
+    .section-label {
+        color: #64748b;
+        font-size: 0.74rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 0.75rem;
+    }
+
     .abstract-box {
-        background-color: #f8fafc;
-        border-left: 4px solid #00aeef;
-        padding: 20px;
-        border-radius: 8px;
+        background: #f8fafc;
+        border-left: 5px solid #00aeef;
+        padding: 1.25rem;
+        border-radius: 16px;
         font-size: 0.95rem;
         color: #475569;
-        line-height: 1.7;
+        line-height: 1.75;
+        font-weight: 600;
+        white-space: pre-line;
+    }
+
+    .file-card {
+        height: 100%;
+        padding: 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .file-card:hover {
+        border-color: rgba(0, 174, 239, 0.35);
+        box-shadow: 0 12px 26px rgba(15, 23, 42, 0.075);
+        transform: translateY(-2px);
+        text-decoration: none;
+    }
+
+    .file-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 16px;
+        background: rgba(239, 68, 68, 0.10);
+        color: #ef4444;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    .file-name {
+        color: #0f172a;
+        font-weight: 900;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .file-helper {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 700;
     }
 
     .evaluation-card {
-        background-color: #fff;
-        border-radius: 16px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        border: 1px solid #f1f5f9;
+        background: #ffffff;
+        border-radius: 28px;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.07);
+        border: 1px solid #e2e8f0;
         position: sticky;
         top: 100px;
+        overflow: hidden;
+    }
+
+    .evaluation-header {
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        border-bottom: 1px solid #e2e8f0;
+        padding: 1.35rem 1.45rem;
+    }
+
+    .evaluation-title {
+        color: #0f172a;
+        font-weight: 950;
+        margin-bottom: 0.25rem;
+    }
+
+    .evaluation-subtitle {
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 650;
+        margin-bottom: 0;
+    }
+
+    .evaluation-body {
+        padding: 1.45rem;
+    }
+
+    .score-display {
+        font-size: 2.7rem;
+        font-weight: 950;
+        color: #00aeef;
+        text-align: center;
+        display: block;
+        margin-bottom: 0.75rem;
+        line-height: 1;
+    }
+
+    .range {
+        width: 100%;
+        cursor: pointer;
     }
 
     .decision-option {
@@ -40,20 +315,27 @@
 
     .decision-label {
         display: block;
-        padding: 15px;
+        padding: 0.95rem 0.75rem;
         border: 2px solid #e2e8f0;
-        border-radius: 12px;
+        border-radius: 18px;
         cursor: pointer;
         transition: all 0.2s;
         text-align: center;
-        font-weight: 600;
+        font-weight: 900;
         color: #64748b;
+        min-height: 92px;
     }
 
-        .decision-label:hover {
-            background-color: #f8fafc;
-            border-color: #cbd5e1;
-        }
+    .decision-label i {
+        display: block;
+        font-size: 1.45rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .decision-label:hover {
+        background-color: #f8fafc;
+        border-color: #cbd5e1;
+    }
 
     .decision-option:checked + .decision-label {
         background-color: #e0f2fe;
@@ -69,161 +351,403 @@
         box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2);
     }
 
-    .range-wrap {
-        position: relative;
-        margin: 0 auto 1rem;
+    .decision-option[value="MinorRevision"]:checked + .decision-label,
+    .decision-option[value="MajorRevision"]:checked + .decision-label {
+        background-color: rgba(245, 158, 11, 0.12);
+        border-color: #f59e0b;
+        color: #b45309;
+        box-shadow: 0 4px 10px rgba(245, 158, 11, 0.18);
     }
 
-    .range {
-        width: 100%;
-        cursor: pointer;
+    .review-textarea {
+        border-radius: 18px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        resize: vertical;
+        min-height: 160px;
+        font-weight: 600;
+        color: #334155;
     }
 
-    .score-display {
-        font-size: 2.5rem;
-        font-weight: 800;
-        color: #00aeef;
-        text-align: center;
-        display: block;
-        margin-bottom: 10px;
+    .review-textarea:focus {
+        border-color: #00aeef;
+        background: #ffffff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 174, 239, 0.10);
+    }
+
+    .readonly-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 1rem;
+        color: #475569;
+        font-weight: 650;
+        line-height: 1.7;
+        white-space: pre-line;
+    }
+
+    .submit-btn {
+        min-height: 52px;
+        border-radius: 999px;
+        font-weight: 950;
+        box-shadow: 0 14px 30px rgba(0, 174, 239, 0.25);
+    }
+
+    .info-alert {
+        border: none;
+        border-radius: 18px;
+        font-weight: 700;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
+    }
+
+    @@media (max-width: 991.98px) {
+        .evaluation-card {
+            position: static;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .review-evaluate-page {
+            padding: 1rem 1rem 3rem;
+        }
+
+        .evaluate-hero-left {
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 100%;
+        }
+
+        .evaluate-title {
+            font-size: 1.45rem;
+        }
     }
 </style>
 
-<div class="container-fluid py-4">
+<div class="review-evaluate-page">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h4 class="fw-bold text-dark mb-1">@Localizer["PageHeading"]</h4>
-            <p class="text-muted small mb-0">@Localizer["PageLead"]</p>
+    <div class="evaluate-hero">
+        <div class="evaluate-hero-left">
+            <div class="evaluate-hero-icon">
+                <i class="fas fa-clipboard-check"></i>
+            </div>
+
+            <div>
+                <div class="evaluate-kicker">
+                    @L("HeaderKicker", "Hakem Değerlendirme")
+                </div>
+
+                <h1 class="evaluate-title">
+                    @(isReviewed
+                        ? L("ReviewedPageHeading", "Değerlendirme Detayı")
+                        : L("PageHeading", "Değerlendirme Formu"))
+                </h1>
+
+                <p class="evaluate-description">
+                    @(isReviewed
+                        ? L("ReviewedPageLead", "Tamamladığınız değerlendirme raporunun detaylarını buradan görüntüleyebilirsiniz.")
+                        : L("PageLead", "Size atanmış bildiriyi inceleyerek değerlendirme puanınızı ve karar önerinizi gönderiniz."))
+                </p>
+            </div>
         </div>
-        <a href="@Url.Action("Index", "Review")" class="btn btn-outline-secondary rounded-pill px-4 btn-sm fw-bold">
-            <i class="fas fa-arrow-left me-2"></i> @Localizer["BackToListButton"]
+
+        <a href="@Url.Action("Index", "Review")" class="btn btn-outline-secondary back-btn">
+            <i class="fas fa-arrow-left"></i>
+            @L("BackToListButton", "Görevlerime Dön")
         </a>
     </div>
 
     <div class="row g-4">
 
         <div class="col-lg-7">
-            <div class="submission-info-card p-4 p-md-5 mb-4">
+            <div class="submission-info-card mb-4">
 
-                <span class="badge bg-light text-primary border mb-3">#REF-@Model.Id.ToString("D8")</span>
+                <div class="submission-info-header">
+                    <div class="submission-ref-row">
+                        <span class="ref-badge">
+                            <i class="fas fa-hashtag"></i>
+                            REF-@Model.Id.ToString("D8")
+                        </span>
 
-                <h4 class="fw-bold text-dark mb-4">@Model.SubmissionTitle</h4>
+                        <span class="conference-badge" title="@Model.ConferenceName">
+                            <i class="fas fa-calendar-check"></i>
+                            <span>@L("ConferenceLabel", "Kongre"): @Model.ConferenceName</span>
+                        </span>
 
-                <h6 class="text-uppercase text-muted small fw-bold mb-2 ls-1">@Localizer["AbstractTitle"]</h6>
-                <div class="abstract-box mb-5">
-                    @Model.SubmissionAbstract
-                </div>
-
-                <h6 class="text-uppercase text-muted small fw-bold mb-3 ls-1">@Localizer["AttachedFilesTitle"]</h6>
-                @if (Model.Files != null && Model.Files.Any())
-                {
-                    <div class="row g-3">
-                        @foreach (var file in Model.Files)
+                        @if (isReviewed)
                         {
-                            <div class="col-md-6">
-                                <a href="@file.FilePath" target="_blank" class="text-decoration-none">
-                                    <div class="p-3 border rounded-3 bg-light d-flex align-items-center hover-shadow transition">
-                                        <div class="bg-white p-2 rounded shadow-sm me-3 text-danger">
-                                            <i class="fas fa-file-pdf fa-lg"></i>
-                                        </div>
-                                        <div class="flex-grow-1 overflow-hidden">
-                                            <div class="fw-bold text-dark text-truncate">@file.FileName</div>
-                                            <small class="text-muted">@Localizer["ClickToViewText"]</small>
-                                        </div>
-                                        <i class="fas fa-download text-muted ms-2"></i>
-                                    </div>
-                                </a>
-                            </div>
+                            <span class="reviewed-badge">
+                                <i class="fas fa-check-circle"></i>
+                                @L("ReviewedBadge", "Tamamlandı")
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="pending-badge">
+                                <i class="fas fa-clock"></i>
+                                @L("PendingBadge", "Bekliyor")
+                            </span>
                         }
                     </div>
-                }
-                else
-                {
-                    <div class="alert alert-warning border-0 small bg-warning bg-opacity-10 text-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i> @Localizer["NoDownloadableFileText"]
+
+                    <h4 class="submission-title">
+                        @Model.SubmissionTitle
+                    </h4>
+                </div>
+
+                <div class="submission-info-body">
+                    <h6 class="section-label">
+                        @L("AbstractTitle", "Bildiri Özeti")
+                    </h6>
+
+                    <div class="abstract-box mb-5">
+                        @Model.SubmissionAbstract
                     </div>
-                }
+
+                    <h6 class="section-label">
+                        @L("AttachedFilesTitle", "Ek Dosyalar")
+                    </h6>
+
+                    @if (Model.Files != null && Model.Files.Any())
+                    {
+                        <div class="row g-3">
+                            @foreach (var file in Model.Files)
+                            {
+                                <div class="col-md-6">
+                                    <a href="@file.FilePath" target="_blank" class="file-card">
+                                        <div class="file-icon">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </div>
+
+                                        <div class="flex-grow-1 overflow-hidden">
+                                            <div class="file-name" title="@file.FileName">
+                                                @file.FileName
+                                            </div>
+
+                                            <div class="file-helper">
+                                                @L("ClickToViewText", "Görüntüle / indir")
+                                            </div>
+                                        </div>
+
+                                        <i class="fas fa-download text-muted ms-2"></i>
+                                    </a>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning info-alert bg-warning bg-opacity-10 text-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            @L("NoDownloadableFileText", "Bu bildiriye ait indirilebilir dosya bulunmuyor.")
+                        </div>
+                    }
+                </div>
             </div>
         </div>
 
         <div class="col-lg-5">
             <div class="evaluation-card">
-                <div class="card-header bg-white border-bottom p-4">
-                    <h5 class="fw-bold m-0"><i class="fas fa-gavel text-primary me-2"></i> @Localizer["ReviewerDecisionTitle"]</h5>
+                <div class="evaluation-header">
+                    <h5 class="evaluation-title">
+                        <i class="fas fa-gavel text-primary me-2"></i>
+                        @(isReviewed
+                            ? L("ReviewedDecisionTitle", "Gönderilen Değerlendirme")
+                            : L("ReviewerDecisionTitle", "Hakem Kararı"))
+                    </h5>
+
+                    <p class="evaluation-subtitle">
+                        @(isReviewed
+                            ? L("ReviewedDecisionSubtitle", "Bu değerlendirme tamamlanmıştır. Bilgiler yalnızca görüntülenir.")
+                            : L("ReviewerDecisionSubtitle", "Puanınızı, karar önerinizi ve yazara iletilecek notunuzu giriniz."))
+                    </p>
                 </div>
 
-                <div class="card-body p-4">
+                <div class="evaluation-body">
                     @if (TempData["ErrorMessage"] != null)
                     {
                         <div class="alert alert-danger rounded-3 border-0 shadow-sm mb-4">
-                            <i class="fas fa-times-circle me-2"></i> @TempData["ErrorMessage"]
+                            <i class="fas fa-times-circle me-2"></i>
+                            @TempData["ErrorMessage"]
                         </div>
                     }
 
-                    <form asp-action="Evaluate" method="post">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="ReviewAssignmentId" value="@Model.Id" />
+                    @if (isReviewed)
+                    {
+                        <div class="mb-4 text-center">
+                            <label class="form-label fw-bold text-muted small text-uppercase mb-3">
+                                @L("OverallScoreLabel", "Genel Puan")
+                            </label>
 
-                        <div class="mb-5 text-center">
-                            <label class="form-label fw-bold text-muted small text-uppercase mb-3">@Localizer["OverallScoreLabel"]</label>
-
-                            <span id="scoreValue" class="score-display">85</span>
-
-                            <input type="range" class="form-range range" name="Score" id="scoreRange" min="0" max="100" value="85" oninput="updateScore(this.value)">
-                            <div class="d-flex justify-content-between text-muted small px-1">
-                                <span>0 (@Localizer["WeakText"])</span>
-                                <span>100 (@Localizer["ExcellentText"])</span>
-                            </div>
-                        </div>
-
-                        <div class="mb-5">
-                            <label class="form-label fw-bold text-muted small text-uppercase mb-3">@Localizer["DecisionLabel"]</label>
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <input type="radio" class="decision-option" name="Recommendation" id="rec_accept" value="Accept" required>
-                                    <label class="decision-label" for="rec_accept">
-                                        <i class="fas fa-check-circle d-block fs-4 mb-2"></i> @Localizer["AcceptLabel"]
-                                    </label>
-                                </div>
-                                <div class="col-6">
-                                    <input type="radio" class="decision-option" name="Recommendation" id="rec_reject" value="Reject">
-                                    <label class="decision-label" for="rec_reject">
-                                        <i class="fas fa-times-circle d-block fs-4 mb-2"></i> @Localizer["RejectLabel"]
-                                    </label>
-                                </div>
-                                <div class="col-6">
-                                    <input type="radio" class="decision-option" name="Recommendation" id="rec_minor" value="MinorRevision">
-                                    <label class="decision-label" for="rec_minor">
-                                        <i class="fas fa-edit d-block fs-4 mb-2"></i> @Localizer["MinorRevisionLabel"]
-                                    </label>
-                                </div>
-                                <div class="col-6">
-                                    <input type="radio" class="decision-option" name="Recommendation" id="rec_major" value="MajorRevision">
-                                    <label class="decision-label" for="rec_major">
-                                        <i class="fas fa-sync-alt d-block fs-4 mb-2"></i> @Localizer["MajorRevisionLabel"]
-                                    </label>
-                                </div>
-                            </div>
+                            <span class="score-display">@currentScore</span>
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold text-muted small text-uppercase">@Localizer["NotesToAuthorLabel"]</label>
-                            <textarea name="CommentsToAuthor"
-                                      class="form-control bg-light"
-                                      rows="6"
-                                      placeholder="@Localizer["NotesPlaceholder"]"
-                                      style="border-radius: 12px; border: 1px solid #e2e8f0; resize: none;"
-                                      required></textarea>
+                            <label class="form-label fw-bold text-muted small text-uppercase mb-2">
+                                @L("DecisionLabel", "Karar Önerisi")
+                            </label>
+
+                            <div class="readonly-box">
+                                @switch (currentRecommendation)
+                                {
+                                    case "Accept":
+                                        <span>
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            @L("AcceptLabel", "Kabul")
+                                        </span>
+                                        break;
+
+                                    case "Reject":
+                                        <span>
+                                            <i class="fas fa-times-circle text-danger me-2"></i>
+                                            @L("RejectLabel", "Ret")
+                                        </span>
+                                        break;
+
+                                    case "MinorRevision":
+                                        <span>
+                                            <i class="fas fa-edit text-warning me-2"></i>
+                                            @L("MinorRevisionLabel", "Küçük Revizyon")
+                                        </span>
+                                        break;
+
+                                    case "MajorRevision":
+                                        <span>
+                                            <i class="fas fa-sync-alt text-warning me-2"></i>
+                                            @L("MajorRevisionLabel", "Büyük Revizyon")
+                                        </span>
+                                        break;
+
+                                    default:
+                                        <span>@(string.IsNullOrWhiteSpace(currentRecommendation) ? "-" : currentRecommendation)</span>
+                                        break;
+                                }
+                            </div>
                         </div>
 
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary py-3 fw-bold rounded-pill shadow-lg" onclick="return confirmEvaluation();">
-                                <i class="fas fa-paper-plane me-2"></i> @Localizer["CompleteReportButton"]
-                            </button>
-                        </div>
+                        <div class="mb-0">
+                            <label class="form-label fw-bold text-muted small text-uppercase mb-2">
+                                @L("NotesToAuthorLabel", "Yazara Not")
+                            </label>
 
-                    </form>
+                            <div class="readonly-box">
+                                @(string.IsNullOrWhiteSpace(currentComment)
+                                    ? L("NoCommentText", "Yorum bulunmuyor.")
+                                    : currentComment)
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <form asp-action="Evaluate" method="post">
+                            @Html.AntiForgeryToken()
+
+                            <input type="hidden" name="ReviewAssignmentId" value="@Model.Id" />
+
+                            <div class="mb-5 text-center">
+                                <label class="form-label fw-bold text-muted small text-uppercase mb-3">
+                                    @L("OverallScoreLabel", "Genel Puan")
+                                </label>
+
+                                <span id="scoreValue" class="score-display">@currentScore</span>
+
+                                <input type="range"
+                                       class="form-range range"
+                                       name="Score"
+                                       id="scoreRange"
+                                       min="0"
+                                       max="100"
+                                       value="@currentScore"
+                                       oninput="updateScore(this.value)">
+
+                                <div class="d-flex justify-content-between text-muted small px-1">
+                                    <span>0 (@L("WeakText", "Zayıf"))</span>
+                                    <span>100 (@L("ExcellentText", "Mükemmel"))</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-5">
+                                <label class="form-label fw-bold text-muted small text-uppercase mb-3">
+                                    @L("DecisionLabel", "Karar Önerisi")
+                                </label>
+
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <input type="radio"
+                                               class="decision-option"
+                                               name="Recommendation"
+                                               id="rec_accept"
+                                               value="Accept"
+                                               required>
+
+                                        <label class="decision-label" for="rec_accept">
+                                            <i class="fas fa-check-circle"></i>
+                                            @L("AcceptLabel", "Kabul")
+                                        </label>
+                                    </div>
+
+                                    <div class="col-6">
+                                        <input type="radio"
+                                               class="decision-option"
+                                               name="Recommendation"
+                                               id="rec_reject"
+                                               value="Reject">
+
+                                        <label class="decision-label" for="rec_reject">
+                                            <i class="fas fa-times-circle"></i>
+                                            @L("RejectLabel", "Ret")
+                                        </label>
+                                    </div>
+
+                                    <div class="col-6">
+                                        <input type="radio"
+                                               class="decision-option"
+                                               name="Recommendation"
+                                               id="rec_minor"
+                                               value="MinorRevision">
+
+                                        <label class="decision-label" for="rec_minor">
+                                            <i class="fas fa-edit"></i>
+                                            @L("MinorRevisionLabel", "Küçük Revizyon")
+                                        </label>
+                                    </div>
+
+                                    <div class="col-6">
+                                        <input type="radio"
+                                               class="decision-option"
+                                               name="Recommendation"
+                                               id="rec_major"
+                                               value="MajorRevision">
+
+                                        <label class="decision-label" for="rec_major">
+                                            <i class="fas fa-sync-alt"></i>
+                                            @L("MajorRevisionLabel", "Büyük Revizyon")
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold text-muted small text-uppercase">
+                                    @L("NotesToAuthorLabel", "Yazara Not")
+                                </label>
+
+                                <textarea name="CommentsToAuthor"
+                                          class="form-control review-textarea"
+                                          rows="6"
+                                          placeholder="@L("NotesPlaceholder", "Yazara iletilecek değerlendirme notunuzu yazınız.")"
+                                          required>@currentComment</textarea>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit"
+                                        class="btn btn-primary py-3 submit-btn"
+                                        onclick="return confirmEvaluation();">
+                                    <i class="fas fa-paper-plane me-2"></i>
+                                    @L("CompleteReportButton", "Değerlendirmeyi Gönder")
+                                </button>
+                            </div>
+                        </form>
+                    }
                 </div>
             </div>
         </div>
@@ -232,18 +756,31 @@
 </div>
 
 <script>
-    const confirmSubmitMessage = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["ConfirmSubmitMessage"].Value));
+    const confirmSubmitMessage = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("ConfirmSubmitMessage", "Değerlendirmeyi göndermek istediğinize emin misiniz? Bu işlemden sonra rapor tamamlandı olarak işaretlenir.")));
 
     function updateScore(val) {
-        document.getElementById('scoreValue').innerText = val;
+        const scoreDisplay = document.getElementById('scoreValue');
 
-        var scoreDisplay = document.getElementById('scoreValue');
-        if (val < 50) scoreDisplay.style.color = '#ef4444';
-        else if (val < 70) scoreDisplay.style.color = '#f59e0b';
-        else scoreDisplay.style.color = '#00aeef';
+        if (!scoreDisplay) {
+            return;
+        }
+
+        scoreDisplay.innerText = val;
+
+        if (val < 50) {
+            scoreDisplay.style.color = '#ef4444';
+        } else if (val < 70) {
+            scoreDisplay.style.color = '#f59e0b';
+        } else {
+            scoreDisplay.style.color = '#00aeef';
+        }
     }
 
     function confirmEvaluation() {
         return confirm(confirmSubmitMessage);
     }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        updateScore(@currentScore);
+    });
 </script>

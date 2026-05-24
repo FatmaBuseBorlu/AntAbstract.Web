@@ -39,22 +39,41 @@
 
     var hasSelectedConference = selectedConferenceId.HasValue;
 
-    string mainColumnClass = isAdmin ? "col-12" : "col-xl-8 col-lg-8";
-    string sideColumnClass = isAdmin ? "d-none" : "col-xl-4 col-lg-4";
+    string mainColumnClass = (isAdmin || isReferee) ? "col-12" : "col-xl-8 col-lg-8";
+    string sideColumnClass = (isAdmin || isReferee) ? "d-none" : "col-xl-4 col-lg-4";
 
     var slug = Context.GetRouteValue("slug")?.ToString() ?? Tc.Current?.Slug ?? "";
     var baseUrl = string.IsNullOrWhiteSpace(slug) ? "" : $"/{slug}";
 
-    var dashboardUrl = $"{baseUrl}/Dashboard";
+    var dashboardUrl = isReferee && !isAdmin
+        ? "/Dashboard"
+        : $"{baseUrl}/Dashboard";
+
     var dashboardMyConferencesUrl = $"{baseUrl}/Dashboard/MyConferences";
     var submissionCreateUrl = $"{baseUrl}/Submission/Create";
     var submissionIndexUrl = $"{baseUrl}/Submission/Index";
-    var reviewIndexUrl = $"{baseUrl}/Review/Index";
-    var messageIndexUrl = $"{baseUrl}/Message/Index";
 
-    var conferenceDisplayName = string.IsNullOrWhiteSpace(Model.ConferenceName)
-        ? L("GeneralManagementPanel", "Genel Yönetim Paneli")
-        : Model.ConferenceName;
+    var reviewIndexUrl = isReferee && !isAdmin
+        ? "/Review/Index"
+        : $"{baseUrl}/Review/Index";
+
+    var reviewGuidelinesUrl = isReferee && !isAdmin
+        ? "/Review/Guidelines"
+        : $"{baseUrl}/Review/Guidelines";
+
+    var certificatesIndexUrl = isReferee && !isAdmin
+        ? "/Certificates"
+        : $"{baseUrl}/Certificates";
+
+    var messageIndexUrl = isReferee && !isAdmin
+        ? "/Message/Index"
+        : $"{baseUrl}/Message/Index";
+
+    var conferenceDisplayName = isReferee && !isAdmin && !hasSelectedConference
+        ? L("RefereeDashboardTitle", "Hakem Paneli")
+        : string.IsNullOrWhiteSpace(Model.ConferenceName)
+            ? L("GeneralManagementPanel", "Genel Yönetim Paneli")
+            : Model.ConferenceName;
 }
 
 <style>
@@ -226,6 +245,27 @@
     .active .date-month {
         background: #00aeef;
     }
+
+    .referee-empty-card {
+        background: #ffffff;
+        border: 1px dashed #cbd5e1;
+        border-radius: 20px;
+        padding: 2.5rem 1.5rem;
+        text-align: center;
+    }
+
+    .referee-empty-icon {
+        width: 82px;
+        height: 82px;
+        border-radius: 50%;
+        background: #f8fafc;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        color: #94a3b8;
+        font-size: 2.2rem;
+    }
 </style>
 
 <div class="container-fluid py-2">
@@ -236,7 +276,10 @@
                 <div class="d-flex align-items-center mb-2">
                     <span class="badge bg-white text-primary bg-opacity-25 border border-white border-opacity-25 rounded-pill me-2 px-3">
                         <i class="fas fa-satellite-dish me-1"></i>
-                        @L("WorkspaceBadge", "Çalışma Alanı")
+
+                        @(isReferee && !isAdmin
+                            ? L("RefereeWorkspaceBadge", "Hakem Çalışma Alanı")
+                            : L("WorkspaceBadge", "Çalışma Alanı"))
                     </span>
                 </div>
 
@@ -250,7 +293,7 @@
         </div>
     </div>
 
-    @if (!hasSelectedConference && !isAdmin)
+    @if (!hasSelectedConference && !isAdmin && !isReferee)
     {
         <div class="alert alert-warning border-0 shadow-sm rounded-4 mb-4">
             <div class="d-flex align-items-center">
@@ -395,7 +438,7 @@
 
                 <div class="card-body p-4 text-center">
 
-                    @if (!hasSelectedConference && !isAdmin)
+                    @if (!hasSelectedConference && !isAdmin && !isReferee)
                     {
                         <div class="py-4">
                             <div class="mb-3">
@@ -441,42 +484,87 @@
                     {
                         <div class="row justify-content-center g-3">
 
-                            @if (isReferee || isAdmin)
+                            @if (isReferee && !isAdmin)
                             {
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <a href="@reviewIndexUrl" class="quick-btn" style="border-left: 4px solid #f59e0b;">
                                         <i class="fas fa-gavel text-warning"></i>
-                                        <span class="fw-bold text-dark">@L("ReviewPanel", "Hakem Paneli")</span>
+                                        <span class="fw-bold text-dark">@L("ReviewPanel", "Görevlerim")</span>
                                         <small class="text-muted" style="font-size: 0.7rem;">
-                                            @L("RefereeEntry", "Değerlendirme ekranı")
+                                            @L("RefereeEntry", "Atanmış bildiriler")
+                                        </small>
+                                    </a>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <a href="@certificatesIndexUrl" class="quick-btn" style="border-left: 4px solid #22c55e;">
+                                        <i class="fas fa-certificate text-success"></i>
+                                        <span class="fw-bold text-dark">@L("Certificates", "Sertifikalarım")</span>
+                                        <small class="text-muted" style="font-size: 0.7rem;">
+                                            @L("CertificatesDescription", "Belgelerinizi indirin")
+                                        </small>
+                                    </a>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <a href="@reviewGuidelinesUrl" class="quick-btn" style="border-left: 4px solid #0d6efd;">
+                                        <i class="fas fa-book-open text-primary"></i>
+                                        <span class="fw-bold text-dark">@L("RefereeGuide", "Hakem Rehberi")</span>
+                                        <small class="text-muted" style="font-size: 0.7rem;">
+                                            @L("RefereeGuideDescription", "Değerlendirme kuralları")
+                                        </small>
+                                    </a>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <a href="@messageIndexUrl" class="quick-btn" style="border-left: 4px solid #64748b;">
+                                        <i class="fas fa-envelope text-secondary"></i>
+                                        <span class="fw-bold text-dark">@L("Messages", "Mesajlar")</span>
+                                        <small class="text-muted" style="font-size: 0.7rem;">
+                                            @L("MessagesDescription", "İletişim kutusu")
                                         </small>
                                     </a>
                                 </div>
                             }
-
-                            @if (isAuthor || isAdmin)
+                            else
                             {
-                                <div class="col-md-4">
-                                    <a href="@submissionCreateUrl" class="quick-btn">
-                                        <i class="fas fa-plus-circle text-primary"></i>
-                                        <span class="fw-bold">@L("AddNewSubmission", "Yeni Bildiri Ekle")</span>
-                                    </a>
-                                </div>
+                                @if (isAdmin)
+                                {
+                                    <div class="col-md-4">
+                                        <a href="@reviewIndexUrl" class="quick-btn" style="border-left: 4px solid #f59e0b;">
+                                            <i class="fas fa-gavel text-warning"></i>
+                                            <span class="fw-bold text-dark">@L("ReviewPanel", "Hakem Paneli")</span>
+                                            <small class="text-muted" style="font-size: 0.7rem;">
+                                                @L("RefereeEntry", "Değerlendirme ekranı")
+                                            </small>
+                                        </a>
+                                    </div>
+                                }
+
+                                @if (isAuthor || isAdmin)
+                                {
+                                    <div class="col-md-4">
+                                        <a href="@submissionCreateUrl" class="quick-btn">
+                                            <i class="fas fa-plus-circle text-primary"></i>
+                                            <span class="fw-bold">@L("AddNewSubmission", "Yeni Bildiri Ekle")</span>
+                                        </a>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <a href="@submissionIndexUrl" class="quick-btn">
+                                            <i class="fas fa-list text-dark"></i>
+                                            <span class="fw-bold">@L("ViewMySubmissions", "Bildirilerimi Gör")</span>
+                                        </a>
+                                    </div>
+                                }
 
                                 <div class="col-md-4">
-                                    <a href="@submissionIndexUrl" class="quick-btn">
-                                        <i class="fas fa-list text-dark"></i>
-                                        <span class="fw-bold">@L("ViewMySubmissions", "Bildirilerimi Gör")</span>
+                                    <a href="@messageIndexUrl" class="quick-btn">
+                                        <i class="fas fa-envelope text-secondary"></i>
+                                        <span class="fw-bold">@L("Messages", "Mesajlar")</span>
                                     </a>
                                 </div>
                             }
-
-                            <div class="col-md-4">
-                                <a href="@messageIndexUrl" class="quick-btn">
-                                    <i class="fas fa-envelope text-secondary"></i>
-                                    <span class="fw-bold">@L("Messages", "Mesajlar")</span>
-                                </a>
-                            </div>
                         </div>
                     }
                 </div>
@@ -499,49 +587,45 @@
                             </div>
 
                             <div class="card-body p-4">
-                                <div class="d-flex align-items-center mb-3 pb-3 border-bottom border-light">
-                                    <div class="bg-danger bg-opacity-10 text-danger rounded-3 p-2 me-3 text-center" style="width: 50px;">
-                                        <span class="d-block fw-bold small">@L("JanShort", "Oca")</span>
-                                        <span class="d-block fw-bold fs-5">15</span>
+                                @if (pendingReviews > 0)
+                                {
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-danger bg-opacity-10 text-danger rounded-3 p-2 me-3 text-center" style="width: 50px;">
+                                            <i class="fas fa-gavel"></i>
+                                        </div>
+
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1 fw-bold text-dark">
+                                                @L("PendingReviewNoticeTitle", "Bekleyen değerlendirmeleriniz var")
+                                            </h6>
+
+                                            <small class="text-danger fw-bold">
+                                                <i class="fas fa-exclamation-circle me-1"></i>
+                                                @pendingReviews @L("PendingReviewNoticeText", "değerlendirme bekliyor")
+                                            </small>
+                                        </div>
+
+                                        <a href="@reviewIndexUrl" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-3">
+                                            @L("Review", "İncele")
+                                        </a>
                                     </div>
+                                }
+                                else
+                                {
+                                    <div class="referee-empty-card">
+                                        <div class="referee-empty-icon">
+                                            <i class="fas fa-clipboard-check"></i>
+                                        </div>
 
-                                    <div class="flex-grow-1">
-                                        <h6 class="mb-1 text-truncate fw-bold text-dark" style="max-width: 300px;">
-                                            @L("SampleReviewTitle1", "Değerlendirme bekleyen bildiri")
-                                        </h6>
+                                        <h5 class="fw-bold text-dark mb-2">
+                                            @L("NoPendingReviewDashboardTitle", "Bekleyen değerlendirme bulunmuyor")
+                                        </h5>
 
-                                        <small class="text-danger fw-bold">
-                                            <i class="fas fa-exclamation-circle me-1"></i>
-                                            @L("Last2Days", "Son 2 gün")
-                                        </small>
+                                        <p class="text-muted small mb-0">
+                                            @L("NoPendingReviewDashboardDescription", "Size yeni bir değerlendirme görevi atandığında bu alanda görüntülenecektir.")
+                                        </p>
                                     </div>
-
-                                    <a href="@reviewIndexUrl" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-3">
-                                        @L("Review", "İncele")
-                                    </a>
-                                </div>
-
-                                <div class="d-flex align-items-center">
-                                    <div class="bg-warning bg-opacity-10 text-warning rounded-3 p-2 me-3 text-center" style="width: 50px;">
-                                        <span class="d-block fw-bold small">@L("JanShort", "Oca")</span>
-                                        <span class="d-block fw-bold fs-5">20</span>
-                                    </div>
-
-                                    <div class="flex-grow-1">
-                                        <h6 class="mb-1 text-truncate fw-bold text-dark" style="max-width: 300px;">
-                                            @L("SampleReviewTitle2", "Yaklaşan değerlendirme")
-                                        </h6>
-
-                                        <small class="text-muted">
-                                            <i class="far fa-clock me-1"></i>
-                                            @L("OneWeekLeft", "1 hafta kaldı")
-                                        </small>
-                                    </div>
-
-                                    <a href="@reviewIndexUrl" class="btn btn-sm btn-light text-muted border rounded-pill px-3">
-                                        @L("Detail", "Detay")
-                                    </a>
-                                </div>
+                                }
                             </div>
                         </div>
                     </div>
@@ -571,8 +655,8 @@
                             var isActive = selectedConferenceId.HasValue && selectedConferenceId.Value == conf.Id;
 
                             var selectReturnUrl = string.IsNullOrWhiteSpace(tenantSlug)
-                            ? "/Dashboard"
-                            : $"/{tenantSlug}/Dashboard";
+                                ? "/Dashboard"
+                                : $"/{tenantSlug}/Dashboard";
 
                             <form asp-controller="Dashboard"
                                   asp-action="SelectConferencePost"

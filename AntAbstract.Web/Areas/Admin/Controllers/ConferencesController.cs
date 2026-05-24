@@ -85,6 +85,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return false;
             }
 
+            if (User.IsInRole("SuperAdmin"))
+            {
+                return true;
+            }
+
             var tenantId = await GetCurrentAdminTenantIdAsync();
 
             if (!tenantId.HasValue)
@@ -97,6 +102,22 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private async Task FillTenantViewBagAsync(Guid? selectedTenantId = null)
         {
+            if (User.IsInRole("SuperAdmin"))
+            {
+                var allTenants = await _context.Tenants
+                    .AsNoTracking()
+                    .OrderBy(x => x.Name)
+                    .ToListAsync();
+
+                ViewBag.Tenants = new SelectList(
+                    allTenants,
+                    "Id",
+                    "Name",
+                    selectedTenantId);
+
+                return;
+            }
+
             var tenantId = await GetCurrentAdminTenantIdAsync();
 
             if (!tenantId.HasValue)
@@ -245,6 +266,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpGet("/Admin/Conferences")]
         public async Task<IActionResult> RootIndex()
         {
+            if (User.IsInRole("SuperAdmin"))
+            {
+                return Redirect("/Admin/AllConferences");
+            }
+
             var tenantId = await GetCurrentAdminTenantIdAsync();
 
             if (!tenantId.HasValue)
@@ -278,7 +304,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                return Redirect("/Dashboard/MyConferences");
+                return Redirect(User.IsInRole("SuperAdmin")
+                    ? "/Admin/AllConferences"
+                    : "/Dashboard/MyConferences");
             }
 
             if (!await CanAccessCurrentTenantAsync())
@@ -287,7 +315,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_UnauthorizedTenant",
                     "Bu kongreleri görüntüleme yetkiniz yok.");
 
-                return Redirect("/Dashboard/MyConferences");
+                return Redirect(User.IsInRole("SuperAdmin")
+                    ? "/Admin/AllConferences"
+                    : "/Dashboard/MyConferences");
             }
 
             var conferences = await _context.Conferences
@@ -296,8 +326,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
-            ViewBag.IsSuperAdmin = false;
-            ViewBag.IsAdmin = true;
+            ViewBag.IsSuperAdmin = User.IsInRole("SuperAdmin");
+            ViewBag.IsAdmin = User.IsInRole("Admin");
 
             return View(conferences);
         }
@@ -308,7 +338,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                return Redirect("/Dashboard/MyConferences");
+                return Redirect(User.IsInRole("SuperAdmin")
+                    ? "/Admin/AllConferences"
+                    : "/Dashboard/MyConferences");
             }
 
             if (!await CanAccessCurrentTenantAsync())
@@ -317,7 +349,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_CreatePermission",
                     "Bu kurum için kongre oluşturma yetkiniz yok.");
 
-                return Redirect("/Dashboard/MyConferences");
+                return Redirect(User.IsInRole("SuperAdmin")
+                    ? "/Admin/AllConferences"
+                    : "/Dashboard/MyConferences");
             }
 
             await FillTenantViewBagAsync(_tenantContext.Current.Id);
@@ -337,7 +371,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                return Redirect("/Dashboard/MyConferences");
+                return Redirect(User.IsInRole("SuperAdmin")
+                    ? "/Admin/AllConferences"
+                    : "/Dashboard/MyConferences");
             }
 
             if (!await CanAccessCurrentTenantAsync())
@@ -346,7 +382,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_CreatePermission",
                     "Bu kurum için kongre oluşturma yetkiniz yok.");
 
-                return Redirect("/Dashboard/MyConferences");
+                return Redirect(User.IsInRole("SuperAdmin")
+                    ? "/Admin/AllConferences"
+                    : "/Dashboard/MyConferences");
             }
 
             RemoveConferenceNavigationModelState();
@@ -390,7 +428,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                return Redirect("/Dashboard/MyConferences");
+                return Redirect(User.IsInRole("SuperAdmin")
+                    ? "/Admin/AllConferences"
+                    : "/Dashboard/MyConferences");
             }
 
             if (!await CanAccessCurrentTenantAsync())
@@ -399,7 +439,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_UnauthorizedTenant",
                     "Bu kongreyi düzenleme yetkiniz yok.");
 
-                return Redirect("/Dashboard/MyConferences");
+                return Redirect(User.IsInRole("SuperAdmin")
+                    ? "/Admin/AllConferences"
+                    : "/Dashboard/MyConferences");
             }
 
             var conference = await _context.Conferences
@@ -431,7 +473,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                return Redirect("/Dashboard/MyConferences");
+                return Redirect(User.IsInRole("SuperAdmin")
+                    ? "/Admin/AllConferences"
+                    : "/Dashboard/MyConferences");
             }
 
             if (!await CanAccessCurrentTenantAsync())
@@ -440,7 +484,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_UnauthorizedTenant",
                     "Bu kongreyi güncelleme yetkiniz yok.");
 
-                return Redirect("/Dashboard/MyConferences");
+                return Redirect(User.IsInRole("SuperAdmin")
+                    ? "/Admin/AllConferences"
+                    : "/Dashboard/MyConferences");
             }
 
             if (id != conference.Id)
@@ -505,6 +551,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             existingConference.Venue = conference.Venue;
             existingConference.TenantId = _tenantContext.Current.Id;
 
+            existingConference.CertificateFirstSignerName = conference.CertificateFirstSignerName;
+            existingConference.CertificateFirstSignerTitle = conference.CertificateFirstSignerTitle;
+            existingConference.CertificateSecondSignerName = conference.CertificateSecondSignerName;
+            existingConference.CertificateSecondSignerTitle = conference.CertificateSecondSignerTitle;
+
             if (!string.IsNullOrWhiteSpace(existingConference.Title))
             {
                 existingConference.Slug = await GenerateUniqueConferenceSlugAsync(
@@ -528,7 +579,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "Success_ConferenceUpdated",
                 "Kongre başarıyla güncellendi.");
 
-            return Redirect($"/{slug}/Admin/Conferences");
+            return Redirect(User.IsInRole("SuperAdmin")
+                ? "/Admin/AllConferences"
+                : $"/{slug}/Admin/Conferences");
         }
 
         [HttpPost("/{slug}/Admin/Conferences/Delete")]
@@ -538,7 +591,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                return Redirect("/Dashboard/MyConferences");
+                return Redirect(User.IsInRole("SuperAdmin")
+                    ? "/Admin/AllConferences"
+                    : "/Dashboard/MyConferences");
             }
 
             if (!await CanAccessCurrentTenantAsync())
@@ -547,7 +602,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_DeletePermission",
                     "Bu kongreyi silme yetkiniz yok.");
 
-                return Redirect("/Dashboard/MyConferences");
+                return Redirect(User.IsInRole("SuperAdmin")
+                    ? "/Admin/AllConferences"
+                    : "/Dashboard/MyConferences");
             }
 
             var conference = await _context.Conferences
@@ -557,7 +614,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conference == null)
             {
-                return Redirect($"/{slug}/Admin/Conferences");
+                return Redirect(User.IsInRole("SuperAdmin")
+                    ? "/Admin/AllConferences"
+                    : $"/{slug}/Admin/Conferences");
             }
 
             var hasRelatedData =
@@ -577,7 +636,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_ConferenceHasRelatedData",
                     "Bu kongreye bağlı kayıt, bildiri, oturum, website bloğu veya hakem değerlendirmesi olduğu için silinemez.");
 
-                return Redirect($"/{slug}/Admin/Conferences");
+                return Redirect(User.IsInRole("SuperAdmin")
+                    ? "/Admin/AllConferences"
+                    : $"/{slug}/Admin/Conferences");
             }
 
             _context.Conferences.Remove(conference);
@@ -589,7 +650,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "Success_ConferenceDeleted",
                 "Kongre başarıyla silindi.");
 
-            return Redirect($"/{slug}/Admin/Conferences");
+            return Redirect(User.IsInRole("SuperAdmin")
+                ? "/Admin/AllConferences"
+                : $"/{slug}/Admin/Conferences");
         }
     }
 }

@@ -4,171 +4,493 @@
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = null;
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
+
+    var reviewerName = ViewBag.ReviewerName?.ToString();
+
+    if (string.IsNullOrWhiteSpace(reviewerName))
+    {
+        reviewerName = L("ReviewerFallbackName", "Değerli Hakem");
+    }
+
+    var certificateDate = Model.EvaluationDate?.ToString("dd MMMM yyyy") ?? DateTime.Now.ToString("dd MMMM yyyy");
+    var documentNumber = $"REF-{Model.Id.ToString("D8")}";
+
+    var firstSignerName = string.IsNullOrWhiteSpace(Model.CertificateFirstSignerName)
+        ? L("DefaultFirstSignerName", "Kongre Başkanı")
+        : Model.CertificateFirstSignerName;
+
+    var firstSignerTitle = string.IsNullOrWhiteSpace(Model.CertificateFirstSignerTitle)
+        ? L("CongressChairTitle", "Kongre Başkanı")
+        : Model.CertificateFirstSignerTitle;
+
+    var secondSignerName = string.IsNullOrWhiteSpace(Model.CertificateSecondSignerName)
+        ? L("DefaultSecondSignerName", "Bilim Kurulu Başkanı")
+        : Model.CertificateSecondSignerName;
+
+    var secondSignerTitle = string.IsNullOrWhiteSpace(Model.CertificateSecondSignerTitle)
+        ? L("ScientificCommitteeChairTitle", "Bilim Kurulu Başkanı")
+        : Model.CertificateSecondSignerTitle;
 }
 
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="utf-8" />
-    <title>@Localizer["PageTitle"] - @Model.SubmissionTitle</title>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <title>@L("PageTitle", "Hakem Sertifikası") - @Model.SubmissionTitle</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+
     <style>
+        :root {
+            --primary: #00aeef;
+            --primary-dark: #0369a1;
+            --ink: #0f172a;
+            --muted: #64748b;
+            --line: #dbe4ef;
+            --gold: #c8a44d;
+            --gold-soft: rgba(200, 164, 77, 0.14);
+            --blue-soft: rgba(0, 174, 239, 0.10);
+            --paper: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
         body {
-            background: #525659;
             margin: 0;
             padding: 0;
-            font-family: 'Roboto', sans-serif;
-            display: flex;
-            justify-content: center;
-            padding-top: 40px;
-            padding-bottom: 40px;
+            min-height: 100%;
         }
 
-        .certificate-container {
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(0, 174, 239, 0.18), transparent 32%),
+                radial-gradient(circle at bottom right, rgba(200, 164, 77, 0.20), transparent 28%),
+                #364152;
+            font-family: 'Inter', sans-serif;
+            color: var(--ink);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 34px;
+        }
+
+        .certificate-page {
             width: 297mm;
             height: 210mm;
-            background: #fff;
+            background: var(--paper);
             position: relative;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            padding: 15mm;
-            box-sizing: border-box;
-            background-image: url('https://www.transparenttextures.com/patterns/cream-paper.png');
+            overflow: hidden;
+            box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+            isolation: isolate;
         }
 
-        .border-pattern {
+        .certificate-page::before {
+            content: "";
             position: absolute;
-            top: 10mm;
-            left: 10mm;
-            right: 10mm;
-            bottom: 10mm;
-            border: 2px solid #1e293b;
-            padding: 5px;
+            inset: 0;
+            background:
+                linear-gradient(135deg, rgba(0, 174, 239, 0.08), transparent 34%),
+                linear-gradient(315deg, rgba(200, 164, 77, 0.12), transparent 30%),
+                radial-gradient(circle at 88% 16%, rgba(0, 174, 239, 0.12), transparent 18%);
+            z-index: -3;
         }
 
-        .border-inner {
-            border: 1px solid #c0a062;
+        .science-grid {
+            position: absolute;
+            inset: 0;
+            opacity: 0.24;
+            background-image:
+                linear-gradient(rgba(15, 23, 42, 0.045) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(15, 23, 42, 0.045) 1px, transparent 1px);
+            background-size: 18px 18px;
+            z-index: -2;
+        }
+
+        .molecule-pattern {
+            position: absolute;
+            right: -58px;
+            top: 28px;
+            width: 330px;
+            height: 330px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 174, 239, 0.18);
+            opacity: 0.8;
+            z-index: -1;
+        }
+
+        .molecule-pattern::before,
+        .molecule-pattern::after {
+            content: "";
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid rgba(200, 164, 77, 0.35);
+        }
+
+        .molecule-pattern::before {
+            width: 210px;
+            height: 210px;
+            right: 60px;
+            top: 58px;
+        }
+
+        .molecule-pattern::after {
+            width: 90px;
+            height: 90px;
+            right: 120px;
+            top: 120px;
+            background: rgba(0, 174, 239, 0.08);
+        }
+
+        .certificate-frame {
+            position: absolute;
+            inset: 12mm;
+            border: 1.5px solid rgba(15, 23, 42, 0.68);
+            padding: 4.5mm;
+        }
+
+        .certificate-frame-inner {
+            width: 100%;
             height: 100%;
+            border: 1px solid rgba(200, 164, 77, 0.85);
             position: relative;
+            padding: 15mm 18mm 13mm;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
         }
 
         .corner {
             position: absolute;
-            width: 40px;
-            height: 40px;
-            border-color: #c0a062;
+            width: 44px;
+            height: 44px;
+            border-color: var(--gold);
             border-style: solid;
         }
 
-        .tl {
+        .corner.tl {
             top: -1px;
             left: -1px;
-            border-width: 4px 0 0 4px;
+            border-width: 5px 0 0 5px;
         }
 
-        .tr {
+        .corner.tr {
             top: -1px;
             right: -1px;
-            border-width: 4px 4px 0 0;
+            border-width: 5px 5px 0 0;
         }
 
-        .bl {
+        .corner.bl {
             bottom: -1px;
             left: -1px;
-            border-width: 0 0 4px 4px;
+            border-width: 0 0 5px 5px;
         }
 
-        .br {
+        .corner.br {
             bottom: -1px;
             right: -1px;
-            border-width: 0 4px 4px 0;
+            border-width: 0 5px 5px 0;
         }
 
-        h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: 3.5rem;
-            color: #1e293b;
+        .top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 24px;
+            margin-bottom: 15mm;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-mark {
+            width: 58px;
+            height: 58px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, var(--primary), #2563eb);
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            letter-spacing: -1px;
+            font-size: 22px;
+            box-shadow: 0 14px 28px rgba(0, 174, 239, 0.26);
+        }
+
+        .brand-title {
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: -0.4px;
+            color: var(--ink);
+            margin-bottom: 3px;
+        }
+
+        .brand-subtitle {
+            font-size: 10px;
+            color: var(--muted);
             text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 10px;
-            margin-top: 0;
+            letter-spacing: 1.8px;
+            font-weight: 800;
+        }
+
+        .document-meta {
+            text-align: right;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1.7;
+        }
+
+        .document-meta strong {
+            color: var(--ink);
+            font-weight: 900;
+        }
+
+        .certificate-main {
+            text-align: center;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 14px;
+            border-radius: 999px;
+            background: var(--blue-soft);
+            color: var(--primary-dark);
+            border: 1px solid rgba(0, 174, 239, 0.20);
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 11px;
+        }
+
+        .title {
+            font-family: 'Playfair Display', serif;
+            margin: 0;
+            color: var(--ink);
+            font-size: 54px;
+            line-height: 1;
+            font-weight: 800;
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+        }
+
+        .title-line {
+            width: 110px;
+            height: 3px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            margin: 16px auto 18px;
         }
 
         .subtitle {
-            font-size: 1.2rem;
-            color: #c0a062;
+            color: var(--gold);
+            font-size: 13px;
+            font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: 4px;
-            font-weight: bold;
-            margin-bottom: 40px;
+            letter-spacing: 5px;
+            margin-bottom: 19px;
+        }
+
+        .intro-text {
+            color: #475569;
+            font-size: 15px;
+            line-height: 1.85;
+            max-width: 770px;
+            margin: 0 auto;
+            font-weight: 600;
+        }
+
+        .recipient {
+            font-family: 'Playfair Display', serif;
+            color: var(--ink);
+            font-size: 36px;
+            font-weight: 800;
+            margin: 14px 0 9px;
+            padding-bottom: 9px;
+            min-width: 520px;
+            max-width: 760px;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.16);
         }
 
         .content-text {
-            font-size: 1.1rem;
+            color: #334155;
+            font-size: 14.5px;
             line-height: 1.8;
-            color: #444;
-            max-width: 80%;
-            margin-bottom: 40px;
+            max-width: 780px;
+            margin: 0 auto;
+            font-weight: 600;
         }
 
-        .highlight {
-            font-family: 'Playfair Display', serif;
-            font-weight: 700;
-            font-size: 1.8rem;
-            color: #000;
-            display: block;
-            margin: 20px 0;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 10px;
+        .conference-name {
+            color: var(--primary-dark);
+            font-weight: 900;
         }
 
-        .congress-name {
-            font-weight: bold;
-            color: #00aeef;
+        .submission-title {
+            color: var(--ink);
+            font-weight: 900;
         }
 
-        .signatures {
-            display: flex;
-            justify-content: space-around;
-            width: 80%;
-            margin-top: 40px;
+        .scientific-band {
+            margin-top: 11mm;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            width: 82%;
         }
 
-        .sig-block {
+        .scientific-item {
+            border: 1px solid rgba(15, 23, 42, 0.10);
+            background: rgba(248, 250, 252, 0.74);
+            border-radius: 18px;
+            padding: 10px 12px;
+            text-align: left;
+        }
+
+        .scientific-item-label {
+            color: var(--muted);
+            font-size: 8.5px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .scientific-item-value {
+            color: var(--ink);
+            font-size: 11px;
+            font-weight: 900;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .bottom-row {
+            margin-top: auto;
+            display: grid;
+            grid-template-columns: 1fr 130px 1fr;
+            align-items: end;
+            gap: 20px;
+        }
+
+        .signature {
             text-align: center;
         }
 
-        .sig-line {
-            width: 200px;
-            border-top: 1px solid #333;
-            margin-bottom: 10px;
-            margin-top: 40px;
+        .signature-line {
+            width: 220px;
+            border-top: 1.5px solid rgba(15, 23, 42, 0.76);
+            margin: 0 auto 9px;
         }
 
-        .sig-name {
-            font-weight: bold;
+        .signature-name {
+            color: var(--ink);
+            font-size: 12px;
+            font-weight: 900;
+            margin-bottom: 3px;
+            min-height: 16px;
         }
 
-        .sig-title {
-            font-size: 0.8rem;
-            color: #666;
+        .signature-title {
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 700;
             font-style: italic;
+            min-height: 14px;
+        }
+
+        .seal {
+            width: 122px;
+            height: 122px;
+            border-radius: 50%;
+            border: 2px solid rgba(200, 164, 77, 0.80);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(200, 164, 77, 0.92);
+            text-align: center;
+            font-family: 'Playfair Display', serif;
+            font-weight: 800;
+            font-size: 12px;
+            line-height: 1.25;
+            transform: rotate(-10deg);
+            background:
+                radial-gradient(circle, rgba(200, 164, 77, 0.09), transparent 60%),
+                rgba(255, 255, 255, 0.50);
+            position: relative;
+            margin: 0 auto;
+        }
+
+        .seal::before {
+            content: "";
+            position: absolute;
+            inset: 8px;
+            border-radius: 50%;
+            border: 1px dashed rgba(200, 164, 77, 0.72);
+        }
+
+        .print-actions {
+            position: fixed;
+            top: 18px;
+            right: 18px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .print-btn {
+            border: none;
+            border-radius: 999px;
+            background: #ffffff;
+            color: #0f172a;
+            padding: 11px 16px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 900;
+            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.20);
+            cursor: pointer;
+        }
+
+        .print-btn.primary {
+            background: linear-gradient(135deg, var(--primary), #2563eb);
+            color: #ffffff;
         }
 
         @@media print {
             body {
-                background: none;
+                background: #ffffff;
                 padding: 0;
+                display: block;
             }
 
-            .certificate-container {
+            .print-actions {
+                display: none !important;
+            }
+
+            .certificate-page {
+                width: 297mm;
+                height: 210mm;
                 box-shadow: none;
-                width: 100%;
-                height: 100%;
                 page-break-after: always;
             }
 
@@ -177,85 +499,158 @@
                 margin: 0;
             }
         }
-
-        .seal {
-            position: absolute;
-            bottom: 40px;
-            width: 120px;
-            height: 120px;
-            border: 3px solid #c0a062;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #c0a062;
-            font-weight: bold;
-            opacity: 0.3;
-            transform: rotate(-15deg);
-            font-family: 'Playfair Display', serif;
-            font-size: 0.9rem;
-            text-align: center;
-            pointer-events: none;
-        }
     </style>
 </head>
+
 <body>
+    <div class="print-actions">
+        <button type="button" class="print-btn" onclick="window.close()">
+            @L("CloseButton", "Kapat")
+        </button>
 
-    <div class="certificate-container">
-        <div class="border-pattern">
-            <div class="border-inner">
-                <div class="corner tl"></div><div class="corner tr"></div>
-                <div class="corner bl"></div><div class="corner br"></div>
-
-                <div style="margin-top: 30px;">
-                    <img src="/images/logo.png" alt="@Localizer["LogoAlt"]" style="height: 50px; margin-bottom: 20px; opacity: 0.8;" onerror="this.style.display='none'">
-                </div>
-
-                <h1>@Localizer["CertificateTitle"]</h1>
-                <div class="subtitle">@Localizer["CertificateSubtitle"]</div>
-
-                <div class="content-text">
-                    @Localizer["ContentTextPart1"]
-                    <span class="highlight">@(ViewBag.ReviewerName ?? Localizer["ReviewerFallbackName"].Value)</span>
-
-                    <span class="congress-name">@Model.ConferenceName</span>
-                    @Localizer["ContentTextPart2"]
-                    <strong>"@Model.SubmissionTitle"</strong>
-                    @Localizer["ContentTextPart3"]
-                </div>
-
-                <div style="font-size: 0.9rem; color: #888;">
-                    @Localizer["EvaluationDateLabel"]:
-                    @(Model.EvaluationDate?.ToString("dd MMMM yyyy") ?? DateTime.Now.ToString("dd MMMM yyyy"))
-
-                    <br> @Localizer["DocumentNumberLabel"]: REF-@Model.Id.ToString("D8")
-                </div>
-
-                <div class="signatures">
-                    <div class="sig-block">
-                        <div class="sig-line"></div>
-                        <div class="sig-name">Prof. Dr. Mehmet Yılmaz</div>
-                        <div class="sig-title">@Localizer["CongressChairTitle"]</div>
-                    </div>
-                    <div class="sig-block">
-                        <div class="sig-line"></div>
-                        <div class="sig-name">Doç. Dr. Ayşe Demir</div>
-                        <div class="sig-title">@Localizer["ScientificCommitteeChairTitle"]</div>
-                    </div>
-                </div>
-
-                <div class="seal">
-                    @Localizer["SealLine1"]<br>@Localizer["SealLine2"]<br>@Localizer["SealLine3"]
-                </div>
-
-            </div>
-        </div>
+        <button type="button" class="print-btn primary" onclick="window.print()">
+            @L("PrintButton", "Yazdır / PDF")
+        </button>
     </div>
 
-    <script>
-        window.onload = function() {
+    <main class="certificate-page">
+        <div class="science-grid"></div>
+        <div class="molecule-pattern"></div>
 
-        };
-    </script>
+        <section class="certificate-frame">
+            <div class="certificate-frame-inner">
+                <div class="corner tl"></div>
+                <div class="corner tr"></div>
+                <div class="corner bl"></div>
+                <div class="corner br"></div>
+
+                <header class="top-row">
+                    <div class="brand">
+                        <div class="brand-mark">
+                            AA
+                        </div>
+
+                        <div>
+                            <div class="brand-title">
+                                ANTABSTRACT
+                            </div>
+
+                            <div class="brand-subtitle">
+                                Academic Review System
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="document-meta">
+                        <div>
+                            @L("DocumentNumberLabel", "Belge No"):
+                            <strong>@documentNumber</strong>
+                        </div>
+
+                        <div>
+                            @L("EvaluationDateLabel", "Değerlendirme Tarihi"):
+                            <strong>@certificateDate</strong>
+                        </div>
+                    </div>
+                </header>
+
+                <section class="certificate-main">
+                    <div class="eyebrow">
+                        <span>●</span>
+                        @L("CertificateEyebrow", "Scientific Peer Review Contribution")
+                    </div>
+
+                    <h1 class="title">
+                        @L("CertificateTitle", "Sertifika")
+                    </h1>
+
+                    <div class="title-line"></div>
+
+                    <div class="subtitle">
+                        @L("CertificateSubtitle", "Hakemlik Katkı Belgesi")
+                    </div>
+
+                    <p class="intro-text">
+                        @L("ContentTextPart1", "Bu belge, akademik değerlendirme sürecine bilimsel katkı sağlayan hakemimize teşekkür amacıyla düzenlenmiştir.")
+                    </p>
+
+                    <div class="recipient">
+                        @reviewerName
+                    </div>
+
+                    <p class="content-text">
+                        <span class="conference-name">@Model.ConferenceName</span>
+                        @L("ContentTextPart2", "kapsamında yürütülen hakemlik sürecinde")
+                        <span class="submission-title">“@Model.SubmissionTitle”</span>
+                        @L("ContentTextPart3", "başlıklı bildirinin bilimsel değerlendirmesini tamamlamıştır.")
+                    </p>
+
+                    <div class="scientific-band">
+                        <div class="scientific-item">
+                            <div class="scientific-item-label">
+                                @L("ScientificRoleLabel", "Akademik Rol")
+                            </div>
+
+                            <div class="scientific-item-value">
+                                @L("ScientificRoleValue", "Bilimsel Hakem")
+                            </div>
+                        </div>
+
+                        <div class="scientific-item">
+                            <div class="scientific-item-label">
+                                @L("ConferenceLabel", "Kongre")
+                            </div>
+
+                            <div class="scientific-item-value" title="@Model.ConferenceName">
+                                @Model.ConferenceName
+                            </div>
+                        </div>
+
+                        <div class="scientific-item">
+                            <div class="scientific-item-label">
+                                @L("VerificationLabel", "Doğrulama")
+                            </div>
+
+                            <div class="scientific-item-value">
+                                @documentNumber
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <footer class="bottom-row">
+                    <div class="signature">
+                        <div class="signature-line"></div>
+
+                        <div class="signature-name">
+                            @firstSignerName
+                        </div>
+
+                        <div class="signature-title">
+                            @firstSignerTitle
+                        </div>
+                    </div>
+
+                    <div class="seal">
+                        @L("SealLine1", "ANT")<br />
+                        @L("SealLine2", "SCIENTIFIC")<br />
+                        @L("SealLine3", "REVIEW")
+                    </div>
+
+                    <div class="signature">
+                        <div class="signature-line"></div>
+
+                        <div class="signature-name">
+                            @secondSignerName
+                        </div>
+
+                        <div class="signature-title">
+                            @secondSignerTitle
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </section>
+    </main>
 </body>
 </html>

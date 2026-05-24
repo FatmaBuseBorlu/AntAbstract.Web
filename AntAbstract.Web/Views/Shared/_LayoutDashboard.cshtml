@@ -111,9 +111,11 @@
         ? "/Dashboard/SuperAdmin"
         : isAuthor || isListener
             ? "/Dashboard/MyConferences"
-            : string.IsNullOrWhiteSpace(slug)
+            : isReferee && !isManagementTeam
                 ? "/Dashboard"
-                : $"/{slug}/Dashboard";
+                : string.IsNullOrWhiteSpace(slug)
+                    ? "/Dashboard"
+                    : $"/{slug}/Dashboard";
 
     var changeSelectedConferenceUrl = isSuperAdmin
         ? "/Admin/ConferenceFlow?forceSelect=true"
@@ -131,33 +133,47 @@
         ? "/Submission/Create"
         : $"/{slug}/Submission/Create";
 
-    var reviewIndexUrl = string.IsNullOrWhiteSpace(slug)
+    var reviewIndexUrl = isReferee && !isManagementTeam
         ? "/Review/Index"
-        : $"/{slug}/Review/Index";
+        : string.IsNullOrWhiteSpace(slug)
+            ? "/Review/Index"
+            : $"/{slug}/Review/Index";
 
-    var reviewInterestsUrl = string.IsNullOrWhiteSpace(slug)
+    var reviewInterestsUrl = isReferee && !isManagementTeam
         ? "/Review/Interests"
-        : $"/{slug}/Review/Interests";
+        : string.IsNullOrWhiteSpace(slug)
+            ? "/Review/Interests"
+            : $"/{slug}/Review/Interests";
 
-    var reviewAvailabilityUrl = string.IsNullOrWhiteSpace(slug)
+    var reviewAvailabilityUrl = isReferee && !isManagementTeam
         ? "/Review/Availability"
-        : $"/{slug}/Review/Availability";
+        : string.IsNullOrWhiteSpace(slug)
+            ? "/Review/Availability"
+            : $"/{slug}/Review/Availability";
 
-    var reviewConflictsUrl = string.IsNullOrWhiteSpace(slug)
+    var reviewConflictsUrl = isReferee && !isManagementTeam
         ? "/Review/Conflicts"
-        : $"/{slug}/Review/Conflicts";
+        : string.IsNullOrWhiteSpace(slug)
+            ? "/Review/Conflicts"
+            : $"/{slug}/Review/Conflicts";
 
-    var reviewGuidelinesUrl = string.IsNullOrWhiteSpace(slug)
+    var reviewGuidelinesUrl = isReferee && !isManagementTeam
         ? "/Review/Guidelines"
-        : $"/{slug}/Review/Guidelines";
+        : string.IsNullOrWhiteSpace(slug)
+            ? "/Review/Guidelines"
+            : $"/{slug}/Review/Guidelines";
 
-    var certificatesIndexUrl = string.IsNullOrWhiteSpace(slug)
+    var certificatesIndexUrl = isReferee && !isManagementTeam
         ? "/Certificates"
-        : $"/{slug}/Certificates";
+        : string.IsNullOrWhiteSpace(slug)
+            ? "/Certificates"
+            : $"/{slug}/Certificates";
 
-    var messageIndexUrl = string.IsNullOrWhiteSpace(slug)
+    var messageIndexUrl = isReferee && !isManagementTeam
         ? "/Message/Index"
-        : $"/{slug}/Message/Index";
+        : string.IsNullOrWhiteSpace(slug)
+            ? "/Message/Index"
+            : $"/{slug}/Message/Index";
 
     var paymentMyUrl = string.IsNullOrWhiteSpace(slug)
         ? "/Payment/My"
@@ -1133,7 +1149,7 @@
                     </a>
                 }
 
-                if (isAuthor || isListener)
+                if (isListener)
                 {
                     <div class="menu-label">@L("Section_Submissions", "Başvurular")</div>
 
@@ -1459,25 +1475,25 @@
                                 </span>
                             </a>
 
-                            @if (!isSuperAdmin)
-                            {
-                                <a class="account-dropdown-item"
-                                   href="@dashboardMyConferencesUrl">
-                                    <span class="account-dropdown-item-icon account-icon-info">
-                                        <i class="fas fa-exchange-alt"></i>
+                        @if (!isSuperAdmin && !isReferee)
+                        {
+                            <a class="account-dropdown-item"
+                            href="@dashboardMyConferencesUrl">
+                                <span class="account-dropdown-item-icon account-icon-info">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </span>
+
+                                <span class="account-dropdown-item-content">
+                                    <span class="account-dropdown-item-title">
+                                        @L("Dropdown_ConferenceSelection", "Kongre Seçimi")
                                     </span>
 
-                                    <span class="account-dropdown-item-content">
-                                        <span class="account-dropdown-item-title">
-                                            @L("Dropdown_ConferenceSelection", "Kongre Seçimi")
-                                        </span>
-
-                                        <span class="account-dropdown-item-desc">
-                                            @L("Dropdown_ConferenceSelectionDescription", "Aktif kongreyi değiştir")
-                                        </span>
+                                    <span class="account-dropdown-item-desc">
+                                        @L("Dropdown_ConferenceSelectionDescription", "Aktif kongreyi değiştir")
                                     </span>
-                                </a>
-                            }
+                                </span>
+                            </a>
+                        }
                         </div>
 
                         <div class="account-dropdown-divider"></div>
@@ -1511,7 +1527,7 @@
         </header>
 
         <div class="content-wrapper">
-            @if (!isSuperAdmin && !hideSelectedConferenceBar && hasSelectedConference && !string.IsNullOrWhiteSpace(selectedConferenceTitle))
+            @if (!isSuperAdmin && !isReferee && !hideSelectedConferenceBar && hasSelectedConference && !string.IsNullOrWhiteSpace(selectedConferenceTitle))
             {
                 <div class="selected-conference-banner">
                     <div class="d-flex align-items-center gap-3">

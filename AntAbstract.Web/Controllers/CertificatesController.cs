@@ -54,7 +54,10 @@ namespace AntAbstract.Web.Controllers
         }
 
         [HttpGet("/Certificates")]
-        public async Task<IActionResult> Index()
+        [HttpGet("/Certificates/Index")]
+        [HttpGet("/{slug}/Certificates")]
+        [HttpGet("/{slug}/Certificates/Index")]
+        public async Task<IActionResult> Index(string? slug = null)
         {
             var user = await _userManager.GetUserAsync(User);
 
@@ -63,13 +66,16 @@ namespace AntAbstract.Web.Controllers
                 return Challenge();
             }
 
+            ViewBag.Slug = slug;
+
             var certificates = await _certificateService.GetMyCertificatesAsync(user.Id);
 
             return View(certificates);
         }
 
         [HttpGet("/Certificates/Download/{id:guid}")]
-        public async Task<IActionResult> Download(Guid id)
+        [HttpGet("/{slug}/Certificates/Download/{id:guid}")]
+        public async Task<IActionResult> Download(Guid id, string? slug = null)
         {
             if (id == Guid.Empty)
             {
@@ -109,6 +115,11 @@ namespace AntAbstract.Web.Controllers
                     TempData["ErrorMessage"] = T(
                         "CertificateAttendanceRequired",
                         "Katılım belgeniz henüz hazır değil. Belge oluşturulabilmesi için kongre katılımınızın tamamlanması gerekir.");
+
+                    if (!string.IsNullOrWhiteSpace(slug))
+                    {
+                        return Redirect($"/{slug}/Certificates");
+                    }
 
                     return RedirectToAction(nameof(Index));
                 }
