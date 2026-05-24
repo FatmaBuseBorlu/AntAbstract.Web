@@ -13,19 +13,70 @@ namespace AntAbstract.Application.Services
 {
     public class ReviewManager : IReviewService
     {
+        private static readonly HashSet<string> AllowedRecommendations = new HashSet<string>
+        {
+            "Accept",
+            "Reject",
+            "MinorRevision",
+            "MajorRevision"
+        };
+
         private readonly IApplicationDbContext _context;
         private readonly UserManager<AppUser> _userManager;
 
-        public ReviewManager(IApplicationDbContext context, UserManager<AppUser> userManager)
+        public ReviewManager(
+            IApplicationDbContext context,
+            UserManager<AppUser> userManager)
         {
             _context = context;
             _userManager = userManager;
         }
 
+        private static string NormalizeText(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                ? string.Empty
+                : value.Trim();
+        }
+
+        private static string NormalizeRecommendation(string? value)
+        {
+            value = NormalizeText(value);
+
+            if (!AllowedRecommendations.Contains(value))
+            {
+                throw new Exception("Geçersiz karar önerisi.");
+            }
+
+            return value;
+        }
+
+        private static int NormalizeScore(int score)
+        {
+            if (score < 0 || score > 100)
+            {
+                throw new Exception("Puan 0 ile 100 arasında olmalıdır.");
+            }
+
+            return score;
+        }
+
         public async Task AssignReviewerAsync(AssignReviewerDto input)
         {
+            if (input.SubmissionId == Guid.Empty)
+            {
+                throw new Exception("Geçersiz bildiri.");
+            }
+
+            if (string.IsNullOrWhiteSpace(input.ReviewerId))
+            {
+                throw new Exception("Geçersiz hakem.");
+            }
+
             var existingAssignment = await _context.ReviewAssignments
-                .FirstOrDefaultAsync(ra => ra.SubmissionId == input.SubmissionId && ra.ReviewerId == input.ReviewerId);
+                .FirstOrDefaultAsync(ra =>
+                    ra.SubmissionId == input.SubmissionId &&
+                    ra.ReviewerId == input.ReviewerId);
 
             if (existingAssignment != null)
             {
@@ -43,71 +94,146 @@ namespace AntAbstract.Application.Services
             await _context.SaveChangesAsync();
         }
 
-
         public async Task<List<ReviewAssignmentDto>> GetMyAssignmentsAsync(string reviewerId)
         {
-            var list = await _context.ReviewAssignments
-                .Include(ra => ra.Submission).ThenInclude(s => s.Conference)
+            if (string.IsNullOrWhiteSpace(reviewerId))
+            {
+                return new List<ReviewAssignmentDto>();
+            }
+
+            var assignments = await _context.ReviewAssignments
+                .AsNoTracking()
+                .Include(ra => ra.Submission)
+                    .ThenInclude(s => s.Conference)
                 .Include(ra => ra.Review)
                 .Where(ra => ra.ReviewerId == reviewerId)
                 .OrderByDescending(ra => ra.AssignedDate)
                 .ToListAsync();
 
-            return list.Select(ra => new ReviewAssignmentDto
+            return assignments.Select(assignment => new ReviewAssignmentDto
             {
-                Id = ra.Id, 
-                SubmissionId = ra.SubmissionId,
-                AssignedDate = ra.AssignedDate,
-                SubmissionTitle = ra.Submission.Title,
-                ConferenceName = ra.Submission.Conference?.Title,
-                IsReviewed = ra.Review != null,
-                Score = ra.Review?.Score,
-                Recommendation = ra.Review?.Recommendation,
-                EvaluationDate = ra.Review?.ReviewedAt 
+                Id = assignment.Id,
+                SubmissionId = assignment.SubmissionId,
+                AssignedDate = assignment.AssignedDate,
+
+                SubmissionTitle = assignment.Submission?.Title ?? "Başlıksız Bildiri",
+                SubmissionAbstract = assignment.Submission?.Abstract ?? string.Empty,
+                ConferenceName = assignment.Submission?.Conference?.Title ?? "Kongre Bilgisi Yok",
+
+                IsReviewed = assignment.Review != null,
+                ReviewId = assignment.Review?.Id,
+                Score = assignment.Review?.Score,
+                Recommendation = assignment.Review?.Recommendation ?? string.Empty,
+                CommentsToAuthor = assignment.Review?.CommentsToAuthor ?? string.Empty,
+                EvaluationDate = assignment.Review?.ReviewedAt,
+
+                ReviewerName = assignment.Review?.ReviewerName ?? string.Empty,
+                Files = new List<SubmissionFileDto>(),
+
+                CertificateFirstSignerName = assignment.Submission?.Conference?.CertificateFirstSignerName,
+                CertificateFirstSignerTitle = assignment.Submission?.Conference?.CertificateFirstSignerTitle,
+                CertificateSecondSignerName = assignment.Submission?.Conference?.CertificateSecondSignerName,
+                CertificateSecondSignerTitle = assignment.Submission?.Conference?.CertificateSecondSignerTitle
             }).ToList();
         }
 
-        public async Task<ReviewAssignmentDto> GetAssignmentByIdAsync(int id, string reviewerId)
+        public async Task<ReviewAssignmentDto> GetAssignmentByIdAsync(
+            int id,
+            string reviewerId)
         {
-            var assignment = await _context.ReviewAssignments
-                .Include(ra => ra.Submission).ThenInclude(s => s.Conference)
-                .Include(ra => ra.Submission).ThenInclude(s => s.Files)
-                .Include(ra => ra.Review)
-                .FirstOrDefaultAsync(ra => ra.Id == id && ra.ReviewerId == reviewerId);
+            if (id <= 0)
+            {
+                return null;
+            }
 
-            if (assignment == null) return null;
+            if (string.IsNullOrWhiteSpace(reviewerId))
+            {
+                return null;
+            }
+
+            var assignment = await _context.ReviewAssignments
+                .AsNoTracking()
+                .Include(ra => ra.Submission)
+                    .ThenInclude(s => s.Conference)
+                .Include(ra => ra.Submission)
+                    .ThenInclude(s => s.Files)
+                .Include(ra => ra.Review)
+                .FirstOrDefaultAsync(ra =>
+                    ra.Id == id &&
+                    ra.ReviewerId == reviewerId);
+
+            if (assignment == null)
+            {
+                return null;
+            }
 
             return new ReviewAssignmentDto
             {
-                Id = assignment.Id, 
+                Id = assignment.Id,
                 SubmissionId = assignment.SubmissionId,
                 AssignedDate = assignment.AssignedDate,
-                SubmissionTitle = assignment.Submission.Title,
-                SubmissionAbstract = assignment.Submission.Abstract,
-                ConferenceName = assignment.Submission.Conference?.Title,
-                Files = assignment.Submission.Files.Select(f => new SubmissionFileDto
-                {
-                    FileName = f.FileName,
-                    FilePath = f.FilePath,
-                    Type = f.Type.ToString()
-                }).ToList(),
+
+                SubmissionTitle = assignment.Submission?.Title ?? "Başlıksız Bildiri",
+                SubmissionAbstract = assignment.Submission?.Abstract ?? string.Empty,
+                ConferenceName = assignment.Submission?.Conference?.Title ?? "Kongre Bilgisi Yok",
+
+                Files = assignment.Submission?.Files?
+                    .Select(file => new SubmissionFileDto
+                    {
+                        FileName = file.FileName,
+                        FilePath = file.FilePath,
+                        Type = file.Type.ToString()
+                    })
+                    .ToList() ?? new List<SubmissionFileDto>(),
 
                 ReviewId = assignment.Review?.Id,
-                CommentsToAuthor = assignment.Review?.CommentsToAuthor,
-                Recommendation = assignment.Review?.Recommendation,
+                CommentsToAuthor = assignment.Review?.CommentsToAuthor ?? string.Empty,
+                Recommendation = assignment.Review?.Recommendation ?? string.Empty,
                 Score = assignment.Review?.Score,
                 IsReviewed = assignment.Review != null,
-                EvaluationDate = assignment.Review?.ReviewedAt
+                EvaluationDate = assignment.Review?.ReviewedAt,
+                ReviewerName = assignment.Review?.ReviewerName ?? string.Empty,
+
+                CertificateFirstSignerName = assignment.Submission?.Conference?.CertificateFirstSignerName,
+                CertificateFirstSignerTitle = assignment.Submission?.Conference?.CertificateFirstSignerTitle,
+                CertificateSecondSignerName = assignment.Submission?.Conference?.CertificateSecondSignerName,
+                CertificateSecondSignerTitle = assignment.Submission?.Conference?.CertificateSecondSignerTitle
             };
         }
 
-        public async Task SubmitReviewAsync(SubmitReviewDto input, string reviewerName)
+        public async Task SubmitReviewAsync(
+            SubmitReviewDto input,
+            string reviewerName)
         {
+            if (input.ReviewAssignmentId <= 0)
+            {
+                throw new Exception("Geçersiz değerlendirme görevi.");
+            }
+
+            var score = NormalizeScore(input.Score);
+            var recommendation = NormalizeRecommendation(input.Recommendation);
+            var commentsToAuthor = NormalizeText(input.CommentsToAuthor);
+
+            if (string.IsNullOrWhiteSpace(commentsToAuthor))
+            {
+                throw new Exception("Yazara iletilecek değerlendirme notu boş olamaz.");
+            }
+
+            reviewerName = NormalizeText(reviewerName);
+
+            if (string.IsNullOrWhiteSpace(reviewerName))
+            {
+                reviewerName = "Hakem";
+            }
+
             var assignment = await _context.ReviewAssignments
                 .Include(ra => ra.Review)
-                .FirstOrDefaultAsync(ra => ra.Id == input.ReviewAssignmentId); 
+                .FirstOrDefaultAsync(ra => ra.Id == input.ReviewAssignmentId);
 
-            if (assignment == null) throw new Exception("Atama bulunamadı.");
+            if (assignment == null)
+            {
+                throw new Exception("Atama bulunamadı.");
+            }
 
             if (assignment.Review != null)
             {
@@ -117,9 +243,9 @@ namespace AntAbstract.Application.Services
             var review = new Review
             {
                 ReviewAssignmentId = assignment.Id,
-                CommentsToAuthor = input.CommentsToAuthor,
-                Recommendation = input.Recommendation,
-                Score = input.Score,
+                CommentsToAuthor = commentsToAuthor,
+                Recommendation = recommendation,
+                Score = score,
                 ReviewerName = reviewerName,
                 ReviewedAt = DateTime.UtcNow
             };
@@ -128,55 +254,87 @@ namespace AntAbstract.Application.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task DeclineAssignmentAsync(int id, string userId, string reason, string note)
+        public async Task DeclineAssignmentAsync(
+            int id,
+            string userId,
+            string reason,
+            string note)
         {
-            var entity = await _context.ReviewAssignments
-                .FirstOrDefaultAsync(x => x.Id == id && x.ReviewerId == userId);
-
-            if (entity != null)
+            if (id <= 0)
             {
-                _context.ReviewAssignments.Remove(entity);
-                await _context.SaveChangesAsync();
+                throw new Exception("Geçersiz değerlendirme görevi.");
             }
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                throw new Exception("Geçersiz kullanıcı.");
+            }
+
+            var assignment = await _context.ReviewAssignments
+                .FirstOrDefaultAsync(x =>
+                    x.Id == id &&
+                    x.ReviewerId == userId);
+
+            if (assignment == null)
+            {
+                throw new Exception("Değerlendirme görevi bulunamadı.");
+            }
+
+            _context.ReviewAssignments.Remove(assignment);
+
+            await _context.SaveChangesAsync();
         }
 
         public async Task<List<ReviewAssignmentDto>> GetReviewsBySubmissionIdAsync(Guid submissionId)
         {
-            var list = await _context.ReviewAssignments
+            if (submissionId == Guid.Empty)
+            {
+                return new List<ReviewAssignmentDto>();
+            }
+
+            var assignments = await _context.ReviewAssignments
+                .AsNoTracking()
                 .Include(ra => ra.Review)
                 .Where(ra => ra.SubmissionId == submissionId)
                 .ToListAsync();
 
             var resultList = new List<ReviewAssignmentDto>();
 
-            foreach (var item in list)
+            foreach (var assignment in assignments)
             {
-                string rName = "Bilinmiyor";
+                string reviewerName = "Bilinmiyor";
 
-                if (item.Review != null && !string.IsNullOrEmpty(item.Review.ReviewerName))
+                if (assignment.Review != null &&
+                    !string.IsNullOrWhiteSpace(assignment.Review.ReviewerName))
                 {
-                    rName = item.Review.ReviewerName;
+                    reviewerName = assignment.Review.ReviewerName;
                 }
                 else
                 {
-                    var user = await _userManager.FindByIdAsync(item.ReviewerId);
+                    var user = await _userManager.FindByIdAsync(assignment.ReviewerId);
+
                     if (user != null)
                     {
-                        rName = $"{user.FirstName} {user.LastName}";
+                        reviewerName = $"{user.FirstName} {user.LastName}".Trim();
+
+                        if (string.IsNullOrWhiteSpace(reviewerName))
+                        {
+                            reviewerName = user.UserName ?? user.Email ?? "Bilinmiyor";
+                        }
                     }
                 }
 
                 resultList.Add(new ReviewAssignmentDto
                 {
-                    Id = item.Id, 
-                    SubmissionId = item.SubmissionId,
-                    AssignedDate = item.AssignedDate,
-                    IsReviewed = item.Review != null,
-                    ReviewerName = rName,
-                    Score = item.Review?.Score,
-                    Recommendation = item.Review?.Recommendation,
-                    CommentsToAuthor = item.Review?.CommentsToAuthor,
-                    EvaluationDate = item.Review?.ReviewedAt
+                    Id = assignment.Id,
+                    SubmissionId = assignment.SubmissionId,
+                    AssignedDate = assignment.AssignedDate,
+                    IsReviewed = assignment.Review != null,
+                    ReviewerName = reviewerName,
+                    Score = assignment.Review?.Score,
+                    Recommendation = assignment.Review?.Recommendation ?? string.Empty,
+                    CommentsToAuthor = assignment.Review?.CommentsToAuthor ?? string.Empty,
+                    EvaluationDate = assignment.Review?.ReviewedAt
                 });
             }
 

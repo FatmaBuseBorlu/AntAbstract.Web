@@ -4,6 +4,7 @@ using AntAbstract.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AntAbstract.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260523190805_AddCertificateSignersToConference")]
+    partial class AddCertificateSignersToConference
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -286,18 +289,6 @@ namespace AntAbstract.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("BannerPath")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CertificateFirstSignerName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CertificateFirstSignerTitle")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CertificateSecondSignerName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CertificateSecondSignerTitle")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("City")
