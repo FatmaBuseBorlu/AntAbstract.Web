@@ -39,7 +39,8 @@ namespace AntAbstract.WebUI.Areas.Admin.Controllers
                     (x.Slug != null && x.Slug.Contains(keyword)) ||
                     (x.City != null && x.City.Contains(keyword)) ||
                     (x.Country != null && x.Country.Contains(keyword)) ||
-                    (x.Tenant != null && x.Tenant.Name.Contains(keyword)));
+                    (x.Tenant != null && x.Tenant.Name.Contains(keyword)) ||
+                    (x.Tenant != null && x.Tenant.Slug != null && x.Tenant.Slug.Contains(keyword)));
             }
 
             if (tenantId.HasValue && tenantId.Value != Guid.Empty)
@@ -52,21 +53,21 @@ namespace AntAbstract.WebUI.Areas.Admin.Controllers
                 .Select(x => new AllConferenceListItemViewModel
                 {
                     Id = x.Id,
-                    Title = x.Title,
+                    Title = x.Title ?? "",
                     Slug = x.Slug,
+
+                    TenantId = x.TenantId,
                     TenantName = x.Tenant != null ? x.Tenant.Name : "-",
                     TenantSlug = x.Tenant != null ? x.Tenant.Slug : null,
+
                     City = x.City,
                     Country = x.Country,
                     Venue = x.Venue,
                     StartDate = x.StartDate,
                     EndDate = x.EndDate,
 
-                    SubmissionCount = _context.Submissions
-                        .Count(s => s.ConferenceId == x.Id),
-
-                    RegistrationCount = _context.Registrations
-                        .Count(r => r.ConferenceId == x.Id)
+                    SubmissionCount = _context.Submissions.Count(s => s.ConferenceId == x.Id),
+                    RegistrationCount = _context.Registrations.Count(r => r.ConferenceId == x.Id)
                 })
                 .ToListAsync();
 
