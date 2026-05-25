@@ -1,7 +1,9 @@
 ﻿@model IEnumerable<AntAbstract.Domain.Entities.AppUser>
+
 @using System
 @using System.Collections.Generic
 @using System.Linq
+
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
@@ -48,7 +50,7 @@
         ? "/Admin/Referee/Delete"
         : $"/{slug}/Admin/Referee/Delete";
 
-    var deleteConfirmText = "Bu kullanıcının Hakem rolünü kaldırmak istediğinize emin misiniz?";
+    var deleteConfirmText = "Bu kullanıcının Referee / Hakem / Reviewer hakem rollerini kaldırmak istediğinize emin misiniz? Kullanıcı silinmez, sadece hakem yetkileri kaldırılır.";
 
     string GetFullName(AntAbstract.Domain.Entities.AppUser user)
     {
@@ -90,7 +92,7 @@
                 </h2>
 
                 <p class="referee-page-description">
-                    Seçili kongrenin kurumuna bağlı <strong>Hakem</strong> rolündeki kullanıcıları buradan görüntüleyebilirsiniz.
+                    Seçili kongrenin kurumuna bağlı <strong>Referee / Hakem / Reviewer</strong> rolündeki kullanıcıları buradan görüntüleyebilirsiniz.
                 </p>
 
                 @if (!string.IsNullOrWhiteSpace(conferenceTitle) || !string.IsNullOrWhiteSpace(slug))
@@ -136,6 +138,26 @@
         </div>
     </div>
 
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-4 mb-4">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-4 mb-4">
+            <i class="fas fa-times-circle me-2"></i>
+            @TempData["ErrorMessage"]
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
     <div class="row g-3 mb-4">
         <div class="col-xl-3 col-md-6">
             <div class="referee-stat-card">
@@ -172,6 +194,41 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="referee-stat-card">
+                <div class="referee-stat-icon stat-purple">
+                    <i class="fas fa-id-badge"></i>
+                </div>
+
+                <div>
+                    <div class="referee-stat-number">
+                        3
+                    </div>
+
+                    <div class="referee-stat-label">
+                        Desteklenen Hakem Rolü
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="role-info-card mb-4">
+        <div class="role-info-icon">
+            <i class="fas fa-circle-info"></i>
+        </div>
+
+        <div>
+            <div class="role-info-title">
+                Hakem rolleri birlikte desteklenir
+            </div>
+
+            <p class="role-info-text">
+                Bu havuzda <strong>Referee</strong>, <strong>Hakem</strong> veya <strong>Reviewer</strong> rollerinden herhangi birine sahip kullanıcılar listelenir.
+                Rol kaldırma işleminde kullanıcı silinmez; sadece varsa bu hakem rolleri kaldırılır.
+            </p>
+        </div>
     </div>
 
     <div class="referee-list-card">
@@ -182,7 +239,7 @@
                 </h5>
 
                 <p>
-                    Bu listede seçili kongrenin kurumuna bağlı hakemler görüntülenir.
+                    Bu listede seçili kongrenin kurumuna bağlı hakem rolündeki kullanıcılar görüntülenir.
                 </p>
             </div>
 
@@ -203,7 +260,9 @@
                 </h4>
 
                 <p>
-                    Hakem atama ekranında kullanıcıların görünebilmesi için kullanıcının hem <strong>Hakem</strong> rolüne sahip olması hem de seçili kongrenin kurumuna bağlı olması gerekir.
+                    Hakem atama ekranında kullanıcıların görünebilmesi için kullanıcının
+                    <strong>Referee</strong>, <strong>Hakem</strong> veya <strong>Reviewer</strong>
+                    rollerinden en az birine sahip olması ve seçili kongrenin kurumuna bağlı olması gerekir.
                 </p>
 
                 <div class="d-flex flex-wrap justify-content-center gap-2">
@@ -239,6 +298,10 @@
                                 Kurum
                             </th>
 
+                            <th>
+                                Rol Bilgisi
+                            </th>
+
                             <th class="text-end pe-4">
                                 İşlem
                             </th>
@@ -261,7 +324,7 @@
                                             </div>
 
                                             <div class="referee-subtitle">
-                                                ID: @item.Id.Substring(0, 8)...
+                                                ID: @(item.Id.Length >= 8 ? item.Id.Substring(0, 8) : item.Id)...
                                             </div>
                                         </div>
                                     </div>
@@ -289,6 +352,13 @@
                                     }
                                 </td>
 
+                                <td>
+                                    <span class="reviewer-role-badge">
+                                        <i class="fas fa-user-tie"></i>
+                                        Hakem Rolü
+                                    </span>
+                                </td>
+
                                 <td class="text-end pe-4">
                                     <form action="@deletePostUrl"
                                           method="post"
@@ -305,9 +375,9 @@
                                         }
 
                                         <button type="submit"
-                                                class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-3">
+                                                class="btn referee-remove-btn">
                                             <i class="fas fa-user-minus me-1"></i>
-                                            Hakem Rolünü Kaldır
+                                            Hakem Rollerini Kaldır
                                         </button>
                                     </form>
                                 </td>
@@ -508,6 +578,11 @@
         color: #16a34a;
     }
 
+    .stat-purple {
+        background: rgba(124, 58, 237, 0.10);
+        color: #7c3aed;
+    }
+
     .referee-stat-number {
         font-size: 1.45rem;
         font-weight: 900;
@@ -520,6 +595,44 @@
         font-weight: 800;
         font-size: 0.76rem;
         margin-top: 0.25rem;
+    }
+
+    .role-info-card {
+        background: rgba(13, 110, 253, 0.06);
+        border: 1px solid rgba(13, 110, 253, 0.14);
+        border-radius: 24px;
+        padding: 1rem 1.15rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.04);
+    }
+
+    .role-info-icon {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        border-radius: 15px;
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .role-info-title {
+        color: #0f172a;
+        font-size: 0.95rem;
+        font-weight: 950;
+        margin-bottom: 0.25rem;
+    }
+
+    .role-info-text {
+        color: #64748b;
+        font-size: 0.86rem;
+        font-weight: 650;
+        line-height: 1.6;
+        margin-bottom: 0;
     }
 
     .referee-list-card {
@@ -630,16 +743,48 @@
         font-weight: 700;
     }
 
-    .institution-badge {
+    .institution-badge,
+    .reviewer-role-badge {
         display: inline-flex;
         align-items: center;
         border-radius: 999px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        color: #475569;
         padding: 0.42rem 0.72rem;
         font-size: 0.78rem;
         font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .institution-badge {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+    }
+
+    .reviewer-role-badge {
+        gap: 0.42rem;
+        background: rgba(13, 110, 253, 0.10);
+        border: 1px solid rgba(13, 110, 253, 0.16);
+        color: #0d6efd;
+    }
+
+    .referee-remove-btn {
+        min-height: 38px;
+        border-radius: 999px;
+        border: 1px solid rgba(239, 68, 68, 0.26);
+        background: #ffffff;
+        color: #ef4444;
+        font-size: 0.82rem;
+        font-weight: 900;
+        padding: 0 0.95rem;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .referee-remove-btn:hover {
+        background: #ef4444;
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px rgba(239, 68, 68, 0.18);
     }
 
     .referee-empty-state {
@@ -698,6 +843,14 @@
     @@media (max-width: 768px) {
         .referee-hero-left {
             flex-direction: column;
+        }
+
+        .role-info-card {
+            flex-direction: column;
+        }
+
+        .referee-table tbody td {
+            min-width: 160px;
         }
     }
 </style>

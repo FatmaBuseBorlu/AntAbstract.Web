@@ -639,7 +639,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .Where(r => assignableReviewerIds.Contains(r.Id))
                 .ToList();
 
-            var others = allAccessibleReferees
+            var others = assignableReferees
                 .Where(x => !recommendedList.Any(r => r.Id == x.Id))
                 .ToList();
 
@@ -873,7 +873,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = T(
-                "Hakem ataması kaldırıldı.",
+                "Success_AssignmentRemoved",
                 "Hakem ataması kaldırıldı.");
 
             return Redirect(BuildAssignmentUrl(slug, conference.Id));
