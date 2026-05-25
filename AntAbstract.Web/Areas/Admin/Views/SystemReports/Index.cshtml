@@ -114,6 +114,19 @@
 
         <div class="col-xl-3 col-md-6">
             <div class="report-stat-card">
+                <div class="report-stat-icon stat-green">
+                    <i class="fas fa-circle-check"></i>
+                </div>
+
+                <div>
+                    <div class="report-stat-number">@Model.ActiveConferences</div>
+                    <div class="report-stat-label">Aktif Kongre</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="report-stat-card">
                 <div class="report-stat-icon stat-purple">
                     <i class="fas fa-users"></i>
                 </div>
@@ -173,6 +186,45 @@
                 <div>
                     <div class="report-stat-number">@Model.TotalSubmissions</div>
                     <div class="report-stat-label">Toplam Bildiri</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="report-stat-card">
+                <div class="report-stat-icon stat-blue">
+                    <i class="fas fa-user-check"></i>
+                </div>
+
+                <div>
+                    <div class="report-stat-number">@Model.AssignedSubmissions</div>
+                    <div class="report-stat-label">Hakem Atanan Bildiri</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="report-stat-card">
+                <div class="report-stat-icon stat-yellow">
+                    <i class="fas fa-hourglass-half"></i>
+                </div>
+
+                <div>
+                    <div class="report-stat-number">@Model.DecisionPendingSubmissions</div>
+                    <div class="report-stat-label">Karar Bekleyen Bildiri</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="report-stat-card">
+                <div class="report-stat-icon stat-green">
+                    <i class="fas fa-gavel"></i>
+                </div>
+
+                <div>
+                    <div class="report-stat-number">@Model.DecisionCompletedSubmissions</div>
+                    <div class="report-stat-label">Karar Verilen Bildiri</div>
                 </div>
             </div>
         </div>
@@ -256,8 +308,8 @@
                         @foreach (var item in conferenceReports)
                         {
                             var siteUrl = string.IsNullOrWhiteSpace(item.Slug)
-                            ? "#"
-                            : $"/{item.Slug}";
+                                ? "#"
+                                : $"/{item.Slug}";
 
                             <div class="bar-report-item">
                                 <div class="bar-report-top">
@@ -379,8 +431,8 @@
                         @foreach (var item in recentConferences)
                         {
                             var siteUrl = string.IsNullOrWhiteSpace(item.Slug)
-                            ? "#"
-                            : $"/{item.Slug}";
+                                ? "#"
+                                : $"/{item.Slug}";
 
                             <div class="recent-list-item">
                                 <div class="recent-date-box">
@@ -412,7 +464,7 @@
                 <div class="report-card-header">
                     <div>
                         <span>Kullanıcı Hareketleri</span>
-                        <h5>Son Kullanıcılar</h5>
+                        <h5>Kullanıcı Özeti</h5>
                     </div>
 
                     <div class="report-card-icon stat-orange">
@@ -445,7 +497,7 @@
                                 </div>
 
                                 <div class="user-date">
-                                    @(user.CreatedDate.HasValue? user.CreatedDate.Value.ToString("dd.MM.yyyy") : "Tarih yok")
+                                    @(user.CreatedDate.HasValue ? user.CreatedDate.Value.ToString("dd.MM.yyyy") : "Tarih yok")
                                 </div>
                             </div>
                         }
@@ -552,10 +604,10 @@
         box-shadow: 0 14px 28px rgba(13, 110, 253, 0.22);
     }
 
-        .report-primary-btn:hover {
-            color: #ffffff;
-            transform: translateY(-1px);
-        }
+    .report-primary-btn:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+    }
 
     .report-light-btn {
         border: 1px solid #dbe3ef;
@@ -563,11 +615,11 @@
         color: #334155;
     }
 
-        .report-light-btn:hover {
-            color: #0d6efd;
-            background: #f8fbff;
-            border-color: rgba(13, 110, 253, 0.25);
-        }
+    .report-light-btn:hover {
+        color: #0d6efd;
+        background: #f8fbff;
+        border-color: rgba(13, 110, 253, 0.25);
+    }
 
     .report-stat-card {
         min-height: 104px;
@@ -582,10 +634,10 @@
         transition: all 0.2s ease;
     }
 
-        .report-stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
-        }
+    .report-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+    }
 
     .report-stat-icon,
     .report-card-icon {
@@ -669,20 +721,20 @@
         margin-bottom: 1.2rem;
     }
 
-        .report-card-header span {
-            color: #64748b;
-            font-size: 0.76rem;
-            font-weight: 900;
-            letter-spacing: 0.07em;
-            text-transform: uppercase;
-        }
+    .report-card-header span {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 900;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+    }
 
-        .report-card-header h5 {
-            color: #0f172a;
-            font-size: 1.18rem;
-            font-weight: 900;
-            margin: 0.2rem 0 0;
-        }
+    .report-card-header h5 {
+        color: #0f172a;
+        font-size: 1.18rem;
+        font-weight: 900;
+        margin: 0.2rem 0 0;
+    }
 
     .payment-summary-grid {
         display: grid;
@@ -691,29 +743,29 @@
         margin-bottom: 1rem;
     }
 
-        .payment-summary-grid div,
-        .revenue-box {
-            background: #f8fafc;
-            border: 1px solid #edf2f7;
-            border-radius: 20px;
-            padding: 1rem;
-        }
+    .payment-summary-grid div,
+    .revenue-box {
+        background: #f8fafc;
+        border: 1px solid #edf2f7;
+        border-radius: 20px;
+        padding: 1rem;
+    }
 
-            .payment-summary-grid span,
-            .revenue-box span {
-                display: block;
-                color: #64748b;
-                font-size: 0.8rem;
-                font-weight: 900;
-                margin-bottom: 0.35rem;
-            }
+    .payment-summary-grid span,
+    .revenue-box span {
+        display: block;
+        color: #64748b;
+        font-size: 0.8rem;
+        font-weight: 900;
+        margin-bottom: 0.35rem;
+    }
 
-        .payment-summary-grid strong {
-            color: #0f172a;
-            font-size: 1.7rem;
-            font-weight: 900;
-            line-height: 1;
-        }
+    .payment-summary-grid strong {
+        color: #0f172a;
+        font-size: 1.7rem;
+        font-weight: 900;
+        line-height: 1;
+    }
 
     .revenue-box strong {
         display: block;
@@ -757,25 +809,25 @@
         margin-bottom: 0.75rem;
     }
 
-        .bar-report-top strong {
-            display: block;
-            color: #0f172a;
-            font-weight: 900;
-            line-height: 1.35;
-        }
+    .bar-report-top strong {
+        display: block;
+        color: #0f172a;
+        font-weight: 900;
+        line-height: 1.35;
+    }
 
-        .bar-report-top span,
-        .tenant-main span,
-        .recent-content span,
-        .recent-content small,
-        .user-info span,
-        .user-info small {
-            display: block;
-            color: #64748b;
-            font-size: 0.82rem;
-            font-weight: 700;
-            margin-top: 0.15rem;
-        }
+    .bar-report-top span,
+    .tenant-main span,
+    .recent-content span,
+    .recent-content small,
+    .user-info span,
+    .user-info small {
+        display: block;
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 700;
+        margin-top: 0.15rem;
+    }
 
     .bar-report-count {
         min-width: fit-content;
@@ -809,9 +861,9 @@
         text-decoration: none;
     }
 
-        .mini-link:hover {
-            text-decoration: underline;
-        }
+    .mini-link:hover {
+        text-decoration: underline;
+    }
 
     .tenant-main {
         display: flex;
@@ -851,26 +903,26 @@
         margin-bottom: 0.85rem;
     }
 
-        .tenant-stats div {
-            border-radius: 16px;
-            background: #ffffff;
-            border: 1px solid #edf2f7;
-            padding: 0.75rem;
-        }
+    .tenant-stats div {
+        border-radius: 16px;
+        background: #ffffff;
+        border: 1px solid #edf2f7;
+        padding: 0.75rem;
+    }
 
-        .tenant-stats strong {
-            display: block;
-            color: #0f172a;
-            font-size: 1.25rem;
-            font-weight: 900;
-            line-height: 1;
-        }
+    .tenant-stats strong {
+        display: block;
+        color: #0f172a;
+        font-size: 1.25rem;
+        font-weight: 900;
+        line-height: 1;
+    }
 
-        .tenant-stats span {
-            color: #64748b;
-            font-size: 0.76rem;
-            font-weight: 800;
-        }
+    .tenant-stats span {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 800;
+    }
 
     .recent-list-item {
         display: grid;
@@ -892,16 +944,16 @@
         line-height: 1;
     }
 
-        .recent-date-box strong {
-            font-size: 1.18rem;
-            font-weight: 900;
-        }
+    .recent-date-box strong {
+        font-size: 1.18rem;
+        font-weight: 900;
+    }
 
-        .recent-date-box span {
-            margin-top: 0.2rem;
-            font-size: 0.68rem;
-            font-weight: 900;
-        }
+    .recent-date-box span {
+        margin-top: 0.2rem;
+        font-size: 0.68rem;
+        font-weight: 900;
+    }
 
     .recent-action {
         width: 40px;
@@ -916,10 +968,10 @@
         text-decoration: none;
     }
 
-        .recent-action:hover {
-            background: #0d6efd;
-            color: #ffffff;
-        }
+    .recent-action:hover {
+        background: #0d6efd;
+        color: #ffffff;
+    }
 
     .recent-user-grid {
         display: grid;
@@ -938,12 +990,12 @@
         min-width: 0;
     }
 
-        .user-info strong,
-        .user-info span {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
+    .user-info strong,
+    .user-info span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 
     .user-date {
         color: #64748b;
@@ -966,22 +1018,22 @@
         padding: 1.5rem;
     }
 
-        .report-empty-mini i {
-            color: #0d6efd;
-            font-size: 2rem;
-            margin-bottom: 0.85rem;
-        }
+    .report-empty-mini i {
+        color: #0d6efd;
+        font-size: 2rem;
+        margin-bottom: 0.85rem;
+    }
 
-        .report-empty-mini strong {
-            color: #0f172a;
-            font-weight: 900;
-            margin-bottom: 0.25rem;
-        }
+    .report-empty-mini strong {
+        color: #0f172a;
+        font-weight: 900;
+        margin-bottom: 0.25rem;
+    }
 
-        .report-empty-mini span {
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
+    .report-empty-mini span {
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
 
     @@media (max-width: 1200px) {
         .recent-user-grid {
