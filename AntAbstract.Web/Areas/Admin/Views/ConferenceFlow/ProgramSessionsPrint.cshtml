@@ -1,12 +1,33 @@
 ﻿@model IEnumerable<AntAbstract.Domain.Entities.Session>
+
+@using System
+@using System.Collections.Generic
+@using System.Linq
 @using AntAbstract.Domain.Entities
 
 @{
     Layout = null;
 
     var sessions = Model?.ToList() ?? new List<Session>();
+
     var conferenceTitle = ViewBag.ConferenceTitle as string ?? "Kongre Programı";
     var slug = ViewBag.Slug as string ?? "";
+
+    var conferenceId = ViewBag.ConferenceId is Guid selectedConferenceId
+        ? selectedConferenceId
+        : Guid.Empty;
+
+    var conferenceIdText = conferenceId == Guid.Empty
+        ? Context.Request.Query["conferenceId"].ToString()
+        : conferenceId.ToString();
+
+    var backUrl = string.IsNullOrWhiteSpace(slug)
+        ? string.IsNullOrWhiteSpace(conferenceIdText)
+            ? "/Admin/ConferenceFlow/ProgramSessions"
+            : $"/Admin/ConferenceFlow/ProgramSessions?conferenceId={conferenceIdText}"
+        : string.IsNullOrWhiteSpace(conferenceIdText)
+            ? $"/{slug}/Admin/ConferenceFlow/ProgramSessions"
+            : $"/{slug}/Admin/ConferenceFlow/ProgramSessions?conferenceId={conferenceIdText}";
 
     var groupedSessions = sessions
         .OrderBy(x => x.SessionDate)
@@ -16,6 +37,32 @@
         .ToList();
 
     var today = DateTime.Now.ToString("dd.MM.yyyy HH:mm");
+
+    var totalSubmissionCount = sessions.Sum(x => x.Submissions?.Count ?? 0);
+
+    string GetAuthorName(Submission submission)
+    {
+        var authorName = $"{submission.Author?.FirstName} {submission.Author?.LastName}".Trim();
+
+        return string.IsNullOrWhiteSpace(authorName)
+            ? "Yazar belirtilmedi"
+            : authorName;
+    }
+
+    string GetSessionDescription(Session session)
+    {
+        if (!string.IsNullOrWhiteSpace(session.Description))
+        {
+            return session.Description;
+        }
+
+        if (!string.IsNullOrWhiteSpace(session.PresentationTitle))
+        {
+            return session.PresentationTitle;
+        }
+
+        return "";
+    }
 }
 
 <!DOCTYPE html>
@@ -27,6 +74,10 @@
     <style>
         * {
             box-sizing: border-box;
+        }
+
+        html {
+            background: #f1f5f9;
         }
 
         body {
@@ -48,16 +99,27 @@
             align-items: center;
             justify-content: space-between;
             gap: 16px;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
         }
 
         .toolbar-title {
-            font-weight: 800;
+            font-weight: 900;
             color: #0f172a;
+            line-height: 1.4;
+        }
+
+        .toolbar-subtitle {
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 700;
+            margin-top: 2px;
         }
 
         .toolbar-actions {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
+            justify-content: flex-end;
         }
 
         .btn {
@@ -73,11 +135,27 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            gap: 7px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 13px;
+        }
+
+        .btn:hover {
+            color: #0d6efd;
+            border-color: rgba(13, 110, 253, 0.32);
+            background: #f8fbff;
         }
 
         .btn-primary {
             border-color: #0d6efd;
             background: #0d6efd;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: #0b5ed7;
             color: #ffffff;
         }
 
@@ -103,9 +181,9 @@
             margin-bottom: 12px;
         }
 
-            .brand span {
-                color: #00aeef;
-            }
+        .brand span {
+            color: #00aeef;
+        }
 
         .document-title {
             font-size: 26px;
@@ -187,12 +265,14 @@
         .day-title {
             font-size: 16px;
             font-weight: 900;
+            line-height: 1.35;
         }
 
         .day-count {
             font-size: 12px;
             font-weight: 800;
             color: #475569;
+            white-space: nowrap;
         }
 
         .session-card {
@@ -217,9 +297,11 @@
             border: 1px solid #e2e8f0;
             padding: 12px;
             text-align: center;
+            height: fit-content;
         }
 
-        .time-start {
+        .time-start,
+        .time-end {
             color: #0d6efd;
             font-size: 18px;
             font-weight: 900;
@@ -232,13 +314,6 @@
             background: #bfdbfe;
             margin: 8px auto;
             border-radius: 999px;
-        }
-
-        .time-end {
-            color: #0d6efd;
-            font-size: 18px;
-            font-weight: 900;
-            line-height: 1;
         }
 
         .session-title {
@@ -261,16 +336,16 @@
             gap: 7px;
         }
 
-            .session-meta span {
-                display: inline-flex;
-                border-radius: 999px;
-                border: 1px solid #e2e8f0;
-                background: #f8fafc;
-                color: #475569;
-                padding: 6px 10px;
-                font-size: 12px;
-                font-weight: 700;
-            }
+        .session-meta span {
+            display: inline-flex;
+            border-radius: 999px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            color: #475569;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 700;
+        }
 
         .submissions {
             border-top: 1px dashed #e2e8f0;
@@ -293,15 +368,16 @@
             background: #ffffff;
         }
 
-            .submission-item:last-child {
-                margin-bottom: 0;
-            }
+        .submission-item:last-child {
+            margin-bottom: 0;
+        }
 
         .submission-title {
             font-size: 13px;
             font-weight: 800;
             color: #0f172a;
             margin-bottom: 4px;
+            line-height: 1.45;
         }
 
         .submission-author {
@@ -318,6 +394,7 @@
             color: #64748b;
             background: #f8fafc;
             font-weight: 700;
+            line-height: 1.55;
         }
 
         .footer {
@@ -329,9 +406,16 @@
             display: flex;
             justify-content: space-between;
             gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        @@page {
+            size: A4;
+            margin: 12mm;
         }
 
         @@media print {
+            html,
             body {
                 background: #ffffff;
             }
@@ -344,7 +428,7 @@
                 width: auto;
                 min-height: auto;
                 margin: 0;
-                padding: 12mm;
+                padding: 0;
                 box-shadow: none;
             }
 
@@ -352,22 +436,83 @@
             .session-card {
                 page-break-inside: avoid;
             }
+
+            .header {
+                margin-top: 0;
+            }
+        }
+
+        @@media (max-width: 768px) {
+            .print-toolbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .toolbar-actions {
+                width: 100%;
+                justify-content: stretch;
+            }
+
+            .btn {
+                flex: 1;
+            }
+
+            .page {
+                width: calc(100% - 24px);
+                min-height: auto;
+                margin: 12px auto;
+                padding: 24px 18px;
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .session-top {
+                grid-template-columns: 1fr;
+            }
+
+            .time-box {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+            }
+
+            .time-line {
+                margin: 0;
+            }
         }
     </style>
 </head>
 
 <body>
     <div class="print-toolbar">
-        <div class="toolbar-title">
-            Program çıktısı hazır
+        <div>
+            <div class="toolbar-title">
+                Program çıktısı hazır
+            </div>
+
+            <div class="toolbar-subtitle">
+                Yazdırabilir, PDF olarak kaydedebilir veya program ekranına geri dönebilirsiniz.
+            </div>
         </div>
 
         <div class="toolbar-actions">
-            <button type="button" class="btn btn-primary" onclick="window.print()">
+            <button type="button"
+                    class="btn btn-primary"
+                    onclick="window.print()">
                 PDF Olarak Kaydet / Yazdır
             </button>
 
-            <button type="button" class="btn" onclick="window.close()">
+            <a href="@backUrl"
+               class="btn">
+                Program Ekranına Dön
+            </a>
+
+            <button type="button"
+                    class="btn"
+                    onclick="window.close()">
                 Kapat
             </button>
         </div>
@@ -390,28 +535,50 @@
             <div class="meta-row">
                 @if (!string.IsNullOrWhiteSpace(slug))
                 {
-                    <span class="meta-pill">/@slug</span>
+                    <span class="meta-pill">
+                        /@slug
+                    </span>
                 }
 
-                <span class="meta-pill">Oluşturulma: @today</span>
-                <span class="meta-pill">Aktif oturumlar</span>
+                <span class="meta-pill">
+                    Oluşturulma: @today
+                </span>
+
+                <span class="meta-pill">
+                    Aktif oturumlar
+                </span>
             </div>
         </header>
 
         <section class="summary-grid">
             <div class="summary-card">
-                <div class="summary-value">@sessions.Count</div>
-                <div class="summary-label">Toplam Oturum</div>
+                <div class="summary-value">
+                    @sessions.Count
+                </div>
+
+                <div class="summary-label">
+                    Toplam Oturum
+                </div>
             </div>
 
             <div class="summary-card">
-                <div class="summary-value">@groupedSessions.Count</div>
-                <div class="summary-label">Program Günü</div>
+                <div class="summary-value">
+                    @groupedSessions.Count
+                </div>
+
+                <div class="summary-label">
+                    Program Günü
+                </div>
             </div>
 
             <div class="summary-card">
-                <div class="summary-value">@sessions.Sum(x => x.Submissions?.Count ?? 0)</div>
-                <div class="summary-label">Programa Ekli Bildiri</div>
+                <div class="summary-value">
+                    @totalSubmissionCount
+                </div>
+
+                <div class="summary-label">
+                    Programa Ekli Bildiri
+                </div>
             </div>
         </section>
 
@@ -441,10 +608,7 @@
 
                     @foreach (var item in dayGroup.OrderBy(x => x.StartTime).ThenBy(x => x.SortOrder))
                     {
-                        var description = !string.IsNullOrWhiteSpace(item.Description)
-                        ? item.Description
-                        : item.PresentationTitle;
-
+                        var description = GetSessionDescription(item);
                         var submissionCount = item.Submissions?.Count ?? 0;
 
                         <article class="session-card">
@@ -501,20 +665,13 @@
 
                                     @foreach (var sub in item.Submissions.OrderBy(x => x.Title))
                                     {
-                                        var authorName = $"{sub.Author?.FirstName} {sub.Author?.LastName}".Trim();
-
-                                        if (string.IsNullOrWhiteSpace(authorName))
-                                        {
-                                            authorName = "Yazar belirtilmedi";
-                                        }
-
                                         <div class="submission-item">
                                             <div class="submission-title">
                                                 @sub.Title
                                             </div>
 
                                             <div class="submission-author">
-                                                @authorName
+                                                @GetAuthorName(sub)
                                             </div>
                                         </div>
                                     }
@@ -527,9 +684,17 @@
         }
 
         <footer class="footer">
-            <span>ANTABSTRACT</span>
-            <span>@conferenceTitle</span>
-            <span>@today</span>
+            <span>
+                ANTABSTRACT
+            </span>
+
+            <span>
+                @conferenceTitle
+            </span>
+
+            <span>
+                @today
+            </span>
         </footer>
     </main>
 </body>

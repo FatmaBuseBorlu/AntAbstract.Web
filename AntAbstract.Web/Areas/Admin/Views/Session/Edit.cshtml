@@ -1,12 +1,27 @@
 ﻿@model AntAbstract.Domain.Entities.Session
+
+@using System
+
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
+    ViewData["HideSelectedConferenceBar"] = true;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
     var slug = Context.GetRouteValue("slug")?.ToString() ?? "";
-    var conferenceId = Context.Request.Query["conferenceId"].ToString();
+
+    var conferenceId = ViewBag.ConferenceId is Guid selectedConferenceId
+        ? selectedConferenceId
+        : Model.ConferenceId;
+
+    var conferenceIdText = conferenceId == Guid.Empty
+        ? Context.Request.Query["conferenceId"].ToString()
+        : conferenceId.ToString();
+
+    var conferenceTitle = ViewBag.ConferenceTitle as string
+                          ?? ViewBag.ConferenceName as string
+                          ?? "";
 
     string L(string key, string fallback)
     {
@@ -18,8 +33,8 @@
     }
 
     var flowUrl = string.IsNullOrWhiteSpace(slug)
-        ? $"/Admin/ConferenceFlow/ProgramSessions?conferenceId={conferenceId}"
-        : $"/{slug}/Admin/ConferenceFlow/ProgramSessions?conferenceId={conferenceId}";
+        ? $"/Admin/ConferenceFlow/ProgramSessions?conferenceId={conferenceIdText}"
+        : $"/{slug}/Admin/ConferenceFlow/ProgramSessions?conferenceId={conferenceIdText}";
 
     var backUrl = flowUrl;
 }
@@ -103,13 +118,13 @@
         white-space: nowrap;
     }
 
-        .session-back-btn:hover {
-            color: #0d6efd;
-            border-color: rgba(13, 110, 253, 0.28);
-            transform: translateY(-2px);
-            box-shadow: 0 12px 28px rgba(13, 110, 253, 0.10);
-            text-decoration: none;
-        }
+    .session-back-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.28);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(13, 110, 253, 0.10);
+        text-decoration: none;
+    }
 
     .session-edit-grid {
         display: grid;
@@ -174,6 +189,45 @@
         padding: 1.7rem;
     }
 
+    .conference-mini-card {
+        border-radius: 20px;
+        border: 1px solid rgba(0, 174, 239, 0.16);
+        background: linear-gradient(135deg, rgba(0, 174, 239, 0.08), rgba(13, 110, 253, 0.06));
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        margin-bottom: 1.35rem;
+    }
+
+    .conference-mini-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 16px;
+        background: #ffffff;
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.10);
+    }
+
+    .conference-mini-label {
+        color: #64748b;
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.35px;
+        margin-bottom: 0.15rem;
+    }
+
+    .conference-mini-title {
+        color: #0f172a;
+        font-size: 0.95rem;
+        font-weight: 900;
+    }
+
     .form-label-modern {
         color: #475569;
         font-size: 0.84rem;
@@ -195,16 +249,16 @@
         box-shadow: 0 6px 18px rgba(15, 23, 42, 0.025);
     }
 
-        .form-control-modern::placeholder {
-            color: #94a3b8;
-            font-weight: 600;
-        }
+    .form-control-modern::placeholder {
+        color: #94a3b8;
+        font-weight: 600;
+    }
 
-        .form-control-modern:focus {
-            outline: none;
-            border-color: #00aeef;
-            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.12);
-        }
+    .form-control-modern:focus {
+        outline: none;
+        border-color: #00aeef;
+        box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.12);
+    }
 
     textarea.form-control-modern {
         min-height: 128px;
@@ -268,11 +322,11 @@
         transition: all 0.2s ease;
     }
 
-        .session-save-btn:hover {
-            color: #ffffff;
-            transform: translateY(-2px);
-            box-shadow: 0 18px 38px rgba(0, 174, 239, 0.34);
-        }
+    .session-save-btn:hover {
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 18px 38px rgba(0, 174, 239, 0.34);
+    }
 
     .session-cancel-btn {
         min-height: 54px;
@@ -290,12 +344,12 @@
         transition: all 0.2s ease;
     }
 
-        .session-cancel-btn:hover {
-            color: #0d6efd;
-            background: #f8fbff;
-            border-color: rgba(13, 110, 253, 0.28);
-            text-decoration: none;
-        }
+    .session-cancel-btn:hover {
+        color: #0d6efd;
+        background: #f8fbff;
+        border-color: rgba(13, 110, 253, 0.28);
+        text-decoration: none;
+    }
 
     .session-side-card {
         background: #ffffff;
@@ -341,19 +395,19 @@
         margin: 0;
     }
 
-        .session-tip-list li {
-            display: flex;
-            gap: 0.55rem;
-            color: #475569;
-            font-size: 0.8rem;
-            font-weight: 750;
-            margin-bottom: 0.7rem;
-        }
+    .session-tip-list li {
+        display: flex;
+        gap: 0.55rem;
+        color: #475569;
+        font-size: 0.8rem;
+        font-weight: 750;
+        margin-bottom: 0.7rem;
+    }
 
-            .session-tip-list li i {
-                color: #00aeef;
-                margin-top: 0.15rem;
-            }
+    .session-tip-list li i {
+        color: #00aeef;
+        margin-top: 0.15rem;
+    }
 
     .validation-summary-errors {
         border: none;
@@ -461,12 +515,31 @@
                         <div asp-validation-summary="All" class="validation-summary-errors"></div>
                     }
 
+                    @if (!string.IsNullOrWhiteSpace(conferenceTitle))
+                    {
+                        <div class="conference-mini-card">
+                            <div class="conference-mini-icon">
+                                <i class="fas fa-building-columns"></i>
+                            </div>
+
+                            <div>
+                                <div class="conference-mini-label">
+                                    @L("ConferenceLabel", "Seçili Kongre")
+                                </div>
+
+                                <div class="conference-mini-title">
+                                    @conferenceTitle
+                                </div>
+                            </div>
+                        </div>
+                    }
+
                     <form asp-area="Admin"
                           asp-controller="Session"
                           asp-action="Edit"
                           asp-route-slug="@slug"
                           asp-route-id="@Model.Id"
-                          asp-route-conferenceId="@conferenceId"
+                          asp-route-conferenceId="@conferenceIdText"
                           method="post">
 
                         @Html.AntiForgeryToken()
