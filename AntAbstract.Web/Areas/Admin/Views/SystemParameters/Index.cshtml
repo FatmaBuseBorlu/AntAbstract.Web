@@ -6,6 +6,7 @@
     Layout = "_LayoutDashboard";
 
     var activeGroup = ViewBag.ActiveGroup?.ToString() ?? "University";
+    var deleteConfirmMessage = Localizer["DeleteConfirmMessage"].Value;
 
     var tabData = new[]
     {
@@ -44,85 +45,437 @@
     };
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h3 class="fw-bold text-dark mb-0">
-            @Localizer["PageTitle"]
-        </h3>
+<style>
+    .system-parameters-page {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        padding-bottom: 2rem;
+    }
 
-        <p class="text-muted small mb-0">
-            @Localizer["PageLead"]
-        </p>
+    .system-parameters-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.35rem;
+    }
+
+    .system-parameters-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.3rem;
+    }
+
+    .system-parameters-title {
+        color: #0f172a;
+        font-size: 1.85rem;
+        font-weight: 950;
+        letter-spacing: -0.05em;
+        margin-bottom: 0.35rem;
+    }
+
+    .system-parameters-lead {
+        color: #64748b;
+        font-size: 0.92rem;
+        font-weight: 650;
+        line-height: 1.65;
+        margin-bottom: 0;
+    }
+
+    .system-parameters-card {
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 28px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+
+    .system-tabs {
+        border-bottom: 1px solid #edf2f7;
+        background: #ffffff;
+    }
+
+    .system-tabs .nav-link {
+        border: none;
+        border-radius: 0;
+        color: #64748b;
+        min-height: 58px;
+        font-size: 0.86rem;
+        font-weight: 900;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .system-tabs .nav-link i {
+        color: #64748b;
+        transition: all 0.2s ease;
+    }
+
+    .system-tabs .nav-link:hover {
+        color: #0d6efd;
+        background: #f8fbff;
+    }
+
+    .system-tabs .nav-link:hover i {
+        color: #0d6efd;
+    }
+
+    .system-tabs .nav-link.active {
+        color: #0d6efd;
+        background: #f8fbff;
+    }
+
+    .system-tabs .nav-link.active i {
+        color: #0d6efd;
+    }
+
+    .system-tabs .nav-link.active::after {
+        content: "";
+        position: absolute;
+        left: 18%;
+        right: 18%;
+        bottom: 0;
+        height: 3px;
+        border-radius: 999px 999px 0 0;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+    }
+
+    .system-tab-toolbar {
+        padding: 1.15rem 1.35rem;
+        background: #f8fafc;
+        border-bottom: 1px solid #edf2f7;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .system-total-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.48rem 0.85rem;
+        border-radius: 999px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 0.82rem;
+        font-weight: 900;
+    }
+
+    .system-create-btn {
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        border: none;
+        border-radius: 999px;
+        padding: 0 1rem;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        font-size: 0.86rem;
+        font-weight: 950;
+        text-decoration: none;
+        box-shadow: 0 12px 24px rgba(13, 110, 253, 0.18);
+        transition: all 0.2s ease;
+    }
+
+    .system-create-btn:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 16px 30px rgba(13, 110, 253, 0.24);
+    }
+
+    .system-table {
+        margin-bottom: 0;
+    }
+
+    .system-table thead th {
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 1rem 1.15rem;
+        border-bottom: 1px solid #edf2f7;
+        white-space: nowrap;
+    }
+
+    .system-table tbody td {
+        padding: 0.95rem 1.15rem;
+        border-bottom: 1px solid #edf2f7;
+        vertical-align: middle;
+    }
+
+    .system-table tbody tr:hover {
+        background: #f8fbff;
+    }
+
+    .system-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .system-order-badge {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #64748b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.82rem;
+        font-weight: 950;
+    }
+
+    .system-param-name {
+        color: #0f172a;
+        font-size: 0.9rem;
+        font-weight: 950;
+    }
+
+    .system-param-name-en {
+        color: #334155;
+        font-size: 0.88rem;
+        font-weight: 650;
+    }
+
+    .system-empty-en {
+        color: #94a3b8;
+        font-size: 0.8rem;
+        font-weight: 700;
+        font-style: italic;
+    }
+
+    .system-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.38rem;
+        border-radius: 999px;
+        padding: 0.4rem 0.72rem;
+        font-size: 0.76rem;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .system-status-active {
+        background: rgba(34, 197, 94, 0.12);
+        color: #15803d;
+        border: 1px solid rgba(34, 197, 94, 0.18);
+    }
+
+    .system-status-passive {
+        background: rgba(100, 116, 139, 0.12);
+        color: #64748b;
+        border: 1px solid rgba(100, 116, 139, 0.18);
+    }
+
+    .admin-action-group {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.42rem;
+    }
+
+    .admin-action-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.84rem;
+        font-weight: 900;
+        text-decoration: none;
+        border: 1px solid transparent;
+        background: #ffffff;
+        transition: all 0.2s ease;
+        line-height: 1;
+        padding: 0;
+    }
+
+    .admin-action-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10);
+    }
+
+    .admin-action-edit {
+        color: #f59e0b;
+        border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    .admin-action-edit:hover {
+        background: rgba(245, 158, 11, 0.10);
+        color: #d97706;
+    }
+
+    .admin-action-sync {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.28);
+    }
+
+    .admin-action-sync:hover {
+        background: rgba(13, 110, 253, 0.08);
+        color: #0b5ed7;
+    }
+
+    .admin-action-delete {
+        color: #dc3545;
+        border-color: rgba(220, 53, 69, 0.30);
+    }
+
+    .admin-action-delete:hover {
+        background: rgba(220, 53, 69, 0.08);
+        color: #bb2d3b;
+    }
+
+    .system-empty-state {
+        padding: 4rem 1.5rem;
+        text-align: center;
+        color: #64748b;
+    }
+
+    .system-empty-state-icon {
+        width: 76px;
+        height: 76px;
+        border-radius: 26px;
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .system-empty-state p {
+        margin-bottom: 0;
+        font-size: 0.92rem;
+        font-weight: 700;
+    }
+
+    @@media (max-width: 768px) {
+        .system-parameters-header {
+            flex-direction: column;
+        }
+
+        .system-tabs .nav-link {
+            font-size: 0.78rem;
+            padding-left: 0.35rem;
+            padding-right: 0.35rem;
+        }
+
+        .system-table tbody td {
+            min-width: 140px;
+        }
+    }
+</style>
+
+<div class="system-parameters-page">
+
+    <div class="system-parameters-header">
+        <div>
+            <div class="system-parameters-label">
+                Sistem
+            </div>
+
+            <h3 class="system-parameters-title">
+                @Localizer["PageTitle"]
+            </h3>
+
+            <p class="system-parameters-lead">
+                @Localizer["PageLead"]
+            </p>
+        </div>
     </div>
-</div>
 
-<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-    <div class="card-header bg-white p-0 border-bottom">
-        <ul class="nav nav-tabs nav-justified" id="paramTabs" role="tablist">
-            @foreach (var tab in tabData)
-            {
-                var isActiveTab = string.Equals(tab.Group, activeGroup, StringComparison.OrdinalIgnoreCase);
+    <div class="system-parameters-card">
+        <div class="system-tabs">
+            <ul class="nav nav-tabs nav-justified border-0"
+                id="paramTabs"
+                role="tablist">
 
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-bold py-3 @(isActiveTab ? "active" : "")"
-                            id="@tab.Id-tab"
-                            data-bs-toggle="tab"
-                            data-bs-target="#@tab.Id"
-                            type="button"
-                            role="tab"
-                            aria-controls="@tab.Id"
-                            aria-selected="@(isActiveTab ? "true" : "false")">
-                        <i class="fas @tab.Icon me-2"></i>
-                        @tab.Title
-                    </button>
-                </li>
-            }
-        </ul>
-    </div>
+                @foreach (var tab in tabData)
+                {
+                    var isActiveTab = string.Equals(
+                        tab.Group,
+                        activeGroup,
+                        StringComparison.OrdinalIgnoreCase);
 
-    <div class="card-body p-0">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link @(isActiveTab ? "active" : "")"
+                                id="@tab.Id-tab"
+                                data-bs-toggle="tab"
+                                data-bs-target="#@tab.Id"
+                                type="button"
+                                role="tab"
+                                aria-controls="@tab.Id"
+                                aria-selected="@(isActiveTab ? "true" : "false")">
+                            <i class="fas @tab.Icon me-2"></i>
+                            @tab.Title
+                        </button>
+                    </li>
+                }
+
+            </ul>
+        </div>
+
         <div class="tab-content" id="paramTabsContent">
 
             @foreach (var tab in tabData)
             {
-                var isActiveTab = string.Equals(tab.Group, activeGroup, StringComparison.OrdinalIgnoreCase);
+                var isActiveTab = string.Equals(
+                    tab.Group,
+                    activeGroup,
+                    StringComparison.OrdinalIgnoreCase);
 
                 var items = Model
-                .Where(x => x.Group == tab.Group)
-                .OrderBy(x => x.Order)
-                .ThenBy(x => x.Name)
-                .ToList();
+                    .Where(x => x.Group == tab.Group)
+                    .OrderBy(x => x.Order)
+                    .ThenBy(x => x.Name)
+                    .ToList();
 
                 <div class="tab-pane fade @(isActiveTab ? "show active" : "")"
                      id="@tab.Id"
                      role="tabpanel"
                      aria-labelledby="@tab.Id-tab">
 
-                    <div class="p-4 bg-light border-bottom d-flex justify-content-between align-items-center">
-                        <span class="fw-bold text-muted">
+                    <div class="system-tab-toolbar">
+                        <span class="system-total-pill">
+                            <i class="fas fa-list-ul"></i>
                             @Localizer["TotalCountLabel", items.Count]
                         </span>
 
                         <a asp-action="Create"
                            asp-route-group="@tab.Group"
-                           class="btn btn-primary btn-sm rounded-pill fw-bold px-3">
-                            <i class="fas fa-plus me-1"></i>
+                           class="system-create-btn">
+                            <i class="fas fa-plus"></i>
                             @Localizer["AddNewButton"]
                         </a>
                     </div>
 
                     @if (!items.Any())
                     {
-                        <div class="text-center p-5 text-muted">
-                            <i class="fas fa-folder-open fa-3x mb-3 opacity-25"></i>
-                            <p class="mb-0">@tab.EmptyMsg</p>
+                        <div class="system-empty-state">
+                            <div class="system-empty-state-icon">
+                                <i class="fas fa-folder-open"></i>
+                            </div>
+
+                            <p>
+                                @tab.EmptyMsg
+                            </p>
                         </div>
                     }
                     else
                     {
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light text-muted small">
+                            <table class="table table-hover align-middle system-table">
+                                <thead>
                                     <tr>
                                         <th class="ps-4" style="width: 90px;">
                                             @Localizer["TableHeaderOrder"]
@@ -136,7 +489,7 @@
                                             Name EN
                                         </th>
 
-                                        <th style="width: 130px;">
+                                        <th style="width: 140px;">
                                             @Localizer["TableHeaderStatus"]
                                         </th>
 
@@ -150,24 +503,28 @@
                                     @foreach (var item in items)
                                     {
                                         <tr>
-                                            <td class="ps-4 fw-bold text-muted">
-                                                @item.Order
+                                            <td class="ps-4">
+                                                <span class="system-order-badge">
+                                                    @item.Order
+                                                </span>
                                             </td>
 
-                                            <td class="fw-bold text-dark">
-                                                @item.Name
+                                            <td>
+                                                <div class="system-param-name">
+                                                    @item.Name
+                                                </div>
                                             </td>
 
                                             <td>
                                                 @if (!string.IsNullOrWhiteSpace(item.NameEn))
                                                 {
-                                                    <span class="text-dark">
+                                                    <span class="system-param-name-en">
                                                         @item.NameEn
                                                     </span>
                                                 }
                                                 else
                                                 {
-                                                    <span class="text-muted fst-italic small">
+                                                    <span class="system-empty-en">
                                                         İngilizce karşılık girilmedi
                                                     </span>
                                                 }
@@ -176,52 +533,56 @@
                                             <td>
                                                 @if (item.IsActive)
                                                 {
-                                                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">
+                                                    <span class="system-status-badge system-status-active">
+                                                        <i class="fas fa-check-circle"></i>
                                                         @Localizer["StatusActive"]
                                                     </span>
                                                 }
                                                 else
                                                 {
-                                                    <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3">
+                                                    <span class="system-status-badge system-status-passive">
+                                                        <i class="fas fa-circle-minus"></i>
                                                         @Localizer["StatusPassive"]
                                                     </span>
                                                 }
                                             </td>
 
                                             <td class="text-end pe-4">
-                                                <a asp-action="Edit"
-                                                   asp-route-id="@item.Id"
-                                                   class="btn btn-sm btn-light text-warning me-1"
-                                                   title="Düzenle">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
+                                                <div class="admin-action-group">
+                                                    <a asp-action="Edit"
+                                                       asp-route-id="@item.Id"
+                                                       class="admin-action-btn admin-action-edit"
+                                                       title="Düzenle">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
 
-                                                <form asp-action="Toggle"
-                                                      asp-route-id="@item.Id"
-                                                      method="post"
-                                                      class="d-inline">
-                                                    @Html.AntiForgeryToken()
+                                                    <form asp-action="Toggle"
+                                                          asp-route-id="@item.Id"
+                                                          method="post"
+                                                          class="d-inline">
+                                                        @Html.AntiForgeryToken()
 
-                                                    <button type="submit"
-                                                            class="btn btn-sm btn-light text-primary me-1"
-                                                            title="@Localizer["ToggleTitle"]">
-                                                        <i class="fas fa-sync-alt"></i>
-                                                    </button>
-                                                </form>
+                                                        <button type="submit"
+                                                                class="admin-action-btn admin-action-sync"
+                                                                title="@Localizer["ToggleTitle"]">
+                                                            <i class="fas fa-sync-alt"></i>
+                                                        </button>
+                                                    </form>
 
-                                                <form asp-action="Delete"
-                                                      asp-route-id="@item.Id"
-                                                      method="post"
-                                                      class="d-inline"
-                                                      onsubmit="return confirm('@Localizer["DeleteConfirmMessage"]');">
-                                                    @Html.AntiForgeryToken()
+                                                    <form asp-action="Delete"
+                                                          asp-route-id="@item.Id"
+                                                          method="post"
+                                                          class="d-inline"
+                                                          onsubmit="return confirm(systemParameterDeleteConfirmText);">
+                                                        @Html.AntiForgeryToken()
 
-                                                    <button type="submit"
-                                                            class="btn btn-sm btn-light text-danger"
-                                                            title="@Localizer["DeleteTitle"]">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </form>
+                                                        <button type="submit"
+                                                                class="admin-action-btn admin-action-delete"
+                                                                title="@Localizer["DeleteTitle"]">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
                                             </td>
                                         </tr>
                                     }
@@ -235,3 +596,7 @@
         </div>
     </div>
 </div>
+
+<script>
+    const systemParameterDeleteConfirmText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(deleteConfirmMessage));
+</script>
