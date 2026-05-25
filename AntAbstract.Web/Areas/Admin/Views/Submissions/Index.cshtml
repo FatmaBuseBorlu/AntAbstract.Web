@@ -86,28 +86,51 @@
                     <strong>@Model.ConferenceTitle</strong> kongresine gönderilen bildirileri, yazar bilgilerini ve durum süreçlerini buradan takip edebilirsiniz.
                 </p>
 
-                @if (!string.IsNullOrWhiteSpace(slug))
-                {
-                    <div class="submission-slug-badge">
-                        /@slug
-                    </div>
-                }
+                <div class="selected-conference-pill">
+                    <i class="fas fa-calendar-check"></i>
+
+                    <span>
+                        Seçili Kongre:
+                    </span>
+
+                    <strong>
+                        @(string.IsNullOrWhiteSpace(Model.ConferenceTitle) ? "Kongre seçilmedi" : Model.ConferenceTitle)
+                    </strong>
+
+                    @if (!string.IsNullOrWhiteSpace(slug))
+                    {
+                        <em>
+                            /@slug
+                        </em>
+                    }
+                </div>
             </div>
         </div>
 
         <div class="submission-hero-actions">
-            <a href="@forceSelectUrl" class="btn submission-outline-btn">
+
+            <a href="@flowUrl"
+               class="btn submission-light-btn">
+                <i class="fas fa-arrow-left me-2"></i>
+                Kongre Akışına Dön
+            </a>
+
+            <a href="@forceSelectUrl"
+               class="btn submission-outline-btn">
                 <i class="fas fa-exchange-alt me-2"></i>
                 Kongre Değiştir
             </a>
 
             @if (!string.IsNullOrWhiteSpace(slug))
             {
-                <a href="@siteUrl" target="_blank" class="btn submission-primary-btn">
+                <a href="@siteUrl"
+                   target="_blank"
+                   class="btn submission-primary-btn">
                     <i class="fas fa-external-link-alt me-2"></i>
                     Siteyi Gör
                 </a>
             }
+
         </div>
     </div>
 
@@ -195,8 +218,8 @@
 
                         @{
                             var statusOptions = Enum.GetValues(typeof(SubmissionStatus))
-                            .Cast<SubmissionStatus>()
-                            .ToList();
+                                .Cast<SubmissionStatus>()
+                                .ToList();
                         }
 
                         @foreach (var statusItem in statusOptions)
@@ -261,10 +284,17 @@
                     Seçili filtrelere uygun bildiri bulunamadı. Filtreleri temizleyerek tekrar deneyebilirsiniz.
                 </p>
 
-                <a href="@listUrl" class="btn submission-primary-btn">
-                    <i class="fas fa-rotate-left me-2"></i>
-                    Filtreleri Temizle
-                </a>
+                <div class="d-flex flex-wrap justify-content-center gap-2">
+                    <a href="@listUrl" class="btn submission-primary-btn">
+                        <i class="fas fa-rotate-left me-2"></i>
+                        Filtreleri Temizle
+                    </a>
+
+                    <a href="@flowUrl" class="btn submission-light-btn">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Kongre Akışına Dön
+                    </a>
+                </div>
             </div>
         }
         else
@@ -285,16 +315,16 @@
                         @foreach (var item in Model.Items)
                         {
                             var detailsUrl = string.IsNullOrWhiteSpace(slug)
-                            ? $"/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}"
-                            : $"/{slug}/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}";
+                                ? $"/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}"
+                                : $"/{slug}/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}";
 
                             var assignUrl = string.IsNullOrWhiteSpace(slug)
-                            ? $"/Admin/Assignment/Assign/{item.Id}?conferenceId={conferenceId}"
-                            : $"/{slug}/Admin/Assignment/Assign/{item.Id}?conferenceId={conferenceId}";
+                                ? $"/Admin/Assignment/Assign/{item.Id}?conferenceId={conferenceId}"
+                                : $"/{slug}/Admin/Assignment/Assign/{item.Id}?conferenceId={conferenceId}";
 
                             var decisionUrl = string.IsNullOrWhiteSpace(slug)
-                            ? $"/Admin/Decision?conferenceId={conferenceId}"
-                            : $"/{slug}/Admin/Decision?conferenceId={conferenceId}";
+                                ? $"/Admin/Decision?conferenceId={conferenceId}"
+                                : $"/{slug}/Admin/Decision?conferenceId={conferenceId}";
 
                             <tr>
                                 <td>
@@ -386,35 +416,6 @@
         font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
-    .selected-conference-card {
-        background: linear-gradient(135deg, rgba(0, 174, 239, 0.14) 0%, rgba(255, 255, 255, 0.95) 75%);
-        border: 1px solid rgba(0, 174, 239, 0.25);
-        border-radius: 1.25rem;
-        padding: 1.1rem 1.4rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
-    }
-
-    .selected-conference-left {
-        display: flex;
-        align-items: center;
-        gap: 0.9rem;
-        min-width: 0;
-    }
-    .selected-change-btn {
-        min-height: 42px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        white-space: nowrap;
-        font-weight: 700;
-        font-size: 0.95rem;
-        box-shadow: 0 8px 18px rgba(13, 110, 253, 0.18);
-    }
-
     .submission-hero-card {
         background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
         border: 1px solid #e8eef6;
@@ -476,27 +477,45 @@
         line-height: 1.55;
     }
 
-    .submission-slug-badge {
+    .selected-conference-pill {
         width: fit-content;
-        margin-top: 0.45rem;
-        padding: 0.32rem 0.7rem;
+        margin-top: 0.55rem;
+        display: inline-flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 0.45rem 0.8rem;
         border-radius: 999px;
-        background: rgba(13, 110, 253, 0.09);
+        background: rgba(0, 174, 239, 0.10);
+        border: 1px solid rgba(0, 174, 239, 0.22);
         color: #0d6efd;
-        font-size: 0.74rem;
+        font-size: 0.78rem;
+        font-weight: 900;
+    }
+
+    .selected-conference-pill span,
+    .selected-conference-pill strong {
+        color: #0d6efd;
+    }
+
+    .selected-conference-pill em {
+        color: #64748b;
+        font-style: normal;
         font-weight: 900;
     }
 
     .submission-hero-actions {
         display: flex;
         align-items: center;
+        justify-content: flex-end;
         gap: 0.65rem;
         flex-wrap: wrap;
     }
 
     .submission-primary-btn,
     .submission-light-btn,
-    .submission-reset-btn {
+    .submission-reset-btn,
+    .submission-outline-btn {
         min-height: 42px;
         display: inline-flex;
         align-items: center;
@@ -506,6 +525,8 @@
         padding: 0 1rem;
         text-decoration: none;
         font-size: 0.88rem;
+        white-space: nowrap;
+        transition: all 0.2s ease;
     }
 
     .submission-primary-btn {
@@ -515,10 +536,10 @@
         box-shadow: 0 10px 24px rgba(13, 110, 253, 0.20);
     }
 
-        .submission-primary-btn:hover {
-            color: #ffffff;
-            transform: translateY(-1px);
-        }
+    .submission-primary-btn:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+    }
 
     .submission-light-btn,
     .submission-reset-btn {
@@ -527,12 +548,27 @@
         color: #334155;
     }
 
-        .submission-light-btn:hover,
-        .submission-reset-btn:hover {
-            color: #0d6efd;
-            background: #f8fbff;
-            border-color: rgba(13, 110, 253, 0.25);
-        }
+    .submission-light-btn:hover,
+    .submission-reset-btn:hover {
+        color: #0d6efd;
+        background: #f8fbff;
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+    }
+
+    .submission-outline-btn {
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #334155;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.045);
+    }
+
+    .submission-outline-btn:hover {
+        color: #0d6efd;
+        background: #ffffff;
+        border-color: rgba(13, 110, 253, 0.32);
+        transform: translateY(-1px);
+    }
 
     .submission-stat-card {
         min-height: 94px;
@@ -615,39 +651,39 @@
         position: relative;
     }
 
-        .submission-input-wrap i {
-            position: absolute;
-            top: 50%;
-            left: 1rem;
-            transform: translateY(-50%);
-            color: #94a3b8;
-            font-size: 0.92rem;
-        }
+    .submission-input-wrap i {
+        position: absolute;
+        top: 50%;
+        left: 1rem;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 0.92rem;
+    }
 
-        .submission-input-wrap input,
-        .submission-select {
-            width: 100%;
-            min-height: 50px;
-            border-radius: 18px;
-            border: 1px solid #dbe3ef;
-            background: #ffffff;
-            color: #0f172a;
-            font-size: 0.92rem;
-            font-weight: 700;
-            padding: 0.75rem 1rem;
-            outline: none;
-            transition: all 0.18s ease;
-        }
+    .submission-input-wrap input,
+    .submission-select {
+        width: 100%;
+        min-height: 50px;
+        border-radius: 18px;
+        border: 1px solid #dbe3ef;
+        background: #ffffff;
+        color: #0f172a;
+        font-size: 0.92rem;
+        font-weight: 700;
+        padding: 0.75rem 1rem;
+        outline: none;
+        transition: all 0.18s ease;
+    }
 
-        .submission-input-wrap input {
-            padding-left: 2.65rem;
-        }
+    .submission-input-wrap input {
+        padding-left: 2.65rem;
+    }
 
-            .submission-input-wrap input:focus,
-            .submission-select:focus {
-                border-color: rgba(13, 110, 253, 0.28);
-                box-shadow: 0 0 0 0.22rem rgba(13, 110, 253, 0.10);
-            }
+    .submission-input-wrap input:focus,
+    .submission-select:focus {
+        border-color: rgba(13, 110, 253, 0.28);
+        box-shadow: 0 0 0 0.22rem rgba(13, 110, 253, 0.10);
+    }
 
     .submission-list-header {
         padding: 1.2rem 1.2rem 0.85rem;
@@ -658,19 +694,19 @@
         flex-wrap: wrap;
     }
 
-        .submission-list-header h5 {
-            margin: 0 0 0.15rem;
-            color: #0f172a;
-            font-size: 1.25rem;
-            font-weight: 900;
-        }
+    .submission-list-header h5 {
+        margin: 0 0 0.15rem;
+        color: #0f172a;
+        font-size: 1.25rem;
+        font-weight: 900;
+    }
 
-        .submission-list-header p {
-            margin: 0;
-            color: #64748b;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
+    .submission-list-header p {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
 
     .submission-count-pill {
         padding: 0.55rem 0.95rem;
@@ -727,27 +763,27 @@
         min-width: 900px;
     }
 
-        .submission-table thead th {
-            padding: 0.95rem 1.2rem;
-            background: #f8fbff;
-            color: #64748b;
-            font-size: 0.82rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            border-top: 1px solid #eef2f7;
-            border-bottom: 1px solid #eef2f7;
-        }
+    .submission-table thead th {
+        padding: 0.95rem 1.2rem;
+        background: #f8fbff;
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-top: 1px solid #eef2f7;
+        border-bottom: 1px solid #eef2f7;
+    }
 
-        .submission-table tbody td {
-            padding: 1rem 1.2rem;
-            vertical-align: middle;
-            border-bottom: 1px solid #eef2f7;
-        }
+    .submission-table tbody td {
+        padding: 1rem 1.2rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #eef2f7;
+    }
 
-        .submission-table tbody tr:last-child td {
-            border-bottom: none;
-        }
+    .submission-table tbody tr:last-child td {
+        border-bottom: none;
+    }
 
     .date-box {
         display: flex;
@@ -755,17 +791,17 @@
         gap: 0.2rem;
     }
 
-        .date-box strong {
-            color: #0f172a;
-            font-size: 0.98rem;
-            font-weight: 900;
-        }
+    .date-box strong {
+        color: #0f172a;
+        font-size: 0.98rem;
+        font-weight: 900;
+    }
 
-        .date-box span {
-            color: #64748b;
-            font-size: 0.88rem;
-            font-weight: 700;
-        }
+    .date-box span {
+        color: #64748b;
+        font-size: 0.88rem;
+        font-weight: 700;
+    }
 
     .submission-title-cell,
     .author-cell,
@@ -825,28 +861,6 @@
         white-space: nowrap;
     }
 
-    .submission-outline-btn {
-        min-height: 42px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 999px;
-        font-weight: 900;
-        padding: 0 1rem;
-        text-decoration: none;
-        font-size: 0.88rem;
-        border: 1px solid #cbd5e1;
-        background: #ffffff;
-        color: #334155;
-        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.045);
-    }
-
-        .submission-outline-btn:hover {
-            color: #0d6efd;
-            background: #ffffff;
-            border-color: rgba(13, 110, 253, 0.32);
-            transform: translateY(-1px);
-        }
     .status-new {
         background: rgba(14, 165, 233, 0.12);
         color: #0284c7;
@@ -905,11 +919,11 @@
         padding: 0 0.85rem;
     }
 
-        .action-view-btn:hover {
-            color: #ffffff;
-            background: linear-gradient(135deg, #0d6efd, #00aeef);
-            border-color: transparent;
-        }
+    .action-view-btn:hover {
+        color: #ffffff;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        border-color: transparent;
+    }
 
     .action-more-btn {
         min-width: 42px;
@@ -921,11 +935,11 @@
         justify-content: center;
     }
 
-        .action-more-btn:hover {
-            color: #0d6efd;
-            border-color: rgba(13, 110, 253, 0.22);
-            background: #f8fbff;
-        }
+    .action-more-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.22);
+        background: #f8fbff;
+    }
 
     .modern-dropdown {
         border: 1px solid #e8eef6;
@@ -934,21 +948,20 @@
         padding: 0.45rem;
     }
 
-        .modern-dropdown .dropdown-item {
-            border-radius: 12px;
-            font-size: 0.88rem;
-            font-weight: 700;
-            color: #334155;
-            padding: 0.7rem 0.85rem;
-        }
+    .modern-dropdown .dropdown-item {
+        border-radius: 12px;
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #334155;
+        padding: 0.7rem 0.85rem;
+    }
 
-            .modern-dropdown .dropdown-item:hover {
-                background: #f8fbff;
-                color: #0d6efd;
-            }
+    .modern-dropdown .dropdown-item:hover {
+        background: #f8fbff;
+        color: #0d6efd;
+    }
 
     @@media (max-width: 991.98px) {
-
         .submission-hero-card {
             padding: 1rem;
         }
@@ -957,8 +970,8 @@
             width: 100%;
         }
 
-            .submission-hero-actions .btn {
-                width: 100%;
-            }
+        .submission-hero-actions .btn {
+            width: 100%;
+        }
     }
 </style>

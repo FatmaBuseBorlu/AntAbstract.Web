@@ -1,12 +1,12 @@
-﻿@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Http
 @using Microsoft.AspNetCore.WebUtilities
 @using System
 @using System.Linq
 
-@model AntAbstract.Web.Models.ViewModels.Admin.Tenants.TenantAssignManagerViewModel
+@model AntAbstract.Web.Models.ViewModels.Admin.Tenants.TenantAssignUserViewModel
 
 @{
-    ViewData["Title"] = "Kurum Yöneticisi Ata";
+    ViewData["Title"] = "Kullanıcıyı Kuruma Bağla";
     Layout = "_LayoutDashboard";
 
     var slug = ViewBag.Slug as string
@@ -15,6 +15,18 @@
                ?? "";
 
     var rawReturnUrl = Model.ReturnUrl ?? "";
+
+    if (string.IsNullOrWhiteSpace(slug) && !string.IsNullOrWhiteSpace(rawReturnUrl))
+    {
+        var pathPart = rawReturnUrl.Split('?')[0].Trim('/');
+        var segments = pathPart.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+        if (segments.Length > 1 &&
+            !string.Equals(segments[0], "Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            slug = segments[0];
+        }
+    }
 
     var conferenceId = Guid.Empty;
 
@@ -34,11 +46,21 @@
         }
     }
 
+    if (conferenceId == Guid.Empty)
+    {
+        var selectedConferenceIdFromSession = Context.Session.GetString("SelectedConferenceId");
+
+        if (!string.IsNullOrWhiteSpace(selectedConferenceIdFromSession))
+        {
+            Guid.TryParse(selectedConferenceIdFromSession, out conferenceId);
+        }
+    }
+
     var normalizedReturnUrl = rawReturnUrl.ToLowerInvariant();
 
     var backUrl = !string.IsNullOrWhiteSpace(rawReturnUrl)
         ? rawReturnUrl
-        : Url.Action("Index", "Tenants", new { area = "Admin" });
+        : Url.Action("Details", "Tenants", new { area = "Admin", id = Model.TenantId });
 
     var backButtonText = "Geri Dön";
     var backButtonIcon = "fas fa-arrow-left";
@@ -66,15 +88,38 @@
         backButtonText = "Kurum Listesine Dön";
         backButtonIcon = "fas fa-list";
     }
+    else if (normalizedReturnUrl.Contains("/referee"))
+    {
+        backButtonText = "Hakem Havuzuna Dön";
+        backButtonIcon = "fas fa-user-tie";
+    }
+
+    var currentAssignmentMode = string.IsNullOrWhiteSpace(Model.AssignmentMode)
+        ? "Existing"
+        : Model.AssignmentMode;
+
+    var existingSectionClass = string.Equals(
+        currentAssignmentMode,
+        "Existing",
+        StringComparison.OrdinalIgnoreCase)
+            ? "tenant-user-form-section active"
+            : "tenant-user-form-section";
+
+    var newSectionClass = string.Equals(
+        currentAssignmentMode,
+        "New",
+        StringComparison.OrdinalIgnoreCase)
+            ? "tenant-user-form-section active"
+            : "tenant-user-form-section";
 }
 
 <style>
-    .tenant-manager-page {
+    .tenant-user-page {
         padding: 1rem 0 3rem;
         font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
-    .tenant-manager-header {
+    .tenant-user-header {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
@@ -82,7 +127,7 @@
         margin-bottom: 1.25rem;
     }
 
-    .tenant-manager-title {
+    .tenant-user-title {
         color: #0f172a;
         font-size: 1.65rem;
         font-weight: 900;
@@ -90,21 +135,22 @@
         margin-bottom: 0.25rem;
     }
 
-    .tenant-manager-lead {
+    .tenant-user-lead {
         color: #64748b;
         font-size: 0.9rem;
         font-weight: 600;
         margin-bottom: 0;
+        line-height: 1.65;
     }
 
-    .tenant-manager-grid {
+    .tenant-user-grid {
         display: grid;
         grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.8fr);
         gap: 1.25rem;
         align-items: start;
     }
 
-    .tenant-manager-card {
+    .tenant-user-card {
         background: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 22px;
@@ -112,7 +158,7 @@
         overflow: hidden;
     }
 
-    .tenant-manager-card-body {
+    .tenant-user-card-body {
         padding: 1.35rem;
     }
 
@@ -127,11 +173,11 @@
         position: relative;
     }
 
-        .assign-mode-option input {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-        }
+    .assign-mode-option input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
 
     .assign-mode-label {
         height: 100%;
@@ -146,10 +192,10 @@
         transition: all 0.2s ease;
     }
 
-        .assign-mode-label:hover {
-            border-color: rgba(0, 174, 239, 0.35);
-            background: #f0f9ff;
-        }
+    .assign-mode-label:hover {
+        border-color: rgba(0, 174, 239, 0.35);
+        background: #f0f9ff;
+    }
 
     .assign-mode-option input:checked + .assign-mode-label {
         background: rgba(0, 174, 239, 0.08);
@@ -185,15 +231,15 @@
         line-height: 1.45;
     }
 
-    .manager-form-section {
+    .tenant-user-form-section {
         display: none;
     }
 
-        .manager-form-section.active {
-            display: block;
-        }
+    .tenant-user-form-section.active {
+        display: block;
+    }
 
-    .manager-label {
+    .tenant-user-label {
         color: #0f172a;
         font-size: 0.78rem;
         font-weight: 900;
@@ -202,7 +248,7 @@
         margin-bottom: 0.45rem;
     }
 
-    .manager-form-control {
+    .tenant-user-form-control {
         min-height: 46px;
         border-radius: 12px;
         border: 1px solid #cbd5e1;
@@ -210,24 +256,25 @@
         color: #0f172a;
     }
 
-        .manager-form-control:focus {
-            border-color: #00aeef;
-            box-shadow: 0 0 0 0.18rem rgba(0, 174, 239, 0.12);
-        }
+    .tenant-user-form-control:focus {
+        border-color: #00aeef;
+        box-shadow: 0 0 0 0.18rem rgba(0, 174, 239, 0.12);
+    }
 
-    .manager-help {
+    .tenant-user-help {
         color: #64748b;
         font-size: 0.78rem;
         font-weight: 600;
         margin-top: 0.45rem;
+        line-height: 1.55;
     }
 
-    .manager-submit-btn {
+    .tenant-user-submit-btn {
         width: 100%;
         min-height: 50px;
         border: none;
         border-radius: 14px;
-        background: linear-gradient(135deg, #198754, #0f9f6e);
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
         color: #ffffff;
         font-size: 0.95rem;
         font-weight: 900;
@@ -235,27 +282,27 @@
         align-items: center;
         justify-content: center;
         gap: 0.6rem;
-        box-shadow: 0 14px 30px rgba(25, 135, 84, 0.18);
+        box-shadow: 0 14px 30px rgba(13, 110, 253, 0.18);
         transition: all 0.2s ease;
     }
 
-        .manager-submit-btn:hover {
-            transform: translateY(-1px);
-            color: #ffffff;
-            box-shadow: 0 18px 36px rgba(25, 135, 84, 0.24);
-        }
-
-    .manager-info-card {
-        background: linear-gradient(135deg, rgba(25, 135, 84, 0.12), rgba(255, 255, 255, 0.92));
-        border-left: 4px solid #198754;
+    .tenant-user-submit-btn:hover {
+        transform: translateY(-1px);
+        color: #ffffff;
+        box-shadow: 0 18px 36px rgba(13, 110, 253, 0.24);
     }
 
-    .manager-info-icon {
+    .tenant-user-info-card {
+        background: linear-gradient(135deg, rgba(13, 110, 253, 0.11), rgba(255, 255, 255, 0.92));
+        border-left: 4px solid #0d6efd;
+    }
+
+    .tenant-user-info-icon {
         width: 56px;
         height: 56px;
         border-radius: 999px;
         background: #ffffff;
-        color: #198754;
+        color: #0d6efd;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -264,20 +311,20 @@
         margin-bottom: 0.85rem;
     }
 
-    .manager-info-title {
-        color: #047857;
+    .tenant-user-info-title {
+        color: #0f172a;
         font-size: 1.15rem;
         font-weight: 900;
         margin-bottom: 0.75rem;
     }
 
-    .manager-info-list {
+    .tenant-user-info-list {
         display: grid;
         gap: 0.7rem;
         margin-top: 1rem;
     }
 
-    .manager-info-item {
+    .tenant-user-info-item {
         display: flex;
         gap: 0.65rem;
         align-items: flex-start;
@@ -287,19 +334,23 @@
         line-height: 1.55;
     }
 
-        .manager-info-item i {
-            margin-top: 0.15rem;
-            width: 18px;
-            text-align: center;
-        }
+    .tenant-user-info-item i {
+        margin-top: 0.15rem;
+        width: 18px;
+        text-align: center;
+    }
 
-        .manager-info-item.success i {
-            color: #198754;
-        }
+    .tenant-user-info-item.success i {
+        color: #198754;
+    }
 
-        .manager-info-item.danger i {
-            color: #ef4444;
-        }
+    .tenant-user-info-item.warning i {
+        color: #f59e0b;
+    }
+
+    .tenant-user-info-item.danger i {
+        color: #ef4444;
+    }
 
     .validation-summary-errors {
         border-radius: 14px;
@@ -319,7 +370,7 @@
     }
 
     @@media (max-width: 992px) {
-        .tenant-manager-grid {
+        .tenant-user-grid {
             grid-template-columns: 1fr;
         }
 
@@ -327,22 +378,22 @@
             grid-template-columns: 1fr;
         }
 
-        .tenant-manager-header {
+        .tenant-user-header {
             flex-direction: column;
         }
     }
 </style>
 
-<div class="tenant-manager-page">
-    <div class="tenant-manager-header">
+<div class="tenant-user-page">
+    <div class="tenant-user-header">
         <div>
-            <h2 class="tenant-manager-title">
-                <i class="fas fa-user-shield text-success me-2"></i>
-                Kurum Yöneticisi Ata
+            <h2 class="tenant-user-title">
+                <i class="fas fa-user-plus text-primary me-2"></i>
+                Kullanıcıyı Kuruma Bağla
             </h2>
 
-            <p class="tenant-manager-lead">
-                <strong>@Model.TenantName</strong> kurumu için admin hesabı oluşturabilir veya mevcut bir kullanıcıyı admin yapabilirsiniz.
+            <p class="tenant-user-lead">
+                <strong>@Model.TenantName</strong> kurumu için mevcut bir kullanıcıyı bağlayabilir veya yeni kullanıcı oluşturup rol verebilirsiniz.
             </p>
         </div>
 
@@ -353,12 +404,12 @@
         </a>
     </div>
 
-    <div class="tenant-manager-grid">
-        <div class="tenant-manager-card">
-            <div class="tenant-manager-card-body">
+    <div class="tenant-user-grid">
+        <div class="tenant-user-card">
+            <div class="tenant-user-card-body">
                 <form asp-area="Admin"
                       asp-controller="Tenants"
-                      asp-action="AssignManager"
+                      asp-action="AssignUser"
                       method="post">
 
                     @Html.AntiForgeryToken()
@@ -368,6 +419,24 @@
                     <input type="hidden" asp-for="ReturnUrl" />
 
                     <div asp-validation-summary="ModelOnly"></div>
+
+                    <div class="mb-4">
+                        <label asp-for="SelectedRole" class="tenant-user-label">
+                            Verilecek Rol
+                        </label>
+
+                        <select asp-for="SelectedRole"
+                                asp-items="Model.AvailableRoles"
+                                class="form-select tenant-user-form-control">
+                            <option value="">Rol seçiniz...</option>
+                        </select>
+
+                        <span asp-validation-for="SelectedRole"></span>
+
+                        <div class="tenant-user-help">
+                            Hakem atama ekranında görünmesi için kullanıcıya <strong>Hakem</strong> rolü verilmeli ve kullanıcı bu kuruma bağlanmalıdır.
+                        </div>
+                    </div>
 
                     <div class="assign-mode-box">
                         <div class="assign-mode-option">
@@ -383,11 +452,11 @@
 
                                 <span>
                                     <span class="assign-mode-title">
-                                        Mevcut Kullanıcıyı Ata
+                                        Mevcut Kullanıcıyı Bağla
                                     </span>
 
                                     <span class="assign-mode-desc">
-                                        Sistemde kayıtlı bir kullanıcıyı bu kuruma admin yap.
+                                        Sistemde kayıtlı bir kullanıcıyı bu kuruma bağla ve seçilen rolü ver.
                                     </span>
                                 </span>
                             </label>
@@ -406,87 +475,87 @@
 
                                 <span>
                                     <span class="assign-mode-title">
-                                        Yeni Admin Oluştur
+                                        Yeni Kullanıcı Oluştur
                                     </span>
 
                                     <span class="assign-mode-desc">
-                                        Yeni kullanıcı oluştur ve bu kuruma admin olarak bağla.
+                                        Yeni hesap oluştur, bu kuruma bağla ve seçilen rolü ver.
                                     </span>
                                 </span>
                             </label>
                         </div>
                     </div>
 
-                    <div id="existingUserSection" class="manager-form-section">
+                    <div id="existingUserSection" class="@existingSectionClass">
                         <div class="mb-3">
-                            <label asp-for="ExistingUserId" class="manager-label">
-                                Admin Yapılacak Kullanıcı
+                            <label asp-for="ExistingUserId" class="tenant-user-label">
+                                Kuruma Bağlanacak Kullanıcı
                             </label>
 
                             <select asp-for="ExistingUserId"
                                     asp-items="Model.AvailableUsers"
-                                    class="form-select manager-form-control">
+                                    class="form-select tenant-user-form-control">
                                 <option value="">Kullanıcı seçiniz...</option>
                             </select>
 
                             <span asp-validation-for="ExistingUserId"></span>
 
-                            <div class="manager-help">
-                                Listede Süper Admin kullanıcıları gösterilmez. Seçilen kullanıcı bu kuruma bağlanır ve Admin rolü alır.
+                            <div class="tenant-user-help">
+                                Listede Süper Admin kullanıcıları gösterilmez. Seçilen kullanıcı bu kuruma bağlanır ve seçilen rolü alır.
                             </div>
                         </div>
                     </div>
 
-                    <div id="newUserSection" class="manager-form-section">
+                    <div id="newUserSection" class="@newSectionClass">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label asp-for="FirstName" class="manager-label">
-                                    Yönetici Adı
+                                <label asp-for="FirstName" class="tenant-user-label">
+                                    Ad
                                 </label>
 
                                 <input asp-for="FirstName"
-                                       class="form-control manager-form-control"
-                                       placeholder="Örn: Ahmet" />
+                                       class="form-control tenant-user-form-control"
+                                       placeholder="Örn: Ayşe" />
 
                                 <span asp-validation-for="FirstName"></span>
                             </div>
 
                             <div class="col-md-6">
-                                <label asp-for="LastName" class="manager-label">
-                                    Soyadı
+                                <label asp-for="LastName" class="tenant-user-label">
+                                    Soyad
                                 </label>
 
                                 <input asp-for="LastName"
-                                       class="form-control manager-form-control"
+                                       class="form-control tenant-user-form-control"
                                        placeholder="Örn: Yılmaz" />
 
                                 <span asp-validation-for="LastName"></span>
                             </div>
 
                             <div class="col-12">
-                                <label asp-for="Email" class="manager-label">
+                                <label asp-for="Email" class="tenant-user-label">
                                     E-posta Adresi
                                 </label>
 
                                 <input asp-for="Email"
-                                       class="form-control manager-form-control"
-                                       placeholder="Örn: yonetici@kurum.edu.tr" />
+                                       class="form-control tenant-user-form-control"
+                                       placeholder="Örn: kullanici@kurum.edu.tr" />
 
                                 <span asp-validation-for="Email"></span>
 
-                                <div class="manager-help">
-                                    Yönetici sisteme bu e-posta adresi ile giriş yapacaktır.
+                                <div class="tenant-user-help">
+                                    Kullanıcı sisteme bu e-posta adresi ile giriş yapacaktır.
                                 </div>
                             </div>
 
                             <div class="col-12">
-                                <label asp-for="Password" class="manager-label">
+                                <label asp-for="Password" class="tenant-user-label">
                                     Giriş Şifresi
                                 </label>
 
                                 <input asp-for="Password"
                                        type="password"
-                                       class="form-control manager-form-control"
+                                       class="form-control tenant-user-form-control"
                                        placeholder="En az 6 karakterli şifre belirleyin" />
 
                                 <span asp-validation-for="Password"></span>
@@ -496,47 +565,52 @@
 
                     <hr class="my-4" />
 
-                    <button type="submit" class="manager-submit-btn">
+                    <button type="submit" class="tenant-user-submit-btn">
                         <i class="fas fa-user-check"></i>
-                        Kaydet ve Yetkilendir
+                        Kaydet ve Kuruma Bağla
                     </button>
                 </form>
             </div>
         </div>
 
-        <div class="tenant-manager-card manager-info-card">
-            <div class="tenant-manager-card-body">
-                <div class="manager-info-icon">
-                    <i class="fas fa-shield-alt"></i>
+        <div class="tenant-user-card tenant-user-info-card">
+            <div class="tenant-user-card-body">
+                <div class="tenant-user-info-icon">
+                    <i class="fas fa-circle-info"></i>
                 </div>
 
-                <h4 class="manager-info-title">
-                    Yetkilendirme Hakkında
+                <h4 class="tenant-user-info-title">
+                    Rol Bağlama Hakkında
                 </h4>
 
                 <p class="mb-0">
-                    Buradan atanan kullanıcı otomatik olarak <strong>Admin</strong> rolüne sahip olur.
+                    Bu ekran, bir kullanıcıyı kuruma bağlamak ve gerekli rolü vermek için kullanılır.
                 </p>
 
-                <div class="manager-info-list">
-                    <div class="manager-info-item success">
+                <div class="tenant-user-info-list">
+                    <div class="tenant-user-info-item success">
                         <i class="fas fa-check-circle"></i>
-                        <span>Kendi kurumuna ait tüm kongreleri görebilir.</span>
+                        <span><strong>Hakem</strong> rolü verilen kullanıcı, aynı kuruma bağlı kongrelerde hakem atama ekranında görünür.</span>
                     </div>
 
-                    <div class="manager-info-item success">
+                    <div class="tenant-user-info-item success">
                         <i class="fas fa-check-circle"></i>
-                        <span>Kendi kurumunun bildirilerini, hakemlerini, kayıtlarını ve programını yönetebilir.</span>
+                        <span><strong>Yazar</strong> rolü verilen kullanıcı, bildiri gönderme süreçlerinde kullanılabilir.</span>
                     </div>
 
-                    <div class="manager-info-item danger">
-                        <i class="fas fa-times-circle"></i>
-                        <span>Başka kurumlara ait verilere erişemez.</span>
+                    <div class="tenant-user-info-item success">
+                        <i class="fas fa-check-circle"></i>
+                        <span><strong>Dinleyici</strong> rolü verilen kullanıcı, katılımcı/dinleyici işlemlerinde kullanılabilir.</span>
                     </div>
 
-                    <div class="manager-info-item danger">
+                    <div class="tenant-user-info-item warning">
+                        <i class="fas fa-triangle-exclamation"></i>
+                        <span>Bir kullanıcı başka kuruma bağlıysa, bu işlem kullanıcının kurum bağlantısını yeni kurumla değiştirir.</span>
+                    </div>
+
+                    <div class="tenant-user-info-item danger">
                         <i class="fas fa-times-circle"></i>
-                        <span>Yeni kurum tanımlayamaz veya kurum silemez.</span>
+                        <span>Süper Admin kullanıcıları bu ekrandan kuruma bağlanamaz.</span>
                     </div>
                 </div>
             </div>
@@ -548,10 +622,14 @@
     <partial name="_ValidationScriptsPartial" />
 
     <script>
-        function updateAssignModeSections() {
+        function updateAssignUserModeSections() {
             const selectedMode = document.querySelector('input[name="AssignmentMode"]:checked')?.value || "Existing";
             const existingUserSection = document.getElementById("existingUserSection");
             const newUserSection = document.getElementById("newUserSection");
+
+            if (!existingUserSection || !newUserSection) {
+                return;
+            }
 
             if (selectedMode === "Existing") {
                 existingUserSection.classList.add("active");
@@ -573,10 +651,10 @@
                 }
             }
 
-            updateAssignModeSections();
+            updateAssignUserModeSections();
 
             document.querySelectorAll('input[name="AssignmentMode"]').forEach(function (radio) {
-                radio.addEventListener("change", updateAssignModeSections);
+                radio.addEventListener("change", updateAssignUserModeSections);
             });
         });
     </script>

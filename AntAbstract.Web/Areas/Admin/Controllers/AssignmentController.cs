@@ -231,6 +231,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     .Where(r =>
                         r.TenantId.HasValue &&
                         r.TenantId.Value == conference.TenantId)
+                    .OrderBy(r => r.FirstName)
+                    .ThenBy(r => r.LastName)
+                    .ThenBy(r => r.Email)
                     .ToList();
             }
 
@@ -246,6 +249,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     r.TenantId.HasValue &&
                     r.TenantId.Value == currentUser.TenantId.Value &&
                     conference.TenantId == currentUser.TenantId.Value)
+                .OrderBy(r => r.FirstName)
+                .ThenBy(r => r.LastName)
+                .ThenBy(r => r.Email)
                 .ToList();
         }
 
@@ -580,25 +586,25 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return Redirect(BuildAssignmentUrl(slug, conference.Id));
             }
 
-            var accessibleReferees = await GetAccessibleRefereesAsync(conference);
+            var allAccessibleReferees = await GetAccessibleRefereesAsync(conference);
 
-            accessibleReferees = accessibleReferees
+            var assignableReferees = allAccessibleReferees
                 .Where(reviewer =>
                     !ReviewerIsUnavailable(reviewer) &&
                     !ReviewerHasSubmissionConflict(reviewer, submission))
                 .ToList();
 
-            var accessibleReviewerIds = accessibleReferees
+            var assignableReviewerIds = assignableReferees
                 .Select(r => r.Id)
                 .ToHashSet();
 
             var recommended = await _recommendationService.GetRecommendationsAsync(id);
 
             var recommendedList = recommended
-                .Where(r => accessibleReviewerIds.Contains(r.Id))
+                .Where(r => assignableReviewerIds.Contains(r.Id))
                 .ToList();
 
-            var others = accessibleReferees
+            var others = allAccessibleReferees
                 .Where(x => !recommendedList.Any(r => r.Id == x.Id))
                 .ToList();
 
@@ -612,6 +618,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ViewBag.ConferenceId = conference.Id;
             ViewBag.ConferenceTitle = conference.Title;
             ViewBag.Slug = slug;
+            ViewBag.TotalAccessibleReviewerCount = allAccessibleReferees.Count;
+            ViewBag.AssignableReviewerCount = assignableReferees.Count;
 
             return View(vm);
         }

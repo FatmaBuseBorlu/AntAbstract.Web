@@ -22,7 +22,15 @@
 
     var backUrl = !string.IsNullOrWhiteSpace(currentSlug)
         ? $"/{currentSlug}/Admin/Assignment?conferenceId={conferenceId}"
-        : "/Admin/Assignment";
+        : $"/Admin/Assignment?conferenceId={conferenceId}";
+
+    var flowUrl = !string.IsNullOrWhiteSpace(currentSlug)
+        ? $"/{currentSlug}/Admin/ConferenceFlow?conferenceId={conferenceId}"
+        : $"/Admin/ConferenceFlow?conferenceId={conferenceId}";
+
+    var assignPostUrl = !string.IsNullOrWhiteSpace(currentSlug)
+        ? $"/{currentSlug}/Admin/Assignment/Assign"
+        : "/Admin/Assignment/Assign";
 
     var authorName = Model.Submission.Author != null
         ? $"{Model.Submission.Author.FirstName} {Model.Submission.Author.LastName}".Trim()
@@ -189,22 +197,22 @@
         white-space: nowrap;
     }
 
-        .assign-action-btn.recommended {
-            background: linear-gradient(135deg, #f59e0b, #f97316);
-            color: #ffffff;
-            box-shadow: 0 8px 18px rgba(249, 115, 22, 0.22);
-        }
+    .assign-action-btn.recommended {
+        background: linear-gradient(135deg, #f59e0b, #f97316);
+        color: #ffffff;
+        box-shadow: 0 8px 18px rgba(249, 115, 22, 0.22);
+    }
 
-        .assign-action-btn.normal {
-            background: linear-gradient(135deg, #00aeef, #0284c7);
-            color: #ffffff;
-            box-shadow: 0 8px 18px rgba(0, 174, 239, 0.22);
-        }
+    .assign-action-btn.normal {
+        background: linear-gradient(135deg, #00aeef, #0284c7);
+        color: #ffffff;
+        box-shadow: 0 8px 18px rgba(0, 174, 239, 0.22);
+    }
 
-        .assign-action-btn:hover {
-            transform: translateY(-1px);
-            color: #ffffff;
-        }
+    .assign-action-btn:hover {
+        transform: translateY(-1px);
+        color: #ffffff;
+    }
 
     .already-assigned-badge {
         display: inline-flex;
@@ -279,11 +287,21 @@
                 </div>
             </div>
 
-            <a href="@backUrl"
-               class="btn btn-outline-secondary rounded-pill fw-bold px-4">
-                <i class="fas fa-arrow-left me-2"></i>
-                @L("BackButton", "Geri Dön")
-            </a>
+            <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+
+                <a href="@flowUrl"
+                   class="btn btn-light border rounded-pill fw-bold px-4">
+                    <i class="fas fa-stream me-2"></i>
+                    Kongre Akışına Dön
+                </a>
+
+                <a href="@backUrl"
+                   class="btn btn-outline-secondary rounded-pill fw-bold px-4">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    @L("BackButton", "Geri Dön")
+                </a>
+
+            </div>
         </div>
     </div>
 
@@ -312,7 +330,7 @@
             @if (!string.IsNullOrWhiteSpace(Model.Submission.Keywords))
             {
                 var keywords = Model.Submission.Keywords
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
                 foreach (var keyword in keywords)
                 {
@@ -364,12 +382,12 @@
                         @foreach (var reviewer in Model.RecommendedReviewers)
                         {
                             var reviewerName = !string.IsNullOrWhiteSpace(reviewer.DisplayName)
-                            ? reviewer.DisplayName
-                            : reviewer.Email;
+                                ? reviewer.DisplayName
+                                : reviewer.Email;
 
                             var firstLetter = !string.IsNullOrWhiteSpace(reviewerName)
-                            ? reviewerName.Substring(0, 1).ToUpper()
-                            : "H";
+                                ? reviewerName.Substring(0, 1).ToUpper()
+                                : "H";
 
                             var alreadyAssigned = IsAlreadyAssigned(reviewer.Id);
 
@@ -400,22 +418,22 @@
                                     <span class="expertise-badge">
                                         <i class="fas fa-brain"></i>
                                         @(string.IsNullOrWhiteSpace(reviewer.ExpertiseAreas)
-                                                                        ? L("NoExpertise", "Uzmanlık alanı belirtilmedi")
-                                                                        : reviewer.ExpertiseAreas)
-                            </span>
-                        </td>
+                                            ? L("NoExpertise", "Uzmanlık alanı belirtilmedi")
+                                            : reviewer.ExpertiseAreas)
+                                    </span>
+                                </td>
 
                                 <td class="text-end">
-                            @if (alreadyAssigned)
+                                    @if (alreadyAssigned)
                                     {
                                         <span class="already-assigned-badge">
                                             <i class="fas fa-check"></i>
                                             @L("AlreadyAssignedText", "Atanmış")
                                         </span>
                                     }
-                                    else if (!string.IsNullOrWhiteSpace(currentSlug))
+                                    else
                                     {
-                                        <form action="/@currentSlug/Admin/Assignment/Assign" method="post" class="m-0">
+                                        <form action="@assignPostUrl" method="post" class="m-0">
                                             @Html.AntiForgeryToken()
 
                                             <input type="hidden" name="submissionId" value="@Model.Submission.Id" />
@@ -427,12 +445,6 @@
                                                 @L("AssignRecommendedBtn", "Önerileni Ata")
                                             </button>
                                         </form>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-danger small">
-                                            @L("Error_SelectConferenceFirst", "Önce kongre seçmelisiniz.")
-                                        </span>
                                     }
                                 </td>
                             </tr>
@@ -477,12 +489,12 @@
                         @foreach (var reviewer in Model.AllOtherReviewers)
                         {
                             var reviewerName = !string.IsNullOrWhiteSpace(reviewer.DisplayName)
-                            ? reviewer.DisplayName
-                            : reviewer.Email;
+                                ? reviewer.DisplayName
+                                : reviewer.Email;
 
                             var firstLetter = !string.IsNullOrWhiteSpace(reviewerName)
-                            ? reviewerName.Substring(0, 1).ToUpper()
-                            : "H";
+                                ? reviewerName.Substring(0, 1).ToUpper()
+                                : "H";
 
                             var alreadyAssigned = IsAlreadyAssigned(reviewer.Id);
 
@@ -513,22 +525,22 @@
                                     <span class="expertise-badge">
                                         <i class="fas fa-brain"></i>
                                         @(string.IsNullOrWhiteSpace(reviewer.ExpertiseAreas)
-                                                                        ? L("NoExpertise", "Uzmanlık alanı belirtilmedi")
-                                                                        : reviewer.ExpertiseAreas)
-                            </span>
-                        </td>
+                                            ? L("NoExpertise", "Uzmanlık alanı belirtilmedi")
+                                            : reviewer.ExpertiseAreas)
+                                    </span>
+                                </td>
 
                                 <td class="text-end">
-                            @if (alreadyAssigned)
+                                    @if (alreadyAssigned)
                                     {
                                         <span class="already-assigned-badge">
                                             <i class="fas fa-check"></i>
                                             @L("AlreadyAssignedText", "Atanmış")
                                         </span>
                                     }
-                                    else if (!string.IsNullOrWhiteSpace(currentSlug))
+                                    else
                                     {
-                                        <form action="/@currentSlug/Admin/Assignment/Assign" method="post" class="m-0">
+                                        <form action="@assignPostUrl" method="post" class="m-0">
                                             @Html.AntiForgeryToken()
 
                                             <input type="hidden" name="submissionId" value="@Model.Submission.Id" />
@@ -540,12 +552,6 @@
                                                 @L("AssignBtn", "Hakem Ata")
                                             </button>
                                         </form>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-danger small">
-                                            @L("Error_SelectConferenceFirst", "Önce kongre seçmelisiniz.")
-                                        </span>
                                     }
                                 </td>
                             </tr>
