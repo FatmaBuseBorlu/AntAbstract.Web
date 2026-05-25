@@ -221,16 +221,42 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 s.Conference.TenantId == _tenantContext.Current.Id);
         }
 
+        private static readonly string[] ReviewerRoleNames =
+        {
+            "Referee",
+            "Hakem",
+            "Reviewer"
+        };
+
+        private async Task<List<AppUser>> GetUsersInReviewerRolesAsync()
+        {
+            var reviewerUsers = new Dictionary<string, AppUser>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var roleName in ReviewerRoleNames)
+            {
+                var usersInRole = await _userManager.GetUsersInRoleAsync(roleName);
+
+                foreach (var user in usersInRole)
+                {
+                    if (user == null || string.IsNullOrWhiteSpace(user.Id))
+                    {
+                        continue;
+                    }
+
+                    reviewerUsers[user.Id] = user;
+                }
+            }
+
+            return reviewerUsers.Values.ToList();
+        }
+
         private async Task<List<AppUser>> GetAccessibleRefereesAsync(Conference conference)
         {
-            var referees = await _userManager.GetUsersInRoleAsync("Referee");
+            var referees = await GetUsersInReviewerRolesAsync();
 
             if (IsSuperAdminUser())
             {
                 return referees
-                    .Where(r =>
-                        r.TenantId.HasValue &&
-                        r.TenantId.Value == conference.TenantId)
                     .OrderBy(r => r.FirstName)
                     .ThenBy(r => r.LastName)
                     .ThenBy(r => r.Email)
@@ -246,9 +272,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             return referees
                 .Where(r =>
-                    r.TenantId.HasValue &&
-                    r.TenantId.Value == currentUser.TenantId.Value &&
-                    conference.TenantId == currentUser.TenantId.Value)
+                    !r.TenantId.HasValue ||
+                    r.TenantId.Value == currentUser.TenantId.Value ||
+                    r.TenantId.Value == conference.TenantId)
                 .OrderBy(r => r.FirstName)
                 .ThenBy(r => r.LastName)
                 .ThenBy(r => r.Email)
@@ -264,21 +290,25 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return false;
             }
 
-            var reviewerIsReferee = await _userManager.IsInRoleAsync(reviewer, "Referee");
+            var reviewerHasRole = false;
 
-            if (!reviewerIsReferee)
+            foreach (var roleName in ReviewerRoleNames)
             {
-                return false;
+                if (await _userManager.IsInRoleAsync(reviewer, roleName))
+                {
+                    reviewerHasRole = true;
+                    break;
+                }
             }
 
-            if (!reviewer.TenantId.HasValue)
+            if (!reviewerHasRole)
             {
                 return false;
             }
 
             if (IsSuperAdminUser())
             {
-                return reviewer.TenantId.Value == conference.TenantId;
+                return true;
             }
 
             var currentUser = await GetCurrentUserAsync();
@@ -288,8 +318,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return false;
             }
 
-            return reviewer.TenantId.Value == currentUser.TenantId.Value &&
-                   conference.TenantId == currentUser.TenantId.Value;
+            if (!reviewer.TenantId.HasValue)
+            {
+                return true;
+            }
+
+            return reviewer.TenantId.Value == currentUser.TenantId.Value ||
+                   reviewer.TenantId.Value == conference.TenantId;
         }
 
         private static List<string> ParseCsv(string? value)
@@ -838,7 +873,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = T(
-                "Success_AssignmentRemoved",
+                "Hakem ataması kaldırıldı.",
                 "Hakem ataması kaldırıldı.");
 
             return Redirect(BuildAssignmentUrl(slug, conference.Id));
