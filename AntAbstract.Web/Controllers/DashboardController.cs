@@ -3,11 +3,16 @@ using AntAbstract.Infrastructure.Context;
 using AntAbstract.Web.Models.ViewModels.Admin.Dashboard;
 using AntAbstract.Web.Models.ViewModels.Proceedings;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
@@ -18,6 +23,25 @@ namespace AntAbstract.Web.Controllers
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly IStringLocalizer<DashboardController> _localizer;
+
+        private static readonly string[] ReviewerRoleNames =
+        {
+            "Referee",
+            "Hakem",
+            "Reviewer"
+        };
+
+        private static readonly string[] AuthorRoleNames =
+        {
+            "Author",
+            "Yazar"
+        };
+
+        private static readonly string[] ListenerRoleNames =
+        {
+            "Listener",
+            "Dinleyici"
+        };
 
         public DashboardController(
             AppDbContext context,
@@ -88,6 +112,36 @@ namespace AntAbstract.Web.Controllers
             return value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
                 ? fallback
                 : value.Value;
+        }
+
+        private async Task<bool> IsInAnyRoleAsync(
+            AppUser user,
+            IEnumerable<string> roleNames)
+        {
+            foreach (var roleName in roleNames)
+            {
+                if (await _userManager.IsInRoleAsync(user, roleName))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private async Task<bool> IsReviewerRoleUserAsync(AppUser user)
+        {
+            return await IsInAnyRoleAsync(user, ReviewerRoleNames);
+        }
+
+        private async Task<bool> IsAuthorRoleUserAsync(AppUser user)
+        {
+            return await IsInAnyRoleAsync(user, AuthorRoleNames);
+        }
+
+        private async Task<bool> IsListenerRoleUserAsync(AppUser user)
+        {
+            return await IsInAnyRoleAsync(user, ListenerRoleNames);
         }
 
         private string GetSlug()
@@ -187,7 +241,9 @@ namespace AntAbstract.Web.Controllers
                 .ToListAsync();
         }
 
-        private async Task<bool> UserCanAccessConferenceAsync(AppUser user, Guid conferenceId)
+        private async Task<bool> UserCanAccessConferenceAsync(
+            AppUser user,
+            Guid conferenceId)
         {
             var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
 
@@ -335,10 +391,10 @@ namespace AntAbstract.Web.Controllers
 
             if (user != null)
             {
-                var isReferee = await _userManager.IsInRoleAsync(user, "Referee");
+                var isReviewer = await IsReviewerRoleUserAsync(user);
                 var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
 
-                if (isReferee && !isAdmin)
+                if (isReviewer && !isAdmin)
                 {
                     return RedirectToAction(nameof(Index));
                 }
@@ -373,7 +429,9 @@ namespace AntAbstract.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SelectConferencePost(Guid conferenceId, string? returnUrl = null)
+        public async Task<IActionResult> SelectConferencePost(
+            Guid conferenceId,
+            string? returnUrl = null)
         {
             if (conferenceId == Guid.Empty)
             {
@@ -393,9 +451,9 @@ namespace AntAbstract.Web.Controllers
 
             var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-            var isAuthor = await _userManager.IsInRoleAsync(user, "Author");
-            var isListener = await _userManager.IsInRoleAsync(user, "Listener");
-            var isReferee = await _userManager.IsInRoleAsync(user, "Referee");
+            var isAuthor = await IsAuthorRoleUserAsync(user);
+            var isListener = await IsListenerRoleUserAsync(user);
+            var isReviewer = await IsReviewerRoleUserAsync(user);
 
             if (isSuperAdmin)
             {
@@ -404,7 +462,7 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(SuperAdmin));
             }
 
-            if (isReferee && !isAdmin)
+            if (isReviewer && !isAdmin)
             {
                 ClearSelectedConference();
 
@@ -488,9 +546,9 @@ namespace AntAbstract.Web.Controllers
 
             var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-            var isAuthor = await _userManager.IsInRoleAsync(user, "Author");
-            var isListener = await _userManager.IsInRoleAsync(user, "Listener");
-            var isReferee = await _userManager.IsInRoleAsync(user, "Referee");
+            var isAuthor = await IsAuthorRoleUserAsync(user);
+            var isListener = await IsListenerRoleUserAsync(user);
+            var isReviewer = await IsReviewerRoleUserAsync(user);
 
             if (isSuperAdmin)
             {
@@ -499,7 +557,7 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(SuperAdmin));
             }
 
-            if (!isAdmin && !isReferee && (isAuthor || isListener))
+            if (!isAdmin && !isReviewer && (isAuthor || isListener))
             {
                 ClearSelectedConference();
 
@@ -521,7 +579,7 @@ namespace AntAbstract.Web.Controllers
                 {
                     ClearSelectedConference();
 
-                    if (!isReferee)
+                    if (!isReviewer)
                     {
                         TempData["ErrorMessage"] = T(
                             "UnauthorizedPreviousConferenceAccess",
@@ -575,7 +633,7 @@ namespace AntAbstract.Web.Controllers
                         return Redirect($"/{selectedSlug}/Dashboard");
                     }
                 }
-                else if (!isReferee)
+                else if (!isReviewer)
                 {
                     return RedirectToAction(nameof(MyConferences));
                 }
@@ -620,12 +678,12 @@ namespace AntAbstract.Web.Controllers
 
             var hasReviewAssignment = await reviewAssignmentsQuery.AnyAsync();
 
-            ViewBag.IsReferee = isReferee || hasReviewAssignment;
+            ViewBag.IsReferee = isReviewer || hasReviewAssignment;
             ViewBag.PendingReviews = pendingReviews;
             ViewBag.CompletedReviews = completedReviews;
 
             ViewBag.IsAuthor =
-                await _userManager.IsInRoleAsync(user, "Author") ||
+                isAuthor ||
                 await submissionsQuery.AnyAsync();
 
             var myConferences = isAdmin && user.TenantId.HasValue
@@ -675,7 +733,7 @@ namespace AntAbstract.Web.Controllers
             return View(viewModel);
         }
 
-        [Authorize(Roles = "Author,Listener")]
+        [Authorize(Roles = "Author,Listener,Yazar,Dinleyici")]
         [HttpGet("/Dashboard/ProceedingBook")]
         [HttpGet("/{slug}/Dashboard/ProceedingBook")]
         public async Task<IActionResult> ProceedingBook(string? slug = null)
@@ -765,9 +823,9 @@ namespace AntAbstract.Web.Controllers
 
             var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-            var isReferee = await _userManager.IsInRoleAsync(user, "Referee");
+            var isReviewer = await IsReviewerRoleUserAsync(user);
 
-            if (isReferee && !isAdmin)
+            if (isReviewer && !isAdmin)
             {
                 ClearSelectedConference();
 
