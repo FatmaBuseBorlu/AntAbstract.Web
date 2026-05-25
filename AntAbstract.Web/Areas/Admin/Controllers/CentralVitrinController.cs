@@ -31,7 +31,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(string? search, Guid? tenantId, string? status)
+        public async Task<IActionResult> Index(
+            string? search,
+            Guid? tenantId,
+            string? status)
         {
             var now = DateTime.Now;
 
@@ -40,15 +43,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .Include(c => c.Tenant)
                 .AsQueryable();
 
-            ViewBag.TotalConferenceCount = await _context.Conferences.CountAsync();
+            ViewBag.TotalConferenceCount = await _context.Conferences
+                .AsNoTracking()
+                .CountAsync();
 
             ViewBag.ActiveConferenceCount = await _context.Conferences
+                .AsNoTracking()
                 .CountAsync(c => c.StartDate <= now && c.EndDate >= now);
 
             ViewBag.UpcomingConferenceCount = await _context.Conferences
+                .AsNoTracking()
                 .CountAsync(c => c.StartDate > now);
 
             ViewBag.CompletedConferenceCount = await _context.Conferences
+                .AsNoTracking()
                 .CountAsync(c => c.EndDate < now);
 
             if (!string.IsNullOrWhiteSpace(search))
@@ -56,12 +64,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 var keyword = search.Trim();
 
                 query = query.Where(c =>
-                    c.Title.Contains(keyword) ||
+                    (c.Title != null && c.Title.Contains(keyword)) ||
                     (c.Slug != null && c.Slug.Contains(keyword)) ||
                     (c.City != null && c.City.Contains(keyword)) ||
                     (c.Country != null && c.Country.Contains(keyword)) ||
-                    (c.Tenant != null && c.Tenant.Name.Contains(keyword)) ||
-                    (c.Tenant != null && c.Tenant.Slug.Contains(keyword)));
+                    (c.Tenant != null && c.Tenant.Name != null && c.Tenant.Name.Contains(keyword)) ||
+                    (c.Tenant != null && c.Tenant.Slug != null && c.Tenant.Slug.Contains(keyword)));
             }
 
             if (tenantId.HasValue && tenantId.Value != Guid.Empty)
@@ -72,17 +80,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (!string.IsNullOrWhiteSpace(status) &&
                 !status.Equals("All", StringComparison.OrdinalIgnoreCase))
             {
-                status = status.Trim();
+                var normalizedStatus = status.Trim();
 
-                if (status.Equals("Active", StringComparison.OrdinalIgnoreCase))
+                if (normalizedStatus.Equals("Active", StringComparison.OrdinalIgnoreCase))
                 {
                     query = query.Where(c => c.StartDate <= now && c.EndDate >= now);
                 }
-                else if (status.Equals("Upcoming", StringComparison.OrdinalIgnoreCase))
+                else if (normalizedStatus.Equals("Upcoming", StringComparison.OrdinalIgnoreCase))
                 {
                     query = query.Where(c => c.StartDate > now);
                 }
-                else if (status.Equals("Completed", StringComparison.OrdinalIgnoreCase))
+                else if (normalizedStatus.Equals("Completed", StringComparison.OrdinalIgnoreCase))
                 {
                     query = query.Where(c => c.EndDate < now);
                 }
@@ -90,11 +98,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var conferences = await query
                 .OrderByDescending(c => c.StartDate)
+                .ThenBy(c => c.Title)
                 .ToListAsync();
 
             ViewBag.Search = search;
             ViewBag.SelectedTenantId = tenantId;
-            ViewBag.SelectedStatus = status;
+            ViewBag.SelectedStatus = string.IsNullOrWhiteSpace(status)
+                ? "All"
+                : status;
 
             ViewBag.Tenants = await _context.Tenants
                 .AsNoTracking()
@@ -129,6 +140,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             ViewBag.ConferenceName = conference.Title;
             ViewBag.ConferenceId = conference.Id;
+            ViewBag.ConferenceSlug = conference.Tenant?.Slug ?? "";
 
             var blocks = await _context.ConferencePageBlocks
                 .Where(b => b.ConferenceId == conferenceId)
@@ -197,6 +209,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var block = await _context.ConferencePageBlocks
                 .Include(b => b.Conference)
+                    .ThenInclude(c => c.Tenant)
                 .FirstOrDefaultAsync(b => b.Id == id);
 
             if (block == null)
@@ -206,6 +219,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             ViewBag.BlockType = block.BlockType;
             ViewBag.ConferenceId = block.ConferenceId;
+            ViewBag.ConferenceName = block.Conference?.Title ?? "";
+            ViewBag.ConferenceSlug = block.Conference?.Tenant?.Slug ?? "";
 
             if (block.BlockType == ConferencePageBlockType.About)
             {
@@ -266,20 +281,24 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return NotFound(_localizer["ConferenceNotFound"]);
             }
 
-            var conferenceExists = await _context.Conferences
+            var conference = await _context.Conferences
                 .AsNoTracking()
-                .AnyAsync(x => x.Id == conferenceId);
+                .Include(x => x.Tenant)
+                .FirstOrDefaultAsync(x => x.Id == conferenceId);
 
-            if (!conferenceExists)
+            if (conference == null)
             {
                 return NotFound(_localizer["ConferenceNotFound"]);
             }
 
-            ViewBag.ConferenceId = conferenceId;
+            ViewBag.ConferenceId = conference.Id;
+            ViewBag.ConferenceName = conference.Title ?? "";
+            ViewBag.ConferenceSlug = conference.Tenant?.Slug ?? "";
 
             return View(new ConferencePageBlock
             {
-                ConferenceId = conferenceId,
+                ConferenceId = conference.Id,
+                TenantId = conference.TenantId,
                 IsActive = true,
                 BlockType = ConferencePageBlockType.About,
                 ContentJson = "{}",

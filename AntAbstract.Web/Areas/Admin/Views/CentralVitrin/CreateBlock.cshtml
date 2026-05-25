@@ -4,7 +4,22 @@
 
 @{
     ViewData["Title"] = "Yeni Vitrin Bloğu Ekle";
+    ViewData["HideSelectedConferenceBar"] = true;
     Layout = "_LayoutDashboard";
+
+    var conferenceName = ViewBag.ConferenceName as string
+                         ?? Model.Conference?.Title
+                         ?? "Kongre";
+
+    var conferenceSlug = ViewBag.ConferenceSlug as string ?? "";
+
+    var siteUrl = string.IsNullOrWhiteSpace(conferenceSlug)
+        ? "#"
+        : $"/{conferenceSlug}";
+
+    var flowUrl = string.IsNullOrWhiteSpace(conferenceSlug)
+        ? $"/Admin/ConferenceFlow?conferenceId={Model.ConferenceId}"
+        : $"/{conferenceSlug}/Admin/ConferenceFlow?conferenceId={Model.ConferenceId}";
 
     string GetBlockTypeLabel(ConferencePageBlockType blockType)
     {
@@ -20,216 +35,369 @@
         };
     }
 
+    string GetBlockTypeDescription(ConferencePageBlockType blockType)
+    {
+        return blockType switch
+        {
+            ConferencePageBlockType.Hero => "Sayfanın en üstünde yer alan ana karşılama alanıdır.",
+            ConferencePageBlockType.CallForPapers => "Bildiri çağrısı, başvuru duyurusu veya önemli açıklamalar için kullanılır.",
+            ConferencePageBlockType.Topics => "Kongre konuları ve çalışma alanlarını listelemek için kullanılır.",
+            ConferencePageBlockType.Committees => "Bilim kurulu, düzenleme kurulu veya komite bilgileri için kullanılır.",
+            ConferencePageBlockType.About => "Genel içerik, açıklama, program veya süreç anlatımı için kullanılabilir.",
+            ConferencePageBlockType.Fees => "Katılım ücretleri ve ödeme bilgileri için kullanılır.",
+            _ => "Bu blok türü vitrin sayfasında özel içerik alanı olarak kullanılır."
+        };
+    }
+
+    string GetBlockTypeClass(ConferencePageBlockType blockType)
+    {
+        return blockType switch
+        {
+            ConferencePageBlockType.Hero => "block-type-hero",
+            ConferencePageBlockType.CallForPapers => "block-type-call",
+            ConferencePageBlockType.Topics => "block-type-topics",
+            ConferencePageBlockType.Committees => "block-type-committees",
+            ConferencePageBlockType.About => "block-type-about",
+            ConferencePageBlockType.Fees => "block-type-fees",
+            _ => "block-type-default"
+        };
+    }
+
+    string GetBlockIcon(ConferencePageBlockType blockType)
+    {
+        return blockType switch
+        {
+            ConferencePageBlockType.Hero => "fas fa-house-chimney",
+            ConferencePageBlockType.CallForPapers => "fas fa-bullhorn",
+            ConferencePageBlockType.Topics => "fas fa-tags",
+            ConferencePageBlockType.Committees => "fas fa-users",
+            ConferencePageBlockType.About => "fas fa-circle-info",
+            ConferencePageBlockType.Fees => "fas fa-credit-card",
+            _ => "fas fa-layer-group"
+        };
+    }
+
     var blockTypes = Enum.GetValues(typeof(ConferencePageBlockType))
         .Cast<ConferencePageBlockType>()
         .ToList();
+
+    var selectedBlockTypeLabel = GetBlockTypeLabel(Model.BlockType);
+    var selectedBlockTypeClass = GetBlockTypeClass(Model.BlockType);
+    var selectedBlockIcon = GetBlockIcon(Model.BlockType);
 }
 
-<div class="container-fluid">
-
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-        <div>
-            <div class="text-uppercase text-muted fw-bold small mb-1">
-                Vitrin Blokları
-            </div>
-
-            <h2 class="fw-bold mb-1 text-dark">
-                Yeni Vitrin Bloğu Ekle
-            </h2>
-
-            <p class="text-muted mb-0">
-                Kongre vitrin sayfasında gösterilecek yeni bir içerik bloğu oluşturabilirsiniz.
-            </p>
-        </div>
-
-        <a asp-area="Admin"
-           asp-controller="CentralVitrin"
-           asp-action="ManageBlocks"
-           asp-route-conferenceId="@Model.ConferenceId"
-           class="btn btn-light border rounded-pill px-4">
-            <i class="fas fa-arrow-left me-2 text-secondary"></i>
-            Blok Listesine Dön
-        </a>
-    </div>
-
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-
-        <div class="create-hero">
-            <div class="d-flex align-items-center gap-3">
-                <div class="hero-icon">
-                    <i class="fas fa-plus-circle"></i>
-                </div>
-
-                <div>
-                    <h4 class="fw-bold mb-1">
-                        Blok Oluşturma
-                    </h4>
-
-                    <p class="mb-0 text-white-50">
-                        Oluşturduğunuz blok, seçtiğiniz duruma göre vitrin sayfasında yayınlanır.
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div class="card-body p-4 p-lg-5">
-
-            <form asp-area="Admin"
-                  asp-controller="CentralVitrin"
-                  asp-action="CreateBlock"
-                  method="post">
-
-                @Html.AntiForgeryToken()
-
-                <input type="hidden" asp-for="ConferenceId" />
-
-                <div class="row g-4 mb-4">
-
-                    <div class="col-md-6">
-                        <label asp-for="Title" class="form-label fw-bold text-dark">
-                            Menüde Görünen Başlık
-                            <span class="text-danger">*</span>
-                        </label>
-
-                        <input asp-for="Title"
-                               class="form-control form-control-modern"
-                               placeholder="Örn: Sponsorlar, Ulaşım, Konaklama"
-                               required />
-
-                        <span asp-validation-for="Title" class="text-danger small"></span>
-
-                        <div class="form-text">
-                            Bu başlık vitrin sayfasındaki menü veya bölüm başlığı olarak kullanılabilir.
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label asp-for="BlockType" class="form-label fw-bold text-dark">
-                            Blok Türü
-                            <span class="text-danger">*</span>
-                        </label>
-
-                        <select asp-for="BlockType" class="form-select form-control-modern">
-                            @foreach (var blockType in blockTypes)
-                            {
-                                if (Model.BlockType == blockType)
-                                {
-                                    <option value="@blockType" selected>
-                                        @GetBlockTypeLabel(blockType)
-                                    </option>
-                                }
-                                else
-                                {
-                                    <option value="@blockType">
-                                        @GetBlockTypeLabel(blockType)
-                                    </option>
-                                }
-                            }
-                        </select>
-
-                        <span asp-validation-for="BlockType" class="text-danger small"></span>
-
-                        <div class="form-text">
-                            Blok türü, bu içeriğin vitrin sayfasında nasıl yorumlanacağını belirler.
-                        </div>
-                    </div>
-
-                    <div class="col-12">
-                        <label asp-for="Subtitle" class="form-label fw-bold text-dark">
-                            Kısa Açıklama
-                        </label>
-
-                        <textarea asp-for="Subtitle"
-                                  class="form-control form-control-modern"
-                                  rows="4"
-                                  placeholder="Bu blok için kısa bir açıklama yazabilirsiniz."></textarea>
-
-                        <span asp-validation-for="Subtitle" class="text-danger small"></span>
-                    </div>
-
-                </div>
-
-                <div class="publish-box">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="form-check form-switch m-0">
-                            <input asp-for="IsActive"
-                                   class="form-check-input publish-switch"
-                                   type="checkbox"
-                                   role="switch"
-                                   id="activeSwitch" />
-                        </div>
-
-                        <div>
-                            <label asp-for="IsActive"
-                                   class="fw-bold text-dark mb-1"
-                                   for="activeSwitch"
-                                   style="cursor:pointer;">
-                                Sitede Yayında Göster
-                            </label>
-
-                            <div class="text-muted small">
-                                Açık olursa bu blok vitrin sayfasında görünür. Kapalı olursa taslak gibi saklanır.
-                            </div>
-                        </div>
-                    </div>
-
-                    <button type="submit"
-                            class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
-                        <i class="fas fa-check me-2"></i>
-                        Bloğu Oluştur
-                    </button>
-                </div>
-
-            </form>
-
-            <div class="alert alert-info border-0 rounded-4 mt-4 mb-0">
-                <i class="fas fa-info-circle me-2"></i>
-                Blok oluşturulduktan sonra içerik detaylarını
-                <strong>Düzenle</strong>
-                butonuyla güncelleyebilirsiniz.
-            </div>
-
-        </div>
-    </div>
-</div>
-
 <style>
-    .create-hero {
-        background: linear-gradient(135deg, #00aeef 0%, #0077b6 100%);
-        padding: 1.6rem 1.8rem;
-        color: #fff;
+    .create-block-page {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        padding-bottom: 2rem;
     }
 
-    .hero-icon {
-        width: 54px;
-        height: 54px;
-        min-width: 54px;
-        border-radius: 18px;
-        background-color: rgba(255, 255, 255, 0.18);
-        color: #fff;
+    .create-block-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e8eef6;
+        border-radius: 28px;
+        padding: 1.55rem;
         display: flex;
         align-items: center;
+        justify-content: space-between;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        margin-bottom: 1.5rem;
+    }
+
+    .create-block-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 300px;
+        flex: 1;
+    }
+
+    .create-block-hero-icon {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
         justify-content: center;
-        font-size: 1.45rem;
+        font-size: 1.55rem;
+        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.22);
     }
 
-    .form-control-modern {
-        border-radius: 14px;
-        border: 2px solid #e2e8f0;
-        padding: 0.85rem 1rem;
+    .create-block-section-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .create-block-title {
+        margin: 0 0 0.35rem;
+        color: #0f172a;
+        font-size: 2rem;
+        font-weight: 950;
+        letter-spacing: -0.05em;
+    }
+
+    .create-block-description {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.96rem;
+        font-weight: 650;
+        line-height: 1.65;
+        max-width: 850px;
+    }
+
+    .selected-conference-chip {
+        width: fit-content;
+        margin-top: 0.75rem;
+        display: inline-flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 0.5rem 0.85rem;
+        border-radius: 999px;
+        background: rgba(0, 174, 239, 0.10);
+        border: 1px solid rgba(0, 174, 239, 0.22);
+        color: #0d6efd;
+        font-size: 0.82rem;
+        font-weight: 900;
+    }
+
+    .selected-conference-chip em {
+        color: #64748b;
+        font-style: normal;
+        font-weight: 900;
+    }
+
+    .create-block-hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .create-light-btn,
+    .create-outline-btn,
+    .create-primary-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        border-radius: 999px;
+        padding: 0 1.15rem;
+        font-size: 0.9rem;
+        font-weight: 900;
+        text-decoration: none;
         transition: all 0.2s ease;
-        min-height: 54px;
+        white-space: nowrap;
     }
 
-        .form-control-modern:focus {
-            border-color: #00aeef;
-            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
-        }
+    .create-light-btn {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #dbe3ef;
+    }
+
+    .create-light-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.32);
+        background: #ffffff;
+        transform: translateY(-1px);
+    }
+
+    .create-outline-btn {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+    }
+
+    .create-outline-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.32);
+        background: #ffffff;
+        transform: translateY(-1px);
+    }
+
+    .create-primary-btn {
+        border: none;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        box-shadow: 0 12px 26px rgba(13, 110, 253, 0.18);
+    }
+
+    .create-primary-btn:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.24);
+    }
+
+    .create-form-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    .create-card {
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 28px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+
+    .create-card-header {
+        padding: 1.25rem 1.35rem;
+        border-bottom: 1px solid #edf2f7;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        background: #ffffff;
+    }
+
+    .create-card-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 17px;
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .create-card-title {
+        color: #0f172a;
+        font-size: 1.12rem;
+        font-weight: 950;
+        margin-bottom: 0.18rem;
+    }
+
+    .create-card-subtitle {
+        color: #64748b;
+        font-size: 0.84rem;
+        font-weight: 650;
+        margin-bottom: 0;
+        line-height: 1.55;
+    }
+
+    .create-card-body {
+        padding: 1.35rem;
+    }
+
+    .create-label {
+        color: #0f172a;
+        font-size: 0.78rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.45rem;
+    }
+
+    .create-form-control {
+        min-height: 48px;
+        border-radius: 14px;
+        border: 1px solid #cbd5e1;
+        color: #0f172a;
+        font-weight: 700;
+    }
+
+    .create-form-control:focus {
+        border-color: #00aeef;
+        box-shadow: 0 0 0 0.18rem rgba(0, 174, 239, 0.12);
+    }
+
+    .form-help {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 650;
+        margin-top: 0.45rem;
+        line-height: 1.55;
+    }
+
+    .block-type-badge,
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.42rem;
+        border-radius: 999px;
+        padding: 0.42rem 0.72rem;
+        font-size: 0.78rem;
+        font-weight: 900;
+        white-space: nowrap;
+        border: 1px solid transparent;
+    }
+
+    .block-type-hero {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.14);
+    }
+
+    .block-type-call {
+        background: rgba(0, 174, 239, 0.12);
+        color: #0284c7;
+        border-color: rgba(0, 174, 239, 0.18);
+    }
+
+    .block-type-topics {
+        background: rgba(34, 197, 94, 0.12);
+        color: #15803d;
+        border-color: rgba(34, 197, 94, 0.18);
+    }
+
+    .block-type-committees {
+        background: rgba(245, 158, 11, 0.12);
+        color: #d97706;
+        border-color: rgba(245, 158, 11, 0.18);
+    }
+
+    .block-type-about {
+        background: rgba(100, 116, 139, 0.12);
+        color: #64748b;
+        border-color: rgba(100, 116, 139, 0.18);
+    }
+
+    .block-type-fees {
+        background: rgba(239, 68, 68, 0.10);
+        color: #dc2626;
+        border-color: rgba(239, 68, 68, 0.16);
+    }
+
+    .block-type-default {
+        background: rgba(15, 23, 42, 0.08);
+        color: #334155;
+        border-color: rgba(15, 23, 42, 0.12);
+    }
+
+    .status-active {
+        background: rgba(34, 197, 94, 0.12);
+        color: #15803d;
+        border-color: rgba(34, 197, 94, 0.18);
+    }
+
+    .status-passive {
+        background: rgba(100, 116, 139, 0.12);
+        color: #64748b;
+        border-color: rgba(100, 116, 139, 0.18);
+    }
 
     .publish-box {
-        border-top: 1px solid #e2e8f0;
-        margin-top: 2rem;
-        padding-top: 1.5rem;
+        border: 1px solid #e8eef6;
+        background: #f8fafc;
+        border-radius: 22px;
+        padding: 1rem;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -244,23 +412,445 @@
         box-shadow: none;
     }
 
-        .publish-switch:checked {
-            background-color: #0d6efd;
-            border-color: #0d6efd;
+    .publish-switch:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+
+    .save-btn {
+        min-height: 48px;
+        border: none;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        padding: 0 1.4rem;
+        font-weight: 950;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        box-shadow: 0 14px 28px rgba(13, 110, 253, 0.18);
+        transition: all 0.2s ease;
+    }
+
+    .save-btn:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 18px 36px rgba(13, 110, 253, 0.24);
+    }
+
+    .side-info-list {
+        display: grid;
+        gap: 0.85rem;
+    }
+
+    .side-info-item {
+        background: #f8fafc;
+        border: 1px solid #edf2f7;
+        border-radius: 18px;
+        padding: 0.9rem;
+    }
+
+    .side-info-label {
+        color: #64748b;
+        font-size: 0.74rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.35rem;
+    }
+
+    .side-info-value {
+        color: #0f172a;
+        font-size: 0.88rem;
+        font-weight: 900;
+        word-break: break-word;
+        line-height: 1.55;
+    }
+
+    .info-note {
+        border: 1px solid rgba(13, 110, 253, 0.14);
+        background: rgba(13, 110, 253, 0.06);
+        color: #334155;
+        border-radius: 18px;
+        padding: 0.95rem;
+        font-size: 0.84rem;
+        font-weight: 650;
+        line-height: 1.6;
+    }
+
+    .info-note i {
+        color: #0d6efd;
+    }
+
+    @@media (max-width: 992px) {
+        .create-block-hero {
+            align-items: flex-start;
+            flex-direction: column;
         }
 
+        .create-block-hero-left {
+            align-items: flex-start;
+        }
+
+        .create-block-hero-actions,
+        .create-block-hero-actions .btn {
+            width: 100%;
+        }
+
+        .create-block-title {
+            font-size: 1.65rem;
+        }
+
+        .create-form-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
     @@media (max-width: 768px) {
+        .create-block-hero-left {
+            flex-direction: column;
+        }
+
         .publish-box {
             align-items: flex-start;
             flex-direction: column;
         }
 
-            .publish-box .btn {
-                width: 100%;
-            }
+        .save-btn {
+            width: 100%;
+        }
     }
 </style>
 
+<div class="container-fluid create-block-page">
+
+    <div class="create-block-hero">
+        <div class="create-block-hero-left">
+            <div class="create-block-hero-icon">
+                <i class="fas fa-plus-circle"></i>
+            </div>
+
+            <div>
+                <div class="create-block-section-label">
+                    İçerik Yönetimi
+                </div>
+
+                <h2 class="create-block-title">
+                    Yeni Vitrin Bloğu Ekle
+                </h2>
+
+                <p class="create-block-description">
+                    <strong>@conferenceName</strong> kongresinin vitrin sayfasında gösterilecek yeni bir içerik bloğu oluşturabilirsiniz.
+                </p>
+
+                <div class="selected-conference-chip">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Seçili Kongre:</span>
+                    <strong>@conferenceName</strong>
+
+                    @if (!string.IsNullOrWhiteSpace(conferenceSlug))
+                    {
+                        <em>/@conferenceSlug</em>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="create-block-hero-actions">
+            <a asp-area="Admin"
+               asp-controller="CentralVitrin"
+               asp-action="ManageBlocks"
+               asp-route-conferenceId="@Model.ConferenceId"
+               class="btn create-light-btn">
+                <i class="fas fa-arrow-left"></i>
+                Blok Listesine Dön
+            </a>
+
+            @if (!string.IsNullOrWhiteSpace(conferenceSlug))
+            {
+                <a href="@siteUrl"
+                   target="_blank"
+                   class="btn create-outline-btn">
+                    <i class="fas fa-arrow-up-right-from-square"></i>
+                    Siteyi Gör
+                </a>
+            }
+
+            <a href="@flowUrl"
+               class="btn create-outline-btn">
+                <i class="fas fa-stream"></i>
+                Kongre Akışına Git
+            </a>
+        </div>
+    </div>
+
+    <form asp-area="Admin"
+          asp-controller="CentralVitrin"
+          asp-action="CreateBlock"
+          method="post">
+
+        @Html.AntiForgeryToken()
+
+        <input type="hidden" asp-for="ConferenceId" />
+
+        <div class="create-form-grid">
+
+            <div class="create-card">
+                <div class="create-card-header">
+                    <div class="create-card-icon">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+
+                    <div>
+                        <div class="create-card-title">
+                            Blok Bilgileri
+                        </div>
+
+                        <p class="create-card-subtitle">
+                            Oluşturulan blok, seçilen türe göre kongre vitrininde gösterilir.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="create-card-body">
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-7">
+                            <label asp-for="Title" class="create-label">
+                                Menüde Görünen Başlık
+                                <span class="text-danger">*</span>
+                            </label>
+
+                            <input asp-for="Title"
+                                   class="form-control create-form-control"
+                                   placeholder="Örn: Sponsorlar, Ulaşım, Konaklama"
+                                   required />
+
+                            <span asp-validation-for="Title" class="text-danger small fw-bold"></span>
+
+                            <div class="form-help">
+                                Bu başlık vitrin sayfasındaki bölüm başlığı olarak kullanılabilir.
+                            </div>
+                        </div>
+
+                        <div class="col-md-5">
+                            <label asp-for="BlockType" class="create-label">
+                                Blok Türü
+                                <span class="text-danger">*</span>
+                            </label>
+
+                            <select asp-for="BlockType"
+                                    class="form-select create-form-control"
+                                    id="blockTypeSelect">
+                                @foreach (var blockType in blockTypes)
+                                {
+                                    if (Model.BlockType == blockType)
+                                    {
+                                        <option value="@blockType"
+                                                data-label="@GetBlockTypeLabel(blockType)"
+                                                data-description="@GetBlockTypeDescription(blockType)"
+                                                data-icon="@GetBlockIcon(blockType)"
+                                                data-class="@GetBlockTypeClass(blockType)"
+                                                selected>
+                                            @GetBlockTypeLabel(blockType)
+                                        </option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@blockType"
+                                                data-label="@GetBlockTypeLabel(blockType)"
+                                                data-description="@GetBlockTypeDescription(blockType)"
+                                                data-icon="@GetBlockIcon(blockType)"
+                                                data-class="@GetBlockTypeClass(blockType)">
+                                            @GetBlockTypeLabel(blockType)
+                                        </option>
+                                    }
+                                }
+                            </select>
+
+                            <span asp-validation-for="BlockType" class="text-danger small fw-bold"></span>
+
+                            <div class="form-help">
+                                Blok türü, bu içeriğin vitrin sayfasında nasıl yorumlanacağını belirler.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Subtitle" class="create-label">
+                            Kısa Açıklama
+                        </label>
+
+                        <textarea asp-for="Subtitle"
+                                  class="form-control create-form-control"
+                                  rows="7"
+                                  placeholder="Bu blok için kısa bir açıklama yazabilirsiniz."></textarea>
+
+                        <span asp-validation-for="Subtitle" class="text-danger small fw-bold"></span>
+                    </div>
+
+                    <div class="publish-box">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="form-check form-switch m-0">
+                                <input asp-for="IsActive"
+                                       class="form-check-input publish-switch"
+                                       type="checkbox"
+                                       role="switch"
+                                       id="activeSwitch" />
+                            </div>
+
+                            <div>
+                                <label asp-for="IsActive"
+                                       class="fw-bold text-dark mb-1"
+                                       for="activeSwitch"
+                                       style="cursor:pointer;">
+                                    Sitede Yayında Göster
+                                </label>
+
+                                <div class="text-muted small fw-semibold">
+                                    Açık olursa bu blok vitrin sayfasında görünür. Kapalı olursa taslak gibi saklanır.
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit"
+                                class="save-btn">
+                            <i class="fas fa-check"></i>
+                            Bloğu Oluştur
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="create-card">
+                <div class="create-card-header">
+                    <div class="create-card-icon">
+                        <i class="fas fa-circle-info"></i>
+                    </div>
+
+                    <div>
+                        <div class="create-card-title">
+                            Blok Özeti
+                        </div>
+
+                        <p class="create-card-subtitle">
+                            Seçtiğiniz blok tipine göre kısa açıklama.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="create-card-body">
+                    <div class="side-info-list">
+
+                        <div class="side-info-item">
+                            <div class="side-info-label">
+                                Seçilen Blok Türü
+                            </div>
+
+                            <div class="side-info-value">
+                                <span id="blockTypePreviewBadge"
+                                      class="block-type-badge @selectedBlockTypeClass">
+                                    <i class="@selectedBlockIcon"></i>
+                                    <span>@selectedBlockTypeLabel</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="side-info-item">
+                            <div class="side-info-label">
+                                Açıklama
+                            </div>
+
+                            <div class="side-info-value"
+                                 id="blockTypePreviewDescription">
+                                @GetBlockTypeDescription(Model.BlockType)
+                            </div>
+                        </div>
+
+                        <div class="side-info-item">
+                            <div class="side-info-label">
+                                Durum
+                            </div>
+
+                            <div class="side-info-value">
+                                @if (Model.IsActive)
+                                {
+                                    <span class="status-badge status-active">
+                                        <i class="fas fa-check-circle"></i>
+                                        Yayında oluşturulacak
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-passive">
+                                        <i class="fas fa-eye-slash"></i>
+                                        Taslak olarak oluşturulacak
+                                    </span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="side-info-item">
+                            <div class="side-info-label">
+                                Kongre
+                            </div>
+
+                            <div class="side-info-value">
+                                @conferenceName
+                            </div>
+                        </div>
+
+                        <div class="info-note">
+                            <i class="fas fa-circle-info me-2"></i>
+                            Blok oluşturulduktan sonra detaylı içerik alanlarını
+                            <strong>Düzenle</strong> ekranından güncelleyebilirsiniz.
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </form>
+</div>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const blockTypeSelect = document.getElementById("blockTypeSelect");
+            const previewBadge = document.getElementById("blockTypePreviewBadge");
+            const previewDescription = document.getElementById("blockTypePreviewDescription");
+
+            function updateBlockTypePreview() {
+                if (!blockTypeSelect || !previewBadge || !previewDescription) {
+                    return;
+                }
+
+                const selectedOption = blockTypeSelect.options[blockTypeSelect.selectedIndex];
+
+                if (!selectedOption) {
+                    return;
+                }
+
+                const label = selectedOption.getAttribute("data-label") || selectedOption.textContent || "";
+                const description = selectedOption.getAttribute("data-description") || "";
+                const icon = selectedOption.getAttribute("data-icon") || "fas fa-layer-group";
+                const badgeClass = selectedOption.getAttribute("data-class") || "block-type-default";
+
+                previewBadge.className = "block-type-badge " + badgeClass;
+                previewBadge.innerHTML = `<i class="${icon}"></i><span>${label}</span>`;
+                previewDescription.textContent = description;
+            }
+
+            updateBlockTypePreview();
+
+            if (blockTypeSelect) {
+                blockTypeSelect.addEventListener("change", updateBlockTypePreview);
+            }
+        });
+    </script>
 }

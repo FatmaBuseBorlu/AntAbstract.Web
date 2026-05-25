@@ -22,7 +22,15 @@
 
     var backUrl = !string.IsNullOrWhiteSpace(currentSlug)
         ? $"/{currentSlug}/Admin/Assignment?conferenceId={conferenceId}"
-        : "/Admin/Assignment";
+        : $"/Admin/Assignment?conferenceId={conferenceId}";
+
+    var flowUrl = !string.IsNullOrWhiteSpace(currentSlug)
+        ? $"/{currentSlug}/Admin/ConferenceFlow?conferenceId={conferenceId}"
+        : $"/Admin/ConferenceFlow?conferenceId={conferenceId}";
+
+    var assignPostUrl = !string.IsNullOrWhiteSpace(currentSlug)
+        ? $"/{currentSlug}/Admin/Assignment/Assign"
+        : "/Admin/Assignment/Assign";
 
     var authorName = Model.Submission.Author != null
         ? $"{Model.Submission.Author.FirstName} {Model.Submission.Author.LastName}".Trim()
@@ -32,6 +40,18 @@
     {
         authorName = Model.Submission.Author?.Email ?? Localizer["EmptyValue"].Value;
     }
+
+    var recommendedCount = Model.RecommendedReviewers?.Count ?? 0;
+    var otherReviewerCount = Model.AllOtherReviewers?.Count ?? 0;
+    var totalVisibleReviewerCount = recommendedCount + otherReviewerCount;
+
+    var totalAccessibleReviewerCount = ViewBag.TotalAccessibleReviewerCount is int totalAccessible
+        ? totalAccessible
+        : totalVisibleReviewerCount;
+
+    var assignableReviewerCount = ViewBag.AssignableReviewerCount is int assignableCount
+        ? assignableCount
+        : totalVisibleReviewerCount;
 
     string L(string key, string fallback)
     {
@@ -47,215 +67,566 @@
         return Model.Submission.ReviewAssignments != null &&
                Model.Submission.ReviewAssignments.Any(x => x.ReviewerId == reviewerId);
     }
+
+    string GetReviewerName(dynamic reviewer)
+    {
+        var displayName = reviewer.DisplayName as string;
+        var email = reviewer.Email as string;
+
+        if (!string.IsNullOrWhiteSpace(displayName))
+        {
+            return displayName;
+        }
+
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            return email;
+        }
+
+        return "Hakem";
+    }
+
+    string GetFirstLetter(string value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? "H"
+            : value.Trim().Substring(0, 1).ToUpper();
+    }
 }
 
 <style>
-    .assign-page-header {
-        background: linear-gradient(135deg, #ffffff, #f8fafc);
-        border: 1px solid #e2e8f0;
-        border-radius: 24px;
-        padding: 26px;
-        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
-        margin-bottom: 24px;
+    .assign-reviewer-page {
+        font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
-    .assign-title {
-        color: #0f172a;
-        font-weight: 900;
-        margin-bottom: 8px;
-        line-height: 1.35;
+    .assign-hero-card {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e8eef6;
+        border-radius: 28px;
+        padding: 1.55rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        margin-bottom: 1.5rem;
     }
 
-    .assign-subtitle {
+    .assign-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 300px;
+        flex: 1;
+    }
+
+    .assign-hero-icon {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.55rem;
+        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.22);
+    }
+
+    .assign-section-label {
         color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .assign-page-title {
+        margin: 0 0 0.35rem;
+        color: #0f172a;
+        font-size: 2rem;
+        font-weight: 950;
+        letter-spacing: -0.05em;
+        line-height: 1.2;
+    }
+
+    .assign-page-description {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.95rem;
+        font-weight: 650;
         line-height: 1.65;
+    }
+
+    .assign-hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .assign-light-btn,
+    .assign-outline-btn,
+    .assign-primary-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        border-radius: 999px;
+        padding: 0 1.15rem;
+        font-size: 0.9rem;
+        font-weight: 900;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .assign-light-btn {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #dbe3ef;
+    }
+
+    .assign-light-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.32);
+        background: #ffffff;
+        transform: translateY(-1px);
+    }
+
+    .assign-outline-btn {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+    }
+
+    .assign-outline-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.32);
+        background: #ffffff;
+        transform: translateY(-1px);
+    }
+
+    .assign-primary-btn {
+        border: none;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        box-shadow: 0 12px 26px rgba(13, 110, 253, 0.18);
+    }
+
+    .assign-primary-btn:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.24);
+    }
+
+    .info-chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        margin-top: 0.8rem;
     }
 
     .info-chip {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 0.45rem;
         border-radius: 999px;
-        padding: 8px 13px;
-        font-size: 0.84rem;
-        font-weight: 800;
-        background: #f1f5f9;
+        padding: 0.48rem 0.78rem;
+        font-size: 0.78rem;
+        font-weight: 900;
+        background: #f8fafc;
         color: #475569;
         border: 1px solid #e2e8f0;
+    }
+
+    .info-chip i {
+        color: #64748b;
+    }
+
+    .selected-conference-chip {
+        background: rgba(0, 174, 239, 0.10);
+        border-color: rgba(0, 174, 239, 0.22);
+        color: #0d6efd;
+    }
+
+    .selected-conference-chip i {
+        color: #0d6efd;
+    }
+
+    .assign-stat-card {
+        min-height: 92px;
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 24px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+    }
+
+    .assign-stat-icon {
+        width: 50px;
+        height: 50px;
+        min-width: 50px;
+        border-radius: 17px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+    }
+
+    .assign-stat-icon.blue {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .assign-stat-icon.green {
+        background: rgba(34, 197, 94, 0.10);
+        color: #16a34a;
+    }
+
+    .assign-stat-icon.orange {
+        background: rgba(245, 158, 11, 0.12);
+        color: #f59e0b;
+    }
+
+    .assign-stat-title {
+        color: #64748b;
+        font-size: 0.77rem;
+        font-weight: 900;
+        margin-bottom: 0.25rem;
+    }
+
+    .assign-stat-value {
+        color: #0f172a;
+        font-size: 1.25rem;
+        font-weight: 950;
+        line-height: 1.2;
+    }
+
+    .keywords-panel {
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 24px;
+        padding: 1rem 1.15rem;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.04);
+        margin-bottom: 1.45rem;
+    }
+
+    .keywords-label {
+        color: #64748b;
+        font-size: 0.84rem;
+        font-weight: 900;
+        margin-right: 0.25rem;
     }
 
     .keyword-chip {
         display: inline-flex;
         align-items: center;
-        gap: 7px;
-        background: rgba(0, 174, 239, 0.1);
+        gap: 0.4rem;
+        background: rgba(0, 174, 239, 0.10);
         color: #0284c7;
         border: 1px solid rgba(0, 174, 239, 0.18);
         border-radius: 999px;
-        padding: 8px 13px;
-        font-size: 0.84rem;
-        font-weight: 800;
+        padding: 0.45rem 0.72rem;
+        font-size: 0.78rem;
+        font-weight: 900;
     }
 
     .section-heading {
         color: #0f172a;
-        font-weight: 900;
+        font-weight: 950;
         display: flex;
         align-items: center;
-        gap: 10px;
-        margin-bottom: 16px;
+        gap: 0.55rem;
+        margin-bottom: 0.85rem;
+        letter-spacing: -0.02em;
+    }
+
+    .section-heading i {
+        width: 30px;
+        height: 30px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .section-heading .icon-warning {
+        color: #f59e0b;
+        background: rgba(245, 158, 11, 0.12);
+    }
+
+    .section-heading .icon-primary {
+        color: #0d6efd;
+        background: rgba(13, 110, 253, 0.10);
     }
 
     .reviewer-card {
-        border: 1px solid #e2e8f0;
-        border-radius: 22px;
+        border: 1px solid #e8eef6;
+        border-radius: 28px;
         overflow: hidden;
-        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
         background: #ffffff;
-        margin-bottom: 28px;
+        margin-bottom: 1.65rem;
+    }
+
+    .reviewer-card-header {
+        padding: 1.2rem 1.35rem;
+        border-bottom: 1px solid #edf2f7;
+        background: #ffffff;
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .reviewer-card-title {
+        color: #0f172a;
+        font-size: 1.1rem;
+        font-weight: 950;
+        margin-bottom: 0.2rem;
+    }
+
+    .reviewer-card-subtitle {
+        color: #64748b;
+        font-size: 0.86rem;
+        font-weight: 650;
+        margin-bottom: 0;
+    }
+
+    .reviewer-count-pill {
+        padding: 0.42rem 0.8rem;
+        border-radius: 999px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 0.78rem;
+        font-weight: 950;
+        white-space: nowrap;
     }
 
     .reviewer-table thead th {
         background: #f8fafc;
-        color: #475569;
-        font-size: 0.78rem;
-        font-weight: 900;
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 950;
         text-transform: uppercase;
-        letter-spacing: 0.4px;
-        padding: 16px;
-        border-bottom: 1px solid #e2e8f0;
+        letter-spacing: 0.04em;
+        padding: 1rem 1.15rem;
+        border-bottom: 1px solid #edf2f7;
+        white-space: nowrap;
     }
 
     .reviewer-table tbody td {
-        padding: 16px;
+        padding: 1rem 1.15rem;
         vertical-align: middle;
-        border-color: #f1f5f9;
+        border-bottom: 1px solid #edf2f7;
+    }
+
+    .reviewer-table tbody tr:hover {
+        background: #f8fbff;
+    }
+
+    .reviewer-table tbody tr:last-child td {
+        border-bottom: none;
     }
 
     .reviewer-profile {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 0.8rem;
     }
 
     .reviewer-avatar {
-        width: 42px;
-        height: 42px;
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
         border-radius: 999px;
-        background: linear-gradient(135deg, #00aeef, #0284c7);
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
         color: #ffffff;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-weight: 900;
-        flex-shrink: 0;
+        font-weight: 950;
+        box-shadow: 0 12px 24px rgba(13, 110, 253, 0.18);
     }
 
     .reviewer-name {
         color: #0f172a;
-        font-weight: 900;
-        margin-bottom: 2px;
+        font-weight: 950;
+        margin-bottom: 0.15rem;
+        line-height: 1.25;
     }
 
     .reviewer-email {
         color: #64748b;
-        font-size: 0.84rem;
+        font-size: 0.8rem;
+        font-weight: 700;
     }
 
     .expertise-badge {
         display: inline-flex;
         align-items: center;
-        gap: 7px;
+        gap: 0.42rem;
         background: #f8fafc;
         color: #475569;
         border: 1px solid #e2e8f0;
         border-radius: 999px;
-        padding: 8px 12px;
-        font-size: 0.82rem;
-        font-weight: 800;
+        padding: 0.46rem 0.72rem;
+        font-size: 0.78rem;
+        font-weight: 900;
+    }
+
+    .expertise-badge i {
+        color: #64748b;
     }
 
     .assign-action-btn {
+        min-width: 140px;
+        min-height: 42px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 7px;
-        width: 100%;
+        gap: 0.45rem;
         border-radius: 999px;
-        padding: 10px 16px;
-        font-weight: 900;
+        padding: 0 1rem;
+        font-size: 0.86rem;
+        font-weight: 950;
         border: none;
         transition: all 0.2s ease;
         white-space: nowrap;
     }
 
-        .assign-action-btn.recommended {
-            background: linear-gradient(135deg, #f59e0b, #f97316);
-            color: #ffffff;
-            box-shadow: 0 8px 18px rgba(249, 115, 22, 0.22);
-        }
+    .assign-action-btn.recommended {
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.20);
+    }
 
-        .assign-action-btn.normal {
-            background: linear-gradient(135deg, #00aeef, #0284c7);
-            color: #ffffff;
-            box-shadow: 0 8px 18px rgba(0, 174, 239, 0.22);
-        }
+    .assign-action-btn.normal {
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.20);
+    }
 
-        .assign-action-btn:hover {
-            transform: translateY(-1px);
-            color: #ffffff;
-        }
+    .assign-action-btn:hover {
+        transform: translateY(-1px);
+        color: #ffffff;
+        box-shadow: 0 14px 28px rgba(13, 110, 253, 0.25);
+    }
 
     .already-assigned-badge {
+        min-width: 140px;
+        min-height: 42px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 7px;
-        width: 100%;
+        gap: 0.45rem;
         border-radius: 999px;
-        padding: 10px 14px;
+        padding: 0 1rem;
         background: rgba(34, 197, 94, 0.12);
         color: #15803d;
         border: 1px solid rgba(34, 197, 94, 0.22);
-        font-weight: 900;
+        font-size: 0.86rem;
+        font-weight: 950;
         white-space: nowrap;
     }
 
     .empty-box {
-        border: 1px solid #e2e8f0;
-        background: #ffffff;
-        border-radius: 20px;
-        padding: 28px;
+        border: 1px dashed #cbd5e1;
+        background: #f8fafc;
+        border-radius: 22px;
+        padding: 2rem 1.25rem;
         color: #64748b;
-        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.05);
+        text-align: center;
+    }
+
+    .empty-box i {
+        color: #0d6efd;
+        font-size: 1.75rem;
+        display: block;
+        margin-bottom: 0.75rem;
+    }
+
+    .empty-box strong {
+        display: block;
+        color: #0f172a;
+        font-weight: 950;
+        margin-bottom: 0.3rem;
+    }
+
+    .empty-box span {
+        font-size: 0.86rem;
+        font-weight: 700;
+    }
+
+    @@media (max-width: 992px) {
+        .assign-hero-card {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .assign-hero-left {
+            align-items: flex-start;
+        }
+
+        .assign-hero-actions,
+        .assign-hero-actions .btn {
+            width: 100%;
+        }
+
+        .assign-page-title {
+            font-size: 1.65rem;
+        }
     }
 
     @@media (max-width: 768px) {
-        .assign-page-header {
-            padding: 20px;
+        .assign-hero-left {
+            flex-direction: column;
         }
 
         .reviewer-table tbody td {
             min-width: 180px;
         }
+
+        .assign-action-btn,
+        .already-assigned-badge {
+            width: 100%;
+        }
     }
 </style>
 
-<div class="container-fluid">
+<div class="container-fluid assign-reviewer-page">
 
-    <div class="assign-page-header">
-        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-start gap-3">
+    <div class="assign-hero-card">
+        <div class="assign-hero-left">
+            <div class="assign-hero-icon">
+                <i class="fas fa-user-plus"></i>
+            </div>
+
             <div>
-                <h4 class="assign-title">
-                    <i class="fas fa-user-plus text-primary me-2"></i>
-                    @Model.Submission.Title
-                </h4>
-
-                <div class="assign-subtitle">
-                    @L("PageLead", "Bu bildiriye uygun hakemleri seçip değerlendirme sürecini başlatabilirsiniz.")
+                <div class="assign-section-label">
+                    Kongre Operasyonları
                 </div>
 
-                <div class="d-flex flex-wrap gap-2 mt-3">
+                <h2 class="assign-page-title">
+                    @Model.Submission.Title
+                </h2>
+
+                <p class="assign-page-description">
+                    @L("PageLead", "Bu bildiriye uygun hakemleri seçip değerlendirme sürecini başlatabilirsiniz.")
+                </p>
+
+                <div class="info-chip-row">
                     <span class="info-chip">
                         <i class="fas fa-user"></i>
                         @authorName
@@ -263,7 +634,7 @@
 
                     @if (!string.IsNullOrWhiteSpace(conferenceTitle))
                     {
-                        <span class="info-chip">
+                        <span class="info-chip selected-conference-chip">
                             <i class="fas fa-calendar-check"></i>
                             @conferenceTitle
                         </span>
@@ -278,41 +649,89 @@
                     }
                 </div>
             </div>
+        </div>
+
+        <div class="assign-hero-actions">
+            <a href="@flowUrl"
+               class="btn assign-light-btn">
+                <i class="fas fa-stream"></i>
+                Kongre Akışına Dön
+            </a>
 
             <a href="@backUrl"
-               class="btn btn-outline-secondary rounded-pill fw-bold px-4">
-                <i class="fas fa-arrow-left me-2"></i>
+               class="btn assign-outline-btn">
+                <i class="fas fa-arrow-left"></i>
                 @L("BackButton", "Geri Dön")
             </a>
         </div>
     </div>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success border-0 rounded-4 shadow-sm">
-            <i class="fas fa-check-circle me-2"></i>
-            @TempData["SuccessMessage"]
-        </div>
-    }
+    <div class="row g-3 mb-4">
+        <div class="col-xl-4 col-md-6">
+            <div class="assign-stat-card">
+                <div class="assign-stat-icon blue">
+                    <i class="fas fa-users"></i>
+                </div>
 
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger border-0 rounded-4 shadow-sm">
-            <i class="fas fa-exclamation-circle me-2"></i>
-            @TempData["ErrorMessage"]
-        </div>
-    }
+                <div>
+                    <div class="assign-stat-value">
+                        @totalAccessibleReviewerCount
+                    </div>
 
-    <div class="mb-4">
+                    <div class="assign-stat-title">
+                        Toplam Erişilebilir Hakem
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-md-6">
+            <div class="assign-stat-card">
+                <div class="assign-stat-icon green">
+                    <i class="fas fa-user-check"></i>
+                </div>
+
+                <div>
+                    <div class="assign-stat-value">
+                        @assignableReviewerCount
+                    </div>
+
+                    <div class="assign-stat-title">
+                        Atanabilir Hakem
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-md-6">
+            <div class="assign-stat-card">
+                <div class="assign-stat-icon orange">
+                    <i class="fas fa-star"></i>
+                </div>
+
+                <div>
+                    <div class="assign-stat-value">
+                        @recommendedCount
+                    </div>
+
+                    <div class="assign-stat-title">
+                        Önerilen Hakem
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="keywords-panel">
         <div class="d-flex flex-wrap gap-2 align-items-center">
-            <span class="fw-bold text-muted">
+            <span class="keywords-label">
                 @L("KeywordsLabel", "Anahtar Kelimeler:")
             </span>
 
             @if (!string.IsNullOrWhiteSpace(Model.Submission.Keywords))
             {
                 var keywords = Model.Submission.Keywords
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
                 foreach (var keyword in keywords)
                 {
@@ -333,20 +752,43 @@
     </div>
 
     <h5 class="section-heading">
-        <i class="fas fa-star text-warning"></i>
+        <i class="fas fa-star icon-warning"></i>
         @L("RecommendedHeader", "Önerilen Hakemler")
     </h5>
 
-    @if (Model.RecommendedReviewers == null || !Model.RecommendedReviewers.Any())
-    {
-        <div class="empty-box mb-4">
-            <i class="fas fa-info-circle me-2 text-primary"></i>
-            @L("NoRecommendations", "Bu bildiri için önerilen hakem bulunamadı.")
+    <div class="reviewer-card">
+        <div class="reviewer-card-header">
+            <div>
+                <div class="reviewer-card-title">
+                    Önerilen Hakemler
+                </div>
+
+                <p class="reviewer-card-subtitle">
+                    Bildiri anahtar kelimelerine göre önerilen hakemler burada listelenir.
+                </p>
+            </div>
+
+            <span class="reviewer-count-pill">
+                @recommendedCount hakem
+            </span>
         </div>
-    }
-    else
-    {
-        <div class="reviewer-card">
+
+        @if (Model.RecommendedReviewers == null || !Model.RecommendedReviewers.Any())
+        {
+            <div class="p-3">
+                <div class="empty-box">
+                    <i class="fas fa-circle-info"></i>
+                    <strong>
+                        Önerilen hakem bulunamadı
+                    </strong>
+                    <span>
+                        Bu bildiri için öneri eşleşmesi bulunmadı. Aşağıdaki atanabilir hakemlerden seçim yapabilirsiniz.
+                    </span>
+                </div>
+            </div>
+        }
+        else
+        {
             <div class="table-responsive">
                 <table class="table table-hover mb-0 reviewer-table">
                     <thead>
@@ -363,14 +805,8 @@
                     <tbody>
                         @foreach (var reviewer in Model.RecommendedReviewers)
                         {
-                            var reviewerName = !string.IsNullOrWhiteSpace(reviewer.DisplayName)
-                            ? reviewer.DisplayName
-                            : reviewer.Email;
-
-                            var firstLetter = !string.IsNullOrWhiteSpace(reviewerName)
-                            ? reviewerName.Substring(0, 1).ToUpper()
-                            : "H";
-
+                            var reviewerName = GetReviewerName(reviewer);
+                            var firstLetter = GetFirstLetter(reviewerName);
                             var alreadyAssigned = IsAlreadyAssigned(reviewer.Id);
 
                             <tr>
@@ -393,29 +829,31 @@
                                 </td>
 
                                 <td>
-                                    @reviewer.Email
+                                    <span class="reviewer-email">
+                                        @reviewer.Email
+                                    </span>
                                 </td>
 
                                 <td>
                                     <span class="expertise-badge">
                                         <i class="fas fa-brain"></i>
                                         @(string.IsNullOrWhiteSpace(reviewer.ExpertiseAreas)
-                                                                        ? L("NoExpertise", "Uzmanlık alanı belirtilmedi")
-                                                                        : reviewer.ExpertiseAreas)
-                            </span>
-                        </td>
+                                            ? L("NoExpertise", "Belirtilmemiş")
+                                            : reviewer.ExpertiseAreas)
+                                    </span>
+                                </td>
 
                                 <td class="text-end">
-                            @if (alreadyAssigned)
+                                    @if (alreadyAssigned)
                                     {
                                         <span class="already-assigned-badge">
                                             <i class="fas fa-check"></i>
                                             @L("AlreadyAssignedText", "Atanmış")
                                         </span>
                                     }
-                                    else if (!string.IsNullOrWhiteSpace(currentSlug))
+                                    else
                                     {
-                                        <form action="/@currentSlug/Admin/Assignment/Assign" method="post" class="m-0">
+                                        <form action="@assignPostUrl" method="post" class="m-0">
                                             @Html.AntiForgeryToken()
 
                                             <input type="hidden" name="submissionId" value="@Model.Submission.Id" />
@@ -423,16 +861,10 @@
                                             <input type="hidden" name="conferenceId" value="@conferenceId" />
 
                                             <button type="submit" class="assign-action-btn recommended">
-                                                <i class="fas fa-star"></i>
-                                                @L("AssignRecommendedBtn", "Önerileni Ata")
+                                                <i class="fas fa-user-plus"></i>
+                                                @L("AssignRecommendedBtn", "Ata")
                                             </button>
                                         </form>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-danger small">
-                                            @L("Error_SelectConferenceFirst", "Önce kongre seçmelisiniz.")
-                                        </span>
                                     }
                                 </td>
                             </tr>
@@ -440,15 +872,31 @@
                     </tbody>
                 </table>
             </div>
-        </div>
-    }
+        }
+    </div>
 
     <h5 class="section-heading">
-        <i class="fas fa-users text-primary"></i>
-        @L("AllReviewersHeader", "Tüm Hakemler")
+        <i class="fas fa-users icon-primary"></i>
+        @L("AllReviewersHeader", "Atanabilir Hakemler")
     </h5>
 
     <div class="reviewer-card">
+        <div class="reviewer-card-header">
+            <div>
+                <div class="reviewer-card-title">
+                    Atanabilir Hakemler
+                </div>
+
+                <p class="reviewer-card-subtitle">
+                    Bu bildiriye atanabilecek hakemleri buradan seçebilirsiniz.
+                </p>
+            </div>
+
+            <span class="reviewer-count-pill">
+                @otherReviewerCount hakem
+            </span>
+        </div>
+
         <div class="table-responsive">
             <table class="table table-hover mb-0 reviewer-table">
                 <thead>
@@ -466,9 +914,16 @@
                     @if (Model.AllOtherReviewers == null || !Model.AllOtherReviewers.Any())
                     {
                         <tr>
-                            <td colspan="4" class="text-center py-5 text-muted">
-                                <i class="fas fa-user-slash d-block mb-2 fs-3 text-primary"></i>
-                                @L("NoReviewersFound", "Hakem bulunamadı.")
+                            <td colspan="4">
+                                <div class="empty-box">
+                                    <i class="fas fa-user-slash"></i>
+                                    <strong>
+                                        Hakem bulunamadı
+                                    </strong>
+                                    <span>
+                                        Bu bildiriye atanabilecek hakem bulunamadı. Önce Hakem Havuzu ekranından kullanıcıyı Hakem rolüyle bağlamalısınız.
+                                    </span>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -476,14 +931,8 @@
                     {
                         @foreach (var reviewer in Model.AllOtherReviewers)
                         {
-                            var reviewerName = !string.IsNullOrWhiteSpace(reviewer.DisplayName)
-                            ? reviewer.DisplayName
-                            : reviewer.Email;
-
-                            var firstLetter = !string.IsNullOrWhiteSpace(reviewerName)
-                            ? reviewerName.Substring(0, 1).ToUpper()
-                            : "H";
-
+                            var reviewerName = GetReviewerName(reviewer);
+                            var firstLetter = GetFirstLetter(reviewerName);
                             var alreadyAssigned = IsAlreadyAssigned(reviewer.Id);
 
                             <tr>
@@ -506,29 +955,31 @@
                                 </td>
 
                                 <td>
-                                    @reviewer.Email
+                                    <span class="reviewer-email">
+                                        @reviewer.Email
+                                    </span>
                                 </td>
 
                                 <td>
                                     <span class="expertise-badge">
                                         <i class="fas fa-brain"></i>
                                         @(string.IsNullOrWhiteSpace(reviewer.ExpertiseAreas)
-                                                                        ? L("NoExpertise", "Uzmanlık alanı belirtilmedi")
-                                                                        : reviewer.ExpertiseAreas)
-                            </span>
-                        </td>
+                                            ? L("NoExpertise", "Belirtilmemiş")
+                                            : reviewer.ExpertiseAreas)
+                                    </span>
+                                </td>
 
                                 <td class="text-end">
-                            @if (alreadyAssigned)
+                                    @if (alreadyAssigned)
                                     {
                                         <span class="already-assigned-badge">
                                             <i class="fas fa-check"></i>
                                             @L("AlreadyAssignedText", "Atanmış")
                                         </span>
                                     }
-                                    else if (!string.IsNullOrWhiteSpace(currentSlug))
+                                    else
                                     {
-                                        <form action="/@currentSlug/Admin/Assignment/Assign" method="post" class="m-0">
+                                        <form action="@assignPostUrl" method="post" class="m-0">
                                             @Html.AntiForgeryToken()
 
                                             <input type="hidden" name="submissionId" value="@Model.Submission.Id" />
@@ -537,15 +988,9 @@
 
                                             <button type="submit" class="assign-action-btn normal">
                                                 <i class="fas fa-user-plus"></i>
-                                                @L("AssignBtn", "Hakem Ata")
+                                                @L("AssignBtn", "Ata")
                                             </button>
                                         </form>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-danger small">
-                                            @L("Error_SelectConferenceFirst", "Önce kongre seçmelisiniz.")
-                                        </span>
                                     }
                                 </td>
                             </tr>

@@ -156,16 +156,22 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 ViewBag.ConferenceId = conference.Id;
                 ViewBag.ConferenceTitle = conference.Title ?? "";
                 ViewBag.Slug = conference.Tenant?.Slug ?? slug ?? "";
+                ViewBag.TargetTenantId = conference.TenantId;
 
                 return conference.TenantId;
             }
 
             if (IsSuperAdminUser())
             {
+                ViewBag.TargetTenantId = null;
                 return null;
             }
 
-            return await GetCurrentAdminTenantIdAsync();
+            var adminTenantId = await GetCurrentAdminTenantIdAsync();
+
+            ViewBag.TargetTenantId = adminTenantId;
+
+            return adminTenantId;
         }
 
         private string BuildRefereeIndexUrl(string? slug, Guid? conferenceId)
@@ -243,6 +249,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 ViewBag.ConferenceId = null;
                 ViewBag.ConferenceTitle = "";
                 ViewBag.Slug = "";
+                ViewBag.TargetTenantId = null;
             }
 
             var filteredReferees = await GetRefereeListAsync(targetTenantId);
@@ -535,8 +542,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (refereeUser.Id == currentUser.Id)
             {
                 TempData["ErrorMessage"] = T(
-                    "Error_CannotDeleteOwnAccount",
-                    "Kendi hesabınızı bu ekrandan silemezsiniz.");
+                    "Error_CannotRemoveOwnRefereeRole",
+                    "Kendi hesabınızın hakem rolünü bu ekrandan kaldıramazsınız.");
 
                 return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
             }
@@ -557,7 +564,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 {
                     TempData["ErrorMessage"] = T(
                         "Error_UnauthorizedDelete",
-                        "Bu hakemi silme yetkiniz yok.");
+                        "Bu kullanıcının hakem rolünü kaldırma yetkiniz yok.");
 
                     return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
                 }
@@ -569,7 +576,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 {
                     TempData["ErrorMessage"] = T(
                         "Error_UnauthorizedDelete",
-                        "Bu hakem seçili kongrenin kurumuna bağlı değil.");
+                        "Bu kullanıcı seçili kongrenin kurumuna bağlı değil.");
 
                     return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
                 }
@@ -581,37 +588,75 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 TempData["ErrorMessage"] = T(
                     "Error_UserIsNotReferee",
-                    "Bu kullanıcı hakem rolüne sahip değil.");
+                    "Bu kullanıcı zaten hakem rolüne sahip değil.");
 
                 return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
             }
 
-            var targetIsSuperAdmin = await _userManager.IsInRoleAsync(refereeUser, "SuperAdmin");
-            var targetIsAdmin = await _userManager.IsInRoleAsync(refereeUser, "Admin");
+            var hasPendingReviewAssignmentQuery = _context.ReviewAssignments
+                .AsNoTracking()
+                .Include(x => x.Submission)
+                .Where(x =>
+                    x.ReviewerId == refereeUser.Id &&
+                    x.Review == null);
 
-            if (targetIsSuperAdmin || targetIsAdmin)
+            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
+            {
+                hasPendingReviewAssignmentQuery = hasPendingReviewAssignmentQuery
+                    .Where(x =>
+                        x.Submission != null &&
+                        x.Submission.ConferenceId == conferenceId.Value);
+            }
+
+            var hasPendingReviewAssignment = await hasPendingReviewAssignmentQuery.AnyAsync();
+
+            if (hasPendingReviewAssignment)
             {
                 TempData["ErrorMessage"] = T(
-                    "Error_CannotDeleteManagementUser",
-                    "Yönetici rolündeki kullanıcıları bu ekrandan silemezsiniz.");
+                    "Error_RefereeHasPendingReviews",
+                    "Bu hakemin tamamlanmamış değerlendirmesi olduğu için hakem rolü kaldırılamaz.");
 
                 return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
             }
 
-            var deleteResult = await _userManager.DeleteAsync(refereeUser);
+            var removeRoleResult = await _userManager.RemoveFromRoleAsync(refereeUser, "Referee");
 
-            if (!deleteResult.Succeeded)
+            if (!removeRoleResult.Succeeded)
             {
                 TempData["ErrorMessage"] = T(
-                    "Error_RefereeDeleteFailed",
-                    "Hakem silinirken bir hata oluştu.");
+                    "Error_RefereeRoleRemoveFailed",
+                    "Hakem rolü kaldırılırken bir hata oluştu.");
+
+                return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
+            }
+
+            var remainingRoles = await _userManager.GetRolesAsync(refereeUser);
+
+            if (!remainingRoles.Any())
+            {
+                refereeUser.TenantId = null;
+
+                var updateUserResult = await _userManager.UpdateAsync(refereeUser);
+
+                if (!updateUserResult.Succeeded)
+                {
+                    TempData["ErrorMessage"] = T(
+                        "Error_RefereeRoleRemovedButTenantClearFailed",
+                        "Hakem rolü kaldırıldı fakat kullanıcının kurum bağlantısı temizlenirken bir hata oluştu.");
+
+                    return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
+                }
+
+                TempData["SuccessMessage"] = T(
+                    "Success_RefereeRoleRemovedAndTenantCleared",
+                    "Hakem rolü kaldırıldı ve kullanıcının kurum bağlantısı temizlendi.");
 
                 return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
             }
 
             TempData["SuccessMessage"] = T(
-                "Success_RefereeDeleted",
-                "Hakem başarıyla silindi.");
+                "Success_RefereeRoleRemoved",
+                "Hakem rolü başarıyla kaldırıldı. Kullanıcının diğer rolleri korundu.");
 
             return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
         }
