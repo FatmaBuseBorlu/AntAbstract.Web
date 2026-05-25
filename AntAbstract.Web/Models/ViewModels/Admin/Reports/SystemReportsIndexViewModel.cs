@@ -9,6 +9,8 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Reports
 
         public int TotalConferences { get; set; }
 
+        public int ActiveConferences { get; set; }
+
         public int TotalUsers { get; set; }
 
         public int TotalAdmins { get; set; }
@@ -19,6 +21,12 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Reports
 
         public int TotalSubmissions { get; set; }
 
+        public int AssignedSubmissions { get; set; }
+
+        public int DecisionPendingSubmissions { get; set; }
+
+        public int DecisionCompletedSubmissions { get; set; }
+
         public int TotalRegistrations { get; set; }
 
         public int PaidRegistrations { get; set; }
@@ -27,13 +35,13 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Reports
 
         public decimal TotalRevenue { get; set; }
 
-        public List<RecentUserReportItem> RecentUsers { get; set; } = new List<RecentUserReportItem>();
+        public List<RecentUserReportItem> RecentUsers { get; set; } = new();
 
-        public List<RecentConferenceReportItem> RecentConferences { get; set; } = new List<RecentConferenceReportItem>();
+        public List<RecentConferenceReportItem> RecentConferences { get; set; } = new();
 
-        public List<ConferenceSubmissionReportItem> ConferenceSubmissionReports { get; set; } = new List<ConferenceSubmissionReportItem>();
+        public List<ConferenceSubmissionReportItem> ConferenceSubmissionReports { get; set; } = new();
 
-        public List<TenantConferenceReportItem> TenantConferenceReports { get; set; } = new List<TenantConferenceReportItem>();
+        public List<TenantConferenceReportItem> TenantConferenceReports { get; set; } = new();
     }
 
     public class RecentUserReportItem
