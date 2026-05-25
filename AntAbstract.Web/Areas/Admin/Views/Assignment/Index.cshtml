@@ -110,7 +110,7 @@
                     <span>Seçili Kongre:</span>
 
                     <strong>
-                        @conferenceTitle
+                        @(string.IsNullOrWhiteSpace(conferenceTitle) ? "Kongre seçilmedi" : conferenceTitle)
                     </strong>
 
                     @if (!string.IsNullOrWhiteSpace(slug))
@@ -122,11 +122,19 @@
         </div>
 
         <div class="assignment-hero-actions">
+
+            <a href="@flowUrl"
+               class="btn assignment-light-btn">
+                <i class="fas fa-arrow-left me-2"></i>
+                Kongre Akışına Dön
+            </a>
+
             <a href="@changeConferenceUrl"
                class="btn assignment-outline-btn">
                 <i class="fas fa-exchange-alt me-2"></i>
                 Kongre Değiştir
             </a>
+
         </div>
     </div>
 
@@ -209,8 +217,8 @@
                             var reviewerCount = submission.ReviewAssignments?.Count ?? 0;
 
                             var assignUrl = string.IsNullOrWhiteSpace(slug)
-                            ? $"/Admin/Assignment/Assign/{submission.Id}?conferenceId={conferenceId}"
-                            : $"/{slug}/Admin/Assignment/Assign/{submission.Id}?conferenceId={conferenceId}";
+                                ? $"/Admin/Assignment/Assign/{submission.Id}?conferenceId={conferenceId}"
+                                : $"/{slug}/Admin/Assignment/Assign/{submission.Id}?conferenceId={conferenceId}";
 
                             <tr>
                                 <td>
@@ -367,66 +375,69 @@
         font-weight: 900;
     }
 
-        .selected-conference-pill span {
-            color: #0d6efd;
-        }
+    .selected-conference-pill span,
+    .selected-conference-pill strong {
+        color: #0d6efd;
+    }
 
-        .selected-conference-pill strong {
-            color: #0d6efd;
-        }
-
-        .selected-conference-pill em {
-            color: #64748b;
-            font-style: normal;
-            font-weight: 900;
-        }
+    .selected-conference-pill em {
+        color: #64748b;
+        font-style: normal;
+        font-weight: 900;
+    }
 
     .assignment-hero-actions {
         display: flex;
         align-items: center;
+        justify-content: flex-end;
         gap: 0.75rem;
         flex-wrap: wrap;
     }
 
     .assignment-light-btn,
     .assignment-outline-btn {
-        min-height: 44px;
+        min-height: 48px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        gap: 0.55rem;
         border-radius: 999px;
-        padding: 0 1.2rem;
-        text-decoration: none;
+        padding: 0 1.35rem;
+        font-size: 0.95rem;
         font-weight: 900;
-        white-space: nowrap;
+        text-decoration: none;
         transition: all 0.2s ease;
+        white-space: nowrap;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.045);
     }
 
     .assignment-light-btn {
-        border: 1px solid #dbe3ef;
         background: #ffffff;
-        color: #334155;
+        color: #0f172a;
+        border: 1px solid #dbe3ef;
     }
 
-        .assignment-light-btn:hover {
-            color: #0d6efd;
-            border-color: rgba(13, 110, 253, 0.28);
-            background: #f8fbff;
-            transform: translateY(-1px);
-        }
+    .assignment-light-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.32);
+        background: #ffffff;
+        box-shadow: 0 12px 26px rgba(13, 110, 253, 0.10);
+        transform: translateY(-1px);
+    }
 
     .assignment-outline-btn {
-        border: 1px solid #94a3b8;
         background: #ffffff;
-        color: #475569;
+        color: #334155;
+        border: 1px solid #cbd5e1;
     }
 
-        .assignment-outline-btn:hover {
-            color: #0f172a;
-            border-color: #64748b;
-            background: #f8fafc;
-            transform: translateY(-1px);
-        }
+    .assignment-outline-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.32);
+        background: #ffffff;
+        box-shadow: 0 12px 26px rgba(13, 110, 253, 0.10);
+        transform: translateY(-1px);
+    }
 
     .assignment-list-card {
         background: #ffffff;
@@ -446,19 +457,19 @@
         flex-wrap: wrap;
     }
 
-        .assignment-list-header h5 {
-            margin: 0 0 0.25rem;
-            color: #0f172a;
-            font-size: 1.25rem;
-            font-weight: 900;
-        }
+    .assignment-list-header h5 {
+        margin: 0 0 0.25rem;
+        color: #0f172a;
+        font-size: 1.25rem;
+        font-weight: 900;
+    }
 
-        .assignment-list-header p {
-            margin: 0;
-            color: #64748b;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
+    .assignment-list-header p {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
 
     .assignment-count-pill {
         padding: 0.45rem 0.85rem;
@@ -480,35 +491,35 @@
         border-spacing: 0;
     }
 
-        .assignment-table thead th {
-            padding: 1rem 1.5rem;
-            background: #f8fafc;
-            color: #64748b;
-            font-size: 0.78rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            border-bottom: 1px solid #edf2f7;
-            white-space: nowrap;
-        }
+    .assignment-table thead th {
+        padding: 1rem 1.5rem;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 1px solid #edf2f7;
+        white-space: nowrap;
+    }
 
-        .assignment-table tbody td {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #edf2f7;
-            vertical-align: middle;
-        }
+    .assignment-table tbody td {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #edf2f7;
+        vertical-align: middle;
+    }
 
-        .assignment-table tbody tr {
-            transition: all 0.2s ease;
-        }
+    .assignment-table tbody tr {
+        transition: all 0.2s ease;
+    }
 
-            .assignment-table tbody tr:hover {
-                background: #f8fbff;
-            }
+    .assignment-table tbody tr:hover {
+        background: #f8fbff;
+    }
 
-            .assignment-table tbody tr:last-child td {
-                border-bottom: none;
-            }
+    .assignment-table tbody tr:last-child td {
+        border-bottom: none;
+    }
 
     .submission-title-cell strong {
         display: block;
@@ -630,9 +641,9 @@
         white-space: nowrap;
     }
 
-        .reviewer-count-pill i {
-            color: #0d6efd;
-        }
+    .reviewer-count-pill i {
+        color: #0d6efd;
+    }
 
     .date-cell strong {
         display: block;
@@ -664,11 +675,11 @@
         transition: all 0.2s ease;
     }
 
-        .assign-reviewer-btn:hover {
-            color: #ffffff;
-            transform: translateY(-1px);
-            box-shadow: 0 18px 36px rgba(13, 110, 253, 0.26);
-        }
+    .assign-reviewer-btn:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 18px 36px rgba(13, 110, 253, 0.26);
+    }
 
     .assignment-empty-state {
         padding: 4rem 1.5rem;
@@ -728,57 +739,4 @@
             flex-direction: column;
         }
     }
-
-    .assignment-hero-actions {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-    }
-
-        .assignment-hero-actions .assignment-light-btn,
-        .assignment-hero-actions .assignment-outline-btn {
-            min-height: 48px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.55rem;
-            border-radius: 999px;
-            padding: 0 1.35rem;
-            font-size: 0.95rem;
-            font-weight: 900;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            white-space: nowrap;
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.045);
-        }
-
-        .assignment-hero-actions .assignment-light-btn {
-            background: #ffffff;
-            color: #0f172a;
-            border: 1px solid #dbe3ef;
-        }
-
-            .assignment-hero-actions .assignment-light-btn:hover {
-                color: #0d6efd;
-                border-color: rgba(13, 110, 253, 0.32);
-                background: #ffffff;
-                box-shadow: 0 12px 26px rgba(13, 110, 253, 0.10);
-                transform: translateY(-1px);
-            }
-
-        .assignment-hero-actions .assignment-outline-btn {
-            background: #ffffff;
-            color: #334155;
-            border: 1px solid #cbd5e1;
-        }
-
-            .assignment-hero-actions .assignment-outline-btn:hover {
-                color: #0d6efd;
-                border-color: rgba(13, 110, 253, 0.32);
-                background: #ffffff;
-                box-shadow: 0 12px 26px rgba(13, 110, 253, 0.10);
-                transform: translateY(-1px);
-            }
 </style>
