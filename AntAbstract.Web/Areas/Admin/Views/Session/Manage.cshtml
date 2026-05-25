@@ -1,14 +1,31 @@
 ﻿@model AntAbstract.Domain.Entities.Session
+
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using Microsoft.AspNetCore.Routing
 @using AntAbstract.Domain.Entities
+
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
+    ViewData["HideSelectedConferenceBar"] = true;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
     var slug = Context.GetRouteValue("slug")?.ToString() ?? "";
-    var conferenceId = ViewBag.ConferenceId;
-    var conferenceIdText = conferenceId?.ToString() ?? Context.Request.Query["conferenceId"].ToString();
+
+    var conferenceId = ViewBag.ConferenceId is Guid selectedConferenceId
+        ? selectedConferenceId
+        : Model.ConferenceId;
+
+    var conferenceIdText = conferenceId == Guid.Empty
+        ? Context.Request.Query["conferenceId"].ToString()
+        : conferenceId.ToString();
+
+    var conferenceTitle = ViewBag.ConferenceTitle as string
+                          ?? ViewBag.ConferenceName as string
+                          ?? "";
 
     var unassigned = ViewBag.UnassignedSubmissions as List<Submission> ?? new List<Submission>();
     var assignedSubmissions = Model.Submissions?.ToList() ?? new List<Submission>();
@@ -26,11 +43,24 @@
         ? $"/Admin/ConferenceFlow/ProgramSessions?conferenceId={conferenceIdText}"
         : $"/{slug}/Admin/ConferenceFlow/ProgramSessions?conferenceId={conferenceIdText}";
 
+    var editUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Session/Edit/{Model.Id}?conferenceId={conferenceIdText}"
+        : $"/{slug}/Admin/Session/Edit/{Model.Id}?conferenceId={conferenceIdText}";
+
     var sessionDateText = Model.SessionDate == default
         ? L("DateNotSpecified", "Tarih belirtilmedi")
         : Model.SessionDate.ToString("dd MMMM yyyy");
 
     var sessionTimeText = $"{Model.StartTime:hh\\:mm} - {Model.EndTime:hh\\:mm}";
+
+    string GetAuthorName(Submission submission)
+    {
+        var authorName = $"{submission.Author?.FirstName} {submission.Author?.LastName}".Trim();
+
+        return string.IsNullOrWhiteSpace(authorName)
+            ? L("AuthorNotSpecified", "Yazar belirtilmedi")
+            : authorName;
+    }
 }
 
 <style>
@@ -63,6 +93,7 @@
         align-items: center;
         gap: 1rem;
         min-width: 280px;
+        flex: 1;
     }
 
     .session-manage-hero-icon {
@@ -85,6 +116,7 @@
         font-weight: 900;
         letter-spacing: -0.055em;
         margin-bottom: 0.25rem;
+        line-height: 1.25;
     }
 
     .session-manage-lead {
@@ -92,15 +124,49 @@
         font-size: 0.95rem;
         font-weight: 650;
         margin: 0;
+        line-height: 1.65;
     }
 
-    .session-back-btn {
+    .session-chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        margin-top: 0.75rem;
+    }
+
+    .session-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.42rem;
+        min-height: 32px;
+        border-radius: 999px;
+        padding: 0 0.75rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 900;
+    }
+
+    .session-chip-primary {
+        background: rgba(0, 174, 239, 0.10);
+        border-color: rgba(0, 174, 239, 0.22);
+        color: #0d6efd;
+    }
+
+    .session-hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .session-back-btn,
+    .session-edit-btn {
         min-height: 48px;
         border-radius: 999px;
         padding: 0 1.2rem;
-        color: #334155;
-        background: #ffffff;
-        border: 1px solid #dbe4ef;
         font-weight: 900;
         text-decoration: none;
         display: inline-flex;
@@ -108,17 +174,37 @@
         justify-content: center;
         gap: 0.55rem;
         transition: all 0.2s ease;
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
         white-space: nowrap;
     }
 
-        .session-back-btn:hover {
-            color: #0d6efd;
-            border-color: rgba(13, 110, 253, 0.28);
-            transform: translateY(-2px);
-            box-shadow: 0 12px 28px rgba(13, 110, 253, 0.10);
-            text-decoration: none;
-        }
+    .session-back-btn {
+        color: #334155;
+        background: #ffffff;
+        border: 1px solid #dbe4ef;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+    }
+
+    .session-back-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.28);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(13, 110, 253, 0.10);
+        text-decoration: none;
+    }
+
+    .session-edit-btn {
+        color: #ffffff;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        border: none;
+        box-shadow: 0 14px 28px rgba(13, 110, 253, 0.18);
+    }
+
+    .session-edit-btn:hover {
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 18px 36px rgba(13, 110, 253, 0.28);
+        text-decoration: none;
+    }
 
     .session-summary-grid {
         display: grid;
@@ -185,6 +271,35 @@
         font-size: 0.74rem;
         font-weight: 850;
         margin-top: 0.1rem;
+    }
+
+    .operation-alert {
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-radius: 18px;
+        border: 1px solid transparent;
+        font-weight: 800;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+    }
+
+    .operation-alert-success {
+        background: rgba(34, 197, 94, 0.10);
+        border-color: rgba(34, 197, 94, 0.20);
+        color: #15803d;
+    }
+
+    .operation-alert-info {
+        background: rgba(13, 110, 253, 0.10);
+        border-color: rgba(13, 110, 253, 0.20);
+        color: #0d6efd;
+    }
+
+    .operation-alert-error {
+        background: rgba(239, 68, 68, 0.10);
+        border-color: rgba(239, 68, 68, 0.20);
+        color: #dc2626;
     }
 
     .manage-grid {
@@ -286,15 +401,15 @@
         transition: all 0.2s ease;
     }
 
-        .submission-item + .submission-item {
-            margin-top: 0.75rem;
-        }
+    .submission-item + .submission-item {
+        margin-top: 0.75rem;
+    }
 
-        .submission-item:hover {
-            background: #f8fafc;
-            transform: translateY(-1px);
-            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.045);
-        }
+    .submission-item:hover {
+        background: #f8fafc;
+        transform: translateY(-1px);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.045);
+    }
 
     .submission-info {
         min-width: 0;
@@ -329,9 +444,9 @@
         font-weight: 850;
     }
 
-        .submission-meta i {
-            color: #00aeef;
-        }
+    .submission-meta i {
+        color: #00aeef;
+    }
 
     .btn-add-submission,
     .btn-remove-submission {
@@ -355,11 +470,11 @@
         box-shadow: 0 10px 22px rgba(0, 174, 239, 0.20);
     }
 
-        .btn-add-submission:hover {
-            color: #ffffff;
-            transform: translateY(-1px);
-            box-shadow: 0 14px 28px rgba(0, 174, 239, 0.30);
-        }
+    .btn-add-submission:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 28px rgba(0, 174, 239, 0.30);
+    }
 
     .btn-remove-submission {
         color: #ef4444;
@@ -367,11 +482,11 @@
         border: 1px solid rgba(239, 68, 68, 0.20);
     }
 
-        .btn-remove-submission:hover {
-            color: #dc2626;
-            background: rgba(239, 68, 68, 0.12);
-            transform: translateY(-1px);
-        }
+    .btn-remove-submission:hover {
+        color: #dc2626;
+        background: rgba(239, 68, 68, 0.12);
+        transform: translateY(-1px);
+    }
 
     .empty-list-state {
         min-height: 280px;
@@ -408,6 +523,7 @@
         font-weight: 650;
         max-width: 360px;
         margin: 0 auto;
+        line-height: 1.65;
     }
 
     @@media (max-width: 1200px) {
@@ -430,11 +546,18 @@
             align-items: flex-start;
         }
 
+        .session-manage-hero-left {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
         .session-manage-title {
             font-size: 1.45rem;
         }
 
-        .session-back-btn {
+        .session-hero-actions,
+        .session-back-btn,
+        .session-edit-btn {
             width: 100%;
         }
 
@@ -476,13 +599,43 @@
                     <p class="session-manage-lead">
                         @L("PageLead", "Kabul edilen bildirileri bu oturuma ekleyebilir veya oturumdan çıkarabilirsiniz.")
                     </p>
+
+                    <div class="session-chip-row">
+                        @if (!string.IsNullOrWhiteSpace(conferenceTitle))
+                        {
+                            <span class="session-chip session-chip-primary">
+                                <i class="fas fa-calendar-check"></i>
+                                @conferenceTitle
+                            </span>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(slug))
+                        {
+                            <span class="session-chip">
+                                <i class="fas fa-link"></i>
+                                /@slug
+                            </span>
+                        }
+
+                        <span class="session-chip">
+                            <i class="fas @(Model.IsActive ? "fa-circle-check" : "fa-circle-pause")"></i>
+                            @(Model.IsActive ? L("ActiveText", "Aktif") : L("PassiveText", "Pasif"))
+                        </span>
+                    </div>
                 </div>
             </div>
 
-            <a href="@backUrl" class="session-back-btn">
-                <i class="fas fa-arrow-left"></i>
-                @L("BackButton", "Program Ekranına Dön")
-            </a>
+            <div class="session-hero-actions">
+                <a href="@backUrl" class="session-back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    @L("BackButton", "Program Ekranına Dön")
+                </a>
+
+                <a href="@editUrl" class="session-edit-btn">
+                    <i class="fas fa-pen-to-square"></i>
+                    @L("EditSessionButton", "Oturumu Düzenle")
+                </a>
+            </div>
         </div>
 
         <div class="session-summary-grid">
@@ -553,29 +706,30 @@
 
         @if (TempData["SuccessMessage"] != null)
         {
-            <div class="alert alert-success border-0 shadow-sm rounded-4 fw-bold mb-4">
-                <i class="fas fa-check-circle me-2"></i>
-                @TempData["SuccessMessage"]
+            <div class="alert operation-alert operation-alert-success mb-4">
+                <i class="fas fa-check-circle"></i>
+                <span>@TempData["SuccessMessage"]</span>
             </div>
         }
 
         @if (TempData["InfoMessage"] != null)
         {
-            <div class="alert alert-info border-0 shadow-sm rounded-4 fw-bold mb-4">
-                <i class="fas fa-info-circle me-2"></i>
-                @TempData["InfoMessage"]
+            <div class="alert operation-alert operation-alert-info mb-4">
+                <i class="fas fa-info-circle"></i>
+                <span>@TempData["InfoMessage"]</span>
             </div>
         }
 
         @if (TempData["ErrorMessage"] != null)
         {
-            <div class="alert alert-danger border-0 shadow-sm rounded-4 fw-bold mb-4">
-                <i class="fas fa-triangle-exclamation me-2"></i>
-                @TempData["ErrorMessage"]
+            <div class="alert operation-alert operation-alert-error mb-4">
+                <i class="fas fa-triangle-exclamation"></i>
+                <span>@TempData["ErrorMessage"]</span>
             </div>
         }
 
         <div class="manage-grid">
+
             <section class="manage-panel">
                 <div class="manage-panel-header">
                     <div class="manage-panel-title">
@@ -604,13 +758,6 @@
                     {
                         foreach (var sub in assignedSubmissions.OrderBy(x => x.Title))
                         {
-                            var authorName = $"{sub.Author?.FirstName} {sub.Author?.LastName}".Trim();
-
-                            if (string.IsNullOrWhiteSpace(authorName))
-                            {
-                                authorName = L("AuthorNotSpecified", "Yazar belirtilmedi");
-                            }
-
                             <div class="submission-item">
                                 <div class="submission-info">
                                     <div class="submission-title">
@@ -620,7 +767,7 @@
                                     <div class="submission-meta-row">
                                         <span class="submission-meta">
                                             <i class="fas fa-user"></i>
-                                            @authorName
+                                            @GetAuthorName(sub)
                                         </span>
 
                                         @if (!string.IsNullOrWhiteSpace(sub.Topic))
@@ -644,7 +791,9 @@
                                       asp-route-slug="@slug"
                                       asp-route-conferenceId="@conferenceIdText"
                                       method="post"
-                                      class="m-0">
+                                      class="m-0"
+                                      onsubmit="return confirm('Bu bildiriyi oturumdan çıkarmak istediğinize emin misiniz?');">
+
                                     @Html.AntiForgeryToken()
 
                                     <input type="hidden" name="sessionId" value="@Model.Id" />
@@ -709,13 +858,6 @@
                     {
                         foreach (var sub in unassigned.OrderBy(x => x.Title))
                         {
-                            var authorName = $"{sub.Author?.FirstName} {sub.Author?.LastName}".Trim();
-
-                            if (string.IsNullOrWhiteSpace(authorName))
-                            {
-                                authorName = L("AuthorNotSpecified", "Yazar belirtilmedi");
-                            }
-
                             <div class="submission-item">
                                 <div class="submission-info">
                                     <div class="submission-title">
@@ -725,7 +867,7 @@
                                     <div class="submission-meta-row">
                                         <span class="submission-meta">
                                             <i class="fas fa-user"></i>
-                                            @authorName
+                                            @GetAuthorName(sub)
                                         </span>
 
                                         @if (!string.IsNullOrWhiteSpace(sub.Topic))
@@ -750,6 +892,7 @@
                                       asp-route-conferenceId="@conferenceIdText"
                                       method="post"
                                       class="m-0">
+
                                     @Html.AntiForgeryToken()
 
                                     <input type="hidden" name="sessionId" value="@Model.Id" />
@@ -783,6 +926,7 @@
                     }
                 </div>
             </section>
+
         </div>
 
     </div>
