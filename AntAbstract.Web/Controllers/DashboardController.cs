@@ -164,9 +164,17 @@ namespace AntAbstract.Web.Controllers
 
             conferenceIdText ??= HttpContext.Session.GetString("SelectedConferenceId");
 
-            return Guid.TryParse(conferenceIdText, out var parsedId)
+            return Guid.TryParse(conferenceIdText, out var parsedId) && parsedId != Guid.Empty
                 ? parsedId
                 : null;
+        }
+
+        private static string GetCanonicalSlug(Conference conference, string? fallbackSlug = null)
+        {
+            return conference.Tenant?.Slug
+                   ?? conference.Slug
+                   ?? fallbackSlug
+                   ?? "";
         }
 
         private void SaveSelectedConference(
@@ -184,6 +192,17 @@ namespace AntAbstract.Web.Controllers
             HttpContext.Session.SetString($"SelectedConferenceTitle:{tenantId}", conferenceTitle ?? "");
         }
 
+        private void SaveSelectedConference(Conference conference, string? fallbackSlug = null)
+        {
+            var selectedSlug = GetCanonicalSlug(conference, fallbackSlug);
+
+            SaveSelectedConference(
+                conference.TenantId,
+                conference.Id,
+                selectedSlug,
+                conference.Title);
+        }
+
         private void ClearSelectedConference()
         {
             if (_tenantContext.Current != null)
@@ -196,6 +215,18 @@ namespace AntAbstract.Web.Controllers
             HttpContext.Session.Remove("SelectedConferenceId");
             HttpContext.Session.Remove("SelectedConferenceSlug");
             HttpContext.Session.Remove("SelectedConferenceTitle");
+        }
+
+        private IQueryable<Guid> GetReviewerConferenceIds(string userId)
+        {
+            var reviewIds =
+                from reviewAssignment in _context.ReviewAssignments.AsNoTracking()
+                join submission in _context.Submissions.AsNoTracking()
+                    on reviewAssignment.SubmissionId equals submission.Id
+                where reviewAssignment.ReviewerId == userId
+                select submission.ConferenceId;
+
+            return reviewIds;
         }
 
         private IQueryable<Guid> GetUserConferenceIds(string userId)
@@ -215,18 +246,6 @@ namespace AntAbstract.Web.Controllers
             return registrationIds
                 .Union(submissionIds)
                 .Union(reviewIds);
-        }
-
-        private IQueryable<Guid> GetReviewerConferenceIds(string userId)
-        {
-            var reviewIds =
-                from reviewAssignment in _context.ReviewAssignments.AsNoTracking()
-                join submission in _context.Submissions.AsNoTracking()
-                    on reviewAssignment.SubmissionId equals submission.Id
-                where reviewAssignment.ReviewerId == userId
-                select submission.ConferenceId;
-
-            return reviewIds;
         }
 
         private Task<List<Conference>> GetUserConferencesAsync(string userId)
@@ -382,6 +401,23 @@ namespace AntAbstract.Web.Controllers
             return "/" + filePath.TrimStart('/');
         }
 
+        private async Task<List<Guid>> GetRegistrationOpenConferenceIdsAsync()
+        {
+            var today = DateTime.UtcNow.Date;
+
+            return await _context.RegistrationTypes
+                .AsNoTracking()
+                .Where(rt =>
+                    rt.IsActive &&
+                    (
+                        !rt.Deadline.HasValue ||
+                        rt.Deadline.Value.Date >= today
+                    ))
+                .Select(rt => rt.ConferenceId)
+                .Distinct()
+                .ToListAsync();
+        }
+
         [HttpGet]
         public async Task<IActionResult> ChangeConference()
         {
@@ -469,12 +505,12 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var conf = await _context.Conferences
+            var conference = await _context.Conferences
                 .AsNoTracking()
                 .Include(x => x.Tenant)
                 .FirstOrDefaultAsync(x => x.Id == conferenceId);
 
-            if (conf == null)
+            if (conference == null)
             {
                 TempData["ErrorMessage"] = T(
                     "ConferenceNotFound",
@@ -494,13 +530,9 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(MyConferences));
             }
 
-            var selectedSlug = conf.Tenant?.Slug ?? conf.Slug ?? GetSlug();
+            var selectedSlug = GetCanonicalSlug(conference, GetSlug());
 
-            SaveSelectedConference(
-                conf.TenantId,
-                conf.Id,
-                selectedSlug,
-                conf.Title);
+            SaveSelectedConference(conference, selectedSlug);
 
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
@@ -521,7 +553,7 @@ namespace AntAbstract.Web.Controllers
 
                 if (isAuthor)
                 {
-                    return Redirect($"/{selectedSlug}/Submission/Index");
+                    return Redirect($"/{selectedSlug}/my-submissions");
                 }
 
                 if (isListener)
@@ -592,11 +624,7 @@ namespace AntAbstract.Web.Controllers
                 }
                 else
                 {
-                    SaveSelectedConference(
-                        selectedConference.TenantId,
-                        selectedConference.Id,
-                        selectedConference.Tenant?.Slug ?? slug,
-                        selectedConference.Title);
+                    SaveSelectedConference(selectedConference, slug);
                 }
             }
 
@@ -622,13 +650,9 @@ namespace AntAbstract.Web.Controllers
 
                     if (autoConference != null)
                     {
-                        var selectedSlug = autoConference.Tenant?.Slug ?? slug;
+                        var selectedSlug = GetCanonicalSlug(autoConference, slug);
 
-                        SaveSelectedConference(
-                            autoConference.TenantId,
-                            autoConference.Id,
-                            selectedSlug,
-                            autoConference.Title);
+                        SaveSelectedConference(autoConference, selectedSlug);
 
                         return Redirect($"/{selectedSlug}/Dashboard");
                     }
@@ -773,13 +797,9 @@ namespace AntAbstract.Web.Controllers
 
             var effectiveSlug = !string.IsNullOrWhiteSpace(slug)
                 ? slug
-                : conference.Tenant?.Slug ?? conference.Slug ?? GetSlug();
+                : GetCanonicalSlug(conference, GetSlug());
 
-            SaveSelectedConference(
-                conference.TenantId,
-                conference.Id,
-                effectiveSlug,
-                conference.Title);
+            SaveSelectedConference(conference, effectiveSlug);
 
             var model = new ProceedingBookPageViewModel
             {
@@ -845,7 +865,8 @@ namespace AntAbstract.Web.Controllers
             }
 
             List<Conference> registeredConferences;
-            List<Conference> availableConferences;
+            List<Conference> registrationAvailableConferences;
+            List<Conference> submissionAvailableConferences;
 
             if (isAdmin)
             {
@@ -867,11 +888,26 @@ namespace AntAbstract.Web.Controllers
                         .ToListAsync();
                 }
 
-                availableConferences = new List<Conference>();
+                registrationAvailableConferences = new List<Conference>();
+                submissionAvailableConferences = new List<Conference>();
             }
             else
             {
                 var myConferenceIds = await GetUserConferenceIds(user.Id)
+                    .Distinct()
+                    .ToListAsync();
+
+                var registeredConferenceIds = await _context.Registrations
+                    .AsNoTracking()
+                    .Where(r => r.AppUserId == user.Id)
+                    .Select(r => r.ConferenceId)
+                    .Distinct()
+                    .ToListAsync();
+
+                var submittedConferenceIds = await _context.Submissions
+                    .AsNoTracking()
+                    .Where(s => s.AuthorId == user.Id)
+                    .Select(s => s.ConferenceId)
                     .Distinct()
                     .ToListAsync();
 
@@ -882,17 +918,32 @@ namespace AntAbstract.Web.Controllers
                     .OrderByDescending(c => c.StartDate)
                     .ToListAsync();
 
-                availableConferences = await _context.Conferences
+                var registrationOpenConferenceIds = await GetRegistrationOpenConferenceIdsAsync();
+
+                registrationAvailableConferences = await _context.Conferences
                     .AsNoTracking()
                     .Include(c => c.Tenant)
                     .Where(c =>
                         c.EndDate.Date >= DateTime.Today &&
+                        registrationOpenConferenceIds.Contains(c.Id) &&
                         !myConferenceIds.Contains(c.Id))
+                    .OrderBy(c => c.StartDate)
+                    .ToListAsync();
+
+                submissionAvailableConferences = await _context.Conferences
+                    .AsNoTracking()
+                    .Include(c => c.Tenant)
+                    .Where(c =>
+                        c.EndDate.Date >= DateTime.Today &&
+                        registeredConferenceIds.Contains(c.Id) &&
+                        !submittedConferenceIds.Contains(c.Id))
                     .OrderBy(c => c.StartDate)
                     .ToListAsync();
             }
 
-            ViewBag.AvailableConferences = availableConferences;
+            ViewBag.AvailableConferences = registrationAvailableConferences;
+            ViewBag.RegistrationAvailableConferences = registrationAvailableConferences;
+            ViewBag.SubmissionAvailableConferences = submissionAvailableConferences;
 
             return View(registeredConferences);
         }

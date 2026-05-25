@@ -1,42 +1,85 @@
 ﻿@using AntAbstract.Application.DTOs.Submission
-@using System.Linq
+@using System
 @using System.Globalization
+@using System.Linq
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model SubmissionDto
 
 @{
     Layout = null;
 
-    var author = Model.Authors?.OrderBy(a => a.Order).FirstOrDefault();
+    var currentCulture = CultureInfo.CurrentUICulture;
+    var currentLang = currentCulture.Name;
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
+
+    var author = Model.Authors?
+        .OrderBy(a => a.Order)
+        .FirstOrDefault();
+
     var authorName = author != null
-        ? $"{author.FirstName} {author.LastName}"
+        ? $"{author.FirstName} {author.LastName}".Trim()
         : Model.CorrespondingAuthorName;
 
-    var institution = author != null
-        ? author.Institution
-        : Localizer["InstitutionNotFound"].Value;
+    if (string.IsNullOrWhiteSpace(authorName))
+    {
+        authorName = L("DefaultParticipantName", "Katılımcı");
+    }
 
-    var conferenceName = Model.ConferenceTitle ?? Localizer["DefaultConferenceTitle"].Value;
-    var currentLang = CultureInfo.CurrentUICulture.Name;
+    var institution = author?.Institution;
+
+    if (string.IsNullOrWhiteSpace(institution))
+    {
+        institution = L("InstitutionNotFound", "Kurum bilgisi belirtilmemiştir");
+    }
+
+    var conferenceName = string.IsNullOrWhiteSpace(Model.ConferenceTitle)
+        ? L("DefaultConferenceTitle", "Bilimsel Kongre")
+        : Model.ConferenceTitle;
+
+    var referenceCode = Model.Id.ToString().Length >= 8
+        ? Model.Id.ToString().Substring(0, 8).ToUpper()
+        : Model.Id.ToString().ToUpper();
+
+    var participantLabel = L("ParticipantLabel", "Katılımcı");
 }
 
 <!DOCTYPE html>
 <html lang="@currentLang">
 <head>
     <meta charset="utf-8" />
-    <title>@Localizer["DocumentTitle"]</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>@L("DocumentTitle", "Yaka Kartı")</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
     <style>
         @@page {
             size: A6 portrait;
             margin: 0;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
         body {
             margin: 0;
             padding: 0;
-            font-family: 'Inter', sans-serif;
-            background-color: #eef2f5;
+            min-height: 100%;
+        }
+
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background: #eef2f5;
+            color: #0f172a;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -48,104 +91,275 @@
         .badge-card {
             width: 105mm;
             height: 148mm;
-            background-color: white;
+            background: #ffffff;
             position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: stretch;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
             overflow: hidden;
-            box-sizing: border-box;
-            border: 1px solid #000;
-            padding-top: 14mm;
-            padding-bottom: 14mm;
-            gap: 6mm;
-        }
-
-        .header {
-            background-color: #fff;
-            color: #000;
-            padding: 0 20px 6px 20px;
-            text-align: center;
-            border-bottom: 2px solid #00aeef;
-            margin-bottom: 4mm;
-        }
-
-        .conf-name {
-            font-size: 14px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            line-height: 1.4;
-            color: #333;
-        }
-
-        .body {
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+            border: 1px solid #0f172a;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+        }
+
+        .badge-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at top right, rgba(0, 174, 239, 0.20), transparent 34%),
+                radial-gradient(circle at bottom left, rgba(13, 110, 253, 0.12), transparent 30%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .top-band {
+            position: relative;
+            z-index: 1;
+            height: 18mm;
+            background: linear-gradient(135deg, #0d6efd, #00aeef);
+            color: #ffffff;
+            display: flex;
             align-items: center;
-            padding: 0 20px;
+            justify-content: center;
+            padding: 0 10mm;
             text-align: center;
+        }
+
+        .system-title {
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            padding: 11mm 9mm 9mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .conference-section {
+            text-align: center;
+            padding-bottom: 8mm;
+            border-bottom: 2px solid rgba(0, 174, 239, 0.22);
+        }
+
+        .conference-label {
+            color: #64748b;
+            font-size: 8px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1.6px;
+            margin-bottom: 3mm;
+        }
+
+        .conference-name {
+            color: #0f172a;
+            font-size: 13px;
+            font-weight: 900;
+            text-transform: uppercase;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+
+        .participant-section {
+            text-align: center;
+            padding: 8mm 0;
+        }
+
+        .avatar-circle {
+            width: 25mm;
+            height: 25mm;
+            border-radius: 999px;
+            margin: 0 auto 6mm;
+            background: linear-gradient(135deg, rgba(0, 174, 239, 0.16), rgba(13, 110, 253, 0.10));
+            border: 2px solid rgba(0, 174, 239, 0.28);
+            color: #0d6efd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 900;
+        }
+
+        .participant-name {
+            color: #020617;
+            font-size: 28px;
+            font-weight: 900;
+            line-height: 1.12;
+            letter-spacing: -0.8px;
+            margin-bottom: 4mm;
+            word-break: break-word;
+        }
+
+        .participant-institution {
+            color: #475569;
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+
+        .meta-section {
+            border-top: 1px dashed #cbd5e1;
+            padding-top: 6mm;
+            text-align: center;
+        }
+
+        .ref-code {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 8mm;
+            padding: 0 5mm;
+            border-radius: 999px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #334155;
+            font-size: 9px;
+            font-weight: 900;
+            letter-spacing: 0.6px;
             margin-bottom: 5mm;
         }
 
-        .name {
-            font-size: 34px;
-            font-weight: 900;
-            color: #000;
-            margin-bottom: 6px;
-            line-height: 1.1;
-        }
-
-        .institution {
-            font-size: 18px;
-            color: #555;
-            font-weight: 500;
-            margin-bottom: 8px;
-        }
-
-        .footer {
-            background-color: #00aeef;
-            color: white;
-            padding: 16px 20px;
+        .role-band {
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(135deg, #00aeef, #0d6efd);
+            color: #ffffff;
+            min-height: 22mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-align: center;
+            padding: 4mm 8mm;
             font-size: 24px;
-            font-weight: 800;
+            font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 3px;
-            margin-top: 2mm;
+        }
+
+        .print-actions {
+            position: fixed;
+            top: 18px;
+            right: 18px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .print-btn {
+            border: none;
+            border-radius: 999px;
+            background: #ffffff;
+            color: #0f172a;
+            padding: 10px 15px;
+            font-family: 'Inter', Arial, sans-serif;
+            font-weight: 900;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.20);
+            cursor: pointer;
+        }
+
+        .print-btn.primary {
+            background: linear-gradient(135deg, #0d6efd, #00aeef);
+            color: #ffffff;
         }
 
         @@media print {
+            html,
             body {
-                background-color: white;
+                width: 105mm;
+                height: 148mm;
+                background: #ffffff;
+                display: block;
+                min-height: 0;
+            }
+
+            .print-actions {
+                display: none !important;
             }
 
             .badge-card {
+                width: 105mm;
+                height: 148mm;
                 box-shadow: none;
-                border: 1px solid #000;
+                border: 1px solid #0f172a;
+                page-break-after: always;
             }
         }
     </style>
 </head>
+
 <body>
+    <div class="print-actions">
+        <button type="button" class="print-btn" onclick="window.close()">
+            @L("CloseButton", "Kapat")
+        </button>
 
-    <div class="badge-card">
-        <div class="header">
-            <div class="conf-name">@conferenceName</div>
-        </div>
-
-        <div class="body">
-            <div class="name">@authorName</div>
-            <div class="institution">@institution</div>
-        </div>
-
-        <div class="footer">
-            @Localizer["ParticipantLabel"]
-        </div>
+        <button type="button" class="print-btn primary" onclick="window.print()">
+            @L("PrintButton", "Yazdır / PDF")
+        </button>
     </div>
 
+    <main class="badge-card">
+        <div class="top-band">
+            <div class="system-title">
+                ANTABSTRACT
+            </div>
+        </div>
+
+        <section class="content">
+            <div class="conference-section">
+                <div class="conference-label">
+                    @L("ConferenceLabel", "Kongre")
+                </div>
+
+                <div class="conference-name">
+                    @conferenceName
+                </div>
+            </div>
+
+            <div class="participant-section">
+                <div class="avatar-circle">
+                    @{
+                        var initials = string.Join("",
+                            authorName
+                                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                .Take(2)
+                                .Select(x => x.Substring(0, 1).ToUpper())
+                        );
+
+                        if (string.IsNullOrWhiteSpace(initials))
+                        {
+                            initials = "P";
+                        }
+                    }
+
+                    @initials
+                </div>
+
+                <div class="participant-name">
+                    @authorName
+                </div>
+
+                <div class="participant-institution">
+                    @institution
+                </div>
+            </div>
+
+            <div class="meta-section">
+                <div class="ref-code">
+                    REF-@referenceCode
+                </div>
+            </div>
+        </section>
+
+        <footer class="role-band">
+            @participantLabel
+        </footer>
+    </main>
 </body>
 </html>

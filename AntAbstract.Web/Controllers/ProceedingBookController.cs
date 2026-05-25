@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -90,7 +91,37 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return query.Where(c => c.TenantId == tenantId.Value);
         }
 
-        private async Task<Conference?> GetAccessibleConferenceAsync(string slug, Guid? conferenceId)
+        private static string GetConferenceSlug(Conference conference)
+        {
+            return conference.Tenant?.Slug ?? conference.Slug ?? "";
+        }
+
+        private string BuildProceedingBookUrl(Conference conference)
+        {
+            var slug = GetConferenceSlug(conference);
+
+            return string.IsNullOrWhiteSpace(slug)
+                ? $"/Admin/ProceedingBook?conferenceId={conference.Id}"
+                : $"/{slug}/Admin/ProceedingBook?conferenceId={conference.Id}";
+        }
+
+        private string BuildConferenceFlowUrl(Conference? conference = null)
+        {
+            if (conference == null || conference.Id == Guid.Empty)
+            {
+                return "/Admin/ConferenceFlow";
+            }
+
+            var slug = GetConferenceSlug(conference);
+
+            return string.IsNullOrWhiteSpace(slug)
+                ? $"/Admin/ConferenceFlow?conferenceId={conference.Id}"
+                : $"/{slug}/Admin/ConferenceFlow?conferenceId={conference.Id}";
+        }
+
+        private async Task<Conference?> GetAccessibleConferenceAsync(
+            string slug,
+            Guid? conferenceId)
         {
             Guid? selectedConferenceId = null;
 
@@ -123,7 +154,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return null;
             }
 
-            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(
+                    _tenantContext.Current.Slug,
+                    slug,
+                    StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }
@@ -133,7 +167,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 c.TenantId == _tenantContext.Current.Id);
         }
 
-        private async Task<IActionResult> RedirectToSelectedConferenceProceedingBookAsync(Guid? conferenceId)
+        private async Task<IActionResult> RedirectToSelectedConferenceProceedingBookAsync(
+            Guid? conferenceId)
         {
             Guid? selectedConferenceId = null;
 
@@ -154,22 +189,31 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var query = await GetAccessibleConferenceQueryAsync();
 
-            var conference = await query.FirstOrDefaultAsync(c => c.Id == selectedConferenceId.Value);
+            var conference = await query.FirstOrDefaultAsync(c =>
+                c.Id == selectedConferenceId.Value);
 
-            if (conference == null || conference.Tenant == null || string.IsNullOrWhiteSpace(conference.Tenant.Slug))
+            if (conference == null || conference.Tenant == null)
             {
                 TempData["ErrorMessage"] = "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.";
                 return Redirect("/Admin/ConferenceFlow");
             }
 
+            var slug = GetConferenceSlug(conference);
+
+            if (string.IsNullOrWhiteSpace(slug))
+            {
+                TempData["ErrorMessage"] = "Kongreye bağlı kurum slug bilgisi bulunamadı.";
+                return Redirect("/Admin/ConferenceFlow");
+            }
+
             SetConferenceSession(conference);
 
-            return Redirect($"/{conference.Tenant.Slug}/Admin/ProceedingBook?conferenceId={conference.Id}");
+            return Redirect(BuildProceedingBookUrl(conference));
         }
 
         private void SetConferenceSession(Conference conference)
         {
-            var slug = conference.Tenant?.Slug ?? conference.Slug ?? "";
+            var slug = GetConferenceSlug(conference);
             var tenantId = conference.TenantId;
 
             _selectedConferenceService.SetSelectedConferenceId(conference.Id);
@@ -183,7 +227,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             HttpContext.Session.SetString($"SelectedConferenceTitle:{tenantId}", conference.Title ?? "");
         }
 
-        private ProceedingBookViewModel BuildViewModel(Conference conference, string slug, string? returnUrl = null)
+        private ProceedingBookViewModel BuildViewModel(
+            Conference conference,
+            string slug,
+            string? returnUrl = null)
         {
             return new ProceedingBookViewModel
             {
@@ -205,7 +252,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                    string.Equals(file.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase);
         }
 
-        private async Task<string> SaveProceedingBookFileAsync(IFormFile file, Guid conferenceId)
+        private async Task<string> SaveProceedingBookFileAsync(
+            IFormFile file,
+            Guid conferenceId)
         {
             var uploadsRoot = Path.Combine(
                 _webHostEnvironment.WebRootPath,
@@ -229,7 +278,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return $"/uploads/proceeding-books/{conferenceId}/{safeFileName}";
         }
 
-        private async Task<string> SaveGeneratedProceedingBookPdfAsync(byte[] pdfBytes, Guid conferenceId)
+        private async Task<string> SaveGeneratedProceedingBookPdfAsync(
+            byte[] pdfBytes,
+            Guid conferenceId)
         {
             var uploadsRoot = Path.Combine(
                 _webHostEnvironment.WebRootPath,
@@ -269,7 +320,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
         }
 
-        private async Task CreateProceedingBookPublishedNotificationsAsync(Conference conference)
+        private async Task CreateProceedingBookPublishedNotificationsAsync(
+            Conference conference)
         {
             if (conference == null || conference.Id == Guid.Empty)
             {
@@ -347,7 +399,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return;
             }
 
-            var slug = conference.Tenant?.Slug ?? conference.Slug ?? "";
+            var slug = GetConferenceSlug(conference);
 
             var link = !string.IsNullOrWhiteSpace(slug)
                 ? $"/{slug}/Proceedings/Index"
@@ -400,7 +452,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         [HttpGet("/{slug}/Admin/ProceedingBook")]
-        public async Task<IActionResult> Index(string slug, Guid? conferenceId, string? returnUrl = null)
+        public async Task<IActionResult> Index(
+            string slug,
+            Guid? conferenceId,
+            string? returnUrl = null)
         {
             var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
 
@@ -412,7 +467,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             SetConferenceSession(conference);
 
-            var model = BuildViewModel(conference, slug, returnUrl);
+            var model = BuildViewModel(
+                conference,
+                GetConferenceSlug(conference),
+                returnUrl);
 
             return View("~/Areas/Admin/Views/ProceedingBook/Index.cshtml", model);
         }
@@ -420,7 +478,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpPost("/Admin/ProceedingBook")]
         [HttpPost("/{slug}/Admin/ProceedingBook")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Index(string? slug, ProceedingBookViewModel model)
+        public async Task<IActionResult> Index(
+            string? slug,
+            ProceedingBookViewModel model)
         {
             if (model.ConferenceId == Guid.Empty)
             {
@@ -439,9 +499,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return Redirect("/Admin/ConferenceFlow");
             }
 
-            var currentSlug = !string.IsNullOrWhiteSpace(slug)
-                ? slug
-                : conference.Tenant.Slug ?? conference.Slug ?? "";
+            var currentSlug = GetConferenceSlug(conference);
+
+            if (string.IsNullOrWhiteSpace(currentSlug))
+            {
+                TempData["ErrorMessage"] = "Kongreye bağlı kurum slug bilgisi bulunamadı.";
+                return Redirect(BuildConferenceFlowUrl(conference));
+            }
 
             SetConferenceSession(conference);
 
@@ -499,7 +563,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             conference.IsProceedingBookPublished = model.IsProceedingBookPublished;
 
-            if (conference.IsProceedingBookPublished && !string.IsNullOrWhiteSpace(conference.ProceedingBookFilePath))
+            if (conference.IsProceedingBookPublished &&
+                !string.IsNullOrWhiteSpace(conference.ProceedingBookFilePath))
             {
                 conference.ProceedingBookPublishedDate ??= DateTime.UtcNow;
 
@@ -522,13 +587,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return LocalRedirect(model.ReturnUrl);
             }
 
-            return Redirect($"/{currentSlug}/Admin/ProceedingBook?conferenceId={conference.Id}");
+            return Redirect(BuildProceedingBookUrl(conference));
         }
 
         [HttpPost("/Admin/ProceedingBook/Generate")]
         [HttpPost("/{slug}/Admin/ProceedingBook/Generate")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Generate(string? slug, Guid conferenceId)
+        public async Task<IActionResult> Generate(
+            string? slug,
+            Guid conferenceId)
         {
             if (conferenceId == Guid.Empty)
             {
@@ -547,15 +614,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return Redirect("/Admin/ConferenceFlow");
             }
 
-            var currentSlug = !string.IsNullOrWhiteSpace(slug)
-                ? slug
-                : conference.Tenant.Slug ?? conference.Slug ?? "";
+            var currentSlug = GetConferenceSlug(conference);
+
+            if (string.IsNullOrWhiteSpace(currentSlug))
+            {
+                TempData["ErrorMessage"] = "Kongreye bağlı kurum slug bilgisi bulunamadı.";
+                return Redirect(BuildConferenceFlowUrl(conference));
+            }
 
             SetConferenceSession(conference);
 
             var acceptedSubmissions = await _context.Submissions
                 .AsNoTracking()
                 .Include(x => x.Author)
+                .Include(x => x.SubmissionAuthors)
                 .Include(x => x.ConferenceTopic)
                 .Where(x =>
                     x.ConferenceId == conference.Id &&
@@ -567,7 +639,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (!acceptedSubmissions.Any())
             {
                 TempData["ErrorMessage"] = "Otomatik bildiri kitabı oluşturmak için kabul edilmiş en az bir bildiri olmalıdır.";
-                return Redirect($"/{currentSlug}/Admin/ProceedingBook?conferenceId={conference.Id}");
+                return Redirect(BuildProceedingBookUrl(conference));
             }
 
             try
@@ -598,13 +670,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 TempData["ErrorMessage"] = $"Bildiri kitabı oluşturulurken bir hata oluştu: {ex.Message}";
             }
 
-            return Redirect($"/{currentSlug}/Admin/ProceedingBook?conferenceId={conference.Id}");
+            return Redirect(BuildProceedingBookUrl(conference));
         }
 
         [HttpPost("/Admin/ProceedingBook/RemoveFile")]
         [HttpPost("/{slug}/Admin/ProceedingBook/RemoveFile")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RemoveFile(string? slug, Guid conferenceId)
+        public async Task<IActionResult> RemoveFile(
+            string? slug,
+            Guid conferenceId)
         {
             if (conferenceId == Guid.Empty)
             {
@@ -623,9 +697,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return Redirect("/Admin/ConferenceFlow");
             }
 
-            var currentSlug = !string.IsNullOrWhiteSpace(slug)
-                ? slug
-                : conference.Tenant.Slug ?? conference.Slug ?? "";
+            var currentSlug = GetConferenceSlug(conference);
+
+            if (string.IsNullOrWhiteSpace(currentSlug))
+            {
+                TempData["ErrorMessage"] = "Kongreye bağlı kurum slug bilgisi bulunamadı.";
+                return Redirect(BuildConferenceFlowUrl(conference));
+            }
 
             SetConferenceSession(conference);
 
@@ -639,7 +717,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             TempData["SuccessMessage"] = "Bildiri kitabı PDF dosyası kaldırıldı.";
 
-            return Redirect($"/{currentSlug}/Admin/ProceedingBook?conferenceId={conference.Id}");
+            return Redirect(BuildProceedingBookUrl(conference));
         }
     }
 }

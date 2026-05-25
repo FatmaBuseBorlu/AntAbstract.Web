@@ -1,4 +1,6 @@
-﻿@using System.Globalization
+﻿@using System
+@using System.Globalization
+@using Microsoft.AspNetCore.Http
 @model AntAbstract.Domain.Entities.Payment
 
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
@@ -7,27 +9,146 @@
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_Layout";
 
-    var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? "";
+    var culture = CultureInfo.CurrentUICulture;
+    var isEnglish = culture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 
-    var dashboardUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Dashboard"
-        : $"/{slug}/Dashboard";
+    string L(string key, string tr, string en)
+    {
+        var value = Localizer[key].Value;
 
-    var submissionCreateUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Submission/Create"
-        : $"/{slug}/Submission/Create";
+        if (string.Equals(value, key, StringComparison.OrdinalIgnoreCase))
+        {
+            return isEnglish ? en : tr;
+        }
 
-    var paymentHistoryUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Payment/My"
-        : $"/{slug}/Payment/My";
+        return value;
+    }
+
+    var routeSlug = ViewContext.RouteData.Values["slug"]?.ToString();
+
+    var modelSlug = Model?.Conference?.Tenant?.Slug
+        ?? Model?.Conference?.Slug;
+
+    var slug = routeSlug
+        ?? modelSlug
+        ?? Context.Session.GetString("SelectedConferenceSlug")
+        ?? "";
+
+    string BuildConferenceUrl(string cleanPath, string fallbackPath)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+        {
+            return fallbackPath;
+        }
+
+        return $"/{slug}{cleanPath}";
+    }
+
+    var mySubmissionsUrl = BuildConferenceUrl(
+        "/my-submissions",
+        "/Submission/Index"
+    );
+
+    var paymentHistoryUrl = BuildConferenceUrl(
+        "/payments",
+        "/Payment/My"
+    );
+
+    var paymentNewUrl = BuildConferenceUrl(
+        "/payment",
+        "/Payment/New"
+    );
 
     var conferenceHomeUrl = string.IsNullOrWhiteSpace(slug)
         ? "/"
         : $"/{slug}";
 
-    var amountText = Model != null
-        ? Model.Amount.ToString("N2", CultureInfo.CurrentCulture)
-        : "0,00";
+    var myConferencesUrl = "/Dashboard/MyConferences";
+
+    var amount = Model?.Amount ?? 0;
+    var currency = string.IsNullOrWhiteSpace(Model?.Currency)
+        ? "TRY"
+        : Model!.Currency;
+
+    var amountText = currency.Equals("TRY", StringComparison.OrdinalIgnoreCase)
+        ? amount.ToString("C", new CultureInfo("tr-TR"))
+        : $"{amount.ToString("N2", culture)} {currency}";
+
+    var transactionId = string.IsNullOrWhiteSpace(Model?.TransactionId)
+        ? L("NoTransactionIdText", "Belge No Oluşturulmadı", "No Transaction ID")
+        : Model!.TransactionId;
+
+    var paymentDateText = Model == null
+        ? DateTime.Now.ToString("dd.MM.yyyy HH:mm", culture)
+        : Model.PaymentDate.ToLocalTime().ToString("dd.MM.yyyy HH:mm", culture);
+
+    var conferenceTitle = string.IsNullOrWhiteSpace(Model?.Conference?.Title)
+        ? L("DefaultConferenceTitle", "Kongre", "Congress")
+        : Model!.Conference!.Title;
+
+    var paymentMethodText = string.IsNullOrWhiteSpace(Model?.PaymentMethod)
+        ? L("CreditCardText", "Kredi Kartı", "Credit Card")
+        : Model!.PaymentMethod;
+
+    var successHeading = L(
+        "SuccessHeading",
+        "Ödeme Başarıyla Tamamlandı",
+        "Payment Completed Successfully"
+    );
+
+    var successDescription = L(
+        "SuccessDescription",
+        "Kongre katılım ödemeniz başarıyla alınmıştır. Ödeme kaydınız sistemde saklanmıştır.",
+        "Your congress participation payment has been received successfully. Your payment record has been saved in the system."
+    );
+
+    var nextStepTitle = L(
+        "NextStepTitle",
+        "Sıradaki adım",
+        "Next Step"
+    );
+
+    var nextStepDescription = L(
+        "NextStepDescription",
+        "Bildiriniz ve katılım durumunuzla ilgili işlemleri Bildirilerim ekranından takip edebilirsiniz.",
+        "You can follow your abstract and participation status from the My Abstracts page."
+    );
+
+    var mySubmissionsButtonText = L(
+        "MySubmissionsButton",
+        "Bildirilerime Dön",
+        "Back to My Abstracts"
+    );
+
+    var paymentHistoryButtonText = L(
+        "HistoryButton",
+        "Ödeme Geçmişi",
+        "Payment History"
+    );
+
+    var myConferencesButtonText = L(
+        "BackToMyConferencesButton",
+        "Kongrelerime Dön",
+        "Back to My Congresses"
+    );
+
+    var printButtonText = L(
+        "PrintButton",
+        "Yazdır",
+        "Print"
+    );
+
+    var backToConferenceButtonText = L(
+        "BackToConferenceButton",
+        "Kongre Sayfasına Dön",
+        "Back to Conference Page"
+    );
+
+    var supportText = L(
+        "SupportText",
+        "Ödeme kaydınızla ilgili sorun yaşarsanız kongre yönetimiyle iletişime geçebilirsiniz.",
+        "If you experience any issue with your payment record, you can contact the congress administration."
+    );
 }
 
 <style>
@@ -40,42 +161,99 @@
     .success-card {
         border: none;
         border-radius: 28px;
-        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+        box-shadow: 0 22px 60px rgba(15, 23, 42, 0.10);
         overflow: hidden;
         position: relative;
-        background: #fff;
+        background: #ffffff;
     }
 
-        .success-card::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at top, rgba(220, 252, 231, 0.55) 0%, rgba(255,255,255,0) 58%);
-            pointer-events: none;
-        }
+    .success-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(circle at top right, rgba(34, 197, 94, 0.18), transparent 34%),
+            radial-gradient(circle at bottom left, rgba(0, 174, 239, 0.12), transparent 30%);
+        pointer-events: none;
+    }
+
+    .success-content {
+        position: relative;
+        z-index: 1;
+    }
 
     .success-icon-wrapper {
-        width: 88px;
-        height: 88px;
-        background-color: #dcfce7;
-        border-radius: 50%;
+        width: 96px;
+        height: 96px;
+        background: rgba(34, 197, 94, 0.12);
+        border: 1px solid rgba(34, 197, 94, 0.24);
+        border-radius: 999px;
         display: flex;
         align-items: center;
         justify-content: center;
         margin: 0 auto;
-        box-shadow: 0 14px 28px rgba(22, 101, 52, 0.12);
+        box-shadow: 0 16px 34px rgba(22, 101, 52, 0.12);
     }
 
     .success-title {
-        font-weight: 800;
+        font-weight: 950;
         color: #0f172a;
-        letter-spacing: -0.5px;
+        letter-spacing: -0.055em;
+    }
+
+    .success-description {
+        color: #64748b;
+        font-weight: 650;
+        line-height: 1.7;
+    }
+
+    .next-step-box {
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
+        color: #075985;
+        border-radius: 20px;
+        padding: 1rem;
+        text-align: left;
+        margin-bottom: 1.25rem;
+    }
+
+    .next-step-inner {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
+    }
+
+    .next-step-icon {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        border-radius: 16px;
+        background: #ffffff;
+        color: #00aeef;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+    }
+
+    .next-step-title {
+        color: #0f172a;
+        font-weight: 950;
+        margin-bottom: 0.15rem;
+    }
+
+    .next-step-description {
+        color: #075985;
+        font-size: 0.88rem;
+        font-weight: 700;
+        line-height: 1.6;
+        margin-bottom: 0;
     }
 
     .payment-detail-box {
         background: #f8fafc;
         border: 1px dashed #cbd5e1;
-        border-radius: 18px;
+        border-radius: 20px;
         padding: 24px;
     }
 
@@ -87,34 +265,73 @@
         font-size: 0.92rem;
     }
 
-        .payment-detail-row:last-child {
-            margin-bottom: 0;
-        }
+    .payment-detail-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .payment-detail-label {
+        color: #64748b;
+        font-size: 0.84rem;
+        font-weight: 800;
+    }
+
+    .payment-detail-value {
+        color: #0f172a;
+        font-size: 0.86rem;
+        font-weight: 950;
+        text-align: right;
+    }
+
+    .payment-total-value {
+        color: #0d6efd;
+        font-size: 1.45rem;
+        font-weight: 950;
+        text-align: right;
+    }
 
     .success-main-btn {
-        background-color: #00aeef;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
         border: none;
-        color: white;
+        color: #ffffff;
         border-radius: 999px;
         padding: 15px 22px;
-        font-weight: 800;
+        font-weight: 950;
         text-decoration: none;
         display: flex;
         justify-content: center;
         align-items: center;
         gap: 8px;
-        box-shadow: 0 10px 24px rgba(0, 174, 239, 0.25);
+        box-shadow: 0 16px 34px rgba(13, 110, 253, 0.22);
+        transition: all 0.2s ease;
     }
 
-        .success-main-btn:hover {
-            color: white;
-            background-color: #009bd5;
-        }
+    .success-main-btn:hover {
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 20px 44px rgba(13, 110, 253, 0.30);
+        text-decoration: none;
+    }
 
     .success-secondary-btn {
         border-radius: 999px;
         padding: 12px 18px;
+        font-weight: 900;
+    }
+
+    .support-box {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 1rem;
+        color: #64748b;
+        font-size: 0.88rem;
         font-weight: 700;
+        line-height: 1.6;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+    }
+
+    .support-box i {
+        color: #00aeef;
     }
 
     @@media print {
@@ -124,12 +341,32 @@
 
         .payment-success-page {
             padding: 0;
-            background: #fff;
+            background: #ffffff;
         }
 
         .success-card {
             box-shadow: none;
             border: 1px solid #e5e7eb;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .payment-success-page {
+            padding: 42px 0;
+        }
+
+        .success-card {
+            border-radius: 22px;
+        }
+
+        .payment-detail-row {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .payment-detail-value,
+        .payment-total-value {
+            text-align: left;
         }
     }
 </style>
@@ -140,7 +377,7 @@
             <div class="col-md-8 col-lg-6 text-center">
 
                 <div class="success-card p-4 p-md-5">
-                    <div class="position-relative">
+                    <div class="success-content">
 
                         <div class="mb-4">
                             <div class="success-icon-wrapper">
@@ -149,100 +386,134 @@
                         </div>
 
                         <h2 class="success-title mb-2">
-                            @Localizer["SuccessHeading"]
+                            @successHeading
                         </h2>
 
-                        <p class="text-muted mb-4">
-                            @Localizer["SuccessDescription"]
+                        <p class="success-description mb-4">
+                            @successDescription
                         </p>
+
+                        <div class="next-step-box no-print">
+                            <div class="next-step-inner">
+                                <div class="next-step-icon">
+                                    <i class="fas fa-file-lines"></i>
+                                </div>
+
+                                <div>
+                                    <div class="next-step-title">
+                                        @nextStepTitle
+                                    </div>
+
+                                    <p class="next-step-description">
+                                        @nextStepDescription
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
 
                         @if (Model != null)
                         {
                             <div class="payment-detail-box mb-4 text-start">
                                 <div class="payment-detail-row">
-                                    <span class="text-muted small">
-                                        @Localizer["ReferenceNoLabel"]
+                                    <span class="payment-detail-label">
+                                        @L("ReferenceNoLabel", "İşlem Referansı", "Transaction Reference")
                                     </span>
 
-                                    <span class="fw-bold text-dark small">
-                                        #@Model.TransactionId
-                                    </span>
-                                </div>
-
-                                <div class="payment-detail-row">
-                                    <span class="text-muted small">
-                                        @Localizer["DateLabel"]
-                                    </span>
-
-                                    <span class="fw-bold text-dark small">
-                                        @Model.PaymentDate.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                                    <span class="payment-detail-value">
+                                        #@transactionId
                                     </span>
                                 </div>
 
                                 <div class="payment-detail-row">
-                                    <span class="text-muted small">
-                                        @Localizer["PaymentMethodLabel"]
+                                    <span class="payment-detail-label">
+                                        @L("ConferenceLabel", "Kongre", "Congress")
                                     </span>
 
-                                    <span class="fw-bold text-dark small">
+                                    <span class="payment-detail-value">
+                                        @conferenceTitle
+                                    </span>
+                                </div>
+
+                                <div class="payment-detail-row">
+                                    <span class="payment-detail-label">
+                                        @L("DateLabel", "Tarih", "Date")
+                                    </span>
+
+                                    <span class="payment-detail-value">
+                                        @paymentDateText
+                                    </span>
+                                </div>
+
+                                <div class="payment-detail-row">
+                                    <span class="payment-detail-label">
+                                        @L("PaymentMethodLabel", "Ödeme Yöntemi", "Payment Method")
+                                    </span>
+
+                                    <span class="payment-detail-value">
                                         <i class="fas fa-credit-card me-1"></i>
-                                        @Localizer["CreditCardText"]
+                                        @paymentMethodText
                                     </span>
                                 </div>
 
                                 <hr class="my-3" style="opacity: 0.12;" />
 
                                 <div class="payment-detail-row align-items-center">
-                                    <span class="text-muted fw-bold">
-                                        @Localizer["TotalAmountLabel"]
+                                    <span class="fw-bold text-dark">
+                                        @L("TotalAmountLabel", "Toplam Tutar", "Total Amount")
                                     </span>
 
-                                    <span class="fs-4 fw-bold text-primary">
-                                        @amountText @Model.Currency
+                                    <span class="payment-total-value">
+                                        @amountText
                                     </span>
                                 </div>
                             </div>
                         }
+                        else
+                        {
+                            <div class="alert alert-warning rounded-4 fw-bold mb-4">
+                                <i class="fas fa-circle-info me-2"></i>
+                                @L("PaymentRecordMissingMessage", "Ödeme kaydı görüntülenemedi ancak işlem tamamlanmış olabilir. Lütfen ödeme geçmişinizi kontrol edin.", "The payment record could not be displayed, but the process may have been completed. Please check your payment history.")
+                            </div>
+                        }
 
                         <div class="d-grid gap-2 no-print">
-                            <a href="@submissionCreateUrl" class="success-main-btn">
-                                <i class="fas fa-file-upload"></i>
-                                @Localizer["SubmitAbstractButton"]
+                            <a href="@mySubmissionsUrl" class="success-main-btn">
+                                <i class="fas fa-file-lines"></i>
+                                @mySubmissionsButtonText
                             </a>
 
-                            <a href="@dashboardUrl" class="btn btn-outline-primary success-secondary-btn">
-                                <i class="fas fa-home me-2"></i>
-                                @Localizer["BackToDashboardButton"]
+                            <a href="@myConferencesUrl" class="btn btn-outline-primary success-secondary-btn">
+                                <i class="fas fa-calendar-check me-2"></i>
+                                @myConferencesButtonText
                             </a>
 
                             <div class="d-flex gap-2">
                                 <a href="@paymentHistoryUrl" class="btn btn-light w-100 py-2 border fw-bold text-muted">
                                     <i class="fas fa-list me-2"></i>
-                                    @Localizer["HistoryButton"]
+                                    @paymentHistoryButtonText
                                 </a>
 
-                                <button onclick="window.print()" class="btn btn-light w-100 py-2 border fw-bold text-muted">
+                                <button type="button"
+                                        onclick="window.print()"
+                                        class="btn btn-light w-100 py-2 border fw-bold text-muted">
                                     <i class="fas fa-print me-2"></i>
-                                    @Localizer["PrintButton"]
+                                    @printButtonText
                                 </button>
                             </div>
 
                             <a href="@conferenceHomeUrl" class="btn btn-link text-muted text-decoration-none mt-2">
                                 <i class="fas fa-arrow-left me-1"></i>
-                                @Localizer["BackToConferenceButton"]
+                                @backToConferenceButtonText
                             </a>
                         </div>
 
                     </div>
                 </div>
 
-                <p class="mt-4 small text-muted no-print">
-                    @Localizer["SupportText_Part1"]
-                    <a href="#" class="text-decoration-none fw-bold" style="color: #00aeef;">
-                        @Localizer["SupportTeamLinkText"]
-                    </a>
-                    @Localizer["SupportText_Part2"]
-                </p>
+                <div class="support-box mt-4 no-print">
+                    <i class="fas fa-circle-info me-1"></i>
+                    @supportText
+                </div>
 
             </div>
         </div>

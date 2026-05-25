@@ -1,5 +1,7 @@
-﻿@using System.Collections.Generic
+﻿@using System
+@using System.Collections.Generic
 @using System.Linq
+@using Microsoft.AspNetCore.Routing
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
@@ -15,8 +17,15 @@
             : value;
     }
 
+    var slug = Context.GetRouteValue("slug")?.ToString() ?? "";
+
+    var postUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Review/Conflicts"
+        : $"/{slug}/Review/Conflicts";
+
     var conflictInstitutions = ViewBag.ConflictInstitutions as List<string> ?? new List<string>();
     var conflictPeople = ViewBag.ConflictPeople as List<string> ?? new List<string>();
+
     var conflictInstitutionsText = string.Join(", ", conflictInstitutions);
     var conflictPeopleText = string.Join(", ", conflictPeople);
 }
@@ -220,16 +229,6 @@
         margin-top: 0.15rem;
     }
 
-    .delete-btn {
-        width: 36px;
-        height: 36px;
-        min-width: 36px;
-        border-radius: 999px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
     .coming-soon-box {
         margin-top: 1.5rem;
         background: #f8fafc;
@@ -328,7 +327,7 @@
                 </div>
             </div>
 
-            <form asp-action="Conflicts" method="post">
+            <form action="@postUrl" method="post">
                 @Html.AntiForgeryToken()
 
                 <div class="row g-4">
@@ -344,7 +343,7 @@
                                        name="conflictInstitutions"
                                        value="@conflictInstitutionsText"
                                        class="form-control"
-                                       placeholder="@L("InstitutionPlaceholder", "Örn: Akdeniz Üniversitesi, X Kurumu")">
+                                       placeholder="@L("InstitutionPlaceholder", "Örn: Akdeniz Üniversitesi, X Kurumu")" />
                             </div>
 
                             <div class="conflict-list">
@@ -389,7 +388,7 @@
                                        name="conflictPeople"
                                        value="@conflictPeopleText"
                                        class="form-control"
-                                       placeholder="@L("PersonPlaceholder", "Örn: Prof. Dr. Ahmet Yılmaz, Ayşe Demir")">
+                                       placeholder="@L("PersonPlaceholder", "Örn: Prof. Dr. Ayşe Yılmaz, Mehmet Demir")" />
                             </div>
 
                             <div class="conflict-list">
@@ -404,7 +403,7 @@
                                                 </div>
 
                                                 <div class="conflict-note">
-                                                    @L("PersonSavedNote", "Yazar bilgileriyle eşleşirse atama engellenir")
+                                                    @L("PersonSavedNote", "Kişi atama kontrolünde dikkate alınır")
                                                 </div>
                                             </div>
                                         </div>
@@ -423,11 +422,18 @@
                     </div>
                 </div>
 
-                <button class="btn btn-warning fw-bold rounded-pill px-4 mt-4" type="submit">
-                    <i class="fas fa-save me-2"></i>
-                    @L("SaveButton", "Kaydet")
-                </button>
+                <div class="mt-4 d-flex justify-content-end">
+                    <button type="submit" class="btn btn-warning rounded-pill fw-bold px-4 py-2">
+                        <i class="fas fa-save me-2"></i>
+                        @L("SaveButton", "Kaydet")
+                    </button>
+                </div>
             </form>
+
+            <div class="coming-soon-box">
+                <i class="fas fa-circle-info me-2 text-primary"></i>
+                @L("ConflictHelpText", "Birden fazla kişi veya kurumu virgülle ayırarak yazabilirsiniz. Boş bırakırsanız kayıt temizlenir.")
+            </div>
         </div>
     </div>
 </div>

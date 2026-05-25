@@ -34,6 +34,11 @@
         "/Home/Congresses"
     );
 
+    var certificatesUrl = BuildConferenceUrl(
+        "/Certificates",
+        "/Certificates"
+    );
+
     var canDownloadAuthorCertificate = ViewBag.CanDownloadAuthorCertificate as bool? ?? false;
 }
 
@@ -41,6 +46,35 @@
     .author-submissions-page {
         padding: 1.25rem 1.25rem 3rem;
         font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .author-operation-alert {
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-radius: 18px;
+        border: 1px solid transparent;
+        font-weight: 800;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+    }
+
+    .author-operation-alert-success {
+        background: rgba(34, 197, 94, 0.10);
+        border-color: rgba(34, 197, 94, 0.20);
+        color: #15803d;
+    }
+
+    .author-operation-alert-info {
+        background: rgba(13, 110, 253, 0.10);
+        border-color: rgba(13, 110, 253, 0.20);
+        color: #0d6efd;
+    }
+
+    .author-operation-alert-error {
+        background: rgba(239, 68, 68, 0.10);
+        border-color: rgba(239, 68, 68, 0.20);
+        color: #dc2626;
     }
 
     .author-submissions-header {
@@ -86,11 +120,11 @@
         white-space: nowrap !important;
     }
 
-        .author-new-submission-btn:hover {
-            color: #ffffff !important;
-            transform: translateY(-1px);
-            box-shadow: 0 14px 30px rgba(13, 110, 253, 0.26) !important;
-        }
+    .author-new-submission-btn:hover {
+        color: #ffffff !important;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(13, 110, 253, 0.26) !important;
+    }
 
     .author-submission-grid {
         display: grid;
@@ -110,11 +144,11 @@
         overflow: hidden;
     }
 
-        .author-submission-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 16px 34px rgba(15, 23, 42, 0.075);
-            border-color: rgba(0, 174, 239, 0.28);
-        }
+    .author-submission-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.075);
+        border-color: rgba(0, 174, 239, 0.28);
+    }
 
     .author-submission-card-inner {
         padding: 0.95rem;
@@ -141,10 +175,10 @@
         white-space: nowrap;
     }
 
-        .author-card-date i {
-            color: #60a5fa;
-            font-size: 0.78rem;
-        }
+    .author-card-date i {
+        color: #60a5fa;
+        font-size: 0.78rem;
+    }
 
     .author-status-badge {
         font-size: 0.64rem;
@@ -255,11 +289,11 @@
         max-width: 100%;
     }
 
-        .author-card-tag span {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
+    .author-card-tag span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 
     .author-card-actions {
         margin-top: auto;
@@ -290,23 +324,23 @@
         white-space: normal !important;
     }
 
-        .author-action-btn i,
-        .author-action-disabled i {
-            font-size: 0.72rem !important;
-            margin: 0 !important;
-        }
+    .author-action-btn i,
+    .author-action-disabled i {
+        font-size: 0.72rem !important;
+        margin: 0 !important;
+    }
 
     .author-action-light {
         background: #ffffff !important;
         color: #0f172a !important;
     }
 
-        .author-action-light:hover {
-            background: #f8fbff !important;
-            color: #0d6efd !important;
-            border-color: rgba(13, 110, 253, 0.28) !important;
-            transform: translateY(-1px);
-        }
+    .author-action-light:hover {
+        background: #f8fbff !important;
+        color: #0d6efd !important;
+        border-color: rgba(13, 110, 253, 0.28) !important;
+        transform: translateY(-1px);
+    }
 
     .author-action-payment {
         background: linear-gradient(135deg, #0d6efd, #00aeef) !important;
@@ -315,16 +349,33 @@
         box-shadow: 0 7px 15px rgba(13, 110, 253, 0.15) !important;
     }
 
-        .author-action-payment:hover {
-            color: #ffffff !important;
-            transform: translateY(-1px);
-            box-shadow: 0 10px 20px rgba(13, 110, 253, 0.22) !important;
-        }
+    .author-action-payment:hover {
+        color: #ffffff !important;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 20px rgba(13, 110, 253, 0.22) !important;
+    }
 
     .author-action-success {
         background: #16a34a !important;
         color: #ffffff !important;
         border: none !important;
+    }
+
+    .author-action-warning {
+        background: #f59e0b !important;
+        color: #ffffff !important;
+        border: none !important;
+    }
+
+    .author-action-danger {
+        background: #ffffff !important;
+        color: #dc2626 !important;
+        border-color: rgba(220, 38, 38, 0.25) !important;
+    }
+
+    .author-action-danger:hover {
+        background: rgba(220, 38, 38, 0.08) !important;
+        color: #b91c1c !important;
     }
 
     .author-action-disabled {
@@ -334,10 +385,10 @@
         box-shadow: none !important;
     }
 
-        .author-action-disabled:hover {
-            color: #94a3b8 !important;
-            transform: none !important;
-        }
+    .author-action-disabled:hover {
+        color: #94a3b8 !important;
+        transform: none !important;
+    }
 
     .author-empty-state {
         min-height: 390px;
@@ -359,10 +410,10 @@
         margin-bottom: 1.1rem;
     }
 
-        .author-empty-icon i {
-            color: #cbd5e1;
-            font-size: 3.3rem;
-        }
+    .author-empty-icon i {
+        color: #cbd5e1;
+        font-size: 3.3rem;
+    }
 
     .author-empty-title {
         color: #0f172a;
@@ -395,11 +446,11 @@
         transition: all 0.2s ease !important;
     }
 
-        .author-first-submission-btn:hover {
-            color: #ffffff !important;
-            transform: translateY(-1px);
-            box-shadow: 0 18px 36px rgba(13, 110, 253, 0.28) !important;
-        }
+    .author-first-submission-btn:hover {
+        color: #ffffff !important;
+        transform: translateY(-1px);
+        box-shadow: 0 18px 36px rgba(13, 110, 253, 0.28) !important;
+    }
 
     @@media (max-width: 768px) {
         .author-submissions-page {
@@ -436,6 +487,30 @@
 </style>
 
 <div class="container-fluid author-submissions-page">
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert author-operation-alert author-operation-alert-success mb-4">
+            <i class="fas fa-check-circle"></i>
+            <span>@TempData["SuccessMessage"]</span>
+        </div>
+    }
+
+    @if (TempData["InfoMessage"] != null)
+    {
+        <div class="alert author-operation-alert author-operation-alert-info mb-4">
+            <i class="fas fa-circle-info"></i>
+            <span>@TempData["InfoMessage"]</span>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert author-operation-alert author-operation-alert-error mb-4">
+            <i class="fas fa-triangle-exclamation"></i>
+            <span>@TempData["ErrorMessage"]</span>
+        </div>
+    }
 
     <div class="author-submissions-header">
         <div>
@@ -493,23 +568,28 @@
                 };
 
                 var detailsUrl = BuildConferenceUrl(
-                $"/my-submissions/{item.Id}",
-                $"/Submission/Details/{item.Id}"
+                    $"/my-submissions/{item.Id}",
+                    $"/Submission/Details/{item.Id}"
                 );
 
                 var editUrl = BuildConferenceUrl(
-                $"/my-submissions/{item.Id}/edit",
-                $"/Submission/Edit/{item.Id}"
+                    $"/my-submissions/{item.Id}/edit",
+                    $"/Submission/Edit/{item.Id}"
                 );
 
                 var deleteUrl = BuildConferenceUrl(
-                $"/my-submissions/{item.Id}/delete",
-                $"/Submission/Delete/{item.Id}"
+                    $"/my-submissions/{item.Id}/delete",
+                    $"/Submission/Delete/{item.Id}"
+                );
+
+                var revisionUrl = BuildConferenceUrl(
+                    $"/my-submissions/{item.Id}/revision",
+                    $"/Submission/UploadRevision/{item.Id}"
                 );
 
                 var acceptanceLetterUrl = BuildConferenceUrl(
-                $"/my-submissions/{item.Id}/acceptance-letter",
-                $"/Submission/DownloadAcceptanceLetter/{item.Id}"
+                    $"/my-submissions/{item.Id}/acceptance-letter",
+                    $"/Submission/DownloadAcceptanceLetter/{item.Id}"
                 );
 
                 <article class="author-submission-card">
@@ -575,7 +655,7 @@
                                 Detay
                             </a>
 
-                            @if (statusEnum == SubmissionStatus.New || statusEnum == SubmissionStatus.RevisionRequired)
+                            @if (statusEnum == SubmissionStatus.New)
                             {
                                 <a href="@editUrl"
                                    class="author-action-btn author-action-light">
@@ -584,9 +664,23 @@
                                 </a>
 
                                 <a href="@deleteUrl"
-                                   class="author-action-btn author-action-light">
-                                    <i class="fas fa-trash-alt text-danger"></i>
+                                   class="author-action-btn author-action-danger">
+                                    <i class="fas fa-trash-alt"></i>
                                     @Localizer["DeleteButton"]
+                                </a>
+                            }
+                            else if (statusEnum == SubmissionStatus.RevisionRequired)
+                            {
+                                <a href="@revisionUrl"
+                                   class="author-action-btn author-action-warning">
+                                    <i class="fas fa-upload"></i>
+                                    Revizyon
+                                </a>
+
+                                <a href="@editUrl"
+                                   class="author-action-btn author-action-light">
+                                    <i class="fas fa-edit text-warning"></i>
+                                    Düzenle
                                 </a>
                             }
                             else if (statusEnum == SubmissionStatus.Accepted || statusEnum == SubmissionStatus.Presented)
@@ -600,13 +694,19 @@
                                     </a>
                                 }
 
+                                <a href="@acceptanceLetterUrl"
+                                   class="author-action-btn author-action-light"
+                                   target="_blank">
+                                    <i class="fas fa-file-signature text-success"></i>
+                                    Kabul
+                                </a>
+
                                 @if (canDownloadAuthorCertificate)
                                 {
-                                    <a href="@acceptanceLetterUrl"
-                                       class="author-action-btn author-action-success"
-                                       target="_blank">
+                                    <a href="@certificatesUrl"
+                                       class="author-action-btn author-action-success">
                                         <i class="fas fa-certificate"></i>
-                                        Belge
+                                        Sertifika
                                     </a>
                                 }
                                 else
@@ -614,9 +714,9 @@
                                     <button type="button"
                                             class="author-action-disabled"
                                             disabled
-                                            title="Katılım belgesi, kongre katılımınız tamamlandıktan sonra oluşturulur.">
+                                            title="Katılım sertifikası, kongre katılımınız tamamlandıktan sonra oluşturulur.">
                                         <i class="fas fa-lock"></i>
-                                        Belge Yok
+                                        Sertifika
                                     </button>
                                 }
                             }

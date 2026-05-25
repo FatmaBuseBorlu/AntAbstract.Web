@@ -1,33 +1,126 @@
 ﻿@using AntAbstract.Domain.Entities
+@using Microsoft.AspNetCore.Http
+@using System
+@using System.Globalization
+@using System.Linq
 @model IEnumerable<AntAbstract.Domain.Entities.Payment>
+
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
-    var payments = Model?.ToList() ?? new List<Payment>();
-
-    var totalPaid = payments.Where(x => x.Status == PaymentStatus.Completed).Sum(x => x.Amount);
-    var totalPending = payments.Where(x => x.Status == PaymentStatus.Pending).Sum(x => x.Amount);
-    var lastPaymentDate = payments.Any() ? payments.Max(x => x.PaymentDate).ToString("dd MMM yyyy") : "-";
+    var culture = CultureInfo.CurrentUICulture;
+    var isEnglish = culture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 
     var slug = ViewContext.RouteData.Values["slug"]?.ToString()
         ?? Context.Session.GetString("SelectedConferenceSlug")
         ?? "";
 
-    var conferenceTitle = payments.FirstOrDefault(x => x.Conference != null)?.Conference?.Title
+    string L(string key, string tr, string en)
+    {
+        var value = Localizer[key].Value;
+
+        if (string.Equals(value, key, StringComparison.OrdinalIgnoreCase))
+        {
+            return isEnglish ? en : tr;
+        }
+
+        return value;
+    }
+
+    string FormatMoney(decimal amount, string? currency)
+    {
+        currency = string.IsNullOrWhiteSpace(currency)
+            ? "TRY"
+            : currency;
+
+        if (currency.Equals("TRY", StringComparison.OrdinalIgnoreCase))
+        {
+            return amount.ToString("C", new CultureInfo("tr-TR"));
+        }
+
+        return $"{amount.ToString("N2", culture)} {currency}";
+    }
+
+    string BuildConferenceUrl(string cleanPath, string fallbackPath)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+        {
+            return fallbackPath;
+        }
+
+        return $"/{slug}{cleanPath}";
+    }
+
+    var payments = Model?.ToList() ?? new List<Payment>();
+
+    var totalPaid = payments
+        .Where(x => x.Status == PaymentStatus.Completed)
+        .Sum(x => x.Amount);
+
+    var totalPending = payments
+        .Where(x => x.Status == PaymentStatus.Pending)
+        .Sum(x => x.Amount);
+
+    var lastPaymentDate = payments.Any()
+        ? payments.Max(x => x.PaymentDate).ToLocalTime().ToString("dd MMM yyyy", culture)
+        : "-";
+
+    var conferenceTitle = payments
+        .FirstOrDefault(x => x.Conference != null)
+        ?.Conference
+        ?.Title
         ?? Context.Session.GetString("SelectedConferenceTitle")
         ?? "";
 
-    var newPaymentUrl = string.IsNullOrWhiteSpace(slug)
-        ? Url.Action("New", "Payment")
-        : $"/{slug}/Payment/New";
+    var newPaymentUrl = BuildConferenceUrl(
+        "/payment",
+        "/Payment/New"
+    );
+
+    var mySubmissionsUrl = BuildConferenceUrl(
+        "/my-submissions",
+        "/Submission/Index"
+    );
+
+    var totalPaidText = FormatMoney(totalPaid, "TRY");
+    var totalPendingText = FormatMoney(totalPending, "TRY");
 }
 
 <style>
     .payment-page {
         font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .payment-alert {
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-radius: 18px;
+        border: 1px solid transparent;
+        font-weight: 800;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+    }
+
+    .payment-alert-success {
+        background: rgba(34, 197, 94, 0.10);
+        border-color: rgba(34, 197, 94, 0.20);
+        color: #15803d;
+    }
+
+    .payment-alert-info {
+        background: rgba(13, 110, 253, 0.10);
+        border-color: rgba(13, 110, 253, 0.20);
+        color: #0d6efd;
+    }
+
+    .payment-alert-error {
+        background: rgba(239, 68, 68, 0.10);
+        border-color: rgba(239, 68, 68, 0.20);
+        color: #dc2626;
     }
 
     .payment-hero-card {
@@ -114,7 +207,8 @@
         flex-wrap: wrap;
     }
 
-    .payment-primary-btn {
+    .payment-primary-btn,
+    .payment-secondary-btn {
         min-height: 42px;
         display: inline-flex;
         align-items: center;
@@ -124,22 +218,38 @@
         padding: 0 1rem;
         text-decoration: none;
         font-size: 0.88rem;
-        border: none;
-        background: linear-gradient(135deg, #0d6efd, #00aeef);
-        color: #ffffff;
-        box-shadow: 0 10px 24px rgba(13, 110, 253, 0.20);
         transition: all 0.2s ease;
         white-space: nowrap;
     }
 
-        .payment-primary-btn:hover {
-            color: #ffffff;
-            transform: translateY(-1px);
-            box-shadow: 0 14px 30px rgba(13, 110, 253, 0.28);
-        }
+    .payment-primary-btn {
+        border: none;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        box-shadow: 0 10px 24px rgba(13, 110, 253, 0.20);
+    }
+
+    .payment-primary-btn:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(13, 110, 253, 0.28);
+    }
+
+    .payment-secondary-btn {
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        color: #64748b;
+    }
+
+    .payment-secondary-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
 
     .pay-stat-card {
-        background: #fff;
+        background: #ffffff;
         border: 1px solid #eef2f6;
         border-radius: 20px;
         padding: 1.35rem 1.5rem;
@@ -151,10 +261,10 @@
         min-height: 108px;
     }
 
-        .pay-stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 18px 42px rgba(15, 23, 42, 0.075);
-        }
+    .pay-stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.075);
+    }
 
     .pay-stat-title {
         color: #64748b;
@@ -167,9 +277,9 @@
 
     .pay-stat-value {
         color: #0f172a;
-        font-size: 1.8rem;
+        font-size: 1.55rem;
         font-weight: 900;
-        line-height: 1;
+        line-height: 1.1;
         margin: 0;
     }
 
@@ -205,6 +315,7 @@
         letter-spacing: 0.5px;
         border-bottom: 2px solid #e2e8f0;
         padding: 1rem;
+        white-space: nowrap;
     }
 
     .table-custom tbody td {
@@ -250,6 +361,28 @@
         color: #475569;
     }
 
+    .payment-action-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        color: #64748b;
+        transition: all 0.2s ease;
+    }
+
+    .payment-action-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.25);
+        background: #f8fbff;
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
     .empty-payment-state {
         padding: 4rem 1rem;
         text-align: center;
@@ -272,7 +405,8 @@
         color: #64748b;
         font-size: 0.9rem;
         font-weight: 600;
-        margin: 0;
+        margin: 0 auto 1.25rem;
+        max-width: 520px;
     }
 
     @@media (max-width: 992px) {
@@ -286,7 +420,8 @@
         }
 
         .payment-hero-actions,
-        .payment-hero-actions .btn {
+        .payment-hero-actions .btn,
+        .payment-hero-actions a {
             width: 100%;
         }
     }
@@ -305,10 +440,38 @@
             align-items: flex-start;
             gap: 1rem;
         }
+
+        .pay-stat-value {
+            font-size: 1.35rem;
+        }
     }
 </style>
 
 <div class="container-fluid px-0 payment-page">
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert payment-alert payment-alert-success mb-4">
+            <i class="fas fa-check-circle"></i>
+            <span>@TempData["SuccessMessage"]</span>
+        </div>
+    }
+
+    @if (TempData["InfoMessage"] != null)
+    {
+        <div class="alert payment-alert payment-alert-info mb-4">
+            <i class="fas fa-circle-info"></i>
+            <span>@TempData["InfoMessage"]</span>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert payment-alert payment-alert-error mb-4">
+            <i class="fas fa-triangle-exclamation"></i>
+            <span>@TempData["ErrorMessage"]</span>
+        </div>
+    }
 
     <div class="payment-hero-card mb-4">
         <div class="payment-hero-left">
@@ -318,7 +481,7 @@
 
             <div>
                 <div class="payment-section-label">
-                    Kongre
+                    @L("SectionLabel", "Kongre Ödeme İşlemleri", "Congress Payment Operations")
                 </div>
 
                 <h2 class="payment-page-title">
@@ -329,7 +492,7 @@
                     @if (!string.IsNullOrWhiteSpace(conferenceTitle))
                     {
                         <span class="payment-conference-name">@conferenceTitle</span>
-                        <text> kongresine ait ödeme kayıtlarınızı buradan takip edebilirsiniz.</text>
+                        <text> @L("ConferencePaymentDescriptionSuffix", "kongresine ait ödeme kayıtlarınızı buradan takip edebilirsiniz.", "payment records can be tracked here.")</text>
                     }
                     else
                     {
@@ -347,7 +510,12 @@
         </div>
 
         <div class="payment-hero-actions">
-            <a href="@newPaymentUrl" class="btn payment-primary-btn">
+            <a href="@mySubmissionsUrl" class="payment-secondary-btn">
+                <i class="fas fa-file-lines me-2"></i>
+                @L("MySubmissionsButton", "Bildirilerim", "My Abstracts")
+            </a>
+
+            <a href="@newPaymentUrl" class="payment-primary-btn">
                 <i class="fas fa-plus-circle me-2"></i>
                 @Localizer["NewPaymentButton"]
             </a>
@@ -358,8 +526,13 @@
         <div class="col-md-4">
             <div class="pay-stat-card">
                 <div>
-                    <p class="pay-stat-title">@Localizer["TotalPaidTitle"]</p>
-                    <h3 class="pay-stat-value">₺ @totalPaid.ToString("N2")</h3>
+                    <p class="pay-stat-title">
+                        @Localizer["TotalPaidTitle"]
+                    </p>
+
+                    <h3 class="pay-stat-value">
+                        @totalPaidText
+                    </h3>
                 </div>
 
                 <div class="stat-icon bg-success bg-opacity-10 text-success">
@@ -371,8 +544,13 @@
         <div class="col-md-4">
             <div class="pay-stat-card">
                 <div>
-                    <p class="pay-stat-title">@Localizer["PendingTransactionTitle"]</p>
-                    <h3 class="pay-stat-value pay-stat-value-warning">₺ @totalPending.ToString("N2")</h3>
+                    <p class="pay-stat-title">
+                        @Localizer["PendingTransactionTitle"]
+                    </p>
+
+                    <h3 class="pay-stat-value pay-stat-value-warning">
+                        @totalPendingText
+                    </h3>
                 </div>
 
                 <div class="stat-icon bg-warning bg-opacity-10 text-warning">
@@ -384,8 +562,13 @@
         <div class="col-md-4">
             <div class="pay-stat-card">
                 <div>
-                    <p class="pay-stat-title">@Localizer["LastTransactionDateTitle"]</p>
-                    <h5 class="fw-bold text-dark mb-0">@lastPaymentDate</h5>
+                    <p class="pay-stat-title">
+                        @Localizer["LastTransactionDateTitle"]
+                    </p>
+
+                    <h5 class="fw-bold text-dark mb-0">
+                        @lastPaymentDate
+                    </h5>
                 </div>
 
                 <div class="stat-icon bg-primary bg-opacity-10 text-primary">
@@ -416,9 +599,43 @@
                     {
                         foreach (var item in payments)
                         {
+                            var itemConferenceTitle = item.Conference?.Title
+                                ?? Localizer["GeneralPaymentText"].Value;
+
+                            var itemCurrency = string.IsNullOrWhiteSpace(item.Currency)
+                                ? "TRY"
+                                : item.Currency;
+
+                            var itemAmountText = FormatMoney(item.Amount, itemCurrency);
+
+                            var itemTransactionText = !string.IsNullOrWhiteSpace(item.TransactionId)
+                                ? item.TransactionId
+                                : item.Id.ToString().Substring(0, 8).ToUpper();
+
+                            var billingName = !string.IsNullOrWhiteSpace(item.BillingName)
+                                ? item.BillingName
+                                : $"{item.AppUser?.FirstName} {item.AppUser?.LastName}".Trim();
+
+                            if (string.IsNullOrWhiteSpace(billingName))
+                            {
+                                billingName = L("BillingNameNotFound", "Fatura bilgisi yok", "No billing information");
+                            }
+
+                            var receiptUrl = BuildConferenceUrl(
+                                $"/payment/success?id={item.Id}",
+                                $"/Payment/Success?id={item.Id}"
+                            );
+
+                            var retryUrl = item.RelatedSubmissionId.HasValue
+                                ? BuildConferenceUrl(
+                                    $"/payment/checkout/{item.RelatedSubmissionId.Value}",
+                                    $"/Payment/Index/{item.RelatedSubmissionId.Value}"
+                                )
+                                : newPaymentUrl;
+
                             <tr>
                                 <td class="text-muted small">
-                                    #@item.Id.ToString().Substring(0, 8)...
+                                    #@itemTransactionText
                                 </td>
 
                                 <td>
@@ -429,13 +646,14 @@
 
                                         <div>
                                             <div class="fw-bold text-dark">
-                                                @(item.Conference?.Title ?? Localizer["GeneralPaymentText"].Value)
+                                                @itemConferenceTitle
                                             </div>
 
                                             @if (item.RelatedSubmissionId.HasValue)
                                             {
                                                 <small class="text-muted">
-                                                    @Localizer["SubmissionIdLabel"] @item.RelatedSubmissionId.Value.ToString().Substring(0, 6)...
+                                                    @Localizer["SubmissionIdLabel"]
+                                                    @item.RelatedSubmissionId.Value.ToString().Substring(0, 6)...
                                                 </small>
                                             }
                                         </div>
@@ -444,29 +662,34 @@
 
                                 <td>
                                     <span class="fw-bold d-block text-dark">
-                                        @(item.BillingName ?? item.AppUser?.FirstName + " " + item.AppUser?.LastName)
+                                        @billingName
                                     </span>
 
-                                    @if (!string.IsNullOrEmpty(item.TaxNumber))
+                                    @if (!string.IsNullOrWhiteSpace(item.TaxNumber))
                                     {
-                                        <small class="text-muted" style="font-size:0.7rem;">
+                                        <small class="text-muted" style="font-size: 0.7rem;">
                                             @Localizer["TaxNumberShortLabel"] @item.TaxNumber
                                         </small>
                                     }
                                 </td>
 
                                 <td>
-                                    @item.PaymentDate.ToString("dd MMM yyyy") <br>
-                                    <small class="text-muted">@item.PaymentDate.ToString("HH:mm")</small>
+                                    @item.PaymentDate.ToLocalTime().ToString("dd MMM yyyy", culture)
+                                    <br />
+                                    <small class="text-muted">
+                                        @item.PaymentDate.ToLocalTime().ToString("HH:mm", culture)
+                                    </small>
                                 </td>
 
                                 <td class="fw-bold text-dark">
-                                    @item.Amount.ToString("N2") @item.Currency
+                                    @itemAmountText
                                 </td>
 
                                 <td>
                                     <span class="badge bg-light text-dark border">
-                                        @item.PaymentMethod
+                                        @(string.IsNullOrWhiteSpace(item.PaymentMethod)
+                                            ? L("UnknownPaymentMethod", "Belirtilmedi", "Not specified")
+                                            : item.PaymentMethod)
                                     </span>
                                 </td>
 
@@ -500,21 +723,32 @@
                                                 @Localizer["StatusRefunded"]
                                             </span>
                                             break;
+
+                                        default:
+                                            <span class="badge-status status-refunded">
+                                                <i class="fas fa-circle-info"></i>
+                                                @item.Status
+                                            </span>
+                                            break;
                                     }
                                 </td>
 
                                 <td class="text-end">
                                     @if (item.Status == PaymentStatus.Completed)
                                     {
-                                        <button class="btn btn-light btn-sm text-muted" title="@Localizer["ViewReceiptTitle"]">
+                                        <a href="@receiptUrl"
+                                           class="payment-action-btn"
+                                           title="@Localizer["ViewReceiptTitle"]">
                                             <i class="fas fa-file-invoice"></i>
-                                        </button>
+                                        </a>
                                     }
                                     else if (item.Status == PaymentStatus.Failed || item.Status == PaymentStatus.Pending)
                                     {
-                                        <button class="btn btn-outline-primary btn-sm" title="@Localizer["RetryTitle"]">
+                                        <a href="@retryUrl"
+                                           class="payment-action-btn"
+                                           title="@Localizer["RetryTitle"]">
                                             <i class="fas fa-redo"></i>
-                                        </button>
+                                        </a>
                                     }
                                 </td>
                             </tr>
@@ -536,6 +770,18 @@
                                     <p class="empty-payment-text">
                                         @Localizer["EmptyStateText"]
                                     </p>
+
+                                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                        <a href="@mySubmissionsUrl" class="payment-secondary-btn">
+                                            <i class="fas fa-file-lines me-2"></i>
+                                            @L("MySubmissionsButton", "Bildirilerim", "My Abstracts")
+                                        </a>
+
+                                        <a href="@newPaymentUrl" class="payment-primary-btn">
+                                            <i class="fas fa-plus-circle me-2"></i>
+                                            @Localizer["NewPaymentButton"]
+                                        </a>
+                                    </div>
                                 </div>
                             </td>
                         </tr>

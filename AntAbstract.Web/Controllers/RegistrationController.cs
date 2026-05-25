@@ -59,7 +59,7 @@ namespace AntAbstract.Web.Controllers
                 : value.Value;
         }
 
-        private static string BuildUrl(string slug, string path)
+        private static string BuildUrl(string? slug, string path)
         {
             if (string.IsNullOrWhiteSpace(slug))
             {
@@ -69,14 +69,15 @@ namespace AntAbstract.Web.Controllers
             return $"/{slug}{path}";
         }
 
-        private static string GetCanonicalSlug(Conference conference, string fallbackSlug)
+        private static string GetCanonicalSlug(Conference conference, string? fallbackSlug = null)
         {
             return conference.Tenant?.Slug
                    ?? conference.Slug
-                   ?? fallbackSlug;
+                   ?? fallbackSlug
+                   ?? "";
         }
 
-        private static bool SlugMatches(Conference? conference, string slug)
+        private static bool SlugMatches(Conference? conference, string? slug)
         {
             if (conference == null || string.IsNullOrWhiteSpace(slug))
             {
@@ -116,6 +117,41 @@ namespace AntAbstract.Web.Controllers
             return value;
         }
 
+        private static bool IsDeadlineOpen(DateTime? deadline)
+        {
+            if (!deadline.HasValue)
+            {
+                return true;
+            }
+
+            return deadline.Value.Date >= DateTime.UtcNow.Date;
+        }
+
+        private Guid? GetSelectedConferenceIdFromSession(Guid? tenantId = null)
+        {
+            if (tenantId.HasValue && tenantId.Value != Guid.Empty)
+            {
+                var tenantSpecificValue = HttpContext.Session.GetString(
+                    $"SelectedConferenceId:{tenantId.Value}");
+
+                if (Guid.TryParse(tenantSpecificValue, out var tenantSpecificConferenceId) &&
+                    tenantSpecificConferenceId != Guid.Empty)
+                {
+                    return tenantSpecificConferenceId;
+                }
+            }
+
+            var globalValue = HttpContext.Session.GetString("SelectedConferenceId");
+
+            if (Guid.TryParse(globalValue, out var globalConferenceId) &&
+                globalConferenceId != Guid.Empty)
+            {
+                return globalConferenceId;
+            }
+
+            return null;
+        }
+
         private async Task EnsureAuthorRoleAsync(AppUser user)
         {
             const string authorRoleName = "Author";
@@ -148,7 +184,20 @@ namespace AntAbstract.Web.Controllers
             HttpContext.Session.SetString($"SelectedConferenceTitle:{conference.TenantId}", conference.Title ?? "");
         }
 
-        private async Task<Conference?> GetConferenceBySlugAsync(string slug)
+        private async Task<Conference?> FindConferenceByIdAsync(Guid conferenceId)
+        {
+            if (conferenceId == Guid.Empty)
+            {
+                return null;
+            }
+
+            return await _context.Conferences
+                .AsNoTracking()
+                .Include(c => c.Tenant)
+                .FirstOrDefaultAsync(c => c.Id == conferenceId);
+        }
+
+        private async Task<Conference?> GetConferenceBySlugAsync(string? slug)
         {
             if (string.IsNullOrWhiteSpace(slug))
             {
@@ -168,6 +217,45 @@ namespace AntAbstract.Web.Controllers
                 .FirstOrDefaultAsync();
         }
 
+        private async Task<Conference?> ResolveConferenceAsync(string? slug)
+        {
+            if (!string.IsNullOrWhiteSpace(slug))
+            {
+                var tenantId = _tenantContext.Current?.Id;
+                var selectedConferenceId = GetSelectedConferenceIdFromSession(tenantId);
+
+                if (selectedConferenceId.HasValue)
+                {
+                    var selectedConference = await FindConferenceByIdAsync(selectedConferenceId.Value);
+
+                    if (selectedConference != null && SlugMatches(selectedConference, slug))
+                    {
+                        return selectedConference;
+                    }
+                }
+            }
+
+            return await GetConferenceBySlugAsync(slug);
+        }
+
+        private async Task<RegistrationType?> GetValidRegistrationTypeAsync(Guid typeId)
+        {
+            return await _context.RegistrationTypes
+                .Include(rt => rt.Conference)
+                    .ThenInclude(c => c.Tenant)
+                .FirstOrDefaultAsync(rt =>
+                    rt.Id == typeId &&
+                    rt.IsActive);
+        }
+
+        private async Task<Registration?> GetExistingRegistrationAsync(string userId, Guid conferenceId)
+        {
+            return await _context.Registrations
+                .FirstOrDefaultAsync(r =>
+                    r.ConferenceId == conferenceId &&
+                    r.AppUserId == userId);
+        }
+
         [AllowAnonymous]
         [HttpGet("/{slug}/register")]
         [HttpGet("/{slug}/registration")]
@@ -175,7 +263,7 @@ namespace AntAbstract.Web.Controllers
         {
             var slug = GetSlug();
 
-            var conference = await GetConferenceBySlugAsync(slug);
+            var conference = await ResolveConferenceAsync(slug);
 
             if (conference == null)
             {
@@ -229,12 +317,17 @@ namespace AntAbstract.Web.Controllers
                 }
             }
 
+            var today = DateTime.UtcNow.Date;
+
             var registrationTypes = await _context.RegistrationTypes
                 .AsNoTracking()
                 .Where(rt =>
                     rt.ConferenceId == conference.Id &&
                     rt.IsActive &&
-                    (!rt.Deadline.HasValue || rt.Deadline.Value >= DateTime.UtcNow))
+                    (
+                        !rt.Deadline.HasValue ||
+                        rt.Deadline.Value.Date >= today
+                    ))
                 .OrderBy(rt => rt.Price)
                 .ThenBy(rt => rt.Name)
                 .ToListAsync();
@@ -260,7 +353,6 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> Checkout(Guid typeId)
         {
             var slug = GetSlug();
-
             var returnUrl = BuildUrl(slug, $"/registration/checkout/{typeId}");
 
             var user = await _userManager.GetUserAsync(User);
@@ -270,16 +362,9 @@ namespace AntAbstract.Web.Controllers
                 return Redirect($"/register?returnUrl={Uri.EscapeDataString(returnUrl)}");
             }
 
-            var ticketType = await _context.RegistrationTypes
-                .AsNoTracking()
-                .Include(rt => rt.Conference)
-                    .ThenInclude(c => c.Tenant)
-                .FirstOrDefaultAsync(rt =>
-                    rt.Id == typeId &&
-                    rt.IsActive &&
-                    (!rt.Deadline.HasValue || rt.Deadline.Value >= DateTime.UtcNow));
+            var ticketType = await GetValidRegistrationTypeAsync(typeId);
 
-            if (ticketType == null)
+            if (ticketType == null || !IsDeadlineOpen(ticketType.Deadline))
             {
                 TempData["ErrorMessage"] = T(
                     "InvalidOrExpiredTicket",
@@ -362,15 +447,9 @@ namespace AntAbstract.Web.Controllers
 
             var slug = GetSlug();
 
-            var ticketType = await _context.RegistrationTypes
-                .Include(rt => rt.Conference)
-                    .ThenInclude(c => c.Tenant)
-                .FirstOrDefaultAsync(rt =>
-                    rt.Id == typeId &&
-                    rt.IsActive &&
-                    (!rt.Deadline.HasValue || rt.Deadline.Value >= DateTime.UtcNow));
+            var ticketType = await GetValidRegistrationTypeAsync(typeId);
 
-            if (ticketType == null)
+            if (ticketType == null || !IsDeadlineOpen(ticketType.Deadline))
             {
                 TempData["ErrorMessage"] = T(
                     "InvalidOrExpiredTicket",
@@ -403,10 +482,9 @@ namespace AntAbstract.Web.Controllers
 
             SetSelectedConferenceSession(conference, canonicalSlug);
 
-            var existingRegistration = await _context.Registrations
-                .FirstOrDefaultAsync(r =>
-                    r.ConferenceId == ticketType.ConferenceId &&
-                    r.AppUserId == user.Id);
+            var existingRegistration = await GetExistingRegistrationAsync(
+                user.Id,
+                ticketType.ConferenceId);
 
             if (existingRegistration != null)
             {
@@ -422,9 +500,11 @@ namespace AntAbstract.Web.Controllers
             var newRegistration = new Registration
             {
                 Id = Guid.NewGuid(),
+
                 AppUserId = user.Id,
                 ConferenceId = ticketType.ConferenceId,
                 RegistrationTypeId = ticketType.Id,
+
                 RegistrationDate = DateTime.UtcNow,
                 IsPaid = false,
                 Amount = ticketType.Price,
@@ -436,6 +516,7 @@ namespace AntAbstract.Web.Controllers
             };
 
             _context.Registrations.Add(newRegistration);
+
             await _context.SaveChangesAsync();
 
             await EnsureAuthorRoleAsync(user);
@@ -444,7 +525,77 @@ namespace AntAbstract.Web.Controllers
                 "RegistrationSuccessSubmitAbstract",
                 "Kongre kaydınız başarıyla oluşturuldu. Şimdi bildirinizin özetini gönderebilirsiniz.");
 
-            return Redirect(BuildUrl(canonicalSlug, "/submit-abstract"));
+            return Redirect(BuildUrl(canonicalSlug, $"/registration/success?id={newRegistration.Id}"));
+        }
+
+        [Authorize]
+        [HttpGet("/{slug}/registration/success")]
+        [HttpGet("/{slug}/register/success")]
+        public async Task<IActionResult> Success(Guid? id = null)
+        {
+            var slug = GetSlug();
+            var canonicalSlug = slug;
+
+            if (id.HasValue && id.Value != Guid.Empty)
+            {
+                var user = await _userManager.GetUserAsync(User);
+
+                if (user == null)
+                {
+                    return Challenge();
+                }
+
+                var registration = await _context.Registrations
+                    .AsNoTracking()
+                    .Include(r => r.Conference)
+                        .ThenInclude(c => c.Tenant)
+                    .FirstOrDefaultAsync(r =>
+                        r.Id == id.Value &&
+                        r.AppUserId == user.Id);
+
+                if (registration == null)
+                {
+                    TempData["ErrorMessage"] = T(
+                        "RegistrationNotFound",
+                        "Kayıt bulunamadı.");
+
+                    return Redirect(BuildUrl(slug, "/registration"));
+                }
+
+                if (registration.Conference != null)
+                {
+                    canonicalSlug = GetCanonicalSlug(registration.Conference, slug);
+
+                    if (!SlugMatches(registration.Conference, slug))
+                    {
+                        return Redirect(BuildUrl(canonicalSlug, $"/registration/success?id={id.Value}"));
+                    }
+
+                    SetSelectedConferenceSession(registration.Conference, canonicalSlug);
+                }
+
+                ViewBag.RegistrationId = registration.Id;
+            }
+            else
+            {
+                var conference = await ResolveConferenceAsync(slug);
+
+                if (conference != null)
+                {
+                    canonicalSlug = GetCanonicalSlug(conference, slug);
+
+                    SetSelectedConferenceSession(conference, canonicalSlug);
+
+                    if (!string.Equals(canonicalSlug, slug, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return Redirect(BuildUrl(canonicalSlug, "/registration/success"));
+                    }
+                }
+            }
+
+            ViewBag.Slug = canonicalSlug;
+
+            return View();
         }
     }
 }

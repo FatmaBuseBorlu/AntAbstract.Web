@@ -1,5 +1,7 @@
-﻿@using System.Collections.Generic
+﻿@using System
+@using System.Collections.Generic
 @using System.Linq
+@using Microsoft.AspNetCore.Routing
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
@@ -14,6 +16,12 @@
             ? fallback
             : value;
     }
+
+    var slug = Context.GetRouteValue("slug")?.ToString() ?? "";
+
+    var postUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Review/Interests"
+        : $"/{slug}/Review/Interests";
 
     var expertiseAreas = ViewBag.ExpertiseAreas as List<string> ?? new List<string>();
     var expertiseAreasText = string.Join(", ", expertiseAreas);
@@ -354,7 +362,7 @@
                 @L("AddExpertiseLabel", "Yeni uzmanlık alanı ekle")
             </label>
 
-            <form asp-action="Interests" method="post">
+            <form action="@postUrl" method="post">
                 @Html.AntiForgeryToken()
 
                 <div class="input-group expertise-input-group mb-4">
@@ -373,9 +381,9 @@
 
             <hr class="section-divider" />
 
-            <h6 class="expertise-list-title">
-                @L("ExistingKeywordsTitle", "Kayıtlı Uzmanlık Alanları")
-            </h6>
+            <div class="expertise-list-title">
+                @L("SavedExpertiseTitle", "Kayıtlı uzmanlık alanları")
+            </div>
 
             @if (expertiseAreas.Any())
             {
@@ -392,8 +400,8 @@
             else
             {
                 <div class="coming-soon-box">
-                    <i class="fas fa-info-circle me-2 text-primary"></i>
-                    @L("NoExpertiseText", "Henüz kayıtlı uzmanlık alanınız yok. Alanları virgülle ayırarak kaydedebilirsiniz.")
+                    <i class="fas fa-circle-info me-2 text-primary"></i>
+                    @L("NoExpertiseText", "Henüz uzmanlık alanı eklenmedi. Alanları virgülle ayırarak yukarıdaki kutudan kaydedebilirsiniz.")
                 </div>
             }
 

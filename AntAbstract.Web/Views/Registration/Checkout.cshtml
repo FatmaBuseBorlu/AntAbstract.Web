@@ -1,5 +1,7 @@
 ﻿@model AntAbstract.Domain.Entities.Registration
+
 @using AntAbstract.Domain.Entities
+@using System
 @using System.Globalization
 
 @{
@@ -7,13 +9,20 @@
 
     var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 
+    string T(string tr, string en)
+    {
+        return isEnglish ? en : tr;
+    }
+
     var ticket = ViewBag.Ticket as RegistrationType;
     var user = ViewBag.User as AppUser;
     var slug = ViewBag.Slug as string ?? "";
 
+    var hasSlug = !string.IsNullOrWhiteSpace(slug);
+
     var conferenceTitle = ViewBag.ConferenceTitle as string
         ?? ticket?.Conference?.Title
-        ?? (isEnglish ? "Congress" : "Kongre");
+        ?? T("Kongre", "Congress");
 
     DateTime? conferenceStartDate = null;
 
@@ -22,13 +31,13 @@
         conferenceStartDate = startDate;
     }
 
-    var registrationBackUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/"
-        : $"/{slug}/registration";
+    var registrationBackUrl = hasSlug
+        ? $"/{slug}/registration"
+        : "/";
 
-    var checkoutPostUrl = string.IsNullOrWhiteSpace(slug)
-        ? "#"
-        : $"/{slug}/registration/checkout/{Model.RegistrationTypeId}";
+    var checkoutPostUrl = hasSlug && Model != null && Model.RegistrationTypeId != Guid.Empty
+        ? $"/{slug}/registration/checkout/{Model.RegistrationTypeId}"
+        : "#";
 
     var ticketName = isEnglish && !string.IsNullOrWhiteSpace(ticket?.NameEn)
         ? ticket.NameEn
@@ -36,72 +45,151 @@
 
     if (string.IsNullOrWhiteSpace(ticketName))
     {
-        ticketName = isEnglish ? "Application Type" : "Başvuru Türü";
+        ticketName = T("Başvuru Türü", "Application Type");
+    }
+
+    if (!isEnglish && ticketName.Contains("Yazar Katılım Ücreti", StringComparison.OrdinalIgnoreCase))
+    {
+        ticketName = "Yazar Ön Başvurusu";
+    }
+
+    if (!isEnglish && ticketName.Contains("Ücreti", StringComparison.OrdinalIgnoreCase))
+    {
+        ticketName = ticketName.Replace("Ücreti", "Başvurusu");
+    }
+
+    if (!isEnglish && ticketName.Contains("Ücret", StringComparison.OrdinalIgnoreCase))
+    {
+        ticketName = ticketName.Replace("Ücret", "Başvuru");
+    }
+
+    if (isEnglish &&
+        (
+            ticketName.Contains("Author Participation Fee", StringComparison.OrdinalIgnoreCase) ||
+            ticketName.Contains("Yazar Katılım Ücreti", StringComparison.OrdinalIgnoreCase)
+        ))
+    {
+        ticketName = "Author Pre-Application";
     }
 
     var ticketCurrency = string.IsNullOrWhiteSpace(ticket?.Currency)
         ? "TRY"
         : ticket.Currency;
 
-    var amountText = ticket != null
-        ? ticket.Price.ToString("N2")
-        : Model.Amount.ToString("N2");
+    var amount = ticket != null
+        ? ticket.Price
+        : Model?.Amount ?? 0;
 
-    var titleText = isEnglish
-        ? "Confirm Your Congress Pre-Registration"
-        : "Kongre Ön Kaydınızı Onaylayın";
+    var amountText = amount.ToString("N2", CultureInfo.CurrentUICulture);
 
-    var welcomeText = isEnglish
-        ? "You are creating a pre-registration for"
-        : "Aşağıdaki kongre için ön kayıt oluşturuyorsunuz";
+    var isDeadlineExpired = ticket?.Deadline != null &&
+                            ticket.Deadline.Value.Date < DateTime.UtcNow.Date;
 
-    var descriptionText = isEnglish
-        ? "At this step, no payment will be collected. After your pre-registration, you will be redirected to the abstract submission screen. Payment will be requested only after your abstract is accepted."
-        : "Bu aşamada ödeme alınmayacaktır. Ön kayıt sonrası bildiri gönderim ekranına yönlendirileceksiniz. Ödeme yalnızca bildiriniz kabul edildikten sonra istenecektir.";
+    var userFullName = user == null
+        ? ""
+        : $"{user.FirstName} {user.LastName}".Trim();
 
-    var submitText = isEnglish
-        ? "Create Pre-Registration and Continue to Abstract Submission"
-        : "Ön Kaydı Oluştur ve Bildiri Gönderimine Geç";
+    if (string.IsNullOrWhiteSpace(userFullName))
+    {
+        userFullName = user?.UserName ?? user?.Email ?? "";
+    }
 
-    var backText = isEnglish
-        ? "Back to Application Types"
-        : "Başvuru Türlerine Dön";
+    var userEmail = user?.Email ?? "";
 
-    var selectedTypeText = isEnglish
-        ? "Selected Application Type"
-        : "Seçilen Başvuru Türü";
+    var titleText = T(
+        "Kongre Ön Kaydınızı Onaylayın",
+        "Confirm Your Congress Pre-Registration"
+    );
 
-    var feeLabelText = isEnglish
-        ? "Post-acceptance participation fee"
-        : "Kabul Sonrası Katılım Ücreti";
+    var welcomeText = T(
+        "Aşağıdaki kongre için ön kayıt oluşturuyorsunuz",
+        "You are creating a pre-registration for"
+    );
 
-    var paymentLaterText = isEnglish
-        ? "Payment will be requested only after your abstract is accepted."
-        : "Ödeme yalnızca bildiriniz kabul edildikten sonra istenecektir.";
+    var descriptionText = T(
+        "Bu aşamada ödeme alınmayacaktır. Ön kayıt sonrası bildiri gönderim ekranına yönlendirileceksiniz. Ödeme yalnızca bildiriniz kabul edildikten sonra istenecektir.",
+        "At this step, no payment will be collected. After your pre-registration, you will be redirected to the abstract submission screen. Payment will be requested only after your abstract is accepted."
+    );
 
-    var noImmediatePaymentText = isEnglish
-        ? "No payment or invoice information is required at this step."
-        : "Bu aşamada ödeme veya fatura bilgisi istenmez.";
+    var submitText = T(
+        "Ön Kaydı Oluştur ve Bildiri Gönderimine Geç",
+        "Create Pre-Registration and Continue to Abstract Submission"
+    );
 
-    var processTitleText = isEnglish
-        ? "What happens next?"
-        : "Sonraki Süreç Nasıl İlerleyecek?";
+    var backText = T(
+        "Başvuru Türlerine Dön",
+        "Back to Application Types"
+    );
 
-    var step1Text = isEnglish
-        ? "Your pre-registration will be created."
-        : "Ön kaydınız oluşturulacak.";
+    var selectedTypeText = T(
+        "Seçilen Başvuru Türü",
+        "Selected Application Type"
+    );
 
-    var step2Text = isEnglish
-        ? "You will submit your abstract."
-        : "Bildirinizi sisteme yükleyeceksiniz.";
+    var feeLabelText = T(
+        "Kabul Sonrası Katılım Ücreti",
+        "Post-acceptance participation fee"
+    );
 
-    var step3Text = isEnglish
-        ? "Reviewers will evaluate your abstract."
-        : "Hakemler bildiriyi değerlendirecek.";
+    var paymentLaterText = T(
+        "Ödeme yalnızca bildiriniz kabul edildikten sonra istenecektir.",
+        "Payment will be requested only after your abstract is accepted."
+    );
 
-    var step4Text = isEnglish
-        ? "If accepted, payment and participation steps will open."
-        : "Kabul edilirse ödeme ve katılım adımları açılacak.";
+    var noImmediatePaymentText = T(
+        "Bu aşamada ödeme veya fatura bilgisi istenmez.",
+        "No payment or invoice information is required at this step."
+    );
+
+    var processTitleText = T(
+        "Sonraki Süreç Nasıl İlerleyecek?",
+        "What happens next?"
+    );
+
+    var step1Text = T(
+        "Ön kaydınız oluşturulacak.",
+        "Your pre-registration will be created."
+    );
+
+    var step2Text = T(
+        "Bildirinizi sisteme yükleyeceksiniz.",
+        "You will submit your abstract."
+    );
+
+    var step3Text = T(
+        "Hakemler bildiriyi değerlendirecek.",
+        "Reviewers will evaluate your abstract."
+    );
+
+    var step4Text = T(
+        "Kabul edilirse ödeme ve katılım adımları açılacak.",
+        "If accepted, payment and participation steps will open."
+    );
+
+    var missingCongressText = T(
+        "Kongre bilgisi eksik olduğu için işlem yapılamıyor.",
+        "The operation cannot continue because congress information is missing."
+    );
+
+    var expiredDeadlineText = T(
+        "Bu başvuru türü için son başvuru tarihi geçti.",
+        "The application deadline for this type has passed."
+    );
+
+    var applicationDeadlineText = T(
+        "Başvuru Son Tarihi",
+        "Application Deadline"
+    );
+
+    var congressText = T("Kongre", "Congress");
+    var applicantText = T("Başvuru Sahibi", "Applicant");
+    var emailText = T("E-posta", "Email");
+    var preRegistrationText = T("Ön Kayıt Onayı", "Pre-Registration Confirmation");
+
+    var canSubmit = hasSlug &&
+                    Model != null &&
+                    Model.RegistrationTypeId != Guid.Empty &&
+                    !isDeadlineExpired;
 }
 
 <style>
@@ -111,9 +199,40 @@
         padding: 60px 0;
     }
 
+    .checkout-alert {
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-radius: 18px;
+        border: 1px solid transparent;
+        font-weight: 800;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+    }
+
+    .checkout-alert-success {
+        background: rgba(34, 197, 94, 0.10);
+        border-color: rgba(34, 197, 94, 0.20);
+        color: #15803d;
+    }
+
+    .checkout-alert-info {
+        background: rgba(13, 110, 253, 0.10);
+        border-color: rgba(13, 110, 253, 0.20);
+        color: #0d6efd;
+    }
+
+    .checkout-alert-error {
+        background: rgba(239, 68, 68, 0.10);
+        border-color: rgba(239, 68, 68, 0.20);
+        color: #dc2626;
+    }
+
     .checkout-hero {
-        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.18), transparent 32%), linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        color: #fff;
+        background:
+            radial-gradient(circle at top right, rgba(0, 174, 239, 0.18), transparent 32%),
+            linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        color: #ffffff;
         border-radius: 28px;
         padding: 42px;
         box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
@@ -128,34 +247,44 @@
         border: 1px solid rgba(255, 255, 255, 0.22);
         padding: 8px 14px;
         border-radius: 999px;
-        font-weight: 800;
+        font-weight: 900;
         font-size: 0.82rem;
         margin-bottom: 18px;
     }
 
     .checkout-title {
         font-size: 2.2rem;
-        font-weight: 900;
+        font-weight: 950;
         letter-spacing: -1px;
         margin-bottom: 10px;
     }
 
     .checkout-conference-name {
         color: #38bdf8;
-        font-weight: 900;
+        font-weight: 950;
         margin-bottom: 12px;
+    }
+
+    .checkout-date {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        color: rgba(255, 255, 255, 0.72);
+        font-weight: 800;
+        margin-bottom: 1rem;
     }
 
     .checkout-description {
         color: rgba(255, 255, 255, 0.82);
         font-size: 1.02rem;
         line-height: 1.8;
-        max-width: 860px;
+        max-width: 900px;
         margin-bottom: 0;
+        font-weight: 600;
     }
 
     .checkout-card {
-        background: #fff;
+        background: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 24px;
         padding: 30px;
@@ -163,17 +292,20 @@
     }
 
     .summary-card {
-        background: #0f172a;
-        color: #fff;
-        border-radius: 22px;
+        background:
+            radial-gradient(circle at top right, rgba(56, 189, 248, 0.16), transparent 34%),
+            linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        color: #ffffff;
+        border-radius: 24px;
         padding: 26px;
         height: 100%;
+        box-shadow: 0 18px 48px rgba(15, 23, 42, 0.14);
     }
 
     .summary-label {
         color: #94a3b8;
-        font-size: 0.82rem;
-        font-weight: 800;
+        font-size: 0.78rem;
+        font-weight: 950;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin-bottom: 6px;
@@ -181,14 +313,21 @@
 
     .summary-value {
         font-weight: 900;
-        font-size: 1.1rem;
+        font-size: 1.05rem;
         margin-bottom: 18px;
+        line-height: 1.45;
     }
 
     .summary-price {
         font-size: 2.1rem;
-        font-weight: 900;
+        font-weight: 950;
         color: #38bdf8;
+        line-height: 1.1;
+    }
+
+    .summary-price span {
+        font-size: 1rem;
+        color: #e0f2fe;
     }
 
     .summary-note {
@@ -197,10 +336,21 @@
         border-radius: 16px;
         padding: 14px;
         color: #e0f2fe;
-        font-weight: 700;
+        font-weight: 750;
         font-size: 0.9rem;
         line-height: 1.6;
         margin-top: 18px;
+    }
+
+    .summary-deadline {
+        margin-top: 22px;
+        padding-top: 18px;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .summary-deadline-expired {
+        color: #fecaca;
+        font-weight: 900;
     }
 
     .process-box {
@@ -212,8 +362,9 @@
 
     .process-title {
         color: #0f172a;
-        font-weight: 900;
+        font-weight: 950;
         margin-bottom: 18px;
+        letter-spacing: -0.035em;
     }
 
     .process-item {
@@ -223,9 +374,9 @@
         margin-bottom: 18px;
     }
 
-        .process-item:last-child {
-            margin-bottom: 0;
-        }
+    .process-item:last-child {
+        margin-bottom: 0;
+    }
 
     .process-icon {
         width: 38px;
@@ -237,12 +388,12 @@
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        font-weight: 900;
+        font-weight: 950;
     }
 
     .process-text {
         color: #334155;
-        font-weight: 700;
+        font-weight: 750;
         line-height: 1.6;
         padding-top: 6px;
     }
@@ -253,32 +404,84 @@
         color: #075985;
         border-radius: 18px;
         padding: 18px;
-        font-weight: 700;
+        font-weight: 750;
+        line-height: 1.7;
+        margin-bottom: 24px;
+    }
+
+    .warning-box {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #b91c1c;
+        border-radius: 18px;
+        padding: 18px;
+        font-weight: 850;
         line-height: 1.7;
         margin-bottom: 24px;
     }
 
     .btn-create-registration {
         background: #00aeef;
-        color: #fff;
+        color: #ffffff;
         border: none;
         border-radius: 999px;
         padding: 13px 22px;
-        font-weight: 900;
+        font-weight: 950;
+        min-height: 48px;
+        transition: all 0.2s ease;
     }
 
-        .btn-create-registration:hover {
-            background: #0095cd;
-            color: #fff;
-        }
+    .btn-create-registration:hover {
+        background: #0095cd;
+        color: #ffffff;
+        transform: translateY(-1px);
+    }
+
+    .btn-create-registration:disabled {
+        background: #cbd5e1;
+        color: #64748b;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .btn-back-registration {
+        min-height: 48px;
+        border-radius: 999px;
+        padding: 0 1.25rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
 
     @@media (max-width: 768px) {
+        .checkout-page {
+            padding: 36px 0;
+        }
+
         .checkout-hero {
             padding: 30px 22px;
+            border-radius: 22px;
         }
 
         .checkout-title {
             font-size: 1.8rem;
+        }
+
+        .checkout-card,
+        .summary-card {
+            border-radius: 20px;
+            padding: 22px;
+        }
+
+        .checkout-actions {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+
+        .checkout-actions .btn,
+        .checkout-actions button {
+            width: 100%;
         }
     }
 </style>
@@ -288,32 +491,32 @@
 
         @if (TempData["SuccessMessage"] != null)
         {
-            <div class="alert alert-success rounded-4 fw-bold mb-4">
-                <i class="fas fa-check-circle me-2"></i>
-                @TempData["SuccessMessage"]
+            <div class="alert checkout-alert checkout-alert-success mb-4">
+                <i class="fas fa-check-circle"></i>
+                <span>@TempData["SuccessMessage"]</span>
             </div>
         }
 
         @if (TempData["InfoMessage"] != null)
         {
-            <div class="alert alert-info rounded-4 fw-bold mb-4">
-                <i class="fas fa-info-circle me-2"></i>
-                @TempData["InfoMessage"]
+            <div class="alert checkout-alert checkout-alert-info mb-4">
+                <i class="fas fa-info-circle"></i>
+                <span>@TempData["InfoMessage"]</span>
             </div>
         }
 
         @if (TempData["ErrorMessage"] != null)
         {
-            <div class="alert alert-danger rounded-4 fw-bold mb-4">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                @TempData["ErrorMessage"]
+            <div class="alert checkout-alert checkout-alert-error mb-4">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>@TempData["ErrorMessage"]</span>
             </div>
         }
 
         <div class="checkout-hero">
             <div class="checkout-badge">
                 <i class="fas fa-clipboard-check"></i>
-                @(isEnglish ? "Pre-Registration Confirmation" : "Ön Kayıt Onayı")
+                @preRegistrationText
             </div>
 
             <h1 class="checkout-title">
@@ -330,8 +533,8 @@
 
             @if (conferenceStartDate.HasValue)
             {
-                <div class="mb-3 fw-bold text-white-50">
-                    <i class="far fa-calendar-alt me-2"></i>
+                <div class="checkout-date">
+                    <i class="far fa-calendar-alt"></i>
                     @conferenceStartDate.Value.ToLocalTime().ToString("dd MMMM yyyy", CultureInfo.CurrentUICulture)
                 </div>
             }
@@ -345,12 +548,34 @@
             <div class="col-lg-4">
                 <div class="summary-card">
                     <div class="summary-label">
-                        @(isEnglish ? "Congress" : "Kongre")
+                        @congressText
                     </div>
 
                     <div class="summary-value">
                         @conferenceTitle
                     </div>
+
+                    @if (!string.IsNullOrWhiteSpace(userFullName))
+                    {
+                        <div class="summary-label">
+                            @applicantText
+                        </div>
+
+                        <div class="summary-value">
+                            @userFullName
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(userEmail))
+                    {
+                        <div class="summary-label">
+                            @emailText
+                        </div>
+
+                        <div class="summary-value">
+                            @userEmail
+                        </div>
+                    }
 
                     <div class="summary-label">
                         @selectedTypeText
@@ -366,7 +591,7 @@
 
                     <div class="summary-price">
                         @amountText
-                        <span style="font-size: 1rem;">@ticketCurrency</span>
+                        <span>@ticketCurrency</span>
                     </div>
 
                     <div class="summary-note">
@@ -378,14 +603,23 @@
 
                     @if (ticket?.Deadline != null)
                     {
-                        <div class="mt-4">
+                        <div class="summary-deadline">
                             <div class="summary-label">
-                                @(isEnglish ? "Application Deadline" : "Başvuru Son Tarihi")
+                                @applicationDeadlineText
                             </div>
 
-                            <div class="summary-value mb-0">
-                                @ticket.Deadline.Value.ToLocalTime().ToString("dd.MM.yyyy")
-                            </div>
+                            @if (isDeadlineExpired)
+                            {
+                                <div class="summary-value summary-deadline-expired mb-0">
+                                    @expiredDeadlineText
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="summary-value mb-0">
+                                    @ticket.Deadline.Value.ToLocalTime().ToString("dd.MM.yyyy")
+                                </div>
+                            }
                         </div>
                     }
                 </div>
@@ -394,12 +628,30 @@
             <div class="col-lg-8">
                 <div class="checkout-card">
 
-                    <div class="info-box">
-                        <i class="fas fa-circle-info me-2"></i>
-                        @(isEnglish
-                                                ? "This screen only creates your congress pre-registration. You will not be charged now. After your abstract is accepted, the payment step will become available."
-                                                : "Bu ekran yalnızca kongre ön kaydınızı oluşturur. Şu anda ödeme alınmaz. Bildiriniz kabul edildikten sonra ödeme adımı aktif olacaktır.")
-                    </div>
+                    @if (!hasSlug)
+                    {
+                        <div class="warning-box">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            @missingCongressText
+                        </div>
+                    }
+                    else if (isDeadlineExpired)
+                    {
+                        <div class="warning-box">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            @expiredDeadlineText
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="info-box">
+                            <i class="fas fa-circle-info me-2"></i>
+                            @T(
+                                "Bu ekran yalnızca kongre ön kaydınızı oluşturur. Şu anda ödeme alınmaz. Bildiriniz kabul edildikten sonra ödeme adımı aktif olacaktır.",
+                                "This screen only creates your congress pre-registration. You will not be charged now. After your abstract is accepted, the payment step will become available."
+                            )
+                        </div>
+                    }
 
                     <div class="process-box mb-4">
                         <h4 class="process-title">
@@ -450,13 +702,15 @@
                     <form method="post" action="@checkoutPostUrl">
                         @Html.AntiForgeryToken()
 
-                        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mt-4">
-                            <a href="@registrationBackUrl" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
+                        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mt-4 checkout-actions">
+                            <a href="@registrationBackUrl" class="btn btn-outline-secondary btn-back-registration">
                                 <i class="fas fa-arrow-left me-2"></i>
                                 @backText
                             </a>
 
-                            <button type="submit" class="btn btn-create-registration px-4">
+                            <button type="submit"
+                                    class="btn btn-create-registration px-4"
+                                    @(canSubmit ? "" : "disabled")>
                                 @submitText
                                 <i class="fas fa-arrow-right ms-2"></i>
                             </button>

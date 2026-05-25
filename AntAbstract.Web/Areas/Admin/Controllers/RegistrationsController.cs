@@ -55,6 +55,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private async Task<bool> CanAccessCurrentTenantAsync(string slug)
         {
+            if (string.IsNullOrWhiteSpace(slug))
+            {
+                return false;
+            }
+
             if (_tenantContext.Current == null)
             {
                 return false;
@@ -92,9 +97,50 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return query.Where(c => c.TenantId == tenantId.Value);
         }
 
+        private Guid? GetSelectedConferenceIdFromSession(Guid? tenantId = null)
+        {
+            if (tenantId.HasValue && tenantId.Value != Guid.Empty)
+            {
+                var tenantSpecificValue = HttpContext.Session.GetString(
+                    $"SelectedConferenceId:{tenantId.Value}");
+
+                if (Guid.TryParse(tenantSpecificValue, out var tenantSpecificConferenceId) &&
+                    tenantSpecificConferenceId != Guid.Empty)
+                {
+                    return tenantSpecificConferenceId;
+                }
+            }
+
+            var globalValue = HttpContext.Session.GetString("SelectedConferenceId");
+
+            if (Guid.TryParse(globalValue, out var globalConferenceId) &&
+                globalConferenceId != Guid.Empty)
+            {
+                return globalConferenceId;
+            }
+
+            return null;
+        }
+
+        private Guid? GetSelectedConferenceId(Guid? tenantId = null)
+        {
+            var selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
+
+            if (selectedConferenceId.HasValue && selectedConferenceId.Value != Guid.Empty)
+            {
+                return selectedConferenceId.Value;
+            }
+
+            return GetSelectedConferenceIdFromSession(tenantId);
+        }
+
         private void SetSelectedConferenceSession(Conference conference)
         {
-            var slug = conference.Tenant?.Slug ?? _tenantContext.Current?.Slug ?? "";
+            var slug = conference.Tenant?.Slug
+                       ?? conference.Slug
+                       ?? _tenantContext.Current?.Slug
+                       ?? "";
+
             var tenantId = conference.TenantId;
 
             _selectedConferenceService.SetSelectedConferenceId(conference.Id);
@@ -106,6 +152,24 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             HttpContext.Session.SetString($"SelectedConferenceId:{tenantId}", conference.Id.ToString());
             HttpContext.Session.SetString($"SelectedConferenceSlug:{tenantId}", slug);
             HttpContext.Session.SetString($"SelectedConferenceTitle:{tenantId}", conference.Title ?? "");
+        }
+
+        private string BuildRegistrationsUrl(string slug, Guid conferenceId)
+        {
+            return $"/{slug}/Admin/Registrations?conferenceId={conferenceId}";
+        }
+
+        private string GetSafeBackUrl(
+            string? returnUrl,
+            string slug,
+            Guid conferenceId)
+        {
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return returnUrl;
+            }
+
+            return BuildRegistrationsUrl(slug, conferenceId);
         }
 
         private async Task<Conference?> GetAccessibleConferenceAsync(
@@ -125,7 +189,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
             else
             {
-                selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
+                selectedConferenceId = GetSelectedConferenceId(_tenantContext.Current?.Id);
             }
 
             if (!selectedConferenceId.HasValue || selectedConferenceId.Value == Guid.Empty)
@@ -153,7 +217,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return Redirect("/Dashboard/MyConferences");
             }
 
-            var selectedId = _selectedConferenceService.GetSelectedConferenceId();
+            var selectedId = GetSelectedConferenceId(tenantId.Value);
 
             if (selectedId.HasValue && selectedId.Value != Guid.Empty)
             {
@@ -162,7 +226,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 var selectedConference = await selectedConferenceQuery
                     .FirstOrDefaultAsync(x => x.Id == selectedId.Value);
 
-                if (selectedConference?.Tenant?.Slug != null)
+                if (selectedConference?.Tenant != null &&
+                    !string.IsNullOrWhiteSpace(selectedConference.Tenant.Slug))
                 {
                     SetSelectedConferenceSession(selectedConference);
 
@@ -171,7 +236,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         return LocalRedirect(returnUrl);
                     }
 
-                    return Redirect($"/{selectedConference.Tenant.Slug}/Admin/Registrations?conferenceId={selectedConference.Id}");
+                    return Redirect(BuildRegistrationsUrl(
+                        selectedConference.Tenant.Slug,
+                        selectedConference.Id));
                 }
             }
 
@@ -228,7 +295,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return LocalRedirect(returnUrl);
             }
 
-            return Redirect($"/{conference.Tenant.Slug}/Admin/Registrations?conferenceId={conference.Id}");
+            return Redirect(BuildRegistrationsUrl(
+                conference.Tenant.Slug,
+                conference.Id));
         }
 
         [HttpGet("/{slug}/Admin/Registrations")]
@@ -296,7 +365,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         r.AppUser != null &&
                         (
                             (((r.AppUser.FirstName ?? "") + " " + (r.AppUser.LastName ?? "")).ToLower().Contains(keyword)) ||
-                            ((r.AppUser.Email ?? "").ToLower().Contains(keyword))
+                            ((r.AppUser.Email ?? "").ToLower().Contains(keyword)) ||
+                            ((r.AppUser.UserName ?? "").ToLower().Contains(keyword))
                         )
                     )
                     ||
@@ -315,7 +385,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                     UserFullName = r.AppUser == null
                         ? ""
-                        : ((r.AppUser.FirstName ?? "") + " " + (r.AppUser.LastName ?? "")).Trim(),
+                        : (
+                            ((r.AppUser.FirstName ?? "") + " " + (r.AppUser.LastName ?? "")).Trim() != ""
+                                ? ((r.AppUser.FirstName ?? "") + " " + (r.AppUser.LastName ?? "")).Trim()
+                                : (r.AppUser.UserName ?? r.AppUser.Email ?? "")
+                        ),
 
                     UserEmail = r.AppUser == null
                         ? ""
@@ -381,7 +455,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (registration == null)
             {
-                return NotFound();
+                TempData["ErrorMessage"] = "Kayıt bulunamadı.";
+
+                return Redirect(BuildRegistrationsUrl(slug, conference.Id));
+            }
+
+            if (registration.IsPaid)
+            {
+                TempData["InfoMessage"] = "Bu kayıt zaten ödenmiş görünüyor.";
+
+                return Redirect(GetSafeBackUrl(returnUrl, slug, conference.Id));
             }
 
             registration.IsPaid = true;
@@ -389,13 +472,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Ödeme durumu güncellendi.";
+            TempData["SuccessMessage"] = "Ödeme durumu ödendi olarak güncellendi.";
 
-            var backUrl = !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
-                ? returnUrl
-                : $"/{slug}/Admin/Registrations?conferenceId={conference.Id}";
-
-            return Redirect(backUrl);
+            return Redirect(GetSafeBackUrl(returnUrl, slug, conference.Id));
         }
 
         [HttpPost("/{slug}/Admin/Registrations/MarkUnpaid")]
@@ -426,7 +505,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (registration == null)
             {
-                return NotFound();
+                TempData["ErrorMessage"] = "Kayıt bulunamadı.";
+
+                return Redirect(BuildRegistrationsUrl(slug, conference.Id));
+            }
+
+            if (!registration.IsPaid)
+            {
+                TempData["InfoMessage"] = "Bu kayıt zaten ödenmemiş görünüyor.";
+
+                return Redirect(GetSafeBackUrl(returnUrl, slug, conference.Id));
             }
 
             registration.IsPaid = false;
@@ -435,13 +523,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Ödeme durumu güncellendi.";
+            TempData["SuccessMessage"] = "Ödeme durumu ödenmedi olarak güncellendi.";
 
-            var backUrl = !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
-                ? returnUrl
-                : $"/{slug}/Admin/Registrations?conferenceId={conference.Id}";
-
-            return Redirect(backUrl);
+            return Redirect(GetSafeBackUrl(returnUrl, slug, conference.Id));
         }
     }
 }
