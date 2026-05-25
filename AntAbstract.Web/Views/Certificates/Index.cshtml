@@ -1,5 +1,11 @@
 ﻿@using AntAbstract.Domain.Entities
+@using Microsoft.AspNetCore.Http
+@using System
+@using System.Collections.Generic
+@using System.Linq
+
 @model List<AntAbstract.Domain.Entities.Certificate>
+
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
@@ -15,9 +21,19 @@
             : value;
     }
 
+    var certificates = Model ?? new List<Certificate>();
+
     var slug = ViewBag.Slug as string
         ?? ViewContext.RouteData.Values["slug"]?.ToString()
+        ?? Context.Session.GetString("SelectedConferenceSlug")
         ?? "";
+
+    var currentConferenceTitle = ViewBag.CurrentConferenceTitle as string
+        ?? Context.Session.GetString("SelectedConferenceTitle")
+        ?? "";
+
+    var conferenceTitles = ViewBag.ConferenceTitles as Dictionary<Guid, string>
+        ?? new Dictionary<Guid, string>();
 
     string GetCertificateTypeText(CertificateType type)
     {
@@ -49,6 +65,19 @@
         };
     }
 
+    string GetConferenceText(Guid conferenceId)
+    {
+        if (conferenceTitles.TryGetValue(conferenceId, out var title) &&
+            !string.IsNullOrWhiteSpace(title))
+        {
+            return title;
+        }
+
+        return conferenceId == Guid.Empty
+            ? L("UnknownConferenceText", "Kongre bilgisi yok")
+            : conferenceId.ToString();
+    }
+
     string GetDownloadUrl(Guid certificateId)
     {
         if (!string.IsNullOrWhiteSpace(slug))
@@ -58,6 +87,10 @@
 
         return $"/Certificates/Download/{certificateId}";
     }
+
+    var totalCount = certificates.Count;
+    var authorCount = certificates.Count(x => x.Type == CertificateType.Author);
+    var reviewerCount = certificates.Count(x => x.Type == CertificateType.Reviewer);
 }
 
 <style>
@@ -225,26 +258,26 @@
         margin-bottom: 0;
     }
 
-        .certificates-table thead th {
-            background: #f8fafc;
-            color: #64748b;
-            font-size: 0.74rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 1rem 1.15rem;
-            white-space: nowrap;
-        }
+    .certificates-table thead th {
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 0.74rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 1rem 1.15rem;
+        white-space: nowrap;
+    }
 
-        .certificates-table tbody td {
-            color: #475569;
-            font-size: 0.92rem;
-            font-weight: 700;
-            padding: 1.1rem 1.15rem;
-            vertical-align: middle;
-            border-color: #edf2f7;
-        }
+    .certificates-table tbody td {
+        color: #475569;
+        font-size: 0.92rem;
+        font-weight: 700;
+        padding: 1.1rem 1.15rem;
+        vertical-align: middle;
+        border-color: #edf2f7;
+    }
 
     .certificate-type-badge {
         display: inline-flex;
@@ -257,26 +290,26 @@
         white-space: nowrap;
     }
 
-        .certificate-type-badge.author {
-            background: rgba(13, 110, 253, 0.09);
-            color: #0d6efd;
-        }
+    .certificate-type-badge.author {
+        background: rgba(13, 110, 253, 0.09);
+        color: #0d6efd;
+    }
 
-        .certificate-type-badge.reviewer {
-            background: rgba(245, 158, 11, 0.12);
-            color: #b45309;
-        }
+    .certificate-type-badge.reviewer {
+        background: rgba(245, 158, 11, 0.12);
+        color: #b45309;
+    }
 
-        .certificate-type-badge.default {
-            background: rgba(100, 116, 139, 0.10);
-            color: #475569;
-        }
+    .certificate-type-badge.default {
+        background: rgba(100, 116, 139, 0.10);
+        color: #475569;
+    }
 
-    .conference-id {
+    .conference-name {
         display: inline-flex;
         align-items: center;
         gap: 0.45rem;
-        max-width: 230px;
+        max-width: 280px;
         padding: 0.45rem 0.7rem;
         border-radius: 12px;
         background: #f8fafc;
@@ -297,9 +330,9 @@
         white-space: nowrap;
     }
 
-        .date-pill i {
-            color: #94a3b8;
-        }
+    .date-pill i {
+        color: #94a3b8;
+    }
 
     .generated-badge {
         display: inline-flex;
@@ -346,28 +379,28 @@
         white-space: nowrap;
     }
 
-        .download-btn:hover {
-            color: #ffffff;
-            transform: translateY(-2px);
-            box-shadow: 0 14px 30px rgba(37, 99, 235, 0.30);
-            text-decoration: none;
-        }
+    .download-btn:hover {
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 14px 30px rgba(37, 99, 235, 0.30);
+        text-decoration: none;
+    }
 
-.empty-state {
-    width: 100%;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 28px;
-    padding: 3.25rem 2rem;
-    text-align: center;
-    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
-    margin: 0;
-}
+    .empty-state {
+        width: 100%;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        padding: 3.25rem 2rem;
+        text-align: center;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+        margin: 0;
+    }
 
-.empty-state-content {
-    max-width: 620px;
-    margin: 0 auto;
-}
+    .empty-state-content {
+        max-width: 620px;
+        margin: 0 auto;
+    }
 
     .empty-icon {
         width: 82px;
@@ -433,17 +466,17 @@
             text-align: right !important;
         }
 
-            .certificates-table tbody td::before {
-                content: attr(data-label);
-                color: #64748b;
-                font-size: 0.74rem;
-                font-weight: 950;
-                text-transform: uppercase;
-                letter-spacing: 0.04em;
-                text-align: left;
-            }
+        .certificates-table tbody td::before {
+            content: attr(data-label);
+            color: #64748b;
+            font-size: 0.74rem;
+            font-weight: 950;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            text-align: left;
+        }
 
-        .conference-id {
+        .conference-name {
             max-width: 180px;
         }
     }
@@ -470,7 +503,14 @@
                     @L("PageDescription", "Hak kazandığınız yazar ve hakem sertifikalarını buradan görüntüleyebilir ve indirebilirsiniz.")
                 </p>
 
-                @if (!string.IsNullOrWhiteSpace(slug))
+                @if (!string.IsNullOrWhiteSpace(currentConferenceTitle))
+                {
+                    <div class="certificates-slug-badge">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>@currentConferenceTitle</span>
+                    </div>
+                }
+                else if (!string.IsNullOrWhiteSpace(slug))
                 {
                     <div class="certificates-slug-badge">
                         <i class="fas fa-link"></i>
@@ -489,6 +529,14 @@
         </div>
     }
 
+    @if (TempData["InfoMessage"] != null)
+    {
+        <div class="alert alert-info border-0 shadow-sm rounded-4 fw-bold mb-4">
+            <i class="fas fa-circle-info me-2"></i>
+            @TempData["InfoMessage"]
+        </div>
+    }
+
     @if (TempData["ErrorMessage"] != null)
     {
         <div class="alert alert-danger border-0 shadow-sm rounded-4 fw-bold mb-4">
@@ -497,30 +545,26 @@
         </div>
     }
 
-    @if (Model == null || !Model.Any())
+    @if (!certificates.Any())
     {
-<div class="empty-state">
-    <div class="empty-state-content">
-        <div class="empty-icon">
-            <i class="fas fa-award"></i>
+        <div class="empty-state">
+            <div class="empty-state-content">
+                <div class="empty-icon">
+                    <i class="fas fa-award"></i>
+                </div>
+
+                <h4 class="empty-title">
+                    @L("NoCertificatesTitle", "Henüz sertifikanız bulunmuyor.")
+                </h4>
+
+                <p class="empty-description">
+                    @L("NoCertificatesMessage", "Sertifika koşullarını sağladığınızda yazar veya hakem sertifikalarınız bu alanda görüntülenecektir.")
+                </p>
+            </div>
         </div>
-
-        <h4 class="empty-title">
-            @L("NoCertificatesTitle", "Henüz sertifikanız bulunmuyor.")
-        </h4>
-
-        <p class="empty-description">
-            @L("NoCertificatesMessage", "Sertifika koşullarını sağladığınızda yazar veya hakem sertifikalarınız bu alanda görüntülenecektir.")
-        </p>
-    </div>
-</div>
     }
     else
     {
-        var totalCount = Model.Count;
-        var authorCount = Model.Count(x => x.Type == CertificateType.Author);
-        var reviewerCount = Model.Count(x => x.Type == CertificateType.Reviewer);
-
         <div class="certificate-summary-grid">
             <div class="certificate-summary-card">
                 <div class="summary-icon">
@@ -582,12 +626,13 @@
                     </thead>
 
                     <tbody>
-                        @foreach (var certificate in Model.OrderByDescending(x => x.GeneratedAt ?? x.EligibleAt))
+                        @foreach (var certificate in certificates.OrderByDescending(x => x.GeneratedAt ?? x.EligibleAt))
                         {
                             var typeText = GetCertificateTypeText(certificate.Type);
                             var typeIcon = GetCertificateTypeIcon(certificate.Type);
                             var typeClass = GetCertificateTypeClass(certificate.Type);
                             var downloadUrl = GetDownloadUrl(certificate.Id);
+                            var conferenceText = GetConferenceText(certificate.ConferenceId);
 
                             <tr>
                                 <td data-label="@L("TypeColumn", "Tür")">
@@ -598,16 +643,16 @@
                                 </td>
 
                                 <td data-label="@L("ConferenceColumn", "Kongre")">
-                                    <span class="conference-id" title="@certificate.ConferenceId">
+                                    <span class="conference-name" title="@conferenceText">
                                         <i class="fas fa-calendar-check"></i>
-                                        @certificate.ConferenceId
+                                        @conferenceText
                                     </span>
                                 </td>
 
                                 <td data-label="@L("EligibilityColumn", "Hak Ediş Tarihi")">
                                     <span class="date-pill">
                                         <i class="fas fa-calendar-day"></i>
-                                        @certificate.EligibleAt.ToString("dd.MM.yyyy")
+                                        @certificate.EligibleAt.ToLocalTime().ToString("dd.MM.yyyy")
                                     </span>
                                 </td>
 
@@ -616,7 +661,7 @@
                                     {
                                         <span class="generated-badge">
                                             <i class="fas fa-check-circle"></i>
-                                            @certificate.GeneratedAt.Value.ToString("dd.MM.yyyy")
+                                            @certificate.GeneratedAt.Value.ToLocalTime().ToString("dd.MM.yyyy")
                                         </span>
                                     }
                                     else

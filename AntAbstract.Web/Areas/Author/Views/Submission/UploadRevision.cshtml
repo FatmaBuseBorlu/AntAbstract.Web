@@ -1,4 +1,7 @@
 ﻿@using AntAbstract.Application.DTOs.Submission
+@using Microsoft.AspNetCore.Http
+@using System
+@using System.Globalization
 @using System.Linq
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model SubmissionDto
@@ -6,67 +9,574 @@
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
+
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString()
+        ?? Context.Session.GetString("SelectedConferenceSlug")
+        ?? "";
+
+    var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+
+    string L(string key, string tr, string en)
+    {
+        var value = Localizer[key].Value;
+
+        if (string.Equals(value, key, StringComparison.OrdinalIgnoreCase))
+        {
+            return isEnglish ? en : tr;
+        }
+
+        return value;
+    }
+
+    string BuildConferenceUrl(string cleanPath, string fallbackPath)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+        {
+            return fallbackPath;
+        }
+
+        return $"/{slug}{cleanPath}";
+    }
+
+    var detailsUrl = BuildConferenceUrl(
+        $"/my-submissions/{Model.Id}",
+        $"/Submission/Details/{Model.Id}"
+    );
+
+    var postUrl = BuildConferenceUrl(
+        $"/my-submissions/{Model.Id}/revision",
+        $"/Submission/UploadRevision/{Model.Id}"
+    );
+
+    var listUrl = BuildConferenceUrl(
+        "/my-submissions",
+        "/Submission/Index"
+    );
+
+    var lastFile = Model.Files?
+        .OrderByDescending(f => f.UploadedAt)
+        .FirstOrDefault();
 }
 
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold mb-0 text-dark">@Localizer["PageHeading"]</h4>
-        <a asp-area="" asp-controller="Submission" asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-1"></i> @Localizer["BackToDetailsButton"]
-        </a>
+<style>
+    .revision-page {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 1.25rem 1.5rem 4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .revision-hero-card {
+        background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.18), transparent 34%), linear-gradient(135deg, #ffffff 0%, #fffaf2 100%);
+        border: 1px solid #f1e4cf;
+        border-radius: 26px;
+        padding: 1.35rem 1.45rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        box-shadow: 0 16px 38px rgba(15, 23, 42, 0.055);
+        margin-bottom: 1.5rem;
+    }
+
+    .revision-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 0.95rem;
+        min-width: 300px;
+        flex: 1;
+    }
+
+    .revision-hero-icon {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #f59e0b, #f97316);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.55rem;
+        box-shadow: 0 16px 32px rgba(245, 158, 11, 0.22);
+    }
+
+    .revision-kicker {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .revision-title {
+        margin: 0 0 0.3rem;
+        color: #0f172a;
+        font-size: 1.75rem;
+        font-weight: 950;
+        letter-spacing: -0.045em;
+        line-height: 1.15;
+    }
+
+    .revision-description {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.94rem;
+        font-weight: 650;
+        line-height: 1.55;
+        max-width: 760px;
+    }
+
+    .revision-hero-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+
+    .revision-hero-btn {
+        min-height: 42px;
+        border-radius: 999px;
+        padding: 0 1rem;
+        font-size: 0.84rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .revision-hero-btn-light {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+    }
+
+    .revision-hero-btn-light:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .revision-hero-btn-primary {
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        border: none;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.18);
+    }
+
+    .revision-hero-btn-primary:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(13, 110, 253, 0.26);
+        text-decoration: none;
+    }
+
+    .operation-alert {
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-radius: 18px;
+        border: 1px solid transparent;
+        font-weight: 800;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+    }
+
+    .operation-alert-success {
+        background: rgba(34, 197, 94, 0.10);
+        border-color: rgba(34, 197, 94, 0.20);
+        color: #15803d;
+    }
+
+    .operation-alert-info {
+        background: rgba(13, 110, 253, 0.10);
+        border-color: rgba(13, 110, 253, 0.20);
+        color: #0d6efd;
+    }
+
+    .operation-alert-error {
+        background: rgba(239, 68, 68, 0.10);
+        border-color: rgba(239, 68, 68, 0.20);
+        color: #dc2626;
+    }
+
+    .revision-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.055);
+        overflow: hidden;
+        height: 100%;
+    }
+
+    .revision-card-header {
+        padding: 1.25rem 1.45rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+    }
+
+    .revision-card-title {
+        color: #0f172a;
+        font-weight: 950;
+        margin-bottom: 0.25rem;
+    }
+
+    .revision-card-subtitle {
+        color: #64748b;
+        font-size: 0.84rem;
+        font-weight: 650;
+        margin-bottom: 0;
+    }
+
+    .revision-card-body {
+        padding: 1.5rem;
+    }
+
+    .warning-box {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.8rem;
+        background: rgba(245, 158, 11, 0.12);
+        border: 1px solid rgba(245, 158, 11, 0.22);
+        border-radius: 18px;
+        padding: 1rem;
+        color: #92400e;
+        font-size: 0.88rem;
+        font-weight: 750;
+        line-height: 1.6;
+    }
+
+    .warning-box i {
+        margin-top: 0.2rem;
+        color: #f59e0b;
+    }
+
+    .file-info-box {
+        border-radius: 18px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        margin-top: 1rem;
+    }
+
+    .file-info-icon {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        border-radius: 16px;
+        background: rgba(100, 116, 139, 0.10);
+        color: #64748b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    .file-info-title {
+        color: #0f172a;
+        font-weight: 900;
+        margin-bottom: 0.15rem;
+    }
+
+    .file-info-meta {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .upload-zone {
+        border: 2px dashed #f59e0b;
+        border-radius: 24px;
+        background: linear-gradient(135deg, #fffbeb, #ffffff);
+        transition: all 0.25s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        padding: 2.2rem;
+        text-align: center;
+    }
+
+    .upload-zone:hover {
+        border-color: #f97316;
+        background: linear-gradient(135deg, #fff7ed, #ffffff);
+        transform: translateY(-2px);
+    }
+
+    .upload-icon {
+        width: 82px;
+        height: 82px;
+        border-radius: 28px;
+        background: #ffffff;
+        color: #f59e0b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 16px 38px rgba(245, 158, 11, 0.14);
+        margin-bottom: 1rem;
+    }
+
+    .revision-file-input {
+        border-radius: 16px;
+        border: 1px solid #dbe4ef;
+        background: #ffffff;
+        padding: 0.9rem 1rem;
+        font-weight: 700;
+        color: #334155;
+        margin-top: 1.25rem;
+    }
+
+    .revision-file-input:focus {
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 0.2rem rgba(245, 158, 11, 0.15);
+    }
+
+    .submit-revision-btn {
+        min-height: 54px;
+        border: none;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #f59e0b, #f97316);
+        color: #ffffff;
+        font-weight: 950;
+        box-shadow: 0 16px 34px rgba(245, 158, 11, 0.24);
+        transition: all 0.2s ease;
+    }
+
+    .submit-revision-btn:hover {
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 20px 44px rgba(245, 158, 11, 0.32);
+    }
+
+    .revision-helper-text {
+        color: #64748b;
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-top: 0.6rem;
+    }
+
+    @@media (max-width: 768px) {
+        .revision-page {
+            padding: 1rem 1rem 3rem;
+        }
+
+        .revision-hero-card {
+            padding: 1.15rem;
+        }
+
+        .revision-hero-left {
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 100%;
+        }
+
+        .revision-title {
+            font-size: 1.45rem;
+        }
+
+        .revision-hero-actions {
+            width: 100%;
+        }
+
+        .revision-hero-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="revision-page">
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert operation-alert operation-alert-success mb-4">
+            <i class="fas fa-check-circle"></i>
+            <span>@TempData["SuccessMessage"]</span>
+        </div>
+    }
+
+    @if (TempData["InfoMessage"] != null)
+    {
+        <div class="alert operation-alert operation-alert-info mb-4">
+            <i class="fas fa-circle-info"></i>
+            <span>@TempData["InfoMessage"]</span>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert operation-alert operation-alert-error mb-4">
+            <i class="fas fa-triangle-exclamation"></i>
+            <span>@TempData["ErrorMessage"]</span>
+        </div>
+    }
+
+    <div class="revision-hero-card">
+        <div class="revision-hero-left">
+            <div class="revision-hero-icon">
+                <i class="fas fa-cloud-arrow-up"></i>
+            </div>
+
+            <div>
+                <div class="revision-kicker">
+                    @L("HeroSectionLabel", "Bildiri İşlemleri", "Abstract Operations")
+                </div>
+
+                <h2 class="revision-title">
+                    @L("PageHeading", "Revizyon Yükle", "Upload Revision")
+                </h2>
+
+                <p class="revision-description">
+                    @L("PageLead", "Hakem veya kongre yönetimi tarafından istenen güncellenmiş bildiri dosyanızı bu ekrandan yükleyebilirsiniz.", "You can upload your updated abstract file requested by the reviewer or congress management from this page.")
+                </p>
+            </div>
+        </div>
+
+        <div class="revision-hero-actions">
+            <a href="@detailsUrl" class="revision-hero-btn revision-hero-btn-light">
+                <i class="fas fa-arrow-left"></i>
+                @L("BackToDetailsButton", "Detaya Dön", "Back to Details")
+            </a>
+
+            <a href="@listUrl" class="revision-hero-btn revision-hero-btn-primary">
+                <i class="fas fa-list"></i>
+                @L("BackToListButton", "Listeye Dön", "Back to List")
+            </a>
+        </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-5">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body">
-                    <h6 class="fw-bold text-primary">@Localizer["ReviewRevisionTitle"]</h6>
-                    <p class="text-muted small">@Localizer["ReviewRevisionText"]</p>
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="revision-card">
+                <div class="revision-card-header">
+                    <h5 class="revision-card-title">
+                        <i class="fas fa-circle-info text-warning me-2"></i>
+                        @L("ReviewRevisionTitle", "Revizyon Bilgisi", "Revision Information")
+                    </h5>
 
-                    <div class="alert alert-warning small border-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        @Localizer["RevisionUploadWarning"]
+                    <p class="revision-card-subtitle">
+                        @L("ReviewRevisionText", "Lütfen yalnızca güncellenmiş nihai dosyanızı yükleyiniz.", "Please upload only your updated final file.")
+                    </p>
+                </div>
+
+                <div class="revision-card-body">
+                    <div class="warning-box">
+                        <i class="fas fa-exclamation-triangle"></i>
+
+                        <div>
+                            @L("RevisionUploadWarning", "Yeni dosya yüklendiğinde bildiriniz tekrar değerlendirme sürecine alınacaktır.", "When a new file is uploaded, your abstract will be sent back to the review process.")
+                        </div>
                     </div>
 
-                    <h6 class="fw-bold small mt-4">@Localizer["CurrentFileLabel"]</h6>
-                    @if (Model.Files != null && Model.Files.Any())
+                    <h6 class="fw-bold small mt-4 mb-2 text-muted text-uppercase">
+                        @L("CurrentFileLabel", "Mevcut Dosya", "Current File")
+                    </h6>
+
+                    @if (lastFile != null)
                     {
-                        var lastFile = Model.Files.OrderByDescending(f => f.UploadedAt).FirstOrDefault();
-                        <div class="d-flex align-items-center bg-light p-2 rounded border">
-                            <i class="fas fa-file-alt text-secondary me-3 fa-2x"></i>
-                            <div>
-                                <span class="d-block fw-bold text-dark small">@lastFile.FileName</span>
-                                <span class="d-block text-muted x-small">@Localizer["VersionPrefix"]@lastFile.Version - @lastFile.UploadedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                        <div class="file-info-box">
+                            <div class="file-info-icon">
+                                <i class="fas fa-file-alt"></i>
                             </div>
+
+                            <div class="min-w-0">
+                                <div class="file-info-title text-truncate" title="@lastFile.FileName">
+                                    @lastFile.FileName
+                                </div>
+
+                                <div class="file-info-meta">
+                                    @L("VersionPrefix", "v", "v")@lastFile.Version
+                                    -
+                                    @lastFile.UploadedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-light border text-muted small mb-0">
+                            <i class="fas fa-file-circle-question me-2"></i>
+                            @L("NoCurrentFileText", "Mevcut dosya bilgisi bulunamadı.", "No current file information was found.")
                         </div>
                     }
                 </div>
             </div>
         </div>
 
-        <div class="col-md-7">
-            <div class="card border-0 shadow-sm border-top border-4 border-warning">
-                <div class="card-body p-4">
-                    <h5 class="fw-bold mb-3">@Localizer["UploadNewFileHeader"]</h5>
+        <div class="col-lg-7">
+            <div class="revision-card">
+                <div class="revision-card-header">
+                    <h5 class="revision-card-title">
+                        <i class="fas fa-upload text-warning me-2"></i>
+                        @L("UploadNewFileHeader", "Yeni Revizyon Dosyası Yükle", "Upload New Revision File")
+                    </h5>
 
-                    <form asp-area=""
-                          asp-controller="Submission"
-                          asp-action="UploadRevision"
-                          asp-route-id="@Model.Id"
+                    <p class="revision-card-subtitle">
+                        @L("UploadNewFileSubtitle", "PDF, DOC veya DOCX formatında dosya yükleyebilirsiniz.", "You can upload a file in PDF, DOC or DOCX format.")
+                    </p>
+                </div>
+
+                <div class="revision-card-body">
+                    <form action="@postUrl"
                           method="post"
                           enctype="multipart/form-data">
+
                         @Html.AntiForgeryToken()
+
                         <input type="hidden" name="id" value="@Model.Id" />
 
-                        <div class="mb-4">
-                            <label class="form-label fw-bold small text-muted">@Localizer["RevisionFileLabel"]</label>
-                            <input type="file" name="revisionFile" class="form-control" accept=".doc,.docx,.pdf" required />
-                            <div class="form-text">@Localizer["RevisionFileHelpText"]</div>
+                        <div class="upload-zone">
+                            <div id="upload-placeholder">
+                                <div class="upload-icon">
+                                    <i class="fas fa-cloud-upload-alt fa-2x"></i>
+                                </div>
+
+                                <h6 class="fw-bold text-dark mb-1">
+                                    @L("UploadDragTitle", "Revizyon dosyanızı seçin", "Select your revision file")
+                                </h6>
+
+                                <p class="text-muted small mb-0">
+                                    @L("RevisionFileHelpText", "PDF, DOC veya DOCX dosyası yükleyebilirsiniz. Maksimum dosya boyutu 10 MB olmalıdır.", "You can upload a PDF, DOC or DOCX file. Maximum file size should be 10 MB.")
+                                </p>
+                            </div>
+
+                            <div id="file-preview" class="d-none align-items-center justify-content-center flex-column">
+                                <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
+
+                                <h6 class="fw-bold text-dark mb-1" id="fileNameText">
+                                    file.pdf
+                                </h6>
+
+                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">
+                                    @L("ReadyToUploadLabel", "Yüklemeye hazır", "Ready to upload")
+                                </span>
+                            </div>
+
+                            <input type="file"
+                                   name="revisionFile"
+                                   class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
+                                   accept=".doc,.docx,.pdf"
+                                   required
+                                   onchange="fileSelected(this)"
+                                   style="cursor: pointer;" />
                         </div>
 
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-warning fw-bold text-dark shadow-sm py-2">
-                                <i class="fas fa-cloud-upload-alt me-2"></i> @Localizer["SubmitRevisionButton"]
+                        <div class="revision-helper-text">
+                            <i class="fas fa-circle-info me-1"></i>
+                            @L("RevisionFileHelpText", "PDF, DOC veya DOCX dosyası yükleyebilirsiniz. Maksimum dosya boyutu 10 MB olmalıdır.", "You can upload a PDF, DOC or DOCX file. Maximum file size should be 10 MB.")
+                        </div>
+
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn submit-revision-btn">
+                                <i class="fas fa-cloud-upload-alt me-2"></i>
+                                @L("SubmitRevisionButton", "Revizyonu Gönder", "Submit Revision")
                             </button>
                         </div>
                     </form>
@@ -75,3 +585,16 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        function fileSelected(input) {
+            if (input.files && input.files[0]) {
+                document.getElementById('fileNameText').innerText = input.files[0].name;
+                document.getElementById('upload-placeholder').classList.add('d-none');
+                document.getElementById('file-preview').classList.remove('d-none');
+                document.getElementById('file-preview').classList.add('d-flex');
+            }
+        }
+    </script>
+}

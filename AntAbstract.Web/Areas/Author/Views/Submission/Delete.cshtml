@@ -1,4 +1,7 @@
 ﻿@using AntAbstract.Application.DTOs.Submission
+@using Microsoft.AspNetCore.Http
+@using System
+@using System.Globalization
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model SubmissionDto
 
@@ -6,65 +9,542 @@
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
-    var currentSlug = ViewContext.RouteData.Values["slug"]?.ToString() ?? "";
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString()
+        ?? Context.Session.GetString("SelectedConferenceSlug")
+        ?? "";
 
-    var deletePostUrl = !string.IsNullOrWhiteSpace(currentSlug)
-        ? $"/{currentSlug}/my-submissions/{Model.Id}/delete"
-        : $"/Submission/Delete/{Model.Id}";
+    var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 
-    var cancelUrl = !string.IsNullOrWhiteSpace(currentSlug)
-        ? $"/{currentSlug}/my-submissions"
-        : "/Submission";
+    string L(string key, string tr, string en)
+    {
+        var value = Localizer[key].Value;
+
+        if (string.Equals(value, key, StringComparison.OrdinalIgnoreCase))
+        {
+            return isEnglish ? en : tr;
+        }
+
+        return value;
+    }
+
+    string BuildConferenceUrl(string cleanPath, string fallbackPath)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+        {
+            return fallbackPath;
+        }
+
+        return $"/{slug}{cleanPath}";
+    }
+
+    var deletePostUrl = BuildConferenceUrl(
+        $"/my-submissions/{Model.Id}/delete",
+        $"/Submission/Delete/{Model.Id}"
+    );
+
+    var cancelUrl = BuildConferenceUrl(
+        $"/my-submissions/{Model.Id}",
+        $"/Submission/Details/{Model.Id}"
+    );
+
+    var listUrl = BuildConferenceUrl(
+        "/my-submissions",
+        "/Submission/Index"
+    );
+
+    var referenceCode = Model.Id.ToString().Length >= 8
+        ? Model.Id.ToString().Substring(0, 8).ToUpper()
+        : Model.Id.ToString().ToUpper();
 }
 
-<div class="container-fluid">
-    <div class="row justify-content-center mt-5">
-        <div class="col-md-6">
-            <div class="card border-danger shadow-lg">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="mb-0 fw-bold">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        @Localizer["CardTitle"]
-                    </h5>
+<style>
+    .delete-submission-page {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 1.25rem 1.5rem 4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .operation-alert {
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-radius: 18px;
+        border: 1px solid transparent;
+        font-weight: 800;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+    }
+
+    .operation-alert-success {
+        background: rgba(34, 197, 94, 0.10);
+        border-color: rgba(34, 197, 94, 0.20);
+        color: #15803d;
+    }
+
+    .operation-alert-info {
+        background: rgba(13, 110, 253, 0.10);
+        border-color: rgba(13, 110, 253, 0.20);
+        color: #0d6efd;
+    }
+
+    .operation-alert-error {
+        background: rgba(239, 68, 68, 0.10);
+        border-color: rgba(239, 68, 68, 0.20);
+        color: #dc2626;
+    }
+
+    .delete-hero-card {
+        background: radial-gradient(circle at top right, rgba(239, 68, 68, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #fff8f8 100%);
+        border: 1px solid #f1dede;
+        border-radius: 26px;
+        padding: 1.35rem 1.45rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        box-shadow: 0 16px 38px rgba(15, 23, 42, 0.055);
+        margin-bottom: 1.5rem;
+    }
+
+    .delete-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 0.95rem;
+        min-width: 300px;
+        flex: 1;
+    }
+
+    .delete-hero-icon {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.55rem;
+        box-shadow: 0 16px 32px rgba(239, 68, 68, 0.22);
+    }
+
+    .delete-kicker {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .delete-title {
+        margin: 0 0 0.3rem;
+        color: #0f172a;
+        font-size: 1.75rem;
+        font-weight: 950;
+        letter-spacing: -0.045em;
+        line-height: 1.15;
+    }
+
+    .delete-description {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.94rem;
+        font-weight: 650;
+        line-height: 1.55;
+        max-width: 720px;
+    }
+
+    .delete-hero-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+
+    .delete-hero-btn {
+        min-height: 42px;
+        border-radius: 999px;
+        padding: 0 1rem;
+        font-size: 0.84rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .delete-hero-btn-light {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+    }
+
+    .delete-hero-btn-light:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .delete-card {
+        background: #ffffff;
+        border: 1px solid rgba(239, 68, 68, 0.22);
+        border-radius: 28px;
+        box-shadow: 0 22px 55px rgba(15, 23, 42, 0.07);
+        overflow: hidden;
+    }
+
+    .delete-card-header {
+        padding: 1.35rem 1.5rem;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .delete-card-header-icon {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.16);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .delete-card-header h5 {
+        margin: 0;
+        font-weight: 950;
+        letter-spacing: -0.02em;
+    }
+
+    .delete-card-body {
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .delete-main-icon {
+        width: 110px;
+        height: 110px;
+        border-radius: 999px;
+        background: rgba(239, 68, 68, 0.10);
+        color: #ef4444;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        margin-bottom: 1.35rem;
+    }
+
+    .delete-confirm-title {
+        color: #0f172a;
+        font-size: 1.35rem;
+        font-weight: 950;
+        letter-spacing: -0.035em;
+        margin-bottom: 0.75rem;
+    }
+
+    .delete-confirm-text {
+        color: #64748b;
+        font-size: 0.98rem;
+        font-weight: 650;
+        line-height: 1.65;
+        margin: 0 auto 1.35rem;
+        max-width: 680px;
+    }
+
+    .submission-summary-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        padding: 1rem 1.1rem;
+        margin: 0 auto 1.35rem;
+        max-width: 720px;
+        text-align: left;
+    }
+
+    .summary-label {
+        color: #64748b;
+        font-size: 0.74rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.055em;
+        margin-bottom: 0.35rem;
+    }
+
+    .summary-title {
+        color: #0f172a;
+        font-size: 0.98rem;
+        font-weight: 900;
+        line-height: 1.45;
+        margin-bottom: 0.6rem;
+    }
+
+    .summary-ref {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        min-height: 30px;
+        padding: 0 0.75rem;
+        border-radius: 999px;
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+        font-size: 0.76rem;
+        font-weight: 900;
+    }
+
+    .danger-warning-box {
+        background: rgba(239, 68, 68, 0.08);
+        border: 1px solid rgba(239, 68, 68, 0.18);
+        color: #b91c1c;
+        border-radius: 18px;
+        padding: 0.9rem 1rem;
+        font-size: 0.88rem;
+        font-weight: 850;
+        line-height: 1.55;
+        max-width: 720px;
+        margin: 0 auto 1.6rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.65rem;
+        text-align: left;
+    }
+
+    .danger-warning-box i {
+        margin-top: 0.18rem;
+    }
+
+    .delete-actions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.85rem;
+        flex-wrap: wrap;
+    }
+
+    .delete-action-btn {
+        min-height: 48px;
+        border-radius: 999px;
+        padding: 0 1.35rem;
+        font-size: 0.9rem;
+        font-weight: 950;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border: none;
+    }
+
+    .delete-cancel-btn {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+    }
+
+    .delete-cancel-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .delete-list-btn {
+        background: #f8fafc;
+        color: #64748b;
+        border: 1px solid #e2e8f0;
+    }
+
+    .delete-list-btn:hover {
+        color: #0f172a;
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .delete-submit-btn {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: #ffffff;
+        box-shadow: 0 16px 34px rgba(239, 68, 68, 0.24);
+    }
+
+    .delete-submit-btn:hover {
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 20px 44px rgba(239, 68, 68, 0.32);
+    }
+
+    @@media (max-width: 768px) {
+        .delete-submission-page {
+            padding: 1rem 1rem 3rem;
+        }
+
+        .delete-hero-card {
+            padding: 1.15rem;
+        }
+
+        .delete-hero-left {
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 100%;
+        }
+
+        .delete-title {
+            font-size: 1.45rem;
+        }
+
+        .delete-hero-actions,
+        .delete-action-btn {
+            width: 100%;
+        }
+
+        .delete-actions {
+            flex-direction: column-reverse;
+        }
+
+        .delete-action-btn {
+            justify-content: center;
+        }
+
+        .delete-card-body {
+            padding: 1.35rem;
+        }
+    }
+</style>
+
+<div class="delete-submission-page">
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert operation-alert operation-alert-success mb-4">
+            <i class="fas fa-check-circle"></i>
+            <span>@TempData["SuccessMessage"]</span>
+        </div>
+    }
+
+    @if (TempData["InfoMessage"] != null)
+    {
+        <div class="alert operation-alert operation-alert-info mb-4">
+            <i class="fas fa-circle-info"></i>
+            <span>@TempData["InfoMessage"]</span>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert operation-alert operation-alert-error mb-4">
+            <i class="fas fa-triangle-exclamation"></i>
+            <span>@TempData["ErrorMessage"]</span>
+        </div>
+    }
+
+    <div class="delete-hero-card">
+        <div class="delete-hero-left">
+            <div class="delete-hero-icon">
+                <i class="fas fa-trash-can"></i>
+            </div>
+
+            <div>
+                <div class="delete-kicker">
+                    @L("HeroSectionLabel", "Bildiri İşlemleri", "Abstract Operations")
                 </div>
 
-                <div class="card-body p-4 text-center">
-                    <div class="mb-4">
-                        <i class="fas fa-trash-alt fa-4x text-danger opacity-50"></i>
-                    </div>
+                <h2 class="delete-title">
+                    @L("PageHeading", "Bildiri Silme Onayı", "Delete Abstract Confirmation")
+                </h2>
 
-                    <h4 class="card-title fw-bold text-dark mb-3">
-                        @Localizer["ConfirmTitle"]
-                    </h4>
+                <p class="delete-description">
+                    @L("PageLead", "Bu ekranda yalnızca henüz işleme alınmamış bildiriler silinebilir.", "Only abstracts that have not yet entered the process can be deleted from this screen.")
+                </p>
+            </div>
+        </div>
 
-                    <p class="card-text text-muted mb-4 fs-5">
-                        "@Localizer["SubmissionPrefix"] <strong>@Model.Title</strong>" @Localizer["SubmissionSuffix"]
-                        <br />
-                        <span class="text-danger small fw-bold">
-                            @Localizer["IrreversibleWarning"]
-                        </span>
-                    </p>
+        <div class="delete-hero-actions">
+            <a href="@cancelUrl" class="delete-hero-btn delete-hero-btn-light">
+                <i class="fas fa-arrow-left"></i>
+                @L("BackToDetailsButton", "Detaya Dön", "Back to Details")
+            </a>
+        </div>
+    </div>
 
-                    <form action="@deletePostUrl" method="post">
-                        @Html.AntiForgeryToken()
+    <div class="delete-card">
+        <div class="delete-card-header">
+            <div class="delete-card-header-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
 
-                        <input type="hidden" asp-for="Id" />
+            <h5>
+                @L("CardTitle", "Dikkat: Silme İşlemi", "Warning: Delete Operation")
+            </h5>
+        </div>
 
-                        <div class="d-flex justify-content-center gap-3">
-                            <a href="@cancelUrl" class="btn btn-secondary px-4 py-2">
-                                <i class="fas fa-arrow-left me-1"></i>
-                                @Localizer["CancelButton"]
-                            </a>
+        <div class="delete-card-body">
+            <div class="delete-main-icon">
+                <i class="fas fa-trash-alt"></i>
+            </div>
 
-                            <button type="submit" class="btn btn-danger px-4 py-2 fw-bold">
-                                <i class="fas fa-trash me-1"></i>
-                                @Localizer["DeleteButton"]
-                            </button>
-                        </div>
-                    </form>
+            <h4 class="delete-confirm-title">
+                @L("ConfirmTitle", "Bu bildiriyi silmek istediğinize emin misiniz?", "Are you sure you want to delete this abstract?")
+            </h4>
 
+            <p class="delete-confirm-text">
+                @L("ConfirmDescription", "Aşağıdaki bildiri sistemden kaldırılacaktır.", "The following abstract will be removed from the system.")
+            </p>
+
+            <div class="submission-summary-box">
+                <div class="summary-label">
+                    @L("SubmissionSummaryLabel", "Silinecek Bildiri", "Abstract to Delete")
+                </div>
+
+                <div class="summary-title">
+                    @Model.Title
+                </div>
+
+                <span class="summary-ref">
+                    <i class="fas fa-hashtag"></i>
+                    REF-@referenceCode
+                </span>
+            </div>
+
+            <div class="danger-warning-box">
+                <i class="fas fa-circle-exclamation"></i>
+
+                <div>
+                    @L("IrreversibleWarning", "Bu işlem geri alınamaz. Bildiri ve ilişkili dosya kayıtları sistemden kaldırılacaktır.", "This action cannot be undone. The abstract and related file records will be removed from the system.")
                 </div>
             </div>
+
+            <form action="@deletePostUrl" method="post">
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" asp-for="Id" />
+
+                <div class="delete-actions">
+                    <a href="@listUrl" class="delete-action-btn delete-list-btn">
+                        <i class="fas fa-list"></i>
+                        @L("BackToListButton", "Listeye Dön", "Back to List")
+                    </a>
+
+                    <a href="@cancelUrl" class="delete-action-btn delete-cancel-btn">
+                        <i class="fas fa-arrow-left"></i>
+                        @L("CancelButton", "Vazgeç", "Cancel")
+                    </a>
+
+                    <button type="submit" class="delete-action-btn delete-submit-btn">
+                        <i class="fas fa-trash"></i>
+                        @L("DeleteButton", "Evet, Sil", "Yes, Delete")
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

@@ -21,15 +21,17 @@
     var conferenceTitle = ViewBag.ConferenceTitle as string ?? "";
     var slug = ViewBag.Slug as string ?? "";
 
-    var flowUrl = string.IsNullOrWhiteSpace(slug)
-        ? $"/Admin/ConferenceFlow?conferenceId={conferenceId}"
-        : $"/{slug}/Admin/ConferenceFlow?conferenceId={conferenceId}";
+    var hasSlug = !string.IsNullOrWhiteSpace(slug);
 
-    var changeConferenceUrl = "/Admin/ConferenceFlow?forceSelect=true";
+    var flowUrl = hasSlug
+        ? $"/{slug}/Admin/ConferenceFlow?conferenceId={conferenceId}"
+        : $"/Admin/ConferenceFlow?conferenceId={conferenceId}";
 
-    var decisionPostUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Admin/Decision/MakeDecision"
-        : $"/{slug}/Admin/Decision/MakeDecision";
+    var changeConferenceUrl = "/Dashboard/MyConferences";
+
+    var decisionPostUrl = hasSlug
+        ? $"/{slug}/Admin/Decision/MakeDecision"
+        : "#";
 
     string StatusLabel(SubmissionStatus status)
     {
@@ -101,10 +103,23 @@
         return $"{reviewCount} / {totalReviewerCount} değerlendirme";
     }
 
+    string GetDecisionHelpText(SubmissionStatus status)
+    {
+        return status switch
+        {
+            SubmissionStatus.Accepted => "Kabul edildiği için yazar ödeme adımına geçebilir.",
+            SubmissionStatus.Rejected => "Reddedildiği için ödeme adımı açılmaz.",
+            SubmissionStatus.RevisionRequired => "Yazar revizyon dosyası yükleyebilir.",
+            SubmissionStatus.Presented => "Sunum tamamlanmış görünüyor.",
+            _ => "Karar süreci devam ediyor."
+        };
+    }
+
     var waitingCount = awaitingDecision.Count;
     var decidedCount = alreadyDecided.Count;
-    var acceptedCount = alreadyDecided.Count(x => x.Status == SubmissionStatus.Accepted);
+    var acceptedCount = alreadyDecided.Count(x => x.Status == SubmissionStatus.Accepted || x.Status == SubmissionStatus.Presented);
     var rejectedCount = alreadyDecided.Count(x => x.Status == SubmissionStatus.Rejected);
+    var revisionCount = alreadyDecided.Count(x => x.Status == SubmissionStatus.RevisionRequired);
 }
 
 <div class="container-fluid decision-page">
@@ -125,7 +140,8 @@
                 </h2>
 
                 <p class="decision-page-description">
-                    <strong>@(string.IsNullOrWhiteSpace(conferenceTitle) ? "Seçili kongre" : conferenceTitle)</strong> kongresine ait bildirilerin kabul, ret veya revizyon kararlarını buradan yönetebilirsiniz.
+                    <strong>@(string.IsNullOrWhiteSpace(conferenceTitle) ? "Seçili kongre" : conferenceTitle)</strong>
+                    kongresine ait bildirilerin kabul, ret veya revizyon kararlarını buradan yönetebilirsiniz.
                 </p>
 
                 @if (!string.IsNullOrWhiteSpace(conferenceTitle) || !string.IsNullOrWhiteSpace(slug))
@@ -149,7 +165,6 @@
         </div>
 
         <div class="decision-hero-actions">
-
             <a href="@flowUrl"
                class="btn decision-light-btn">
                 <i class="fas fa-arrow-left me-2"></i>
@@ -161,7 +176,6 @@
                 <i class="fas fa-exchange-alt me-2"></i>
                 Kongre Değiştir
             </a>
-
         </div>
     </div>
 
@@ -185,6 +199,49 @@
         </div>
     }
 
+    @if (!hasSlug)
+    {
+        <div class="alert alert-warning border-0 shadow-sm rounded-4 mb-4">
+            <i class="fas fa-triangle-exclamation me-2"></i>
+            Kongre bağlantısı bulunamadı. Karar işlemleri için önce geçerli bir kongre seçmelisiniz.
+        </div>
+    }
+
+    <div class="decision-flow-info mb-4">
+        <div class="decision-flow-item flow-accept">
+            <div class="flow-icon">
+                <i class="fas fa-check"></i>
+            </div>
+
+            <div>
+                <strong>Kabul</strong>
+                <span>Yazar ödeme adımına geçebilir.</span>
+            </div>
+        </div>
+
+        <div class="decision-flow-item flow-revision">
+            <div class="flow-icon">
+                <i class="fas fa-rotate"></i>
+            </div>
+
+            <div>
+                <strong>Revizyon</strong>
+                <span>Yazar revizyon dosyası yükler.</span>
+            </div>
+        </div>
+
+        <div class="decision-flow-item flow-reject">
+            <div class="flow-icon">
+                <i class="fas fa-xmark"></i>
+            </div>
+
+            <div>
+                <strong>Ret</strong>
+                <span>Ödeme adımı açılmaz.</span>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-3 mb-4">
         <div class="col-xl-3 col-md-6">
             <div class="decision-stat-card">
@@ -206,21 +263,21 @@
                 </div>
 
                 <div>
-                    <div class="stat-number">@decidedCount</div>
-                    <div class="stat-label">Sonuçlanan</div>
+                    <div class="stat-number">@acceptedCount</div>
+                    <div class="stat-label">Kabul Edilen</div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-md-6">
             <div class="decision-stat-card">
-                <div class="stat-icon stat-blue">
-                    <i class="fas fa-thumbs-up"></i>
+                <div class="stat-icon stat-purple">
+                    <i class="fas fa-rotate"></i>
                 </div>
 
                 <div>
-                    <div class="stat-number">@acceptedCount</div>
-                    <div class="stat-label">Kabul Edilen</div>
+                    <div class="stat-number">@revisionCount</div>
+                    <div class="stat-label">Revizyon İstenen</div>
                 </div>
             </div>
         </div>
@@ -307,9 +364,9 @@
                         <tbody>
                             @foreach (var item in awaitingDecision)
                             {
-                                var detailUrl = string.IsNullOrWhiteSpace(slug)
-                                    ? $"/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}"
-                                    : $"/{slug}/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}";
+                                var detailUrl = hasSlug
+                                    ? $"/{slug}/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}"
+                                    : $"/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}";
 
                                 <tr>
                                     <td>
@@ -359,7 +416,7 @@
                                             <form method="post"
                                                   action="@decisionPostUrl"
                                                   class="d-inline decision-form"
-                                                  onsubmit="return confirm('Bu bildiriyi kabul etmek istediğinize emin misiniz?');">
+                                                  onsubmit="return confirm('Bu bildiriyi kabul etmek istediğinize emin misiniz? Kabul sonrası yazar ödeme adımına geçebilir.');">
                                                 @Html.AntiForgeryToken()
 
                                                 <input type="hidden" name="submissionId" value="@item.Id" />
@@ -368,7 +425,8 @@
 
                                                 <button type="submit"
                                                         class="btn decision-accept-btn"
-                                                        title="Kabul Et">
+                                                        title="Kabul Et"
+                                                        @(hasSlug ? "" : "disabled")>
                                                     <i class="fas fa-check"></i>
                                                 </button>
                                             </form>
@@ -376,7 +434,7 @@
                                             <form method="post"
                                                   action="@decisionPostUrl"
                                                   class="d-inline decision-form"
-                                                  onsubmit="return confirm('Bu bildiri için revizyon istemek istediğinize emin misiniz?');">
+                                                  onsubmit="return confirm('Bu bildiri için revizyon istemek istediğinize emin misiniz? Yazar revizyon dosyası yükleyebilecek.');">
                                                 @Html.AntiForgeryToken()
 
                                                 <input type="hidden" name="submissionId" value="@item.Id" />
@@ -385,7 +443,8 @@
 
                                                 <button type="submit"
                                                         class="btn decision-revision-btn"
-                                                        title="Revizyon İste">
+                                                        title="Revizyon İste"
+                                                        @(hasSlug ? "" : "disabled")>
                                                     <i class="fas fa-rotate"></i>
                                                 </button>
                                             </form>
@@ -393,7 +452,7 @@
                                             <form method="post"
                                                   action="@decisionPostUrl"
                                                   class="d-inline decision-form"
-                                                  onsubmit="return confirm('Bu bildiriyi reddetmek istediğinize emin misiniz?');">
+                                                  onsubmit="return confirm('Bu bildiriyi reddetmek istediğinize emin misiniz? Ret sonrası ödeme adımı açılmaz.');">
                                                 @Html.AntiForgeryToken()
 
                                                 <input type="hidden" name="submissionId" value="@item.Id" />
@@ -402,7 +461,8 @@
 
                                                 <button type="submit"
                                                         class="btn decision-reject-btn"
-                                                        title="Reddet">
+                                                        title="Reddet"
+                                                        @(hasSlug ? "" : "disabled")>
                                                     <i class="fas fa-xmark"></i>
                                                 </button>
                                             </form>
@@ -460,6 +520,7 @@
                                 <th>Yazar</th>
                                 <th>Hakem Durumu</th>
                                 <th>Karar</th>
+                                <th>Sonuç</th>
                                 <th class="text-end">İşlem</th>
                             </tr>
                         </thead>
@@ -467,9 +528,9 @@
                         <tbody>
                             @foreach (var item in alreadyDecided)
                             {
-                                var detailUrl = string.IsNullOrWhiteSpace(slug)
-                                    ? $"/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}"
-                                    : $"/{slug}/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}";
+                                var detailUrl = hasSlug
+                                    ? $"/{slug}/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}"
+                                    : $"/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}";
 
                                 <tr>
                                     <td>
@@ -484,7 +545,7 @@
                                                     Ref: #@item.Id.ToString().Substring(0, 8).ToUpper()
                                                     @if (item.DecisionDate.HasValue)
                                                     {
-                                                        <text> · @item.DecisionDate.Value.ToString("dd.MM.yyyy HH:mm")</text>
+                                                        <text> · @item.DecisionDate.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</text>
                                                     }
                                                 </span>
                                             </div>
@@ -511,6 +572,12 @@
                                     <td>
                                         <span class="decision-status @StatusClass(item.Status)">
                                             @StatusLabel(item.Status)
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <span class="decision-help-pill @StatusClass(item.Status)">
+                                            @GetDecisionHelpText(item.Status)
                                         </span>
                                     </td>
 
@@ -678,6 +745,63 @@
         transform: translateY(-1px);
     }
 
+    .decision-flow-info {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .decision-flow-item {
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 22px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.045);
+    }
+
+    .flow-icon {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 15px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .decision-flow-item strong {
+        display: block;
+        color: #0f172a;
+        font-weight: 950;
+        margin-bottom: 0.15rem;
+    }
+
+    .decision-flow-item span {
+        display: block;
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 700;
+        line-height: 1.45;
+    }
+
+    .flow-accept .flow-icon {
+        background: rgba(34, 197, 94, 0.10);
+        color: #16a34a;
+    }
+
+    .flow-revision .flow-icon {
+        background: rgba(124, 58, 237, 0.10);
+        color: #7c3aed;
+    }
+
+    .flow-reject .flow-icon {
+        background: rgba(239, 68, 68, 0.10);
+        color: #ef4444;
+    }
+
     .decision-stat-card {
         min-height: 104px;
         background: #ffffff;
@@ -709,6 +833,11 @@
     .stat-green {
         background: rgba(34, 197, 94, 0.10);
         color: #16a34a;
+    }
+
+    .stat-purple {
+        background: rgba(124, 58, 237, 0.10);
+        color: #7c3aed;
     }
 
     .stat-blue {
@@ -933,7 +1062,8 @@
     }
 
     .review-info-pill,
-    .decision-status {
+    .decision-status,
+    .decision-help-pill {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -944,6 +1074,15 @@
         font-size: 0.78rem;
         font-weight: 900;
         white-space: nowrap;
+    }
+
+    .decision-help-pill {
+        max-width: 260px;
+        white-space: normal;
+        text-align: center;
+        line-height: 1.35;
+        padding-top: 0.4rem;
+        padding-bottom: 0.4rem;
     }
 
     .review-info-pill {
@@ -1056,6 +1195,14 @@
         color: #ffffff;
     }
 
+    .decision-accept-btn:disabled,
+    .decision-revision-btn:disabled,
+    .decision-reject-btn:disabled {
+        background: #e2e8f0;
+        color: #94a3b8;
+        cursor: not-allowed;
+    }
+
     .decision-empty-state {
         padding: 4rem 1.5rem;
         text-align: center;
@@ -1106,6 +1253,10 @@
 
         .decision-page-title {
             font-size: 1.65rem;
+        }
+
+        .decision-flow-info {
+            grid-template-columns: 1fr;
         }
 
         .decision-tabs-card {

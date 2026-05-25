@@ -1,6 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Http
 @using Microsoft.AspNetCore.Mvc.Localization
 @using Microsoft.AspNetCore.Routing
+@using System
 @using System.Globalization
 @using System.Linq
 @using AntAbstract.Domain.Entities
@@ -17,7 +18,10 @@
     Func<string, string, string> L = (key, fallback) =>
     {
         var text = Localizer[key].Value;
-        return string.Equals(text, key, StringComparison.OrdinalIgnoreCase) ? fallback : text;
+
+        return string.Equals(text, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : text;
     };
 
     var isAdmin = User.IsInRole("Admin");
@@ -113,14 +117,14 @@
     {
         return string.IsNullOrWhiteSpace(tenantSlug)
             ? "/Dashboard/MyConferences"
-            : $"/{tenantSlug}/Submission/Index";
+            : $"/{tenantSlug}/my-submissions";
     }
 
     string GetSubmissionCreateUrl(string tenantSlug)
     {
         return string.IsNullOrWhiteSpace(tenantSlug)
             ? "/Dashboard/MyConferences"
-            : $"/{tenantSlug}/Submission/Create";
+            : $"/{tenantSlug}/submit-abstract";
     }
 
     string GetRegistrationUrl(string tenantSlug)
@@ -128,6 +132,20 @@
         return string.IsNullOrWhiteSpace(tenantSlug)
             ? "/Home/Congresses"
             : $"/{tenantSlug}/registration";
+    }
+
+    string GetPaymentUrl(string tenantSlug)
+    {
+        return string.IsNullOrWhiteSpace(tenantSlug)
+            ? "/Payment/New"
+            : $"/{tenantSlug}/payment";
+    }
+
+    string GetPaymentsUrl(string tenantSlug)
+    {
+        return string.IsNullOrWhiteSpace(tenantSlug)
+            ? "/Payment/My"
+            : $"/{tenantSlug}/payments";
     }
 
     string GetCityText(Conference conference)
@@ -648,6 +666,12 @@
             gap: 0.7rem;
         }
 
+        .author-action-row {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.7rem;
+        }
+
         .admin-action-row {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -730,7 +754,8 @@
                 font-size: 1.65rem;
             }
 
-            .admin-action-row {
+            .admin-action-row,
+            .author-action-row {
                 grid-template-columns: 1fr;
             }
         }
@@ -764,7 +789,8 @@
                 margin-bottom: 1rem;
             }
 
-            .action-row {
+            .action-row,
+            .author-action-row {
                 grid-template-columns: 1fr;
             }
         }
@@ -957,12 +983,16 @@
                         var conferenceFlowUrl = GetConferenceFlowUrl(kongre);
                         var adminSubmissionsUrl = GetAdminSubmissionsUrl(kongre);
                         var adminAssignmentUrl = GetAdminAssignmentUrl(kongre);
+                        var submissionIndexUrl = GetSubmissionIndexUrl(tenantSlug);
+                        var submissionCreateUrl = GetSubmissionCreateUrl(tenantSlug);
+                        var paymentUrl = GetPaymentUrl(tenantSlug);
+                        var paymentsUrl = GetPaymentsUrl(tenantSlug);
                         var statusText = GetConferenceStatusText(kongre);
                         var statusClass = GetConferenceStatusClass(kongre);
 
                         var effectiveReturnUrl = isAdmin
                             ? conferenceFlowUrl
-                            : GetSubmissionIndexUrl(tenantSlug);
+                            : submissionIndexUrl;
 
                         <div class="col-md-6 col-xl-4 conf-item">
                             <div class="conference-card @(isSelected ? "selected" : "")">
@@ -1090,14 +1120,41 @@
                                                     Hakem Ata
                                                 </a>
                                             </div>
+
+                                            <a href="@websiteUrl"
+                                               target="_blank"
+                                               class="secondary-action-btn">
+                                                <i class="fas fa-arrow-up-right-from-square"></i>
+                                                Siteyi Gör
+                                            </a>
                                         }
                                         else
                                         {
-                                            <div class="action-row">
-                                                <a href="@dashboardUrl"
+                                            <div class="author-action-row">
+                                                <a href="@submissionIndexUrl"
                                                    class="secondary-action-btn">
-                                                    <i class="fas fa-gauge-high"></i>
-                                                    Panel
+                                                    <i class="fas fa-file-lines"></i>
+                                                    Bildirilerim
+                                                </a>
+
+                                                <a href="@submissionCreateUrl"
+                                                   class="secondary-action-btn">
+                                                    <i class="fas fa-paper-plane"></i>
+                                                    Bildiri Gönder
+                                                </a>
+
+                                                <a href="@paymentsUrl"
+                                                   class="secondary-action-btn">
+                                                    <i class="fas fa-receipt"></i>
+                                                    Ödemelerim
+                                                </a>
+                                            </div>
+
+                                            <div class="action-row">
+                                                <a href="@paymentUrl"
+                                                   class="secondary-action-btn">
+                                                    <i class="fas fa-credit-card"></i>
+                                                    Ödeme
                                                 </a>
 
                                                 <a href="@websiteUrl"
@@ -1107,16 +1164,6 @@
                                                     @L("Website", "Web Sitesi")
                                                 </a>
                                             </div>
-                                        }
-
-                                        @if (isAdmin)
-                                        {
-                                            <a href="@websiteUrl"
-                                               target="_blank"
-                                               class="secondary-action-btn">
-                                                <i class="fas fa-arrow-up-right-from-square"></i>
-                                                Siteyi Gör
-                                            </a>
                                         }
                                     </div>
                                 </div>
@@ -1156,7 +1203,6 @@
                         var websiteUrl = GetWebsiteUrl(tenantSlug);
                         var submissionCreateUrl = GetSubmissionCreateUrl(tenantSlug);
                         var statusText = GetConferenceStatusText(kongre);
-                        var statusClass = GetConferenceStatusClass(kongre);
 
                         <div class="col-md-6 col-xl-4 conf-item">
                             <div class="conference-card available">

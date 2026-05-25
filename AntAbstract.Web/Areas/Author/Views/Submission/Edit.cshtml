@@ -1,7 +1,9 @@
 ﻿@using AntAbstract.Web.Models.ViewModels
 @using AntAbstract.Web.Models.ViewModels.Admin.Submissions
 @using Microsoft.AspNetCore.Http
+@using System
 @using System.Globalization
+@using System.Linq
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model SubmissionEditViewModel
 
@@ -15,11 +17,15 @@
 
     var backUrl = string.IsNullOrWhiteSpace(slug)
         ? "/Submission/Index"
-        : $"/{slug}/Submission/Index";
+        : $"/{slug}/my-submissions";
 
     var postUrl = string.IsNullOrWhiteSpace(slug)
         ? $"/Submission/Edit/{Model.Id}"
-        : $"/{slug}/Submission/Edit/{Model.Id}";
+        : $"/{slug}/my-submissions/{Model.Id}/edit";
+
+    var detailsUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Submission/Details/{Model.Id}"
+        : $"/{slug}/my-submissions/{Model.Id}";
 
     var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 
@@ -43,122 +49,626 @@
                 e.Exception != null
             )
         );
+
+    var authors = Model.Authors ?? new List<SubmissionAuthorViewModel>();
+    var hasExistingFile = !string.IsNullOrWhiteSpace(Model.ExistingFilePath);
 }
 
 <style>
-    .edit-card {
-        border: none;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
-        background: #fff;
-        overflow: hidden;
+    .edit-submission-page {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 1.25rem 1.5rem 4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
-    .edit-section-title {
+    .edit-hero-card {
+        background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #fffaf2 100%);
+        border: 1px solid #f1e4cf;
+        border-radius: 24px;
+        padding: 1.35rem 1.45rem;
         display: flex;
         align-items: center;
-        gap: 10px;
-        font-weight: 800;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.055);
+        margin-bottom: 1.4rem;
+    }
+
+    .edit-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 0.95rem;
+        min-width: 300px;
+        flex: 1;
+    }
+
+    .edit-hero-icon {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #f59e0b, #f97316);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.55rem;
+        box-shadow: 0 16px 32px rgba(245, 158, 11, 0.22);
+    }
+
+    .edit-section-label {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .edit-hero-title {
+        margin: 0 0 0.3rem;
         color: #0f172a;
-        margin-bottom: 18px;
+        font-size: 1.75rem;
+        font-weight: 900;
+        letter-spacing: -0.045em;
+        line-height: 1.15;
     }
 
-        .edit-section-title i {
-            color: #00aeef;
-        }
+    .edit-hero-text {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.94rem;
+        font-weight: 600;
+        line-height: 1.55;
+    }
 
-    .form-control,
-    .form-select {
-        border-radius: 12px;
+    .edit-hero-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+
+    .edit-hero-btn {
+        min-height: 42px;
+        border-radius: 999px;
+        padding: 0 1rem;
+        font-size: 0.84rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .edit-hero-btn-light {
+        background: #ffffff;
+        color: #334155;
         border: 1px solid #e2e8f0;
-        background-color: #f8fafc;
-        padding: 12px 16px;
-        font-weight: 500;
     }
 
-        .form-control:focus,
-        .form-select:focus {
-            background-color: #fff;
-            border-color: #00aeef;
-            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.1);
-        }
+    .edit-hero-btn-light:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .edit-hero-btn-primary {
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        border: none;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.18);
+    }
+
+    .edit-hero-btn-primary:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(13, 110, 253, 0.26);
+        text-decoration: none;
+    }
+
+    .edit-slug-badge {
+        width: fit-content;
+        margin-top: 0.55rem;
+        padding: 0.34rem 0.75rem;
+        border-radius: 999px;
+        background: rgba(245, 158, 11, 0.12);
+        color: #b45309;
+        font-size: 0.76rem;
+        font-weight: 900;
+    }
+
+    .edit-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        box-shadow: 0 22px 55px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .edit-card-header {
+        padding: 1.35rem 1.65rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .edit-step-title {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+    }
+
+    .edit-step-number {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #f59e0b, #f97316);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        box-shadow: 0 10px 22px rgba(245, 158, 11, 0.22);
+    }
+
+    .edit-step-title h5 {
+        color: #0f172a;
+        font-size: 1.05rem;
+        font-weight: 900;
+        margin-bottom: 0.12rem;
+    }
+
+    .edit-step-title span {
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .edit-card-body {
+        padding: 2.2rem;
+    }
 
     .form-label {
+        color: #475569;
+        font-size: 0.86rem;
+        font-weight: 900;
+        margin-bottom: 0.55rem;
+    }
+
+    .form-control-modern,
+    .form-select-modern {
+        width: 100%;
+        min-height: 54px;
+        border-radius: 15px;
+        border: 1px solid #dbe4ef;
+        background: #ffffff;
+        color: #0f172a;
+        font-size: 0.94rem;
         font-weight: 700;
-        color: #334155;
-        margin-bottom: 8px;
+        padding: 0.85rem 1rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.025);
+    }
+
+    .form-control-modern::placeholder {
+        color: #94a3b8;
+        font-weight: 600;
+    }
+
+    .form-control-modern:focus,
+    .form-select-modern:focus {
+        outline: none;
+        border-color: #00aeef;
+        box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.12);
+    }
+
+    textarea.form-control-modern {
+        min-height: 170px;
+        resize: vertical;
+    }
+
+    .modern-notice {
+        min-height: 54px;
+        border-radius: 15px;
+        border: 1px solid rgba(245, 158, 11, 0.35);
+        background: linear-gradient(135deg, rgba(255, 251, 235, 0.95), rgba(255, 247, 237, 0.95));
+        color: #92400e;
+        font-size: 0.86rem;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        padding: 0.85rem 1rem;
+    }
+
+    .modern-notice i {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        border-radius: 10px;
+        background: rgba(245, 158, 11, 0.16);
+        color: #f59e0b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .author-info-card {
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(0, 174, 239, 0.08));
+        border: 1px solid rgba(37, 99, 235, 0.12);
+        border-radius: 18px;
+        padding: 1rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
+        color: #1e40af;
+        margin-bottom: 1.4rem;
+    }
+
+    .author-info-card i {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        border-radius: 14px;
+        background: #ffffff;
+        color: #2563eb;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
     }
 
     .author-row {
-        border: 1px solid #e5e7eb;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        background: #ffffff;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+        transition: all 0.2s ease;
+    }
+
+    .author-row:hover {
+        border-color: #cbd5e1;
+        box-shadow: 0 16px 38px rgba(15, 23, 42, 0.07);
+    }
+
+    .btn-add-author {
+        min-height: 50px;
+        border: 1px dashed #60a5fa;
+        background: rgba(239, 248, 255, 0.8);
+        color: #2563eb;
         border-radius: 16px;
-        background: #fff;
-        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        transition: all 0.2s ease;
+    }
+
+    .btn-add-author:hover {
+        background: #eff6ff;
+        color: #1d4ed8;
+        transform: translateY(-1px);
     }
 
     .file-info-box {
-        border-radius: 16px;
+        border-radius: 18px;
         border: 1px solid #e2e8f0;
         background: #f8fafc;
-        padding: 16px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
     }
 
-    .btn-primary-glow {
-        background: linear-gradient(135deg, #00aeef 0%, #0077b6 100%);
+    .file-info-left {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        min-width: 0;
+    }
+
+    .file-info-icon {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        border-radius: 16px;
+        background: rgba(239, 68, 68, 0.10);
+        color: #ef4444;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    .file-info-title {
+        color: #0f172a;
+        font-weight: 900;
+        margin-bottom: 0.1rem;
+    }
+
+    .file-info-text {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 700;
+        line-height: 1.45;
+    }
+
+    .file-view-btn {
+        min-height: 38px;
+        border-radius: 999px;
+        padding: 0 0.9rem;
+        border: 1px solid rgba(13, 110, 253, 0.18);
+        color: #0d6efd;
+        background: rgba(13, 110, 253, 0.08);
+        font-size: 0.78rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        text-decoration: none;
+    }
+
+    .file-view-btn:hover {
+        color: #0b5ed7;
+        background: rgba(13, 110, 253, 0.12);
+        text-decoration: none;
+    }
+
+    .edit-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 3rem;
+    }
+
+    .btn-back {
+        min-height: 52px;
+        border-radius: 16px;
+        padding: 0 1.1rem;
+        color: #64748b;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        font-weight: 900;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+        color: #0f172a;
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+        text-decoration: none;
+    }
+
+    .btn-submit-modern {
+        min-height: 56px;
         border: none;
-        box-shadow: 0 6px 18px rgba(0, 174, 239, 0.28);
+        border-radius: 18px;
+        padding: 0 1.65rem;
+        color: #ffffff;
+        background: linear-gradient(135deg, #f59e0b, #f97316);
+        box-shadow: 0 16px 34px rgba(245, 158, 11, 0.24);
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        transition: all 0.2s ease;
     }
 
-        .btn-primary-glow:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 22px rgba(0, 174, 239, 0.34);
+    .btn-submit-modern:hover {
+        transform: translateY(-2px);
+        color: #ffffff;
+        box-shadow: 0 20px 44px rgba(245, 158, 11, 0.32);
+    }
+
+    .validation-summary-errors {
+        border: none;
+        border-radius: 18px;
+        background: rgba(239, 68, 68, 0.08);
+        color: #b91c1c;
+        font-weight: 800;
+    }
+
+    .operation-alert {
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-radius: 18px;
+        border: 1px solid transparent;
+        font-weight: 800;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+    }
+
+    .operation-alert-success {
+        background: rgba(34, 197, 94, 0.10);
+        border-color: rgba(34, 197, 94, 0.20);
+        color: #15803d;
+    }
+
+    .operation-alert-info {
+        background: rgba(13, 110, 253, 0.10);
+        border-color: rgba(13, 110, 253, 0.20);
+        color: #0d6efd;
+    }
+
+    .operation-alert-error {
+        background: rgba(239, 68, 68, 0.10);
+        border-color: rgba(239, 68, 68, 0.20);
+        color: #dc2626;
+    }
+
+    @@media (max-width: 768px) {
+        .edit-submission-page {
+            padding: 1rem 1rem 3rem;
+            max-width: 100%;
         }
+
+        .edit-hero-card {
+            padding: 1.15rem;
+        }
+
+        .edit-hero-left {
+            align-items: flex-start;
+            flex-direction: column;
+            min-width: 100%;
+        }
+
+        .edit-hero-title {
+            font-size: 1.45rem;
+        }
+
+        .edit-hero-actions {
+            width: 100%;
+        }
+
+        .edit-hero-btn {
+            width: 100%;
+        }
+
+        .edit-card-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .edit-card-body {
+            padding: 1.2rem;
+        }
+
+        .edit-actions {
+            flex-direction: column-reverse;
+            align-items: stretch;
+        }
+
+        .btn-back,
+        .btn-submit-modern {
+            justify-content: center;
+            width: 100%;
+        }
+    }
 </style>
 
-<div class="container-fluid py-4">
+<div class="edit-submission-page">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h3 class="fw-bold mb-1 text-dark">
-                @L("PageHeading", "Bildiriyi Düzenle", "Edit Abstract")
-            </h3>
-
-            <p class="text-muted mb-0">
-                @L("PageLead", "Bildiri bilgilerinizi güncelleyebilirsiniz.", "You can update your abstract information.")
-            </p>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert operation-alert operation-alert-success mb-4">
+            <i class="fas fa-check-circle"></i>
+            <span>@TempData["SuccessMessage"]</span>
         </div>
+    }
 
-        <a href="@backUrl" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-            <i class="fas fa-arrow-left me-1"></i>
-            @L("BackButton", "Listeye Dön", "Back to List")
-        </a>
-    </div>
+    @if (TempData["InfoMessage"] != null)
+    {
+        <div class="alert operation-alert operation-alert-info mb-4">
+            <i class="fas fa-circle-info"></i>
+            <span>@TempData["InfoMessage"]</span>
+        </div>
+    }
 
-    <div class="edit-card">
-        <div class="card-body p-4 p-md-5">
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert operation-alert operation-alert-error mb-4">
+            <i class="fas fa-triangle-exclamation"></i>
+            <span>@TempData["ErrorMessage"]</span>
+        </div>
+    }
 
-            <form action="@postUrl"
-                  enctype="multipart/form-data"
-                  method="post">
+    <div class="edit-hero-card">
+        <div class="edit-hero-left">
+            <div class="edit-hero-icon">
+                <i class="fas fa-pen-to-square"></i>
+            </div>
 
-                @Html.AntiForgeryToken()
-
-                <input type="hidden" asp-for="Id" />
-                <input type="hidden" asp-for="ConferenceId" />
-
-                @if (hasValidationErrors)
-                {
-                    <div asp-validation-summary="All"
-                         class="alert alert-danger rounded-4 mb-4 border-0 shadow-sm"
-                         role="alert">
-                    </div>
-                }
-
-                <div class="edit-section-title">
-                    <i class="fas fa-edit"></i>
-                    <span>@L("StudyInfoHeader", "Çalışma Bilgileri", "Study Information")</span>
+            <div>
+                <div class="edit-section-label">
+                    @L("HeroSectionLabel", "Bildiri İşlemleri", "Abstract Operations")
                 </div>
 
+                <h2 class="edit-hero-title">
+                    @L("PageHeading", "Bildiriyi Düzenle", "Edit Abstract")
+                </h2>
+
+                <p class="edit-hero-text">
+                    @L("PageLead", "Bildiri bilgilerinizi güncelleyebilir, yazarları düzenleyebilir ve yeni dosya versiyonu yükleyebilirsiniz.", "You can update your abstract information, edit authors, and upload a new file version.")
+                </p>
+
+                @if (!string.IsNullOrWhiteSpace(slug))
+                {
+                    <div class="edit-slug-badge">
+                        /@slug
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="edit-hero-actions">
+            <a href="@backUrl" class="edit-hero-btn edit-hero-btn-light">
+                <i class="fas fa-arrow-left"></i>
+                @L("BackButton", "Listeye Dön", "Back to List")
+            </a>
+
+            <a href="@detailsUrl" class="edit-hero-btn edit-hero-btn-primary">
+                <i class="fas fa-eye"></i>
+                @L("DetailsButton", "Detayı Gör", "View Details")
+            </a>
+        </div>
+    </div>
+
+    <form action="@postUrl"
+          enctype="multipart/form-data"
+          method="post">
+
+        @Html.AntiForgeryToken()
+
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="ConferenceId" />
+
+        @if (hasValidationErrors)
+        {
+            <div asp-validation-summary="All"
+                 class="alert validation-summary-errors mb-4 shadow-sm"
+                 role="alert">
+            </div>
+        }
+
+        <div class="edit-card">
+            <div class="edit-card-header">
+                <div class="edit-step-title">
+                    <div class="edit-step-number">1</div>
+
+                    <div>
+                        <h5>
+                            @L("StudyInfoHeader", "Çalışma Bilgileri", "Study Information")
+                        </h5>
+
+                        <span>
+                            @L("StudyInfoSubtitle", "Bildiri başlığı, türü, konusu ve özet bilgilerini düzenleyin.", "Edit the title, type, topic and abstract information.")
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="edit-card-body">
                 <div class="mb-4">
                     <label asp-for="Title" class="form-label">
                         @L("TitleLabel", "Bildiri Başlığı", "Abstract Title")
@@ -166,10 +676,11 @@
                     </label>
 
                     <input asp-for="Title"
-                           class="form-control form-control-lg"
+                           maxlength="200"
+                           class="form-control-modern"
                            placeholder="@L("TitlePlaceholder", "Bildiri başlığını giriniz", "Enter abstract title")" />
 
-                    <span asp-validation-for="Title" class="text-danger small"></span>
+                    <span asp-validation-for="Title" class="text-danger small fw-bold mt-2 d-block"></span>
                 </div>
 
                 <div class="row g-4">
@@ -179,7 +690,11 @@
                             <span class="text-danger">*</span>
                         </label>
 
-                        <select asp-for="PresentationType" class="form-select">
+                        <select asp-for="PresentationType" class="form-select-modern">
+                            <option value="">
+                                @L("SelectPresentationTypeOption", "Sunum türü seçiniz", "Select presentation type")
+                            </option>
+
                             <option value="Oral">
                                 @L("PresentationTypeOral", "Sözlü Sunum", "Oral Presentation")
                             </option>
@@ -193,7 +708,7 @@
                             </option>
                         </select>
 
-                        <span asp-validation-for="PresentationType" class="text-danger small"></span>
+                        <span asp-validation-for="PresentationType" class="text-danger small fw-bold mt-2 d-block"></span>
                     </div>
 
                     <div class="col-md-6">
@@ -204,21 +719,25 @@
 
                         @if (Model.AvailableTopics == null || !Model.AvailableTopics.Any())
                         {
-                            <div class="alert alert-warning rounded-3 mb-2">
-                                @L(
-                                "NoTopicsDefinedMessage",
-                                                        "Bu kongre için henüz bildiri konusu tanımlanmamış.",
-                                                        "No abstract topics have been defined for this congress yet."
-                                                        )
-                        </div>
-                                                }
+                            <div class="modern-notice">
+                                <i class="fas fa-info"></i>
+                                <span>
+                                    @L("NoTopicsDefinedMessage", "Bu kongre için henüz bildiri konusu tanımlanmamış.", "No abstract topics have been defined for this congress yet.")
+                                </span>
+                            </div>
+                        }
+                        else
+                        {
+                            <select asp-for="ConferenceTopicId"
+                                    asp-items="Model.AvailableTopics"
+                                    class="form-select-modern">
+                                <option value="">
+                                    @L("SelectTopicOption", "Bildiri konusu seçiniz", "Select abstract topic")
+                                </option>
+                            </select>
+                        }
 
-                        <select asp-for="ConferenceTopicId"
-                                asp-items="Model.AvailableTopics"
-                                class="form-select">
-                        </select>
-
-                        <span asp-validation-for="ConferenceTopicId" class="text-danger small"></span>
+                        <span asp-validation-for="ConferenceTopicId" class="text-danger small fw-bold mt-2 d-block"></span>
                     </div>
 
                     <div class="col-md-12">
@@ -228,14 +747,14 @@
                         </label>
 
                         <input asp-for="Keywords"
-                               class="form-control"
+                               class="form-control-modern"
                                placeholder="@L("KeywordsPlaceholder", "Örn: yapay zeka, kırsal turizm, sürdürülebilirlik", "Example: AI, rural tourism, sustainability")" />
 
-                        <span asp-validation-for="Keywords" class="text-danger small"></span>
+                        <span asp-validation-for="Keywords" class="text-danger small fw-bold mt-2 d-block"></span>
                     </div>
                 </div>
 
-                <div class="mt-4 mb-4">
+                <div class="mt-4">
                     <label asp-for="AbstractText" class="form-label">
                         @L("AbstractLabel", "Özet Metni", "Abstract Text")
                         <span class="text-danger">*</span>
@@ -243,174 +762,225 @@
 
                     <textarea asp-for="AbstractText"
                               id="AbstractText"
-                              class="form-control"
+                              maxlength="5000"
+                              class="form-control-modern"
                               rows="8"
                               placeholder="@L("AbstractPlaceholder", "Özetinizi buraya yazın veya yapıştırın...", "Write or paste your abstract here...")"></textarea>
 
-                    <span asp-validation-for="AbstractText" class="text-danger small"></span>
+                    <span asp-validation-for="AbstractText" class="text-danger small fw-bold mt-2 d-block"></span>
                 </div>
+            </div>
+        </div>
 
-                <hr class="my-5" />
+        <div class="edit-card">
+            <div class="edit-card-header">
+                <div class="edit-step-title">
+                    <div class="edit-step-number">2</div>
 
-                <div class="edit-section-title">
-                    <i class="fas fa-users"></i>
-                    <span>@L("CoAuthorsHeader", "Yazar Bilgileri", "Author Information")</span>
+                    <div>
+                        <h5>
+                            @L("CoAuthorsHeader", "Yazar Bilgileri", "Author Information")
+                        </h5>
+
+                        <span>
+                            @L("CoAuthorsSubtitle", "Bildiriye bağlı yazarları güncelleyebilirsiniz.", "You can update the authors linked to the abstract.")
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="edit-card-body">
+                <div class="author-info-card">
+                    <i class="fas fa-info-circle"></i>
+
+                    <div>
+                        <div class="fw-bold mb-1">
+                            @L("AuthorInfoTitle", "Yazar bilgilerini kontrol edin.", "Check author information.")
+                        </div>
+
+                        <div class="small fw-bold opacity-75">
+                            @L("AuthorInfoText", "Bu listedeki yazarlar bildiri detaylarında ve PDF çıktılarında kullanılabilir.", "Authors in this list may be used in abstract details and PDF outputs.")
+                        </div>
+                    </div>
                 </div>
 
                 <div id="author-list">
-                    @if (Model.Authors != null)
+                    @for (int i = 0; i < authors.Count; i++)
                     {
-                        for (int i = 0; i < Model.Authors.Count; i++)
-                        {
-                            <div class="row g-3 mb-3 p-3 author-row">
-                                <input type="hidden" name="Authors.Index" value="@i" />
-                                <input type="hidden" name="Authors[@i].Order" value="@(i + 1)" />
+                        <div class="author-card p-4 mb-3 position-relative author-row">
+                            <button type="button"
+                                    class="btn-close position-absolute top-0 end-0 m-3 remove-author-btn"
+                                    aria-label="@L("DeleteButton", "Sil", "Delete")"></button>
 
-                                <div class="col-md-3">
-                                    <label class="small text-muted mb-1">
+                            <h6 class="fw-bold text-primary mb-3">
+                                @L("AuthorLabel", "Yazar", "Author") #@(i + 1)
+                            </h6>
+
+                            <input type="hidden" name="Authors.Index" value="@i" />
+                            <input type="hidden" name="Authors[@i].Order" value="@(i + 1)" />
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small">
                                         @L("AuthorFirstNameLabel", "Ad", "First Name")
                                     </label>
 
                                     <input name="Authors[@i].FirstName"
-                                           value="@Model.Authors[i].FirstName"
-                                           class="form-control form-control-sm"
+                                           value="@authors[i].FirstName"
+                                           class="form-control-modern"
                                            required />
                                 </div>
 
-                                <div class="col-md-3">
-                                    <label class="small text-muted mb-1">
+                                <div class="col-md-6">
+                                    <label class="form-label small">
                                         @L("AuthorLastNameLabel", "Soyad", "Last Name")
                                     </label>
 
                                     <input name="Authors[@i].LastName"
-                                           value="@Model.Authors[i].LastName"
-                                           class="form-control form-control-sm"
+                                           value="@authors[i].LastName"
+                                           class="form-control-modern"
                                            required />
                                 </div>
 
-                                <div class="col-md-4">
-                                    <label class="small text-muted mb-1">
-                                        @L("AuthorInstitutionLabel", "Kurum", "Institution")
-                                    </label>
-
-                                    <input name="Authors[@i].Institution"
-                                           value="@Model.Authors[i].Institution"
-                                           class="form-control form-control-sm"
-                                           required />
-                                </div>
-
-                                <div class="col-md-2 d-flex align-items-end">
-                                    <button type="button"
-                                            class="btn btn-outline-danger btn-sm w-100 remove-author-btn">
-                                        <i class="fas fa-trash-alt me-1"></i>
-                                        @L("DeleteButton", "Sil", "Delete")
-                                    </button>
-                                </div>
-
-                                <div class="col-md-4">
-                                    <label class="small text-muted mb-1">
+                                <div class="col-md-6">
+                                    <label class="form-label small">
                                         @L("AuthorEmailLabel", "E-posta", "Email")
                                     </label>
 
                                     <input name="Authors[@i].Email"
-                                           value="@Model.Authors[i].Email"
-                                           class="form-control form-control-sm" />
+                                           value="@authors[i].Email"
+                                           class="form-control-modern"
+                                           type="email" />
                                 </div>
 
-                                <div class="col-md-4">
-                                    <label class="small text-muted mb-1">
+                                <div class="col-md-6">
+                                    <label class="form-label small">
+                                        @L("AuthorInstitutionLabel", "Kurum", "Institution")
+                                    </label>
+
+                                    <input name="Authors[@i].Institution"
+                                           value="@authors[i].Institution"
+                                           class="form-control-modern"
+                                           required />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label small">
                                         @L("AuthorOrcidLabel", "ORCID", "ORCID")
                                     </label>
 
                                     <input name="Authors[@i].ORCID"
-                                           value="@Model.Authors[i].ORCID"
-                                           class="form-control form-control-sm"
+                                           value="@authors[i].ORCID"
+                                           class="form-control-modern"
                                            placeholder="0000-0000-0000-0000" />
                                 </div>
 
-                                <div class="col-md-4 d-flex align-items-center justify-content-end">
-                                    <div class="form-check mt-3">
+                                <div class="col-md-6 d-flex align-items-end">
+                                    <div class="form-check mb-2">
                                         <input class="form-check-input"
                                                type="checkbox"
                                                name="Authors[@i].IsCorrespondingAuthor"
                                                value="true"
-                                               @(Model.Authors[i].IsCorrespondingAuthor ? "checked" : "") />
+                                               @(authors[i].IsCorrespondingAuthor ? "checked" : "") />
 
-                                        <label class="form-check-label small">
+                                        <label class="form-check-label small text-muted fw-bold">
                                             @L("CorrespondingAuthorLabel", "Sorumlu yazar", "Corresponding author")
                                         </label>
                                     </div>
                                 </div>
                             </div>
-                        }
+                        </div>
                     }
                 </div>
 
-                <div class="mb-4">
-                    <button type="button"
-                            class="btn btn-outline-primary btn-sm fw-bold"
-                            id="add-author-btn">
-                        <i class="fas fa-plus me-1"></i>
-                        @L("AddAuthorButton", "Yazar Ekle", "Add Author")
-                    </button>
+                <button type="button"
+                        class="btn-add-author w-100"
+                        id="add-author-btn">
+                    <i class="fas fa-plus-circle"></i>
+                    @L("AddAuthorButton", "Yazar Ekle", "Add Author")
+                </button>
+            </div>
+        </div>
+
+        <div class="edit-card">
+            <div class="edit-card-header">
+                <div class="edit-step-title">
+                    <div class="edit-step-number">3</div>
+
+                    <div>
+                        <h5>
+                            @L("FileUpdateHeader", "Dosya Güncelleme", "File Update")
+                        </h5>
+
+                        <span>
+                            @L("FileUpdateSubtitle", "Yeni dosya yüklerseniz mevcut dosyanın yeni versiyonu kaydedilir.", "If you upload a new file, it will be saved as a new version.")
+                        </span>
+                    </div>
                 </div>
+            </div>
 
-                <hr class="my-5" />
-
-                <div class="edit-section-title">
-                    <i class="fas fa-paperclip"></i>
-                    <span>@L("FileUpdateHeader", "Dosya Güncelleme", "File Update")</span>
-                </div>
-
-                <div class="mb-4">
-                    @if (!string.IsNullOrEmpty(Model.ExistingFilePath))
-                    {
-                        <div class="file-info-box d-flex align-items-center mb-3">
-                            <i class="fas fa-file-pdf fa-2x me-3 text-danger"></i>
+            <div class="edit-card-body">
+                @if (hasExistingFile)
+                {
+                    <div class="file-info-box">
+                        <div class="file-info-left">
+                            <div class="file-info-icon">
+                                <i class="fas fa-file-pdf"></i>
+                            </div>
 
                             <div>
-                                <strong class="d-block">
+                                <div class="file-info-title">
                                     @L("ExistingFileTitle", "Mevcut dosya var", "Existing file available")
-                                </strong>
+                                </div>
 
-                                <small class="text-muted">
-                                    @L(
-                                    "ExistingFileHelpText",
-                                                                "Yeni dosya yüklerseniz mevcut dosyanın yeni versiyonu olarak kaydedilir.",
-                                                                "If you upload a new file, it will be saved as a new version of the existing file."
-                                                                )
-                            </small>
+                                <div class="file-info-text">
+                                    @L("ExistingFileHelpText", "Yeni dosya yüklerseniz mevcut dosyanın yeni versiyonu olarak kaydedilir.", "If you upload a new file, it will be saved as a new version of the existing file.")
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                                        }
 
+                        <a href="@Model.ExistingFilePath"
+                           target="_blank"
+                           class="file-view-btn">
+                            <i class="fas fa-eye"></i>
+                            @L("ViewFileButton", "Dosyayı Gör", "View File")
+                        </a>
+                    </div>
+                }
+
+                <div class="mb-0">
                     <label asp-for="SubmissionFile" class="form-label">
                         @L("NewFileLabel", "Yeni Dosya Yükle", "Upload New File")
                     </label>
 
                     <input asp-for="SubmissionFile"
                            type="file"
-                           class="form-control"
+                           class="form-control-modern"
                            accept=".pdf,.docx,.doc" />
 
-                    <span asp-validation-for="SubmissionFile" class="text-danger small"></span>
+                    <div class="small text-muted fw-bold mt-2">
+                        @L("FileHelpText", "PDF, DOC veya DOCX dosyası yükleyebilirsiniz. Maksimum dosya boyutu 10 MB olmalıdır.", "You can upload a PDF, DOC or DOCX file. Maximum file size should be 10 MB.")
+                    </div>
+
+                    <span asp-validation-for="SubmissionFile" class="text-danger small fw-bold mt-2 d-block"></span>
                 </div>
-
-                <div class="d-flex justify-content-between align-items-center mt-5">
-                    <a href="@backUrl" class="text-decoration-none text-muted fw-bold">
-                        <i class="fas fa-arrow-left me-2"></i>
-                        @L("CancelButton", "Vazgeç", "Cancel")
-                    </a>
-
-                    <button type="submit" class="btn btn-primary btn-lg px-5 btn-primary-glow">
-                        <i class="fas fa-save me-2"></i>
-                        @L("SaveChangesButton", "Değişiklikleri Kaydet", "Save Changes")
-                    </button>
-                </div>
-            </form>
-
+            </div>
         </div>
-    </div>
+
+        <div class="edit-actions">
+            <a href="@backUrl" class="btn-back">
+                <i class="fas fa-arrow-left"></i>
+                @L("CancelButton", "Vazgeç", "Cancel")
+            </a>
+
+            <button type="submit" class="btn-submit-modern">
+                <i class="fas fa-save"></i>
+                <span>
+                    @L("SaveChangesButton", "Değişiklikleri Kaydet", "Save Changes")
+                </span>
+            </button>
+        </div>
+    </form>
 </div>
 
 @section Scripts {
@@ -418,6 +988,7 @@
 
     <script>
         const deleteLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("DeleteButton", "Sil", "Delete")));
+        const authorLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("AuthorLabel", "Yazar", "Author")));
         const firstNameLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("AuthorFirstNameLabel", "Ad", "First Name")));
         const lastNameLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("AuthorLastNameLabel", "Soyad", "Last Name")));
         const institutionLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("AuthorInstitutionLabel", "Kurum", "Institution")));
@@ -426,49 +997,58 @@
         const correspondingAuthorLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("CorrespondingAuthorLabel", "Sorumlu yazar", "Corresponding author")));
 
         $(document).ready(function () {
-            let authorIndex = @(Model.Authors?.Count ?? 0);
+            let authorIndex = @(authors.Count);
 
             function getAuthorRowTemplate(index) {
                 return `
-                    <div class="row g-3 mb-3 p-3 author-row">
+                    <div class="author-card p-4 mb-3 position-relative author-row">
+                        <button type="button"
+                                class="btn-close position-absolute top-0 end-0 m-3 remove-author-btn"
+                                aria-label="${deleteLabel}">
+                        </button>
+
+                        <h6 class="fw-bold text-primary mb-3">${authorLabel} #${index + 1}</h6>
+
                         <input type="hidden" name="Authors.Index" value="${index}" />
                         <input type="hidden" name="Authors[${index}].Order" value="${index + 1}" />
 
-                        <div class="col-md-3">
-                            <label class="small text-muted mb-1">${firstNameLabel}</label>
-                            <input name="Authors[${index}].FirstName" class="form-control form-control-sm" required />
-                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small">${firstNameLabel}</label>
+                                <input name="Authors[${index}].FirstName" class="form-control-modern" required />
+                            </div>
 
-                        <div class="col-md-3">
-                            <label class="small text-muted mb-1">${lastNameLabel}</label>
-                            <input name="Authors[${index}].LastName" class="form-control form-control-sm" required />
-                        </div>
+                            <div class="col-md-6">
+                                <label class="form-label small">${lastNameLabel}</label>
+                                <input name="Authors[${index}].LastName" class="form-control-modern" required />
+                            </div>
 
-                        <div class="col-md-4">
-                            <label class="small text-muted mb-1">${institutionLabel}</label>
-                            <input name="Authors[${index}].Institution" class="form-control form-control-sm" required />
-                        </div>
+                            <div class="col-md-6">
+                                <label class="form-label small">${emailLabel}</label>
+                                <input name="Authors[${index}].Email" class="form-control-modern" type="email" />
+                            </div>
 
-                        <div class="col-md-2 d-flex align-items-end">
-                            <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-author-btn">
-                                <i class="fas fa-trash-alt me-1"></i> ${deleteLabel}
-                            </button>
-                        </div>
+                            <div class="col-md-6">
+                                <label class="form-label small">${institutionLabel}</label>
+                                <input name="Authors[${index}].Institution" class="form-control-modern" required />
+                            </div>
 
-                        <div class="col-md-4">
-                            <label class="small text-muted mb-1">${emailLabel}</label>
-                            <input name="Authors[${index}].Email" class="form-control form-control-sm" />
-                        </div>
+                            <div class="col-md-6">
+                                <label class="form-label small">${orcidLabel}</label>
+                                <input name="Authors[${index}].ORCID" class="form-control-modern" placeholder="0000-0000-0000-0000" />
+                            </div>
 
-                        <div class="col-md-4">
-                            <label class="small text-muted mb-1">${orcidLabel}</label>
-                            <input name="Authors[${index}].ORCID" class="form-control form-control-sm" placeholder="0000-0000-0000-0000" />
-                        </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           name="Authors[${index}].IsCorrespondingAuthor"
+                                           value="true" />
 
-                        <div class="col-md-4 d-flex align-items-center justify-content-end">
-                            <div class="form-check mt-3">
-                                <input class="form-check-input" type="checkbox" name="Authors[${index}].IsCorrespondingAuthor" value="true">
-                                <label class="form-check-label small">${correspondingAuthorLabel}</label>
+                                    <label class="form-check-label small text-muted fw-bold">
+                                        ${correspondingAuthorLabel}
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>`;

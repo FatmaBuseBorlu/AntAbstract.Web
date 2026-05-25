@@ -1,5 +1,8 @@
 ﻿@model AntAbstract.Web.Models.ViewModels.Admin.ProceedingBooks.ProceedingBookViewModel
 
+@using System
+@using Microsoft.AspNetCore.Routing
+
 @{
     ViewData["Title"] = "Bildiri Kitabı Yönetimi";
     ViewData["HideSelectedConferenceBar"] = true;
@@ -16,6 +19,12 @@
     var backUrl = string.IsNullOrWhiteSpace(slug)
         ? $"/Admin/ConferenceFlow?conferenceId={conferenceIdText}"
         : $"/{slug}/Admin/ConferenceFlow?conferenceId={conferenceIdText}";
+
+    var changeConferenceUrl = "/Admin/ConferenceFlow?forceSelect=true";
+
+    var publicSiteUrl = string.IsNullOrWhiteSpace(slug)
+        ? "#"
+        : $"/{slug}";
 
     var postUrl = string.IsNullOrWhiteSpace(slug)
         ? "/Admin/ProceedingBook"
@@ -47,6 +56,35 @@
         margin: 0 auto;
     }
 
+    .operation-alert {
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-radius: 18px;
+        border: 1px solid transparent;
+        font-weight: 800;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+    }
+
+    .operation-alert-success {
+        background: rgba(34, 197, 94, 0.10);
+        border-color: rgba(34, 197, 94, 0.20);
+        color: #15803d;
+    }
+
+    .operation-alert-info {
+        background: rgba(13, 110, 253, 0.10);
+        border-color: rgba(13, 110, 253, 0.20);
+        color: #0d6efd;
+    }
+
+    .operation-alert-error {
+        background: rgba(239, 68, 68, 0.10);
+        border-color: rgba(239, 68, 68, 0.20);
+        color: #dc2626;
+    }
+
     .proceeding-hero {
         background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.18), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
         border: 1px solid #e2e8f0;
@@ -66,6 +104,7 @@
         align-items: center;
         gap: 1rem;
         min-width: 280px;
+        flex: 1;
     }
 
     .proceeding-hero-icon {
@@ -98,13 +137,47 @@
         line-height: 1.55;
     }
 
-    .proceeding-back-btn {
+    .proceeding-chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        margin-top: 0.75rem;
+    }
+
+    .proceeding-chip {
+        min-height: 32px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.42rem;
+        border-radius: 999px;
+        padding: 0 0.75rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 900;
+    }
+
+    .proceeding-chip-primary {
+        background: rgba(0, 174, 239, 0.10);
+        border-color: rgba(0, 174, 239, 0.22);
+        color: #0d6efd;
+    }
+
+    .proceeding-hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .proceeding-back-btn,
+    .proceeding-outline-btn,
+    .proceeding-primary-btn {
         min-height: 48px;
         border-radius: 999px;
         padding: 0 1.2rem;
-        color: #334155;
-        background: #ffffff;
-        border: 1px solid #dbe4ef;
         font-weight: 900;
         text-decoration: none;
         display: inline-flex;
@@ -112,17 +185,39 @@
         justify-content: center;
         gap: 0.55rem;
         transition: all 0.2s ease;
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
         white-space: nowrap;
     }
 
-        .proceeding-back-btn:hover {
-            color: #0d6efd;
-            border-color: rgba(13, 110, 253, 0.28);
-            transform: translateY(-2px);
-            box-shadow: 0 12px 28px rgba(13, 110, 253, 0.10);
-            text-decoration: none;
-        }
+    .proceeding-back-btn,
+    .proceeding-outline-btn {
+        color: #334155;
+        background: #ffffff;
+        border: 1px solid #dbe4ef;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+    }
+
+    .proceeding-back-btn:hover,
+    .proceeding-outline-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.28);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(13, 110, 253, 0.10);
+        text-decoration: none;
+    }
+
+    .proceeding-primary-btn {
+        color: #ffffff;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        border: none;
+        box-shadow: 0 14px 28px rgba(13, 110, 253, 0.18);
+    }
+
+    .proceeding-primary-btn:hover {
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 18px 36px rgba(13, 110, 253, 0.28);
+        text-decoration: none;
+    }
 
     .proceeding-grid {
         display: grid;
@@ -293,11 +388,11 @@
         white-space: nowrap;
     }
 
-        .auto-generate-btn:hover {
-            color: #ffffff;
-            transform: translateY(-2px);
-            box-shadow: 0 16px 34px rgba(0, 174, 239, 0.32);
-        }
+    .auto-generate-btn:hover {
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.32);
+    }
 
     .current-file-card {
         border: 1px solid #e2e8f0;
@@ -376,11 +471,11 @@
         border-color: rgba(13, 110, 253, 0.18);
     }
 
-        .file-view-btn:hover {
-            color: #0b5ed7;
-            background: rgba(13, 110, 253, 0.12);
-            text-decoration: none;
-        }
+    .file-view-btn:hover {
+        color: #0b5ed7;
+        background: rgba(13, 110, 253, 0.12);
+        text-decoration: none;
+    }
 
     .file-remove-btn {
         color: #ef4444;
@@ -388,10 +483,10 @@
         border-color: rgba(239, 68, 68, 0.18);
     }
 
-        .file-remove-btn:hover {
-            color: #dc2626;
-            background: rgba(239, 68, 68, 0.12);
-        }
+    .file-remove-btn:hover {
+        color: #dc2626;
+        background: rgba(239, 68, 68, 0.12);
+    }
 
     .pdf-preview-card {
         border: 1px solid #e2e8f0;
@@ -470,12 +565,12 @@
         text-decoration: none;
     }
 
-        .pdf-preview-btn:hover {
-            color: #0d6efd;
-            background: #f8fbff;
-            border-color: rgba(13, 110, 253, 0.25);
-            text-decoration: none;
-        }
+    .pdf-preview-btn:hover {
+        color: #0d6efd;
+        background: #f8fbff;
+        border-color: rgba(13, 110, 253, 0.25);
+        text-decoration: none;
+    }
 
     .pdf-preview-body {
         background: #f8fafc;
@@ -542,10 +637,10 @@
         box-shadow: 0 6px 18px rgba(15, 23, 42, 0.025);
     }
 
-        .file-upload-box:focus-within {
-            border-color: #00aeef;
-            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.12);
-        }
+    .file-upload-box:focus-within {
+        border-color: #00aeef;
+        box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.12);
+    }
 
     .file-upload-help {
         color: #64748b;
@@ -569,11 +664,11 @@
         box-shadow: 0 6px 18px rgba(15, 23, 42, 0.025);
     }
 
-        .form-control-modern:focus {
-            outline: none;
-            border-color: #00aeef;
-            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.12);
-        }
+    .form-control-modern:focus {
+        outline: none;
+        border-color: #00aeef;
+        box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.12);
+    }
 
     .modern-switch-card {
         border-radius: 20px;
@@ -633,11 +728,11 @@
         transition: all 0.2s ease;
     }
 
-        .save-btn:hover {
-            color: #ffffff;
-            transform: translateY(-2px);
-            box-shadow: 0 18px 38px rgba(0, 174, 239, 0.34);
-        }
+    .save-btn:hover {
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 18px 38px rgba(0, 174, 239, 0.34);
+    }
 
     .cancel-btn {
         min-height: 54px;
@@ -655,12 +750,12 @@
         transition: all 0.2s ease;
     }
 
-        .cancel-btn:hover {
-            color: #0d6efd;
-            background: #f8fbff;
-            border-color: rgba(13, 110, 253, 0.28);
-            text-decoration: none;
-        }
+    .cancel-btn:hover {
+        color: #0d6efd;
+        background: #f8fbff;
+        border-color: rgba(13, 110, 253, 0.28);
+        text-decoration: none;
+    }
 
     .side-card {
         background: #ffffff;
@@ -717,20 +812,20 @@
         margin: 0;
     }
 
-        .info-list li {
-            display: flex;
-            gap: 0.65rem;
-            color: #475569;
-            font-size: 0.82rem;
-            font-weight: 750;
-            margin-bottom: 0.85rem;
-            line-height: 1.45;
-        }
+    .info-list li {
+        display: flex;
+        gap: 0.65rem;
+        color: #475569;
+        font-size: 0.82rem;
+        font-weight: 750;
+        margin-bottom: 0.85rem;
+        line-height: 1.45;
+    }
 
-            .info-list li i {
-                color: #00aeef;
-                margin-top: 0.15rem;
-            }
+    .info-list li i {
+        color: #00aeef;
+        margin-top: 0.15rem;
+    }
 
     .validation-summary-errors {
         border: none;
@@ -758,9 +853,9 @@
         gap: 1rem;
     }
 
-        .remove-modal-header .btn-close {
-            margin-left: auto;
-        }
+    .remove-modal-header .btn-close {
+        margin-left: auto;
+    }
 
     .remove-modal-icon {
         width: 52px;
@@ -836,10 +931,20 @@
         box-shadow: 0 12px 26px rgba(239, 68, 68, 0.24);
     }
 
-        .remove-confirm-btn:hover {
-            background: #dc2626;
-            color: #ffffff;
-        }
+    .remove-confirm-btn:hover {
+        background: #dc2626;
+        color: #ffffff;
+    }
+
+    .generate-confirm-btn {
+        background: #0d6efd;
+        box-shadow: 0 12px 26px rgba(13, 110, 253, 0.24);
+    }
+
+    .generate-confirm-btn:hover {
+        background: #0b5ed7;
+        color: #ffffff;
+    }
 
     @@media (max-width: 992px) {
         .proceeding-grid {
@@ -855,7 +960,15 @@
             flex-direction: column;
         }
 
-        .proceeding-back-btn {
+        .proceeding-hero-left {
+            align-items: flex-start;
+        }
+
+        .proceeding-hero-actions,
+        .proceeding-hero-actions .btn,
+        .proceeding-back-btn,
+        .proceeding-outline-btn,
+        .proceeding-primary-btn {
             width: 100%;
         }
     }
@@ -863,6 +976,10 @@
     @@media (max-width: 768px) {
         .proceeding-page {
             padding: 1.5rem 1rem 3rem;
+        }
+
+        .proceeding-hero-left {
+            flex-direction: column;
         }
 
         .proceeding-title {
@@ -877,10 +994,10 @@
             align-items: stretch;
         }
 
-            .auto-generate-card form,
-            .auto-generate-btn {
-                width: 100%;
-            }
+        .auto-generate-card form,
+        .auto-generate-btn {
+            width: 100%;
+        }
 
         .proceeding-actions {
             flex-direction: column-reverse;
@@ -912,16 +1029,40 @@
             align-items: stretch;
         }
 
-            .remove-modal-footer form,
-            .remove-cancel-btn,
-            .remove-confirm-btn {
-                width: 100%;
-            }
+        .remove-modal-footer form,
+        .remove-cancel-btn,
+        .remove-confirm-btn {
+            width: 100%;
+        }
     }
 </style>
 
 <div class="proceeding-page">
     <div class="proceeding-shell">
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert operation-alert operation-alert-success mb-4">
+                <i class="fas fa-check-circle"></i>
+                <span>@TempData["SuccessMessage"]</span>
+            </div>
+        }
+
+        @if (TempData["InfoMessage"] != null)
+        {
+            <div class="alert operation-alert operation-alert-info mb-4">
+                <i class="fas fa-info-circle"></i>
+                <span>@TempData["InfoMessage"]</span>
+            </div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert operation-alert operation-alert-error mb-4">
+                <i class="fas fa-triangle-exclamation"></i>
+                <span>@TempData["ErrorMessage"]</span>
+            </div>
+        }
 
         <div class="proceeding-hero">
             <div class="proceeding-hero-left">
@@ -935,15 +1076,52 @@
                     </h3>
 
                     <p class="proceeding-lead">
-                        Kongreye ait bildiri kitabı PDF dosyasını yükleyebilir, yayına alabilir veya yayından kaldırabilirsiniz.
+                        Kongreye ait bildiri kitabı PDF dosyasını yükleyebilir, otomatik oluşturabilir, yayına alabilir veya yayından kaldırabilirsiniz.
                     </p>
+
+                    <div class="proceeding-chip-row">
+                        <span class="proceeding-chip proceeding-chip-primary">
+                            <i class="fas fa-calendar-check"></i>
+                            Seçili Kongre
+                        </span>
+
+                        @if (!string.IsNullOrWhiteSpace(slug))
+                        {
+                            <span class="proceeding-chip">
+                                <i class="fas fa-link"></i>
+                                /@slug
+                            </span>
+                        }
+
+                        <span class="proceeding-chip">
+                            <i class="fas @(hasFile ? "fa-file-pdf" : "fa-file-circle-xmark")"></i>
+                            @(hasFile ? "PDF yüklü" : "PDF yok")
+                        </span>
+                    </div>
                 </div>
             </div>
 
-            <a href="@backUrl" class="proceeding-back-btn">
-                <i class="fas fa-arrow-left"></i>
-                Kongre Akışına Dön
-            </a>
+            <div class="proceeding-hero-actions">
+                <a href="@backUrl" class="proceeding-back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    Kongre Akışına Dön
+                </a>
+
+                <a href="@changeConferenceUrl" class="proceeding-outline-btn">
+                    <i class="fas fa-exchange-alt"></i>
+                    Kongre Değiştir
+                </a>
+
+                @if (!string.IsNullOrWhiteSpace(slug))
+                {
+                    <a href="@publicSiteUrl"
+                       target="_blank"
+                       class="proceeding-primary-btn">
+                        <i class="fas fa-arrow-up-right-from-square"></i>
+                        Siteyi Gör
+                    </a>
+                }
+            </div>
         </div>
 
         <div class="proceeding-grid">
@@ -1293,8 +1471,7 @@
                     <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
 
                     <button type="submit"
-                            class="btn remove-confirm-btn"
-                            style="background: #0d6efd; box-shadow: 0 12px 26px rgba(13, 110, 253, 0.24);">
+                            class="btn remove-confirm-btn generate-confirm-btn">
                         <i class="fas fa-file-circle-plus me-2"></i>
                         Evet, Oluştur
                     </button>

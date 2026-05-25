@@ -74,7 +74,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var tenantId = await GetCurrentAdminTenantIdAsync();
 
-            return tenantId.HasValue;
+            return tenantId.HasValue && tenantId.Value != Guid.Empty;
         }
 
         private async Task<bool> CanAccessCurrentTenantAsync()
@@ -91,12 +91,80 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var tenantId = await GetCurrentAdminTenantIdAsync();
 
-            if (!tenantId.HasValue)
+            if (!tenantId.HasValue || tenantId.Value == Guid.Empty)
             {
                 return false;
             }
 
             return tenantId.Value == _tenantContext.Current.Id;
+        }
+
+        private static bool SlugMatches(Conference? conference, string? slug)
+        {
+            if (conference == null || string.IsNullOrWhiteSpace(slug))
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(conference.Slug) &&
+                string.Equals(conference.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (conference.Tenant != null &&
+                !string.IsNullOrWhiteSpace(conference.Tenant.Slug) &&
+                string.Equals(conference.Tenant.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static string GetCanonicalSlug(Conference? conference, string? fallbackSlug = null)
+        {
+            return conference?.Tenant?.Slug
+                   ?? conference?.Slug
+                   ?? fallbackSlug
+                   ?? "";
+        }
+
+        private Guid? GetSelectedConferenceIdFromSession(Guid? tenantId = null)
+        {
+            if (tenantId.HasValue && tenantId.Value != Guid.Empty)
+            {
+                var tenantSpecificValue = HttpContext.Session.GetString(
+                    $"SelectedConferenceId:{tenantId.Value}");
+
+                if (Guid.TryParse(tenantSpecificValue, out var tenantSpecificConferenceId) &&
+                    tenantSpecificConferenceId != Guid.Empty)
+                {
+                    return tenantSpecificConferenceId;
+                }
+            }
+
+            var globalValue = HttpContext.Session.GetString("SelectedConferenceId");
+
+            if (Guid.TryParse(globalValue, out var globalConferenceId) &&
+                globalConferenceId != Guid.Empty)
+            {
+                return globalConferenceId;
+            }
+
+            return null;
+        }
+
+        private Guid? GetSelectedConferenceId(Guid? tenantId = null)
+        {
+            var selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
+
+            if (selectedConferenceId.HasValue && selectedConferenceId.Value != Guid.Empty)
+            {
+                return selectedConferenceId.Value;
+            }
+
+            return GetSelectedConferenceIdFromSession(tenantId);
         }
 
         private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync()
@@ -113,7 +181,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var tenantId = await GetCurrentAdminTenantIdAsync();
 
-            if (!tenantId.HasValue)
+            if (!tenantId.HasValue || tenantId.Value == Guid.Empty)
             {
                 return query.Where(c => false);
             }
@@ -125,7 +193,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             string slug,
             Guid? conferenceId)
         {
-            Guid? selectedConferenceId = null;
+            Guid? selectedConferenceId;
 
             if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
             {
@@ -133,7 +201,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
             else
             {
-                selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
+                selectedConferenceId = GetSelectedConferenceId(_tenantContext.Current?.Id);
             }
 
             if (!selectedConferenceId.HasValue || selectedConferenceId.Value == Guid.Empty)
@@ -148,10 +216,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (IsSuperAdminUser())
             {
-                return await query.FirstOrDefaultAsync(c =>
-                    c.Id == selectedConferenceId.Value &&
-                    c.Tenant != null &&
-                    c.Tenant.Slug == slug);
+                var conference = await query.FirstOrDefaultAsync(c =>
+                    c.Id == selectedConferenceId.Value);
+
+                if (conference == null || !SlugMatches(conference, slug))
+                {
+                    return null;
+                }
+
+                return conference;
             }
 
             if (_tenantContext.Current == null)
@@ -176,7 +249,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private void SetSelectedConferenceSession(Conference conference)
         {
-            var slug = conference.Tenant?.Slug ?? _tenantContext.Current?.Slug ?? "";
+            var slug = GetCanonicalSlug(conference, _tenantContext.Current?.Slug);
             var tenantId = conference.TenantId;
 
             _selectedConferenceService.SetSelectedConferenceId(conference.Id);
@@ -192,6 +265,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private string BuildDecisionUrl(string slug, Guid conferenceId)
         {
+            if (string.IsNullOrWhiteSpace(slug))
+            {
+                return $"/Admin/Decision?conferenceId={conferenceId}";
+            }
+
             return $"/{slug}/Admin/Decision?conferenceId={conferenceId}";
         }
 
@@ -207,11 +285,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (IsSuperAdminUser())
             {
-                return await query.FirstOrDefaultAsync(s =>
+                var submission = await query.FirstOrDefaultAsync(s =>
                     s.Id == submissionId &&
-                    s.Conference != null &&
-                    s.Conference.Tenant != null &&
-                    s.Conference.Tenant.Slug == slug);
+                    s.Conference != null);
+
+                if (submission == null || !SlugMatches(submission.Conference, slug))
+                {
+                    return null;
+                }
+
+                return submission;
             }
 
             if (_tenantContext.Current == null)
@@ -226,7 +309,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var tenantId = await GetCurrentAdminTenantIdAsync();
 
-            if (!tenantId.HasValue)
+            if (!tenantId.HasValue || tenantId.Value == Guid.Empty)
             {
                 return null;
             }
@@ -251,7 +334,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return Redirect("/Dashboard/MyConferences");
             }
 
-            var selectedId = _selectedConferenceService.GetSelectedConferenceId();
+            var selectedId = GetSelectedConferenceId(_tenantContext.Current?.Id);
 
             if (selectedId.HasValue && selectedId.Value != Guid.Empty)
             {
@@ -260,7 +343,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 var selectedConference = await selectedQuery
                     .FirstOrDefaultAsync(x => x.Id == selectedId.Value);
 
-                if (selectedConference?.Tenant?.Slug != null)
+                if (selectedConference?.Tenant != null &&
+                    !string.IsNullOrWhiteSpace(GetCanonicalSlug(selectedConference)))
                 {
                     SetSelectedConferenceSession(selectedConference);
 
@@ -270,7 +354,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     }
 
                     return Redirect(BuildDecisionUrl(
-                        selectedConference.Tenant.Slug,
+                        GetCanonicalSlug(selectedConference),
                         selectedConference.Id));
                 }
             }
@@ -284,15 +368,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (!conferences.Any())
             {
                 TempData["ErrorMessage"] = IsSuperAdminUser()
-                    ? "Sistemde görüntülenebilecek kongre bulunamadı."
-                    : "Kurumunuza bağlı görüntülenebilecek kongre bulunamadı.";
+                    ? T("Error_NoConferenceForSuperAdmin", "Sistemde görüntülenebilecek kongre bulunamadı.")
+                    : T("Error_NoConferenceForAdmin", "Kurumunuza bağlı görüntülenebilecek kongre bulunamadı.");
             }
 
             var vm = new SelectConferenceViewModel
             {
                 Title = T("SelectConference_Title", "Kongre Seç"),
                 Lead = IsSuperAdminUser()
-                    ? "SuperAdmin olarak sistemdeki tüm kongreleri görebilirsiniz. Karar ekranını incelemek istediğiniz kongreyi seçiniz."
+                    ? T("SelectConference_SuperAdminLead", "SuperAdmin olarak sistemdeki tüm kongreleri görebilirsiniz. Karar ekranını incelemek istediğiniz kongreyi seçiniz.")
                     : T("SelectConference_Lead", "Karar ekranını görüntülemek için önce kongre seçiniz."),
                 PostUrl = "/Admin/Decision/Select",
                 SubmitText = T("SelectConference_Submit", "Devam Et"),
@@ -323,9 +407,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var conference = await query
                 .FirstOrDefaultAsync(c => c.Id == conferenceId);
 
-            if (conference == null ||
-                conference.Tenant == null ||
-                string.IsNullOrWhiteSpace(conference.Tenant.Slug))
+            var canonicalSlug = GetCanonicalSlug(conference);
+
+            if (conference == null || string.IsNullOrWhiteSpace(canonicalSlug))
             {
                 TempData["ErrorMessage"] = T(
                     "Error_ConferenceNotFound",
@@ -341,9 +425,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return LocalRedirect(returnUrl);
             }
 
-            return Redirect(BuildDecisionUrl(
-                conference.Tenant.Slug,
-                conference.Id));
+            return Redirect(BuildDecisionUrl(canonicalSlug, conference.Id));
         }
 
         [HttpGet("/{slug}/Admin/Decision")]
@@ -359,7 +441,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_SelectConferenceFirst",
                     "Lütfen yetkili olduğunuz geçerli bir kongre seçiniz.");
 
-                return RedirectToAction(nameof(SelectConference));
+                return RedirectToAction(
+                    nameof(SelectConference),
+                    new { returnUrl = $"/{slug}/Admin/Decision" });
+            }
+
+            var canonicalSlug = GetCanonicalSlug(conference, slug);
+
+            if (!string.Equals(canonicalSlug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return Redirect(BuildDecisionUrl(canonicalSlug, conference.Id));
             }
 
             SetSelectedConferenceSession(conference);
@@ -390,7 +481,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             ViewBag.ConferenceId = conference.Id;
             ViewBag.ConferenceTitle = conference.Title;
-            ViewBag.Slug = slug;
+            ViewBag.Slug = canonicalSlug;
 
             var viewModel = new DecisionIndexViewModel
             {
@@ -435,14 +526,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             var conference = await _context.Conferences
-                .AsNoTracking()
                 .Include(c => c.Tenant)
-                .FirstOrDefaultAsync(c =>
-                    c.Id == submission.ConferenceId &&
-                    c.Tenant != null &&
-                    c.Tenant.Slug == slug);
+                .FirstOrDefaultAsync(c => c.Id == submission.ConferenceId);
 
-            if (conference == null)
+            if (conference == null || !SlugMatches(conference, slug))
             {
                 TempData["ErrorMessage"] = T(
                     "Error_ConferenceNotFound",
@@ -455,7 +542,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 var adminTenantId = await GetCurrentAdminTenantIdAsync();
 
-                if (!adminTenantId.HasValue || conference.TenantId != adminTenantId.Value)
+                if (!adminTenantId.HasValue ||
+                    adminTenantId.Value == Guid.Empty ||
+                    conference.TenantId != adminTenantId.Value)
                 {
                     TempData["ErrorMessage"] = T(
                         "Error_TenantMismatch",
@@ -464,6 +553,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     return RedirectToAction(nameof(SelectConference));
                 }
             }
+
+            var canonicalSlug = GetCanonicalSlug(conference, slug);
 
             SetSelectedConferenceSession(conference);
 
@@ -490,10 +581,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_InvalidDecision",
                     "Geçersiz karar seçimi.");
 
-                return Redirect(BuildDecisionUrl(slug, submission.ConferenceId));
+                return Redirect(BuildDecisionUrl(canonicalSlug, submission.ConferenceId));
             }
 
             submission.DecisionDate = DateTime.UtcNow;
+            submission.UpdatedDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
@@ -501,7 +593,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "Success_SubmissionDecisionSaved",
                 $"Bildiri kararı kaydedildi: {decisionText}");
 
-            return Redirect(BuildDecisionUrl(slug, submission.ConferenceId));
+            return Redirect(BuildDecisionUrl(canonicalSlug, submission.ConferenceId));
         }
     }
 }

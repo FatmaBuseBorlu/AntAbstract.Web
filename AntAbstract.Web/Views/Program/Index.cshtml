@@ -1,6 +1,10 @@
 ﻿@model IEnumerable<AntAbstract.Domain.Entities.Session>
+
+@using System
 @using System.Globalization
+@using System.Linq
 @using AntAbstract.Domain.Entities
+
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
@@ -18,6 +22,36 @@
 
     var slug = ViewBag.Slug as string ?? "";
     var conferenceName = ViewBag.ConferenceName as string ?? "";
+
+    var conferenceId = ViewBag.ConferenceId is Guid viewConferenceId
+        ? viewConferenceId
+        : Guid.Empty;
+
+    var canTrackAttendance = ViewBag.CanTrackAttendance is bool canTrack && canTrack;
+
+    var attendanceJoinUrl = ViewBag.AttendanceJoinUrl as string
+        ?? (!string.IsNullOrWhiteSpace(slug) ? $"/{slug}/Attendance/Join" : "");
+
+    var attendancePingUrl = ViewBag.AttendancePingUrl as string
+        ?? (!string.IsNullOrWhiteSpace(slug) ? $"/{slug}/Attendance/Ping" : "");
+
+    var attendanceTotalSeconds = ViewBag.AttendanceTotalSeconds is int totalSeconds
+        ? totalSeconds
+        : 0;
+
+    var attendanceRequiredSeconds = ViewBag.AttendanceRequiredSeconds is int requiredSeconds && requiredSeconds > 0
+        ? requiredSeconds
+        : 600;
+
+    var attendanceCompleted = ViewBag.AttendanceCompleted is bool completed && completed;
+
+    var attendanceProgress = attendanceRequiredSeconds <= 0
+        ? 0
+        : Math.Min(100, (int)Math.Round((attendanceTotalSeconds * 100.0) / attendanceRequiredSeconds));
+
+    var certificatesUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Certificates"
+        : $"/{slug}/Certificates";
 
     var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 
@@ -73,6 +107,24 @@
         }
 
         return authorName;
+    }
+
+    string FormatDuration(int seconds)
+    {
+        if (seconds < 0)
+        {
+            seconds = 0;
+        }
+
+        var minutes = seconds / 60;
+        var remainingSeconds = seconds % 60;
+
+        if (minutes <= 0)
+        {
+            return $"{remainingSeconds} sn";
+        }
+
+        return $"{minutes} dk {remainingSeconds:D2} sn";
     }
 }
 
@@ -147,11 +199,138 @@
         max-width: 380px;
     }
 
-        .program-conference-pill span {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+    .program-conference-pill span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .attendance-card {
+        background: #ffffff;
+        border: 1px solid #dbeafe;
+        border-radius: 24px;
+        padding: 1.2rem 1.35rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 16px 38px rgba(15, 23, 42, 0.05);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+    }
+
+    .attendance-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 280px;
+        flex: 1;
+    }
+
+    .attendance-icon {
+        width: 54px;
+        height: 54px;
+        min-width: 54px;
+        border-radius: 18px;
+        background: rgba(34, 197, 94, 0.12);
+        color: #16a34a;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+    }
+
+    .attendance-title {
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 950;
+        margin-bottom: 0.25rem;
+    }
+
+    .attendance-text {
+        color: #64748b;
+        font-size: 0.84rem;
+        font-weight: 700;
+        margin-bottom: 0;
+        line-height: 1.55;
+    }
+
+    .attendance-progress-area {
+        min-width: 280px;
+        max-width: 360px;
+        flex: 1;
+    }
+
+    .attendance-progress-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.5rem;
+        color: #334155;
+        font-size: 0.8rem;
+        font-weight: 900;
+    }
+
+    .attendance-progress {
+        height: 12px;
+        border-radius: 999px;
+        background: #e2e8f0;
+        overflow: hidden;
+    }
+
+    .attendance-progress-bar {
+        height: 100%;
+        width: 0%;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #22c55e, #00aeef);
+        transition: width 0.3s ease;
+    }
+
+    .attendance-status-badge {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        border-radius: 999px;
+        padding: 0 0.8rem;
+        font-size: 0.78rem;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .attendance-status-badge.waiting {
+        background: rgba(245, 158, 11, 0.12);
+        color: #b45309;
+    }
+
+    .attendance-status-badge.completed {
+        background: rgba(34, 197, 94, 0.12);
+        color: #15803d;
+    }
+
+    .attendance-certificate-btn {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        border-radius: 999px;
+        padding: 0 0.95rem;
+        background: linear-gradient(135deg, #16a34a, #00aeef);
+        color: #ffffff;
+        text-decoration: none;
+        font-size: 0.82rem;
+        font-weight: 950;
+        box-shadow: 0 10px 24px rgba(22, 163, 74, 0.20);
+    }
+
+    .attendance-certificate-btn:hover {
+        color: #ffffff;
+        text-decoration: none;
+        transform: translateY(-1px);
+    }
 
     .program-stats {
         display: grid;
@@ -230,17 +409,17 @@
         box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
     }
 
-        .program-tab-btn:hover {
-            color: #0d6efd;
-            transform: translateY(-1px);
-        }
+    .program-tab-btn:hover {
+        color: #0d6efd;
+        transform: translateY(-1px);
+    }
 
-        .program-tab-btn.active {
-            border-color: transparent;
-            background: linear-gradient(135deg, #00aeef, #0d6efd);
-            color: #ffffff;
-            box-shadow: 0 12px 28px rgba(0, 174, 239, 0.24);
-        }
+    .program-tab-btn.active {
+        border-color: transparent;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        box-shadow: 0 12px 28px rgba(0, 174, 239, 0.24);
+    }
 
     .program-day-card {
         background: #ffffff;
@@ -271,16 +450,16 @@
         margin: 0;
     }
 
-        .program-day-title i {
-            width: 38px;
-            height: 38px;
-            border-radius: 14px;
-            background: rgba(0, 174, 239, 0.10);
-            color: #00aeef;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
+    .program-day-title i {
+        width: 38px;
+        height: 38px;
+        border-radius: 14px;
+        background: rgba(0, 174, 239, 0.10);
+        color: #00aeef;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
 
     .program-day-count {
         min-height: 30px;
@@ -310,15 +489,15 @@
         border: 1px solid transparent;
     }
 
-        .program-session-item + .program-session-item {
-            margin-top: 0.65rem;
-        }
+    .program-session-item + .program-session-item {
+        margin-top: 0.65rem;
+    }
 
-        .program-session-item:hover {
-            background: #f8fafc;
-            border-color: #e2e8f0;
-            transform: translateY(-1px);
-        }
+    .program-session-item:hover {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        transform: translateY(-1px);
+    }
 
     .program-time-box {
         border-radius: 18px;
@@ -381,9 +560,9 @@
         font-weight: 850;
     }
 
-        .program-meta i {
-            color: #00aeef;
-        }
+    .program-meta i {
+        color: #00aeef;
+    }
 
     .presentation-list {
         margin-top: 0.85rem;
@@ -399,9 +578,9 @@
         margin-bottom: 0.65rem;
     }
 
-        .presentation-item:last-child {
-            margin-bottom: 0;
-        }
+    .presentation-item:last-child {
+        margin-bottom: 0;
+    }
 
     .presentation-title {
         color: #0f172a;
@@ -474,6 +653,16 @@
         .program-session-item {
             grid-template-columns: 1fr;
         }
+
+        .attendance-card {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .attendance-progress-area {
+            width: 100%;
+            max-width: 100%;
+        }
     }
 
     @@media (max-width: 768px) {
@@ -489,10 +678,20 @@
             flex-direction: column;
             align-items: flex-start;
         }
+
+        .attendance-left {
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 100%;
+        }
     }
 </style>
 
 <div class="program-page">
+
+    <form id="attendanceAntiForgeryForm" class="d-none">
+        @Html.AntiForgeryToken()
+    </form>
 
     <div class="program-hero">
         <div class="program-hero-left">
@@ -507,10 +706,10 @@
 
                 <p class="program-lead">
                     @L(
-                    "PageLead",
-                                        "Kongre oturumlarını, sunum saatlerini ve programa alınan bildirileri buradan takip edebilirsiniz.",
-                                        "You can follow congress sessions, presentation times and scheduled abstracts here."
-                                        )
+                        "PageLead",
+                        "Kongre oturumlarını, sunum saatlerini ve programa alınan bildirileri buradan takip edebilirsiniz.",
+                        "You can follow congress sessions, presentation times and scheduled abstracts here."
+                    )
                 </p>
             </div>
         </div>
@@ -523,6 +722,62 @@
             </div>
         }
     </div>
+
+    @if (canTrackAttendance && conferenceId != Guid.Empty)
+    {
+        <div class="attendance-card"
+             id="attendanceTracker"
+             data-completed="@(attendanceCompleted ? "true" : "false")">
+
+            <div class="attendance-left">
+                <div class="attendance-icon">
+                    <i class="fas fa-user-clock"></i>
+                </div>
+
+                <div>
+                    <div class="attendance-title">
+                        @L("AttendanceTrackingTitle", "Online Katılım Takibi", "Online Attendance Tracking")
+                    </div>
+
+                    <p class="attendance-text" id="attendanceMessage">
+                        @(attendanceCompleted
+                            ? L("AttendanceAlreadyCompletedText", "Katılım süreniz tamamlandı. Sertifika koşullarınız sağlandıysa belgeniz Sertifikalarım ekranında görünür.", "Your attendance time is completed. If certificate requirements are met, your certificate will appear on My Certificates.")
+                            : L("AttendanceTrackingText", "Bu sayfada kaldığınız süre boyunca online katılım süreniz takip edilir.", "Your online attendance time is tracked while you stay on this page."))
+                    </p>
+                </div>
+            </div>
+
+            <div class="attendance-progress-area">
+                <div class="attendance-progress-top">
+                    <span id="attendanceTimeText">
+                        @FormatDuration(attendanceTotalSeconds) / @FormatDuration(attendanceRequiredSeconds)
+                    </span>
+
+                    <span class="attendance-status-badge @(attendanceCompleted ? "completed" : "waiting")"
+                          id="attendanceStatusBadge">
+                        <i class="fas @(attendanceCompleted ? "fa-check-circle" : "fa-clock")"></i>
+                        <span>
+                            @(attendanceCompleted
+                                ? L("AttendanceCompletedBadge", "Tamamlandı", "Completed")
+                                : L("AttendanceWaitingBadge", "Takip Ediliyor", "Tracking"))
+                        </span>
+                    </span>
+                </div>
+
+                <div class="attendance-progress">
+                    <div class="attendance-progress-bar"
+                         id="attendanceProgressBar"
+                         style="width:@attendanceProgress%">
+                    </div>
+                </div>
+            </div>
+
+            <a href="@certificatesUrl" class="attendance-certificate-btn">
+                <i class="fas fa-certificate"></i>
+                @L("GoToCertificatesButton", "Sertifikalarım", "My Certificates")
+            </a>
+        </div>
+    }
 
     <div class="program-stats">
         <div class="program-stat-card">
@@ -587,13 +842,13 @@
 
             <p class="empty-program-text">
                 @L(
-                "EmptyProgramText",
-                        "Bu kongre için henüz aktif program oturumu oluşturulmamış.",
-                        "No active program sessions have been created for this congress yet."
-                        )
-        </p>
-    </div>
-        }
+                    "EmptyProgramText",
+                    "Bu kongre için henüz aktif program oturumu oluşturulmamış.",
+                    "No active program sessions have been created for this congress yet."
+                )
+            </p>
+        </div>
+    }
     else
     {
         <ul class="nav program-tabs" id="program-tabs" role="tablist">
@@ -610,7 +865,7 @@
                             role="tab"
                             aria-controls="content-@i"
                             aria-selected="@(i == 0 ? "true" : "false")">
-                        @group.Key.ToString("dd MMMM dddd")
+                        @group.Key.ToString("dd MMMM dddd", CultureInfo.CurrentUICulture)
                     </button>
                 </li>
             }
@@ -630,7 +885,7 @@
                         <div class="program-day-header">
                             <h5 class="program-day-title">
                                 <i class="fas fa-calendar-day"></i>
-                                @group.Key.ToString("dd MMMM yyyy")
+                                @group.Key.ToString("dd MMMM yyyy", CultureInfo.CurrentUICulture)
                             </h5>
 
                             <span class="program-day-count">
@@ -669,15 +924,15 @@
                                             </div>
                                         }
 
-                                    <div class="program-meta-list">
-                                        <span class="program-meta">
-                                            <i class="fas fa-location-dot"></i>
-                                            @(string.IsNullOrWhiteSpace(session.Location)
-                                                                                ? L("LocationNotSpecified", "Konum belirtilmedi", "Location not specified")
-                                                                                : session.Location)
-                                </span>
+                                        <div class="program-meta-list">
+                                            <span class="program-meta">
+                                                <i class="fas fa-location-dot"></i>
+                                                @(string.IsNullOrWhiteSpace(session.Location)
+                                                    ? L("LocationNotSpecified", "Konum belirtilmedi", "Location not specified")
+                                                    : session.Location)
+                                            </span>
 
-                                @if (!string.IsNullOrWhiteSpace(session.SpeakerName))
+                                            @if (!string.IsNullOrWhiteSpace(session.SpeakerName))
                                             {
                                                 <span class="program-meta">
                                                     <i class="fas fa-microphone"></i>
@@ -730,20 +985,185 @@
                                         {
                                             <div class="program-session-desc mb-0">
                                                 @L(
-                                                "DetailsComingSoonText",
-                                                                "Oturum detayları yakında eklenecektir.",
-                                                                "Session details will be added soon."
-                                                                )
-                            </div>
-                                                        }
+                                                    "DetailsComingSoonText",
+                                                    "Oturum detayları yakında eklenecektir.",
+                                                    "Session details will be added soon."
+                                                )
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
                         </div>
                     </div>
-                                        }
-                </div>
-            </div>
 
+                </div>
+            }
         </div>
-                }
-    </div>
-        }
+    }
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const canTrackAttendance = @(canTrackAttendance.ToString().ToLowerInvariant());
+            const conferenceId = "@conferenceId";
+            const joinUrl = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(attendanceJoinUrl));
+            const pingUrl = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(attendancePingUrl));
+
+            const completedText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("AttendanceCompletedBadge", "Tamamlandı", "Completed")));
+            const trackingText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("AttendanceWaitingBadge", "Takip Ediliyor", "Tracking")));
+            const completedMessage = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("AttendanceCompletedMessage", "Katılım süreniz tamamlandı. Sertifika koşullarınız sağlandıysa belgeniz Sertifikalarım ekranında görünür.", "Your attendance time is completed. If certificate requirements are met, your certificate will appear on My Certificates.")));
+            const errorPrefix = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("AttendanceErrorPrefix", "Katılım takibi başlatılamadı:", "Attendance tracking could not start:")));
+
+            const tracker = document.getElementById("attendanceTracker");
+
+            if (!canTrackAttendance || !tracker || !conferenceId || conferenceId === "00000000-0000-0000-0000-000000000000") {
+                return;
+            }
+
+            const tokenInput = document.querySelector('#attendanceAntiForgeryForm input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : "";
+
+            const timeText = document.getElementById("attendanceTimeText");
+            const progressBar = document.getElementById("attendanceProgressBar");
+            const statusBadge = document.getElementById("attendanceStatusBadge");
+            const messageBox = document.getElementById("attendanceMessage");
+
+            let isCompleted = tracker.dataset.completed === "true";
+            let pingTimer = null;
+
+            function formatDuration(seconds) {
+                seconds = Math.max(0, parseInt(seconds || 0));
+
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = seconds % 60;
+
+                if (minutes <= 0) {
+                    return remainingSeconds + " sn";
+                }
+
+                return minutes + " dk " + String(remainingSeconds).padStart(2, "0") + " sn";
+            }
+
+            function updateAttendanceUi(data) {
+                if (!data) {
+                    return;
+                }
+
+                const totalSeconds = parseInt(data.totalSeconds || 0);
+                const requiredSeconds = parseInt(data.requiredSeconds || 600);
+                const progress = requiredSeconds <= 0
+                    ? 0
+                    : Math.min(100, Math.round((totalSeconds * 100) / requiredSeconds));
+
+                if (timeText) {
+                    timeText.innerText = formatDuration(totalSeconds) + " / " + formatDuration(requiredSeconds);
+                }
+
+                if (progressBar) {
+                    progressBar.style.width = progress + "%";
+                }
+
+                isCompleted = data.completed === true;
+
+                if (statusBadge) {
+                    statusBadge.classList.toggle("completed", isCompleted);
+                    statusBadge.classList.toggle("waiting", !isCompleted);
+
+                    statusBadge.innerHTML = isCompleted
+                        ? '<i class="fas fa-check-circle"></i><span>' + completedText + '</span>'
+                        : '<i class="fas fa-clock"></i><span>' + trackingText + '</span>';
+                }
+
+                if (isCompleted && messageBox) {
+                    messageBox.innerText = completedMessage;
+                }
+
+                if (isCompleted && pingTimer) {
+                    clearInterval(pingTimer);
+                    pingTimer = null;
+                }
+            }
+
+            async function postAttendance(url) {
+                const formData = new URLSearchParams();
+
+                formData.append("conferenceId", conferenceId);
+
+                if (token) {
+                    formData.append("__RequestVerificationToken", token);
+                }
+
+                const response = await fetch(url, {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "RequestVerificationToken": token
+                    },
+                    body: formData.toString()
+                });
+
+                const data = await response.json().catch(function () {
+                    return {
+                        ok: false,
+                        message: response.statusText
+                    };
+                });
+
+                if (!response.ok || data.ok === false) {
+                    throw new Error(data.message || response.statusText);
+                }
+
+                return data;
+            }
+
+            async function joinAttendance() {
+                try {
+                    const data = await postAttendance(joinUrl);
+                    updateAttendanceUi(data);
+
+                    if (!isCompleted) {
+                        startPingTimer();
+                    }
+                } catch (error) {
+                    if (messageBox) {
+                        messageBox.innerText = errorPrefix + " " + error.message;
+                    }
+                }
+            }
+
+            async function pingAttendance() {
+                if (isCompleted || document.visibilityState !== "visible") {
+                    return;
+                }
+
+                try {
+                    const data = await postAttendance(pingUrl);
+                    updateAttendanceUi(data);
+                } catch (error) {
+                    if (messageBox) {
+                        messageBox.innerText = errorPrefix + " " + error.message;
+                    }
+                }
+            }
+
+            function startPingTimer() {
+                if (pingTimer) {
+                    clearInterval(pingTimer);
+                }
+
+                pingTimer = setInterval(pingAttendance, 30000);
+            }
+
+            joinAttendance();
+
+            document.addEventListener("visibilitychange", function () {
+                if (document.visibilityState === "visible" && !isCompleted) {
+                    pingAttendance();
+                }
+            });
+        });
+    </script>
+}

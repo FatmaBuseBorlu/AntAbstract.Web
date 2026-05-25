@@ -1,7 +1,9 @@
 ﻿@using AntAbstract.Domain.Entities
 @using AntAbstract.Application.DTOs.Submission
 @using Microsoft.AspNetCore.Http
+@using System
 @using System.Globalization
+@using System.Linq
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model SubmissionDto
 
@@ -13,23 +15,55 @@
         ?? Context.Session.GetString("SelectedConferenceSlug")
         ?? "";
 
-    string BuildUrl(string path)
+    string BuildConferenceUrl(string cleanPath, string fallbackPath)
     {
         if (string.IsNullOrWhiteSpace(slug))
         {
-            return path;
+            return fallbackPath;
         }
 
-        return $"/{slug}{path}";
+        return $"/{slug}{cleanPath}";
     }
 
-    var listUrl = BuildUrl("/Submission/Index");
-    var editUrl = BuildUrl($"/Submission/Edit/{Model.Id}");
-    var deleteUrl = BuildUrl($"/Submission/Delete/{Model.Id}");
-    var uploadRevisionUrl = BuildUrl($"/Submission/UploadRevision/{Model.Id}");
-    var acceptanceLetterUrl = BuildUrl($"/Submission/DownloadAcceptanceLetter/{Model.Id}");
-    var rejectionLetterUrl = BuildUrl($"/Submission/DownloadRejectionLetter/{Model.Id}");
-    var badgeUrl = BuildUrl($"/Submission/DownloadBadge/{Model.Id}");
+    var listUrl = BuildConferenceUrl(
+        "/my-submissions",
+        "/Submission/Index"
+    );
+
+    var editUrl = BuildConferenceUrl(
+        $"/my-submissions/{Model.Id}/edit",
+        $"/Submission/Edit/{Model.Id}"
+    );
+
+    var deleteUrl = BuildConferenceUrl(
+        $"/my-submissions/{Model.Id}/delete",
+        $"/Submission/Delete/{Model.Id}"
+    );
+
+    var uploadRevisionUrl = BuildConferenceUrl(
+        $"/my-submissions/{Model.Id}/revision",
+        $"/Submission/UploadRevision/{Model.Id}"
+    );
+
+    var acceptanceLetterUrl = BuildConferenceUrl(
+        $"/my-submissions/{Model.Id}/acceptance-letter",
+        $"/Submission/DownloadAcceptanceLetter/{Model.Id}"
+    );
+
+    var rejectionLetterUrl = BuildConferenceUrl(
+        $"/my-submissions/{Model.Id}/rejection-letter",
+        $"/Submission/DownloadRejectionLetter/{Model.Id}"
+    );
+
+    var badgeUrl = BuildConferenceUrl(
+        $"/my-submissions/{Model.Id}/badge",
+        $"/Submission/DownloadBadge/{Model.Id}"
+    );
+
+    var certificatesUrl = BuildConferenceUrl(
+        "/Certificates",
+        "/Certificates"
+    );
 
     var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 
@@ -54,15 +88,15 @@
 
     string statusBadgeClass = currentStatus switch
     {
-        SubmissionStatus.New => "bg-primary bg-opacity-10 text-primary border-primary",
-        SubmissionStatus.Pending => "bg-warning bg-opacity-10 text-warning border-warning",
-        SubmissionStatus.UnderReview => "bg-warning bg-opacity-10 text-warning border-warning",
-        SubmissionStatus.RevisionRequired => "bg-info bg-opacity-10 text-info border-info",
-        SubmissionStatus.Accepted => "bg-success bg-opacity-10 text-success border-success",
-        SubmissionStatus.Rejected => "bg-danger bg-opacity-10 text-danger border-danger",
-        SubmissionStatus.Presented => "bg-primary text-white border-primary",
-        SubmissionStatus.Withdrawn => "bg-secondary bg-opacity-10 text-secondary border-secondary",
-        _ => "bg-light text-dark border"
+        SubmissionStatus.New => "detail-status-new",
+        SubmissionStatus.Pending => "detail-status-pending",
+        SubmissionStatus.UnderReview => "detail-status-review",
+        SubmissionStatus.RevisionRequired => "detail-status-revision",
+        SubmissionStatus.Accepted => "detail-status-accepted",
+        SubmissionStatus.Rejected => "detail-status-rejected",
+        SubmissionStatus.Presented => "detail-status-presented",
+        SubmissionStatus.Withdrawn => "detail-status-withdrawn",
+        _ => "detail-status-new"
     };
 
     string statusText = currentStatus switch
@@ -91,6 +125,7 @@
     };
 
     bool stepSubmitted = true;
+
     bool stepReview = currentStatus == SubmissionStatus.UnderReview
         || currentStatus == SubmissionStatus.RevisionRequired
         || currentStatus == SubmissionStatus.Accepted
@@ -105,70 +140,342 @@
 }
 
 <style>
+    .submission-detail-page {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 1.25rem 1.5rem 4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .operation-alert {
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-radius: 18px;
+        border: 1px solid transparent;
+        font-weight: 800;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+    }
+
+    .operation-alert-success {
+        background: rgba(34, 197, 94, 0.10);
+        border-color: rgba(34, 197, 94, 0.20);
+        color: #15803d;
+    }
+
+    .operation-alert-info {
+        background: rgba(13, 110, 253, 0.10);
+        border-color: rgba(13, 110, 253, 0.20);
+        color: #0d6efd;
+    }
+
+    .operation-alert-error {
+        background: rgba(239, 68, 68, 0.10);
+        border-color: rgba(239, 68, 68, 0.20);
+        color: #dc2626;
+    }
+
+    .detail-hero-card {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e8eef6;
+        border-radius: 24px;
+        padding: 1.35rem 1.45rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.055);
+        margin-bottom: 1.4rem;
+    }
+
+    .detail-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 0.95rem;
+        min-width: 300px;
+        flex: 1;
+    }
+
+    .detail-hero-icon {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.55rem;
+        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.22);
+    }
+
+    .detail-section-label {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .detail-hero-title {
+        margin: 0 0 0.3rem;
+        color: #0f172a;
+        font-size: 1.75rem;
+        font-weight: 900;
+        letter-spacing: -0.045em;
+        line-height: 1.15;
+    }
+
+    .detail-hero-text {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.94rem;
+        font-weight: 600;
+        line-height: 1.55;
+        max-width: 780px;
+    }
+
+    .detail-ref-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.65rem;
+    }
+
+    .detail-ref-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        min-height: 30px;
+        padding: 0 0.75rem;
+        border-radius: 999px;
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+        font-size: 0.76rem;
+        font-weight: 900;
+    }
+
+    .detail-slug-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        min-height: 30px;
+        padding: 0 0.75rem;
+        border-radius: 999px;
+        background: rgba(13, 110, 253, 0.09);
+        color: #0d6efd;
+        font-size: 0.76rem;
+        font-weight: 900;
+    }
+
+    .detail-hero-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+
+    .detail-hero-btn {
+        min-height: 42px;
+        border-radius: 999px;
+        padding: 0 1rem;
+        font-size: 0.84rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .detail-hero-btn-light {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+    }
+
+    .detail-hero-btn-light:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .detail-hero-btn-primary {
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        border: none;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.18);
+    }
+
+    .detail-hero-btn-primary:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(13, 110, 253, 0.26);
+        text-decoration: none;
+    }
+
+    .timeline-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.05);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
     .timeline-steps {
         display: flex;
         justify-content: center;
         flex-wrap: wrap;
-        margin-bottom: 30px;
+        margin: 0;
     }
 
-        .timeline-steps .timeline-step {
-            align-items: center;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            margin: 0 1rem;
-        }
+    .timeline-steps .timeline-step {
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        margin: 0 1rem;
+    }
 
-        .timeline-steps .timeline-content {
-            width: 110px;
-            text-align: center;
-        }
+    .timeline-steps .timeline-content {
+        width: 115px;
+        text-align: center;
+    }
 
-            .timeline-steps .timeline-content .inner-circle {
-                border-radius: 1.5rem;
-                height: 3rem;
-                width: 3rem;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                background-color: #eef2f5;
-                color: #99a2a8;
-                border: 2px solid #eef2f5;
-                z-index: 10;
-                position: relative;
-                font-weight: bold;
-                transition: all 0.3s;
-            }
+    .timeline-steps .timeline-content .inner-circle {
+        border-radius: 999px;
+        height: 3rem;
+        width: 3rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #eef2f5;
+        color: #99a2a8;
+        border: 2px solid #eef2f5;
+        z-index: 10;
+        position: relative;
+        font-weight: 900;
+        transition: all 0.3s;
+    }
 
-                .timeline-steps .timeline-content .inner-circle.active {
-                    background-color: #00aeef;
-                    color: #fff;
-                    border-color: #00aeef;
-                    box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.2);
-                }
+    .timeline-steps .timeline-content .inner-circle.active {
+        background-color: #00aeef;
+        color: #ffffff;
+        border-color: #00aeef;
+        box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.2);
+    }
 
-        .timeline-steps .timeline-step:not(:last-child):after {
-            content: "";
-            display: block;
-            border-top: 3px solid #eef2f5;
-            width: 100%;
-            position: absolute;
-            left: 50%;
-            top: 1.5rem;
-            z-index: 0;
-        }
+    .timeline-steps .timeline-step:not(:last-child):after {
+        content: "";
+        display: block;
+        border-top: 3px solid #eef2f5;
+        width: 100%;
+        position: absolute;
+        left: 50%;
+        top: 1.5rem;
+        z-index: 0;
+    }
 
-        .timeline-steps .timeline-step.completed:not(:last-child):after {
-            border-top-color: #00aeef;
-        }
+    .timeline-steps .timeline-step.completed:not(:last-child):after {
+        border-top-color: #00aeef;
+    }
 
     .detail-card {
-        border: none;
-        border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+        background: #ffffff;
         height: 100%;
+        padding: 1.35rem;
+    }
+
+    .detail-card-title {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.055em;
+        margin-bottom: 1rem;
+    }
+
+    .detail-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        min-height: 38px;
+        padding: 0 0.9rem;
+        border-radius: 14px;
+        font-size: 0.86rem;
+        font-weight: 900;
+        border: 1px solid transparent;
+    }
+
+    .detail-status-new {
+        background-color: #e3f2fd;
+        color: #1565c0;
+        border-color: rgba(21, 101, 192, 0.18);
+    }
+
+    .detail-status-pending {
+        background-color: #fff8e1;
+        color: #f57f17;
+        border-color: rgba(245, 127, 23, 0.18);
+    }
+
+    .detail-status-review {
+        background-color: #fff3e0;
+        color: #ef6c00;
+        border-color: rgba(239, 108, 0, 0.18);
+    }
+
+    .detail-status-accepted {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+        border-color: rgba(46, 125, 50, 0.18);
+    }
+
+    .detail-status-rejected {
+        background-color: #ffebee;
+        color: #c62828;
+        border-color: rgba(198, 40, 40, 0.18);
+    }
+
+    .detail-status-revision {
+        background-color: #f3e5f5;
+        color: #7b1fa2;
+        border-color: rgba(123, 31, 162, 0.18);
+    }
+
+    .detail-status-presented {
+        background-color: #dbeafe;
+        color: #1d4ed8;
+        border-color: rgba(29, 78, 216, 0.18);
+    }
+
+    .detail-status-withdrawn {
+        background-color: #f1f5f9;
+        color: #64748b;
+        border-color: rgba(100, 116, 139, 0.18);
+    }
+
+    .quick-action-btn {
+        min-height: 42px;
+        border-radius: 14px;
+        font-size: 0.86rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 0.5rem;
     }
 
     .info-chip {
@@ -181,7 +488,7 @@
         border: 1px solid #e2e8f0;
         color: #475569;
         font-size: 0.85rem;
-        font-weight: 600;
+        font-weight: 700;
         margin-right: 6px;
         margin-bottom: 6px;
     }
@@ -189,20 +496,20 @@
     .nav-tabs-custom .nav-link {
         border: none;
         color: #64748b;
-        font-weight: 600;
+        font-weight: 800;
         padding: 15px 20px;
         border-bottom: 2px solid transparent;
     }
 
-        .nav-tabs-custom .nav-link.active {
-            color: #00aeef;
-            background: transparent;
-            border-bottom-color: #00aeef;
-        }
+    .nav-tabs-custom .nav-link.active {
+        color: #00aeef;
+        background: transparent;
+        border-bottom-color: #00aeef;
+    }
 
-        .nav-tabs-custom .nav-link:hover {
-            color: #00aeef;
-        }
+    .nav-tabs-custom .nav-link:hover {
+        color: #00aeef;
+    }
 
     .abstract-box {
         background: #f8fafc;
@@ -211,47 +518,136 @@
         padding: 24px;
     }
 
+    .detail-tabs-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.05);
+        background: #ffffff;
+        overflow: hidden;
+    }
+
     @@media (max-width: 768px) {
+        .submission-detail-page {
+            padding: 1rem 1rem 3rem;
+            max-width: 100%;
+        }
+
+        .detail-hero-card {
+            padding: 1.15rem;
+        }
+
+        .detail-hero-left {
+            align-items: flex-start;
+            flex-direction: column;
+            min-width: 100%;
+        }
+
+        .detail-hero-title {
+            font-size: 1.45rem;
+        }
+
+        .detail-hero-actions {
+            width: 100%;
+        }
+
+        .detail-hero-btn {
+            width: 100%;
+        }
+
         .timeline-steps .timeline-step {
             margin: 0.5rem;
         }
 
-            .timeline-steps .timeline-step:not(:last-child):after {
-                display: none;
-            }
+        .timeline-steps .timeline-step:not(:last-child):after {
+            display: none;
+        }
     }
 </style>
 
-<div class="container-fluid py-4">
+<div class="submission-detail-page">
 
-    <div class="d-flex justify-content-between align-items-center mb-5">
-        <div>
-            <h4 class="fw-bold text-dark mb-1">
-                @L("PageHeading", "Bildiri Detayı", "Abstract Details")
-            </h4>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert operation-alert operation-alert-success mb-4">
+            <i class="fas fa-check-circle"></i>
+            <span>@TempData["SuccessMessage"]</span>
+        </div>
+    }
 
-            <div class="d-flex align-items-center flex-wrap">
-                <span class="badge bg-light text-dark border me-2">
-                    #@Model.Id.ToString().Substring(0, 8).ToUpper()
-                </span>
+    @if (TempData["InfoMessage"] != null)
+    {
+        <div class="alert operation-alert operation-alert-info mb-4">
+            <i class="fas fa-circle-info"></i>
+            <span>@TempData["InfoMessage"]</span>
+        </div>
+    }
 
-                <span class="text-muted small">
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert operation-alert operation-alert-error mb-4">
+            <i class="fas fa-triangle-exclamation"></i>
+            <span>@TempData["ErrorMessage"]</span>
+        </div>
+    }
+
+    <div class="detail-hero-card">
+        <div class="detail-hero-left">
+            <div class="detail-hero-icon">
+                <i class="fas fa-file-lines"></i>
+            </div>
+
+            <div>
+                <div class="detail-section-label">
+                    @L("HeroSectionLabel", "Bildiri İşlemleri", "Abstract Operations")
+                </div>
+
+                <h2 class="detail-hero-title">
+                    @L("PageHeading", "Bildiri Detayı", "Abstract Details")
+                </h2>
+
+                <p class="detail-hero-text">
                     @Model.Title
-                </span>
+                </p>
+
+                <div class="detail-ref-row">
+                    <span class="detail-ref-badge">
+                        <i class="fas fa-hashtag"></i>
+                        @Model.Id.ToString().Substring(0, 8).ToUpper()
+                    </span>
+
+                    @if (!string.IsNullOrWhiteSpace(slug))
+                    {
+                        <span class="detail-slug-badge">
+                            <i class="fas fa-link"></i>
+                            /@slug
+                        </span>
+                    }
+                </div>
             </div>
         </div>
 
-        <a href="@listUrl" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-bold">
-            <i class="fas fa-arrow-left me-1"></i>
-            @L("BackToListButton", "Listeye Dön", "Back to List")
-        </a>
+        <div class="detail-hero-actions">
+            <a href="@listUrl" class="detail-hero-btn detail-hero-btn-light">
+                <i class="fas fa-arrow-left"></i>
+                @L("BackToListButton", "Listeye Dön", "Back to List")
+            </a>
+
+            @if (currentStatus == SubmissionStatus.New || currentStatus == SubmissionStatus.Pending || currentStatus == SubmissionStatus.RevisionRequired)
+            {
+                <a href="@editUrl" class="detail-hero-btn detail-hero-btn-primary">
+                    <i class="fas fa-edit"></i>
+                    @L("EditSubmissionButton", "Düzenle", "Edit")
+                </a>
+            }
+        </div>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-4 mb-5 p-4">
+    <div class="timeline-card">
         <div class="timeline-steps">
             <div class="timeline-step @(stepReview ? "completed" : "")">
                 <div class="timeline-content">
                     <div class="inner-circle @(stepSubmitted ? "active" : "")">1</div>
+
                     <p class="mt-2 mb-0 small fw-bold text-muted">
                         @L("StepSubmitted", "Gönderildi", "Submitted")
                     </p>
@@ -261,6 +657,7 @@
             <div class="timeline-step @(stepDecision ? "completed" : "")">
                 <div class="timeline-content">
                     <div class="inner-circle @(stepReview ? "active" : "")">2</div>
+
                     <p class="mt-2 mb-0 small fw-bold text-muted">
                         @L("StepReview", "Değerlendirme", "Review")
                     </p>
@@ -270,6 +667,7 @@
             <div class="timeline-step @(stepCompleted ? "completed" : "")">
                 <div class="timeline-content">
                     <div class="inner-circle @(stepDecision ? "active" : "")">3</div>
+
                     <p class="mt-2 mb-0 small fw-bold text-muted">
                         @L("StepDecision", "Karar", "Decision")
                     </p>
@@ -281,6 +679,7 @@
                     <div class="inner-circle @(stepCompleted ? "active" : "")">
                         <i class="fas fa-check"></i>
                     </div>
+
                     <p class="mt-2 mb-0 small fw-bold text-muted">
                         @L("StepCompleted", "Tamamlandı", "Completed")
                     </p>
@@ -290,10 +689,9 @@
     </div>
 
     <div class="row g-4 mb-5">
-
         <div class="col-md-4">
-            <div class="detail-card p-4">
-                <h6 class="fw-bold text-muted small text-uppercase mb-3">
+            <div class="detail-card">
+                <h6 class="detail-card-title">
                     @L("CurrentStatusHeader", "Mevcut Durum", "Current Status")
                 </h6>
 
@@ -322,11 +720,11 @@
                     </div>
 
                     <div>
-                        <span class="badge @statusBadgeClass fs-6 px-3 py-2 rounded-3">
+                        <span class="detail-status-badge @statusBadgeClass">
                             @statusText
                         </span>
 
-                        <small class="text-muted d-block mt-1">
+                        <small class="text-muted d-block mt-2 fw-bold">
                             @L("LastUpdatedLabel", "Son güncelleme:", "Last updated:")
                             @Model.CreatedDate.ToLocalTime().ToString("dd MMM yyyy")
                         </small>
@@ -344,27 +742,39 @@
         </div>
 
         <div class="col-md-4">
-            <div class="detail-card p-4">
-                <h6 class="fw-bold text-muted small text-uppercase mb-3">
+            <div class="detail-card">
+                <h6 class="detail-card-title">
                     @L("QuickActionsHeader", "Hızlı İşlemler", "Quick Actions")
                 </h6>
 
                 <div class="d-grid gap-2">
-                    @if (currentStatus == SubmissionStatus.New || currentStatus == SubmissionStatus.Pending)
+                    @if (currentStatus == SubmissionStatus.New)
                     {
-                        <a href="@editUrl" class="btn btn-outline-primary fw-bold text-start">
-                            <i class="fas fa-edit me-2"></i>
+                        <a href="@editUrl" class="btn btn-outline-primary quick-action-btn">
+                            <i class="fas fa-edit"></i>
                             @L("EditSubmissionButton", "Bildiriyi Düzenle", "Edit Abstract")
                         </a>
 
-                        <a href="@deleteUrl" class="btn btn-outline-danger fw-bold text-start">
-                            <i class="fas fa-trash-alt me-2"></i>
+                        <a href="@deleteUrl" class="btn btn-outline-danger quick-action-btn">
+                            <i class="fas fa-trash-alt"></i>
                             @L("DeleteSubmissionButton", "Bildiriyi Sil", "Delete Abstract")
                         </a>
 
                         <small class="text-muted text-center d-block mt-2">
                             @L("EditDeleteHelpText", "Değerlendirme başlamadan önce bildirinizi düzenleyebilir veya silebilirsiniz.", "You can edit or delete your abstract before the review process starts.")
                         </small>
+                    }
+                    else if (currentStatus == SubmissionStatus.Pending)
+                    {
+                        <a href="@editUrl" class="btn btn-outline-primary quick-action-btn">
+                            <i class="fas fa-edit"></i>
+                            @L("EditSubmissionButton", "Bildiriyi Düzenle", "Edit Abstract")
+                        </a>
+
+                        <div class="alert alert-light border text-muted small mb-0">
+                            <i class="fas fa-lock me-1"></i>
+                            @L("PendingDeleteNotAllowed", "Bu aşamada bildiri silinemez.", "The abstract cannot be deleted at this stage.")
+                        </div>
                     }
                     else if (currentStatus == SubmissionStatus.RevisionRequired)
                     {
@@ -373,15 +783,20 @@
                             @L("RevisionRequestedInfo", "Bu bildiri için revizyon istenmiştir.", "A revision has been requested for this abstract.")
                         </div>
 
-                        <a href="@uploadRevisionUrl" class="btn btn-warning fw-bold">
-                            <i class="fas fa-upload me-2"></i>
+                        <a href="@uploadRevisionUrl" class="btn btn-warning quick-action-btn">
+                            <i class="fas fa-upload"></i>
                             @L("UploadRevisionButton", "Revizyon Yükle", "Upload Revision")
+                        </a>
+
+                        <a href="@editUrl" class="btn btn-outline-primary quick-action-btn">
+                            <i class="fas fa-edit"></i>
+                            @L("EditSubmissionButton", "Bildiriyi Düzenle", "Edit Abstract")
                         </a>
                     }
                     else if (currentStatus == SubmissionStatus.Rejected)
                     {
-                        <a href="@rejectionLetterUrl" target="_blank" class="btn btn-outline-danger fw-bold">
-                            <i class="fas fa-file-pdf me-2"></i>
+                        <a href="@rejectionLetterUrl" target="_blank" class="btn btn-outline-danger quick-action-btn">
+                            <i class="fas fa-file-pdf"></i>
                             @L("DownloadRejectionLetterButton", "Red Mektubunu İndir", "Download Rejection Letter")
                         </a>
                     }
@@ -397,22 +812,27 @@
         </div>
 
         <div class="col-md-4">
-            <div class="detail-card p-4">
-                <h6 class="fw-bold text-muted small text-uppercase mb-3">
+            <div class="detail-card">
+                <h6 class="detail-card-title">
                     @L("DocumentsHeader", "Belgeler", "Documents")
                 </h6>
 
                 <div class="d-grid gap-2">
                     @if (currentStatus == SubmissionStatus.Accepted || currentStatus == SubmissionStatus.Presented)
                     {
-                        <a href="@acceptanceLetterUrl" target="_blank" class="btn btn-outline-success fw-bold text-start">
-                            <i class="fas fa-file-contract me-2"></i>
+                        <a href="@acceptanceLetterUrl" target="_blank" class="btn btn-outline-success quick-action-btn">
+                            <i class="fas fa-file-contract"></i>
                             @L("AcceptanceLetterButton", "Kabul Mektubu", "Acceptance Letter")
                         </a>
 
-                        <a href="@badgeUrl" target="_blank" class="btn btn-outline-dark fw-bold text-start">
-                            <i class="fas fa-id-badge me-2"></i>
+                        <a href="@badgeUrl" target="_blank" class="btn btn-outline-dark quick-action-btn">
+                            <i class="fas fa-id-badge"></i>
                             @L("GenerateBadgeButton", "Yaka Kartı Oluştur", "Generate Badge")
+                        </a>
+
+                        <a href="@certificatesUrl" class="btn btn-outline-primary quick-action-btn">
+                            <i class="fas fa-certificate"></i>
+                            @L("CertificateButton", "Sertifikalarım", "My Certificates")
                         </a>
                     }
                     else
@@ -430,7 +850,7 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="detail-tabs-card">
         <div class="card-header bg-white border-bottom p-0">
             <ul class="nav nav-tabs nav-tabs-custom px-4" id="detailTabs" role="tablist">
                 <li class="nav-item">
@@ -545,12 +965,12 @@
                                     foreach (var author in Model.Authors.OrderBy(a => a.Order))
                                     {
                                         var firstInitial = !string.IsNullOrWhiteSpace(author.FirstName)
-                                        ? author.FirstName.Substring(0, 1).ToUpper()
-                                        : "";
+                                            ? author.FirstName.Substring(0, 1).ToUpper()
+                                            : "";
 
                                         var lastInitial = !string.IsNullOrWhiteSpace(author.LastName)
-                                        ? author.LastName.Substring(0, 1).ToUpper()
-                                        : "";
+                                            ? author.LastName.Substring(0, 1).ToUpper()
+                                            : "";
 
                                         <tr>
                                             <td class="fw-bold text-muted">

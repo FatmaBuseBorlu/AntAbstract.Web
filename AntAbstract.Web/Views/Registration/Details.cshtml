@@ -1,61 +1,225 @@
 ﻿@model AntAbstract.Domain.Entities.Registration
+
+@using System
+@using System.Globalization
+
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_Layout";
+
+    var culture = CultureInfo.CurrentUICulture;
+    var isEnglish = culture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+
+    string L(string key, string tr, string en)
+    {
+        var value = Localizer[key].Value;
+
+        if (string.Equals(value, key, StringComparison.OrdinalIgnoreCase))
+        {
+            return isEnglish ? en : tr;
+        }
+
+        return value;
+    }
+
+    var user = Model?.AppUser;
+    var registrationType = Model?.RegistrationType;
+    var conference = registrationType?.Conference ?? Model?.Conference;
+
+    var userFullName = user == null
+        ? ""
+        : !string.IsNullOrWhiteSpace(user.DisplayName)
+            ? user.DisplayName
+            : $"{user.FirstName} {user.LastName}".Trim();
+
+    if (string.IsNullOrWhiteSpace(userFullName))
+    {
+        userFullName = user?.UserName ?? user?.Email ?? L("UnknownUser", "Kullanıcı", "User");
+    }
+
+    var userEmail = user?.Email ?? "-";
+
+    var registrationTypeName = registrationType?.Name;
+
+    if (isEnglish && !string.IsNullOrWhiteSpace(registrationType?.NameEn))
+    {
+        registrationTypeName = registrationType.NameEn;
+    }
+
+    if (string.IsNullOrWhiteSpace(registrationTypeName))
+    {
+        registrationTypeName = L("DefaultRegistrationType", "Kayıt Türü", "Registration Type");
+    }
+
+    var conferenceTitle = conference?.Title ?? L("DefaultConferenceTitle", "Kongre", "Congress");
+
+    var currency = !string.IsNullOrWhiteSpace(registrationType?.Currency)
+        ? registrationType.Currency
+        : "TRY";
+
+    var amount = registrationType != null
+        ? registrationType.Price
+        : Model?.Amount ?? 0;
+
+    var amountText = currency.Equals("TRY", StringComparison.OrdinalIgnoreCase)
+        ? amount.ToString("C", new CultureInfo("tr-TR"))
+        : $"{amount.ToString("N2", culture)} {currency}";
+
+    var registrationDate = Model?.RegistrationDate.ToLocalTime().ToString("dd MMM yyyy", culture) ?? "-";
+
+    var paymentDate = Model?.PaymentDate?.ToLocalTime().ToString("dd MMM yyyy HH:mm", culture);
+
+    var isPaid = Model?.IsPaid ?? false;
+    var hasValidRegistration = Model != null && Model.Id != Guid.Empty;
+
+    var homeUrl = "/";
+
+    var myConferencesUrl = "/Dashboard/MyConferences";
+
+    var titleText = isPaid
+        ? L("PaidTitle", "Ödeme Tamamlandı", "Payment Completed")
+        : L("PaymentTitle", "Kongre Katılım Ödemesi", "Congress Participation Payment");
+
+    var leadText = isPaid
+        ? L("PaidLead", "Bu kayıt için ödeme daha önce tamamlanmış görünüyor.", "The payment for this registration appears to have already been completed.")
+        : L("PaymentLead", "Kabul edilen bildiriniz veya katılımınız için ödeme işlemini bu ekrandan başlatabilirsiniz.", "You can start the payment process for your accepted abstract or participation from this screen.");
+
+    var step1Text = L("Step1Label", "Kayıt", "Registration");
+    var step2Text = L("Step2Label", "Ödeme", "Payment");
+
+    var statusText = isPaid
+        ? L("StatusPaid", "Ödendi", "Paid")
+        : L("StatusUnpaid", "Ödenmedi", "Unpaid");
 }
 
 <style>
-    .step-indicator {
+    .payment-page {
+        background: #f8fafc;
+        min-height: calc(100vh - 90px);
+        padding: 72px 0 56px;
+    }
+
+    .payment-hero {
+        background:
+            radial-gradient(circle at top right, rgba(34, 197, 94, 0.18), transparent 34%),
+            linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        color: #ffffff;
+        border-radius: 28px;
+        padding: 38px 42px;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
+        margin-bottom: 30px;
+    }
+
+    .payment-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-weight: 900;
+        font-size: 0.82rem;
+        margin-bottom: 18px;
+    }
+
+    .payment-title {
+        font-size: 2.15rem;
+        font-weight: 950;
+        letter-spacing: -1px;
+        margin-bottom: 10px;
+    }
+
+    .payment-lead {
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 1rem;
+        line-height: 1.75;
+        max-width: 850px;
+        margin-bottom: 0;
+        font-weight: 600;
+    }
+
+    .step-wrapper {
         display: flex;
+        align-items: center;
         justify-content: center;
         margin-bottom: 30px;
     }
 
+    .step-box {
+        text-align: center;
+    }
+
     .step {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
+        width: 42px;
+        height: 42px;
+        border-radius: 999px;
         background: #e9ecef;
         color: #6c757d;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-weight: bold;
-        margin: 0 10px;
+        font-weight: 950;
         position: relative;
         z-index: 1;
     }
 
-        .step.completed {
-            background: #198754;
-            color: white;
-        }
-
-        .step.active {
-            background: #00aeef;
-            color: white;
-            box-shadow: 0 0 10px rgba(0, 174, 239, 0.4);
-        }
-
-    .step-line {
-        height: 2px;
-        background: #e9ecef;
-        flex: 1;
-        margin-top: 20px;
-        max-width: 100px;
+    .step.completed {
+        background: #198754;
+        color: #ffffff;
     }
 
-        .step-line.completed {
-            background: #198754;
-        }
+    .step.active {
+        background: #00aeef;
+        color: #ffffff;
+        box-shadow: 0 0 0 5px rgba(0, 174, 239, 0.16);
+    }
+
+    .step-line {
+        height: 3px;
+        background: #e9ecef;
+        flex: 1;
+        max-width: 120px;
+        margin: 0 14px 22px;
+    }
+
+    .step-line.completed {
+        background: #198754;
+    }
 
     .payment-card {
         border: none;
-        border-radius: 15px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        border-radius: 26px;
+        box-shadow: 0 20px 55px rgba(15, 23, 42, 0.08);
         overflow: hidden;
+        background: #ffffff;
+    }
+
+    .payment-card-header {
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        padding: 1.35rem 1.5rem;
+        text-align: center;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .payment-card-title {
+        color: #0f172a;
+        font-weight: 950;
+        letter-spacing: -0.035em;
+        margin-bottom: 0.25rem;
+    }
+
+    .payment-card-subtitle {
+        color: #64748b;
+        font-size: 0.88rem;
+        font-weight: 650;
+        margin-bottom: 0;
+    }
+
+    .payment-card-body {
+        padding: 2rem;
     }
 
     .user-profile-mini {
@@ -63,128 +227,416 @@
         align-items: center;
         gap: 15px;
         padding: 15px;
-        background: #f8f9fa;
-        border-radius: 8px;
-        border: 1px solid #e9ecef;
+        background: #f8fafc;
+        border-radius: 18px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 1.4rem;
+    }
+
+    .user-avatar {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .info-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.85rem 0;
+        border-bottom: 1px dashed #e2e8f0;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        color: #64748b;
+        font-weight: 750;
+    }
+
+    .info-value {
+        color: #0f172a;
+        font-weight: 900;
+        text-align: right;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border-radius: 999px;
+        padding: 0.38rem 0.75rem;
+        font-size: 0.78rem;
+        font-weight: 950;
+    }
+
+    .status-paid {
+        background: rgba(34, 197, 94, 0.12);
+        color: #15803d;
+        border: 1px solid rgba(34, 197, 94, 0.22);
+    }
+
+    .status-unpaid {
+        background: rgba(245, 158, 11, 0.14);
+        color: #b45309;
+        border: 1px solid rgba(245, 158, 11, 0.24);
     }
 
     .price-tag {
-        background-color: #f1f8ff;
-        border-radius: 10px;
-        padding: 20px;
+        background:
+            radial-gradient(circle at top right, rgba(0, 174, 239, 0.12), transparent 36%),
+            #f8fbff;
+        border-radius: 22px;
+        padding: 24px;
         text-align: center;
         border: 2px dashed #00aeef;
-        margin: 20px 0;
+        margin: 24px 0;
+    }
+
+    .price-label {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 0.35rem;
+    }
+
+    .price-value {
+        color: #0d6efd;
+        font-size: 2.65rem;
+        font-weight: 950;
+        letter-spacing: -0.06em;
+        line-height: 1.1;
+    }
+
+    .payment-info-box {
+        border-radius: 18px;
+        padding: 1rem;
+        font-weight: 750;
+        line-height: 1.65;
+        margin-bottom: 1.25rem;
+    }
+
+    .payment-info-success {
+        background: rgba(34, 197, 94, 0.10);
+        border: 1px solid rgba(34, 197, 94, 0.20);
+        color: #15803d;
+        text-align: center;
+    }
+
+    .payment-info-warning {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        color: #92400e;
+    }
+
+    .pay-button {
+        min-height: 54px;
+        border: none;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #16a34a, #22c55e);
+        color: #ffffff;
+        font-weight: 950;
+        box-shadow: 0 16px 34px rgba(34, 197, 94, 0.24);
+        transition: all 0.2s ease;
+    }
+
+    .pay-button:hover {
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 20px 44px rgba(34, 197, 94, 0.32);
+    }
+
+    .pay-button:disabled {
+        background: #cbd5e1;
+        color: #64748b;
+        box-shadow: none;
+        transform: none;
+        cursor: not-allowed;
     }
 
     .payment-icons i {
         font-size: 26px;
         margin: 0 8px;
-        color: #6c757d;
-        opacity: 0.7;
+        color: #64748b;
+        opacity: 0.72;
+    }
+
+    .secure-text {
+        color: #64748b;
+        font-size: 0.75rem;
+        font-weight: 750;
+    }
+
+    .back-button {
+        min-height: 46px;
+        border-radius: 999px;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    @@media (max-width: 768px) {
+        .payment-page {
+            padding: 42px 0;
+        }
+
+        .payment-hero {
+            padding: 30px 22px;
+            border-radius: 22px;
+        }
+
+        .payment-title {
+            font-size: 1.75rem;
+        }
+
+        .payment-card-body {
+            padding: 1.35rem;
+        }
+
+        .price-value {
+            font-size: 2.1rem;
+        }
+
+        .info-row {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .info-value {
+            text-align: left;
+        }
     }
 </style>
 
-<div class="container mt-5 pt-5 mb-5">
+<section class="payment-page">
+    <div class="container">
 
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="d-flex align-items-center justify-content-center mb-4">
-                <div class="text-center">
-                    <div class="step completed"><i class="fas fa-check"></i></div>
-                    <small class="fw-bold mt-1 d-block text-success">@Localizer["Step1Label"]</small>
-                </div>
-                <div class="step-line completed"></div>
-                <div class="text-center">
-                    <div class="step active">2</div>
-                    <small class="fw-bold mt-1 d-block text-primary">@Localizer["Step2Label"]</small>
-                </div>
+        <div class="payment-hero">
+            <div class="payment-badge">
+                <i class="fas fa-credit-card"></i>
+                @L("HeroBadge", "Güvenli Ödeme", "Secure Payment")
             </div>
-        </div>
-    </div>
 
-    <div class="row justify-content-center">
-        <div class="col-lg-6 col-md-8">
-            <div class="card payment-card">
-                <div class="card-header bg-white p-4 text-center border-bottom">
-                    <h4 class="fw-bold text-dark mb-1">@Localizer["PageTitle"]</h4>
-                    <p class="text-muted small mb-0">@Localizer["PageLead"]</p>
+            <h1 class="payment-title">
+                @titleText
+            </h1>
+
+            <p class="payment-lead">
+                @leadText
+            </p>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-7 col-md-9">
+
+                <div class="step-wrapper">
+                    <div class="step-box">
+                        <div class="step completed">
+                            <i class="fas fa-check"></i>
+                        </div>
+
+                        <small class="fw-bold mt-2 d-block text-success">
+                            @step1Text
+                        </small>
+                    </div>
+
+                    <div class="step-line completed"></div>
+
+                    <div class="step-box">
+                        <div class="step active">
+                            2
+                        </div>
+
+                        <small class="fw-bold mt-2 d-block text-primary">
+                            @step2Text
+                        </small>
+                    </div>
                 </div>
 
-                <div class="card-body p-4 p-md-5">
+                <div class="payment-card">
+                    <div class="payment-card-header">
+                        <h4 class="payment-card-title">
+                            @ViewData["Title"]
+                        </h4>
 
-                    <div class="user-profile-mini mb-4">
-                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width:45px; height:45px; font-size:18px; min-width: 45px;">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="lh-1 overflow-hidden">
-                            <h6 class="mb-1 fw-bold text-truncate">@Model.AppUser.DisplayName</h6>
-                            <small class="text-muted">@Model.AppUser.Email</small>
-                        </div>
+                        <p class="payment-card-subtitle">
+                            @leadText
+                        </p>
                     </div>
 
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">@Localizer["TypeLabel"]</span>
-                        <span class="fw-bold text-dark">@Model.RegistrationType.Name</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">@Localizer["DateLabel"]</span>
-                        <span class="fw-bold text-dark">@Model.RegistrationDate.ToLocalTime().ToString("dd MMM yyyy")</span>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span class="text-muted">@Localizer["StatusLabel"]</span>
-                        <span>
-                            @if (Model.IsPaid)
-                            {
-                                <span class="badge bg-success">@Localizer["StatusPaid"]</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-warning text-dark">@Localizer["StatusUnpaid"]</span>
-                            }
-                        </span>
-                    </div>
+                    <div class="payment-card-body">
 
-                    <div class="price-tag">
-                        <small class="text-uppercase text-muted fw-bold" style="font-size: 0.75rem;">@Localizer["PriceLabel"]</small>
-                        <div class="display-4 fw-bold text-primary mt-1">
-                            @Model.RegistrationType.Price.ToString("C", new System.Globalization.CultureInfo("tr-TR"))
-                        </div>
-                    </div>
-
-                    @if (Model.IsPaid)
-                    {
-                        <div class="alert alert-success text-center py-3 border-0 bg-success bg-opacity-10 text-success">
-                            <i class="fas fa-check-circle fs-4 mb-2"></i><br>
-                            <strong>@Localizer["PaidMessage"]</strong>
-                        </div>
-                        <a href="/" class="btn btn-outline-secondary w-100 fw-bold">@Localizer["BackToHomeButton"]</a>
-                    }
-                    else
-                    {
-                        <form asp-controller="Payment" asp-action="CreateCheckoutSession" method="post">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="registrationId" value="@Model.Id" />
-
-                            <button type="submit" class="btn btn-lg btn-success w-100 py-3 fw-bold shadow-sm" style="transition: transform 0.2s;">
-                                <i class="fas fa-lock me-2"></i> @Localizer["PayNowButton"]
-                            </button>
-                        </form>
-
-                        <div class="text-center mt-4">
-                            <div class="payment-icons mb-2">
-                                <i class="fab fa-cc-visa" title="Visa"></i>
-                                <i class="fab fa-cc-mastercard" title="Mastercard"></i>
-                                <i class="fab fa-cc-amex" title="American Express"></i>
+                        <div class="user-profile-mini">
+                            <div class="user-avatar">
+                                <i class="fas fa-user"></i>
                             </div>
-                            <small class="text-muted" style="font-size: 11px;">
-                                <i class="fas fa-shield-alt text-success me-1"></i> @Localizer["SecurePaymentText"]
-                            </small>
-                        </div>
-                    }
 
+                            <div class="lh-1 overflow-hidden">
+                                <h6 class="mb-1 fw-bold text-truncate">
+                                    @userFullName
+                                </h6>
+
+                                <small class="text-muted">
+                                    @userEmail
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="info-row">
+                            <span class="info-label">
+                                @L("ConferenceLabel", "Kongre", "Congress")
+                            </span>
+
+                            <span class="info-value">
+                                @conferenceTitle
+                            </span>
+                        </div>
+
+                        <div class="info-row">
+                            <span class="info-label">
+                                @L("TypeLabel", "Kayıt Türü", "Registration Type")
+                            </span>
+
+                            <span class="info-value">
+                                @registrationTypeName
+                            </span>
+                        </div>
+
+                        <div class="info-row">
+                            <span class="info-label">
+                                @L("DateLabel", "Kayıt Tarihi", "Registration Date")
+                            </span>
+
+                            <span class="info-value">
+                                @registrationDate
+                            </span>
+                        </div>
+
+                        <div class="info-row">
+                            <span class="info-label">
+                                @L("StatusLabel", "Ödeme Durumu", "Payment Status")
+                            </span>
+
+                            <span class="info-value">
+                                @if (isPaid)
+                                {
+                                    <span class="status-badge status-paid">
+                                        <i class="fas fa-check-circle"></i>
+                                        @statusText
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-unpaid">
+                                        <i class="fas fa-clock"></i>
+                                        @statusText
+                                    </span>
+                                }
+                            </span>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(paymentDate))
+                        {
+                            <div class="info-row">
+                                <span class="info-label">
+                                    @L("PaymentDateLabel", "Ödeme Tarihi", "Payment Date")
+                                </span>
+
+                                <span class="info-value">
+                                    @paymentDate
+                                </span>
+                            </div>
+                        }
+
+                        <div class="price-tag">
+                            <div class="price-label">
+                                @L("PriceLabel", "Ödenecek Tutar", "Amount to Pay")
+                            </div>
+
+                            <div class="price-value">
+                                @amountText
+                            </div>
+                        </div>
+
+                        @if (!hasValidRegistration)
+                        {
+                            <div class="payment-info-box payment-info-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                @L("InvalidRegistrationMessage", "Geçerli bir kayıt bulunamadı. Lütfen kongre kayıt ekranından tekrar deneyin.", "No valid registration was found. Please try again from the congress registration page.")
+                            </div>
+
+                            <a href="@myConferencesUrl" class="btn btn-outline-secondary w-100 back-button">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                @L("BackToMyConferencesButton", "Kongrelerime Dön", "Back to My Congresses")
+                            </a>
+                        }
+                        else if (isPaid)
+                        {
+                            <div class="payment-info-box payment-info-success">
+                                <i class="fas fa-check-circle fs-4 mb-2"></i>
+                                <br />
+                                <strong>
+                                    @L("PaidMessage", "Bu kayıt için ödeme tamamlanmıştır.", "Payment has been completed for this registration.")
+                                </strong>
+                            </div>
+
+                            <a href="@myConferencesUrl" class="btn btn-outline-secondary w-100 back-button">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                @L("BackToMyConferencesButton", "Kongrelerime Dön", "Back to My Congresses")
+                            </a>
+                        }
+                        else
+                        {
+                            <div class="payment-info-box payment-info-warning">
+                                <i class="fas fa-circle-info me-2"></i>
+                                @L("PaymentWarningText", "Ödeme işlemine devam ettiğinizde güvenli ödeme sağlayıcısına yönlendirileceksiniz.", "When you continue, you will be redirected to the secure payment provider.")
+                            </div>
+
+                            <form asp-controller="Payment"
+                                  asp-action="CreateCheckoutSession"
+                                  method="post">
+
+                                @Html.AntiForgeryToken()
+
+                                <input type="hidden" name="registrationId" value="@Model.Id" />
+
+                                <button type="submit" class="btn pay-button w-100">
+                                    <i class="fas fa-lock me-2"></i>
+                                    @L("PayNowButton", "Güvenli Ödeme Yap", "Pay Securely")
+                                </button>
+                            </form>
+
+                            <div class="text-center mt-4">
+                                <div class="payment-icons mb-2">
+                                    <i class="fab fa-cc-visa" title="Visa"></i>
+                                    <i class="fab fa-cc-mastercard" title="Mastercard"></i>
+                                    <i class="fab fa-cc-amex" title="American Express"></i>
+                                </div>
+
+                                <small class="secure-text">
+                                    <i class="fas fa-shield-alt text-success me-1"></i>
+                                    @L("SecurePaymentText", "Ödeme bilgileriniz güvenli şekilde işlenir.", "Your payment information is processed securely.")
+                                </small>
+                            </div>
+                        }
+
+                    </div>
                 </div>
+
             </div>
         </div>
     </div>
-</div>
+</section>

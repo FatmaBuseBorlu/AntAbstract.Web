@@ -1,4 +1,6 @@
-﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+﻿@using System
+@using Microsoft.AspNetCore.Routing
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -13,9 +15,16 @@
             : value;
     }
 
+    var slug = Context.GetRouteValue("slug")?.ToString() ?? "";
+
+    var postUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Review/Availability"
+        : $"/{slug}/Review/Availability";
+
     DateTime? unavailableStartDate = ViewBag.UnavailableStartDate as DateTime?;
     DateTime? unavailableEndDate = ViewBag.UnavailableEndDate as DateTime?;
     string unavailableReason = ViewBag.UnavailableReason as string ?? "";
+
     var hasAvailabilityRecord = unavailableStartDate.HasValue && unavailableEndDate.HasValue;
     var availabilityStart = unavailableStartDate.GetValueOrDefault();
     var availabilityEnd = unavailableEndDate.GetValueOrDefault();
@@ -206,16 +215,6 @@
         border: 1px solid rgba(100, 116, 139, 0.16);
     }
 
-    .cancel-btn {
-        width: 38px;
-        height: 38px;
-        min-width: 38px;
-        border-radius: 999px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
     .coming-soon-box {
         margin-top: 1.5rem;
         background: #f8fafc;
@@ -313,7 +312,7 @@
                         </div>
                     }
 
-                    <form asp-action="Availability" method="post">
+                    <form action="@postUrl" method="post">
                         @Html.AntiForgeryToken()
 
                         <div class="mb-3">
@@ -324,7 +323,7 @@
                             <input type="date"
                                    name="unavailableStartDate"
                                    value="@(unavailableStartDate?.ToString("yyyy-MM-dd"))"
-                                   class="form-control form-control-custom">
+                                   class="form-control form-control-custom" />
                         </div>
 
                         <div class="mb-3">
@@ -335,7 +334,7 @@
                             <input type="date"
                                    name="unavailableEndDate"
                                    value="@(unavailableEndDate?.ToString("yyyy-MM-dd"))"
-                                   class="form-control form-control-custom">
+                                   class="form-control form-control-custom" />
                         </div>
 
                         <div class="mb-4">
@@ -347,7 +346,7 @@
                                    name="unavailableReason"
                                    value="@unavailableReason"
                                    class="form-control form-control-custom"
-                                   placeholder="@L("ReasonPlaceholder", "Örn: Akademik seyahat, yoğunluk, izin...")">
+                                   placeholder="@L("ReasonPlaceholder", "Örn: Akademik seyahat, yoğunluk, izin...")" />
                         </div>
 
                         <button class="btn btn-danger w-100 save-btn" type="submit">
@@ -386,39 +385,43 @@
                                     <i class="fas @(isUpcomingOrActive ? "fa-clock" : "fa-check-circle")"></i>
                                     @(isUpcomingOrActive
                                         ? L("UpcomingPlanBadge", "Yaklaşan / Aktif")
-                                        : L("CompletedBadge", "Tamamlandı"))
+                                        : L("CompletedPlanBadge", "Geçmiş"))
                                 </span>
 
-                                <h6 class="availability-date @(isUpcomingOrActive ? "" : "text-muted text-decoration-line-through")">
-                                    @availabilityStart.ToString("dd.MM.yyyy") - @availabilityEnd.ToString("dd.MM.yyyy")
-                                </h6>
+                                <div class="availability-date">
+                                    @availabilityStart.ToString("dd MMMM yyyy") - @availabilityEnd.ToString("dd MMMM yyyy")
+                                </div>
 
-                                <div class="availability-reason @(isUpcomingOrActive ? "text-danger" : "")">
-                                    <i class="fas fa-calendar-times me-1"></i>
+                                <div class="availability-reason">
                                     @(string.IsNullOrWhiteSpace(unavailableReason)
                                         ? L("NoReasonText", "Açıklama belirtilmedi.")
                                         : unavailableReason)
                                 </div>
                             </div>
-
-                            <i class="fas @(isUpcomingOrActive ? "fa-calendar-times text-danger" : "fa-check-circle text-success") fs-4 opacity-50"></i>
                         </div>
                     }
                     else
                     {
                         <div class="review-empty-card m-4">
-                            <div class="text-muted">
-                                <i class="fas fa-calendar-check fa-2x mb-3 opacity-50"></i>
-                                <div class="fw-bold">
-                                    @L("NoAvailabilityRecordTitle", "Kayıtlı müsait olmama aralığınız yok")
-                                </div>
-                                <div class="small mt-1">
-                                    @L("NoAvailabilityRecordText", "Yeni atamalarda uygun kabul edilirsiniz.")
-                                </div>
+                            <div class="mb-3">
+                                <i class="fas fa-calendar-check fa-3x text-muted opacity-25"></i>
                             </div>
+
+                            <h5 class="fw-bold text-dark">
+                                @L("NoAvailabilityRecordTitle", "Kayıtlı müsait olmama aralığı yok")
+                            </h5>
+
+                            <p class="text-muted small mb-0">
+                                @L("NoAvailabilityRecordText", "Değerlendirme yapamayacağınız tarihleri eklediğinizde burada görüntülenecek.")
+                            </p>
                         </div>
                     }
                 </div>
+            </div>
+
+            <div class="coming-soon-box">
+                <i class="fas fa-lightbulb me-2 text-warning"></i>
+                @L("AvailabilityInfoText", "Müsaitlik bilgisi, ileride otomatik hakem atama sürecinde kullanılabilir.")
             </div>
         </div>
     </div>
