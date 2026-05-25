@@ -125,27 +125,43 @@
                 </h2>
 
                 <p class="decision-page-description">
-                    <strong>@conferenceTitle</strong> kongresine ait bildirilerin kabul, ret veya revizyon kararlarını buradan yönetebilirsiniz.
+                    <strong>@(string.IsNullOrWhiteSpace(conferenceTitle) ? "Seçili kongre" : conferenceTitle)</strong> kongresine ait bildirilerin kabul, ret veya revizyon kararlarını buradan yönetebilirsiniz.
                 </p>
 
-                @if (!string.IsNullOrWhiteSpace(slug))
+                @if (!string.IsNullOrWhiteSpace(conferenceTitle) || !string.IsNullOrWhiteSpace(slug))
                 {
                     <div class="selected-conference-pill">
                         <i class="fas fa-calendar-check"></i>
+
                         <span>Seçili Kongre:</span>
-                        <strong>@conferenceTitle</strong>
-                        <em>/@slug</em>
+
+                        <strong>
+                            @(string.IsNullOrWhiteSpace(conferenceTitle) ? "Kongre seçilmedi" : conferenceTitle)
+                        </strong>
+
+                        @if (!string.IsNullOrWhiteSpace(slug))
+                        {
+                            <em>/@slug</em>
+                        }
                     </div>
                 }
             </div>
         </div>
 
         <div class="decision-hero-actions">
+
+            <a href="@flowUrl"
+               class="btn decision-light-btn">
+                <i class="fas fa-arrow-left me-2"></i>
+                Kongre Akışına Dön
+            </a>
+
             <a href="@changeConferenceUrl"
                class="btn decision-outline-btn">
                 <i class="fas fa-exchange-alt me-2"></i>
                 Kongre Değiştir
             </a>
+
         </div>
     </div>
 
@@ -266,6 +282,12 @@
                     <p>
                         Karar aşamasına gelen bildiriler olduğunda burada listelenecek.
                     </p>
+
+                    <a href="@flowUrl"
+                       class="btn decision-light-btn">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Kongre Akışına Dön
+                    </a>
                 </div>
             }
             else
@@ -286,8 +308,8 @@
                             @foreach (var item in awaitingDecision)
                             {
                                 var detailUrl = string.IsNullOrWhiteSpace(slug)
-                                ? $"/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}"
-                                : $"/{slug}/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}";
+                                    ? $"/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}"
+                                    : $"/{slug}/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}";
 
                                 <tr>
                                     <td>
@@ -344,7 +366,9 @@
                                                 <input type="hidden" name="decision" value="Accept" />
                                                 <input type="hidden" name="note" value="" />
 
-                                                <button type="submit" class="btn decision-accept-btn">
+                                                <button type="submit"
+                                                        class="btn decision-accept-btn"
+                                                        title="Kabul Et">
                                                     <i class="fas fa-check"></i>
                                                 </button>
                                             </form>
@@ -359,7 +383,9 @@
                                                 <input type="hidden" name="decision" value="Revision" />
                                                 <input type="hidden" name="note" value="" />
 
-                                                <button type="submit" class="btn decision-revision-btn">
+                                                <button type="submit"
+                                                        class="btn decision-revision-btn"
+                                                        title="Revizyon İste">
                                                     <i class="fas fa-rotate"></i>
                                                 </button>
                                             </form>
@@ -374,7 +400,9 @@
                                                 <input type="hidden" name="decision" value="Reject" />
                                                 <input type="hidden" name="note" value="" />
 
-                                                <button type="submit" class="btn decision-reject-btn">
+                                                <button type="submit"
+                                                        class="btn decision-reject-btn"
+                                                        title="Reddet">
                                                     <i class="fas fa-xmark"></i>
                                                 </button>
                                             </form>
@@ -414,6 +442,12 @@
                     <p>
                         Karar verilen bildiriler burada listelenecek.
                     </p>
+
+                    <a href="@flowUrl"
+                       class="btn decision-light-btn">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Kongre Akışına Dön
+                    </a>
                 </div>
             }
             else
@@ -434,8 +468,8 @@
                             @foreach (var item in alreadyDecided)
                             {
                                 var detailUrl = string.IsNullOrWhiteSpace(slug)
-                                ? $"/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}"
-                                : $"/{slug}/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}";
+                                    ? $"/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}"
+                                    : $"/{slug}/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}";
 
                                 <tr>
                                     <td>
@@ -579,15 +613,21 @@
         font-weight: 900;
     }
 
-        .selected-conference-pill em {
-            color: #64748b;
-            font-style: normal;
-            font-weight: 900;
-        }
+    .selected-conference-pill span,
+    .selected-conference-pill strong {
+        color: #0d6efd;
+    }
+
+    .selected-conference-pill em {
+        color: #64748b;
+        font-style: normal;
+        font-weight: 900;
+    }
 
     .decision-hero-actions {
         display: flex;
         align-items: center;
+        justify-content: flex-end;
         gap: 0.75rem;
         flex-wrap: wrap;
     }
@@ -595,43 +635,48 @@
     .decision-light-btn,
     .decision-outline-btn,
     .decision-view-btn {
-        min-height: 44px;
+        min-height: 48px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        gap: 0.55rem;
         border-radius: 999px;
-        padding: 0 1.2rem;
-        text-decoration: none;
+        padding: 0 1.35rem;
+        font-size: 0.95rem;
         font-weight: 900;
-        white-space: nowrap;
+        text-decoration: none;
         transition: all 0.2s ease;
+        white-space: nowrap;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.045);
     }
 
     .decision-light-btn {
-        border: 1px solid #dbe3ef;
         background: #ffffff;
-        color: #334155;
+        color: #0f172a;
+        border: 1px solid #dbe3ef;
     }
 
-        .decision-light-btn:hover {
-            color: #0d6efd;
-            border-color: rgba(13, 110, 253, 0.28);
-            background: #f8fbff;
-            transform: translateY(-1px);
-        }
+    .decision-light-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.32);
+        background: #ffffff;
+        box-shadow: 0 12px 26px rgba(13, 110, 253, 0.10);
+        transform: translateY(-1px);
+    }
 
     .decision-outline-btn {
-        border: 1px solid #94a3b8;
         background: #ffffff;
-        color: #475569;
+        color: #334155;
+        border: 1px solid #cbd5e1;
     }
 
-        .decision-outline-btn:hover {
-            color: #0f172a;
-            border-color: #64748b;
-            background: #f8fafc;
-            transform: translateY(-1px);
-        }
+    .decision-outline-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.32);
+        background: #ffffff;
+        box-shadow: 0 12px 26px rgba(13, 110, 253, 0.10);
+        transform: translateY(-1px);
+    }
 
     .decision-stat-card {
         min-height: 104px;
@@ -716,37 +761,37 @@
         transition: all 0.2s ease;
     }
 
-        .decision-tab span {
-            min-width: 26px;
-            min-height: 24px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 999px;
-            background: #f1f5f9;
-            color: #0f172a;
-            font-size: 0.76rem;
-            font-weight: 900;
-        }
+    .decision-tab span {
+        min-width: 26px;
+        min-height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #0f172a;
+        font-size: 0.76rem;
+        font-weight: 900;
+    }
 
-        .decision-tab.active {
-            background: linear-gradient(135deg, #0d6efd, #00aeef);
-            color: #ffffff;
-            box-shadow: 0 10px 22px rgba(13, 110, 253, 0.20);
-        }
+    .decision-tab.active {
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.20);
+    }
 
-            .decision-tab.active span {
-                background: rgba(255, 255, 255, 0.18);
-                color: #ffffff;
-            }
+    .decision-tab.active span {
+        background: rgba(255, 255, 255, 0.18);
+        color: #ffffff;
+    }
 
     .decision-panel {
         display: none;
     }
 
-        .decision-panel.active {
-            display: block;
-        }
+    .decision-panel.active {
+        display: block;
+    }
 
     .decision-list-card {
         background: #ffffff;
@@ -766,19 +811,19 @@
         flex-wrap: wrap;
     }
 
-        .decision-list-header h5 {
-            margin: 0 0 0.25rem;
-            color: #0f172a;
-            font-size: 1.25rem;
-            font-weight: 900;
-        }
+    .decision-list-header h5 {
+        margin: 0 0 0.25rem;
+        color: #0f172a;
+        font-size: 1.25rem;
+        font-weight: 900;
+    }
 
-        .decision-list-header p {
-            margin: 0;
-            color: #64748b;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
+    .decision-list-header p {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
 
     .decision-count-pill {
         padding: 0.45rem 0.85rem;
@@ -800,35 +845,35 @@
         border-spacing: 0;
     }
 
-        .decision-table thead th {
-            padding: 1rem 1.5rem;
-            background: #f8fafc;
-            color: #64748b;
-            font-size: 0.78rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            border-bottom: 1px solid #edf2f7;
-            white-space: nowrap;
-        }
+    .decision-table thead th {
+        padding: 1rem 1.5rem;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 1px solid #edf2f7;
+        white-space: nowrap;
+    }
 
-        .decision-table tbody td {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #edf2f7;
-            vertical-align: middle;
-        }
+    .decision-table tbody td {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #edf2f7;
+        vertical-align: middle;
+    }
 
-        .decision-table tbody tr {
-            transition: all 0.2s ease;
-        }
+    .decision-table tbody tr {
+        transition: all 0.2s ease;
+    }
 
-            .decision-table tbody tr:hover {
-                background: #f8fbff;
-            }
+    .decision-table tbody tr:hover {
+        background: #f8fbff;
+    }
 
-            .decision-table tbody tr:last-child td {
-                border-bottom: none;
-            }
+    .decision-table tbody tr:last-child td {
+        border-bottom: none;
+    }
 
     .submission-title-cell,
     .author-cell,
@@ -907,9 +952,9 @@
         color: #475569;
     }
 
-        .review-info-pill i {
-            color: #0d6efd;
-        }
+    .review-info-pill i {
+        color: #0d6efd;
+    }
 
     .status-new {
         background: rgba(0, 174, 239, 0.12);
@@ -959,10 +1004,10 @@
         padding: 0 0.95rem;
     }
 
-        .decision-view-btn:hover {
-            background: #0d6efd;
-            color: #ffffff;
-        }
+    .decision-view-btn:hover {
+        background: #0d6efd;
+        color: #ffffff;
+    }
 
     .decision-form {
         display: inline-flex;
@@ -986,30 +1031,30 @@
         color: #16a34a;
     }
 
-        .decision-accept-btn:hover {
-            background: #16a34a;
-            color: #ffffff;
-        }
+    .decision-accept-btn:hover {
+        background: #16a34a;
+        color: #ffffff;
+    }
 
     .decision-revision-btn {
         background: rgba(124, 58, 237, 0.10);
         color: #7c3aed;
     }
 
-        .decision-revision-btn:hover {
-            background: #7c3aed;
-            color: #ffffff;
-        }
+    .decision-revision-btn:hover {
+        background: #7c3aed;
+        color: #ffffff;
+    }
 
     .decision-reject-btn {
         background: rgba(239, 68, 68, 0.10);
         color: #ef4444;
     }
 
-        .decision-reject-btn:hover {
-            background: #ef4444;
-            color: #ffffff;
-        }
+    .decision-reject-btn:hover {
+        background: #ef4444;
+        color: #ffffff;
+    }
 
     .decision-empty-state {
         padding: 4rem 1.5rem;
@@ -1086,61 +1131,6 @@
             flex-wrap: wrap;
         }
     }
-
-
-    /* Ortak modern header buton görünümü */
-    .decision-hero-actions {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-    }
-
-        .decision-hero-actions .decision-light-btn,
-        .decision-hero-actions .decision-outline-btn {
-            min-height: 48px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.55rem;
-            border-radius: 999px;
-            padding: 0 1.35rem;
-            font-size: 0.95rem;
-            font-weight: 900;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            white-space: nowrap;
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.045);
-        }
-
-        .decision-hero-actions .decision-light-btn {
-            background: #ffffff;
-            color: #0f172a;
-            border: 1px solid #dbe3ef;
-        }
-
-            .decision-hero-actions .decision-light-btn:hover {
-                color: #0d6efd;
-                border-color: rgba(13, 110, 253, 0.32);
-                background: #ffffff;
-                box-shadow: 0 12px 26px rgba(13, 110, 253, 0.10);
-                transform: translateY(-1px);
-            }
-
-        .decision-hero-actions .decision-outline-btn {
-            background: #ffffff;
-            color: #334155;
-            border: 1px solid #cbd5e1;
-        }
-
-            .decision-hero-actions .decision-outline-btn:hover {
-                color: #0d6efd;
-                border-color: rgba(13, 110, 253, 0.32);
-                background: #ffffff;
-                box-shadow: 0 12px 26px rgba(13, 110, 253, 0.10);
-                transform: translateY(-1px);
-            }
 </style>
 
 @section Scripts {

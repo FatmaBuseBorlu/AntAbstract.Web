@@ -1,49 +1,42 @@
-﻿@model AntAbstract.Domain.Entities.Tenant
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+﻿@model AntAbstract.Web.Models.ViewModels.Admin.Tenants.TenantDetailViewModel
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"].Value;
+    ViewData["Title"] = string.IsNullOrWhiteSpace(Model?.Name)
+        ? "Kurum Detayı"
+        : $"{Model.Name} - Kurum Detayı";
+
     Layout = "_LayoutDashboard";
+}
 
-    string L(string key, string fallback)
+@functions {
+    private string GetRoleLabel(string role)
     {
-        var value = Localizer[key].Value;
+        return role switch
+        {
+            "SuperAdmin" => "Süper Admin",
+            "Admin" => "Admin",
+            "Author" => "Yazar",
+            "Listener" => "Dinleyici",
+            "Referee" => "Hakem",
+            _ => role
+        };
+    }
 
-        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
-            ? fallback
-            : value;
+    private string GetRoleBadgeClass(string role)
+    {
+        return role switch
+        {
+            "SuperAdmin" => "bg-dark text-white",
+            "Admin" => "bg-danger bg-opacity-10 text-danger",
+            "Author" => "bg-primary bg-opacity-10 text-primary",
+            "Listener" => "bg-info bg-opacity-10 text-info",
+            "Referee" => "bg-warning bg-opacity-10 text-warning",
+            _ => "bg-secondary bg-opacity-10 text-secondary"
+        };
     }
 }
 
 <div class="container-fluid tenant-details-page">
-
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-4 mb-4">
-            <i class="fas fa-check-circle me-2"></i>
-            @TempData["SuccessMessage"]
-
-            <button type="button"
-                    class="btn-close"
-                    data-bs-dismiss="alert"
-                    aria-label="@L("CloseLabel", "Kapat")">
-            </button>
-        </div>
-    }
-
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-4 mb-4">
-            <i class="fas fa-times-circle me-2"></i>
-            @TempData["ErrorMessage"]
-
-            <button type="button"
-                    class="btn-close"
-                    data-bs-dismiss="alert"
-                    aria-label="@L("CloseLabel", "Kapat")">
-            </button>
-        </div>
-    }
 
     <div class="details-page-header d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4">
         <div>
@@ -54,7 +47,7 @@
                            asp-controller="Tenants"
                            asp-action="Index"
                            class="text-decoration-none">
-                            @L("BreadcrumbInstitutions", "Kurumlar")
+                            Kurumlar
                         </a>
                     </li>
 
@@ -70,41 +63,133 @@
                 </div>
 
                 <div>
+                    <div class="text-uppercase text-muted fw-bold small mb-1">
+                        Global Sistem
+                    </div>
+
                     <h1 class="page-title mb-1">
                         @Model.Name
                     </h1>
 
                     <p class="page-subtitle mb-0">
-                        @L("PageLead", "Bu kurumun temel bilgilerini buradan görüntüleyebilir ve düzenleyebilirsiniz.")
+                        Bu kurumun adminlerini, kullanıcılarını ve bağlı kongrelerini buradan takip edebilirsiniz.
                     </p>
                 </div>
             </div>
         </div>
 
-        <a asp-area="Admin"
-           asp-controller="Tenants"
-           asp-action="Index"
-           class="btn btn-light border shadow-sm rounded-pill px-4 py-2 fw-bold back-btn">
-            <i class="fas fa-arrow-left me-2"></i>
-            @L("BackToListButton", "Kurum Listesine Dön")
-        </a>
+        <div class="details-header-actions">
+            <a asp-area="Admin"
+               asp-controller="Tenants"
+               asp-action="Index"
+               class="btn btn-light border shadow-sm rounded-pill px-4 py-2 fw-bold">
+                <i class="fas fa-arrow-left me-2"></i>
+                Kurum Listesine Dön
+            </a>
+
+            <a asp-area="Admin"
+               asp-controller="Tenants"
+               asp-action="Edit"
+               asp-route-id="@Model.Id"
+               class="btn btn-warning rounded-pill px-4 py-2 fw-bold text-white">
+                <i class="fas fa-pen-to-square me-2"></i>
+                Düzenle
+            </a>
+        </div>
     </div>
 
-    <div class="row justify-content-center g-4">
-        <div class="col-xl-7 col-lg-9">
-            <div class="modern-card info-card h-100">
+    <div class="row g-4 mb-4">
+
+        <div class="col-xl-3 col-md-6">
+            <div class="summary-card">
+                <div class="summary-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="fas fa-building"></i>
+                </div>
+
+                <div>
+                    <div class="summary-title">
+                        Kurum Durumu
+                    </div>
+
+                    <div class="summary-value">
+                        Aktif
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="summary-card">
+                <div class="summary-icon bg-success bg-opacity-10 text-success">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+
+                <div>
+                    <div class="summary-title">
+                        Kurum Admini
+                    </div>
+
+                    <div class="summary-value">
+                        @Model.AdminCount
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="summary-card">
+                <div class="summary-icon bg-info bg-opacity-10 text-info">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+
+                <div>
+                    <div class="summary-title">
+                        Bağlı Kongre
+                    </div>
+
+                    <div class="summary-value">
+                        @Model.ConferenceCount
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="summary-card">
+                <div class="summary-icon bg-warning bg-opacity-10 text-warning">
+                    <i class="fas fa-users"></i>
+                </div>
+
+                <div>
+                    <div class="summary-title">
+                        Bağlı Kullanıcı
+                    </div>
+
+                    <div class="summary-value">
+                        @Model.UserCount
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row g-4 mb-4">
+
+        <div class="col-xl-7">
+            <div class="modern-card h-100">
                 <div class="modern-card-header">
                     <div class="modern-card-icon soft-primary">
-                        <i class="fas fa-building"></i>
+                        <i class="fas fa-circle-info"></i>
                     </div>
 
                     <div>
                         <h5 class="modern-card-title mb-1">
-                            @L("InfoCardTitle", "Kurum Bilgileri")
+                            Kurum Bilgileri
                         </h5>
 
                         <p class="modern-card-text mb-0">
-                            @L("InfoCardLead", "Bu kurumun temel sistem bilgileri.")
+                            Bu kurumun sistemde kayıtlı temel bilgileri.
                         </p>
                     </div>
                 </div>
@@ -117,7 +202,7 @@
 
                         <div class="info-box-content">
                             <div class="info-label">
-                                @L("NameLabel", "Kurum Adı")
+                                Kurum Adı
                             </div>
 
                             <div class="info-value">
@@ -133,13 +218,56 @@
 
                         <div class="info-box-content">
                             <div class="info-label">
-                                @L("SlugLabel", "URL Adresi")
+                                URL Adresi
                             </div>
 
                             <div class="info-value">
-                                <span class="slug-badge">
-                                    /@Model.Slug
-                                </span>
+                                @if (!string.IsNullOrWhiteSpace(Model.Slug))
+                                {
+                                    <a href="@Model.PublicSiteUrl"
+                                       target="_blank"
+                                       class="slug-badge text-decoration-none">
+                                        @Model.SlugPath
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">
+                                        Slug tanımlanmamış
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="info-box-icon soft-green">
+                            <i class="fas fa-flask"></i>
+                        </div>
+
+                        <div class="info-box-content">
+                            <div class="info-label">
+                                Bilimsel Alan
+                            </div>
+
+                            <div class="info-value">
+                                @(Model.ScientificFieldName ?? "Tanımlanmamış")
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="info-box-icon soft-purple">
+                            <i class="fas fa-tag"></i>
+                        </div>
+
+                        <div class="info-box-content">
+                            <div class="info-label">
+                                Kongre Türü
+                            </div>
+
+                            <div class="info-value">
+                                @(Model.CongressTypeName ?? "Tanımlanmamış")
                             </div>
                         </div>
                     </div>
@@ -151,7 +279,7 @@
 
                         <div class="info-box-content">
                             <div class="info-label">
-                                @L("SystemIdLabel", "Sistem ID")
+                                Sistem ID
                             </div>
 
                             <div class="info-value system-id">
@@ -160,20 +288,444 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <div class="modern-card-footer">
+        <div class="col-xl-5">
+            <div class="modern-card h-100">
+                <div class="modern-card-header">
+                    <div class="modern-card-icon soft-success">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+
+                    <div>
+                        <h5 class="modern-card-title mb-1">
+                            Hızlı İşlemler
+                        </h5>
+
+                        <p class="modern-card-text mb-0">
+                            Bu kurumla ilgili en sık kullanılan işlemler.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="modern-card-body">
+
+                    <a asp-area="Admin"
+                       asp-controller="Tenants"
+                       asp-action="AssignManager"
+                       asp-route-id="@Model.Id"
+                       asp-route-returnUrl="@Model.AssignManagerReturnUrl"
+                       class="quick-action-card text-decoration-none">
+                        <div class="quick-action-icon soft-success">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+
+                        <div class="quick-action-content">
+                            <div class="quick-action-title">
+                                Kurum Yöneticisi Ata
+                            </div>
+
+                            <div class="quick-action-desc">
+                                Mevcut kullanıcıyı admin yap veya yeni admin hesabı oluştur.
+                            </div>
+                        </div>
+
+                        <i class="fas fa-arrow-right quick-action-arrow"></i>
+                    </a>
+
+                    <a asp-area="Admin"
+                       asp-controller="Tenants"
+                       asp-action="AssignUser"
+                       asp-route-id="@Model.Id"
+                       asp-route-returnUrl="@Model.AssignManagerReturnUrl"
+                       class="quick-action-card text-decoration-none">
+                        <div class="quick-action-icon soft-user">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+
+                        <div class="quick-action-content">
+                            <div class="quick-action-title">
+                                Kullanıcı / Hakem Bağla
+                            </div>
+
+                            <div class="quick-action-desc">
+                                Mevcut kullanıcıyı kuruma bağla veya yeni kullanıcı oluşturup rol ver.
+                            </div>
+                        </div>
+
+                        <i class="fas fa-arrow-right quick-action-arrow"></i>
+                    </a>
+
                     <a asp-area="Admin"
                        asp-controller="Tenants"
                        asp-action="Edit"
                        asp-route-id="@Model.Id"
-                       class="btn edit-btn rounded-pill fw-bold w-100">
-                        <i class="fas fa-pen-to-square me-2"></i>
-                        @L("EditButton", "Bilgileri Düzenle")
+                       class="quick-action-card text-decoration-none">
+                        <div class="quick-action-icon soft-warning">
+                            <i class="fas fa-pen-to-square"></i>
+                        </div>
+
+                        <div class="quick-action-content">
+                            <div class="quick-action-title">
+                                Kurum Bilgilerini Düzenle
+                            </div>
+
+                            <div class="quick-action-desc">
+                                Kurum adı, slug, logo ve temel bilgileri güncelle.
+                            </div>
+                        </div>
+
+                        <i class="fas fa-arrow-right quick-action-arrow"></i>
                     </a>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.Slug))
+                    {
+                        <a href="@Model.PublicSiteUrl"
+                           target="_blank"
+                           class="quick-action-card text-decoration-none">
+                            <div class="quick-action-icon soft-blue">
+                                <i class="fas fa-external-link-alt"></i>
+                            </div>
+
+                            <div class="quick-action-content">
+                                <div class="quick-action-title">
+                                    Siteyi Görüntüle
+                                </div>
+
+                                <div class="quick-action-desc">
+                                    Kuruma ait public siteyi yeni sekmede aç.
+                                </div>
+                            </div>
+
+                            <i class="fas fa-arrow-right quick-action-arrow"></i>
+                        </a>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.ConferenceFlowUrl))
+                    {
+                        <a href="@Model.ConferenceFlowUrl"
+                           class="quick-action-card text-decoration-none">
+                            <div class="quick-action-icon soft-primary">
+                                <i class="fas fa-stream"></i>
+                            </div>
+
+                            <div class="quick-action-content">
+                                <div class="quick-action-title">
+                                    Kongre Akışına Git
+                                </div>
+
+                                <div class="quick-action-desc">
+                                    Bu kuruma bağlı en güncel kongrenin operasyon ekranına geç.
+                                </div>
+                            </div>
+
+                            <i class="fas fa-arrow-right quick-action-arrow"></i>
+                        </a>
+                    }
+                    else
+                    {
+                        <div class="quick-action-card disabled-action">
+                            <div class="quick-action-icon soft-gray">
+                                <i class="fas fa-stream"></i>
+                            </div>
+
+                            <div class="quick-action-content">
+                                <div class="quick-action-title">
+                                    Kongre Akışı Yok
+                                </div>
+
+                                <div class="quick-action-desc">
+                                    Bu kuruma bağlı kongre bulunmadığı için kongre akışı açılamaz.
+                                </div>
+                            </div>
+                        </div>
+                    }
+
                 </div>
             </div>
         </div>
+
     </div>
+
+    <div class="row g-4 mb-4">
+
+        <div class="col-xl-6">
+            <div class="modern-card h-100">
+                <div class="modern-card-header">
+                    <div class="modern-card-icon soft-success">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+
+                    <div>
+                        <h5 class="modern-card-title mb-1">
+                            Kurum Adminleri
+                        </h5>
+
+                        <p class="modern-card-text mb-0">
+                            Bu kurumu yönetebilen admin kullanıcılar.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="modern-card-body">
+                    @if (Model.Admins != null && Model.Admins.Any())
+                    {
+                        <div class="simple-list">
+                            @foreach (var admin in Model.Admins)
+                            {
+                                <div class="simple-list-item">
+                                    <div class="list-avatar bg-success bg-opacity-10 text-success">
+                                        @admin.DisplayName.Substring(0, 1).ToUpper()
+                                    </div>
+
+                                    <div class="list-content">
+                                        <div class="list-title">
+                                            @admin.DisplayName
+                                        </div>
+
+                                        <div class="list-subtitle">
+                                            @(admin.Email ?? "-")
+                                        </div>
+                                    </div>
+
+                                    <span class="role-badge bg-danger bg-opacity-10 text-danger">
+                                        Admin
+                                    </span>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="empty-box">
+                            <i class="fas fa-user-shield"></i>
+
+                            <h6>
+                                Admin atanmamış
+                            </h6>
+
+                            <p>
+                                Bu kuruma henüz admin kullanıcı atanmamış.
+                            </p>
+
+                            <a asp-area="Admin"
+                               asp-controller="Tenants"
+                               asp-action="AssignManager"
+                               asp-route-id="@Model.Id"
+                               asp-route-returnUrl="@Model.AssignManagerReturnUrl"
+                               class="btn btn-sm btn-success rounded-pill px-3 fw-bold">
+                                <i class="fas fa-user-plus me-1"></i>
+                                Admin Ata
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-6">
+            <div class="modern-card h-100">
+                <div class="modern-card-header">
+                    <div class="modern-card-icon soft-primary">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+
+                    <div>
+                        <h5 class="modern-card-title mb-1">
+                            Bağlı Kongreler
+                        </h5>
+
+                        <p class="modern-card-text mb-0">
+                            Bu kuruma bağlı kongreler.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="modern-card-body">
+                    @if (Model.Conferences != null && Model.Conferences.Any())
+                    {
+                        <div class="simple-list">
+                            @foreach (var conference in Model.Conferences)
+                            {
+                                <div class="simple-list-item">
+                                    <div class="list-avatar bg-primary bg-opacity-10 text-primary">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </div>
+
+                                    <div class="list-content">
+                                        <div class="list-title">
+                                            @conference.Title
+                                        </div>
+
+                                        <div class="list-subtitle">
+                                            @conference.SlugPath
+                                            @if (conference.StartDate.HasValue)
+                                            {
+                                                <span>
+                                                    • @conference.StartDate.Value.ToString("dd.MM.yyyy")
+                                                </span>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <span class="role-badge bg-success bg-opacity-10 text-success">
+                                        @conference.StatusText
+                                    </span>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="empty-box">
+                            <i class="fas fa-calendar-alt"></i>
+
+                            <h6>
+                                Kongre yok
+                            </h6>
+
+                            <p>
+                                Bu kuruma bağlı kongre bulunmuyor.
+                            </p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="modern-card">
+        <div class="modern-card-header users-card-header">
+            <div class="modern-card-header-left">
+                <div class="modern-card-icon soft-warning">
+                    <i class="fas fa-users"></i>
+                </div>
+
+                <div>
+                    <h5 class="modern-card-title mb-1">
+                        Bağlı Kullanıcılar
+                    </h5>
+
+                    <p class="modern-card-text mb-0">
+                        Bu kuruma bağlı tüm kullanıcılar ve rolleri.
+                    </p>
+                </div>
+            </div>
+
+            <a asp-area="Admin"
+               asp-controller="Tenants"
+               asp-action="AssignUser"
+               asp-route-id="@Model.Id"
+               asp-route-returnUrl="@Model.AssignManagerReturnUrl"
+               class="btn btn-primary rounded-pill px-4 fw-bold add-user-btn">
+                <i class="fas fa-user-plus me-2"></i>
+                Kullanıcı / Hakem Bağla
+            </a>
+        </div>
+
+        <div class="modern-card-body">
+            @if (Model.Users != null && Model.Users.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 users-table">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4 py-3 text-muted fw-bold small">
+                                    Kullanıcı
+                                </th>
+
+                                <th class="py-3 text-muted fw-bold small">
+                                    E-posta
+                                </th>
+
+                                <th class="py-3 text-muted fw-bold small">
+                                    Roller
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var user in Model.Users)
+                            {
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="table-avatar me-3 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold">
+                                                @user.DisplayName.Substring(0, 1).ToUpper()
+                                            </div>
+
+                                            <div>
+                                                <span class="fw-bold d-block text-dark">
+                                                    @user.DisplayName
+                                                </span>
+
+                                                <small class="text-muted">
+                                                    ID: @user.UserId.Substring(0, 8)...
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <span class="text-muted">
+                                            @(user.Email ?? "-")
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        @if (user.Roles != null && user.Roles.Any())
+                                        {
+                                            <div class="d-flex flex-wrap gap-2">
+                                                @foreach (var role in user.Roles)
+                                                {
+                                                    <span class="role-badge @GetRoleBadgeClass(role)">
+                                                        @GetRoleLabel(role)
+                                                    </span>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">
+                                                Rol yok
+                                            </span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="empty-box">
+                    <i class="fas fa-users"></i>
+
+                    <h6>
+                        Kullanıcı yok
+                    </h6>
+
+                    <p class="mb-3">
+                        Bu kuruma bağlı kullanıcı bulunmuyor.
+                    </p>
+
+                    <a asp-area="Admin"
+                       asp-controller="Tenants"
+                       asp-action="AssignUser"
+                       asp-route-id="@Model.Id"
+                       asp-route-returnUrl="@Model.AssignManagerReturnUrl"
+                       class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">
+                        <i class="fas fa-user-plus me-1"></i>
+                        Kullanıcı / Hakem Bağla
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
 </div>
 
 <style>
@@ -192,6 +744,14 @@
 
     .breadcrumb-item a {
         color: #2563eb;
+    }
+
+    .details-header-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.65rem;
+        flex-wrap: wrap;
     }
 
     .page-title-wrap {
@@ -226,14 +786,41 @@
         font-weight: 600;
     }
 
-    .back-btn {
-        white-space: nowrap;
-        transition: all 0.25s ease;
+    .summary-card {
+        background-color: #ffffff;
+        border-radius: 1rem;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        box-shadow: 0 8px 25px rgba(15, 23, 42, 0.05);
+        border: 1px solid #f1f5f9;
+        min-height: 95px;
     }
 
-    .back-btn:hover {
-        transform: translateY(-2px);
-        background: #f8fafc;
+    .summary-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .summary-title {
+        color: #64748b;
+        font-weight: 800;
+        font-size: 0.75rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .summary-value {
+        color: #0f172a;
+        font-weight: 900;
+        font-size: 1rem;
+        line-height: 1.25;
     }
 
     .modern-card {
@@ -249,6 +836,18 @@
         align-items: flex-start;
         gap: 1rem;
         padding: 1.85rem 1.85rem 1.45rem 1.85rem;
+    }
+
+    .modern-card-header.users-card-header {
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
+    .modern-card-header-left {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
     }
 
     .modern-card-icon {
@@ -267,6 +866,16 @@
         color: #0284c7;
     }
 
+    .modern-card-icon.soft-success {
+        background: rgba(25, 135, 84, 0.12);
+        color: #198754;
+    }
+
+    .modern-card-icon.soft-warning {
+        background: rgba(245, 158, 11, 0.12);
+        color: #f59e0b;
+    }
+
     .modern-card-title {
         color: #0f172a;
         font-weight: 950;
@@ -281,14 +890,9 @@
     }
 
     .modern-card-body {
-        padding: 0 1.85rem 1.4rem 1.85rem;
+        padding: 0 1.85rem 1.85rem 1.85rem;
         display: grid;
         gap: 1rem;
-    }
-
-    .modern-card-footer {
-        padding: 1.4rem 1.85rem 1.85rem 1.85rem;
-        border-top: 1px solid #e2e8f0;
     }
 
     .info-box {
@@ -322,13 +926,35 @@
         color: #2563eb;
     }
 
+    .info-box-icon.soft-green {
+        background: rgba(25, 135, 84, 0.10);
+        color: #198754;
+    }
+
+    .info-box-icon.soft-purple {
+        background: rgba(111, 66, 193, 0.10);
+        color: #6f42c1;
+    }
+
     .info-box-icon.soft-gray {
         background: rgba(100, 116, 139, 0.12);
         color: #64748b;
     }
 
-    .info-box-content {
-        min-width: 0;
+    .slug-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.42rem 0.72rem;
+        border-radius: 12px;
+        background: #eff6ff;
+        color: #2563eb;
+        font-weight: 950;
+    }
+
+    .system-id {
+        color: #64748b;
+        font-size: 0.92rem;
+        word-break: break-all;
     }
 
     .info-label {
@@ -348,38 +974,177 @@
         word-break: break-word;
     }
 
-    .slug-badge {
-        display: inline-flex;
+    .quick-action-card,
+    .simple-list-item {
+        min-height: 82px;
+        display: flex;
         align-items: center;
-        padding: 0.42rem 0.72rem;
-        border-radius: 12px;
-        background: #eff6ff;
-        color: #2563eb;
-        font-weight: 950;
+        gap: 1rem;
+        padding: 1rem;
+        border-radius: 22px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #0f172a;
+        transition: all 0.2s ease;
     }
 
-    .system-id {
-        color: #64748b;
-        font-size: 0.92rem;
-        word-break: break-all;
-    }
-
-    .edit-btn {
-        min-height: 52px;
-        border: 2px solid #f59e0b;
-        color: #f59e0b;
+    .quick-action-card:hover {
         background: #ffffff;
+        border-color: rgba(0, 174, 239, 0.35);
+        box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
+        transform: translateY(-2px);
+        color: #0f172a;
+    }
+
+    .quick-action-icon,
+    .list-avatar {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        border-radius: 17px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.25s ease;
+        font-size: 1rem;
+        font-weight: 900;
     }
 
-    .edit-btn:hover {
-        color: #ffffff;
-        background: #f59e0b;
-        transform: translateY(-2px);
-        box-shadow: 0 16px 30px rgba(245, 158, 11, 0.22);
+    .quick-action-icon.soft-success {
+        background: rgba(25, 135, 84, 0.12);
+        color: #198754;
+    }
+
+    .quick-action-icon.soft-user {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .quick-action-icon.soft-warning {
+        background: rgba(245, 158, 11, 0.12);
+        color: #f59e0b;
+    }
+
+    .quick-action-icon.soft-blue {
+        background: rgba(37, 99, 235, 0.10);
+        color: #2563eb;
+    }
+
+    .quick-action-icon.soft-primary {
+        background: rgba(0, 174, 239, 0.12);
+        color: #0284c7;
+    }
+
+    .quick-action-icon.soft-gray {
+        background: rgba(100, 116, 139, 0.12);
+        color: #64748b;
+    }
+
+    .quick-action-content,
+    .list-content {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .quick-action-title,
+    .list-title {
+        color: #0f172a;
+        font-weight: 950;
+        font-size: 0.95rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .quick-action-desc,
+    .list-subtitle {
+        color: #64748b;
+        font-weight: 600;
+        line-height: 1.45;
+        font-size: 0.78rem;
+    }
+
+    .quick-action-arrow {
+        color: #94a3b8;
+        font-size: 0.85rem;
+    }
+
+    .disabled-action {
+        opacity: 0.82;
+        cursor: not-allowed;
+    }
+
+    .disabled-action:hover {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        box-shadow: none;
+        transform: none;
+    }
+
+    .simple-list {
+        display: grid;
+        gap: 0.85rem;
+    }
+
+    .role-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 0.35rem 0.6rem;
+        font-size: 0.75rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .empty-box {
+        border: 1px dashed #cbd5e1;
+        border-radius: 24px;
+        padding: 2rem;
+        text-align: center;
+        color: #64748b;
+        background: #f8fafc;
+    }
+
+    .empty-box i {
+        font-size: 2rem;
+        opacity: 0.4;
+        margin-bottom: 0.75rem;
+    }
+
+    .empty-box h6 {
+        color: #0f172a;
+        font-weight: 900;
+        margin-bottom: 0.35rem;
+    }
+
+    .empty-box p {
+        margin-bottom: 0;
+        font-size: 0.88rem;
+        font-weight: 600;
+    }
+
+    .users-table thead th {
+        font-size: 0.7rem;
+        letter-spacing: 0.8px;
+        border-bottom: none;
+        text-transform: uppercase;
+    }
+
+    .users-table tbody tr {
+        border-bottom: 1px solid #f8fafc;
+    }
+
+    .table-avatar {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        font-size: 0.95rem;
+    }
+
+    .add-user-btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        box-shadow: 0 12px 24px rgba(13, 110, 253, 0.14);
     }
 
     @@media (max-width: 991.98px) {
@@ -391,11 +1156,6 @@
             padding-left: 1.4rem;
             padding-right: 1.4rem;
         }
-
-        .modern-card-footer {
-            padding-left: 1.4rem;
-            padding-right: 1.4rem;
-        }
     }
 
     @@media (max-width: 575.98px) {
@@ -403,7 +1163,21 @@
             flex-direction: column;
         }
 
-        .info-box {
+        .details-header-actions {
+            justify-content: flex-start;
+        }
+
+        .modern-card-header.users-card-header {
+            align-items: flex-start;
+        }
+
+        .modern-card-header-left {
+            flex-direction: column;
+        }
+
+        .info-box,
+        .quick-action-card,
+        .simple-list-item {
             align-items: flex-start;
         }
     }

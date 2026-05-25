@@ -10,6 +10,8 @@ namespace AntAbstract.WebUI.Models.ViewModels.Admin.AllConferences
 
         public string? Slug { get; set; }
 
+        public Guid? TenantId { get; set; }
+
         public string TenantName { get; set; } = "-";
 
         public string? TenantSlug { get; set; }

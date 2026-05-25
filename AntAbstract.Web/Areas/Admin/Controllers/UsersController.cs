@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AntAbstract.Infrastructure.Context;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -19,6 +20,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IStringLocalizer<UsersController> _localizer;
+        private readonly AppDbContext _context;
 
         private static readonly string[] AllowedRoles =
         {
@@ -32,11 +34,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public UsersController(
             UserManager<AppUser> userManager,
             RoleManager<IdentityRole> roleManager,
-            IStringLocalizer<UsersController> localizer)
+            IStringLocalizer<UsersController> localizer,
+            AppDbContext context)
+            
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _localizer = localizer;
+            _context = context;
         }
 
         private string T(string key, string fallback)

@@ -26,6 +26,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IStringLocalizer<TenantsController> _localizer;
 
+        private static readonly string[] AssignableTenantRoles =
+        {
+            "Admin",
+            "Author",
+            "Referee",
+            "Listener"
+        };
+
         public TenantsController(
             AppDbContext context,
             UserManager<AppUser> userManager,
@@ -117,6 +125,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return Regex.IsMatch(slug, @"^[a-z0-9]+(?:-[a-z0-9]+)*$");
         }
 
+        private static string GetRoleDisplayName(string role)
+        {
+            return role switch
+            {
+                "Admin" => "Admin",
+                "Author" => "Yazar",
+                "Referee" => "Hakem",
+                "Listener" => "Dinleyici",
+                _ => role
+            };
+        }
+
         private async Task FillSelectListsAsync(
             int? selectedScientificFieldId = null,
             int? selectedCongressTypeId = null)
@@ -142,6 +162,21 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "Id",
                 "Name",
                 selectedCongressTypeId);
+        }
+
+        private void FillAssignableTenantRoles(TenantAssignUserViewModel model)
+        {
+            model.AvailableRoles = AssignableTenantRoles
+                .Select(role => new SelectListItem
+                {
+                    Value = role,
+                    Text = GetRoleDisplayName(role),
+                    Selected = string.Equals(
+                        role,
+                        model.SelectedRole,
+                        StringComparison.OrdinalIgnoreCase)
+                })
+                .ToList();
         }
 
         private async Task FillAssignableAdminUsersAsync(TenantAssignManagerViewModel model)
@@ -203,6 +238,65 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
         }
 
+        private async Task FillAssignableTenantUsersAsync(TenantAssignUserViewModel model)
+        {
+            var users = await _context.Users
+                .AsNoTracking()
+                .OrderBy(x => x.FirstName)
+                .ThenBy(x => x.LastName)
+                .ThenBy(x => x.Email)
+                .ToListAsync();
+
+            var tenants = await _context.Tenants
+                .AsNoTracking()
+                .ToDictionaryAsync(x => x.Id, x => x.Name);
+
+            model.AvailableUsers = new List<SelectListItem>();
+
+            foreach (var user in users)
+            {
+                if (user == null || string.IsNullOrWhiteSpace(user.Id))
+                {
+                    continue;
+                }
+
+                var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
+
+                if (isSuperAdmin)
+                {
+                    continue;
+                }
+
+                var fullName = $"{user.FirstName} {user.LastName}".Trim();
+
+                if (string.IsNullOrWhiteSpace(fullName))
+                {
+                    fullName = user.Email ?? user.UserName ?? "Kullanıcı";
+                }
+
+                var currentTenantText = "Kurumsuz";
+
+                if (user.TenantId.HasValue &&
+                    tenants.TryGetValue(user.TenantId.Value, out var tenantName))
+                {
+                    currentTenantText = tenantName;
+                }
+
+                var roles = await _userManager.GetRolesAsync(user);
+
+                var roleText = roles.Any()
+                    ? string.Join(", ", roles.Select(GetRoleDisplayName))
+                    : "Rol yok";
+
+                model.AvailableUsers.Add(new SelectListItem
+                {
+                    Value = user.Id,
+                    Text = $"{fullName} - {user.Email} | {roleText} | {currentTenantText}",
+                    Selected = user.Id == model.ExistingUserId
+                });
+            }
+        }
+
         public async Task<IActionResult> Index()
         {
             var tenants = await _context.Tenants
@@ -212,7 +306,71 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .OrderBy(t => t.Name)
                 .ToListAsync();
 
-            return View(tenants);
+            var users = await _context.Users
+                .AsNoTracking()
+                .OrderBy(x => x.FirstName)
+                .ThenBy(x => x.LastName)
+                .ThenBy(x => x.Email)
+                .ToListAsync();
+
+            var conferences = await _context.Conferences
+                .AsNoTracking()
+                .Select(x => new
+                {
+                    x.Id,
+                    x.TenantId
+                })
+                .ToListAsync();
+
+            var adminUsers = new List<AppUser>();
+
+            if (await _roleManager.RoleExistsAsync("Admin"))
+            {
+                adminUsers = (await _userManager.GetUsersInRoleAsync("Admin")).ToList();
+            }
+
+            var adminUserIds = adminUsers
+                .Select(x => x.Id)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var model = tenants.Select(tenant =>
+            {
+                var tenantUsers = users
+                    .Where(x => x.TenantId == tenant.Id)
+                    .ToList();
+
+                var adminNames = tenantUsers
+                    .Where(x => adminUserIds.Contains(x.Id))
+                    .Select(x =>
+                    {
+                        var fullName = $"{x.FirstName} {x.LastName}".Trim();
+
+                        return string.IsNullOrWhiteSpace(fullName)
+                            ? x.Email ?? x.UserName ?? "Admin"
+                            : fullName;
+                    })
+                    .OrderBy(x => x)
+                    .ToList();
+
+                return new TenantListItemViewModel
+                {
+                    Id = tenant.Id,
+                    Name = tenant.Name,
+                    Slug = tenant.Slug,
+                    ScientificFieldName = tenant.ScientificField?.Name,
+                    CongressTypeName = tenant.CongressType?.Name,
+                    ConferenceCount = conferences.Count(x => x.TenantId == tenant.Id),
+                    UserCount = tenantUsers.Count,
+                    AdminNames = adminNames
+                };
+            }).ToList();
+
+            ViewBag.TotalTenantCount = model.Count;
+            ViewBag.TenantWithAdminCount = model.Count(x => x.HasAdmin);
+            ViewBag.TotalConferenceCount = model.Sum(x => x.ConferenceCount);
+            ViewBag.TotalUserCount = model.Sum(x => x.UserCount);
+
+            return View(model);
         }
 
         public async Task<IActionResult> Details(Guid? id)
@@ -233,30 +391,90 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return NotFound();
             }
 
-            var firstConferenceId = await _context.Conferences
+            var conferences = await _context.Conferences
                 .AsNoTracking()
                 .Where(x => x.TenantId == tenant.Id)
                 .OrderByDescending(x => x.StartDate)
+                .Select(x => new TenantDetailConferenceViewModel
+                {
+                    Id = x.Id,
+                    Title = x.Title,
+                    Slug = x.Slug,
+                    StartDate = x.StartDate,
+                    StatusText = "Aktif"
+                })
+                .ToListAsync();
+
+            var firstConferenceId = conferences
                 .Select(x => x.Id)
-                .FirstOrDefaultAsync();
+                .FirstOrDefault();
 
             Guid? conferenceId = firstConferenceId == Guid.Empty
                 ? null
                 : firstConferenceId;
 
-            ViewBag.ConferenceId = conferenceId;
-
-            ViewBag.ConferenceFlowUrl = conferenceId.HasValue
+            var conferenceFlowUrl = conferenceId.HasValue && !string.IsNullOrWhiteSpace(tenant.Slug)
                 ? $"/{tenant.Slug}/Admin/ConferenceFlow?conferenceId={conferenceId.Value}"
                 : null;
 
-            ViewBag.AssignManagerReturnUrl = conferenceId.HasValue
-                ? $"/{tenant.Slug}/Admin/ConferenceFlow?conferenceId={conferenceId.Value}"
-                : Url.Action(
-                action: nameof(Index),
+            var detailsReturnUrl = Url.Action(
+                action: nameof(Details),
                 controller: "Tenants",
-                values: new { area = "Admin" });
-                return View(tenant);
+                values: new { area = "Admin", id = tenant.Id });
+
+            var tenantUsers = await _context.Users
+                .AsNoTracking()
+                .Where(x => x.TenantId == tenant.Id)
+                .OrderBy(x => x.FirstName)
+                .ThenBy(x => x.LastName)
+                .ThenBy(x => x.Email)
+                .ToListAsync();
+
+            var userModels = new List<TenantDetailUserViewModel>();
+
+            foreach (var tenantUser in tenantUsers)
+            {
+                var roles = await _userManager.GetRolesAsync(tenantUser);
+
+                var fullName = $"{tenantUser.FirstName} {tenantUser.LastName}".Trim();
+
+                if (string.IsNullOrWhiteSpace(fullName))
+                {
+                    fullName = tenantUser.Email ?? tenantUser.UserName ?? "Kullanıcı";
+                }
+
+                userModels.Add(new TenantDetailUserViewModel
+                {
+                    UserId = tenantUser.Id,
+                    DisplayName = fullName,
+                    Email = tenantUser.Email,
+                    Roles = roles
+                        .OrderBy(x => x)
+                        .ToList()
+                });
+            }
+
+            var admins = userModels
+                .Where(x => x.Roles.Contains("Admin", StringComparer.OrdinalIgnoreCase))
+                .OrderBy(x => x.DisplayName)
+                .ToList();
+
+            var model = new TenantDetailViewModel
+            {
+                Id = tenant.Id,
+                Name = tenant.Name,
+                Slug = tenant.Slug,
+                LogoUrl = tenant.LogoUrl,
+                ScientificFieldName = tenant.ScientificField?.Name,
+                CongressTypeName = tenant.CongressType?.Name,
+                ConferenceFlowUrl = conferenceFlowUrl,
+                AssignManagerReturnUrl = detailsReturnUrl,
+                Admins = admins,
+                Users = userModels,
+                Conferences = conferences
+            };
+
+            return View(model);
         }
 
         [HttpGet]
@@ -763,6 +981,311 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             model.ReturnUrl = safeReturnUrl;
 
             await FillAssignableAdminUsersAsync(model);
+
+            return View(model);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> AssignUser(Guid id, string? returnUrl = null)
+        {
+            if (id == Guid.Empty)
+            {
+                return NotFound();
+            }
+
+            var tenant = await _context.Tenants
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (tenant == null)
+            {
+                return NotFound();
+            }
+
+            var safeReturnUrl = GetSafeReturnUrl(returnUrl);
+
+            var model = new TenantAssignUserViewModel
+            {
+                TenantId = tenant.Id,
+                TenantName = tenant.Name,
+                AssignmentMode = "Existing",
+                SelectedRole = "Referee",
+                ReturnUrl = safeReturnUrl
+            };
+
+            FillAssignableTenantRoles(model);
+            await FillAssignableTenantUsersAsync(model);
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AssignUser(TenantAssignUserViewModel model)
+        {
+            var tenant = await _context.Tenants
+                .FirstOrDefaultAsync(x => x.Id == model.TenantId);
+
+            if (tenant == null)
+            {
+                return NotFound();
+            }
+
+            model.TenantName = tenant.Name;
+
+            var safeReturnUrl = GetSafeReturnUrl(model.ReturnUrl);
+
+            var assignmentMode = string.IsNullOrWhiteSpace(model.AssignmentMode)
+                ? "Existing"
+                : model.AssignmentMode;
+
+            var selectedRole = model.SelectedRole?.Trim();
+
+            var roleName = AssignableTenantRoles.FirstOrDefault(role =>
+                string.Equals(role, selectedRole, StringComparison.OrdinalIgnoreCase));
+
+            if (string.IsNullOrWhiteSpace(roleName))
+            {
+                ModelState.AddModelError(
+                    nameof(model.SelectedRole),
+                    T("Error_SelectRoleRequired", "Lütfen kullanıcıya verilecek rolü seçiniz."));
+            }
+
+            if (assignmentMode == "Existing")
+            {
+                ModelState.Remove(nameof(model.FirstName));
+                ModelState.Remove(nameof(model.LastName));
+                ModelState.Remove(nameof(model.Email));
+                ModelState.Remove(nameof(model.Password));
+
+                if (string.IsNullOrWhiteSpace(model.ExistingUserId))
+                {
+                    ModelState.AddModelError(
+                        nameof(model.ExistingUserId),
+                        T("Error_SelectUserRequired", "Lütfen kuruma bağlanacak kullanıcıyı seçiniz."));
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    model.ReturnUrl = safeReturnUrl;
+
+                    FillAssignableTenantRoles(model);
+                    await FillAssignableTenantUsersAsync(model);
+
+                    return View(model);
+                }
+
+                var existingUser = await _userManager.FindByIdAsync(model.ExistingUserId!);
+
+                if (existingUser == null)
+                {
+                    ModelState.AddModelError(
+                        nameof(model.ExistingUserId),
+                        T("Error_UserNotFound", "Seçilen kullanıcı bulunamadı."));
+
+                    model.ReturnUrl = safeReturnUrl;
+
+                    FillAssignableTenantRoles(model);
+                    await FillAssignableTenantUsersAsync(model);
+
+                    return View(model);
+                }
+
+                var isSuperAdmin = await _userManager.IsInRoleAsync(existingUser, "SuperAdmin");
+
+                if (isSuperAdmin)
+                {
+                    ModelState.AddModelError(
+                        nameof(model.ExistingUserId),
+                        T("Error_SuperAdminCannotBeAssignedToTenant", "Süper Admin kullanıcıları kuruma bu ekrandan bağlanamaz."));
+
+                    model.ReturnUrl = safeReturnUrl;
+
+                    FillAssignableTenantRoles(model);
+                    await FillAssignableTenantUsersAsync(model);
+
+                    return View(model);
+                }
+
+                existingUser.TenantId = tenant.Id;
+                existingUser.EmailConfirmed = true;
+
+                var updateResult = await _userManager.UpdateAsync(existingUser);
+
+                if (!updateResult.Succeeded)
+                {
+                    foreach (var error in updateResult.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+
+                    model.ReturnUrl = safeReturnUrl;
+
+                    FillAssignableTenantRoles(model);
+                    await FillAssignableTenantUsersAsync(model);
+
+                    return View(model);
+                }
+
+                if (!await _roleManager.RoleExistsAsync(roleName!))
+                {
+                    await _roleManager.CreateAsync(new IdentityRole(roleName!));
+                }
+
+                if (!await _userManager.IsInRoleAsync(existingUser, roleName!))
+                {
+                    var addRoleResult = await _userManager.AddToRoleAsync(existingUser, roleName!);
+
+                    if (!addRoleResult.Succeeded)
+                    {
+                        foreach (var error in addRoleResult.Errors)
+                        {
+                            ModelState.AddModelError(string.Empty, error.Description);
+                        }
+
+                        model.ReturnUrl = safeReturnUrl;
+
+                        FillAssignableTenantRoles(model);
+                        await FillAssignableTenantUsersAsync(model);
+
+                        return View(model);
+                    }
+                }
+
+                var fullName = $"{existingUser.FirstName} {existingUser.LastName}".Trim();
+
+                if (string.IsNullOrWhiteSpace(fullName))
+                {
+                    fullName = existingUser.Email ?? existingUser.UserName ?? "Kullanıcı";
+                }
+
+                TempData["SuccessMessage"] =
+                    $"{tenant.Name} kurumuna {fullName} adlı kullanıcı {GetRoleDisplayName(roleName!)} rolüyle bağlandı.";
+
+                return RedirectBackOrIndex(safeReturnUrl);
+            }
+
+            if (assignmentMode == "New")
+            {
+                ModelState.Remove(nameof(model.ExistingUserId));
+
+                if (string.IsNullOrWhiteSpace(model.FirstName))
+                {
+                    ModelState.AddModelError(
+                        nameof(model.FirstName),
+                        T("Error_FirstNameRequired", "Ad alanı zorunludur."));
+                }
+
+                if (string.IsNullOrWhiteSpace(model.LastName))
+                {
+                    ModelState.AddModelError(
+                        nameof(model.LastName),
+                        T("Error_LastNameRequired", "Soyad alanı zorunludur."));
+                }
+
+                if (string.IsNullOrWhiteSpace(model.Email))
+                {
+                    ModelState.AddModelError(
+                        nameof(model.Email),
+                        T("Error_EmailRequired", "E-posta alanı zorunludur."));
+                }
+
+                if (string.IsNullOrWhiteSpace(model.Password))
+                {
+                    ModelState.AddModelError(
+                        nameof(model.Password),
+                        T("Error_PasswordRequired", "Şifre zorunludur."));
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    model.ReturnUrl = safeReturnUrl;
+
+                    FillAssignableTenantRoles(model);
+                    await FillAssignableTenantUsersAsync(model);
+
+                    return View(model);
+                }
+
+                var existingUser = await _userManager.FindByEmailAsync(model.Email!);
+
+                if (existingUser != null)
+                {
+                    ModelState.AddModelError(
+                        nameof(model.Email),
+                        T("Error_EmailAlreadyRegistered", "Bu e-posta adresiyle kayıtlı bir kullanıcı zaten var. Mevcut kullanıcıyı seçerek kuruma bağlayabilirsiniz."));
+
+                    model.ReturnUrl = safeReturnUrl;
+
+                    FillAssignableTenantRoles(model);
+                    await FillAssignableTenantUsersAsync(model);
+
+                    return View(model);
+                }
+
+                var newUser = new AppUser
+                {
+                    UserName = model.Email,
+                    Email = model.Email,
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    TenantId = model.TenantId,
+                    EmailConfirmed = true
+                };
+
+                var createResult = await _userManager.CreateAsync(newUser, model.Password!);
+
+                if (!createResult.Succeeded)
+                {
+                    foreach (var error in createResult.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+
+                    model.ReturnUrl = safeReturnUrl;
+
+                    FillAssignableTenantRoles(model);
+                    await FillAssignableTenantUsersAsync(model);
+
+                    return View(model);
+                }
+
+                if (!await _roleManager.RoleExistsAsync(roleName!))
+                {
+                    await _roleManager.CreateAsync(new IdentityRole(roleName!));
+                }
+
+                var addRoleResult = await _userManager.AddToRoleAsync(newUser, roleName!);
+
+                if (!addRoleResult.Succeeded)
+                {
+                    foreach (var error in addRoleResult.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+
+                    model.ReturnUrl = safeReturnUrl;
+
+                    FillAssignableTenantRoles(model);
+                    await FillAssignableTenantUsersAsync(model);
+
+                    return View(model);
+                }
+
+                TempData["SuccessMessage"] =
+                    $"{tenant.Name} kurumuna {model.FirstName} {model.LastName} adlı yeni kullanıcı {GetRoleDisplayName(roleName!)} rolüyle oluşturuldu.";
+
+                return RedirectBackOrIndex(safeReturnUrl);
+            }
+
+            ModelState.AddModelError(
+                nameof(model.AssignmentMode),
+                T("Error_InvalidAssignmentMode", "Geçersiz kullanıcı bağlama yöntemi."));
+
+            model.ReturnUrl = safeReturnUrl;
+
+            FillAssignableTenantRoles(model);
+            await FillAssignableTenantUsersAsync(model);
 
             return View(model);
         }

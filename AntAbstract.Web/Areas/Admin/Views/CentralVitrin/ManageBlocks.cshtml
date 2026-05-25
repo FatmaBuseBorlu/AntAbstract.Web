@@ -2,10 +2,16 @@
 
 @{
     ViewData["Title"] = "Vitrin Blokları";
+    ViewData["HideSelectedConferenceBar"] = true;
     Layout = "_LayoutDashboard";
 
     var conferenceName = ViewBag.ConferenceName as string ?? "Kongre";
-    var conferenceId = ViewBag.ConferenceId;
+
+    var conferenceId = ViewBag.ConferenceId is Guid selectedConferenceId
+        ? selectedConferenceId
+        : Guid.Empty;
+
+    var conferenceSlug = ViewBag.ConferenceSlug as string ?? "";
 
     var blocks = Model?
         .OrderBy(x => x.Order)
@@ -14,6 +20,14 @@
     var totalBlockCount = blocks.Count;
     var activeBlockCount = blocks.Count(x => x.IsActive);
     var passiveBlockCount = blocks.Count(x => !x.IsActive);
+
+    var siteUrl = string.IsNullOrWhiteSpace(conferenceSlug)
+        ? "#"
+        : $"/{conferenceSlug}";
+
+    var flowUrl = string.IsNullOrWhiteSpace(conferenceSlug)
+        ? $"/Admin/ConferenceFlow?conferenceId={conferenceId}"
+        : $"/{conferenceSlug}/Admin/ConferenceFlow?conferenceId={conferenceId}";
 }
 
 @functions {
@@ -33,318 +47,833 @@
         };
     }
 
-    private string GetBlockTypeBadgeClass(object blockType)
+    private string GetBlockTypeClass(object blockType)
     {
         var value = blockType?.ToString() ?? "";
 
         return value switch
         {
-            "Hero" => "bg-primary bg-opacity-10 text-primary",
-            "CallForPapers" => "bg-info bg-opacity-10 text-info",
-            "Topics" => "bg-success bg-opacity-10 text-success",
-            "Committees" => "bg-warning bg-opacity-10 text-warning",
-            "About" => "bg-secondary bg-opacity-10 text-secondary",
-            "Fees" => "bg-danger bg-opacity-10 text-danger",
-            _ => "bg-dark bg-opacity-10 text-dark"
+            "Hero" => "block-type-hero",
+            "CallForPapers" => "block-type-call",
+            "Topics" => "block-type-topics",
+            "Committees" => "block-type-committees",
+            "About" => "block-type-about",
+            "Fees" => "block-type-fees",
+            _ => "block-type-default"
+        };
+    }
+
+    private string GetBlockIcon(object blockType)
+    {
+        var value = blockType?.ToString() ?? "";
+
+        return value switch
+        {
+            "Hero" => "fas fa-house-chimney",
+            "CallForPapers" => "fas fa-bullhorn",
+            "Topics" => "fas fa-tags",
+            "Committees" => "fas fa-users",
+            "About" => "fas fa-circle-info",
+            "Fees" => "fas fa-credit-card",
+            _ => "fas fa-layer-group"
         };
     }
 }
 
-<div class="container-fluid">
+<style>
+    .vitrin-blocks-page {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        padding-bottom: 2rem;
+    }
 
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-        <div>
-            <div class="text-uppercase text-muted fw-bold small mb-1">
-                Tüm Vitrinler
+    .vitrin-hero-card {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e8eef6;
+        border-radius: 28px;
+        padding: 1.55rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        margin-bottom: 1.5rem;
+    }
+
+    .vitrin-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 300px;
+        flex: 1;
+    }
+
+    .vitrin-hero-icon {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.55rem;
+        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.22);
+    }
+
+    .vitrin-section-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .vitrin-page-title {
+        margin: 0 0 0.35rem;
+        color: #0f172a;
+        font-size: 2rem;
+        font-weight: 950;
+        letter-spacing: -0.05em;
+    }
+
+    .vitrin-page-description {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.96rem;
+        font-weight: 650;
+        line-height: 1.65;
+        max-width: 850px;
+    }
+
+    .selected-conference-chip {
+        width: fit-content;
+        margin-top: 0.75rem;
+        display: inline-flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 0.5rem 0.85rem;
+        border-radius: 999px;
+        background: rgba(0, 174, 239, 0.10);
+        border: 1px solid rgba(0, 174, 239, 0.22);
+        color: #0d6efd;
+        font-size: 0.82rem;
+        font-weight: 900;
+    }
+
+    .selected-conference-chip em {
+        color: #64748b;
+        font-style: normal;
+        font-weight: 900;
+    }
+
+    .vitrin-hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .vitrin-light-btn,
+    .vitrin-outline-btn,
+    .vitrin-primary-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        border-radius: 999px;
+        padding: 0 1.15rem;
+        font-size: 0.9rem;
+        font-weight: 900;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .vitrin-light-btn {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #dbe3ef;
+    }
+
+    .vitrin-light-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.32);
+        background: #ffffff;
+        transform: translateY(-1px);
+    }
+
+    .vitrin-outline-btn {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+    }
+
+    .vitrin-outline-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.32);
+        background: #ffffff;
+        transform: translateY(-1px);
+    }
+
+    .vitrin-primary-btn {
+        border: none;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        box-shadow: 0 12px 26px rgba(13, 110, 253, 0.18);
+    }
+
+    .vitrin-primary-btn:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.24);
+    }
+
+    .vitrin-stat-card {
+        min-height: 96px;
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 24px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+        transition: all 0.2s ease;
+    }
+
+    .vitrin-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+    }
+
+    .vitrin-stat-icon {
+        width: 50px;
+        height: 50px;
+        min-width: 50px;
+        border-radius: 17px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+    }
+
+    .stat-blue {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .stat-green {
+        background: rgba(34, 197, 94, 0.10);
+        color: #16a34a;
+    }
+
+    .stat-gray {
+        background: rgba(100, 116, 139, 0.12);
+        color: #64748b;
+    }
+
+    .stat-cyan {
+        background: rgba(0, 174, 239, 0.12);
+        color: #00aeef;
+    }
+
+    .vitrin-stat-number {
+        color: #0f172a;
+        font-size: 1.55rem;
+        font-weight: 950;
+        line-height: 1;
+    }
+
+    .vitrin-stat-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 850;
+        margin-top: 0.3rem;
+    }
+
+    .vitrin-list-card {
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 28px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+
+    .vitrin-list-header {
+        padding: 1.35rem 1.45rem;
+        border-bottom: 1px solid #edf2f7;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .vitrin-list-header h5 {
+        color: #0f172a;
+        font-size: 1.18rem;
+        font-weight: 950;
+        margin-bottom: 0.25rem;
+    }
+
+    .vitrin-list-header p {
+        color: #64748b;
+        font-size: 0.88rem;
+        font-weight: 650;
+        margin-bottom: 0;
+        line-height: 1.55;
+    }
+
+    .vitrin-count-pill {
+        padding: 0.44rem 0.82rem;
+        border-radius: 999px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 0.78rem;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .vitrin-block-table {
+        margin-bottom: 0;
+    }
+
+    .vitrin-block-table thead th {
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 0.75rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 1rem 1.1rem;
+        border-bottom: 1px solid #edf2f7;
+        white-space: nowrap;
+    }
+
+    .vitrin-block-table tbody td {
+        padding: 1rem 1.1rem;
+        border-bottom: 1px solid #edf2f7;
+        vertical-align: middle;
+    }
+
+    .vitrin-block-table tbody tr:hover {
+        background: #f8fbff;
+    }
+
+    .vitrin-block-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .order-badge {
+        width: 36px;
+        height: 36px;
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #64748b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 950;
+        font-size: 0.85rem;
+    }
+
+    .block-profile {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .block-avatar {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 17px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        box-shadow: 0 12px 24px rgba(13, 110, 253, 0.16);
+    }
+
+    .block-title {
+        color: #0f172a;
+        font-size: 0.92rem;
+        font-weight: 950;
+        line-height: 1.3;
+    }
+
+    .block-subtitle {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 750;
+        margin-top: 0.18rem;
+    }
+
+    .block-type-badge,
+    .block-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.42rem;
+        border-radius: 999px;
+        padding: 0.42rem 0.72rem;
+        font-size: 0.78rem;
+        font-weight: 900;
+        white-space: nowrap;
+        border: 1px solid transparent;
+    }
+
+    .block-type-hero {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.14);
+    }
+
+    .block-type-call {
+        background: rgba(0, 174, 239, 0.12);
+        color: #0284c7;
+        border-color: rgba(0, 174, 239, 0.18);
+    }
+
+    .block-type-topics {
+        background: rgba(34, 197, 94, 0.12);
+        color: #15803d;
+        border-color: rgba(34, 197, 94, 0.18);
+    }
+
+    .block-type-committees {
+        background: rgba(245, 158, 11, 0.12);
+        color: #d97706;
+        border-color: rgba(245, 158, 11, 0.18);
+    }
+
+    .block-type-about {
+        background: rgba(100, 116, 139, 0.12);
+        color: #64748b;
+        border-color: rgba(100, 116, 139, 0.18);
+    }
+
+    .block-type-fees {
+        background: rgba(239, 68, 68, 0.10);
+        color: #dc2626;
+        border-color: rgba(239, 68, 68, 0.16);
+    }
+
+    .block-type-default {
+        background: rgba(15, 23, 42, 0.08);
+        color: #334155;
+        border-color: rgba(15, 23, 42, 0.12);
+    }
+
+    .block-status-active {
+        background: rgba(34, 197, 94, 0.12);
+        color: #15803d;
+        border-color: rgba(34, 197, 94, 0.18);
+    }
+
+    .block-status-passive {
+        background: rgba(100, 116, 139, 0.12);
+        color: #64748b;
+        border-color: rgba(100, 116, 139, 0.18);
+    }
+
+    .admin-action-group {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.42rem;
+        flex-wrap: nowrap;
+    }
+
+    .admin-action-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.84rem;
+        font-weight: 900;
+        text-decoration: none;
+        border: 1px solid transparent;
+        background: #ffffff;
+        transition: all 0.2s ease;
+        line-height: 1;
+        padding: 0;
+    }
+
+    .admin-action-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10);
+    }
+
+    .admin-action-edit {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.28);
+    }
+
+    .admin-action-edit:hover {
+        background: rgba(13, 110, 253, 0.08);
+        color: #0b5ed7;
+    }
+
+    .vitrin-empty-state {
+        padding: 4rem 1.5rem;
+        text-align: center;
+        color: #64748b;
+    }
+
+    .vitrin-empty-icon {
+        width: 76px;
+        height: 76px;
+        margin: 0 auto 1rem;
+        border-radius: 26px;
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+    }
+
+    .vitrin-empty-state h6 {
+        color: #0f172a;
+        font-size: 1.1rem;
+        font-weight: 950;
+        margin-bottom: 0.3rem;
+    }
+
+    .vitrin-empty-state p {
+        margin-bottom: 0;
+        font-weight: 650;
+    }
+
+    @@media (max-width: 992px) {
+        .vitrin-hero-card {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .vitrin-hero-left {
+            align-items: flex-start;
+        }
+
+        .vitrin-hero-actions,
+        .vitrin-hero-actions .btn {
+            width: 100%;
+        }
+
+        .vitrin-page-title {
+            font-size: 1.65rem;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .vitrin-hero-left {
+            flex-direction: column;
+        }
+
+        .vitrin-block-table tbody td {
+            min-width: 150px;
+        }
+
+        .admin-action-group {
+            flex-wrap: wrap;
+        }
+    }
+</style>
+
+<div class="container-fluid vitrin-blocks-page">
+
+    <div class="vitrin-hero-card">
+        <div class="vitrin-hero-left">
+            <div class="vitrin-hero-icon">
+                <i class="fas fa-layer-group"></i>
             </div>
 
-            <h2 class="fw-bold mb-1 text-dark">
-                Vitrin Blokları
-            </h2>
+            <div>
+                <div class="vitrin-section-label">
+                    İçerik Yönetimi
+                </div>
 
-            <p class="text-muted mb-0">
-                <strong>@conferenceName</strong> kongresinin vitrin sayfasında görünecek içerik bloklarını buradan yönetebilirsiniz.
-            </p>
+                <h2 class="vitrin-page-title">
+                    Vitrin Blokları
+                </h2>
+
+                <p class="vitrin-page-description">
+                    <strong>@conferenceName</strong> kongresinin vitrin sayfasında görünecek içerik bloklarını buradan yönetebilirsiniz.
+                </p>
+
+                <div class="selected-conference-chip">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Seçili Kongre:</span>
+                    <strong>@conferenceName</strong>
+
+                    @if (!string.IsNullOrWhiteSpace(conferenceSlug))
+                    {
+                        <em>/@conferenceSlug</em>
+                    }
+                </div>
+            </div>
         </div>
 
-        <div class="d-flex flex-wrap gap-2">
+        <div class="vitrin-hero-actions">
             <a asp-area="Admin"
                asp-controller="CentralVitrin"
                asp-action="Index"
-               class="btn btn-light border rounded-pill px-4">
-                <i class="fas fa-arrow-left me-2 text-secondary"></i>
-                Kongre Listesine Dön
+               class="btn vitrin-light-btn">
+                <i class="fas fa-arrow-left"></i>
+                Kongre Sitelerine Dön
+            </a>
+
+            @if (!string.IsNullOrWhiteSpace(conferenceSlug))
+            {
+                <a href="@siteUrl"
+                   target="_blank"
+                   class="btn vitrin-outline-btn">
+                    <i class="fas fa-arrow-up-right-from-square"></i>
+                    Siteyi Gör
+                </a>
+            }
+
+            <a href="@flowUrl"
+               class="btn vitrin-outline-btn">
+                <i class="fas fa-stream"></i>
+                Kongre Akışına Git
             </a>
 
             <a asp-area="Admin"
                asp-controller="CentralVitrin"
                asp-action="CreateBlock"
                asp-route-conferenceId="@conferenceId"
-               class="btn btn-primary rounded-pill px-4 shadow-sm">
-                <i class="fas fa-plus me-2"></i>
+               class="btn vitrin-primary-btn">
+                <i class="fas fa-plus"></i>
                 Yeni Blok Ekle
             </a>
         </div>
     </div>
 
     <div class="row g-3 mb-4">
-        <div class="col-md-3 col-6">
-            <div class="info-card">
-                <div class="info-icon bg-primary bg-opacity-10 text-primary">
+        <div class="col-xl-3 col-md-6">
+            <div class="vitrin-stat-card">
+                <div class="vitrin-stat-icon stat-blue">
                     <i class="fas fa-layer-group"></i>
                 </div>
 
                 <div>
-                    <div class="info-number">@totalBlockCount</div>
-                    <div class="info-label">Toplam Blok</div>
+                    <div class="vitrin-stat-number">
+                        @totalBlockCount
+                    </div>
+
+                    <div class="vitrin-stat-label">
+                        Toplam Blok
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-3 col-6">
-            <div class="info-card">
-                <div class="info-icon bg-success bg-opacity-10 text-success">
+        <div class="col-xl-3 col-md-6">
+            <div class="vitrin-stat-card">
+                <div class="vitrin-stat-icon stat-green">
                     <i class="fas fa-eye"></i>
                 </div>
 
                 <div>
-                    <div class="info-number">@activeBlockCount</div>
-                    <div class="info-label">Yayında</div>
+                    <div class="vitrin-stat-number">
+                        @activeBlockCount
+                    </div>
+
+                    <div class="vitrin-stat-label">
+                        Yayında
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-3 col-6">
-            <div class="info-card">
-                <div class="info-icon bg-secondary bg-opacity-10 text-secondary">
+        <div class="col-xl-3 col-md-6">
+            <div class="vitrin-stat-card">
+                <div class="vitrin-stat-icon stat-gray">
                     <i class="fas fa-eye-slash"></i>
                 </div>
 
                 <div>
-                    <div class="info-number">@passiveBlockCount</div>
-                    <div class="info-label">Pasif</div>
+                    <div class="vitrin-stat-number">
+                        @passiveBlockCount
+                    </div>
+
+                    <div class="vitrin-stat-label">
+                        Gizli
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-3 col-6">
-            <div class="info-card">
-                <div class="info-icon bg-info bg-opacity-10 text-info">
+        <div class="col-xl-3 col-md-6">
+            <div class="vitrin-stat-card">
+                <div class="vitrin-stat-icon stat-cyan">
                     <i class="fas fa-globe"></i>
                 </div>
 
                 <div>
-                    <div class="info-number">Aktif</div>
-                    <div class="info-label">Kongre Vitrini</div>
+                    <div class="vitrin-stat-number">
+                        @(string.IsNullOrWhiteSpace(conferenceSlug) ? "-" : "Aktif")
+                    </div>
+
+                    <div class="vitrin-stat-label">
+                        Kongre Vitrini
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="card-header bg-white border-0 px-4 py-3">
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-                <div>
-                    <h5 class="fw-bold mb-1">
-                        Blok Listesi
-                    </h5>
+    <div class="vitrin-list-card">
+        <div class="vitrin-list-header">
+            <div>
+                <h5>
+                    Blok Listesi
+                </h5>
 
-                    <p class="text-muted small mb-0">
-                        Bloklar sıra numarasına göre vitrin sayfasında gösterilir. Yayında olmayan bloklar sitede görünmez.
-                    </p>
-                </div>
-
-                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
-                    Merkezi Yönetim
-                </span>
+                <p>
+                    Bloklar sıra numarasına göre vitrin sayfasında gösterilir. Yayında olmayan bloklar sitede görünmez.
+                </p>
             </div>
+
+            <span class="vitrin-count-pill">
+                @totalBlockCount blok
+            </span>
         </div>
 
-        <div class="card-body p-0">
-
-            @if (!blocks.Any())
-            {
-                <div class="text-center py-5 text-muted">
-                    <i class="fas fa-layer-group fa-3x mb-3 opacity-25"></i>
-
-                    <h6 class="fw-bold mb-1">
-                        Henüz vitrin bloğu bulunmuyor
-                    </h6>
-
-                    <p class="mb-0">
-                        Bu kongre vitrini için yeni blok ekleyebilirsiniz.
-                    </p>
+        @if (!blocks.Any())
+        {
+            <div class="vitrin-empty-state">
+                <div class="vitrin-empty-icon">
+                    <i class="fas fa-layer-group"></i>
                 </div>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 vitrin-block-table">
-                        <thead class="bg-light">
+
+                <h6>
+                    Henüz vitrin bloğu bulunmuyor
+                </h6>
+
+                <p>
+                    Bu kongre vitrini için yeni blok ekleyebilirsiniz.
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle vitrin-block-table">
+                    <thead>
+                        <tr>
+                            <th class="ps-4" style="width: 9%;">
+                                Sıra
+                            </th>
+
+                            <th style="width: 24%;">
+                                Blok Türü
+                            </th>
+
+                            <th style="width: 39%;">
+                                Menü Başlığı
+                            </th>
+
+                            <th class="text-center" style="width: 14%;">
+                                Durum
+                            </th>
+
+                            <th class="text-end pe-4" style="width: 14%;">
+                                İşlemler
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var block in blocks)
+                        {
                             <tr>
-                                <th class="ps-4 py-3 text-muted fw-bold small" style="width: 10%;">
-                                    Sıra
-                                </th>
+                                <td class="ps-4">
+                                    <span class="order-badge">
+                                        @block.Order
+                                    </span>
+                                </td>
 
-                                <th class="py-3 text-muted fw-bold small" style="width: 20%;">
-                                    Blok Türü
-                                </th>
+                                <td>
+                                    <span class="block-type-badge @GetBlockTypeClass(block.BlockType)">
+                                        <i class="@GetBlockIcon(block.BlockType)"></i>
+                                        @GetBlockTypeLabel(block.BlockType)
+                                    </span>
+                                </td>
 
-                                <th class="py-3 text-muted fw-bold small" style="width: 38%;">
-                                    Menü Başlığı
-                                </th>
-
-                                <th class="py-3 text-muted fw-bold small text-center" style="width: 14%;">
-                                    Durum
-                                </th>
-
-                                <th class="pe-4 py-3 text-muted fw-bold small text-end" style="width: 18%;">
-                                    İşlemler
-                                </th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            @foreach (var block in blocks)
-                            {
-                                <tr>
-                                    <td class="ps-4">
-                                        <span class="order-badge">
-                                            @block.Order
-                                        </span>
-                                    </td>
-
-                                    <td>
-                                        <span class="block-type-badge @GetBlockTypeBadgeClass(block.BlockType)">
-                                            @GetBlockTypeLabel(block.BlockType)
-                                        </span>
-                                    </td>
-
-                                    <td>
-                                        <div class="fw-bold text-dark">
-                                            @block.Title
+                                <td>
+                                    <div class="block-profile">
+                                        <div class="block-avatar">
+                                            <i class="@GetBlockIcon(block.BlockType)"></i>
                                         </div>
 
-                                        @if (!string.IsNullOrWhiteSpace(block.Subtitle))
-                                        {
-                                            <small class="text-muted">
-                                                @block.Subtitle
-                                            </small>
-                                        }
-                                    </td>
+                                        <div>
+                                            <div class="block-title">
+                                                @block.Title
+                                            </div>
 
-                                    <td class="text-center">
-                                        @if (block.IsActive)
-                                        {
-                                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2">
-                                                <i class="fas fa-check-circle me-1"></i>
-                                                Yayında
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3 py-2">
-                                                <i class="fas fa-eye-slash me-1"></i>
-                                                Gizli
-                                            </span>
-                                        }
-                                    </td>
+                                            @if (!string.IsNullOrWhiteSpace(block.Subtitle))
+                                            {
+                                                <div class="block-subtitle">
+                                                    @block.Subtitle
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="block-subtitle">
+                                                    Alt başlık girilmedi
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
 
-                                    <td class="pe-4 text-end">
+                                <td class="text-center">
+                                    @if (block.IsActive)
+                                    {
+                                        <span class="block-status-badge block-status-active">
+                                            <i class="fas fa-check-circle"></i>
+                                            Yayında
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="block-status-badge block-status-passive">
+                                            <i class="fas fa-eye-slash"></i>
+                                            Gizli
+                                        </span>
+                                    }
+                                </td>
+
+                                <td class="text-end pe-4">
+                                    <div class="admin-action-group">
                                         <a asp-area="Admin"
                                            asp-controller="CentralVitrin"
                                            asp-action="EditBlock"
                                            asp-route-id="@block.Id"
-                                           class="btn btn-sm btn-outline-primary rounded-3">
-                                            <i class="fas fa-pen-to-square me-1"></i>
-                                            Düzenle
+                                           class="admin-action-btn admin-action-edit"
+                                           title="Bloğu Düzenle">
+                                            <i class="fas fa-pen-to-square"></i>
                                         </a>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-
-        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
     </div>
 </div>
-
-<style>
-    .info-card {
-        background-color: #fff;
-        border-radius: 1rem;
-        padding: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.85rem;
-        box-shadow: 0 8px 25px rgba(15, 23, 42, 0.05);
-        border: 1px solid #f1f5f9;
-        min-height: 95px;
-    }
-
-    .info-icon {
-        width: 46px;
-        height: 46px;
-        min-width: 46px;
-        border-radius: 15px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.1rem;
-    }
-
-    .info-number {
-        font-size: 1.45rem;
-        font-weight: 800;
-        color: #0f172a;
-        line-height: 1;
-    }
-
-    .info-label {
-        color: #64748b;
-        font-weight: 700;
-        font-size: 0.76rem;
-        margin-top: 0.25rem;
-    }
-
-    .vitrin-block-table thead th {
-        font-size: 0.7rem;
-        letter-spacing: 0.8px;
-        border-bottom: none;
-        text-transform: uppercase;
-    }
-
-    .vitrin-block-table tbody tr {
-        transition: background-color 0.2s ease;
-        border-bottom: 1px solid #f8fafc;
-    }
-
-        .vitrin-block-table tbody tr:hover {
-            background-color: #fbfcfe !important;
-        }
-
-    .order-badge {
-        width: 34px;
-        height: 34px;
-        border-radius: 999px;
-        background-color: #f1f5f9;
-        color: #0f172a;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        font-size: 0.85rem;
-    }
-
-    .block-type-badge {
-        display: inline-flex;
-        align-items: center;
-        border-radius: 999px;
-        padding: 0.45rem 0.75rem;
-        font-weight: 700;
-        font-size: 0.78rem;
-        white-space: nowrap;
-    }
-</style>
