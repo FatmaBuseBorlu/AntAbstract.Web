@@ -26,6 +26,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly IStringLocalizer<RefereeController> _localizer;
 
+        private static readonly string[] ReviewerRoleNames =
+        {
+            "Referee",
+            "Hakem",
+            "Reviewer"
+        };
+
+        private const string PrimaryReviewerRoleName = "Referee";
+
         public RefereeController(
             AppDbContext context,
             TenantContext tenantContext,
@@ -66,6 +75,55 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var currentUser = await GetCurrentUserAsync();
 
             return currentUser?.TenantId;
+        }
+
+        private async Task EnsurePrimaryReviewerRoleExistsAsync()
+        {
+            if (!await _roleManager.RoleExistsAsync(PrimaryReviewerRoleName))
+            {
+                await _roleManager.CreateAsync(new IdentityRole(PrimaryReviewerRoleName));
+            }
+        }
+
+        private async Task<List<AppUser>> GetUsersInReviewerRolesAsync()
+        {
+            var reviewerUsers = new Dictionary<string, AppUser>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var roleName in ReviewerRoleNames)
+            {
+                if (!await _roleManager.RoleExistsAsync(roleName))
+                {
+                    continue;
+                }
+
+                var usersInRole = await _userManager.GetUsersInRoleAsync(roleName);
+
+                foreach (var user in usersInRole)
+                {
+                    if (user == null || string.IsNullOrWhiteSpace(user.Id))
+                    {
+                        continue;
+                    }
+
+                    reviewerUsers[user.Id] = user;
+                }
+            }
+
+            return reviewerUsers.Values.ToList();
+        }
+
+        private async Task<bool> UserHasAnyReviewerRoleAsync(AppUser user)
+        {
+            foreach (var roleName in ReviewerRoleNames)
+            {
+                if (await _roleManager.RoleExistsAsync(roleName) &&
+                    await _userManager.IsInRoleAsync(user, roleName))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private async Task<Conference?> GetAccessibleConferenceAsync(
@@ -163,12 +221,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (IsSuperAdminUser())
             {
+                ViewBag.ConferenceId = null;
+                ViewBag.ConferenceTitle = "";
+                ViewBag.Slug = slug ?? "";
                 ViewBag.TargetTenantId = null;
+
                 return null;
             }
 
             var adminTenantId = await GetCurrentAdminTenantIdAsync();
 
+            ViewBag.ConferenceId = null;
+            ViewBag.ConferenceTitle = "";
+            ViewBag.Slug = slug ?? "";
             ViewBag.TargetTenantId = adminTenantId;
 
             return adminTenantId;
@@ -191,9 +256,26 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return "/Admin/Referee";
         }
 
+        private string BuildRefereeCreateUrl(string? slug, Guid? conferenceId)
+        {
+            if (!string.IsNullOrWhiteSpace(slug) &&
+                conferenceId.HasValue &&
+                conferenceId.Value != Guid.Empty)
+            {
+                return $"/{slug}/Admin/Referee/Create?conferenceId={conferenceId.Value}";
+            }
+
+            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
+            {
+                return $"/Admin/Referee/Create?conferenceId={conferenceId.Value}";
+            }
+
+            return "/Admin/Referee/Create";
+        }
+
         private async Task<List<AppUser>> GetRefereeListAsync(Guid? targetTenantId)
         {
-            var referees = await _userManager.GetUsersInRoleAsync("Referee");
+            var referees = await GetUsersInReviewerRolesAsync();
 
             if (targetTenantId.HasValue)
             {
@@ -203,6 +285,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         r.TenantId.Value == targetTenantId.Value)
                     .OrderBy(r => r.FirstName)
                     .ThenBy(r => r.LastName)
+                    .ThenBy(r => r.Email)
                     .ToList();
             }
 
@@ -211,6 +294,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return referees
                     .OrderBy(r => r.FirstName)
                     .ThenBy(r => r.LastName)
+                    .ThenBy(r => r.Email)
                     .ToList();
             }
 
@@ -289,7 +373,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 SetSelectedConferenceSession(conference);
 
-                return Redirect($"/{conference.Tenant.Slug}/Admin/Referee/Create?conferenceId={conference.Id}");
+                return Redirect(BuildRefereeCreateUrl(
+                    conference.Tenant.Slug,
+                    conference.Id));
             }
 
             var targetTenantId = await GetTargetTenantIdAsync(null, conferenceId);
@@ -399,13 +485,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (!ModelState.IsValid)
             {
                 ViewBag.TargetTenantId = targetTenantId;
+
                 return View("Create", model);
             }
 
-            if (!await _roleManager.RoleExistsAsync("Referee"))
-            {
-                await _roleManager.CreateAsync(new IdentityRole("Referee"));
-            }
+            await EnsurePrimaryReviewerRoleExistsAsync();
 
             var existingUser = await _userManager.FindByEmailAsync(model.Email);
 
@@ -416,6 +500,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     T("Error_EmailAlreadyExists", "Bu e-posta adresiyle kayıtlı bir kullanıcı zaten var."));
 
                 ViewBag.TargetTenantId = targetTenantId;
+
                 return View("Create", model);
             }
 
@@ -430,7 +515,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 EmailConfirmed = true
             };
 
-            var createResult = await _userManager.CreateAsync(refereeUser, model.Password);
+            var createResult = await _userManager.CreateAsync(
+                refereeUser,
+                model.Password);
 
             if (!createResult.Succeeded)
             {
@@ -440,10 +527,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 }
 
                 ViewBag.TargetTenantId = targetTenantId;
+
                 return View("Create", model);
             }
 
-            var roleResult = await _userManager.AddToRoleAsync(refereeUser, "Referee");
+            var roleResult = await _userManager.AddToRoleAsync(
+                refereeUser,
+                PrimaryReviewerRoleName);
 
             if (!roleResult.Succeeded)
             {
@@ -453,6 +543,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 }
 
                 ViewBag.TargetTenantId = targetTenantId;
+
                 return View("Create", model);
             }
 
@@ -582,9 +673,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 }
             }
 
-            var isReferee = await _userManager.IsInRoleAsync(refereeUser, "Referee");
+            var hasReviewerRole = await UserHasAnyReviewerRoleAsync(refereeUser);
 
-            if (!isReferee)
+            if (!hasReviewerRole)
             {
                 TempData["ErrorMessage"] = T(
                     "Error_UserIsNotReferee",
@@ -619,13 +710,41 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
             }
 
-            var removeRoleResult = await _userManager.RemoveFromRoleAsync(refereeUser, "Referee");
+            var rolesRemoved = new List<string>();
 
-            if (!removeRoleResult.Succeeded)
+            foreach (var roleName in ReviewerRoleNames)
+            {
+                if (!await _roleManager.RoleExistsAsync(roleName))
+                {
+                    continue;
+                }
+
+                if (!await _userManager.IsInRoleAsync(refereeUser, roleName))
+                {
+                    continue;
+                }
+
+                var removeRoleResult = await _userManager.RemoveFromRoleAsync(
+                    refereeUser,
+                    roleName);
+
+                if (!removeRoleResult.Succeeded)
+                {
+                    TempData["ErrorMessage"] = T(
+                        "Error_RefereeRoleRemoveFailed",
+                        "Hakem rolü kaldırılırken bir hata oluştu.");
+
+                    return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
+                }
+
+                rolesRemoved.Add(roleName);
+            }
+
+            if (!rolesRemoved.Any())
             {
                 TempData["ErrorMessage"] = T(
-                    "Error_RefereeRoleRemoveFailed",
-                    "Hakem rolü kaldırılırken bir hata oluştu.");
+                    "Error_UserIsNotReferee",
+                    "Bu kullanıcı zaten hakem rolüne sahip değil.");
 
                 return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
             }

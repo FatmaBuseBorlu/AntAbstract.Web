@@ -24,7 +24,7 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Author.Controllers
 {
     [Area("Author")]
-    [Authorize(Roles = "Author,Admin")]
+    [Authorize(Roles = "Author,Yazar,Admin")]
     public class SubmissionController : Controller
     {
         private readonly ISubmissionService _submissionService;
@@ -110,6 +110,31 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             return false;
         }
 
+        private Guid? GetSelectedConferenceIdFromSession(Guid? tenantId = null)
+        {
+            if (tenantId.HasValue && tenantId.Value != Guid.Empty)
+            {
+                var tenantSpecificValue = HttpContext.Session.GetString(
+                    $"SelectedConferenceId:{tenantId.Value}");
+
+                if (Guid.TryParse(tenantSpecificValue, out var tenantSpecificConferenceId) &&
+                    tenantSpecificConferenceId != Guid.Empty)
+                {
+                    return tenantSpecificConferenceId;
+                }
+            }
+
+            var globalValue = HttpContext.Session.GetString("SelectedConferenceId");
+
+            if (Guid.TryParse(globalValue, out var globalConferenceId) &&
+                globalConferenceId != Guid.Empty)
+            {
+                return globalConferenceId;
+            }
+
+            return null;
+        }
+
         private void SetSelectedConferenceSession(Conference conference, string slug)
         {
             _selectedConferenceService.SetSelectedConferenceId(conference.Id);
@@ -123,51 +148,87 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             HttpContext.Session.SetString($"SelectedConferenceTitle:{conference.TenantId}", conference.Title ?? "");
         }
 
+        private async Task<Conference?> FindConferenceByIdAsync(Guid conferenceId)
+        {
+            if (conferenceId == Guid.Empty)
+            {
+                return null;
+            }
+
+            return await _context.Conferences
+                .Include(c => c.Tenant)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == conferenceId);
+        }
+
         private async Task<Conference?> ResolveConferenceAsync(string? slug, Guid? conferenceId = null)
         {
             if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
             {
-                var conference = await _context.Conferences
-                    .Include(c => c.Tenant)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Id == conferenceId.Value);
+                var conferenceById = await FindConferenceByIdAsync(conferenceId.Value);
 
-                if (conference != null && !SlugMatches(conference, slug))
+                if (conferenceById != null && !SlugMatches(conferenceById, slug))
                 {
                     return null;
                 }
 
-                return conference;
-            }
-
-            if (!string.IsNullOrWhiteSpace(slug))
-            {
-                return await _context.Conferences
-                    .Include(c => c.Tenant)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(c =>
-                        c.Slug == slug ||
-                        (c.Tenant != null && c.Tenant.Slug == slug));
+                return conferenceById;
             }
 
             var selectedId = _selectedConferenceService.GetSelectedConferenceId();
 
             if (selectedId.HasValue && selectedId.Value != Guid.Empty)
             {
-                return await _context.Conferences
-                    .Include(c => c.Tenant)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Id == selectedId.Value);
+                var selectedConference = await FindConferenceByIdAsync(selectedId.Value);
+
+                if (selectedConference != null && SlugMatches(selectedConference, slug))
+                {
+                    return selectedConference;
+                }
             }
 
-            var selectedIdStr = HttpContext.Session.GetString("SelectedConferenceId");
+            Guid? sessionConferenceId = null;
 
-            if (Guid.TryParse(selectedIdStr, out var parsedId))
+            if (!string.IsNullOrWhiteSpace(slug))
             {
-                return await _context.Conferences
+                var slugConference = await _context.Conferences
                     .Include(c => c.Tenant)
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Id == parsedId);
+                    .Where(c =>
+                        c.Slug == slug ||
+                        (c.Tenant != null && c.Tenant.Slug == slug))
+                    .OrderByDescending(c => c.StartDate)
+                    .FirstOrDefaultAsync();
+
+                if (slugConference != null)
+                {
+                    sessionConferenceId = GetSelectedConferenceIdFromSession(slugConference.TenantId);
+
+                    if (sessionConferenceId.HasValue)
+                    {
+                        var selectedConferenceFromTenantSession = await FindConferenceByIdAsync(sessionConferenceId.Value);
+
+                        if (selectedConferenceFromTenantSession != null &&
+                            SlugMatches(selectedConferenceFromTenantSession, slug))
+                        {
+                            return selectedConferenceFromTenantSession;
+                        }
+                    }
+
+                    return slugConference;
+                }
+            }
+
+            sessionConferenceId ??= GetSelectedConferenceIdFromSession();
+
+            if (sessionConferenceId.HasValue)
+            {
+                var selectedConferenceFromSession = await FindConferenceByIdAsync(sessionConferenceId.Value);
+
+                if (selectedConferenceFromSession != null && SlugMatches(selectedConferenceFromSession, slug))
+                {
+                    return selectedConferenceFromSession;
+                }
             }
 
             return null;
@@ -353,6 +414,11 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             var canonicalSlug = GetCanonicalSlug(conference, slug);
 
+            if (!string.Equals(canonicalSlug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
+            }
+
             SetSelectedConferenceSession(conference, canonicalSlug);
 
             ViewBag.CurrentConferenceTitle = conference.Title;
@@ -457,6 +523,11 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             var canonicalSlug = GetCanonicalSlug(conference, slug);
 
+            if (!string.Equals(canonicalSlug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return Redirect(BuildUrl(canonicalSlug, "/submit-abstract"));
+            }
+
             SetSelectedConferenceSession(conference, canonicalSlug);
 
             var redirectResult = await EnsureUserCanCreateSubmissionAsync(user, conference, canonicalSlug);
@@ -505,11 +576,17 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                     T("InvalidConferenceSelection", "Geçersiz kongre seçimi."));
 
                 model.AvailableConferences = await GetRegisteredConferenceSelectListAsync(user, model.ConferenceId);
+                model.AvailableTopics = new List<SelectListItem>();
 
                 return View(model);
             }
 
             var canonicalSlug = GetCanonicalSlug(conference, slug);
+
+            if (!string.Equals(canonicalSlug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return Redirect(BuildUrl(canonicalSlug, "/submit-abstract"));
+            }
 
             SetSelectedConferenceSession(conference, canonicalSlug);
 
@@ -589,6 +666,18 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
                     foreach (var authorVm in model.Authors)
                     {
+                        var hasAnyAuthorValue =
+                            !string.IsNullOrWhiteSpace(authorVm.FirstName) ||
+                            !string.IsNullOrWhiteSpace(authorVm.LastName) ||
+                            !string.IsNullOrWhiteSpace(authorVm.Email) ||
+                            !string.IsNullOrWhiteSpace(authorVm.Institution) ||
+                            !string.IsNullOrWhiteSpace(authorVm.ORCID);
+
+                        if (!hasAnyAuthorValue)
+                        {
+                            continue;
+                        }
+
                         allAuthors.Add(new SubmissionAuthorDto
                         {
                             FirstName = authorVm.FirstName,
@@ -697,6 +786,11 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             var canonicalSlug = GetCanonicalSlug(conference, slug);
 
             if (string.IsNullOrWhiteSpace(slug))
+            {
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/edit"));
+            }
+
+            if (!SlugMatches(conference, slug))
             {
                 return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/edit"));
             }
@@ -813,6 +907,11 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             var canonicalSlug = GetCanonicalSlug(conference, slug);
 
+            if (!SlugMatches(conference, slug))
+            {
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/edit"));
+            }
+
             SetSelectedConferenceSession(conference, canonicalSlug);
 
             if (submissionEntity.Status == SubmissionStatus.Accepted ||
@@ -910,16 +1009,23 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                     StoredFileName = storedFileName,
                     OriginalFileName = originalFileName,
 
-                    SubmissionAuthors = model.Authors?.Select(a => new SubmissionAuthorDto
-                    {
-                        FirstName = a.FirstName,
-                        LastName = a.LastName,
-                        Email = a.Email,
-                        Institution = a.Institution,
-                        ORCID = a.ORCID,
-                        IsCorrespondingAuthor = a.IsCorrespondingAuthor,
-                        Order = a.Order
-                    }).ToList() ?? new List<SubmissionAuthorDto>()
+                    SubmissionAuthors = model.Authors?
+                        .Where(a =>
+                            !string.IsNullOrWhiteSpace(a.FirstName) ||
+                            !string.IsNullOrWhiteSpace(a.LastName) ||
+                            !string.IsNullOrWhiteSpace(a.Email) ||
+                            !string.IsNullOrWhiteSpace(a.Institution) ||
+                            !string.IsNullOrWhiteSpace(a.ORCID))
+                        .Select((a, index) => new SubmissionAuthorDto
+                        {
+                            FirstName = a.FirstName,
+                            LastName = a.LastName,
+                            Email = a.Email,
+                            Institution = a.Institution,
+                            ORCID = a.ORCID,
+                            IsCorrespondingAuthor = a.IsCorrespondingAuthor,
+                            Order = index + 1
+                        }).ToList() ?? new List<SubmissionAuthorDto>()
                 };
 
                 await _submissionService.UpdateSubmissionAsync(id, updateDto);
@@ -983,15 +1089,17 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/delete"));
             }
 
+            var currentSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
+
+            SetSelectedConferenceSession(submissionEntity.Conference!, currentSlug);
+
             if (submissionEntity.Status != SubmissionStatus.New)
             {
                 TempData["ErrorMessage"] = T(
                     "ProcessedSubmissionCannotBeDeleted",
                     "İşleme alınmış bildiriler silinemez.");
 
-                var canonicalSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
-
-                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}"));
+                return Redirect(BuildUrl(currentSlug, $"/my-submissions/{id}"));
             }
 
             var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
@@ -1024,18 +1132,25 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 return Forbid();
             }
 
+            if (!SlugMatches(submissionEntity.Conference, slug))
+            {
+                var canonicalSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
+
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/delete"));
+            }
+
+            var currentSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
+
+            SetSelectedConferenceSession(submissionEntity.Conference!, currentSlug);
+
             if (submissionEntity.Status != SubmissionStatus.New)
             {
                 TempData["ErrorMessage"] = T(
                     "ProcessedSubmissionCannotBeDeleted",
                     "İşleme alınmış bildiriler silinemez.");
 
-                var canonicalSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
-
-                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}"));
+                return Redirect(BuildUrl(currentSlug, $"/my-submissions/{id}"));
             }
-
-            var currentSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
 
             await _submissionService.DeleteSubmissionAsync(id);
 
@@ -1079,15 +1194,17 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/revision"));
             }
 
+            var currentSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
+
+            SetSelectedConferenceSession(submissionEntity.Conference!, currentSlug);
+
             if (submissionEntity.Status != SubmissionStatus.RevisionRequired)
             {
                 TempData["ErrorMessage"] = T(
                     "RevisionPeriodClosed",
                     "Revizyon yükleme süresi kapalı.");
 
-                var canonicalSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
-
-                return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
+                return Redirect(BuildUrl(currentSlug, "/my-submissions"));
             }
 
             var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
@@ -1121,6 +1238,13 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             }
 
             var canonicalSlug = GetCanonicalSlug(submission.Conference!, slug);
+
+            if (!SlugMatches(submission.Conference, slug))
+            {
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/revision"));
+            }
+
+            SetSelectedConferenceSession(submission.Conference!, canonicalSlug);
 
             if (submission.Status != SubmissionStatus.RevisionRequired)
             {
@@ -1199,6 +1323,15 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 return Forbid();
             }
 
+            var canonicalSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
+
+            if (!SlugMatches(submissionEntity.Conference, slug))
+            {
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/acceptance-letter"));
+            }
+
+            SetSelectedConferenceSession(submissionEntity.Conference!, canonicalSlug);
+
             if (submissionEntity.Status != SubmissionStatus.Accepted &&
                 submissionEntity.Status != SubmissionStatus.Presented)
             {
@@ -1241,6 +1374,15 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 return Forbid();
             }
 
+            var canonicalSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
+
+            if (!SlugMatches(submissionEntity.Conference, slug))
+            {
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/rejection-letter"));
+            }
+
+            SetSelectedConferenceSession(submissionEntity.Conference!, canonicalSlug);
+
             if (submissionEntity.Status != SubmissionStatus.Rejected)
             {
                 return BadRequest(T(
@@ -1280,6 +1422,15 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             {
                 return Forbid();
             }
+
+            var canonicalSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
+
+            if (!SlugMatches(submissionEntity.Conference, slug))
+            {
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/badge"));
+            }
+
+            SetSelectedConferenceSession(submissionEntity.Conference!, canonicalSlug);
 
             if (submissionEntity.Status != SubmissionStatus.Accepted &&
                 submissionEntity.Status != SubmissionStatus.Presented)

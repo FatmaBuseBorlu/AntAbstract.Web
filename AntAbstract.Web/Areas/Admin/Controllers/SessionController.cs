@@ -189,6 +189,29 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return await query.FirstOrDefaultAsync();
         }
 
+        private string BuildProgramSessionsUrl(string slug, Guid conferenceId)
+        {
+            return $"/{slug}/Admin/ConferenceFlow/ProgramSessions?conferenceId={conferenceId}";
+        }
+
+        private string BuildSessionIndexUrl(string slug, Guid conferenceId)
+        {
+            return $"/{slug}/Admin/Session?conferenceId={conferenceId}";
+        }
+
+        private string BuildSessionManageUrl(string slug, Guid sessionId, Guid conferenceId)
+        {
+            return $"/{slug}/Admin/Session/Manage/{sessionId}?conferenceId={conferenceId}";
+        }
+
+        private void SetConferenceViewBag(Conference conference, string slug)
+        {
+            ViewBag.ConferenceId = conference.Id;
+            ViewBag.ConferenceName = conference.Title;
+            ViewBag.ConferenceTitle = conference.Title;
+            ViewBag.Slug = slug;
+        }
+
         [HttpGet("/Admin/Session")]
         public async Task<IActionResult> SelectConference(string? returnUrl = null)
         {
@@ -224,7 +247,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         return LocalRedirect(returnUrl);
                     }
 
-                    return Redirect($"/{selectedConference.Tenant.Slug}/Admin/Session?conferenceId={selectedConference.Id}");
+                    return Redirect(BuildProgramSessionsUrl(
+                        selectedConference.Tenant.Slug,
+                        selectedConference.Id));
                 }
             }
 
@@ -285,7 +310,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return LocalRedirect(returnUrl);
             }
 
-            return Redirect($"/{conference.Tenant.Slug}/Admin/Session?conferenceId={conference.Id}");
+            return Redirect(BuildProgramSessionsUrl(
+                conference.Tenant.Slug,
+                conference.Id));
         }
 
         [HttpGet("/{slug}/Admin/Session")]
@@ -315,9 +342,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .ThenBy(s => s.SortOrder)
                 .ToListAsync();
 
-            ViewBag.ConferenceId = conference.Id;
-            ViewBag.ConferenceName = conference.Title;
-            ViewBag.Slug = slug;
+            SetConferenceViewBag(conference, slug);
 
             return View(sessions);
         }
@@ -341,7 +366,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             SetSelectedConferenceSession(conference);
 
-            var fallback = $"/{slug}/Admin/Session?conferenceId={conference.Id}";
+            var fallback = BuildProgramSessionsUrl(slug, conference.Id);
 
             var effectiveReturnUrl = !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
                 ? returnUrl
@@ -360,9 +385,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 ReturnUrl = effectiveReturnUrl
             };
 
-            ViewBag.ConferenceId = conference.Id;
-            ViewBag.ConferenceName = conference.Title;
-            ViewBag.Slug = slug;
+            SetConferenceViewBag(conference, slug);
 
             return View(vm);
         }
@@ -397,14 +420,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (model.EndTime <= model.StartTime)
             {
-                ModelState.AddModelError(nameof(model.EndTime), "Bitiş saati başlangıç saatinden sonra olmalıdır.");
+                ModelState.AddModelError(
+                    nameof(model.EndTime),
+                    "Bitiş saati başlangıç saatinden sonra olmalıdır.");
             }
 
             if (!ModelState.IsValid)
             {
-                ViewBag.ConferenceId = conference.Id;
-                ViewBag.ConferenceName = conference.Title;
-                ViewBag.Slug = slug;
+                SetConferenceViewBag(conference, slug);
 
                 return View(model);
             }
@@ -436,7 +459,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "Success_SessionCreated",
                 "Oturum başarıyla oluşturuldu.");
 
-            var fallback = $"/{slug}/Admin/Session?conferenceId={conference.Id}";
+            var fallback = BuildProgramSessionsUrl(slug, conference.Id);
 
             var go = !string.IsNullOrWhiteSpace(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl)
                 ? model.ReturnUrl
@@ -474,9 +497,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return NotFound();
             }
 
-            ViewBag.ConferenceId = conference.Id;
-            ViewBag.ConferenceName = conference.Title;
-            ViewBag.Slug = slug;
+            SetConferenceViewBag(conference, slug);
 
             return View(session);
         }
@@ -512,14 +533,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (session.EndTime <= session.StartTime)
             {
-                ModelState.AddModelError(nameof(session.EndTime), "Bitiş saati başlangıç saatinden sonra olmalıdır.");
+                ModelState.AddModelError(
+                    nameof(session.EndTime),
+                    "Bitiş saati başlangıç saatinden sonra olmalıdır.");
             }
 
             if (!ModelState.IsValid)
             {
-                ViewBag.ConferenceId = conference.Id;
-                ViewBag.ConferenceName = conference.Title;
-                ViewBag.Slug = slug;
+                SetConferenceViewBag(conference, slug);
 
                 return View(session);
             }
@@ -555,7 +576,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "Success_SessionUpdated",
                 "Oturum başarıyla güncellendi.");
 
-            return Redirect($"/{slug}/Admin/Session?conferenceId={conference.Id}");
+            return Redirect(BuildProgramSessionsUrl(slug, conference.Id));
         }
 
         [HttpGet("/{slug}/Admin/Session/Manage/{id:guid}")]
@@ -603,9 +624,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .ToListAsync();
 
             ViewBag.UnassignedSubmissions = unassignedSubmissions;
-            ViewBag.ConferenceId = conference.Id;
-            ViewBag.ConferenceName = conference.Title;
-            ViewBag.Slug = slug;
+
+            SetConferenceViewBag(conference, slug);
 
             return View(session);
         }
@@ -647,18 +667,53 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     s.Id == submissionId &&
                     s.ConferenceId == conference.Id);
 
-            if (submission != null)
+            if (submission == null)
             {
-                submission.SessionId = sessionId;
+                TempData["ErrorMessage"] = T(
+                    "Error_SubmissionNotFound",
+                    "Bildiri bulunamadı.");
 
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = T(
-                    "Success_SubmissionAddedToSession",
-                    "Bildiri oturuma başarıyla eklendi.");
+                return Redirect(BuildSessionManageUrl(slug, sessionId, conference.Id));
             }
 
-            return Redirect($"/{slug}/Admin/Session/Manage/{sessionId}?conferenceId={conference.Id}");
+            if (submission.Status != SubmissionStatus.Accepted &&
+                submission.Status != SubmissionStatus.Presented)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_OnlyAcceptedSubmissionCanBeAdded",
+                    "Sadece kabul edilen veya sunuldu durumundaki bildiriler programa eklenebilir.");
+
+                return Redirect(BuildSessionManageUrl(slug, sessionId, conference.Id));
+            }
+
+            if (submission.SessionId.HasValue &&
+                submission.SessionId.Value != sessionId)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_SubmissionAlreadyAssignedToAnotherSession",
+                    "Bu bildiri zaten başka bir oturuma bağlı. Önce mevcut oturumdan çıkarılmalıdır.");
+
+                return Redirect(BuildSessionManageUrl(slug, sessionId, conference.Id));
+            }
+
+            if (submission.SessionId == sessionId)
+            {
+                TempData["InfoMessage"] = T(
+                    "Info_SubmissionAlreadyInSession",
+                    "Bu bildiri zaten bu oturumda yer alıyor.");
+
+                return Redirect(BuildSessionManageUrl(slug, sessionId, conference.Id));
+            }
+
+            submission.SessionId = sessionId;
+
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = T(
+                "Success_SubmissionAddedToSession",
+                "Bildiri oturuma başarıyla eklendi.");
+
+            return Redirect(BuildSessionManageUrl(slug, sessionId, conference.Id));
         }
 
         [HttpPost("/{slug}/Admin/Session/RemoveSubmission")]
@@ -709,7 +764,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Bildiri oturumdan çıkarıldı.");
             }
 
-            return Redirect($"/{slug}/Admin/Session/Manage/{sessionId}?conferenceId={conference.Id}");
+            return Redirect(BuildSessionManageUrl(slug, sessionId, conference.Id));
         }
 
         [HttpPost("/{slug}/Admin/Session/Delete")]
@@ -754,7 +809,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Oturum başarıyla silindi.");
             }
 
-            return Redirect($"/{slug}/Admin/Session?conferenceId={conference.Id}");
+            return Redirect(BuildProgramSessionsUrl(slug, conference.Id));
         }
     }
 }

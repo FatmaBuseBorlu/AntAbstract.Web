@@ -8,16 +8,18 @@
     ViewData["HideSelectedConferenceBar"] = true;
     Layout = "_LayoutDashboard";
 
+    var conferences = Model ?? new List<AllConferenceListItemViewModel>();
+
     var search = ViewBag.Search as string;
     var selectedTenantId = ViewBag.TenantId as Guid?;
     var tenants = ViewBag.Tenants as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
 
     var now = DateTime.Now;
 
-    var totalConferenceCount = Model?.Count ?? 0;
-    var activeConferenceCount = Model?.Count(x => x.StartDate <= now && x.EndDate >= now) ?? 0;
-    var upcomingConferenceCount = Model?.Count(x => x.StartDate > now) ?? 0;
-    var completedConferenceCount = Model?.Count(x => x.EndDate < now) ?? 0;
+    var totalConferenceCount = conferences.Count;
+    var activeConferenceCount = conferences.Count(x => x.StartDate <= now && x.EndDate >= now);
+    var upcomingConferenceCount = conferences.Count(x => x.StartDate > now);
+    var completedConferenceCount = conferences.Count(x => x.EndDate < now);
 
     string GetStatusText(AllConferenceListItemViewModel item)
     {
@@ -38,15 +40,15 @@
     {
         if (item.StartDate <= now && item.EndDate >= now)
         {
-            return "conference-status-active";
+            return "status-active";
         }
 
         if (item.EndDate < now)
         {
-            return "conference-status-completed";
+            return "status-completed";
         }
 
-        return "conference-status-upcoming";
+        return "status-upcoming";
     }
 
     string GetInitial(string? value)
@@ -82,73 +84,73 @@
 
 <style>
     .all-conferences-page {
+        padding: 2rem 1.5rem 4rem;
         font-family: 'Plus Jakarta Sans', sans-serif;
-        padding-bottom: 2rem;
     }
 
-    .all-conferences-hero {
-        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
-        border: 1px solid #e8eef6;
-        border-radius: 28px;
-        padding: 1.55rem;
+    .admin-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%),
+                    linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        padding: 1.45rem 1.55rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.055);
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 1.25rem;
-        flex-wrap: wrap;
-        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
-        margin-bottom: 1.5rem;
+        gap: 1.5rem;
     }
 
-    .all-conferences-hero-left {
+    .admin-hero-left {
         display: flex;
         align-items: center;
         gap: 1rem;
-        min-width: 300px;
-        flex: 1;
+        min-width: 0;
     }
 
-    .all-conferences-hero-icon {
-        width: 64px;
-        height: 64px;
-        min-width: 64px;
+    .admin-hero-icon {
+        width: 62px;
+        height: 62px;
+        min-width: 62px;
         border-radius: 22px;
-        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
         color: #ffffff;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.55rem;
-        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.22);
+        font-size: 1.45rem;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
     }
 
-    .all-conferences-section-label {
+    .admin-hero-kicker {
         color: #64748b;
-        font-size: 0.78rem;
+        font-size: 0.76rem;
         font-weight: 900;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         margin-bottom: 0.35rem;
     }
 
-    .all-conferences-title {
-        margin: 0 0 0.35rem;
+    .admin-hero-title {
         color: #0f172a;
-        font-size: 2rem;
-        font-weight: 950;
-        letter-spacing: -0.05em;
+        font-size: 1.65rem;
+        font-weight: 900;
+        letter-spacing: -0.6px;
+        margin-bottom: 0.25rem;
+        line-height: 1.2;
     }
 
-    .all-conferences-description {
-        margin: 0;
+    .admin-hero-lead {
         color: #64748b;
-        font-size: 0.96rem;
+        font-size: 0.95rem;
         font-weight: 650;
-        line-height: 1.65;
-        max-width: 850px;
+        margin-bottom: 0;
+        line-height: 1.6;
+        max-width: 860px;
     }
 
-    .all-conferences-hero-actions {
+    .admin-hero-actions {
         display: flex;
         align-items: center;
         justify-content: flex-end;
@@ -156,75 +158,82 @@
         flex-wrap: wrap;
     }
 
-    .conference-light-btn,
-    .conference-primary-btn {
-        min-height: 44px;
+    .admin-hero-btn {
+        min-height: 42px;
+        border-radius: 999px;
+        padding: 0 1rem;
+        font-size: 0.84rem;
+        font-weight: 900;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 0.55rem;
-        border-radius: 999px;
-        padding: 0 1.15rem;
-        font-size: 0.9rem;
-        font-weight: 900;
+        gap: 0.45rem;
         text-decoration: none;
         transition: all 0.2s ease;
         white-space: nowrap;
     }
 
-    .conference-light-btn {
+    .admin-hero-btn-light {
         background: #ffffff;
         color: #334155;
-        border: 1px solid #dbe3ef;
+        border: 1px solid #e2e8f0;
     }
 
-    .conference-light-btn:hover {
+    .admin-hero-btn-light:hover {
         color: #0d6efd;
-        border-color: rgba(13, 110, 253, 0.32);
-        background: #ffffff;
+        border-color: rgba(13, 110, 253, 0.25);
         transform: translateY(-1px);
+        text-decoration: none;
     }
 
-    .conference-primary-btn {
-        border: none;
+    .admin-hero-btn-primary {
         background: linear-gradient(135deg, #0d6efd, #00aeef);
         color: #ffffff;
-        box-shadow: 0 12px 26px rgba(13, 110, 253, 0.18);
+        border: none;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.18);
     }
 
-    .conference-primary-btn:hover {
+    .admin-hero-btn-primary:hover {
         color: #ffffff;
         transform: translateY(-1px);
-        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.24);
+        box-shadow: 0 14px 30px rgba(13, 110, 253, 0.26);
+        text-decoration: none;
     }
 
-    .conference-stat-card {
-        min-height: 96px;
+    .admin-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.4rem;
+    }
+
+    .admin-stat-card {
         background: #ffffff;
-        border: 1px solid #e8eef6;
-        border-radius: 24px;
-        padding: 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        padding: 1.05rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
         display: flex;
         align-items: center;
         gap: 0.85rem;
-        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+        min-height: 96px;
         transition: all 0.2s ease;
     }
 
-    .conference-stat-card:hover {
+    .admin-stat-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.075);
     }
 
-    .conference-stat-icon {
-        width: 50px;
-        height: 50px;
-        min-width: 50px;
-        border-radius: 17px;
+    .admin-stat-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 16px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.15rem;
+        font-size: 1.1rem;
     }
 
     .stat-blue {
@@ -233,159 +242,183 @@
     }
 
     .stat-green {
-        background: rgba(34, 197, 94, 0.10);
-        color: #16a34a;
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
     }
 
     .stat-cyan {
-        background: rgba(0, 174, 239, 0.12);
-        color: #00aeef;
+        background: rgba(0, 174, 239, 0.10);
+        color: #0284c7;
     }
 
-    .stat-gray {
+    .stat-slate {
         background: rgba(100, 116, 139, 0.12);
         color: #64748b;
     }
 
-    .conference-stat-number {
+    .admin-stat-value {
         color: #0f172a;
-        font-size: 1.55rem;
-        font-weight: 950;
-        line-height: 1;
+        font-size: 1.35rem;
+        font-weight: 900;
+        line-height: 1.1;
     }
 
-    .conference-stat-label {
+    .admin-stat-label {
         color: #64748b;
         font-size: 0.78rem;
         font-weight: 850;
-        margin-top: 0.3rem;
+        margin-top: 0.25rem;
     }
 
-    .conference-filter-card,
-    .conference-list-card {
+    .admin-filter-card {
         background: #ffffff;
-        border: 1px solid #e8eef6;
-        border-radius: 28px;
-        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
-        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
+        padding: 1.15rem;
+        margin-bottom: 1.4rem;
     }
 
-    .conference-filter-card {
-        padding: 1.25rem;
-        margin-bottom: 1.35rem;
-    }
-
-    .conference-label {
+    .admin-filter-label {
         color: #0f172a;
         font-size: 0.78rem;
         font-weight: 950;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        margin-bottom: 0.45rem;
+        margin-bottom: 0.55rem;
     }
 
-    .conference-form-control {
-        min-height: 44px;
-        border-radius: 14px;
-        border: 1px solid #cbd5e1;
+    .admin-filter-control {
+        min-height: 48px;
+        border-radius: 15px;
+        border: 1px solid #dbe4ef;
+        background: #ffffff;
         color: #0f172a;
-        font-weight: 700;
+        font-size: 0.92rem;
+        font-weight: 750;
+        box-shadow: none;
+        transition: all 0.2s ease;
     }
 
-    .conference-form-control:focus {
+    .admin-filter-control:focus {
         border-color: #00aeef;
-        box-shadow: 0 0 0 0.18rem rgba(0, 174, 239, 0.12);
+        box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.10);
     }
 
-    .conference-filter-btn,
-    .conference-reset-btn {
-        min-height: 44px;
-        border-radius: 14px;
-        font-weight: 900;
+    .admin-filter-btn {
+        min-height: 48px;
+        border-radius: 15px;
+        border: none;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        font-size: 0.9rem;
+        font-weight: 950;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 0.45rem;
+        box-shadow: 0 12px 24px rgba(13, 110, 253, 0.18);
+        transition: all 0.2s ease;
     }
 
-    .conference-filter-btn {
-        border: none;
-        background: linear-gradient(135deg, #0d6efd, #00aeef);
-        color: #ffffff;
-        box-shadow: 0 12px 24px rgba(13, 110, 253, 0.16);
-    }
-
-    .conference-filter-btn:hover {
+    .admin-filter-btn:hover {
         color: #ffffff;
         transform: translateY(-1px);
+        box-shadow: 0 16px 30px rgba(13, 110, 253, 0.24);
     }
 
-    .conference-reset-btn {
-        border: 1px solid #dbe3ef;
+    .admin-reset-btn {
+        min-width: 52px;
+        min-height: 48px;
+        border-radius: 15px;
+        border: 1px solid #e2e8f0;
         background: #ffffff;
-        color: #334155;
-        min-width: 46px;
+        color: #64748b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all 0.2s ease;
     }
 
-    .conference-reset-btn:hover {
+    .admin-reset-btn:hover {
         color: #0d6efd;
         border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+        text-decoration: none;
     }
 
-    .conference-list-header {
-        padding: 1.35rem 1.45rem;
-        border-bottom: 1px solid #edf2f7;
+    .admin-list-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
+        overflow: hidden;
+    }
+
+    .admin-list-card-header {
+        padding: 1.15rem 1.35rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         justify-content: space-between;
         gap: 1rem;
         flex-wrap: wrap;
     }
 
-    .conference-list-header h5 {
+    .admin-list-card-title {
         color: #0f172a;
-        font-size: 1.18rem;
-        font-weight: 950;
-        margin-bottom: 0.25rem;
+        font-size: 1.08rem;
+        font-weight: 900;
+        margin: 0 0 0.25rem;
     }
 
-    .conference-list-header p {
+    .admin-list-card-subtitle {
         color: #64748b;
-        font-size: 0.88rem;
+        font-size: 0.86rem;
         font-weight: 650;
-        margin-bottom: 0;
         line-height: 1.55;
+        margin-bottom: 0;
     }
 
-    .conference-count-pill {
-        padding: 0.44rem 0.82rem;
+    .admin-list-count {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0 0.8rem;
         border-radius: 999px;
-        background: #f8fafc;
+        background: #ffffff;
         border: 1px solid #e2e8f0;
         color: #475569;
         font-size: 0.78rem;
-        font-weight: 950;
-        white-space: nowrap;
+        font-weight: 900;
+    }
+
+    .all-conferences-table-responsive {
+        overflow-x: auto;
     }
 
     .all-conferences-table {
+        min-width: 1280px;
         margin-bottom: 0;
     }
 
     .all-conferences-table thead th {
         background: #f8fafc;
         color: #64748b;
-        font-size: 0.75rem;
+        font-size: 0.76rem;
         font-weight: 950;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        padding: 1rem 1.1rem;
+        padding: 1rem 1.15rem;
         border-bottom: 1px solid #edf2f7;
         white-space: nowrap;
     }
 
     .all-conferences-table tbody td {
-        padding: 1rem 1.1rem;
+        padding: 0.95rem 1.15rem;
         border-bottom: 1px solid #edf2f7;
         vertical-align: middle;
     }
@@ -401,20 +434,21 @@
     .conference-profile {
         display: flex;
         align-items: center;
-        gap: 0.8rem;
+        gap: 0.85rem;
+        min-width: 0;
     }
 
     .conference-avatar {
         width: 46px;
         height: 46px;
         min-width: 46px;
-        border-radius: 17px;
+        border-radius: 16px;
         background: linear-gradient(135deg, #0d6efd, #00aeef);
         color: #ffffff;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 1rem;
+        font-size: 0.95rem;
         font-weight: 950;
         box-shadow: 0 12px 24px rgba(13, 110, 253, 0.16);
     }
@@ -423,20 +457,21 @@
         color: #0f172a;
         font-size: 0.92rem;
         font-weight: 950;
-        line-height: 1.3;
+        line-height: 1.35;
     }
 
     .conference-subtitle {
         color: #64748b;
         font-size: 0.76rem;
         font-weight: 750;
-        margin-top: 0.18rem;
+        margin-top: 0.15rem;
     }
 
-    .tenant-pill {
+    .tenant-pill,
+    .location-pill {
         display: inline-flex;
         align-items: center;
-        gap: 0.42rem;
+        gap: 0.38rem;
         border-radius: 999px;
         background: #f8fafc;
         border: 1px solid #e2e8f0;
@@ -444,15 +479,17 @@
         padding: 0.42rem 0.72rem;
         font-size: 0.78rem;
         font-weight: 900;
+        white-space: nowrap;
     }
 
     .metric-pill {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-width: 44px;
+        min-width: 42px;
+        min-height: 32px;
         border-radius: 999px;
-        padding: 0.4rem 0.68rem;
+        padding: 0.35rem 0.68rem;
         font-size: 0.78rem;
         font-weight: 950;
     }
@@ -469,33 +506,34 @@
         border: 1px solid rgba(245, 158, 11, 0.18);
     }
 
-    .conference-status-badge {
+    .status-badge {
         display: inline-flex;
         align-items: center;
         gap: 0.38rem;
         border-radius: 999px;
-        padding: 0.4rem 0.72rem;
+        padding: 0.42rem 0.72rem;
         font-size: 0.76rem;
         font-weight: 950;
         white-space: nowrap;
+        border: 1px solid transparent;
     }
 
-    .conference-status-active {
+    .status-active {
         background: rgba(34, 197, 94, 0.12);
         color: #15803d;
-        border: 1px solid rgba(34, 197, 94, 0.18);
+        border-color: rgba(34, 197, 94, 0.18);
     }
 
-    .conference-status-upcoming {
+    .status-upcoming {
         background: rgba(0, 174, 239, 0.12);
         color: #0284c7;
-        border: 1px solid rgba(0, 174, 239, 0.18);
+        border-color: rgba(0, 174, 239, 0.18);
     }
 
-    .conference-status-completed {
+    .status-completed {
         background: rgba(100, 116, 139, 0.12);
         color: #64748b;
-        border: 1px solid rgba(100, 116, 139, 0.18);
+        border-color: rgba(100, 116, 139, 0.18);
     }
 
     .admin-action-group {
@@ -526,6 +564,7 @@
     .admin-action-btn:hover {
         transform: translateY(-1px);
         box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10);
+        text-decoration: none;
     }
 
     .admin-action-flow {
@@ -587,166 +626,177 @@
         font-size: 2rem;
     }
 
-    .conference-empty-state h6 {
+    .conference-empty-title {
         color: #0f172a;
-        font-size: 1.1rem;
-        font-weight: 950;
-        margin-bottom: 0.3rem;
+        font-size: 1rem;
+        font-weight: 900;
+        margin-bottom: 0.35rem;
     }
 
-    .conference-empty-state p {
+    .conference-empty-text {
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 700;
         margin-bottom: 0;
-        font-weight: 650;
+    }
+
+    @@media (max-width: 1200px) {
+        .admin-stat-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
     }
 
     @@media (max-width: 992px) {
-        .all-conferences-hero {
-            align-items: flex-start;
+        .admin-hero {
             flex-direction: column;
-        }
-
-        .all-conferences-hero-left {
             align-items: flex-start;
         }
 
-        .all-conferences-hero-actions,
-        .all-conferences-hero-actions .btn {
+        .admin-hero-actions {
             width: 100%;
-        }
-
-        .all-conferences-title {
-            font-size: 1.65rem;
+            justify-content: flex-start;
         }
     }
 
     @@media (max-width: 768px) {
-        .all-conferences-hero-left {
-            flex-direction: column;
+        .all-conferences-page {
+            padding: 1.5rem 1rem 3rem;
         }
 
-        .all-conferences-table tbody td {
-            min-width: 150px;
+        .admin-hero-left {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .admin-hero-title {
+            font-size: 1.45rem;
+        }
+
+        .admin-stat-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .admin-list-card-header {
+            align-items: flex-start;
+            flex-direction: column;
         }
 
         .admin-action-group {
             flex-wrap: wrap;
         }
+
+        .admin-filter-btn,
+        .admin-reset-btn {
+            width: 100%;
+        }
     }
 </style>
 
-<div class="container-fluid all-conferences-page">
+<div class="all-conferences-page">
 
-    <div class="all-conferences-hero">
-        <div class="all-conferences-hero-left">
-            <div class="all-conferences-hero-icon">
+    <div class="admin-hero">
+        <div class="admin-hero-left">
+            <div class="admin-hero-icon">
                 <i class="fas fa-calendar-days"></i>
             </div>
 
             <div>
-                <div class="all-conferences-section-label">
+                <div class="admin-hero-kicker">
                     Global Sistem
                 </div>
 
-                <h2 class="all-conferences-title">
+                <h3 class="admin-hero-title">
                     Tüm Kongreler
-                </h2>
+                </h3>
 
-                <p class="all-conferences-description">
+                <p class="admin-hero-lead">
                     Sistemdeki tüm kurumlara bağlı kongreleri buradan izleyebilir, kongre sitesine veya kongre operasyon akışına hızlıca geçebilirsiniz.
                 </p>
             </div>
         </div>
 
-        <div class="all-conferences-hero-actions">
+        <div class="admin-hero-actions">
             <a href="/Admin/Tenants"
-               class="btn conference-light-btn">
+               class="admin-hero-btn admin-hero-btn-light">
                 <i class="fas fa-building"></i>
                 Kurumlara Git
             </a>
 
             <a href="/Admin/SystemReports"
-               class="btn conference-primary-btn">
+               class="admin-hero-btn admin-hero-btn-primary">
                 <i class="fas fa-chart-line"></i>
                 Sistem Raporları
             </a>
         </div>
     </div>
 
-    <div class="row g-3 mb-4">
-        <div class="col-xl-3 col-md-6">
-            <div class="conference-stat-card">
-                <div class="conference-stat-icon stat-blue">
-                    <i class="fas fa-calendar-alt"></i>
+    <div class="admin-stat-grid">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-blue">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @totalConferenceCount
                 </div>
 
-                <div>
-                    <div class="conference-stat-number">
-                        @totalConferenceCount
-                    </div>
-
-                    <div class="conference-stat-label">
-                        Toplam Kongre
-                    </div>
+                <div class="admin-stat-label">
+                    Toplam Kongre
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
-            <div class="conference-stat-card">
-                <div class="conference-stat-icon stat-green">
-                    <i class="fas fa-play-circle"></i>
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-green">
+                <i class="fas fa-play-circle"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @activeConferenceCount
                 </div>
 
-                <div>
-                    <div class="conference-stat-number">
-                        @activeConferenceCount
-                    </div>
-
-                    <div class="conference-stat-label">
-                        Devam Eden
-                    </div>
+                <div class="admin-stat-label">
+                    Devam Eden
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
-            <div class="conference-stat-card">
-                <div class="conference-stat-icon stat-cyan">
-                    <i class="fas fa-clock"></i>
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-cyan">
+                <i class="fas fa-clock"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @upcomingConferenceCount
                 </div>
 
-                <div>
-                    <div class="conference-stat-number">
-                        @upcomingConferenceCount
-                    </div>
-
-                    <div class="conference-stat-label">
-                        Yaklaşan
-                    </div>
+                <div class="admin-stat-label">
+                    Yaklaşan
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
-            <div class="conference-stat-card">
-                <div class="conference-stat-icon stat-gray">
-                    <i class="fas fa-check-circle"></i>
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-slate">
+                <i class="fas fa-check-circle"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @completedConferenceCount
                 </div>
 
-                <div>
-                    <div class="conference-stat-number">
-                        @completedConferenceCount
-                    </div>
-
-                    <div class="conference-stat-label">
-                        Tamamlanan
-                    </div>
+                <div class="admin-stat-label">
+                    Tamamlanan
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="conference-filter-card">
+    <div class="admin-filter-card">
         <form method="get"
               asp-area="Admin"
               asp-controller="AllConferences"
@@ -754,23 +804,23 @@
               class="row g-3 align-items-end">
 
             <div class="col-lg-5">
-                <label class="conference-label">
+                <label class="admin-filter-label">
                     Arama
                 </label>
 
                 <input type="text"
                        name="search"
                        value="@search"
-                       class="form-control conference-form-control"
+                       class="form-control admin-filter-control"
                        placeholder="Kongre adı, kurum, şehir, ülke veya slug ara..." />
             </div>
 
             <div class="col-lg-4">
-                <label class="conference-label">
+                <label class="admin-filter-label">
                     Kurum
                 </label>
 
-                <select name="tenantId" class="form-select conference-form-control">
+                <select name="tenantId" class="form-select admin-filter-control">
                     <option value="">Tüm Kurumlar</option>
 
                     @foreach (var tenant in tenants)
@@ -787,59 +837,62 @@
                 </select>
             </div>
 
-            <div class="col-lg-3 d-flex gap-2">
-                <button type="submit"
-                        class="btn conference-filter-btn w-100">
-                    <i class="fas fa-search"></i>
-                    Filtrele
-                </button>
+            <div class="col-lg-3">
+                <div class="d-flex gap-2">
+                    <button type="submit"
+                            class="admin-filter-btn flex-fill">
+                        <i class="fas fa-search"></i>
+                        Filtrele
+                    </button>
 
-                <a href="/Admin/AllConferences"
-                   class="btn conference-reset-btn"
-                   title="Filtreleri Temizle">
-                    <i class="fas fa-rotate-left"></i>
-                </a>
+                    <a href="/Admin/AllConferences"
+                       class="admin-reset-btn"
+                       title="Filtreleri Temizle">
+                        <i class="fas fa-rotate-left"></i>
+                    </a>
+                </div>
             </div>
 
         </form>
     </div>
 
-    <div class="conference-list-card">
-        <div class="conference-list-header">
+    <div class="admin-list-card">
+        <div class="admin-list-card-header">
             <div>
-                <h5>
+                <h5 class="admin-list-card-title">
                     Kongre Listesi
                 </h5>
 
-                <p>
+                <p class="admin-list-card-subtitle">
                     Bu liste SuperAdmin için genel izleme ekranıdır. İşlem ikonlarıyla siteye, ayarlara ve kongre operasyon akışına hızlıca geçebilirsiniz.
                 </p>
             </div>
 
-            <span class="conference-count-pill">
+            <span class="admin-list-count">
+                <i class="fas fa-list-ul"></i>
                 @totalConferenceCount kayıt
             </span>
         </div>
 
-        @if (Model == null || !Model.Any())
+        @if (!conferences.Any())
         {
             <div class="conference-empty-state">
                 <div class="conference-empty-icon">
                     <i class="fas fa-calendar-xmark"></i>
                 </div>
 
-                <h6>
+                <h6 class="conference-empty-title">
                     Kongre bulunamadı
                 </h6>
 
-                <p>
+                <p class="conference-empty-text">
                     Arama kriterlerine uygun kongre yok.
                 </p>
             </div>
         }
         else
         {
-            <div class="table-responsive">
+            <div class="table-responsive all-conferences-table-responsive">
                 <table class="table table-hover align-middle all-conferences-table">
                     <thead>
                         <tr>
@@ -878,7 +931,7 @@
                     </thead>
 
                     <tbody>
-                        @foreach (var item in Model)
+                        @foreach (var item in conferences)
                         {
                             var statusText = GetStatusText(item);
                             var statusClass = GetStatusClass(item);
@@ -932,7 +985,7 @@
                                 </td>
 
                                 <td>
-                                    <span class="tenant-pill">
+                                    <span class="location-pill">
                                         <i class="fas fa-location-dot"></i>
                                         @GetLocation(item)
                                     </span>
@@ -961,7 +1014,7 @@
                                 </td>
 
                                 <td class="text-center">
-                                    <span class="conference-status-badge @statusClass">
+                                    <span class="status-badge @statusClass">
                                         <i class="fas fa-circle"></i>
                                         @statusText
                                     </span>

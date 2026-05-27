@@ -1,5 +1,8 @@
 ﻿@model IEnumerable<AntAbstract.Domain.Entities.ConferencePageBlock>
 
+@using System
+@using System.Collections.Generic
+@using System.Linq
 @using AntAbstract.Domain.Entities
 
 @{
@@ -40,41 +43,532 @@
     {
         return blockType switch
         {
-            ConferencePageBlockType.Hero => "bg-primary bg-opacity-10 text-primary",
-            ConferencePageBlockType.About => "bg-secondary bg-opacity-10 text-secondary",
-            ConferencePageBlockType.CallForPapers => "bg-info bg-opacity-10 text-info",
-            ConferencePageBlockType.Topics => "bg-success bg-opacity-10 text-success",
-            ConferencePageBlockType.Committees => "bg-warning bg-opacity-10 text-warning",
-            ConferencePageBlockType.Fees => "bg-danger bg-opacity-10 text-danger",
-            _ => "bg-dark bg-opacity-10 text-dark"
+            ConferencePageBlockType.Hero => "block-hero",
+            ConferencePageBlockType.About => "block-about",
+            ConferencePageBlockType.CallForPapers => "block-call",
+            ConferencePageBlockType.Topics => "block-topics",
+            ConferencePageBlockType.Committees => "block-committees",
+            ConferencePageBlockType.Fees => "block-fees",
+            _ => "block-default"
         };
     }
 }
 
-<div class="container-fluid">
+<style>
+    .page-blocks-page {
+        padding: 2rem 1.5rem 4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
 
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-        <div>
-            <div class="text-uppercase text-muted fw-bold small mb-1">
-                Kongre Sitesi
+    .admin-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%),
+                    linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        padding: 1.45rem 1.55rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.055);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+    }
+
+    .admin-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 0;
+    }
+
+    .admin-hero-icon {
+        width: 62px;
+        height: 62px;
+        min-width: 62px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.45rem;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
+    }
+
+    .admin-hero-kicker {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .admin-hero-title {
+        color: #0f172a;
+        font-size: 1.65rem;
+        font-weight: 900;
+        letter-spacing: -0.6px;
+        margin-bottom: 0.25rem;
+        line-height: 1.2;
+    }
+
+    .admin-hero-lead {
+        color: #64748b;
+        font-size: 0.95rem;
+        font-weight: 650;
+        margin-bottom: 0;
+        line-height: 1.6;
+        max-width: 860px;
+    }
+
+    .admin-hero-lead strong {
+        color: #334155;
+        font-weight: 950;
+    }
+
+    .admin-hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .admin-hero-btn {
+        min-height: 42px;
+        border-radius: 999px;
+        padding: 0 1rem;
+        font-size: 0.84rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .admin-hero-btn-light {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+    }
+
+    .admin-hero-btn-light:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .admin-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.4rem;
+    }
+
+    .admin-stat-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        padding: 1.05rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        min-height: 96px;
+        transition: all 0.2s ease;
+    }
+
+    .admin-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.075);
+    }
+
+    .admin-stat-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .stat-blue {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .stat-green {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+    }
+
+    .stat-slate {
+        background: rgba(100, 116, 139, 0.12);
+        color: #64748b;
+    }
+
+    .admin-stat-value {
+        color: #0f172a;
+        font-size: 1.35rem;
+        font-weight: 900;
+        line-height: 1.1;
+    }
+
+    .admin-stat-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 850;
+        margin-top: 0.25rem;
+    }
+
+    .page-blocks-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
+        overflow: hidden;
+    }
+
+    .page-blocks-card-header {
+        padding: 1.15rem 1.35rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .page-blocks-card-title {
+        color: #0f172a;
+        font-size: 1.08rem;
+        font-weight: 900;
+        margin: 0 0 0.25rem;
+    }
+
+    .page-blocks-card-subtitle {
+        color: #64748b;
+        font-size: 0.86rem;
+        font-weight: 650;
+        line-height: 1.55;
+        margin-bottom: 0;
+    }
+
+    .page-blocks-card-count {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0 0.8rem;
+        border-radius: 999px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 0.78rem;
+        font-weight: 900;
+    }
+
+    .page-blocks-alert {
+        border: none;
+        border-radius: 18px;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.055);
+        font-weight: 850;
+    }
+
+    .page-blocks-table-responsive {
+        overflow-x: auto;
+    }
+
+    .page-block-table {
+        min-width: 980px;
+        margin-bottom: 0;
+    }
+
+    .page-block-table thead th {
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 1rem 1.15rem;
+        border-bottom: 1px solid #edf2f7;
+        white-space: nowrap;
+    }
+
+    .page-block-table tbody td {
+        padding: 0.95rem 1.15rem;
+        border-bottom: 1px solid #edf2f7;
+        vertical-align: middle;
+    }
+
+    .page-block-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .page-block-table tbody tr:hover {
+        background: #f8fbff;
+    }
+
+    .page-block-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .order-badge {
+        width: 36px;
+        height: 36px;
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #64748b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 950;
+        font-size: 0.85rem;
+    }
+
+    .block-type-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 0.46rem 0.76rem;
+        font-weight: 900;
+        font-size: 0.78rem;
+        white-space: nowrap;
+        border: 1px solid transparent;
+    }
+
+    .block-hero {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.16);
+    }
+
+    .block-about {
+        background: rgba(100, 116, 139, 0.12);
+        color: #64748b;
+        border-color: rgba(100, 116, 139, 0.18);
+    }
+
+    .block-call {
+        background: rgba(0, 174, 239, 0.10);
+        color: #0284c7;
+        border-color: rgba(0, 174, 239, 0.16);
+    }
+
+    .block-topics {
+        background: rgba(22, 163, 74, 0.11);
+        color: #15803d;
+        border-color: rgba(22, 163, 74, 0.18);
+    }
+
+    .block-committees {
+        background: rgba(245, 158, 11, 0.12);
+        color: #b45309;
+        border-color: rgba(245, 158, 11, 0.18);
+    }
+
+    .block-fees {
+        background: rgba(239, 68, 68, 0.10);
+        color: #dc2626;
+        border-color: rgba(239, 68, 68, 0.18);
+    }
+
+    .block-default {
+        background: rgba(15, 23, 42, 0.10);
+        color: #0f172a;
+        border-color: rgba(15, 23, 42, 0.18);
+    }
+
+    .block-title {
+        color: #0f172a;
+        font-size: 0.92rem;
+        font-weight: 950;
+        line-height: 1.35;
+    }
+
+    .block-subtitle {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 700;
+        line-height: 1.45;
+        margin-top: 0.2rem;
+        display: block;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.38rem;
+        border-radius: 999px;
+        padding: 0.42rem 0.72rem;
+        font-size: 0.76rem;
+        font-weight: 950;
+        white-space: nowrap;
+        border: 1px solid transparent;
+    }
+
+    .status-active {
+        background: rgba(34, 197, 94, 0.12);
+        color: #15803d;
+        border-color: rgba(34, 197, 94, 0.18);
+    }
+
+    .status-passive {
+        background: rgba(100, 116, 139, 0.12);
+        color: #64748b;
+        border-color: rgba(100, 116, 139, 0.18);
+    }
+
+    .edit-block-btn {
+        min-height: 38px;
+        border-radius: 999px;
+        padding: 0 0.95rem;
+        color: #ffffff;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        border: none;
+        font-size: 0.82rem;
+        font-weight: 950;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        text-decoration: none;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.18);
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .edit-block-btn:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(13, 110, 253, 0.26);
+        text-decoration: none;
+    }
+
+    .page-blocks-empty-state {
+        padding: 4rem 1.5rem;
+        text-align: center;
+        color: #64748b;
+    }
+
+    .page-blocks-empty-icon {
+        width: 76px;
+        height: 76px;
+        border-radius: 26px;
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .page-blocks-empty-title {
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 900;
+        margin-bottom: 0.35rem;
+    }
+
+    .page-blocks-empty-text {
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin-bottom: 0;
+    }
+
+    @@media (max-width: 1200px) {
+        .admin-stat-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 992px) {
+        .admin-hero {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .admin-hero-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .page-blocks-page {
+            padding: 1.5rem 1rem 3rem;
+        }
+
+        .admin-hero-left {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .admin-hero-title {
+            font-size: 1.45rem;
+        }
+
+        .admin-stat-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .page-blocks-card-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .admin-hero-btn,
+        .edit-block-btn {
+            width: 100%;
+        }
+
+        .page-block-table {
+            min-width: 900px;
+        }
+    }
+</style>
+
+<div class="page-blocks-page">
+
+    <div class="admin-hero">
+        <div class="admin-hero-left">
+            <div class="admin-hero-icon">
+                <i class="fas fa-layer-group"></i>
             </div>
 
-            <h2 class="fw-bold mb-1 text-dark">
-                Kongre Site Blokları
-            </h2>
+            <div>
+                <div class="admin-hero-kicker">
+                    Kongre Sitesi
+                </div>
 
-            <p class="text-muted mb-0">
-                <strong>@conferenceTitle</strong> kongresinin web sitesinde görünecek bölümleri buradan yönetebilirsiniz.
-            </p>
+                <h3 class="admin-hero-title">
+                    Kongre Site Blokları
+                </h3>
+
+                <p class="admin-hero-lead">
+                    <strong>@conferenceTitle</strong> kongresinin web sitesinde görünecek bölümleri buradan yönetebilirsiniz.
+                </p>
+            </div>
         </div>
 
-        <div class="d-flex flex-wrap gap-2">
+        <div class="admin-hero-actions">
             @if (!string.IsNullOrWhiteSpace(slug))
             {
                 <a href="/@slug"
                    target="_blank"
-                   class="btn btn-light border rounded-pill px-4">
-                    <i class="fas fa-external-link-alt me-2 text-primary"></i>
+                   class="admin-hero-btn admin-hero-btn-light">
+                    <i class="fas fa-external-link-alt"></i>
                     Siteyi Gör
                 </a>
             }
@@ -83,7 +577,7 @@
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
+        <div class="alert alert-success alert-dismissible fade show page-blocks-alert mb-4" role="alert">
             <i class="fas fa-check-circle me-2"></i>
             @TempData["SuccessMessage"]
 
@@ -96,7 +590,7 @@
 
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
+        <div class="alert alert-danger alert-dismissible fade show page-blocks-alert mb-4" role="alert">
             <i class="fas fa-times-circle me-2"></i>
             @TempData["ErrorMessage"]
 
@@ -107,252 +601,180 @@
         </div>
     }
 
-    <div class="row g-3 mb-4">
-        <div class="col-md-4 col-6">
-            <div class="info-card">
-                <div class="info-icon bg-primary bg-opacity-10 text-primary">
+    <div class="admin-stat-grid">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-blue">
+                <i class="fas fa-layer-group"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @totalBlockCount
+                </div>
+
+                <div class="admin-stat-label">
+                    Toplam Blok
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-green">
+                <i class="fas fa-eye"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @activeBlockCount
+                </div>
+
+                <div class="admin-stat-label">
+                    Yayında
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-slate">
+                <i class="fas fa-eye-slash"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @passiveBlockCount
+                </div>
+
+                <div class="admin-stat-label">
+                    Gizli
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-blocks-card">
+        <div class="page-blocks-card-header">
+            <div>
+                <h5 class="page-blocks-card-title">
+                    Blok Listesi
+                </h5>
+
+                <p class="page-blocks-card-subtitle">
+                    Bloklar sıra numarasına göre kongre sitesinde gösterilir. Gizli bloklar canlı sitede görünmez.
+                </p>
+            </div>
+
+            <span class="page-blocks-card-count">
+                <i class="fas fa-list-ul"></i>
+                @blocks.Count kayıt
+            </span>
+        </div>
+
+        @if (!blocks.Any())
+        {
+            <div class="page-blocks-empty-state">
+                <div class="page-blocks-empty-icon">
                     <i class="fas fa-layer-group"></i>
                 </div>
 
-                <div>
-                    <div class="info-number">@totalBlockCount</div>
-                    <div class="info-label">Toplam Blok</div>
-                </div>
+                <h6 class="page-blocks-empty-title">
+                    Henüz site bloğu bulunmuyor
+                </h6>
+
+                <p class="page-blocks-empty-text">
+                    Bu kongre için otomatik bloklar oluşturulmamış olabilir.
+                </p>
             </div>
-        </div>
+        }
+        else
+        {
+            <div class="table-responsive page-blocks-table-responsive">
+                <table class="table table-hover align-middle page-block-table">
+                    <thead>
+                        <tr>
+                            <th class="ps-4" style="width: 10%;">
+                                Sıra
+                            </th>
 
-        <div class="col-md-4 col-6">
-            <div class="info-card">
-                <div class="info-icon bg-success bg-opacity-10 text-success">
-                    <i class="fas fa-eye"></i>
-                </div>
+                            <th style="width: 22%;">
+                                Blok Türü
+                            </th>
 
-                <div>
-                    <div class="info-number">@activeBlockCount</div>
-                    <div class="info-label">Yayında</div>
-                </div>
-            </div>
-        </div>
+                            <th style="width: 38%;">
+                                Başlık
+                            </th>
 
-        <div class="col-md-4 col-6">
-            <div class="info-card">
-                <div class="info-icon bg-secondary bg-opacity-10 text-secondary">
-                    <i class="fas fa-eye-slash"></i>
-                </div>
+                            <th class="text-center" style="width: 14%;">
+                                Durum
+                            </th>
 
-                <div>
-                    <div class="info-number">@passiveBlockCount</div>
-                    <div class="info-label">Gizli</div>
-                </div>
-            </div>
-        </div>
-    </div>
+                            <th class="pe-4 text-end" style="width: 16%;">
+                                İşlem
+                            </th>
+                        </tr>
+                    </thead>
 
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="card-header bg-white border-0 px-4 py-3">
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-                <div>
-                    <h5 class="fw-bold mb-1">
-                        Blok Listesi
-                    </h5>
-
-                    <p class="text-muted small mb-0">
-                        Bloklar sıra numarasına göre kongre sitesinde gösterilir. Gizli bloklar canlı sitede görünmez.
-                    </p>
-                </div>
-
-                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
-                    Seçili Kongre
-                </span>
-            </div>
-        </div>
-
-        <div class="card-body p-0">
-
-            @if (!blocks.Any())
-            {
-                <div class="text-center py-5 text-muted">
-                    <i class="fas fa-layer-group fa-3x mb-3 opacity-25"></i>
-
-                    <h6 class="fw-bold mb-1">
-                        Henüz site bloğu bulunmuyor
-                    </h6>
-
-                    <p class="mb-0">
-                        Bu kongre için otomatik bloklar oluşturulmamış olabilir.
-                    </p>
-                </div>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 page-block-table">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="ps-4 py-3 text-muted fw-bold small" style="width: 10%;">
-                                    Sıra
-                                </th>
-
-                                <th class="py-3 text-muted fw-bold small" style="width: 22%;">
-                                    Blok Türü
-                                </th>
-
-                                <th class="py-3 text-muted fw-bold small" style="width: 38%;">
-                                    Başlık
-                                </th>
-
-                                <th class="py-3 text-muted fw-bold small text-center" style="width: 14%;">
-                                    Durum
-                                </th>
-
-                                <th class="pe-4 py-3 text-muted fw-bold small text-end" style="width: 16%;">
-                                    İşlem
-                                </th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            @foreach (var item in blocks)
-                            {
-                                var editUrl = string.IsNullOrWhiteSpace(slug)
+                    <tbody>
+                        @foreach (var item in blocks)
+                        {
+                            var editUrl = string.IsNullOrWhiteSpace(slug)
                                 ? $"/Admin/PageBlocks/Edit/{item.Id}"
                                 : $"/{slug}/Admin/PageBlocks/Edit/{item.Id}";
 
-                                <tr>
-                                    <td class="ps-4">
-                                        <span class="order-badge">
-                                            @item.Order
+                            <tr>
+                                <td class="ps-4">
+                                    <span class="order-badge">
+                                        @item.Order
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <span class="block-type-badge @GetBlockTypeBadgeClass(item.BlockType)">
+                                        @GetBlockTypeLabel(item.BlockType)
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <div class="block-title">
+                                        @item.Title
+                                    </div>
+
+                                    @if (!string.IsNullOrWhiteSpace(item.Subtitle))
+                                    {
+                                        <span class="block-subtitle">
+                                            @item.Subtitle
                                         </span>
-                                    </td>
+                                    }
+                                </td>
 
-                                    <td>
-                                        <span class="block-type-badge @GetBlockTypeBadgeClass(item.BlockType)">
-                                            @GetBlockTypeLabel(item.BlockType)
+                                <td class="text-center">
+                                    @if (item.IsActive)
+                                    {
+                                        <span class="status-badge status-active">
+                                            <i class="fas fa-eye"></i>
+                                            Yayında
                                         </span>
-                                    </td>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-badge status-passive">
+                                            <i class="fas fa-eye-slash"></i>
+                                            Gizli
+                                        </span>
+                                    }
+                                </td>
 
-                                    <td>
-                                        <div class="fw-bold text-dark">
-                                            @item.Title
-                                        </div>
-
-                                        @if (!string.IsNullOrWhiteSpace(item.Subtitle))
-                                        {
-                                            <small class="text-muted">
-                                                @item.Subtitle
-                                            </small>
-                                        }
-                                    </td>
-
-                                    <td class="text-center">
-                                        @if (item.IsActive)
-                                        {
-                                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2">
-                                                <i class="fas fa-eye me-1"></i>
-                                                Yayında
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3 py-2">
-                                                <i class="fas fa-eye-slash me-1"></i>
-                                                Gizli
-                                            </span>
-                                        }
-                                    </td>
-
-                                    <td class="pe-4 text-end">
-                                        <a href="@editUrl"
-                                           class="btn btn-sm btn-primary rounded-3 text-nowrap">
-                                            <i class="fas fa-pen-to-square me-1"></i>
-                                            İçeriği Düzenle
-                                        </a>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-
-        </div>
+                                <td class="pe-4 text-end">
+                                    <a href="@editUrl"
+                                       class="edit-block-btn">
+                                        <i class="fas fa-pen-to-square"></i>
+                                        İçeriği Düzenle
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
     </div>
 </div>
-
-<style>
-    .info-card {
-        background-color: #fff;
-        border-radius: 1rem;
-        padding: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.85rem;
-        box-shadow: 0 8px 25px rgba(15, 23, 42, 0.05);
-        border: 1px solid #f1f5f9;
-        min-height: 95px;
-    }
-
-    .info-icon {
-        width: 46px;
-        height: 46px;
-        min-width: 46px;
-        border-radius: 15px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.1rem;
-    }
-
-    .info-number {
-        font-size: 1.55rem;
-        font-weight: 800;
-        color: #0f172a;
-        line-height: 1;
-    }
-
-    .info-label {
-        color: #64748b;
-        font-weight: 700;
-        font-size: 0.76rem;
-        margin-top: 0.25rem;
-    }
-
-    .page-block-table thead th {
-        font-size: 0.7rem;
-        letter-spacing: 0.8px;
-        border-bottom: none;
-        text-transform: uppercase;
-    }
-
-    .page-block-table tbody tr {
-        transition: background-color 0.2s ease;
-        border-bottom: 1px solid #f8fafc;
-    }
-
-        .page-block-table tbody tr:hover {
-            background-color: #fbfcfe !important;
-        }
-
-    .order-badge {
-        width: 34px;
-        height: 34px;
-        border-radius: 999px;
-        background-color: #f1f5f9;
-        color: #0f172a;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        font-size: 0.85rem;
-    }
-
-    .block-type-badge {
-        display: inline-flex;
-        align-items: center;
-        border-radius: 999px;
-        padding: 0.45rem 0.75rem;
-        font-weight: 700;
-        font-size: 0.78rem;
-        white-space: nowrap;
-    }
-</style>

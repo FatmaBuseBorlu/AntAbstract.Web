@@ -48,7 +48,9 @@ namespace AntAbstract.Web.Controllers
                         ? c.Tenant.Slug
                         : (c.Slug ?? ""),
                     FileUrl = NormalizeFileUrl(c.ProceedingBookFilePath),
-                    DownloadUrl = $"/Proceedings/Download/{c.Id}",
+                    DownloadUrl = c.Tenant != null && !string.IsNullOrWhiteSpace(c.Tenant.Slug)
+                        ? $"/{c.Tenant.Slug}/Proceedings/Download/{c.Id}"
+                        : $"/Proceedings/Download/{c.Id}",
                     Year = c.StartDate.Year,
                     PublishedDate = c.ProceedingBookPublishedDate,
                     StatusText = "Yayında",
@@ -67,19 +69,32 @@ namespace AntAbstract.Web.Controllers
 
         [HttpGet("/{slug}/Proceedings")]
         [HttpGet("/{slug}/Proceedings/Index")]
-        public async Task<IActionResult> Index(string slug)
+        public async Task<IActionResult> Index(string slug, Guid? conferenceId = null)
         {
             if (string.IsNullOrWhiteSpace(slug))
             {
                 return RedirectToAction(nameof(IndexRoot));
             }
 
-            var conference = await _context.Conferences
+            var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
-                .FirstOrDefaultAsync(c =>
-                    c.Slug == slug ||
-                    (c.Tenant != null && c.Tenant.Slug == slug));
+                .AsQueryable();
+
+            var conference = conferenceId.HasValue && conferenceId.Value != Guid.Empty
+                ? await query.FirstOrDefaultAsync(c =>
+                    c.Id == conferenceId.Value &&
+                    (
+                        c.Slug == slug ||
+                        (c.Tenant != null && c.Tenant.Slug == slug)
+                    ))
+                : await query
+                    .Where(c =>
+                        c.Slug == slug ||
+                        (c.Tenant != null && c.Tenant.Slug == slug))
+                    .OrderByDescending(c => c.IsProceedingBookPublished)
+                    .ThenByDescending(c => c.ProceedingBookPublishedDate ?? c.EndDate)
+                    .FirstOrDefaultAsync();
 
             if (conference == null)
             {
@@ -87,10 +102,14 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(IndexRoot));
             }
 
+            var resolvedSlug = conference.Tenant != null && !string.IsNullOrWhiteSpace(conference.Tenant.Slug)
+                ? conference.Tenant.Slug
+                : (!string.IsNullOrWhiteSpace(conference.Slug) ? conference.Slug : slug);
+
             var model = new ProceedingBookPageViewModel
             {
                 ConferenceId = conference.Id,
-                Slug = slug,
+                Slug = resolvedSlug,
                 ConferenceTitle = conference.Title ?? "",
                 ProceedingBookFilePath = conference.ProceedingBookFilePath,
                 IsProceedingBookPublished = conference.IsProceedingBookPublished,
@@ -105,9 +124,11 @@ namespace AntAbstract.Web.Controllers
                 {
                     ConferenceId = conference.Id,
                     ConferenceTitle = conference.Title ?? "",
-                    Slug = slug,
+                    Slug = resolvedSlug,
                     FileUrl = NormalizeFileUrl(conference.ProceedingBookFilePath),
-                    DownloadUrl = $"/Proceedings/Download/{conference.Id}",
+                    DownloadUrl = !string.IsNullOrWhiteSpace(resolvedSlug)
+                        ? $"/{resolvedSlug}/Proceedings/Download/{conference.Id}"
+                        : $"/Proceedings/Download/{conference.Id}",
                     Year = conference.StartDate.Year,
                     PublishedDate = conference.ProceedingBookPublishedDate,
                     StatusText = "Yayında",
@@ -119,20 +140,30 @@ namespace AntAbstract.Web.Controllers
         }
 
         [HttpGet("/Proceedings/Download/{conferenceId:guid}")]
-        public async Task<IActionResult> Download(Guid conferenceId)
+        [HttpGet("/{slug}/Proceedings/Download/{conferenceId:guid}")]
+        public async Task<IActionResult> Download(Guid conferenceId, string? slug = null)
         {
             if (conferenceId == Guid.Empty)
             {
                 return BadRequest("Geçersiz bildiri kitabı isteği.");
             }
 
-            var conference = await _context.Conferences
+            var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
-                .FirstOrDefaultAsync(c =>
+                .Where(c =>
                     c.Id == conferenceId &&
                     c.IsProceedingBookPublished &&
                     !string.IsNullOrWhiteSpace(c.ProceedingBookFilePath));
+
+            if (!string.IsNullOrWhiteSpace(slug))
+            {
+                query = query.Where(c =>
+                    c.Slug == slug ||
+                    (c.Tenant != null && c.Tenant.Slug == slug));
+            }
+
+            var conference = await query.FirstOrDefaultAsync();
 
             if (conference == null)
             {
@@ -154,8 +185,11 @@ namespace AntAbstract.Web.Controllers
                 return NotFound("PDF dosyası sunucuda bulunamadı.");
             }
 
-            var slug = conference.Tenant?.Slug ?? conference.Slug ?? "bildiri-kitabi";
-            var safeFileName = $"{slug}-bildiri-kitabi.pdf";
+            var fileSlug = conference.Tenant != null && !string.IsNullOrWhiteSpace(conference.Tenant.Slug)
+                ? conference.Tenant.Slug
+                : (!string.IsNullOrWhiteSpace(conference.Slug) ? conference.Slug : "bildiri-kitabi");
+
+            var safeFileName = $"{fileSlug}-bildiri-kitabi.pdf";
 
             var bytes = await System.IO.File.ReadAllBytesAsync(physicalPath);
 

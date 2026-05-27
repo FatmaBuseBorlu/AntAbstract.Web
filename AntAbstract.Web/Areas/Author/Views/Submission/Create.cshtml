@@ -1,6 +1,8 @@
 ﻿@using AntAbstract.Web.Models.ViewModels.Admin.Submissions
 @using Microsoft.AspNetCore.Http
+@using System
 @using System.Globalization
+@using System.Linq
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model SubmissionCreateViewModel
 
@@ -11,6 +13,8 @@
     var slug = ViewContext.RouteData.Values["slug"]?.ToString()
         ?? Context.Session.GetString("SelectedConferenceSlug")
         ?? "";
+
+    var conferenceTitle = Context.Session.GetString("SelectedConferenceTitle") ?? "";
 
     var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 
@@ -42,99 +46,104 @@
                 e.Exception != null
             )
         );
+
+    var existingAuthors = Model.Authors ?? new List<SubmissionAuthorViewModel>();
 }
 
 <style>
     .submission-page {
-        max-width: 1320px;
-        margin: 0 auto;
-        padding: 1.25rem 1.5rem 4rem;
+        padding: 2rem 1.5rem 4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
-    .submission-hero-card {
-        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
-        border: 1px solid #e8eef6;
-        border-radius: 24px;
-        padding: 1.35rem 1.45rem;
+    .program-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        padding: 1.45rem 1.55rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.055);
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 1rem;
-        flex-wrap: wrap;
-        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.055);
-        margin-bottom: 1.4rem;
+        gap: 1.5rem;
     }
 
-    .submission-hero-left {
+    .program-hero-left {
         display: flex;
         align-items: center;
-        gap: 0.95rem;
-        min-width: 300px;
-        flex: 1;
+        gap: 1rem;
+        min-width: 0;
     }
 
-    .submission-hero-icon {
-        width: 64px;
-        height: 64px;
-        min-width: 64px;
+    .program-hero-icon {
+        width: 62px;
+        height: 62px;
+        min-width: 62px;
         border-radius: 22px;
-        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
         color: #ffffff;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.55rem;
-        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.22);
+        font-size: 1.45rem;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
     }
 
-    .submission-section-label {
-        color: #64748b;
-        font-size: 0.76rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        margin-bottom: 0.35rem;
-    }
-
-    .submission-hero-title {
-        margin: 0 0 0.3rem;
+    .program-title {
         color: #0f172a;
-        font-size: 1.75rem;
+        font-size: 1.65rem;
         font-weight: 900;
-        letter-spacing: -0.045em;
-        line-height: 1.15;
+        letter-spacing: -0.6px;
+        margin-bottom: 0.25rem;
+        line-height: 1.2;
     }
 
-    .submission-hero-text {
-        margin: 0;
+    .program-lead {
         color: #64748b;
-        font-size: 0.94rem;
-        font-weight: 600;
-        line-height: 1.55;
+        font-size: 0.95rem;
+        font-weight: 650;
+        margin-bottom: 0;
+        line-height: 1.6;
     }
 
-    .submission-slug-badge {
-        width: fit-content;
-        margin-top: 0.55rem;
-        padding: 0.34rem 0.75rem;
+    .program-conference-pill {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
         border-radius: 999px;
-        background: rgba(13, 110, 253, 0.09);
-        color: #0d6efd;
-        font-size: 0.76rem;
+        background: #ffffff;
+        border: 1px solid #dbe4ef;
+        color: #64748b;
+        font-size: 0.82rem;
         font-weight: 900;
+        padding: 0 0.95rem;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.045);
+        max-width: 380px;
+    }
+
+    .program-conference-pill span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .program-conference-pill i {
+        color: #00aeef;
     }
 
     .submission-card {
-        background: #fff;
+        background: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 26px;
-        box-shadow: 0 22px 55px rgba(15, 23, 42, 0.06);
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
         overflow: hidden;
-        margin-bottom: 2rem;
+        margin-bottom: 1.4rem;
     }
 
     .submission-card-header {
-        padding: 1.35rem 1.65rem;
+        padding: 1.1rem 1.35rem;
         border-bottom: 1px solid #e2e8f0;
         background: linear-gradient(135deg, #ffffff, #f8fbff);
         display: flex;
@@ -155,7 +164,7 @@
         min-width: 38px;
         border-radius: 14px;
         background: linear-gradient(135deg, #00aeef, #2563eb);
-        color: #fff;
+        color: #ffffff;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -193,15 +202,15 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: #fff;
+        background: #ffffff;
     }
 
-        .step-dot.active {
-            border-color: #2563eb;
-            color: #fff;
-            background: linear-gradient(135deg, #00aeef, #2563eb);
-            box-shadow: 0 10px 22px rgba(37, 99, 235, 0.2);
-        }
+    .step-dot.active {
+        border-color: #2563eb;
+        color: #ffffff;
+        background: linear-gradient(135deg, #00aeef, #2563eb);
+        box-shadow: 0 10px 22px rgba(37, 99, 235, 0.2);
+    }
 
     .submission-card-body {
         padding: 2.2rem;
@@ -229,17 +238,17 @@
         box-shadow: 0 6px 18px rgba(15, 23, 42, 0.025);
     }
 
-        .form-control-modern::placeholder {
-            color: #94a3b8;
-            font-weight: 600;
-        }
+    .form-control-modern::placeholder {
+        color: #94a3b8;
+        font-weight: 600;
+    }
 
-        .form-control-modern:focus,
-        .form-select-modern:focus {
-            outline: none;
-            border-color: #00aeef;
-            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.12);
-        }
+    .form-control-modern:focus,
+    .form-select-modern:focus {
+        outline: none;
+        border-color: #00aeef;
+        box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.12);
+    }
 
     textarea.form-control-modern {
         min-height: 170px;
@@ -260,17 +269,17 @@
         padding: 0.85rem 1rem;
     }
 
-        .modern-notice i {
-            width: 28px;
-            height: 28px;
-            min-width: 28px;
-            border-radius: 10px;
-            background: rgba(245, 158, 11, 0.16);
-            color: #f59e0b;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
+    .modern-notice i {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        border-radius: 10px;
+        background: rgba(245, 158, 11, 0.16);
+        color: #f59e0b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
 
     .field-hint {
         color: #64748b;
@@ -306,31 +315,31 @@
         margin-bottom: 1.4rem;
     }
 
-        .author-info-card i {
-            width: 38px;
-            height: 38px;
-            min-width: 38px;
-            border-radius: 14px;
-            background: #fff;
-            color: #2563eb;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
-        }
+    .author-info-card i {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        border-radius: 14px;
+        background: #ffffff;
+        color: #2563eb;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
+    }
 
     .author-card {
         border: 1px solid #e2e8f0;
         border-radius: 20px;
-        background: #fff;
+        background: #ffffff;
         box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
         transition: all 0.2s ease;
     }
 
-        .author-card:hover {
-            border-color: #cbd5e1;
-            box-shadow: 0 16px 38px rgba(15, 23, 42, 0.07);
-        }
+    .author-card:hover {
+        border-color: #cbd5e1;
+        box-shadow: 0 16px 38px rgba(15, 23, 42, 0.07);
+    }
 
     .btn-add-author {
         min-height: 54px;
@@ -346,11 +355,11 @@
         transition: all 0.2s ease;
     }
 
-        .btn-add-author:hover {
-            background: #eff6ff;
-            color: #1d4ed8;
-            transform: translateY(-1px);
-        }
+    .btn-add-author:hover {
+        background: #eff6ff;
+        color: #1d4ed8;
+        transform: translateY(-1px);
+    }
 
     .upload-zone {
         border: 2px dashed #cbd5e1;
@@ -362,17 +371,17 @@
         overflow: hidden;
     }
 
-        .upload-zone:hover {
-            border-color: #00aeef;
-            background: linear-gradient(135deg, #f0f9ff, #ffffff);
-            transform: translateY(-2px);
-        }
+    .upload-zone:hover {
+        border-color: #00aeef;
+        background: linear-gradient(135deg, #f0f9ff, #ffffff);
+        transform: translateY(-2px);
+    }
 
     .upload-icon {
         width: 82px;
         height: 82px;
         border-radius: 28px;
-        background: #fff;
+        background: #ffffff;
         color: #2563eb;
         display: inline-flex;
         align-items: center;
@@ -393,7 +402,7 @@
         border-radius: 16px;
         padding: 0 1.1rem;
         color: #64748b;
-        background: #fff;
+        background: #ffffff;
         border: 1px solid #e2e8f0;
         font-weight: 900;
         text-decoration: none;
@@ -403,19 +412,19 @@
         transition: all 0.2s ease;
     }
 
-        .btn-back:hover {
-            color: #0f172a;
-            transform: translateY(-2px);
-            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
-            text-decoration: none;
-        }
+    .btn-back:hover {
+        color: #0f172a;
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+        text-decoration: none;
+    }
 
     .btn-submit-modern {
         min-height: 56px;
         border: none;
         border-radius: 18px;
         padding: 0 1.65rem;
-        color: #fff;
+        color: #ffffff;
         background: linear-gradient(135deg, #0d6efd, #00aeef);
         box-shadow: 0 16px 34px rgba(13, 110, 253, 0.24);
         font-weight: 900;
@@ -425,11 +434,11 @@
         transition: all 0.2s ease;
     }
 
-        .btn-submit-modern:hover {
-            transform: translateY(-2px);
-            color: #fff;
-            box-shadow: 0 20px 44px rgba(13, 110, 253, 0.32);
-        }
+    .btn-submit-modern:hover {
+        transform: translateY(-2px);
+        color: #ffffff;
+        box-shadow: 0 20px 44px rgba(13, 110, 253, 0.32);
+    }
 
     .validation-summary-errors {
         border: none;
@@ -439,23 +448,28 @@
         font-weight: 800;
     }
 
-    @@media (max-width: 768px) {
-        .submission-page {
-            padding: 1rem 1rem 3rem;
+    @@media (max-width: 992px) {
+        .program-hero {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .program-conference-pill {
             max-width: 100%;
         }
+    }
 
-        .submission-hero-card {
-            padding: 1.15rem;
+    @@media (max-width: 768px) {
+        .submission-page {
+            padding: 1.5rem 1rem 3rem;
         }
 
-        .submission-hero-left {
+        .program-hero-left {
             align-items: flex-start;
             flex-direction: column;
-            min-width: 100%;
         }
 
-        .submission-hero-title {
+        .program-title {
             font-size: 1.45rem;
         }
 
@@ -487,6 +501,14 @@
 
 <div class="submission-page">
 
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success rounded-4 fw-bold mb-4">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
     @if (TempData["InfoMessage"] != null)
     {
         <div class="alert alert-info rounded-4 fw-bold mb-4">
@@ -503,33 +525,37 @@
         </div>
     }
 
-    <div class="submission-hero-card">
-        <div class="submission-hero-left">
-            <div class="submission-hero-icon">
+    <div class="program-hero">
+        <div class="program-hero-left">
+            <div class="program-hero-icon">
                 <i class="fas fa-paper-plane"></i>
             </div>
 
             <div>
-                <div class="submission-section-label">
-                    @L("HeroSectionLabel", "Başvuru İşlemleri", "Submission Operations")
-                </div>
-
-                <h2 class="submission-hero-title">
+                <h3 class="program-title">
                     @L("PageHeading", "Yeni Bildiri Gönder", "Submit New Abstract")
-                </h2>
+                </h3>
 
-                <p class="submission-hero-text">
+                <p class="program-lead">
                     @L("PageLead", "Bildirinizi seçili kongre için oluşturun ve değerlendirme sürecine gönderin.", "Create your abstract for the selected congress and submit it for review.")
                 </p>
-
-                @if (!string.IsNullOrWhiteSpace(slug))
-                {
-                    <div class="submission-slug-badge">
-                        /@slug
-                    </div>
-                }
             </div>
         </div>
+
+        @if (!string.IsNullOrWhiteSpace(conferenceTitle))
+        {
+            <div class="program-conference-pill">
+                <i class="fas fa-calendar-check"></i>
+                <span>@conferenceTitle</span>
+            </div>
+        }
+        else if (!string.IsNullOrWhiteSpace(slug))
+        {
+            <div class="program-conference-pill">
+                <i class="fas fa-link"></i>
+                <span>/@slug</span>
+            </div>
+        }
     </div>
 
     <form action="@submitUrl"
@@ -721,7 +747,96 @@
                     </div>
                 </div>
 
-                <div id="author-list"></div>
+                <div id="author-list">
+                    @for (var i = 0; i < existingAuthors.Count; i++)
+                    {
+                        <div class="author-card p-4 mb-3 position-relative author-row">
+                            <button type="button"
+                                    class="btn-close position-absolute top-0 end-0 m-3 remove-author-btn"
+                                    aria-label="@L("RemoveLabel", "Kaldır", "Remove")"></button>
+
+                            <h6 class="fw-bold text-primary mb-3">
+                                @L("CoAuthorPrefix", "Ek Yazar", "Co-Author") #@(i + 1)
+                            </h6>
+
+                            <input type="hidden" name="Authors.Index" value="@i" />
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small">
+                                        @L("AuthorFirstNameLabel", "Ad", "First Name")
+                                    </label>
+
+                                    <input name="Authors[@i].FirstName"
+                                           value="@existingAuthors[i].FirstName"
+                                           class="form-control-modern"
+                                           required />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label small">
+                                        @L("AuthorLastNameLabel", "Soyad", "Last Name")
+                                    </label>
+
+                                    <input name="Authors[@i].LastName"
+                                           value="@existingAuthors[i].LastName"
+                                           class="form-control-modern"
+                                           required />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label small">
+                                        @L("AuthorEmailLabel", "E-posta", "Email")
+                                    </label>
+
+                                    <input name="Authors[@i].Email"
+                                           value="@existingAuthors[i].Email"
+                                           class="form-control-modern"
+                                           type="email"
+                                           required />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label small">
+                                        @L("AuthorInstitutionLabel", "Kurum", "Institution")
+                                    </label>
+
+                                    <input name="Authors[@i].Institution"
+                                           value="@existingAuthors[i].Institution"
+                                           class="form-control-modern"
+                                           required />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label small">
+                                        @L("AuthorOrcidLabel", "ORCID", "ORCID")
+                                    </label>
+
+                                    <input name="Authors[@i].ORCID"
+                                           value="@existingAuthors[i].ORCID"
+                                           class="form-control-modern"
+                                           placeholder="@L("AuthorOrcidPlaceholder", "0000-0000-0000-0000", "0000-0000-0000-0000")" />
+                                </div>
+
+                                <div class="col-md-6 d-flex align-items-end">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               name="Authors[@i].IsCorrespondingAuthor"
+                                               value="true"
+                                               @(existingAuthors[i].IsCorrespondingAuthor ? "checked" : "") />
+
+                                        <label class="form-check-label small text-muted fw-bold">
+                                            @L("CorrespondingAuthorLabel", "Sorumlu yazar", "Corresponding author")
+                                        </label>
+                                    </div>
+
+                                    <input type="hidden" name="Authors[@i].Order" value="@(i + 2)" />
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
 
                 <button type="button"
                         class="btn-add-author w-100"
@@ -903,7 +1018,7 @@
         }
 
         $(document).ready(function () {
-            let authorIndex = 0;
+            let authorIndex = @existingAuthors.Count;
 
             function getAuthorRowTemplate(index) {
                 return `
