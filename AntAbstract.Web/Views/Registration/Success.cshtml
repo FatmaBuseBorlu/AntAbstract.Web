@@ -1,61 +1,180 @@
-﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+﻿@using System
+@using System.Globalization
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_Layout";
-    var slug = ViewContext.RouteData.Values["slug"];
+
+    var culture = CultureInfo.CurrentUICulture;
+    var isEnglish = culture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+
+    string L(string key, string tr, string en)
+    {
+        var value = Localizer[key].Value;
+
+        if (string.Equals(value, key, StringComparison.OrdinalIgnoreCase))
+        {
+            return isEnglish ? en : tr;
+        }
+
+        return value;
+    }
+
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString()
+        ?? ViewBag.Slug?.ToString()
+        ?? "";
+
     var regId = ViewBag.RegistrationId;
+
+    var hasSlug = !string.IsNullOrWhiteSpace(slug);
+
+    var submitAbstractUrl = hasSlug
+        ? $"/{slug}/submit-abstract"
+        : "/Dashboard/MyConferences";
+
+    var registrationUrl = hasSlug
+        ? $"/{slug}/registration"
+        : "/";
+
+    var congressHomeUrl = hasSlug
+        ? $"/{slug}"
+        : "/";
+
+    var myConferencesUrl = "/Dashboard/MyConferences";
+
+    var titleText = L(
+        "SuccessTitle",
+        "Ön Kaydınız Başarıyla Oluşturuldu",
+        "Your Pre-Registration Has Been Created Successfully"
+    );
+
+    var descriptionText = L(
+        "SuccessDescription",
+        "Kongre ön kaydınız tamamlandı. Şimdi bildirinizin özetini gönderebilirsiniz.",
+        "Your congress pre-registration has been completed. You can now submit your abstract."
+    );
+
+    var nextStepTitle = L(
+        "NextStepTitle",
+        "Sıradaki adım: Bildiri gönderimi",
+        "Next step: Abstract submission"
+    );
+
+    var nextStepDescription = L(
+        "NextStepDescription",
+        "Bu aşamada ödeme alınmaz. Bildiriniz hakem değerlendirmesinden sonra kabul edilirse ödeme adımı daha sonra açılacaktır.",
+        "No payment is collected at this stage. If your abstract is accepted after reviewer evaluation, the payment step will be opened later."
+    );
+
+    var submitAbstractButtonText = L(
+        "GoToSubmissionButton",
+        "Bildiri Gönderimine Geç",
+        "Continue to Abstract Submission"
+    );
+
+    var backToRegistrationText = L(
+        "BackToRegistrationButton",
+        "Başvuru Türlerine Dön",
+        "Back to Application Types"
+    );
+
+    var backToCongressText = L(
+        "BackToCongressButton",
+        "Kongre Sayfasına Dön",
+        "Back to Congress Page"
+    );
+
+    var myConferencesText = L(
+        "MyConferencesButton",
+        "Kongrelerime Git",
+        "Go to My Congresses"
+    );
+
+    var registrationCodeText = L(
+        "RegistrationCodeLabel",
+        "Kayıt Referansı",
+        "Registration Reference"
+    );
+
+    var paymentLaterTitle = L(
+        "PendingPaymentTitle",
+        "Ödeme daha sonra açılacak",
+        "Payment will be opened later"
+    );
+
+    var paymentLaterDescription = L(
+        "PendingPaymentDescription",
+        "Kabul öncesinde ödeme yapmanıza gerek yoktur. Bildiriniz kabul edilirse ödeme ve katılım adımları sistemde aktif hale gelir.",
+        "You do not need to pay before acceptance. If your abstract is accepted, payment and participation steps will become available in the system."
+    );
+
+    var sslInfoText = L(
+        "SslInfoText",
+        "Bilgileriniz güvenli şekilde işlenir.",
+        "Your information is processed securely."
+    );
 }
 
 <style>
-    .step-indicator {
+    .registration-success-page {
+        background: #f8fafc;
+        min-height: calc(100vh - 90px);
+        padding: 72px 0 56px;
+    }
+
+    .step-wrapper {
         display: flex;
+        align-items: center;
         justify-content: center;
         margin-bottom: 30px;
     }
 
+    .step-box {
+        text-align: center;
+    }
+
     .step {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
+        width: 42px;
+        height: 42px;
+        border-radius: 999px;
         background: #e9ecef;
         color: #6c757d;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-weight: bold;
-        margin: 0 10px;
+        font-weight: 950;
         position: relative;
         z-index: 1;
     }
 
-        .step.completed {
-            background: #198754;
-            color: white;
-        }
-
-        .step.active {
-            background: #00aeef;
-            color: white;
-            box-shadow: 0 0 10px rgba(0, 174, 239, 0.4);
-        }
-
-    .step-line {
-        height: 2px;
-        background: #e9ecef;
-        flex: 1;
-        margin-top: 20px;
-        max-width: 100px;
+    .step.completed {
+        background: #198754;
+        color: #ffffff;
     }
 
-        .step-line.completed {
-            background: #198754;
-        }
+    .step.active {
+        background: #00aeef;
+        color: #ffffff;
+        box-shadow: 0 0 0 5px rgba(0, 174, 239, 0.16);
+    }
+
+    .step-line {
+        height: 3px;
+        background: #e9ecef;
+        flex: 1;
+        max-width: 120px;
+        margin: 0 14px 22px;
+    }
+
+    .step-line.completed {
+        background: #198754;
+    }
 
     @@keyframes fadeInUp {
         from {
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateY(22px);
         }
 
         to {
@@ -66,80 +185,380 @@
 
     .success-card {
         border: none;
-        border-radius: 15px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        border-radius: 28px;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.12);
         overflow: hidden;
-        animation: fadeInUp 0.6s ease-out forwards;
+        animation: fadeInUp 0.55s ease-out forwards;
+        background: #ffffff;
+    }
+
+    .success-card-header {
+        background:
+            radial-gradient(circle at top right, rgba(34, 197, 94, 0.18), transparent 34%),
+            linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        color: #ffffff;
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .success-icon {
+        width: 108px;
+        height: 108px;
+        border-radius: 999px;
+        background: rgba(34, 197, 94, 0.14);
+        border: 1px solid rgba(34, 197, 94, 0.22);
+        color: #22c55e;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3.4rem;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 16px 34px rgba(34, 197, 94, 0.18);
+    }
+
+    .success-title {
+        font-size: 2rem;
+        font-weight: 950;
+        letter-spacing: -0.055em;
+        margin-bottom: 0.6rem;
+    }
+
+    .success-description {
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 1rem;
+        line-height: 1.7;
+        font-weight: 650;
+        max-width: 620px;
+        margin: 0 auto;
+    }
+
+    .success-card-body {
+        padding: 2rem;
+    }
+
+    .registration-ref-box {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        border-radius: 999px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #334155;
+        padding: 0.55rem 0.95rem;
+        font-size: 0.84rem;
+        font-weight: 900;
+        margin-bottom: 1.25rem;
+    }
+
+    .next-step-box {
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
+        color: #075985;
+        border-radius: 22px;
+        padding: 1.15rem;
+        text-align: left;
+        margin-bottom: 1.5rem;
+    }
+
+    .next-step-box-inner {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.9rem;
+    }
+
+    .next-step-icon {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 16px;
+        background: #ffffff;
+        color: #00aeef;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+        font-size: 1.1rem;
+    }
+
+    .next-step-title {
+        color: #0f172a;
+        font-weight: 950;
+        margin-bottom: 0.2rem;
+    }
+
+    .next-step-description {
+        color: #075985;
+        font-size: 0.9rem;
+        font-weight: 700;
+        line-height: 1.65;
+        margin-bottom: 0;
+    }
+
+    .payment-later-box {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        color: #92400e;
+        border-radius: 22px;
+        padding: 1.15rem;
+        text-align: left;
+        margin-bottom: 1.75rem;
+    }
+
+    .payment-later-inner {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.9rem;
+    }
+
+    .payment-later-icon {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 16px;
+        background: #ffffff;
+        color: #f59e0b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+        font-size: 1.1rem;
+    }
+
+    .payment-later-title {
+        color: #0f172a;
+        font-weight: 950;
+        margin-bottom: 0.2rem;
+    }
+
+    .payment-later-description {
+        color: #92400e;
+        font-size: 0.9rem;
+        font-weight: 700;
+        line-height: 1.65;
+        margin-bottom: 0;
+    }
+
+    .success-actions {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .success-primary-btn {
+        min-height: 54px;
+        border: none;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        font-weight: 950;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        text-decoration: none;
+        box-shadow: 0 16px 34px rgba(13, 110, 253, 0.22);
+        transition: all 0.2s ease;
+    }
+
+    .success-primary-btn:hover {
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 20px 44px rgba(13, 110, 253, 0.30);
+        text-decoration: none;
+    }
+
+    .success-secondary-row {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .success-secondary-btn {
+        min-height: 44px;
+        border-radius: 999px;
+        padding: 0 1rem;
+        background: #ffffff;
+        color: #64748b;
+        border: 1px solid #e2e8f0;
+        font-size: 0.86rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .success-secondary-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .security-note {
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 750;
+        margin-top: 1.35rem;
+        text-align: center;
+    }
+
+    @@media (max-width: 768px) {
+        .registration-success-page {
+            padding: 42px 0;
+        }
+
+        .success-card-header,
+        .success-card-body {
+            padding: 1.45rem;
+        }
+
+        .success-title {
+            font-size: 1.6rem;
+        }
+
+        .success-secondary-row {
+            flex-direction: column;
+        }
+
+        .success-secondary-btn {
+            width: 100%;
+        }
+
+        .step-line {
+            max-width: 72px;
+        }
     }
 </style>
 
-<div class="container mt-5 pt-5 mb-5">
+<section class="registration-success-page">
+    <div class="container">
 
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="d-flex align-items-center justify-content-center mb-4">
-                <div class="text-center">
-                    <div class="step completed"><i class="fas fa-check"></i></div>
-                    <small class="fw-bold mt-1 d-block text-success">@Localizer["Step1Label"]</small>
-                </div>
-                <div class="step-line completed"></div>
-                <div class="text-center">
-                    <div class="step active">2</div>
-                    <small class="fw-bold mt-1 d-block text-primary">@Localizer["Step2Label"]</small>
-                </div>
-            </div>
-        </div>
-    </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-7 col-md-9">
 
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
+                <div class="step-wrapper">
+                    <div class="step-box">
+                        <div class="step completed">
+                            <i class="fas fa-check"></i>
+                        </div>
 
-            <div class="card success-card p-5 text-center">
+                        <small class="fw-bold mt-2 d-block text-success">
+                            @L("Step1Label", "Ön Kayıt", "Pre-Registration")
+                        </small>
+                    </div>
 
-                <div class="mb-4">
-                    <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 rounded-circle" style="width: 100px; height: 100px;">
-                        <i class="fas fa-check text-success" style="font-size: 3.5rem;"></i>
+                    <div class="step-line completed"></div>
+
+                    <div class="step-box">
+                        <div class="step active">
+                            2
+                        </div>
+
+                        <small class="fw-bold mt-2 d-block text-primary">
+                            @L("Step2Label", "Bildiri Gönderimi", "Abstract Submission")
+                        </small>
                     </div>
                 </div>
 
-                <h2 class="fw-bold text-dark mb-2">@Localizer["SuccessTitle"]</h2>
-                <p class="text-muted fs-5 mb-4">@Localizer["SuccessDescription"]</p>
+                <div class="success-card">
+                    <div class="success-card-header">
+                        <div class="success-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
 
-                <div class="alert alert-light border border-info rounded-3 text-start d-inline-block w-100 p-3 mb-4">
-                    <div class="d-flex">
-                        <i class="fas fa-info-circle text-info fs-4 me-3 mt-1"></i>
-                        <div>
-                            <h6 class="fw-bold text-dark mb-1">@Localizer["PendingPaymentTitle"]</h6>
-                            <p class="mb-0 small text-muted">@Localizer["PendingPaymentDescription"]</p>
+                        <h2 class="success-title">
+                            @titleText
+                        </h2>
+
+                        <p class="success-description">
+                            @descriptionText
+                        </p>
+                    </div>
+
+                    <div class="success-card-body text-center">
+
+                        @if (regId != null)
+                        {
+                            <div class="registration-ref-box">
+                                <i class="fas fa-hashtag"></i>
+                                @registrationCodeText:
+                                @regId
+                            </div>
+                        }
+
+                        <div class="next-step-box">
+                            <div class="next-step-box-inner">
+                                <div class="next-step-icon">
+                                    <i class="fas fa-file-upload"></i>
+                                </div>
+
+                                <div>
+                                    <div class="next-step-title">
+                                        @nextStepTitle
+                                    </div>
+
+                                    <p class="next-step-description">
+                                        @nextStepDescription
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="payment-later-box">
+                            <div class="payment-later-inner">
+                                <div class="payment-later-icon">
+                                    <i class="fas fa-credit-card"></i>
+                                </div>
+
+                                <div>
+                                    <div class="payment-later-title">
+                                        @paymentLaterTitle
+                                    </div>
+
+                                    <p class="payment-later-description">
+                                        @paymentLaterDescription
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="success-actions">
+                            <a href="@submitAbstractUrl"
+                               class="success-primary-btn">
+                                @submitAbstractButtonText
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+
+                            <div class="success-secondary-row">
+                                <a href="@registrationUrl" class="success-secondary-btn">
+                                    <i class="fas fa-arrow-left"></i>
+                                    @backToRegistrationText
+                                </a>
+
+                                <a href="@congressHomeUrl" class="success-secondary-btn">
+                                    <i class="fas fa-home"></i>
+                                    @backToCongressText
+                                </a>
+
+                                <a href="@myConferencesUrl" class="success-secondary-btn">
+                                    <i class="fas fa-calendar-check"></i>
+                                    @myConferencesText
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="security-note">
+                            <i class="fas fa-lock me-1"></i>
+                            @sslInfoText
                         </div>
                     </div>
                 </div>
 
-                <div class="d-grid gap-2">
-                    @if (regId != null)
-                    {
-                        <a href="/@slug/payment/index/@regId"
-                           class="btn btn-primary btn-lg py-3 fw-bold shadow rounded-pill"
-                           style="background-color: #00aeef; border: none;">
-                            @Localizer["GoToPaymentButton"] <i class="fas fa-arrow-right ms-2"></i>
-                        </a>
-                    }
-                    else
-                    {
-                        <div class="alert alert-danger">
-                            @Localizer["MissingRegistrationIdMessage"]
-                        </div>
-                    }
-
-                    <a href="/" class="btn btn-link text-muted text-decoration-none mt-2">@Localizer["BackToHomeButton"]</a>
-                </div>
-
             </div>
-
-            <div class="text-center mt-4 text-muted small">
-                <i class="fas fa-lock me-1"></i> @Localizer["SslInfoText"]
-            </div>
-
         </div>
+
     </div>
-</div>
+</section>

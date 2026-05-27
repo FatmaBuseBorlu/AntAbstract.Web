@@ -25,6 +25,12 @@
         ? "/Admin/ConferenceFlow/RegistrationsAndPayments/ApprovePayment"
         : $"/{slug}/Admin/ConferenceFlow/RegistrationsAndPayments/ApprovePayment";
 
+    var changeConferenceUrl = "/Admin/ConferenceFlow?forceSelect=true";
+
+    var publicSiteUrl = string.IsNullOrWhiteSpace(slug)
+        ? "#"
+        : $"/{slug}";
+
     var currentUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
 
     string Money(decimal amount, string currency = "TRY")
@@ -40,6 +46,13 @@
     string PaymentStatusClass(bool isPaid)
     {
         return isPaid ? "payment-paid" : "payment-pending";
+    }
+
+    string GetParticipantInitial(string fullName)
+    {
+        return string.IsNullOrWhiteSpace(fullName)
+            ? "K"
+            : fullName.Trim().Substring(0, 1).ToUpper();
     }
 
     var totalFilteredCount = Model.Items?.Count ?? 0;
@@ -73,34 +86,67 @@
 
     <div class="operation-header-card mb-4">
         <div class="operation-header-left">
-            <div class="operation-section-label">
-                Kongre Operasyonları
+            <div class="operation-header-icon">
+                <i class="fas fa-credit-card"></i>
             </div>
 
-            <h2 class="operation-title">
-                Kayıtlar ve Ödemeler
-            </h2>
+            <div>
+                <div class="operation-section-label">
+                    Kongre Operasyonları
+                </div>
 
-            <p class="operation-description">
-                <strong>@conferenceTitle</strong> kongresine ait katılımcı kayıtlarını, ödeme durumlarını ve işlem özetlerini buradan takip edebilirsiniz.
-            </p>
+                <h2 class="operation-title">
+                    Kayıtlar ve Ödemeler
+                </h2>
 
-            @if (!string.IsNullOrWhiteSpace(slug))
-            {
-                <div class="mt-2">
-                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
-                        /@slug
+                <p class="operation-description">
+                    <strong>@conferenceTitle</strong> kongresine ait katılımcı kayıtlarını, ödeme durumlarını ve işlem özetlerini buradan takip edebilirsiniz.
+                </p>
+
+                <div class="operation-chip-row">
+                    <span class="operation-chip operation-chip-primary">
+                        <i class="fas fa-calendar-check"></i>
+                        Seçili Kongre
+                    </span>
+
+                    @if (!string.IsNullOrWhiteSpace(slug))
+                    {
+                        <span class="operation-chip">
+                            <i class="fas fa-link"></i>
+                            /@slug
+                        </span>
+                    }
+
+                    <span class="operation-chip">
+                        <i class="fas fa-receipt"></i>
+                        @Model.TotalRegistrations kayıt
                     </span>
                 </div>
-            }
+            </div>
         </div>
 
         <div class="operation-header-right">
             <a href="@backUrl"
-               class="btn btn-outline-secondary rounded-pill px-4 operation-back-btn">
-                <i class="fas fa-arrow-left me-2"></i>
+               class="btn operation-light-btn">
+                <i class="fas fa-arrow-left"></i>
                 Kongre Akışına Dön
             </a>
+
+            <a href="@changeConferenceUrl"
+               class="btn operation-outline-btn">
+                <i class="fas fa-exchange-alt"></i>
+                Kongre Değiştir
+            </a>
+
+            @if (!string.IsNullOrWhiteSpace(slug))
+            {
+                <a href="@publicSiteUrl"
+                   target="_blank"
+                   class="btn operation-primary-btn">
+                    <i class="fas fa-arrow-up-right-from-square"></i>
+                    Siteyi Gör
+                </a>
+            }
         </div>
     </div>
 
@@ -113,8 +159,13 @@
                 </div>
 
                 <div>
-                    <div class="operation-stat-number">@Model.TotalRegistrations</div>
-                    <div class="operation-stat-label">Toplam Kayıt</div>
+                    <div class="operation-stat-number">
+                        @Model.TotalRegistrations
+                    </div>
+
+                    <div class="operation-stat-label">
+                        Toplam Kayıt
+                    </div>
                 </div>
             </div>
         </div>
@@ -126,8 +177,13 @@
                 </div>
 
                 <div>
-                    <div class="operation-stat-number">@Model.PaidRegistrations</div>
-                    <div class="operation-stat-label">Ödeme Tamamlandı</div>
+                    <div class="operation-stat-number">
+                        @Model.PaidRegistrations
+                    </div>
+
+                    <div class="operation-stat-label">
+                        Ödeme Tamamlandı
+                    </div>
                 </div>
             </div>
         </div>
@@ -139,8 +195,13 @@
                 </div>
 
                 <div>
-                    <div class="operation-stat-number">@Model.PendingPayments</div>
-                    <div class="operation-stat-label">Ödeme Bekliyor</div>
+                    <div class="operation-stat-number">
+                        @Model.PendingPayments
+                    </div>
+
+                    <div class="operation-stat-label">
+                        Ödeme Bekliyor
+                    </div>
                 </div>
             </div>
         </div>
@@ -155,7 +216,10 @@
                     <div class="operation-stat-number revenue-number">
                         @Money(Model.TotalRevenue)
                     </div>
-                    <div class="operation-stat-label">Toplam Gelir</div>
+
+                    <div class="operation-stat-label">
+                        Toplam Gelir
+                    </div>
                 </div>
             </div>
         </div>
@@ -298,14 +362,14 @@
                 <button type="button"
                         class="btn operation-light-btn"
                         disabled>
-                    <i class="fas fa-file-excel me-2"></i>
+                    <i class="fas fa-file-excel"></i>
                     Excel Aktar
                 </button>
 
                 <button type="button"
                         class="btn operation-primary-btn"
                         disabled>
-                    <i class="fas fa-plus me-2"></i>
+                    <i class="fas fa-plus"></i>
                     Manuel Kayıt Ekle
                 </button>
             </div>
@@ -329,13 +393,13 @@
                 <div class="empty-state-actions">
                     <a href="@backUrl"
                        class="btn operation-light-btn">
-                        <i class="fas fa-arrow-left me-2"></i>
+                        <i class="fas fa-arrow-left"></i>
                         Kongre Akışına Dön
                     </a>
 
                     <a href="@listUrl"
                        class="btn operation-primary-btn">
-                        <i class="fas fa-rotate-left me-2"></i>
+                        <i class="fas fa-rotate-left"></i>
                         Filtreleri Temizle
                     </a>
                 </div>
@@ -364,20 +428,30 @@
                             <tr>
                                 <td>
                                     <div class="date-box">
-                                        <strong>@item.RegistrationDate.ToString("dd.MM.yyyy")</strong>
-                                        <span>@item.RegistrationDate.ToString("HH:mm")</span>
+                                        <strong>
+                                            @item.RegistrationDate.ToString("dd.MM.yyyy")
+                                        </strong>
+
+                                        <span>
+                                            @item.RegistrationDate.ToString("HH:mm")
+                                        </span>
                                     </div>
                                 </td>
 
                                 <td>
                                     <div class="participant-cell">
                                         <div class="participant-avatar">
-                                            @(string.IsNullOrWhiteSpace(item.FullName) ? "K" : item.FullName.Substring(0, 1).ToUpper())
+                                            @GetParticipantInitial(item.FullName)
                                         </div>
 
                                         <div class="participant-info">
-                                            <strong>@item.FullName</strong>
-                                            <span>@(string.IsNullOrWhiteSpace(item.Email) ? "E-posta yok" : item.Email)</span>
+                                            <strong>
+                                                @(string.IsNullOrWhiteSpace(item.FullName) ? "Kullanıcı" : item.FullName)
+                                            </strong>
+
+                                            <span>
+                                                @(string.IsNullOrWhiteSpace(item.Email) ? "E-posta yok" : item.Email)
+                                            </span>
                                         </div>
                                     </div>
                                 </td>
@@ -391,8 +465,13 @@
 
                                 <td>
                                     <div class="amount-cell">
-                                        <strong>@Money(item.Amount, item.Currency)</strong>
-                                        <span>@item.Currency</span>
+                                        <strong>
+                                            @Money(item.Amount, item.Currency)
+                                        </strong>
+
+                                        <span>
+                                            @item.Currency
+                                        </span>
                                     </div>
                                 </td>
 
@@ -417,7 +496,8 @@
                                                 <input type="hidden" name="conferenceId" value="@conferenceId" />
                                                 <input type="hidden" name="returnUrl" value="@currentUrl" />
 
-                                                <button type="submit" class="approve-payment-btn">
+                                                <button type="submit"
+                                                        class="approve-payment-btn">
                                                     <i class="fas fa-circle-check"></i>
                                                     Ödemeyi Onayla
                                                 </button>
@@ -437,8 +517,13 @@
                                     @if (item.PaymentDate.HasValue)
                                     {
                                         <div class="date-box">
-                                            <strong>@item.PaymentDate.Value.ToString("dd.MM.yyyy")</strong>
-                                            <span>@item.PaymentDate.Value.ToString("HH:mm")</span>
+                                            <strong>
+                                                @item.PaymentDate.Value.ToString("dd.MM.yyyy")
+                                            </strong>
+
+                                            <span>
+                                                @item.PaymentDate.Value.ToString("HH:mm")
+                                            </span>
                                         </div>
                                     }
                                     else
@@ -489,6 +574,7 @@
 <style>
     .registration-payment-page {
         font-family: 'Plus Jakarta Sans', sans-serif;
+        padding-bottom: 2rem;
     }
 
     .operation-alert {
@@ -502,9 +588,9 @@
         box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
     }
 
-        .operation-alert i {
-            font-size: 1rem;
-        }
+    .operation-alert i {
+        font-size: 1rem;
+    }
 
     .operation-alert-success {
         background: rgba(34, 197, 94, 0.10);
@@ -525,25 +611,46 @@
     }
 
     .operation-header-card {
-        background: #ffffff;
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
         border: 1px solid #e8eef6;
-        border-radius: 24px;
-        padding: 1.5rem;
+        border-radius: 28px;
+        padding: 1.55rem;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 1.2rem;
+        gap: 1.25rem;
         flex-wrap: wrap;
-        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
     }
 
     .operation-header-left {
-        flex: 1 1 680px;
+        flex: 1;
         min-width: 300px;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .operation-header-icon {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.55rem;
+        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.22);
     }
 
     .operation-header-right {
-        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
     }
 
     .operation-section-label {
@@ -558,42 +665,130 @@
     .operation-title {
         color: #0f172a;
         font-size: 2rem;
-        font-weight: 900;
+        font-weight: 950;
         letter-spacing: -0.05em;
         margin: 0 0 0.4rem;
+        line-height: 1.2;
     }
 
     .operation-description {
         color: #64748b;
         font-size: 0.96rem;
-        font-weight: 600;
+        font-weight: 650;
         margin: 0;
         max-width: 860px;
         line-height: 1.65;
     }
 
-    .operation-back-btn {
+    .operation-chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        margin-top: 0.8rem;
+    }
+
+    .operation-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        border-radius: 999px;
+        padding: 0.48rem 0.78rem;
+        font-size: 0.78rem;
+        font-weight: 900;
+        background: #f8fafc;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+    }
+
+    .operation-chip-primary {
+        background: rgba(0, 174, 239, 0.10);
+        border-color: rgba(0, 174, 239, 0.22);
+        color: #0d6efd;
+    }
+
+    .operation-light-btn,
+    .operation-outline-btn,
+    .operation-primary-btn,
+    .operation-reset-btn {
         min-height: 44px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-weight: 800;
-        border-color: #dbe3ef;
-        color: #334155;
-        background: #ffffff;
+        gap: 0.55rem;
+        border-radius: 999px;
+        font-weight: 900;
+        padding: 0 1.15rem;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+        white-space: nowrap;
     }
 
-        .operation-back-btn:hover {
-            color: #0d6efd;
-            background: #f8fbff;
-            border-color: rgba(13, 110, 253, 0.25);
-        }
+    .operation-light-btn {
+        border: 1px solid #dbe3ef;
+        background: #ffffff;
+        color: #334155;
+    }
+
+    .operation-light-btn:hover {
+        color: #0d6efd;
+        background: #f8fbff;
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+    }
+
+    .operation-outline-btn {
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #334155;
+    }
+
+    .operation-outline-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.32);
+        background: #ffffff;
+        transform: translateY(-1px);
+    }
+
+    .operation-primary-btn {
+        border: none;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        box-shadow: 0 12px 26px rgba(13, 110, 253, 0.18);
+    }
+
+    .operation-primary-btn:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.24);
+    }
+
+    .operation-primary-btn:disabled,
+    .operation-light-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+    }
+
+    .operation-reset-btn {
+        border: 1px solid #dbe3ef;
+        background: #ffffff;
+        color: #334155;
+    }
+
+    .operation-reset-btn:hover {
+        color: #0d6efd;
+        background: #f8fbff;
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+    }
 
     .operation-stat-card {
         min-height: 104px;
         background: #ffffff;
         border: 1px solid #e8eef6;
-        border-radius: 22px;
+        border-radius: 24px;
         padding: 1.15rem;
         display: flex;
         align-items: center;
@@ -602,10 +797,10 @@
         transition: all 0.2s ease;
     }
 
-        .operation-stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
-        }
+    .operation-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+    }
 
     .operation-stat-icon {
         width: 50px;
@@ -641,7 +836,7 @@
     .operation-stat-number {
         color: #0f172a;
         font-size: 1.65rem;
-        font-weight: 900;
+        font-weight: 950;
         line-height: 1;
     }
 
@@ -652,14 +847,14 @@
     .operation-stat-label {
         color: #64748b;
         font-size: 0.82rem;
-        font-weight: 800;
+        font-weight: 850;
         margin-top: 0.3rem;
     }
 
     .operation-filter-card {
         background: #ffffff;
         border: 1px solid #e8eef6;
-        border-radius: 22px;
+        border-radius: 24px;
         padding: 1.2rem;
         box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
     }
@@ -667,8 +862,10 @@
     .operation-label {
         display: block;
         color: #0f172a;
-        font-size: 0.86rem;
-        font-weight: 900;
+        font-size: 0.78rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
         margin-bottom: 0.45rem;
     }
 
@@ -684,27 +881,27 @@
         transition: all 0.2s ease;
     }
 
-        .operation-input-wrap:focus-within {
-            border-color: rgba(13, 110, 253, 0.45);
-            box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.08);
-        }
+    .operation-input-wrap:focus-within {
+        border-color: rgba(13, 110, 253, 0.45);
+        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.08);
+    }
 
-        .operation-input-wrap i {
-            color: #94a3b8;
-        }
+    .operation-input-wrap i {
+        color: #94a3b8;
+    }
 
-        .operation-input-wrap input {
-            width: 100%;
-            border: none;
-            outline: none;
-            color: #0f172a;
-            font-weight: 600;
-            background: transparent;
-        }
+    .operation-input-wrap input {
+        width: 100%;
+        border: none;
+        outline: none;
+        color: #0f172a;
+        font-weight: 700;
+        background: transparent;
+    }
 
-            .operation-input-wrap input::placeholder {
-                color: #94a3b8;
-            }
+    .operation-input-wrap input::placeholder {
+        color: #94a3b8;
+    }
 
     .operation-select {
         width: 100%;
@@ -718,71 +915,17 @@
         outline: none;
     }
 
-        .operation-select:focus {
-            border-color: rgba(13, 110, 253, 0.45);
-            box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.08);
-        }
-
-    .operation-primary-btn {
-        min-height: 44px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border: none;
-        border-radius: 999px;
-        background: #0d6efd;
-        color: #ffffff;
-        font-weight: 900;
-        padding: 0 1.15rem;
-        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.18);
-        text-decoration: none;
+    .operation-select:focus {
+        border-color: rgba(13, 110, 253, 0.45);
+        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.08);
     }
-
-        .operation-primary-btn:hover {
-            color: #ffffff;
-            background: #0b5ed7;
-            box-shadow: 0 14px 28px rgba(13, 110, 253, 0.24);
-        }
-
-        .operation-primary-btn:disabled {
-            opacity: 0.55;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
-    .operation-reset-btn,
-    .operation-light-btn {
-        min-height: 44px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 999px;
-        border: 1px solid #dbe3ef;
-        background: #ffffff;
-        color: #334155;
-        font-weight: 900;
-        padding: 0 1.15rem;
-        text-decoration: none;
-    }
-
-        .operation-reset-btn:hover,
-        .operation-light-btn:hover {
-            color: #0d6efd;
-            background: #f8fbff;
-            border-color: rgba(13, 110, 253, 0.25);
-        }
-
-        .operation-light-btn:disabled {
-            opacity: 0.55;
-            cursor: not-allowed;
-        }
 
     .operation-main-card {
         background: #ffffff;
         border: 1px solid #e8eef6;
-        border-radius: 24px;
+        border-radius: 28px;
         overflow: hidden;
-        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
     }
 
     .operation-main-card-header {
@@ -795,19 +938,19 @@
         flex-wrap: wrap;
     }
 
-        .operation-main-card-header h5 {
-            color: #0f172a;
-            font-size: 1.25rem;
-            font-weight: 900;
-            margin: 0 0 0.25rem;
-        }
+    .operation-main-card-header h5 {
+        color: #0f172a;
+        font-size: 1.25rem;
+        font-weight: 950;
+        margin: 0 0 0.25rem;
+    }
 
-        .operation-main-card-header p {
-            color: #64748b;
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin: 0;
-        }
+    .operation-main-card-header p {
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 650;
+        margin: 0;
+    }
 
     .operation-header-actions {
         display: flex;
@@ -841,35 +984,35 @@
         border-spacing: 0;
     }
 
-        .registration-table thead th {
-            padding: 1rem 1.35rem;
-            background: #f8fafc;
-            color: #64748b;
-            font-size: 0.76rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            border-bottom: 1px solid #edf2f7;
-            white-space: nowrap;
-        }
+    .registration-table thead th {
+        padding: 1rem 1.35rem;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 1px solid #edf2f7;
+        white-space: nowrap;
+    }
 
-        .registration-table tbody td {
-            padding: 1rem 1.35rem;
-            border-bottom: 1px solid #edf2f7;
-            vertical-align: middle;
-        }
+    .registration-table tbody td {
+        padding: 1rem 1.35rem;
+        border-bottom: 1px solid #edf2f7;
+        vertical-align: middle;
+    }
 
-        .registration-table tbody tr {
-            transition: all 0.2s ease;
-        }
+    .registration-table tbody tr {
+        transition: all 0.2s ease;
+    }
 
-            .registration-table tbody tr:hover {
-                background: #f8fbff;
-            }
+    .registration-table tbody tr:hover {
+        background: #f8fbff;
+    }
 
-            .registration-table tbody tr:last-child td {
-                border-bottom: none;
-            }
+    .registration-table tbody tr:last-child td {
+        border-bottom: none;
+    }
 
     .date-box strong,
     .amount-cell strong,
@@ -918,21 +1061,21 @@
         min-width: 0;
     }
 
-        .participant-info strong {
-            display: block;
-            color: #0f172a;
-            font-size: 0.94rem;
-            font-weight: 900;
-            line-height: 1.25;
-        }
+    .participant-info strong {
+        display: block;
+        color: #0f172a;
+        font-size: 0.94rem;
+        font-weight: 900;
+        line-height: 1.25;
+    }
 
-        .participant-info span {
-            display: block;
-            color: #64748b;
-            font-size: 0.8rem;
-            font-weight: 700;
-            margin-top: 0.2rem;
-        }
+    .participant-info span {
+        display: block;
+        color: #64748b;
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-top: 0.2rem;
+    }
 
     .registration-type-pill,
     .payment-status,
@@ -995,10 +1138,10 @@
         transition: all 0.2s ease;
     }
 
-        .approve-payment-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 14px 28px rgba(34, 197, 94, 0.28);
-        }
+    .approve-payment-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 28px rgba(34, 197, 94, 0.28);
+    }
 
     .payment-approved-pill {
         min-height: 34px;
@@ -1042,7 +1185,7 @@
 
     .operation-empty-state p {
         color: #64748b;
-        font-weight: 600;
+        font-weight: 650;
         margin: 0 auto;
         max-width: 520px;
         line-height: 1.65;
@@ -1063,8 +1206,12 @@
             flex-direction: column;
         }
 
+        .operation-header-left {
+            align-items: flex-start;
+        }
+
         .operation-header-right,
-        .operation-back-btn {
+        .operation-header-right .btn {
             width: 100%;
         }
 
@@ -1076,9 +1223,15 @@
             width: 100%;
         }
 
-            .operation-header-actions .btn,
-            .operation-header-actions .operation-count-pill {
-                width: 100%;
-            }
+        .operation-header-actions .btn,
+        .operation-header-actions .operation-count-pill {
+            width: 100%;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .operation-header-left {
+            flex-direction: column;
+        }
     }
 </style>

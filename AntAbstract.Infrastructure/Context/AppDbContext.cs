@@ -89,8 +89,8 @@ namespace AntAbstract.Infrastructure.Context
             });
 
             builder.Entity<SiteSectionTemplate>()
-                    .HasIndex(x => x.BlockType)
-                    .IsUnique();
+                .HasIndex(x => x.BlockType)
+                .IsUnique();
 
             builder.Entity<ConferenceTopic>(entity =>
             {
@@ -124,16 +124,61 @@ namespace AntAbstract.Infrastructure.Context
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            builder.Entity<Certificate>()
-                .HasIndex(x => new { x.ConferenceId, x.UserId, x.Type })
-                .IsUnique();
+            builder.Entity<Certificate>(entity =>
+            {
+                entity.HasIndex(x => new
+                {
+                    x.ConferenceId,
+                    x.UserId,
+                    x.Type
+                })
+                    .IsUnique();
+            });
 
-            builder.Entity<ConferenceAttendance>()
-                .HasIndex(x => new { x.ConferenceId, x.UserId })
-                .IsUnique();
+            builder.Entity<ConferenceAttendance>(entity =>
+            {
+                entity.HasIndex(x => new
+                {
+                    x.ConferenceId,
+                    x.UserId
+                })
+                    .IsUnique();
+
+                entity.Property(x => x.UserId)
+                    .IsRequired();
+
+                entity.Property(x => x.TotalSeconds)
+                    .HasDefaultValue(0);
+
+                entity.Property(x => x.RequiredSeconds)
+                    .HasDefaultValue(600);
+
+                entity.Property(x => x.IpAddress)
+                    .HasMaxLength(100);
+
+                entity.Property(x => x.UserAgent)
+                    .HasMaxLength(500);
+
+                entity.HasOne(x => x.Conference)
+                    .WithMany()
+                    .HasForeignKey(x => x.ConferenceId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
 
             builder.Entity<ConferencePageBlock>()
-                .HasIndex(x => new { x.TenantId, x.ConferenceId, x.Page, x.Culture, x.Order });
+                .HasIndex(x => new
+                {
+                    x.TenantId,
+                    x.ConferenceId,
+                    x.Page,
+                    x.Culture,
+                    x.Order
+                });
 
             builder.Entity<ReviewAssignment>()
                 .HasOne(ra => ra.Reviewer)
@@ -176,7 +221,6 @@ namespace AntAbstract.Infrastructure.Context
                 .HasForeignKey<Review>(r => r.ReviewAssignmentId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
-
 
         static readonly MethodInfo SetGlobalQueryMethod = typeof(AppDbContext)
             .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)

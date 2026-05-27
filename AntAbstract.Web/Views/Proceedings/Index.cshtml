@@ -1,6 +1,8 @@
 ﻿@model AntAbstract.Web.Models.ViewModels.Proceedings.ProceedingBookPageViewModel
 
 @using System
+@using System.Collections.Generic
+@using System.Linq
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
@@ -49,40 +51,43 @@
                     @L("HeroDescription", "Kongrelere ait yayınlanmış bildiri kitaplarını görüntüleyin, inceleyin ve PDF olarak indirin.")
                 </p>
 
-                <div class="proceedings-search-card">
-                    <div class="proceedings-search-input-wrap">
-                        <i class="fas fa-search"></i>
+                @if (books.Any())
+                {
+                    <div class="proceedings-search-card">
+                        <div class="proceedings-search-input-wrap">
+                            <i class="fas fa-search"></i>
 
-                        <input type="text"
-                               id="proceedingsSearchInput"
-                               autocomplete="off"
-                               placeholder="@L("SearchPlaceholder", "Bildiri kitabı, kongre adı veya yıl ara...")" />
+                            <input type="text"
+                                   id="proceedingsSearchInput"
+                                   autocomplete="off"
+                                   placeholder="@L("SearchPlaceholder", "Bildiri kitabı, kongre adı veya yıl ara...")" />
+                        </div>
+
+                        <button type="button"
+                                id="proceedingsSearchButton"
+                                class="proceedings-search-button">
+                            <i class="fas fa-search"></i>
+                            @L("SearchButton", "Ara")
+                        </button>
                     </div>
 
-                    <button type="button"
-                            id="proceedingsSearchButton"
-                            class="proceedings-search-button">
-                        <i class="fas fa-search"></i>
-                        @L("SearchButton", "Ara")
-                    </button>
-                </div>
+                    <div class="proceedings-filter-chips">
+                        <button type="button" class="proceeding-chip active" data-filter="">
+                            <i class="fas fa-border-all"></i>
+                            @L("FilterAll", "Tümü")
+                        </button>
 
-                <div class="proceedings-filter-chips">
-                    <button type="button" class="proceeding-chip active" data-filter="">
-                        <i class="fas fa-border-all"></i>
-                        @L("FilterAll", "Tümü")
-                    </button>
+                        <button type="button" class="proceeding-chip" data-filter="bildiri kitabı">
+                            <i class="fas fa-file-lines"></i>
+                            @L("FilterProceedings", "Bildiri Kitabı")
+                        </button>
 
-                    <button type="button" class="proceeding-chip" data-filter="bildiri kitabı">
-                        <i class="fas fa-file-lines"></i>
-                        @L("FilterProceedings", "Bildiri Kitabı")
-                    </button>
-
-                    <button type="button" class="proceeding-chip" data-filter="yayında">
-                        <i class="fas fa-circle-check"></i>
-                        @L("PublishedBadge", "Yayında")
-                    </button>
-                </div>
+                        <button type="button" class="proceeding-chip" data-filter="yayında">
+                            <i class="fas fa-circle-check"></i>
+                            @L("PublishedBadge", "Yayında")
+                        </button>
+                    </div>
+                }
 
             </div>
         </div>
@@ -114,13 +119,26 @@
                         <i class="fas fa-book-open"></i>
                     </div>
 
-                    <h3>
-                        @L("EmptyTitle", "Henüz yayınlanan bildiri kitabı yok")
-                    </h3>
+                    @if (Model?.IsSingleConferencePage == true)
+                    {
+                        <h3>
+                            @L("SingleEmptyTitle", "Bu kongre için bildiri kitabı henüz yayınlanmadı")
+                        </h3>
 
-                    <p>
-                        @L("EmptyDescription", "Bildiri kitabı yayınlandığında bu alanda otomatik olarak görüntülenecektir.")
-                    </p>
+                        <p>
+                            @L("SingleEmptyDescription", "Bildiri kitabı yayınlandığında bu sayfadan görüntüleyebilir ve PDF olarak indirebilirsiniz.")
+                        </p>
+                    }
+                    else
+                    {
+                        <h3>
+                            @L("EmptyTitle", "Henüz yayınlanan bildiri kitabı yok")
+                        </h3>
+
+                        <p>
+                            @L("EmptyDescription", "Bildiri kitabı yayınlandığında bu alanda otomatik olarak görüntülenecektir.")
+                        </p>
+                    }
                 </div>
             }
             else
@@ -132,14 +150,14 @@
                         var book = books[i];
 
                         var accentClass = i % 3 == 0
-                        ? "proceeding-accent-blue"
-                        : i % 3 == 1
-                        ? "proceeding-accent-green"
-                        : "proceeding-accent-orange";
+                            ? "proceeding-accent-blue"
+                            : i % 3 == 1
+                                ? "proceeding-accent-green"
+                                : "proceeding-accent-orange";
 
                         var publishedText = book.PublishedDate.HasValue
-                        ? book.PublishedDate.Value.ToString("dd.MM.yyyy")
-                        : L("PublishedDateUnknown", "Yayın tarihi belirtilmedi");
+                            ? book.PublishedDate.Value.ToString("dd.MM.yyyy")
+                            : L("PublishedDateUnknown", "Yayın tarihi belirtilmedi");
 
                         var searchText = $"{book.ConferenceTitle} {book.Year} {book.CategoryText} {book.StatusText} bildiri kitabı pdf".ToLowerInvariant();
 
@@ -277,27 +295,27 @@
         border-bottom-right-radius: 46px;
     }
 
-        .proceedings-hero::before {
-            content: "";
-            position: absolute;
-            left: -120px;
-            top: -150px;
-            width: 360px;
-            height: 360px;
-            border-radius: 999px;
-            border: 2px solid rgba(13, 110, 253, 0.10);
-        }
+    .proceedings-hero::before {
+        content: "";
+        position: absolute;
+        left: -120px;
+        top: -150px;
+        width: 360px;
+        height: 360px;
+        border-radius: 999px;
+        border: 2px solid rgba(13, 110, 253, 0.10);
+    }
 
-        .proceedings-hero::after {
-            content: "";
-            position: absolute;
-            right: -160px;
-            bottom: -200px;
-            width: 460px;
-            height: 460px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.46);
-        }
+    .proceedings-hero::after {
+        content: "";
+        position: absolute;
+        right: -160px;
+        bottom: -200px;
+        width: 460px;
+        height: 460px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.46);
+    }
 
     .proceedings-hero-shape {
         position: absolute;
@@ -397,25 +415,25 @@
         border: 1px solid #dbe3ef;
     }
 
-        .proceedings-search-input-wrap i {
-            color: #64748b;
-            font-size: 1.1rem;
-        }
+    .proceedings-search-input-wrap i {
+        color: #64748b;
+        font-size: 1.1rem;
+    }
 
-        .proceedings-search-input-wrap input {
-            width: 100%;
-            border: none;
-            outline: none;
-            background: transparent;
-            color: #0f172a;
-            font-size: 1rem;
-            font-weight: 600;
-        }
+    .proceedings-search-input-wrap input {
+        width: 100%;
+        border: none;
+        outline: none;
+        background: transparent;
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 600;
+    }
 
-            .proceedings-search-input-wrap input::placeholder {
-                color: #94a3b8;
-                font-weight: 600;
-            }
+    .proceedings-search-input-wrap input::placeholder {
+        color: #94a3b8;
+        font-weight: 600;
+    }
 
     .proceedings-search-button {
         min-height: 58px;
@@ -434,10 +452,10 @@
         transition: all 0.2s ease;
     }
 
-        .proceedings-search-button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 20px 40px rgba(13, 110, 253, 0.34);
-        }
+    .proceedings-search-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 20px 40px rgba(13, 110, 253, 0.34);
+    }
 
     .proceedings-filter-chips {
         margin-top: 1.25rem;
@@ -463,12 +481,12 @@
         transition: all 0.2s ease;
     }
 
-        .proceeding-chip:hover,
-        .proceeding-chip.active {
-            border-color: rgba(13, 110, 253, 0.35);
-            background: rgba(13, 110, 253, 0.08);
-            color: #0d6efd;
-        }
+    .proceeding-chip:hover,
+    .proceeding-chip.active {
+        border-color: rgba(13, 110, 253, 0.35);
+        background: rgba(13, 110, 253, 0.08);
+        color: #0d6efd;
+    }
 
     .proceedings-list-section {
         padding: 2.2rem 0 4rem;
@@ -483,20 +501,20 @@
         flex-wrap: wrap;
     }
 
-        .proceedings-list-header h2 {
-            margin: 0;
-            color: #0f172a;
-            font-size: 1.45rem;
-            font-weight: 900;
-            letter-spacing: -0.03em;
-        }
+    .proceedings-list-header h2 {
+        margin: 0;
+        color: #0f172a;
+        font-size: 1.45rem;
+        font-weight: 900;
+        letter-spacing: -0.03em;
+    }
 
-        .proceedings-list-header p {
-            margin: 0.35rem 0 0;
-            color: #64748b;
-            font-size: 0.94rem;
-            font-weight: 600;
-        }
+    .proceedings-list-header p {
+        margin: 0.35rem 0 0;
+        color: #64748b;
+        font-size: 0.94rem;
+        font-weight: 600;
+    }
 
     .proceedings-count-badge {
         display: inline-flex;
@@ -530,10 +548,10 @@
         transition: all 0.24s ease;
     }
 
-        .proceeding-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 26px 60px rgba(15, 23, 42, 0.11);
-        }
+    .proceeding-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 26px 60px rgba(15, 23, 42, 0.11);
+    }
 
     .proceeding-cover {
         position: relative;
@@ -617,12 +635,12 @@
         overflow: hidden;
     }
 
-        .book-front::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.20), transparent 42%), radial-gradient(circle at top right, rgba(255,255,255,0.20), transparent 30%);
-        }
+    .book-front::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.20), transparent 42%), radial-gradient(circle at top right, rgba(255,255,255,0.20), transparent 30%);
+    }
 
     .book-front-icon,
     .book-front-title,
@@ -736,15 +754,15 @@
         font-weight: 700;
     }
 
-        .proceeding-meta span {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.38rem;
-        }
+    .proceeding-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.38rem;
+    }
 
-        .proceeding-meta i {
-            color: #0d6efd;
-        }
+    .proceeding-meta i {
+        color: #0d6efd;
+    }
 
     .proceeding-actions {
         margin-top: 1.4rem;
@@ -773,13 +791,13 @@
         border-color: rgba(13, 110, 253, 0.20);
     }
 
-        .proceeding-view-btn:hover {
-            color: #ffffff;
-            background: #0d6efd;
-            border-color: #0d6efd;
-            box-shadow: 0 14px 28px rgba(13, 110, 253, 0.22);
-            transform: translateY(-1px);
-        }
+    .proceeding-view-btn:hover {
+        color: #ffffff;
+        background: #0d6efd;
+        border-color: #0d6efd;
+        box-shadow: 0 14px 28px rgba(13, 110, 253, 0.22);
+        transform: translateY(-1px);
+    }
 
     .proceeding-download-btn {
         color: #ef4444;
@@ -787,13 +805,13 @@
         border-color: rgba(239, 68, 68, 0.20);
     }
 
-        .proceeding-download-btn:hover {
-            color: #ffffff;
-            background: #ef4444;
-            border-color: #ef4444;
-            box-shadow: 0 14px 28px rgba(239, 68, 68, 0.20);
-            transform: translateY(-1px);
-        }
+    .proceeding-download-btn:hover {
+        color: #ffffff;
+        background: #ef4444;
+        border-color: #ef4444;
+        box-shadow: 0 14px 28px rgba(239, 68, 68, 0.20);
+        transform: translateY(-1px);
+    }
 
     .proceedings-empty {
         padding: 4rem 1.5rem;

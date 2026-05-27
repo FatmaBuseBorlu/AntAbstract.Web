@@ -1,123 +1,336 @@
 ﻿@using AntAbstract.Application.DTOs.Submission
-@using System.Linq
+@using System
 @using System.Globalization
+@using System.Linq
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model SubmissionDto
 
 @{
     Layout = null;
 
-    var firstAuthor = Model.Authors?.OrderBy(a => a.Order).FirstOrDefault();
+    var currentCulture = CultureInfo.CurrentUICulture;
+    var currentLang = currentCulture.Name;
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
+
+    var firstAuthor = Model.Authors?
+        .OrderBy(a => a.Order)
+        .FirstOrDefault();
+
     var authorName = firstAuthor != null
-        ? $"{firstAuthor.FirstName} {firstAuthor.LastName}"
+        ? $"{firstAuthor.FirstName} {firstAuthor.LastName}".Trim()
         : Model.CorrespondingAuthorName;
 
-    var currentLang = CultureInfo.CurrentUICulture.Name;
+    if (string.IsNullOrWhiteSpace(authorName))
+    {
+        authorName = L("DefaultAuthorName", "Değerli Yazar");
+    }
+
+    var referenceCode = Model.Id.ToString().Length >= 8
+        ? Model.Id.ToString().Substring(0, 8).ToUpper()
+        : Model.Id.ToString().ToUpper();
+
+    var documentDate = DateTime.Now.ToString("dd MMMM yyyy", currentCulture);
+
+    var conferenceTitle = string.IsNullOrWhiteSpace(Model.ConferenceTitle)
+        ? L("DefaultConferenceTitle", "Bilimsel Kongre")
+        : Model.ConferenceTitle;
+
+    var submissionTitle = string.IsNullOrWhiteSpace(Model.Title)
+        ? L("DefaultSubmissionTitle", "Başlıksız Bildiri")
+        : Model.Title;
 }
 
 <!DOCTYPE html>
 <html lang="@currentLang">
 <head>
     <meta charset="utf-8" />
-    <title>@Localizer["DocumentTitle"]</title>
+    <title>@L("DocumentTitle", "Bildiri Kabul / Sonuç Mektubu")</title>
+
     <style>
+        @@page {
+            size: A4;
+            margin: 18mm;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Times New Roman', serif;
-            padding: 40px;
-            color: #333;
-            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            color: #1f2937;
+            background: #ffffff;
+            font-family: "Times New Roman", Times, serif;
+            font-size: 14px;
+            line-height: 1.65;
+        }
+
+        .document-wrapper {
+            width: 100%;
+            min-height: 100%;
+            position: relative;
+            padding: 8px 4px;
+        }
+
+        .document-frame {
+            border: 1px solid #d1d5db;
+            padding: 28px 32px 24px;
+            min-height: 100%;
+            position: relative;
+        }
+
+        .document-frame::before {
+            content: "";
+            position: absolute;
+            inset: 8px;
+            border: 1px solid #eef2f7;
+            pointer-events: none;
         }
 
         .header {
             text-align: center;
-            border-bottom: 2px solid #333;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+            border-bottom: 2px solid #1f2937;
+            padding-bottom: 18px;
+            margin-bottom: 26px;
+            position: relative;
+            z-index: 1;
         }
 
         .logo {
+            color: #b91c1c;
             font-size: 24px;
             font-weight: bold;
-            color: #d9534f;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
         }
 
-        .title {
+        .committee-subtitle {
+            color: #4b5563;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 0.4px;
+        }
+
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 24px;
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .meta-box {
+            font-size: 12px;
+            color: #4b5563;
+            line-height: 1.6;
+        }
+
+        .meta-box strong {
+            color: #111827;
+        }
+
+        .date-box {
+            text-align: right;
+            font-size: 13px;
+            color: #111827;
+            white-space: nowrap;
+        }
+
+        .letter-title {
+            text-align: center;
             font-size: 18px;
             font-weight: bold;
-            margin-bottom: 20px;
             text-decoration: underline;
+            margin: 12px 0 28px;
+            color: #111827;
+            position: relative;
+            z-index: 1;
         }
 
         .content {
-            font-size: 14px;
+            position: relative;
+            z-index: 1;
+            font-size: 14.5px;
             text-align: justify;
+        }
+
+        .content p {
+            margin: 0 0 15px;
+        }
+
+        .dear-line {
+            margin-bottom: 18px;
+        }
+
+        .highlight {
+            font-weight: bold;
+            color: #111827;
+        }
+
+        .reference {
+            display: inline-block;
+            font-weight: bold;
+            color: #111827;
+        }
+
+        .submission-title {
+            font-weight: bold;
+            color: #111827;
+        }
+
+        .signature {
+            margin-top: 42px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .signature p {
+            margin-bottom: 26px;
+        }
+
+        .signature-name {
+            font-weight: bold;
+            color: #111827;
+        }
+
+        .signature-title {
+            color: #374151;
+            line-height: 1.5;
         }
 
         .footer {
             margin-top: 50px;
-            font-size: 12px;
-            color: #777;
-            border-top: 1px solid #ddd;
-            padding-top: 10px;
+            padding-top: 12px;
+            border-top: 1px solid #d1d5db;
             text-align: center;
+            color: #6b7280;
+            font-size: 11.5px;
+            line-height: 1.5;
+            position: relative;
+            z-index: 1;
         }
 
-        .signature {
-            margin-top: 40px;
+        .watermark {
+            position: absolute;
+            left: 50%;
+            top: 52%;
+            transform: translate(-50%, -50%) rotate(-28deg);
+            font-size: 72px;
+            font-weight: bold;
+            color: rgba(185, 28, 28, 0.035);
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 0;
         }
     </style>
 </head>
+
 <body>
+    <div class="document-wrapper">
+        <div class="document-frame">
 
-    <div class="header">
-        <div class="logo">@Localizer["CommitteeTitle"]</div>
-        <div style="font-size: 14px; margin-top: 5px;">@Localizer["CommitteeSubtitle"]</div>
+            <div class="watermark">
+                ANTABSTRACT
+            </div>
+
+            <header class="header">
+                <div class="logo">
+                    @L("CommitteeTitle", "Bilim Kurulu")
+                </div>
+
+                <div class="committee-subtitle">
+                    @L("CommitteeSubtitle", "Akademik Değerlendirme ve Kongre Sekretaryası")
+                </div>
+            </header>
+
+            <div class="meta-row">
+                <div class="meta-box">
+                    <div>
+                        <strong>@L("ReferenceNoLabel", "Referans No"):</strong>
+                        REF-@referenceCode
+                    </div>
+
+                    <div>
+                        <strong>@L("ConferenceLabel", "Kongre"):</strong>
+                        @conferenceTitle
+                    </div>
+                </div>
+
+                <div class="date-box">
+                    <strong>@L("DateLabel", "Tarih"):</strong>
+                    @documentDate
+                </div>
+            </div>
+
+            <div class="letter-title">
+                @L("LetterTitle", "Bildiri Sonuç Mektubu")
+            </div>
+
+            <main class="content">
+                <p class="dear-line">
+                    <strong>@L("DearPrefix", "Sayın") @authorName,</strong>
+                </p>
+
+                <p>
+                    @L("Paragraph1_Part1", "Kongremize göndermiş olduğunuz")
+                    <span class="reference">"Ref: #@referenceCode"</span>
+                    @L("Paragraph1_Part2", "referans numaralı")
+                    <span class="submission-title">"@submissionTitle"</span>
+                    @L("Paragraph1_Part3", "başlıklı bildiriniz bilimsel değerlendirme süreci kapsamında incelenmiştir.")
+                </p>
+
+                <p>
+                    @L("Paragraph2_Part1", "Değerlendirme sonucunda bildirinizin durumu")
+                    <span class="highlight">@L("Paragraph2_Highlight", "ilgili karar doğrultusunda belirlenmiştir")</span>
+                    @L("Paragraph2_Part2", "ve sonuç bilgisi sistem üzerinden tarafınıza sunulmuştur.")
+                </p>
+
+                <p>
+                    @L("Paragraph3", "Bildiri sürecinizle ilgili belge, yaka kartı, sertifika veya ek işlemler için kullanıcı panelinizi takip edebilirsiniz.")
+                </p>
+
+                <p>
+                    @L("Paragraph4", "Kongremize göstermiş olduğunuz ilgi ve bilimsel katkınız için teşekkür ederiz.")
+                </p>
+
+                <p>
+                    @L("ClosingWish", "Başarılarınızın devamını dileriz.")
+                </p>
+            </main>
+
+            <section class="signature">
+                <p>
+                    @L("SignatureGreeting", "Saygılarımızla,")
+                </p>
+
+                <div class="signature-name">
+                    @L("SignatureName", "Kongre Düzenleme Kurulu")
+                </div>
+
+                <div class="signature-title">
+                    @L("SignatureTitle1", "Bilimsel Değerlendirme Komitesi")<br />
+                    @L("SignatureTitle2", "Kongre Sekretaryası")
+                </div>
+            </section>
+
+            <footer class="footer">
+                @L("FooterLine1", "Bu belge AntAbstract kongre yönetim sistemi üzerinden otomatik olarak oluşturulmuştur.")<br />
+                @L("FooterLine2", "Belge doğrulaması için sistemdeki bildiri referans numarası kullanılabilir.")
+            </footer>
+
+        </div>
     </div>
-
-    <div style="text-align: right; margin-bottom: 20px;">
-        <strong>@Localizer["DateLabel"]</strong> @DateTime.Now.ToString("dd MMMM yyyy")
-    </div>
-
-    <p><strong>@Localizer["DearPrefix"] @authorName,</strong></p>
-
-    <div class="content">
-        <p>
-            @Localizer["Paragraph1_Part1"]
-            <strong>"Ref: #@Model.Id.ToString().Substring(0, 8).ToUpper()"</strong>
-            @Localizer["Paragraph1_Part2"]
-            <strong>"@Model.Title"</strong>
-            @Localizer["Paragraph1_Part3"]
-        </p>
-
-        <p>
-            @Localizer["Paragraph2_Part1"]
-            <strong>@Localizer["Paragraph2_Highlight"]</strong>
-            @Localizer["Paragraph2_Part2"]
-        </p>
-
-        <p>
-            @Localizer["Paragraph3"]
-        </p>
-
-        <p>
-            @Localizer["Paragraph4"]
-        </p>
-
-        <p>@Localizer["ClosingWish"]</p>
-    </div>
-
-    <div class="signature">
-        <p>@Localizer["SignatureGreeting"]</p>
-        <br />
-        <strong>@Localizer["SignatureName"]</strong><br />
-        @Localizer["SignatureTitle1"]<br />
-        @Localizer["SignatureTitle2"]
-    </div>
-
-    <div class="footer">
-        @Localizer["FooterLine1"]<br />
-        @Localizer["FooterLine2"]
-    </div>
-
 </body>
 </html>

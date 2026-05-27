@@ -1,63 +1,755 @@
 ﻿@using AntAbstract.Web.Models.ViewModels.Admin.Referee
+@using Microsoft.AspNetCore.Http
 @model RefereeCreateViewModel
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"].Value;
+    ViewData["Title"] = "Yeni Hakem Oluştur";
+    ViewData["HideSelectedConferenceBar"] = true;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
+
+    var currentSlug = ViewBag.Slug as string
+                      ?? ViewContext.RouteData.Values["slug"]?.ToString()
+                      ?? Context.Session.GetString("SelectedConferenceSlug")
+                      ?? "";
+
+    var conferenceId = ViewBag.ConferenceId is Guid selectedConferenceId
+        ? selectedConferenceId
+        : Guid.Empty;
+
+    var conferenceTitle = ViewBag.ConferenceTitle as string
+                          ?? Context.Session.GetString("SelectedConferenceTitle")
+                          ?? "";
+
+    var targetTenantId = ViewBag.TargetTenantId is Guid selectedTenantId
+        ? selectedTenantId
+        : Guid.Empty;
+
+    var backUrl = !string.IsNullOrWhiteSpace(currentSlug)
+        ? conferenceId != Guid.Empty
+            ? $"/{currentSlug}/Admin/Referee?conferenceId={conferenceId}"
+            : $"/{currentSlug}/Admin/Referee"
+        : conferenceId != Guid.Empty
+            ? $"/Admin/Referee?conferenceId={conferenceId}"
+            : "/Admin/Referee";
+
+    var flowUrl = !string.IsNullOrWhiteSpace(currentSlug)
+        ? conferenceId != Guid.Empty
+            ? $"/{currentSlug}/Admin/ConferenceFlow?conferenceId={conferenceId}"
+            : $"/{currentSlug}/Admin/ConferenceFlow"
+        : conferenceId != Guid.Empty
+            ? $"/Admin/ConferenceFlow?conferenceId={conferenceId}"
+            : "/Admin/ConferenceFlow";
+
+    var createPostUrl = !string.IsNullOrWhiteSpace(currentSlug)
+        ? conferenceId != Guid.Empty
+            ? $"/{currentSlug}/Admin/Referee/Create?conferenceId={conferenceId}"
+            : $"/{currentSlug}/Admin/Referee/Create"
+        : conferenceId != Guid.Empty
+            ? $"/Admin/Referee/Create?conferenceId={conferenceId}"
+            : "/Admin/Referee/Create";
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card border-0 shadow-sm mt-3">
-            <div class="card-header bg-white py-3">
-                <h5 class="fw-bold mb-0">@Localizer["CardTitle"]</h5>
+<style>
+    .referee-create-page {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        padding-bottom: 2rem;
+    }
+
+    .referee-create-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e8eef6;
+        border-radius: 28px;
+        padding: 1.55rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        margin-bottom: 1.5rem;
+    }
+
+    .referee-create-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 300px;
+        flex: 1;
+    }
+
+    .referee-create-hero-icon {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.55rem;
+        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.22);
+    }
+
+    .referee-create-section-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .referee-create-title {
+        margin: 0 0 0.35rem;
+        color: #0f172a;
+        font-size: 2rem;
+        font-weight: 950;
+        letter-spacing: -0.05em;
+        line-height: 1.2;
+    }
+
+    .referee-create-description {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.96rem;
+        font-weight: 650;
+        line-height: 1.65;
+        max-width: 850px;
+    }
+
+    .selected-conference-chip {
+        width: fit-content;
+        margin-top: 0.75rem;
+        display: inline-flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 0.5rem 0.85rem;
+        border-radius: 999px;
+        background: rgba(0, 174, 239, 0.10);
+        border: 1px solid rgba(0, 174, 239, 0.22);
+        color: #0d6efd;
+        font-size: 0.82rem;
+        font-weight: 900;
+    }
+
+    .selected-conference-chip em {
+        color: #64748b;
+        font-style: normal;
+        font-weight: 900;
+    }
+
+    .referee-create-hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .create-light-btn,
+    .create-outline-btn,
+    .create-primary-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        border-radius: 999px;
+        padding: 0 1.15rem;
+        font-size: 0.9rem;
+        font-weight: 900;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .create-light-btn {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #dbe3ef;
+    }
+
+    .create-light-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.32);
+        background: #ffffff;
+        transform: translateY(-1px);
+    }
+
+    .create-outline-btn {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+    }
+
+    .create-outline-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.32);
+        background: #ffffff;
+        transform: translateY(-1px);
+    }
+
+    .create-primary-btn {
+        border: none;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        box-shadow: 0 12px 26px rgba(13, 110, 253, 0.18);
+    }
+
+    .create-primary-btn:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.24);
+    }
+
+    .referee-create-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    .create-card {
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 28px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+
+    .create-card-header {
+        padding: 1.25rem 1.35rem;
+        border-bottom: 1px solid #edf2f7;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        background: #ffffff;
+    }
+
+    .create-card-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 17px;
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .create-card-title {
+        color: #0f172a;
+        font-size: 1.12rem;
+        font-weight: 950;
+        margin-bottom: 0.18rem;
+    }
+
+    .create-card-subtitle {
+        color: #64748b;
+        font-size: 0.84rem;
+        font-weight: 650;
+        margin-bottom: 0;
+        line-height: 1.55;
+    }
+
+    .create-card-body {
+        padding: 1.35rem;
+    }
+
+    .create-label {
+        color: #0f172a;
+        font-size: 0.78rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.45rem;
+    }
+
+    .create-form-control {
+        min-height: 48px;
+        border-radius: 14px;
+        border: 1px solid #cbd5e1;
+        color: #0f172a;
+        font-weight: 700;
+    }
+
+    .create-form-control:focus {
+        border-color: #00aeef;
+        box-shadow: 0 0 0 0.18rem rgba(0, 174, 239, 0.12);
+    }
+
+    .create-help-text {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 650;
+        margin-top: 0.45rem;
+        line-height: 1.55;
+    }
+
+    .validation-box {
+        border: 1px solid rgba(239, 68, 68, 0.16);
+        background: rgba(239, 68, 68, 0.06);
+        color: #dc2626;
+        border-radius: 18px;
+        padding: 0.95rem 1rem;
+        font-size: 0.86rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+
+    .submit-box {
+        border: 1px solid #e8eef6;
+        background: #f8fafc;
+        border-radius: 22px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .submit-box-title {
+        color: #0f172a;
+        font-weight: 950;
+        margin-bottom: 0.18rem;
+    }
+
+    .submit-box-text {
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 650;
+        margin-bottom: 0;
+        line-height: 1.55;
+    }
+
+    .save-btn {
+        min-height: 48px;
+        border: none;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        padding: 0 1.4rem;
+        font-weight: 950;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        box-shadow: 0 14px 28px rgba(13, 110, 253, 0.18);
+        transition: all 0.2s ease;
+    }
+
+    .save-btn:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 18px 36px rgba(13, 110, 253, 0.24);
+    }
+
+    .side-info-list {
+        display: grid;
+        gap: 0.85rem;
+    }
+
+    .side-info-item {
+        background: #f8fafc;
+        border: 1px solid #edf2f7;
+        border-radius: 18px;
+        padding: 0.9rem;
+    }
+
+    .side-info-label {
+        color: #64748b;
+        font-size: 0.74rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.35rem;
+    }
+
+    .side-info-value {
+        color: #0f172a;
+        font-size: 0.88rem;
+        font-weight: 900;
+        word-break: break-word;
+        line-height: 1.55;
+    }
+
+    .role-badge,
+    .tenant-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.42rem;
+        border-radius: 999px;
+        padding: 0.42rem 0.72rem;
+        font-size: 0.78rem;
+        font-weight: 900;
+        white-space: nowrap;
+        border: 1px solid transparent;
+    }
+
+    .role-badge {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.14);
+    }
+
+    .tenant-badge {
+        background: rgba(34, 197, 94, 0.12);
+        color: #15803d;
+        border-color: rgba(34, 197, 94, 0.18);
+    }
+
+    .info-note {
+        border: 1px solid rgba(13, 110, 253, 0.14);
+        background: rgba(13, 110, 253, 0.06);
+        color: #334155;
+        border-radius: 18px;
+        padding: 0.95rem;
+        font-size: 0.84rem;
+        font-weight: 650;
+        line-height: 1.6;
+    }
+
+    .info-note i {
+        color: #0d6efd;
+    }
+
+    @@media (max-width: 992px) {
+        .referee-create-hero {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .referee-create-hero-left {
+            align-items: flex-start;
+        }
+
+        .referee-create-hero-actions,
+        .referee-create-hero-actions .btn {
+            width: 100%;
+        }
+
+        .referee-create-title {
+            font-size: 1.65rem;
+        }
+
+        .referee-create-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .referee-create-hero-left {
+            flex-direction: column;
+        }
+
+        .submit-box {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .save-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="container-fluid referee-create-page">
+
+    <div class="referee-create-hero">
+        <div class="referee-create-hero-left">
+            <div class="referee-create-hero-icon">
+                <i class="fas fa-user-plus"></i>
             </div>
 
-            <div class="card-body p-4">
-                <form asp-action="Create" method="post">
-                    <div class="text-danger small mb-3" asp-validation-summary="All"></div>
+            <div>
+                <div class="referee-create-section-label">
+                    Kongre Operasyonları
+                </div>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">@Localizer["FirstNameLabel"]</label>
-                            <input asp-for="FirstName" class="form-control" placeholder="@Localizer["FirstNamePlaceholder"]" />
-                        </div>
+                <h2 class="referee-create-title">
+                    Yeni Hakem Oluştur
+                </h2>
 
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">@Localizer["LastNameLabel"]</label>
-                            <input asp-for="LastName" class="form-control" placeholder="@Localizer["LastNamePlaceholder"]" />
-                        </div>
+                <p class="referee-create-description">
+                    Seçili kongrenin kurumuna bağlı yeni bir hakem hesabı oluşturabilirsiniz. Oluşturulan kullanıcıya otomatik olarak <strong>Referee</strong> rolü atanır.
+                </p>
+
+                @if (!string.IsNullOrWhiteSpace(conferenceTitle) || !string.IsNullOrWhiteSpace(currentSlug))
+                {
+                    <div class="selected-conference-chip">
+                        <i class="fas fa-calendar-check"></i>
+
+                        <span>Seçili Kongre:</span>
+
+                        <strong>
+                            @(string.IsNullOrWhiteSpace(conferenceTitle) ? "Kongre seçilmedi" : conferenceTitle)
+                        </strong>
+
+                        @if (!string.IsNullOrWhiteSpace(currentSlug))
+                        {
+                            <em>/@currentSlug</em>
+                        }
                     </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">@Localizer["EmailLabel"]</label>
-                        <input asp-for="Email" class="form-control" type="email" placeholder="@Localizer["EmailPlaceholder"]" />
-                        <div class="form-text">@Localizer["EmailHelpText"]</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">@Localizer["InstitutionLabel"]</label>
-                        <input asp-for="Institution" class="form-control" placeholder="@Localizer["InstitutionPlaceholder"]" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">@Localizer["PasswordLabel"]</label>
-                        <input asp-for="Password" class="form-control" type="password" />
-                        <div class="form-text">@Localizer["PasswordHelpText"]</div>
-                    </div>
-
-                    <div class="d-grid mt-4">
-                        <button type="submit" class="btn btn-primary fw-bold">
-                            <i class="fas fa-save me-2"></i> @Localizer["SaveButton"]
-                        </button>
-
-                        <a asp-action="Index" class="btn btn-link text-muted mt-2">
-                            @Localizer["BackToListButton"]
-                        </a>
-                    </div>
-                </form>
+                }
             </div>
         </div>
+
+        <div class="referee-create-hero-actions">
+            <a href="@flowUrl"
+               class="btn create-light-btn">
+                <i class="fas fa-stream"></i>
+                Kongre Akışına Dön
+            </a>
+
+            <a href="@backUrl"
+               class="btn create-outline-btn">
+                <i class="fas fa-arrow-left"></i>
+                Hakem Havuzuna Dön
+            </a>
+        </div>
     </div>
+
+    <form action="@createPostUrl"
+          method="post">
+
+        @Html.AntiForgeryToken()
+
+        @if (conferenceId != Guid.Empty)
+        {
+            <input type="hidden" name="conferenceId" value="@conferenceId" />
+        }
+
+        <div class="referee-create-grid">
+
+            <div class="create-card">
+                <div class="create-card-header">
+                    <div class="create-card-icon">
+                        <i class="fas fa-id-card"></i>
+                    </div>
+
+                    <div>
+                        <div class="create-card-title">
+                            Hakem Bilgileri
+                        </div>
+
+                        <p class="create-card-subtitle">
+                            Hakem hesabı için gerekli temel kullanıcı bilgilerini giriniz.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="create-card-body">
+
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="validation-box">
+                            <div asp-validation-summary="All"></div>
+                        </div>
+                    }
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="FirstName" class="create-label">
+                                @L("FirstNameLabel", "Ad")
+                                <span class="text-danger">*</span>
+                            </label>
+
+                            <input asp-for="FirstName"
+                                   class="form-control create-form-control"
+                                   placeholder="@L("FirstNamePlaceholder", "Hakemin adını giriniz")" />
+
+                            <span asp-validation-for="FirstName" class="text-danger small fw-bold"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="LastName" class="create-label">
+                                @L("LastNameLabel", "Soyad")
+                                <span class="text-danger">*</span>
+                            </label>
+
+                            <input asp-for="LastName"
+                                   class="form-control create-form-control"
+                                   placeholder="@L("LastNamePlaceholder", "Hakemin soyadını giriniz")" />
+
+                            <span asp-validation-for="LastName" class="text-danger small fw-bold"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Email" class="create-label">
+                            @L("EmailLabel", "E-posta")
+                            <span class="text-danger">*</span>
+                        </label>
+
+                        <input asp-for="Email"
+                               class="form-control create-form-control"
+                               type="email"
+                               placeholder="@L("EmailPlaceholder", "ornek@eposta.com")" />
+
+                        <div class="create-help-text">
+                            @L("EmailHelpText", "Hakem bu e-posta adresi ile sisteme giriş yapacaktır.")
+                        </div>
+
+                        <span asp-validation-for="Email" class="text-danger small fw-bold"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Institution" class="create-label">
+                            @L("InstitutionLabel", "Kurum")
+                        </label>
+
+                        <input asp-for="Institution"
+                               class="form-control create-form-control"
+                               placeholder="@L("InstitutionPlaceholder", "Üniversite, kurum veya kuruluş adı")" />
+
+                        <span asp-validation-for="Institution" class="text-danger small fw-bold"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Password" class="create-label">
+                            @L("PasswordLabel", "Şifre")
+                            <span class="text-danger">*</span>
+                        </label>
+
+                        <input asp-for="Password"
+                               class="form-control create-form-control"
+                               type="password"
+                               placeholder="En az 6 karakter" />
+
+                        <div class="create-help-text">
+                            @L("PasswordHelpText", "Şifre en az 6 karakter olmalıdır. Hakem daha sonra şifresini değiştirebilir.")
+                        </div>
+
+                        <span asp-validation-for="Password" class="text-danger small fw-bold"></span>
+                    </div>
+
+                    <div class="submit-box">
+                        <div>
+                            <div class="submit-box-title">
+                                Hakem hesabını oluştur
+                            </div>
+
+                            <p class="submit-box-text">
+                                Kaydettiğinizde kullanıcı oluşturulur, seçili kuruma bağlanır ve Referee rolü atanır.
+                            </p>
+                        </div>
+
+                        <button type="submit"
+                                class="save-btn">
+                            <i class="fas fa-save"></i>
+                            @L("SaveButton", "Hakemi Kaydet")
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="create-card">
+                <div class="create-card-header">
+                    <div class="create-card-icon">
+                        <i class="fas fa-circle-info"></i>
+                    </div>
+
+                    <div>
+                        <div class="create-card-title">
+                            Oluşturma Özeti
+                        </div>
+
+                        <p class="create-card-subtitle">
+                            Bu hesabın sistemde nasıl konumlanacağını buradan görebilirsiniz.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="create-card-body">
+                    <div class="side-info-list">
+
+                        <div class="side-info-item">
+                            <div class="side-info-label">
+                                Atanacak Rol
+                            </div>
+
+                            <div class="side-info-value">
+                                <span class="role-badge">
+                                    <i class="fas fa-user-tie"></i>
+                                    Referee
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="side-info-item">
+                            <div class="side-info-label">
+                                Kurum Bağlantısı
+                            </div>
+
+                            <div class="side-info-value">
+                                @if (targetTenantId != Guid.Empty)
+                                {
+                                    <span class="tenant-badge">
+                                        <i class="fas fa-check-circle"></i>
+                                        Aktif
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted fw-bold">
+                                        Kurum bilgisi alınamadı
+                                    </span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="side-info-item">
+                            <div class="side-info-label">
+                                Seçili Kongre
+                            </div>
+
+                            <div class="side-info-value">
+                                @(string.IsNullOrWhiteSpace(conferenceTitle) ? "Kongre bilgisi yok" : conferenceTitle)
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(currentSlug))
+                        {
+                            <div class="side-info-item">
+                                <div class="side-info-label">
+                                    Site Slug
+                                </div>
+
+                                <div class="side-info-value">
+                                    /@currentSlug
+                                </div>
+                            </div>
+                        }
+
+                        <div class="info-note">
+                            <i class="fas fa-circle-info me-2"></i>
+                            Bu ekrandan oluşturulan kullanıcı gerçek anlamda silinmez. İleride gerekirse Hakem Havuzu ekranından sadece hakem rolü kaldırılır.
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </form>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,27 +1,318 @@
-﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+﻿@using System
+@using System.Globalization
+@using Microsoft.AspNetCore.Http
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = Localizer["PageTitleCancel"];
-    var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? "";
+    ViewData["Title"] = Localizer["PageTitleCancel"].Value;
+    Layout = "_Layout";
+
+    var culture = CultureInfo.CurrentUICulture;
+    var isEnglish = culture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+
+    string L(string key, string tr, string en)
+    {
+        var value = Localizer[key].Value;
+
+        if (string.Equals(value, key, StringComparison.OrdinalIgnoreCase))
+        {
+            return isEnglish ? en : tr;
+        }
+
+        return value;
+    }
+
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString()
+        ?? Context.Session.GetString("SelectedConferenceSlug")
+        ?? "";
+
+    string BuildConferenceUrl(string cleanPath, string fallbackPath)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+        {
+            return fallbackPath;
+        }
+
+        return $"/{slug}{cleanPath}";
+    }
+
+    var retryPaymentUrl = BuildConferenceUrl(
+        "/payment",
+        "/Payment/New"
+    );
+
+    var mySubmissionsUrl = BuildConferenceUrl(
+        "/my-submissions",
+        "/Submission/Index"
+    );
+
+    var paymentHistoryUrl = BuildConferenceUrl(
+        "/payments",
+        "/Payment/My"
+    );
+
+    var conferenceHomeUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/"
+        : $"/{slug}";
+
+    var pageTitle = L(
+        "CancelHeader",
+        "Ödeme İşlemi Tamamlanmadı",
+        "Payment Was Not Completed"
+    );
+
+    var pageLead = L(
+        "CancelLead",
+        "Ödeme işleminiz iptal edildi veya tamamlanmadan sonlandırıldı.",
+        "Your payment was cancelled or ended before completion."
+    );
+
+    var infoText = L(
+        "CancelInfo",
+        "Herhangi bir ödeme alınmadıysa tekrar deneyebilir veya bildirilerim ekranından süreci takip edebilirsiniz.",
+        "If no payment was collected, you can try again or follow the process from the My Abstracts page."
+    );
+
+    var retryButtonText = L(
+        "RetryPaymentButton",
+        "Ödemeyi Tekrar Dene",
+        "Try Payment Again"
+    );
+
+    var mySubmissionsButtonText = L(
+        "MySubmissionsButton",
+        "Bildirilerime Dön",
+        "Back to My Abstracts"
+    );
+
+    var paymentHistoryButtonText = L(
+        "PaymentHistoryButton",
+        "Ödeme Geçmişi",
+        "Payment History"
+    );
+
+    var backToConferenceButtonText = L(
+        "BackToConferenceButton",
+        "Kongre Sayfasına Dön",
+        "Back to Conference Page"
+    );
 }
 
-<div class="container text-center mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-lg">
-                <div class="card-body p-5">
-                    <i class="bi bi-x-circle-fill text-danger" style="font-size: 5rem;"></i>
-                    <h1 class="display-4 mt-3">@Localizer["CancelHeader"]</h1>
-                    <p class="lead text-muted">@Localizer["CancelLead"]</p>
-                    <hr>
-                    <p>@Localizer["CancelInfo"]</p>
-                    <a asp-controller="Registration"
-                       asp-action="Index"
-                       asp-route-slug="@slug"
-                       class="btn btn-secondary mt-3">
-                        @Localizer["BackToRegistrationLink"]
-                    </a>
+<style>
+    .payment-cancel-page {
+        background: #f8fafc;
+        min-height: calc(100vh - 120px);
+        padding: 70px 0;
+    }
+
+    .cancel-card {
+        border: none;
+        border-radius: 28px;
+        box-shadow: 0 22px 60px rgba(15, 23, 42, 0.10);
+        overflow: hidden;
+        position: relative;
+        background: #ffffff;
+    }
+
+    .cancel-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(circle at top right, rgba(239, 68, 68, 0.16), transparent 34%),
+            radial-gradient(circle at bottom left, rgba(245, 158, 11, 0.12), transparent 30%);
+        pointer-events: none;
+    }
+
+    .cancel-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .cancel-icon-wrapper {
+        width: 96px;
+        height: 96px;
+        background: rgba(239, 68, 68, 0.10);
+        border: 1px solid rgba(239, 68, 68, 0.22);
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        box-shadow: 0 16px 34px rgba(239, 68, 68, 0.12);
+    }
+
+    .cancel-title {
+        font-weight: 950;
+        color: #0f172a;
+        letter-spacing: -0.055em;
+    }
+
+    .cancel-description {
+        color: #64748b;
+        font-weight: 650;
+        line-height: 1.7;
+    }
+
+    .cancel-info-box {
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        color: #9a3412;
+        border-radius: 20px;
+        padding: 1rem;
+        text-align: left;
+        margin-bottom: 1.5rem;
+    }
+
+    .cancel-info-inner {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
+    }
+
+    .cancel-info-icon {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        border-radius: 16px;
+        background: #ffffff;
+        color: #f97316;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+    }
+
+    .cancel-info-title {
+        color: #0f172a;
+        font-weight: 950;
+        margin-bottom: 0.15rem;
+    }
+
+    .cancel-info-text {
+        color: #9a3412;
+        font-size: 0.9rem;
+        font-weight: 700;
+        line-height: 1.6;
+        margin-bottom: 0;
+    }
+
+    .cancel-main-btn {
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        border: none;
+        color: #ffffff;
+        border-radius: 999px;
+        padding: 15px 22px;
+        font-weight: 950;
+        text-decoration: none;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 16px 34px rgba(13, 110, 253, 0.22);
+        transition: all 0.2s ease;
+    }
+
+    .cancel-main-btn:hover {
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 20px 44px rgba(13, 110, 253, 0.30);
+        text-decoration: none;
+    }
+
+    .cancel-secondary-btn {
+        border-radius: 999px;
+        padding: 12px 18px;
+        font-weight: 900;
+    }
+
+    @@media (max-width: 768px) {
+        .payment-cancel-page {
+            padding: 42px 0;
+        }
+
+        .cancel-card {
+            border-radius: 22px;
+        }
+
+        .cancel-info-inner {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="payment-cancel-page">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6 text-center">
+
+                <div class="cancel-card p-4 p-md-5">
+                    <div class="cancel-content">
+
+                        <div class="mb-4">
+                            <div class="cancel-icon-wrapper">
+                                <i class="fas fa-xmark fa-3x text-danger"></i>
+                            </div>
+                        </div>
+
+                        <h2 class="cancel-title mb-2">
+                            @pageTitle
+                        </h2>
+
+                        <p class="cancel-description mb-4">
+                            @pageLead
+                        </p>
+
+                        <div class="cancel-info-box">
+                            <div class="cancel-info-inner">
+                                <div class="cancel-info-icon">
+                                    <i class="fas fa-circle-info"></i>
+                                </div>
+
+                                <div>
+                                    <div class="cancel-info-title">
+                                        @L("CancelInfoTitle", "Bilgilendirme", "Information")
+                                    </div>
+
+                                    <p class="cancel-info-text">
+                                        @infoText
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <a href="@retryPaymentUrl" class="cancel-main-btn">
+                                <i class="fas fa-rotate-right"></i>
+                                @retryButtonText
+                            </a>
+
+                            <a href="@mySubmissionsUrl" class="btn btn-outline-primary cancel-secondary-btn">
+                                <i class="fas fa-file-lines me-2"></i>
+                                @mySubmissionsButtonText
+                            </a>
+
+                            <div class="d-flex gap-2">
+                                <a href="@paymentHistoryUrl" class="btn btn-light w-100 py-2 border fw-bold text-muted">
+                                    <i class="fas fa-list me-2"></i>
+                                    @paymentHistoryButtonText
+                                </a>
+
+                                <a href="@conferenceHomeUrl" class="btn btn-light w-100 py-2 border fw-bold text-muted">
+                                    <i class="fas fa-home me-2"></i>
+                                    @backToConferenceButtonText
+                                </a>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
+
+                <p class="mt-4 small text-muted">
+                    <i class="fas fa-shield-alt me-1"></i>
+                    @L("NoChargeInfoText", "İptal edilen işlem için sistemde başarılı ödeme kaydı oluşturulmaz.", "A successful payment record is not created for a cancelled transaction.")
+                </p>
+
             </div>
         </div>
     </div>

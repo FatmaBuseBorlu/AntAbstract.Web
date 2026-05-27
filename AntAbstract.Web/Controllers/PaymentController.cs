@@ -72,13 +72,13 @@ namespace AntAbstract.Web.Controllers
 
             if (_tenantContext.Current != null)
             {
-                var tenantKey = $"SelectedConferenceId:{_tenantContext.Current.Id}";
-                conferenceIdText = HttpContext.Session.GetString(tenantKey);
+                var tenantSpecificKey = $"SelectedConferenceId:{_tenantContext.Current.Id}";
+                conferenceIdText = HttpContext.Session.GetString(tenantSpecificKey);
             }
 
             conferenceIdText ??= HttpContext.Session.GetString("SelectedConferenceId");
 
-            return Guid.TryParse(conferenceIdText, out var parsedId)
+            return Guid.TryParse(conferenceIdText, out var parsedId) && parsedId != Guid.Empty
                 ? parsedId
                 : null;
         }
@@ -93,14 +93,16 @@ namespace AntAbstract.Web.Controllers
                 TempData["ErrorMessage"] = message;
             }
 
+            var encodedReturnUrl = Uri.EscapeDataString(returnUrl);
+
             var url = string.IsNullOrWhiteSpace(slug)
-                ? $"/Dashboard/MyConferences?returnUrl={Uri.EscapeDataString(returnUrl)}"
-                : $"/{slug}/Dashboard/MyConferences?returnUrl={Uri.EscapeDataString(returnUrl)}";
+                ? $"/Dashboard/MyConferences?returnUrl={encodedReturnUrl}"
+                : $"/{slug}/Dashboard/MyConferences?returnUrl={encodedReturnUrl}";
 
             return Redirect(url);
         }
 
-        private static bool SlugMatches(Conference? conference, string slug)
+        private static bool SlugMatches(Conference? conference, string? slug)
         {
             if (conference == null || string.IsNullOrWhiteSpace(slug))
             {
@@ -152,9 +154,11 @@ namespace AntAbstract.Web.Controllers
             return await _context.Conferences
                 .Include(c => c.Tenant)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(c =>
+                .Where(c =>
                     c.Slug == slug ||
-                    (c.Tenant != null && c.Tenant.Slug == slug));
+                    (c.Tenant != null && c.Tenant.Slug == slug))
+                .OrderByDescending(c => c.StartDate)
+                .FirstOrDefaultAsync();
         }
 
         private async Task<Conference?> GetSelectedConferenceAsync(string slug)
@@ -168,7 +172,7 @@ namespace AntAbstract.Web.Controllers
                     .AsNoTracking()
                     .FirstOrDefaultAsync(c => c.Id == selectedConferenceId.Value);
 
-                if (selectedConference != null)
+                if (selectedConference != null && SlugMatches(selectedConference, slug))
                 {
                     return selectedConference;
                 }
@@ -188,6 +192,26 @@ namespace AntAbstract.Web.Controllers
                         s.Status == SubmissionStatus.Accepted ||
                         s.Status == SubmissionStatus.Presented
                     ));
+        }
+
+        private async Task<Payment?> GetExistingPaymentAsync(string userId, Registration registration)
+        {
+            return await _context.Payments
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p =>
+                    p.AppUserId == userId &&
+                    p.ConferenceId == registration.ConferenceId &&
+                    p.RelatedSubmissionId == registration.Id);
+        }
+
+        private static string BuildPaymentSuccessUrl(string canonicalSlug, Guid? paymentId = null)
+        {
+            if (paymentId.HasValue && paymentId.Value != Guid.Empty)
+            {
+                return $"/{canonicalSlug}/payment/success?id={paymentId.Value}";
+            }
+
+            return $"/{canonicalSlug}/payment/success";
         }
 
         #endregion
@@ -295,7 +319,7 @@ namespace AntAbstract.Web.Controllers
                     "RegisterBeforePayment",
                     "Ödeme yapmadan önce kongreye kayıt olmalısınız.");
 
-                return Redirect(BuildUrl(canonicalSlug, "/register"));
+                return Redirect(BuildUrl(canonicalSlug, "/registration"));
             }
 
             if (registration.IsPaid)
@@ -362,19 +386,9 @@ namespace AntAbstract.Web.Controllers
 
             if (registration.IsPaid)
             {
-                var existingPayment = await _context.Payments
-                    .FirstOrDefaultAsync(p =>
-                        p.AppUserId == user.Id &&
-                        p.ConferenceId == registration.ConferenceId &&
-                        p.RelatedSubmissionId == registration.Id);
+                var existingPayment = await GetExistingPaymentAsync(user.Id, registration);
 
-                return RedirectToAction(
-                    nameof(Success),
-                    new
-                    {
-                        slug = canonicalSlug,
-                        id = existingPayment?.Id
-                    });
+                return Redirect(BuildPaymentSuccessUrl(canonicalSlug, existingPayment?.Id));
             }
 
             var hasAcceptedSubmission = await HasAcceptedSubmissionAsync(
@@ -401,11 +415,13 @@ namespace AntAbstract.Web.Controllers
 
                 BillingName = !string.IsNullOrWhiteSpace(registration.BillingName)
                     ? registration.BillingName
-                    : $"{user.FirstName} {user.LastName}",
+                    : $"{user.FirstName} {user.LastName}".Trim(),
 
                 BillingAddress = registration.BillingAddress,
                 TaxNumber = registration.TaxNumber,
-                TaxOffice = registration.TaxOffice
+                TaxOffice = registration.TaxOffice,
+
+                PaymentMethod = "CreditCard"
             };
 
             return View(paymentModel);
@@ -444,21 +460,16 @@ namespace AntAbstract.Web.Controllers
                 return Redirect(BuildUrl(canonicalSlug, $"/payment/checkout/{registration.Id}"));
             }
 
+            if (registration.Conference != null)
+            {
+                SetSelectedConferenceSession(registration.Conference, canonicalSlug);
+            }
+
             if (registration.IsPaid)
             {
-                var existingPayment = await _context.Payments
-                    .FirstOrDefaultAsync(p =>
-                        p.AppUserId == user.Id &&
-                        p.ConferenceId == registration.ConferenceId &&
-                        p.RelatedSubmissionId == registration.Id);
+                var existingPayment = await GetExistingPaymentAsync(user.Id, registration);
 
-                return RedirectToAction(
-                    nameof(Success),
-                    new
-                    {
-                        slug = canonicalSlug,
-                        id = existingPayment?.Id
-                    });
+                return Redirect(BuildPaymentSuccessUrl(canonicalSlug, existingPayment?.Id));
             }
 
             var hasAcceptedSubmission = await HasAcceptedSubmissionAsync(
@@ -477,6 +488,13 @@ namespace AntAbstract.Web.Controllers
             var amount = registration.RegistrationType?.Price ?? registration.Amount;
             var currency = registration.RegistrationType?.Currency ?? "TRY";
 
+            var transactionId = Guid.NewGuid()
+                .ToString("N")
+                .Substring(0, 12)
+                .ToUpper();
+
+            var paymentDate = DateTime.UtcNow;
+
             var payment = new Payment
             {
                 Id = Guid.NewGuid(),
@@ -484,24 +502,29 @@ namespace AntAbstract.Web.Controllers
                 ConferenceId = registration.ConferenceId,
                 RelatedSubmissionId = registration.Id,
 
-                PaymentDate = DateTime.UtcNow,
+                PaymentDate = paymentDate,
                 Status = PaymentStatus.Completed,
 
                 Amount = amount,
                 Currency = currency,
 
-                BillingName = model.BillingName,
+                BillingName = !string.IsNullOrWhiteSpace(model.BillingName)
+                    ? model.BillingName
+                    : $"{user.FirstName} {user.LastName}".Trim(),
+
                 BillingAddress = model.BillingAddress,
                 TaxNumber = model.TaxNumber,
                 TaxOffice = model.TaxOffice,
 
                 PaymentMethod = "CreditCard",
-                TransactionId = Guid.NewGuid().ToString().Substring(0, 8).ToUpper()
+                TransactionId = transactionId
             };
 
             _context.Payments.Add(payment);
 
             registration.IsPaid = true;
+            registration.PaymentDate = paymentDate;
+            registration.PaymentTransactionId = transactionId;
 
             await _context.SaveChangesAsync();
 
@@ -517,19 +540,15 @@ namespace AntAbstract.Web.Controllers
                 link: BuildUrl(canonicalSlug, "/payments")
             );
 
-            return RedirectToAction(
-                nameof(Success),
-                new
-                {
-                    slug = canonicalSlug,
-                    id = payment.Id
-                });
+            return Redirect(BuildPaymentSuccessUrl(canonicalSlug, payment.Id));
         }
 
         [HttpGet("Success")]
         [HttpGet("/{slug}/payment/success")]
         public async Task<IActionResult> Success(Guid? id)
         {
+            var slug = GetSlug();
+
             if (id == null)
             {
                 return View();
@@ -551,8 +570,6 @@ namespace AntAbstract.Web.Controllers
 
             if (payment == null)
             {
-                var slug = GetSlug();
-
                 if (!string.IsNullOrWhiteSpace(slug))
                 {
                     return Redirect(BuildUrl(slug, "/payments"));
@@ -561,7 +578,12 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(My));
             }
 
-            var canonicalSlug = GetCanonicalSlug(payment.Conference, GetSlug());
+            var canonicalSlug = GetCanonicalSlug(payment.Conference, slug);
+
+            if (payment.Conference != null)
+            {
+                SetSelectedConferenceSession(payment.Conference, canonicalSlug);
+            }
 
             return View(payment);
         }
@@ -574,4 +596,3 @@ namespace AntAbstract.Web.Controllers
         }
     }
 }
-

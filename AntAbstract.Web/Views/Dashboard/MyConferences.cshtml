@@ -1,6 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Http
 @using Microsoft.AspNetCore.Mvc.Localization
 @using Microsoft.AspNetCore.Routing
+@using System
 @using System.Globalization
 @using System.Linq
 @using AntAbstract.Domain.Entities
@@ -17,10 +18,15 @@
     Func<string, string, string> L = (key, fallback) =>
     {
         var text = Localizer[key].Value;
-        return string.Equals(text, key, StringComparison.OrdinalIgnoreCase) ? fallback : text;
+
+        return string.Equals(text, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : text;
     };
 
-    var returnUrl = Context.Request.Query["returnUrl"].ToString();
+    var isAdmin = User.IsInRole("Admin");
+    var isAuthor = User.IsInRole("Author") || User.IsInRole("Yazar");
+    var isListener = User.IsInRole("Listener") || User.IsInRole("Dinleyici");
 
     string? selectedIdStr = null;
 
@@ -51,13 +57,15 @@
     var registrationAvailableConferenceList = registrationAvailableConferences.ToList();
 
     var hasRegisteredConferences = registeredConferences.Any();
-    var hasSubmissionAvailableConferences = submissionAvailableConferenceList.Any();
-    var hasRegistrationAvailableConferences = registrationAvailableConferenceList.Any();
+    var hasSubmissionAvailableConferences = !isAdmin && submissionAvailableConferenceList.Any();
+    var hasRegistrationAvailableConferences = !isAdmin && registrationAvailableConferenceList.Any();
 
     var hasAnyConference =
         hasRegisteredConferences ||
         hasSubmissionAvailableConferences ||
         hasRegistrationAvailableConferences;
+
+    var today = DateTime.Today;
 
     string GetConferenceSlug(Conference conference)
     {
@@ -71,18 +79,52 @@
             : $"/{tenantSlug}";
     }
 
+    string GetDashboardUrl(string tenantSlug)
+    {
+        return string.IsNullOrWhiteSpace(tenantSlug)
+            ? "/Dashboard"
+            : $"/{tenantSlug}/Dashboard";
+    }
+
+    string GetConferenceFlowUrl(Conference conference)
+    {
+        var tenantSlug = GetConferenceSlug(conference);
+
+        return string.IsNullOrWhiteSpace(tenantSlug)
+            ? $"/Admin/ConferenceFlow?conferenceId={conference.Id}"
+            : $"/{tenantSlug}/Admin/ConferenceFlow?conferenceId={conference.Id}";
+    }
+
+    string GetAdminSubmissionsUrl(Conference conference)
+    {
+        var tenantSlug = GetConferenceSlug(conference);
+
+        return string.IsNullOrWhiteSpace(tenantSlug)
+            ? $"/Admin/Submissions?conferenceId={conference.Id}"
+            : $"/{tenantSlug}/Admin/Submissions?conferenceId={conference.Id}";
+    }
+
+    string GetAdminAssignmentUrl(Conference conference)
+    {
+        var tenantSlug = GetConferenceSlug(conference);
+
+        return string.IsNullOrWhiteSpace(tenantSlug)
+            ? $"/Admin/Assignment?conferenceId={conference.Id}"
+            : $"/{tenantSlug}/Admin/Assignment?conferenceId={conference.Id}";
+    }
+
     string GetSubmissionIndexUrl(string tenantSlug)
     {
         return string.IsNullOrWhiteSpace(tenantSlug)
             ? "/Dashboard/MyConferences"
-            : $"/{tenantSlug}/Submission/Index";
+            : $"/{tenantSlug}/my-submissions";
     }
 
     string GetSubmissionCreateUrl(string tenantSlug)
     {
         return string.IsNullOrWhiteSpace(tenantSlug)
             ? "/Dashboard/MyConferences"
-            : $"/{tenantSlug}/Submission/Create";
+            : $"/{tenantSlug}/submit-abstract";
     }
 
     string GetRegistrationUrl(string tenantSlug)
@@ -90,6 +132,20 @@
         return string.IsNullOrWhiteSpace(tenantSlug)
             ? "/Home/Congresses"
             : $"/{tenantSlug}/registration";
+    }
+
+    string GetPaymentUrl(string tenantSlug)
+    {
+        return string.IsNullOrWhiteSpace(tenantSlug)
+            ? "/Payment/New"
+            : $"/{tenantSlug}/payment";
+    }
+
+    string GetPaymentsUrl(string tenantSlug)
+    {
+        return string.IsNullOrWhiteSpace(tenantSlug)
+            ? "/Payment/My"
+            : $"/{tenantSlug}/payments";
     }
 
     string GetCityText(Conference conference)
@@ -102,468 +158,770 @@
     string GetFirstLetter(Conference conference)
     {
         return !string.IsNullOrWhiteSpace(conference.Title)
-            ? conference.Title.Substring(0, 1).ToUpper()
+            ? conference.Title.Trim().Substring(0, 1).ToUpper()
             : "A";
+    }
+
+    string GetDateRange(Conference conference)
+    {
+        return $"{conference.StartDate.ToString("dd MMM yyyy", CultureInfo.CurrentUICulture)} - {conference.EndDate.ToString("dd MMM yyyy", CultureInfo.CurrentUICulture)}";
+    }
+
+    string GetConferenceStatusText(Conference conference)
+    {
+        if (conference.StartDate.Date <= today && conference.EndDate.Date >= today)
+        {
+            return L("StatusActive", "Devam Ediyor");
+        }
+
+        if (conference.StartDate.Date > today)
+        {
+            return L("StatusUpcoming", "Yaklaşan");
+        }
+
+        return L("StatusCompleted", "Tamamlandı");
+    }
+
+    string GetConferenceStatusClass(Conference conference)
+    {
+        if (conference.StartDate.Date <= today && conference.EndDate.Date >= today)
+        {
+            return "status-active";
+        }
+
+        if (conference.StartDate.Date > today)
+        {
+            return "status-upcoming";
+        }
+
+        return "status-completed";
     }
 }
 
 @section Styles {
     <style>
-        .selection-container {
-            max-width: 1200px;
+        .selection-page {
+            max-width: 1280px;
             margin: 0 auto;
-            padding: 1.65rem 1.5rem 3rem;
-            width: 100%;
+            padding: 1.5rem 1.5rem 3rem;
+            font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
-        .selection-hero {
-            text-align: center;
-            margin-bottom: 2rem;
+        .selection-hero-card {
+            background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.18), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+            border: 1px solid #e8eef6;
+            border-radius: 30px;
+            padding: 1.65rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.25rem;
+            flex-wrap: wrap;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+            margin-bottom: 1.5rem;
         }
 
-        .page-title {
-            font-size: 2rem;
-            font-weight: 800;
-            color: #0f172a;
-            letter-spacing: -0.7px;
+        .selection-hero-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-width: 300px;
+            flex: 1;
         }
 
-        .page-description {
+        .selection-hero-icon {
+            width: 66px;
+            height: 66px;
+            min-width: 66px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, #0d6efd, #00aeef);
+            color: #ffffff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.55rem;
+            box-shadow: 0 16px 32px rgba(13, 110, 253, 0.22);
+        }
+
+        .selection-label {
             color: #64748b;
-            font-size: 1.05rem;
+            font-size: 0.78rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.35rem;
+        }
+
+        .selection-title {
+            margin: 0 0 0.35rem;
+            color: #0f172a;
+            font-size: 2rem;
+            font-weight: 950;
+            letter-spacing: -0.05em;
+            line-height: 1.2;
+        }
+
+        .selection-description {
+            margin: 0;
+            color: #64748b;
+            font-size: 0.96rem;
+            font-weight: 650;
+            line-height: 1.65;
+            max-width: 850px;
+        }
+
+        .selection-hero-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .selection-light-btn,
+        .selection-primary-btn {
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.55rem;
+            border-radius: 999px;
+            padding: 0 1.15rem;
+            font-size: 0.9rem;
+            font-weight: 900;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .selection-light-btn {
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #dbe3ef;
+        }
+
+        .selection-light-btn:hover {
+            color: #0d6efd;
+            border-color: rgba(13, 110, 253, 0.32);
+            background: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        .selection-primary-btn {
+            border: none;
+            background: linear-gradient(135deg, #0d6efd, #00aeef);
+            color: #ffffff;
+            box-shadow: 0 12px 26px rgba(13, 110, 253, 0.18);
+        }
+
+        .selection-primary-btn:hover {
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 16px 32px rgba(13, 110, 253, 0.24);
+        }
+
+        .search-card {
+            background: #ffffff;
+            border: 1px solid #e8eef6;
+            border-radius: 26px;
+            padding: 1rem;
+            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+            margin-bottom: 1.75rem;
         }
 
         .search-wrapper {
-            max-width: 600px;
-            margin: 0 auto 2.25rem auto;
             position: relative;
         }
 
         .search-input {
             width: 100%;
-            padding: 1.05rem 1.5rem 1.05rem 3.5rem;
-            border-radius: 50px;
-            border: 1px solid #e2e8f0;
+            min-height: 52px;
+            padding: 0.95rem 1.25rem 0.95rem 3.2rem;
+            border-radius: 18px;
+            border: 1px solid #cbd5e1;
             background-color: #fff;
-            font-size: 1rem;
-            transition: all 0.3s;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            color: #0f172a;
+            font-size: 0.96rem;
+            font-weight: 700;
+            transition: all 0.2s ease;
         }
 
-            .search-input:focus {
-                outline: none;
-                border-color: #00aeef;
-                box-shadow: 0 8px 30px rgba(0, 174, 239, 0.15);
-            }
+        .search-input:focus {
+            outline: none;
+            border-color: #00aeef;
+            box-shadow: 0 0 0 0.18rem rgba(0, 174, 239, 0.12);
+        }
 
         .search-icon {
             position: absolute;
-            left: 1.5rem;
+            left: 1.15rem;
             top: 50%;
             transform: translateY(-50%);
             color: #94a3b8;
-            font-size: 1.2rem;
+            font-size: 1rem;
         }
 
         .section-block {
-            margin-bottom: 2.35rem;
+            margin-bottom: 2rem;
         }
 
-        .section-header {
+        .section-header-card {
+            background: #ffffff;
+            border: 1px solid #e8eef6;
+            border-radius: 26px;
+            padding: 1.25rem 1.35rem;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
             gap: 1rem;
-            margin-bottom: 1.25rem;
+            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
         }
 
         .section-title {
-            font-size: 1.25rem;
-            font-weight: 800;
+            font-size: 1.18rem;
+            font-weight: 950;
             color: #0f172a;
             margin-bottom: 0.25rem;
         }
 
         .section-subtitle {
             color: #64748b;
-            font-size: 0.95rem;
+            font-size: 0.88rem;
+            font-weight: 650;
+            line-height: 1.6;
             margin-bottom: 0;
         }
 
         .section-count {
-            background: #fff;
+            background: #f8fafc;
             border: 1px solid #e2e8f0;
-            color: #64748b;
-            font-weight: 700;
-            font-size: 0.85rem;
-            padding: 0.55rem 0.9rem;
+            color: #475569;
+            font-weight: 950;
+            font-size: 0.78rem;
+            padding: 0.48rem 0.85rem;
             border-radius: 999px;
             white-space: nowrap;
         }
 
-        .empty-mini-state {
-            background: #fff;
-            border: 1px dashed #cbd5e1;
-            border-radius: 22px;
-            padding: 2rem;
-            text-align: center;
-            margin-bottom: 2.5rem;
+        .conference-grid {
+            align-items: stretch;
         }
 
-        .empty-mini-icon {
-            width: 72px;
-            height: 72px;
-            border-radius: 50%;
-            background: #f8fafc;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1rem;
-            color: #94a3b8;
-            font-size: 2rem;
-        }
-
-        .conf-card {
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            border-radius: 24px;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        .conference-card {
+            background: #ffffff;
+            border: 1px solid #e8eef6;
+            border-radius: 28px;
+            transition: all 0.22s ease;
             position: relative;
             overflow: hidden;
             height: 100%;
             display: flex;
             flex-direction: column;
+            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
         }
 
-            .conf-card:hover {
-                transform: translateY(-8px);
-                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-                border-color: #00aeef;
-            }
-
-            .conf-card.active {
-                border: 2px solid #10b981;
-                background-color: #fcfdfd;
-            }
-
-            .conf-card.available {
-                border-color: #dbeafe;
-            }
-
-                .conf-card.available:hover {
-                    border-color: #2563eb;
-                }
-
-        .active-badge {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #10b981;
-            color: #fff;
-            font-size: 0.7rem;
-            font-weight: 800;
-            padding: 5px 12px;
-            border-radius: 20px;
-            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
-            z-index: 2;
+        .conference-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 44px rgba(15, 23, 42, 0.10);
+            border-color: rgba(13, 110, 253, 0.28);
         }
 
-        .available-badge {
+        .conference-card.selected {
+            border-color: rgba(34, 197, 94, 0.55);
+            box-shadow: 0 18px 42px rgba(34, 197, 94, 0.10);
+        }
+
+        .conference-card.available {
+            border-color: rgba(13, 110, 253, 0.18);
+        }
+
+        .conference-card-body {
+            padding: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .status-floating-badge {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #2563eb;
-            color: #fff;
-            font-size: 0.7rem;
-            font-weight: 800;
-            padding: 5px 12px;
-            border-radius: 20px;
-            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.18);
+            top: 1rem;
+            right: 1rem;
             z-index: 2;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.68rem;
+            font-weight: 950;
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+            border: 1px solid transparent;
+        }
+
+        .status-active {
+            background: rgba(34, 197, 94, 0.12);
+            color: #15803d;
+            border-color: rgba(34, 197, 94, 0.18);
+        }
+
+        .status-upcoming {
+            background: rgba(0, 174, 239, 0.12);
+            color: #0284c7;
+            border-color: rgba(0, 174, 239, 0.18);
+        }
+
+        .status-completed {
+            background: rgba(100, 116, 139, 0.12);
+            color: #64748b;
+            border-color: rgba(100, 116, 139, 0.18);
+        }
+
+        .selected-badge {
+            background: rgba(34, 197, 94, 0.12);
+            color: #15803d;
+            border: 1px solid rgba(34, 197, 94, 0.20);
+        }
+
+        .open-badge {
+            background: rgba(13, 110, 253, 0.10);
+            color: #0d6efd;
+            border: 1px solid rgba(13, 110, 253, 0.16);
         }
 
         .submission-badge {
-            background: #16a34a;
-            box-shadow: 0 4px 10px rgba(22, 163, 74, 0.18);
+            background: rgba(22, 163, 74, 0.12);
+            color: #15803d;
+            border: 1px solid rgba(22, 163, 74, 0.18);
+        }
+
+        .card-top-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding-right: 6.5rem;
         }
 
         .logo-wrapper {
-            width: 72px;
-            height: 72px;
-            border-radius: 20px;
+            width: 68px;
+            height: 68px;
+            min-width: 68px;
+            border-radius: 22px;
             background: #f8fafc;
-            border: 1px solid #f1f5f9;
+            border: 1px solid #edf2f7;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 1.5rem;
             overflow: hidden;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.8);
         }
 
-            .logo-wrapper img {
-                width: 100%;
-                height: 100%;
-                object-fit: contain;
-                padding: 10px;
-                border-radius: 20px;
-            }
+        .logo-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 10px;
+            border-radius: 20px;
+        }
 
         .logo-placeholder {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: #00aeef;
+            width: 100%;
+            height: 100%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0d6efd, #00aeef);
+            color: #ffffff;
+            font-size: 1.35rem;
+            font-weight: 950;
         }
 
         .tenant-badge {
-            max-width: 130px;
+            max-width: 135px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            border-radius: 999px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+            padding: 0.35rem 0.65rem;
+            font-size: 0.72rem;
+            font-weight: 900;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .conf-title {
-            min-height: 3.5rem;
-            line-height: 1.4;
+        .conference-title {
+            min-height: 3.2rem;
+            line-height: 1.35;
             color: #0f172a;
+            font-size: 1.05rem;
+            font-weight: 950;
+            margin-bottom: 0.9rem;
+        }
+
+        .card-meta-list {
+            display: grid;
+            gap: 0.55rem;
+            margin-bottom: 1rem;
         }
 
         .card-meta {
-            font-size: 0.9rem;
+            font-size: 0.84rem;
             color: #64748b;
-            margin-bottom: 0.6rem;
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-weight: 500;
-        }
-
-            .card-meta i {
-                width: 20px;
-                text-align: center;
-            }
-
-        .footer-actions {
-            margin-top: auto;
-            padding-top: 1.5rem;
-            display: grid;
-            gap: 12px;
-        }
-
-        .btn-select,
-        .btn-select-start,
-        .btn-register,
-        .btn-submit-paper,
-        .btn-secondary-custom {
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-select,
-        .btn-select-start,
-        .btn-register,
-        .btn-submit-paper {
-            color: #fff;
-            border: none;
-            font-weight: 800;
-            padding: 12px 16px;
-            border-radius: 16px;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-size: 0.96rem;
-            width: 100%;
-            text-decoration: none;
-            min-height: 50px;
-            letter-spacing: 0.1px;
-        }
-
-        .btn-select {
-            background: linear-gradient(135deg, #00aeef 0%, #0984e3 100%);
-            box-shadow: 0 6px 18px rgba(0, 174, 239, 0.25);
-        }
-
-            .btn-select:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 10px 26px rgba(0, 174, 239, 0.35);
-                color: white;
-            }
-
-            .btn-select.active-btn {
-                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-                box-shadow: 0 6px 18px rgba(16, 185, 129, 0.25);
-                cursor: pointer;
-                opacity: 1;
-            }
-
-                .btn-select.active-btn:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 10px 26px rgba(16, 185, 129, 0.35);
-                }
-
-        .btn-select-start {
-            background: linear-gradient(135deg, #00aeef 0%, #0d6efd 100%);
-            box-shadow: 0 10px 24px rgba(0, 174, 239, 0.24);
-        }
-
-            .btn-select-start:hover {
-                transform: translateY(-2px);
-                color: #fff;
-                box-shadow: 0 14px 30px rgba(0, 174, 239, 0.34);
-                background: linear-gradient(135deg, #009bd8 0%, #0b5ed7 100%);
-            }
-
-            .btn-select-start.active-btn {
-                background: linear-gradient(135deg, #00aeef 0%, #0d6efd 100%);
-                box-shadow: 0 10px 24px rgba(0, 174, 239, 0.24);
-            }
-
-                .btn-select-start.active-btn:hover {
-                    box-shadow: 0 12px 28px rgba(16, 185, 129, 0.35);
-                }
-
-        .btn-register {
-            background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 55%, #06b6d4 100%);
-            box-shadow: 0 10px 24px rgba(14, 165, 233, 0.22);
-        }
-
-            .btn-register:hover {
-                transform: translateY(-2px);
-                color: #fff;
-                box-shadow: 0 14px 30px rgba(14, 165, 233, 0.32);
-                background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 55%, #0891b2 100%);
-            }
-
-        .btn-submit-paper {
-            background: linear-gradient(135deg, #059669 0%, #10b981 55%, #22c55e 100%);
-            box-shadow: 0 10px 24px rgba(16, 185, 129, 0.22);
-        }
-
-            .btn-submit-paper:hover {
-                transform: translateY(-2px);
-                color: #fff;
-                box-shadow: 0 14px 30px rgba(16, 185, 129, 0.32);
-                background: linear-gradient(135deg, #047857 0%, #059669 55%, #16a34a 100%);
-            }
-
-        .btn-secondary-custom {
-            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-            color: #475569;
-            border: 1px solid #dbe4ef;
+            gap: 0.55rem;
             font-weight: 700;
-            padding: 11px 14px;
-            border-radius: 16px;
-            transition: all 0.3s ease;
-            font-size: 0.93rem;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            min-height: 48px;
-            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
         }
 
-            .btn-secondary-custom:hover {
-                background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
-                color: #0f172a;
-                border-color: #cbd5e1;
-                transform: translateY(-2px);
-                box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-            }
+        .card-meta i {
+            width: 20px;
+            text-align: center;
+        }
+
+        .card-actions {
+            margin-top: auto;
+            display: grid;
+            gap: 0.7rem;
+        }
+
+        .primary-action-btn,
+        .success-action-btn,
+        .register-action-btn,
+        .secondary-action-btn,
+        .small-action-btn {
+            border-radius: 16px;
+            min-height: 48px;
+            font-size: 0.9rem;
+            font-weight: 950;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            width: 100%;
+        }
+
+        .primary-action-btn {
+            background: linear-gradient(135deg, #0d6efd, #00aeef);
+            color: #ffffff;
+            box-shadow: 0 12px 26px rgba(13, 110, 253, 0.18);
+        }
+
+        .primary-action-btn:hover {
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 16px 32px rgba(13, 110, 253, 0.24);
+        }
+
+        .success-action-btn {
+            background: linear-gradient(135deg, #059669, #22c55e);
+            color: #ffffff;
+            box-shadow: 0 12px 26px rgba(34, 197, 94, 0.18);
+        }
+
+        .success-action-btn:hover {
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 16px 32px rgba(34, 197, 94, 0.24);
+        }
+
+        .register-action-btn {
+            background: linear-gradient(135deg, #2563eb, #06b6d4);
+            color: #ffffff;
+            box-shadow: 0 12px 26px rgba(14, 165, 233, 0.18);
+        }
+
+        .register-action-btn:hover {
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 16px 32px rgba(14, 165, 233, 0.24);
+        }
+
+        .secondary-action-btn,
+        .small-action-btn {
+            background: #ffffff;
+            color: #334155;
+            border-color: #dbe3ef;
+        }
+
+        .secondary-action-btn:hover,
+        .small-action-btn:hover {
+            color: #0d6efd;
+            border-color: rgba(13, 110, 253, 0.32);
+            background: #f8fbff;
+            transform: translateY(-1px);
+        }
+
+        .action-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.7rem;
+        }
+
+        .author-action-row {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.7rem;
+        }
+
+        .admin-action-row {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.7rem;
+        }
+
+        .empty-state-card {
+            background: #ffffff;
+            border: 1px dashed #cbd5e1;
+            border-radius: 28px;
+            padding: 3rem 1.5rem;
+            text-align: center;
+            color: #64748b;
+            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.04);
+        }
+
+        .empty-state-icon {
+            width: 92px;
+            height: 92px;
+            border-radius: 30px;
+            background: rgba(13, 110, 253, 0.10);
+            color: #0d6efd;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.3rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-mini-state {
+            background: #ffffff;
+            border: 1px dashed #cbd5e1;
+            border-radius: 26px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #64748b;
+        }
+
+        .empty-mini-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 24px;
+            background: rgba(13, 110, 253, 0.10);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            color: #0d6efd;
+            font-size: 1.8rem;
+        }
 
         .no-results {
             display: none;
             text-align: center;
-            padding: 4rem;
-            color: #94a3b8;
+            padding: 3rem 1.5rem;
+            color: #64748b;
+            background: #ffffff;
+            border: 1px dashed #cbd5e1;
+            border-radius: 28px;
+            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.04);
         }
 
-        .empty-state-icon {
-            width: 130px;
-            height: 130px;
-            border-radius: 50%;
-            background: white;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
-            margin-bottom: 1.5rem;
-        }
-
-        @@media (max-width: 768px) {
-            .selection-container {
-                padding: 1.25rem 1rem 2.5rem;
-            }
-
-            .selection-hero {
-                margin-bottom: 1.5rem;
-            }
-
-            .page-title {
-                font-size: 1.6rem;
-            }
-
-            .search-wrapper {
-                margin-bottom: 1.75rem;
-            }
-
-            .section-header {
+        @@media (max-width: 992px) {
+            .selection-hero-card {
                 align-items: flex-start;
                 flex-direction: column;
             }
 
-            .conf-title {
+            .selection-hero-left {
+                align-items: flex-start;
+            }
+
+            .selection-hero-actions,
+            .selection-hero-actions .btn {
+                width: 100%;
+            }
+
+            .selection-title {
+                font-size: 1.65rem;
+            }
+
+            .admin-action-row,
+            .author-action-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @@media (max-width: 768px) {
+            .selection-page {
+                padding: 1.25rem 1rem 2.5rem;
+            }
+
+            .selection-hero-left {
+                flex-direction: column;
+            }
+
+            .section-header-card {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .conference-title {
                 min-height: auto;
+            }
+
+            .card-top-row {
+                padding-right: 0;
+                flex-direction: column;
+            }
+
+            .status-floating-badge {
+                position: static;
+                width: fit-content;
+                margin-bottom: 1rem;
+            }
+
+            .action-row,
+            .author-action-row {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 }
 
-<div class="selection-container">
-    <div class="selection-hero">
-        <h2 class="page-title mb-2">
-            @L("Welcome", "Hoş Geldiniz")
-        </h2>
+<div class="selection-page">
 
-        <p class="page-description mb-0">
-            @L("SelectWorkspaceDescription", "İşlem yapmak istediğiniz çalışma alanını yani kongreyi aşağıdan seçiniz.")
-        </p>
+    <div class="selection-hero-card">
+        <div class="selection-hero-left">
+            <div class="selection-hero-icon">
+                @if (isAdmin)
+                {
+                    <i class="fas fa-user-shield"></i>
+                }
+                else if (isAuthor)
+                {
+                    <i class="fas fa-pen-nib"></i>
+                }
+                else if (isListener)
+                {
+                    <i class="fas fa-ticket"></i>
+                }
+                else
+                {
+                    <i class="fas fa-calendar-check"></i>
+                }
+            </div>
+
+            <div>
+                <div class="selection-label">
+                    @(isAdmin
+                        ? "Kurum Admini"
+                        : L("WorkspaceSelection", "Çalışma Alanı Seçimi"))
+                </div>
+
+                <h2 class="selection-title">
+                    @(isAdmin
+                        ? "Kurum Kongrelerim"
+                        : L("Welcome", "Hoş Geldiniz"))
+                </h2>
+
+                <p class="selection-description">
+                    @if (isAdmin)
+                    {
+                        <span>
+                            Kurumunuza bağlı kongreleri buradan seçebilir, kongre akışına geçebilir ve operasyon ekranlarını yönetebilirsiniz.
+                        </span>
+                    }
+                    else
+                    {
+                        <span>
+                            @L("SelectWorkspaceDescription", "İşlem yapmak istediğiniz çalışma alanını yani kongreyi aşağıdan seçiniz.")
+                        </span>
+                    }
+                </p>
+            </div>
+        </div>
+
+        <div class="selection-hero-actions">
+            @if (isAdmin)
+            {
+                <a href="/Dashboard"
+                   class="btn selection-light-btn">
+                    <i class="fas fa-gauge-high"></i>
+                    Admin Paneline Dön
+                </a>
+            }
+            else
+            {
+                <a href="/Home/Index#congress-list"
+                   class="btn selection-light-btn">
+                    <i class="fas fa-globe"></i>
+                    @L("DiscoverEvents", "Etkinlikleri Keşfet")
+                </a>
+            }
+        </div>
     </div>
 
-    <div class="search-wrapper">
-        <i class="fas fa-search search-icon"></i>
+    <div class="search-card">
+        <div class="search-wrapper">
+            <i class="fas fa-search search-icon"></i>
 
-        <input type="text"
-               id="conferenceSearch"
-               class="search-input"
-               placeholder="@L("SearchPlaceholder", "Kongre adı ile arama yapın...")" />
+            <input type="text"
+                   id="conferenceSearch"
+                   class="search-input"
+                   placeholder="@(isAdmin ? "Kongre adı, şehir veya kurum slug ile ara..." : L("SearchPlaceholder", "Kongre adı ile arama yapın..."))" />
+        </div>
     </div>
 
     @if (!hasAnyConference)
     {
-        <div class="col-12 text-center py-4">
+        <div class="empty-state-card">
             <div class="empty-state-icon">
-                <i class="far fa-folder-open fa-4x text-muted opacity-50"></i>
+                <i class="far fa-folder-open"></i>
             </div>
 
             <h3 class="fw-bold text-dark">
-                @L("NoConferenceTitle", "Henüz görüntülenebilir kongre bulunamadı")
+                @(isAdmin
+                    ? "Kurumunuza bağlı kongre bulunamadı"
+                    : L("NoConferenceTitle", "Henüz görüntülenebilir kongre bulunamadı"))
             </h3>
 
             <p class="text-muted mb-4">
-                @L("NoConferenceDescription", "Şu anda kayıtlı olduğunuz veya kayıt olabileceğiniz aktif bir kongre bulunmuyor.")
+                @if (isAdmin)
+                {
+                    <span>
+                        Admin hesabınız bir kuruma bağlı olabilir ancak bu kuruma ait kongre henüz tanımlanmamış görünüyor.
+                    </span>
+                }
+                else
+                {
+                    <span>
+                        @L("NoConferenceDescription", "Şu anda kayıtlı olduğunuz veya kayıt olabileceğiniz aktif bir kongre bulunmuyor.")
+                    </span>
+                }
             </p>
 
-            <a href="/Home/Index#congress-list" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
-                @L("DiscoverEvents", "Etkinlikleri Keşfet")
-            </a>
+            @if (!isAdmin)
+            {
+                <a href="/Home/Index#congress-list"
+                   class="btn selection-primary-btn">
+                    <i class="fas fa-compass"></i>
+                    @L("DiscoverEvents", "Etkinlikleri Keşfet")
+                </a>
+            }
         </div>
     }
     else
     {
-        @if (!hasRegisteredConferences)
+        @if (!hasRegisteredConferences && !isAdmin)
         {
             <div class="empty-mini-state">
                 <div class="empty-mini-icon">
@@ -583,14 +941,27 @@
         @if (hasRegisteredConferences)
         {
             <section class="section-block conference-section">
-                <div class="section-header">
+                <div class="section-header-card">
                     <div>
                         <h3 class="section-title">
-                            @L("RegisteredConferencesTitle", "Kayıtlı Olduğum Kongreler")
+                            @(isAdmin
+                                ? "Kurumuma Bağlı Kongreler"
+                                : L("RegisteredConferencesTitle", "Kayıtlı Olduğum Kongreler"))
                         </h3>
 
                         <p class="section-subtitle">
-                            @L("RegisteredConferencesDescription", "Bu kongrelerde panelinize geçiş yapabilir ve işlemlerinize devam edebilirsiniz.")
+                            @if (isAdmin)
+                            {
+                                <span>
+                                    Bu kongreleri seçerek bildiri, hakem, karar, kayıt ve program süreçlerini yönetebilirsiniz.
+                                </span>
+                            }
+                            else
+                            {
+                                <span>
+                                    @L("RegisteredConferencesDescription", "Bu kongrelerde panelinize geçiş yapabilir ve işlemlerinize devam edebilirsiniz.")
+                                </span>
+                            }
                         </p>
                     </div>
 
@@ -599,95 +970,202 @@
                     </span>
                 </div>
 
-                <div class="row g-4 justify-content-center conference-grid">
+                <div class="row g-4 conference-grid">
                     @foreach (var kongre in registeredConferences)
                     {
                         var tenantSlug = GetConferenceSlug(kongre);
-                        var effectiveReturnUrl = GetSubmissionIndexUrl(tenantSlug);
                         var isSelected = selectedConferenceId.HasValue && selectedConferenceId.Value == kongre.Id;
                         var hasLogo = !string.IsNullOrWhiteSpace(kongre.LogoPath);
                         var firstLetter = GetFirstLetter(kongre);
                         var cityText = GetCityText(kongre);
                         var websiteUrl = GetWebsiteUrl(tenantSlug);
+                        var dashboardUrl = GetDashboardUrl(tenantSlug);
+                        var conferenceFlowUrl = GetConferenceFlowUrl(kongre);
+                        var adminSubmissionsUrl = GetAdminSubmissionsUrl(kongre);
+                        var adminAssignmentUrl = GetAdminAssignmentUrl(kongre);
+                        var submissionIndexUrl = GetSubmissionIndexUrl(tenantSlug);
+                        var submissionCreateUrl = GetSubmissionCreateUrl(tenantSlug);
+                        var paymentUrl = GetPaymentUrl(tenantSlug);
+                        var paymentsUrl = GetPaymentsUrl(tenantSlug);
+                        var statusText = GetConferenceStatusText(kongre);
+                        var statusClass = GetConferenceStatusClass(kongre);
 
-                        <div class="col-md-6 col-lg-4 col-xl-4 conf-item">
-                            <div class="conf-card p-4 @(isSelected ? "active" : "")">
+                        var effectiveReturnUrl = isAdmin
+                            ? conferenceFlowUrl
+                            : submissionIndexUrl;
 
-                                @if (isSelected)
-                                {
-                                    <span class="active-badge">
-                                        @L("Active", "Aktif")
-                                    </span>
-                                }
+                        <div class="col-md-6 col-xl-4 conf-item">
+                            <div class="conference-card @(isSelected ? "selected" : "")">
+                                <div class="conference-card-body">
 
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div class="logo-wrapper">
-                                        @if (hasLogo)
-                                        {
-                                            <img src="@kongre.LogoPath" alt="@kongre.Title" />
-                                        }
-                                        else
-                                        {
-                                            <span class="logo-placeholder">@firstLetter</span>
-                                        }
-                                    </div>
-
-                                    @if (!string.IsNullOrWhiteSpace(tenantSlug))
+                                    @if (isSelected)
                                     {
-                                        <span class="badge bg-light text-secondary border rounded-pill px-3 tenant-badge">
-                                            @tenantSlug
+                                        <span class="status-floating-badge selected-badge">
+                                            <i class="fas fa-check-circle"></i>
+                                            @L("Active", "Aktif")
                                         </span>
                                     }
-                                </div>
+                                    else
+                                    {
+                                        <span class="status-floating-badge @statusClass">
+                                            <i class="fas fa-circle"></i>
+                                            @statusText
+                                        </span>
+                                    }
 
-                                <h5 class="fw-bold mb-3 conf-title">
-                                    @kongre.Title
-                                </h5>
-
-                                <div class="card-meta">
-                                    <i class="far fa-calendar-alt text-primary"></i>
-
-                                    <span class="fw-bold text-dark">
-                                        @kongre.StartDate.ToString("dd MMMM yyyy", CultureInfo.CurrentUICulture)
-                                    </span>
-                                </div>
-
-                                <div class="card-meta">
-                                    <i class="fas fa-map-marker-alt text-danger"></i>
-
-                                    <span>
-                                        @cityText
-                                    </span>
-                                </div>
-
-                                <div class="footer-actions">
-                                    <form action="/Dashboard/SelectConferencePost"
-                                          method="post"
-                                          class="d-grid">
-
-                                        @Html.AntiForgeryToken()
-
-                                        <input type="hidden" name="conferenceId" value="@kongre.Id" />
-                                        <input type="hidden" name="returnUrl" value="@effectiveReturnUrl" />
-
-                                        <button type="submit" class="btn-select-start @(isSelected ? "active-btn" : "")">
-                                            @if (isSelected)
+                                    <div class="card-top-row">
+                                        <div class="logo-wrapper">
+                                            @if (hasLogo)
                                             {
-                                                <span>@L("ReturnToPanelActive", "Panele Dön")</span>
-                                                <i class="fas fa-sign-in-alt"></i>
+                                                <img src="@kongre.LogoPath" alt="@kongre.Title" />
                                             }
                                             else
                                             {
-                                                <span>@L("SelectAndStart", "Seç ve Başla")</span>
-                                                <i class="fas fa-arrow-right"></i>
+                                                <span class="logo-placeholder">@firstLetter</span>
                                             }
-                                        </button>
-                                    </form>
+                                        </div>
 
-                                    <a href="@websiteUrl" target="_blank" class="btn-secondary-custom">
-                                        <i class="fas fa-external-link-alt small"></i>
-                                        <span>@L("Website", "Web Sitesi")</span>
-                                    </a>
+                                        @if (!string.IsNullOrWhiteSpace(tenantSlug))
+                                        {
+                                            <span class="tenant-badge">
+                                                <i class="fas fa-link"></i>
+                                                @tenantSlug
+                                            </span>
+                                        }
+                                    </div>
+
+                                    <h5 class="conference-title conf-title">
+                                        @kongre.Title
+                                    </h5>
+
+                                    <div class="card-meta-list">
+                                        <div class="card-meta">
+                                            <i class="far fa-calendar-alt text-primary"></i>
+
+                                            <span>
+                                                @GetDateRange(kongre)
+                                            </span>
+                                        </div>
+
+                                        <div class="card-meta">
+                                            <i class="fas fa-map-marker-alt text-danger"></i>
+
+                                            <span>
+                                                @cityText
+                                            </span>
+                                        </div>
+
+                                        @if (!string.IsNullOrWhiteSpace(kongre.Venue))
+                                        {
+                                            <div class="card-meta">
+                                                <i class="fas fa-building text-secondary"></i>
+
+                                                <span>
+                                                    @kongre.Venue
+                                                </span>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <div class="card-actions">
+                                        <form action="/Dashboard/SelectConferencePost"
+                                              method="post"
+                                              class="d-grid">
+
+                                            @Html.AntiForgeryToken()
+
+                                            <input type="hidden" name="conferenceId" value="@kongre.Id" />
+                                            <input type="hidden" name="returnUrl" value="@effectiveReturnUrl" />
+
+                                            <button type="submit"
+                                                    class="primary-action-btn">
+                                                @if (isAdmin)
+                                                {
+                                                    <span>
+                                                        @(isSelected ? "Kongre Akışına Dön" : "Seç ve Yönet")
+                                                    </span>
+                                                    <i class="fas fa-stream"></i>
+                                                }
+                                                else if (isSelected)
+                                                {
+                                                    <span>@L("ReturnToPanelActive", "Panele Dön")</span>
+                                                    <i class="fas fa-sign-in-alt"></i>
+                                                }
+                                                else
+                                                {
+                                                    <span>@L("SelectAndStart", "Seç ve Başla")</span>
+                                                    <i class="fas fa-arrow-right"></i>
+                                                }
+                                            </button>
+                                        </form>
+
+                                        @if (isAdmin)
+                                        {
+                                            <div class="admin-action-row">
+                                                <a href="@conferenceFlowUrl"
+                                                   class="small-action-btn">
+                                                    <i class="fas fa-stream"></i>
+                                                    Akış
+                                                </a>
+
+                                                <a href="@adminSubmissionsUrl"
+                                                   class="small-action-btn">
+                                                    <i class="fas fa-file-lines"></i>
+                                                    Bildiriler
+                                                </a>
+
+                                                <a href="@adminAssignmentUrl"
+                                                   class="small-action-btn">
+                                                    <i class="fas fa-user-check"></i>
+                                                    Hakem Ata
+                                                </a>
+                                            </div>
+
+                                            <a href="@websiteUrl"
+                                               target="_blank"
+                                               class="secondary-action-btn">
+                                                <i class="fas fa-arrow-up-right-from-square"></i>
+                                                Siteyi Gör
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <div class="author-action-row">
+                                                <a href="@submissionIndexUrl"
+                                                   class="secondary-action-btn">
+                                                    <i class="fas fa-file-lines"></i>
+                                                    Bildirilerim
+                                                </a>
+
+                                                <a href="@submissionCreateUrl"
+                                                   class="secondary-action-btn">
+                                                    <i class="fas fa-paper-plane"></i>
+                                                    Bildiri Gönder
+                                                </a>
+
+                                                <a href="@paymentsUrl"
+                                                   class="secondary-action-btn">
+                                                    <i class="fas fa-receipt"></i>
+                                                    Ödemelerim
+                                                </a>
+                                            </div>
+
+                                            <div class="action-row">
+                                                <a href="@paymentUrl"
+                                                   class="secondary-action-btn">
+                                                    <i class="fas fa-credit-card"></i>
+                                                    Ödeme
+                                                </a>
+
+                                                <a href="@websiteUrl"
+                                                   target="_blank"
+                                                   class="secondary-action-btn">
+                                                    <i class="fas fa-arrow-up-right-from-square"></i>
+                                                    @L("Website", "Web Sitesi")
+                                                </a>
+                                            </div>
+                                        }
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -699,7 +1177,7 @@
         @if (hasSubmissionAvailableConferences)
         {
             <section class="section-block conference-section">
-                <div class="section-header">
+                <div class="section-header-card">
                     <div>
                         <h3 class="section-title">
                             @L("SubmissionAvailableConferencesTitle", "Bildiri Gönderebileceğim Kongreler")
@@ -715,7 +1193,7 @@
                     </span>
                 </div>
 
-                <div class="row g-4 justify-content-center conference-grid">
+                <div class="row g-4 conference-grid">
                     @foreach (var kongre in submissionAvailableConferenceList)
                     {
                         var tenantSlug = GetConferenceSlug(kongre);
@@ -724,64 +1202,73 @@
                         var cityText = GetCityText(kongre);
                         var websiteUrl = GetWebsiteUrl(tenantSlug);
                         var submissionCreateUrl = GetSubmissionCreateUrl(tenantSlug);
+                        var statusText = GetConferenceStatusText(kongre);
 
-                        <div class="col-md-6 col-lg-4 col-xl-4 conf-item">
-                            <div class="conf-card available p-4">
+                        <div class="col-md-6 col-xl-4 conf-item">
+                            <div class="conference-card available">
+                                <div class="conference-card-body">
 
-                                <span class="available-badge submission-badge">
-                                    @L("SubmissionOpen", "Başvuru Açık")
-                                </span>
+                                    <span class="status-floating-badge submission-badge">
+                                        <i class="fas fa-paper-plane"></i>
+                                        @L("SubmissionOpen", "Başvuru Açık")
+                                    </span>
 
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div class="logo-wrapper">
-                                        @if (hasLogo)
+                                    <div class="card-top-row">
+                                        <div class="logo-wrapper">
+                                            @if (hasLogo)
+                                            {
+                                                <img src="@kongre.LogoPath" alt="@kongre.Title" />
+                                            }
+                                            else
+                                            {
+                                                <span class="logo-placeholder">@firstLetter</span>
+                                            }
+                                        </div>
+
+                                        @if (!string.IsNullOrWhiteSpace(tenantSlug))
                                         {
-                                            <img src="@kongre.LogoPath" alt="@kongre.Title" />
-                                        }
-                                        else
-                                        {
-                                            <span class="logo-placeholder">@firstLetter</span>
+                                            <span class="tenant-badge">
+                                                <i class="fas fa-link"></i>
+                                                @tenantSlug
+                                            </span>
                                         }
                                     </div>
 
-                                    @if (!string.IsNullOrWhiteSpace(tenantSlug))
-                                    {
-                                        <span class="badge bg-light text-secondary border rounded-pill px-3 tenant-badge">
-                                            @tenantSlug
-                                        </span>
-                                    }
-                                </div>
+                                    <h5 class="conference-title conf-title">
+                                        @kongre.Title
+                                    </h5>
 
-                                <h5 class="fw-bold mb-3 conf-title">
-                                    @kongre.Title
-                                </h5>
+                                    <div class="card-meta-list">
+                                        <div class="card-meta">
+                                            <i class="far fa-calendar-alt text-primary"></i>
+                                            <span>@GetDateRange(kongre)</span>
+                                        </div>
 
-                                <div class="card-meta">
-                                    <i class="far fa-calendar-alt text-primary"></i>
+                                        <div class="card-meta">
+                                            <i class="fas fa-map-marker-alt text-danger"></i>
+                                            <span>@cityText</span>
+                                        </div>
 
-                                    <span class="fw-bold text-dark">
-                                        @kongre.StartDate.ToString("dd MMMM yyyy", CultureInfo.CurrentUICulture)
-                                    </span>
-                                </div>
+                                        <div class="card-meta">
+                                            <i class="fas fa-circle text-primary"></i>
+                                            <span>@statusText</span>
+                                        </div>
+                                    </div>
 
-                                <div class="card-meta">
-                                    <i class="fas fa-map-marker-alt text-danger"></i>
+                                    <div class="card-actions">
+                                        <a href="@submissionCreateUrl"
+                                           class="success-action-btn">
+                                            <span>@L("SubmitPaper", "Bildiri Gönder")</span>
+                                            <i class="fas fa-paper-plane"></i>
+                                        </a>
 
-                                    <span>
-                                        @cityText
-                                    </span>
-                                </div>
-
-                                <div class="footer-actions">
-                                    <a href="@submissionCreateUrl" class="btn-submit-paper">
-                                        <span>@L("SubmitPaper", "Bildiri Gönder")</span>
-                                        <i class="fas fa-paper-plane"></i>
-                                    </a>
-
-                                    <a href="@websiteUrl" target="_blank" class="btn-secondary-custom">
-                                        <i class="fas fa-external-link-alt small"></i>
-                                        <span>@L("Website", "Web Sitesi")</span>
-                                    </a>
+                                        <a href="@websiteUrl"
+                                           target="_blank"
+                                           class="secondary-action-btn">
+                                            <i class="fas fa-arrow-up-right-from-square"></i>
+                                            <span>@L("Website", "Web Sitesi")</span>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -793,7 +1280,7 @@
         @if (hasRegistrationAvailableConferences)
         {
             <section class="section-block conference-section">
-                <div class="section-header">
+                <div class="section-header-card">
                     <div>
                         <h3 class="section-title">
                             @L("AvailableConferencesTitle", "Kayıt Olabileceğim Kongreler")
@@ -809,7 +1296,7 @@
                     </span>
                 </div>
 
-                <div class="row g-4 justify-content-center conference-grid">
+                <div class="row g-4 conference-grid">
                     @foreach (var kongre in registrationAvailableConferenceList)
                     {
                         var tenantSlug = GetConferenceSlug(kongre);
@@ -818,64 +1305,73 @@
                         var cityText = GetCityText(kongre);
                         var websiteUrl = GetWebsiteUrl(tenantSlug);
                         var registerUrl = GetRegistrationUrl(tenantSlug);
+                        var statusText = GetConferenceStatusText(kongre);
 
-                        <div class="col-md-6 col-lg-4 col-xl-4 conf-item">
-                            <div class="conf-card available p-4">
+                        <div class="col-md-6 col-xl-4 conf-item">
+                            <div class="conference-card available">
+                                <div class="conference-card-body">
 
-                                <span class="available-badge">
-                                    @L("Available", "Kayıt Açık")
-                                </span>
+                                    <span class="status-floating-badge open-badge">
+                                        <i class="fas fa-user-plus"></i>
+                                        @L("Available", "Kayıt Açık")
+                                    </span>
 
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div class="logo-wrapper">
-                                        @if (hasLogo)
+                                    <div class="card-top-row">
+                                        <div class="logo-wrapper">
+                                            @if (hasLogo)
+                                            {
+                                                <img src="@kongre.LogoPath" alt="@kongre.Title" />
+                                            }
+                                            else
+                                            {
+                                                <span class="logo-placeholder">@firstLetter</span>
+                                            }
+                                        </div>
+
+                                        @if (!string.IsNullOrWhiteSpace(tenantSlug))
                                         {
-                                            <img src="@kongre.LogoPath" alt="@kongre.Title" />
-                                        }
-                                        else
-                                        {
-                                            <span class="logo-placeholder">@firstLetter</span>
+                                            <span class="tenant-badge">
+                                                <i class="fas fa-link"></i>
+                                                @tenantSlug
+                                            </span>
                                         }
                                     </div>
 
-                                    @if (!string.IsNullOrWhiteSpace(tenantSlug))
-                                    {
-                                        <span class="badge bg-light text-secondary border rounded-pill px-3 tenant-badge">
-                                            @tenantSlug
-                                        </span>
-                                    }
-                                </div>
+                                    <h5 class="conference-title conf-title">
+                                        @kongre.Title
+                                    </h5>
 
-                                <h5 class="fw-bold mb-3 conf-title">
-                                    @kongre.Title
-                                </h5>
+                                    <div class="card-meta-list">
+                                        <div class="card-meta">
+                                            <i class="far fa-calendar-alt text-primary"></i>
+                                            <span>@GetDateRange(kongre)</span>
+                                        </div>
 
-                                <div class="card-meta">
-                                    <i class="far fa-calendar-alt text-primary"></i>
+                                        <div class="card-meta">
+                                            <i class="fas fa-map-marker-alt text-danger"></i>
+                                            <span>@cityText</span>
+                                        </div>
 
-                                    <span class="fw-bold text-dark">
-                                        @kongre.StartDate.ToString("dd MMMM yyyy", CultureInfo.CurrentUICulture)
-                                    </span>
-                                </div>
+                                        <div class="card-meta">
+                                            <i class="fas fa-circle text-primary"></i>
+                                            <span>@statusText</span>
+                                        </div>
+                                    </div>
 
-                                <div class="card-meta">
-                                    <i class="fas fa-map-marker-alt text-danger"></i>
+                                    <div class="card-actions">
+                                        <a href="@registerUrl"
+                                           class="register-action-btn">
+                                            <span>@L("GoToRegistrationPage", "Kayıt Ol")</span>
+                                            <i class="fas fa-user-plus"></i>
+                                        </a>
 
-                                    <span>
-                                        @cityText
-                                    </span>
-                                </div>
-
-                                <div class="footer-actions">
-                                    <a href="@registerUrl" class="btn-register">
-                                        <span>@L("GoToRegistrationPage", "Kayıt Ol")</span>
-                                        <i class="fas fa-user-plus"></i>
-                                    </a>
-
-                                    <a href="@websiteUrl" target="_blank" class="btn-secondary-custom">
-                                        <i class="fas fa-external-link-alt small"></i>
-                                        <span>@L("Website", "Web Sitesi")</span>
-                                    </a>
+                                        <a href="@websiteUrl"
+                                           target="_blank"
+                                           class="secondary-action-btn">
+                                            <i class="fas fa-arrow-up-right-from-square"></i>
+                                            <span>@L("Website", "Web Sitesi")</span>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -887,9 +1383,13 @@
         <div id="noResults" class="no-results">
             <i class="fas fa-search fa-3x mb-3 opacity-25"></i>
 
-            <h4>
+            <h4 class="fw-bold text-dark">
                 @L("NoSearchResults", "Aramanıza uygun kongre bulunamadı.")
             </h4>
+
+            <p class="mb-0">
+                Farklı bir kongre adı, şehir veya slug ile tekrar arama yapabilirsiniz.
+            </p>
         </div>
     }
 </div>
@@ -912,16 +1412,9 @@
                 let hasVisible = false;
 
                 items.forEach(function (item) {
-                    const titleElement = item.querySelector('.conf-title');
+                    const text = item.innerText.toLowerCase();
 
-                    if (!titleElement) {
-                        item.style.display = 'none';
-                        return;
-                    }
-
-                    const title = titleElement.innerText.toLowerCase();
-
-                    if (title.includes(input)) {
+                    if (text.includes(input)) {
                         item.style.display = '';
                         hasVisible = true;
                     } else {

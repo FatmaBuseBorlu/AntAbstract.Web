@@ -1,12 +1,24 @@
 ﻿@model IEnumerable<AntAbstract.Domain.Entities.SystemParameter>
+
+@using System
+@using System.Linq
+@using AntAbstract.Domain.Entities
+
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
+    var parameters = Model?.ToList() ?? new List<SystemParameter>();
+
     var activeGroup = ViewBag.ActiveGroup?.ToString() ?? "University";
     var deleteConfirmMessage = Localizer["DeleteConfirmMessage"].Value;
+
+    var totalCount = parameters.Count;
+    var activeCount = parameters.Count(x => x.IsActive);
+    var passiveCount = parameters.Count(x => !x.IsActive);
+    var selectedGroupCount = parameters.Count(x => x.Group == activeGroup);
 
     var tabData = new[]
     {
@@ -47,49 +59,232 @@
 
 <style>
     .system-parameters-page {
+        padding: 2rem 1.5rem 4rem;
         font-family: 'Plus Jakarta Sans', sans-serif;
-        padding-bottom: 2rem;
     }
 
-    .system-parameters-header {
+    .admin-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%),
+                    linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        padding: 1.45rem 1.55rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.055);
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         justify-content: space-between;
-        gap: 1rem;
-        margin-bottom: 1.35rem;
+        gap: 1.5rem;
     }
 
-    .system-parameters-label {
+    .admin-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 0;
+    }
+
+    .admin-hero-icon {
+        width: 62px;
+        height: 62px;
+        min-width: 62px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.45rem;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
+    }
+
+    .admin-hero-kicker {
         color: #64748b;
-        font-size: 0.78rem;
+        font-size: 0.76rem;
         font-weight: 900;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        margin-bottom: 0.3rem;
-    }
-
-    .system-parameters-title {
-        color: #0f172a;
-        font-size: 1.85rem;
-        font-weight: 950;
-        letter-spacing: -0.05em;
         margin-bottom: 0.35rem;
     }
 
-    .system-parameters-lead {
+    .admin-hero-title {
+        color: #0f172a;
+        font-size: 1.65rem;
+        font-weight: 900;
+        letter-spacing: -0.6px;
+        margin-bottom: 0.25rem;
+        line-height: 1.2;
+    }
+
+    .admin-hero-lead {
         color: #64748b;
-        font-size: 0.92rem;
+        font-size: 0.95rem;
         font-weight: 650;
-        line-height: 1.65;
         margin-bottom: 0;
+        line-height: 1.6;
+        max-width: 860px;
+    }
+
+    .admin-hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .admin-hero-btn {
+        min-height: 42px;
+        border-radius: 999px;
+        padding: 0 1rem;
+        font-size: 0.84rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .admin-hero-btn-light {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+    }
+
+    .admin-hero-btn-light:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .admin-hero-btn-primary {
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        border: none;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.18);
+    }
+
+    .admin-hero-btn-primary:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(13, 110, 253, 0.26);
+        text-decoration: none;
+    }
+
+    .admin-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.4rem;
+    }
+
+    .admin-stat-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        padding: 1.05rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        min-height: 96px;
+    }
+
+    .admin-stat-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .stat-blue {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .stat-green {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+    }
+
+    .stat-slate {
+        background: rgba(100, 116, 139, 0.12);
+        color: #64748b;
+    }
+
+    .stat-cyan {
+        background: rgba(0, 174, 239, 0.10);
+        color: #0284c7;
+    }
+
+    .admin-stat-value {
+        color: #0f172a;
+        font-size: 1.35rem;
+        font-weight: 900;
+        line-height: 1.1;
+    }
+
+    .admin-stat-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 850;
+        margin-top: 0.25rem;
     }
 
     .system-parameters-card {
         background: #ffffff;
-        border: 1px solid #e8eef6;
-        border-radius: 28px;
-        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
         overflow: hidden;
+    }
+
+    .system-card-header {
+        padding: 1.15rem 1.35rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .system-card-title {
+        color: #0f172a;
+        font-size: 1.08rem;
+        font-weight: 900;
+        margin: 0 0 0.25rem;
+    }
+
+    .system-card-subtitle {
+        color: #64748b;
+        font-size: 0.86rem;
+        font-weight: 650;
+        line-height: 1.55;
+        margin-bottom: 0;
+    }
+
+    .system-card-count {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0 0.8rem;
+        border-radius: 999px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 0.78rem;
+        font-weight: 900;
     }
 
     .system-tabs {
@@ -359,8 +554,44 @@
         font-weight: 700;
     }
 
+    @@media (max-width: 1200px) {
+        .admin-stat-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 992px) {
+        .admin-hero {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .admin-hero-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+    }
+
     @@media (max-width: 768px) {
-        .system-parameters-header {
+        .system-parameters-page {
+            padding: 1.5rem 1rem 3rem;
+        }
+
+        .admin-hero-left {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .admin-hero-title {
+            font-size: 1.45rem;
+        }
+
+        .admin-stat-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .system-card-header {
+            align-items: flex-start;
             flex-direction: column;
         }
 
@@ -378,23 +609,127 @@
 
 <div class="system-parameters-page">
 
-    <div class="system-parameters-header">
-        <div>
-            <div class="system-parameters-label">
-                Sistem
+    <div class="admin-hero">
+        <div class="admin-hero-left">
+            <div class="admin-hero-icon">
+                <i class="fas fa-sliders-h"></i>
             </div>
 
-            <h3 class="system-parameters-title">
-                @Localizer["PageTitle"]
-            </h3>
+            <div>
+                <div class="admin-hero-kicker">
+                    Sistem
+                </div>
 
-            <p class="system-parameters-lead">
-                @Localizer["PageLead"]
-            </p>
+                <h3 class="admin-hero-title">
+                    @Localizer["PageTitle"]
+                </h3>
+
+                <p class="admin-hero-lead">
+                    @Localizer["PageLead"]
+                </p>
+            </div>
+        </div>
+
+        <div class="admin-hero-actions">
+            <a asp-action="Create"
+               asp-route-group="@activeGroup"
+               class="admin-hero-btn admin-hero-btn-primary">
+                <i class="fas fa-plus"></i>
+                @Localizer["AddNewButton"]
+            </a>
+
+            <a href="/Admin/AllConferences"
+               class="admin-hero-btn admin-hero-btn-light">
+                <i class="fas fa-calendar-alt"></i>
+                Tüm Kongreler
+            </a>
+        </div>
+    </div>
+
+    <div class="admin-stat-grid">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-blue">
+                <i class="fas fa-database"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @totalCount
+                </div>
+
+                <div class="admin-stat-label">
+                    Toplam Parametre
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-green">
+                <i class="fas fa-check-circle"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @activeCount
+                </div>
+
+                <div class="admin-stat-label">
+                    Aktif Parametre
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-slate">
+                <i class="fas fa-circle-minus"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @passiveCount
+                </div>
+
+                <div class="admin-stat-label">
+                    Pasif Parametre
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-cyan">
+                <i class="fas fa-layer-group"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @selectedGroupCount
+                </div>
+
+                <div class="admin-stat-label">
+                    Seçili Grup
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="system-parameters-card">
+        <div class="system-card-header">
+            <div>
+                <h5 class="system-card-title">
+                    Parametre Listesi
+                </h5>
+
+                <p class="system-card-subtitle">
+                    Üniversite, fakülte, bölüm ve unvan parametrelerini sekmeler üzerinden yönetebilirsiniz.
+                </p>
+            </div>
+
+            <span class="system-card-count">
+                <i class="fas fa-list-ul"></i>
+                @totalCount kayıt
+            </span>
+        </div>
+
         <div class="system-tabs">
             <ul class="nav nav-tabs nav-justified border-0"
                 id="paramTabs"
@@ -434,7 +769,7 @@
                     activeGroup,
                     StringComparison.OrdinalIgnoreCase);
 
-                var items = Model
+                var items = parameters
                     .Where(x => x.Group == tab.Group)
                     .OrderBy(x => x.Order)
                     .ThenBy(x => x.Name)

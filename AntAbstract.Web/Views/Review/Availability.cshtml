@@ -1,4 +1,7 @@
-﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+﻿@using System
+@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Routing
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -13,9 +16,17 @@
             : value;
     }
 
+    var slug = Context.GetRouteValue("slug")?.ToString() ?? "";
+    var conferenceTitle = Context.Session.GetString("SelectedConferenceTitle") ?? "";
+
+    var postUrl = string.IsNullOrWhiteSpace(slug)
+        ? "/Review/Availability"
+        : $"/{slug}/Review/Availability";
+
     DateTime? unavailableStartDate = ViewBag.UnavailableStartDate as DateTime?;
     DateTime? unavailableEndDate = ViewBag.UnavailableEndDate as DateTime?;
     string unavailableReason = ViewBag.UnavailableReason as string ?? "";
+
     var hasAvailabilityRecord = unavailableStartDate.HasValue && unavailableEndDate.HasValue;
     var availabilityStart = unavailableStartDate.GetValueOrDefault();
     var availabilityEnd = unavailableEndDate.GetValueOrDefault();
@@ -24,103 +35,138 @@
 
 <style>
     .review-settings-page {
-        max-width: 1180px;
-        margin: 0 auto;
-        padding: 1.25rem 1.5rem 4rem;
+        padding: 2rem 1.5rem 4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
-    .settings-hero {
-        background: radial-gradient(circle at top right, rgba(239, 68, 68, 0.14), transparent 34%), linear-gradient(135deg, #ffffff 0%, #fff8f8 100%);
-        border: 1px solid #f1dede;
+    .program-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%),
+                    linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e2e8f0;
         border-radius: 26px;
         padding: 1.45rem 1.55rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.055);
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 1rem;
-        flex-wrap: wrap;
-        box-shadow: 0 16px 38px rgba(15, 23, 42, 0.055);
-        margin-bottom: 1.5rem;
+        gap: 1.5rem;
     }
 
-    .settings-hero-left {
+    .program-hero-left {
         display: flex;
         align-items: center;
         gap: 1rem;
-        min-width: 280px;
-        flex: 1;
+        min-width: 0;
     }
 
-    .settings-hero-icon {
-        width: 66px;
-        height: 66px;
-        min-width: 66px;
-        border-radius: 24px;
-        background: linear-gradient(135deg, #ef4444, #f97316);
+    .program-hero-icon {
+        width: 62px;
+        height: 62px;
+        min-width: 62px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
         color: #ffffff;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.6rem;
-        box-shadow: 0 16px 32px rgba(239, 68, 68, 0.20);
+        font-size: 1.45rem;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
     }
 
-    .settings-kicker {
-        color: #64748b;
-        font-size: 0.76rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        margin-bottom: 0.35rem;
-    }
-
-    .settings-title {
-        margin: 0 0 0.35rem;
+    .program-title {
         color: #0f172a;
-        font-size: 1.8rem;
-        font-weight: 950;
-        letter-spacing: -0.045em;
-        line-height: 1.15;
+        font-size: 1.65rem;
+        font-weight: 900;
+        letter-spacing: -0.6px;
+        margin-bottom: 0.25rem;
+        line-height: 1.2;
     }
 
-    .settings-description {
-        margin: 0;
+    .program-lead {
         color: #64748b;
         font-size: 0.95rem;
         font-weight: 650;
+        margin-bottom: 0;
         line-height: 1.6;
+        max-width: 780px;
+    }
+
+    .program-conference-pill {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border-radius: 999px;
+        background: #ffffff;
+        border: 1px solid #dbe4ef;
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 900;
+        padding: 0 0.95rem;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.045);
+        max-width: 380px;
+    }
+
+    .program-conference-pill span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .program-conference-pill i {
+        color: #00aeef;
     }
 
     .settings-card {
         background: #ffffff;
         border: 1px solid #e2e8f0;
-        border-radius: 28px;
-        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.065);
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
         overflow: hidden;
         height: 100%;
     }
 
     .settings-card-header {
-        padding: 1.25rem 1.45rem;
+        padding: 1.15rem 1.35rem;
         border-bottom: 1px solid #e2e8f0;
         background: linear-gradient(135deg, #ffffff, #f8fbff);
     }
 
     .settings-card-title {
         color: #0f172a;
-        font-weight: 950;
-        margin-bottom: 0.25rem;
+        font-size: 1.05rem;
+        font-weight: 900;
+        margin: 0 0 0.25rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .settings-card-title i {
+        color: #00aeef;
     }
 
     .settings-card-subtitle {
         color: #64748b;
-        font-size: 0.84rem;
+        font-size: 0.86rem;
         font-weight: 650;
+        line-height: 1.55;
         margin-bottom: 0;
     }
 
     .settings-card-body {
-        padding: 1.5rem;
+        padding: 1.35rem;
+    }
+
+    .review-alert {
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        border: none;
+        border-radius: 18px;
+        font-weight: 850;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.045);
     }
 
     .form-label-custom {
@@ -133,12 +179,20 @@
     }
 
     .form-control-custom {
+        min-height: 52px;
         border: 1px solid #e2e8f0;
         background: #f8fafc;
         border-radius: 16px;
         padding: 0.9rem 1rem;
-        font-weight: 700;
+        font-weight: 750;
         color: #334155;
+        box-shadow: none;
+        transition: all 0.2s ease;
+    }
+
+    .form-control-custom::placeholder {
+        color: #94a3b8;
+        font-weight: 650;
     }
 
     .form-control-custom:focus {
@@ -148,10 +202,22 @@
     }
 
     .save-btn {
-        min-height: 48px;
+        min-height: 52px;
+        border: none;
         border-radius: 999px;
         font-weight: 950;
-        box-shadow: 0 14px 28px rgba(239, 68, 68, 0.18);
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        box-shadow: 0 14px 28px rgba(13, 110, 253, 0.18);
+        transition: all 0.2s ease;
+    }
+
+    .save-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 18px 34px rgba(13, 110, 253, 0.26);
+    }
+
+    .availability-list {
+        padding: 0.4rem;
     }
 
     .availability-item {
@@ -160,28 +226,29 @@
         justify-content: space-between;
         gap: 1rem;
         padding: 1.1rem 1.25rem;
-        border-bottom: 1px solid #edf2f7;
-    }
-
-    .availability-item:last-child {
-        border-bottom: none;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        background: #ffffff;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.035);
     }
 
     .availability-item.upcoming {
-        background: rgba(239, 68, 68, 0.07);
-        border-left: 5px solid #ef4444;
+        background: linear-gradient(135deg, rgba(0, 174, 239, 0.08), rgba(255, 255, 255, 0.95));
+        border-color: rgba(0, 174, 239, 0.22);
     }
 
     .availability-date {
         color: #0f172a;
+        font-size: 1rem;
         font-weight: 950;
         margin-bottom: 0.25rem;
     }
 
     .availability-reason {
         color: #64748b;
-        font-size: 0.82rem;
+        font-size: 0.84rem;
         font-weight: 750;
+        line-height: 1.55;
     }
 
     .status-badge {
@@ -189,15 +256,16 @@
         align-items: center;
         gap: 0.35rem;
         border-radius: 999px;
-        padding: 0.35rem 0.65rem;
+        padding: 0.38rem 0.7rem;
         font-size: 0.72rem;
         font-weight: 950;
-        margin-bottom: 0.55rem;
+        margin-bottom: 0.6rem;
     }
 
     .status-badge.upcoming {
-        background: #ef4444;
-        color: #ffffff;
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        border: 1px solid rgba(13, 110, 253, 0.16);
     }
 
     .status-badge.completed {
@@ -206,49 +274,84 @@
         border: 1px solid rgba(100, 116, 139, 0.16);
     }
 
-    .cancel-btn {
-        width: 38px;
-        height: 38px;
-        min-width: 38px;
-        border-radius: 999px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
     .coming-soon-box {
-        margin-top: 1.5rem;
+        margin-top: 1.4rem;
         background: #f8fafc;
         border: 1px dashed #cbd5e1;
         border-radius: 22px;
         padding: 1rem;
         color: #64748b;
         font-size: 0.86rem;
-        font-weight: 700;
+        font-weight: 750;
         line-height: 1.6;
     }
 
     .review-empty-card {
         border: 1px dashed #cbd5e1;
         border-radius: 22px;
-        padding: 2rem 1rem;
+        padding: 2.5rem 1rem;
         text-align: center;
         background: #f8fafc;
+        margin: 1.35rem;
+    }
+
+    .empty-icon {
+        width: 82px;
+        height: 82px;
+        border-radius: 28px;
+        background: #ffffff;
+        color: #cbd5e1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.4rem;
+        box-shadow: 0 14px 30px rgba(15, 23, 42, 0.045);
+        margin-bottom: 1rem;
+    }
+
+    .empty-title {
+        color: #0f172a;
+        font-size: 1.05rem;
+        font-weight: 900;
+        margin-bottom: 0.4rem;
+    }
+
+    .empty-text {
+        color: #64748b;
+        font-size: 0.86rem;
+        font-weight: 650;
+        line-height: 1.65;
+        max-width: 520px;
+        margin: 0 auto;
+    }
+
+    @@media (max-width: 992px) {
+        .program-hero {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .program-conference-pill {
+            max-width: 100%;
+        }
     }
 
     @@media (max-width: 768px) {
         .review-settings-page {
-            padding: 1rem 1rem 3rem;
+            padding: 1.5rem 1rem 3rem;
         }
 
-        .settings-hero-left {
+        .program-hero-left {
             flex-direction: column;
             align-items: flex-start;
-            min-width: 100%;
         }
 
-        .settings-title {
+        .program-title {
             font-size: 1.45rem;
+        }
+
+        .settings-card-body {
+            padding: 1.1rem;
         }
 
         .availability-item {
@@ -260,26 +363,37 @@
 
 <div class="review-settings-page">
 
-    <div class="settings-hero">
-        <div class="settings-hero-left">
-            <div class="settings-hero-icon">
+    <div class="program-hero">
+        <div class="program-hero-left">
+            <div class="program-hero-icon">
                 <i class="fas fa-calendar-times"></i>
             </div>
 
             <div>
-                <div class="settings-kicker">
-                    @L("HeaderKicker", "Hakem Profili")
-                </div>
-
-                <h1 class="settings-title">
+                <h3 class="program-title">
                     @L("PageHeading", "Müsaitlik Durumum")
-                </h1>
+                </h3>
 
-                <p class="settings-description">
+                <p class="program-lead">
                     @L("PageDescription", "Değerlendirme yapamayacağınız tarih aralıklarını buradan belirleyebilirsiniz.")
                 </p>
             </div>
         </div>
+
+        @if (!string.IsNullOrWhiteSpace(conferenceTitle))
+        {
+            <div class="program-conference-pill">
+                <i class="fas fa-calendar-check"></i>
+                <span>@conferenceTitle</span>
+            </div>
+        }
+        else if (!string.IsNullOrWhiteSpace(slug))
+        {
+            <div class="program-conference-pill">
+                <i class="fas fa-link"></i>
+                <span>/@slug</span>
+            </div>
+        }
     </div>
 
     <div class="row g-4">
@@ -287,7 +401,7 @@
             <div class="settings-card">
                 <div class="settings-card-header">
                     <h5 class="settings-card-title">
-                        <i class="fas fa-calendar-plus text-danger me-2"></i>
+                        <i class="fas fa-calendar-plus me-2"></i>
                         @L("CreateLeaveTitle", "Müsait Olmadığım Tarih Ekle")
                     </h5>
 
@@ -299,21 +413,21 @@
                 <div class="settings-card-body">
                     @if (TempData["SuccessMessage"] != null)
                     {
-                        <div class="alert alert-success rounded-3 border-0 shadow-sm mb-4">
-                            <i class="fas fa-check-circle me-2"></i>
+                        <div class="alert alert-success review-alert mb-4">
+                            <i class="fas fa-check-circle"></i>
                             @TempData["SuccessMessage"]
                         </div>
                     }
 
                     @if (TempData["ErrorMessage"] != null)
                     {
-                        <div class="alert alert-danger rounded-3 border-0 shadow-sm mb-4">
-                            <i class="fas fa-times-circle me-2"></i>
+                        <div class="alert alert-danger review-alert mb-4">
+                            <i class="fas fa-times-circle"></i>
                             @TempData["ErrorMessage"]
                         </div>
                     }
 
-                    <form asp-action="Availability" method="post">
+                    <form action="@postUrl" method="post">
                         @Html.AntiForgeryToken()
 
                         <div class="mb-3">
@@ -324,7 +438,7 @@
                             <input type="date"
                                    name="unavailableStartDate"
                                    value="@(unavailableStartDate?.ToString("yyyy-MM-dd"))"
-                                   class="form-control form-control-custom">
+                                   class="form-control form-control-custom" />
                         </div>
 
                         <div class="mb-3">
@@ -335,7 +449,7 @@
                             <input type="date"
                                    name="unavailableEndDate"
                                    value="@(unavailableEndDate?.ToString("yyyy-MM-dd"))"
-                                   class="form-control form-control-custom">
+                                   class="form-control form-control-custom" />
                         </div>
 
                         <div class="mb-4">
@@ -347,10 +461,10 @@
                                    name="unavailableReason"
                                    value="@unavailableReason"
                                    class="form-control form-control-custom"
-                                   placeholder="@L("ReasonPlaceholder", "Örn: Akademik seyahat, yoğunluk, izin...")">
+                                   placeholder="@L("ReasonPlaceholder", "Örn: Akademik seyahat, yoğunluk, izin...")" />
                         </div>
 
-                        <button class="btn btn-danger w-100 save-btn" type="submit">
+                        <button class="btn btn-primary w-100 save-btn" type="submit">
                             <i class="fas fa-check-circle me-2"></i>
                             @L("SaveLeaveButton", "Müsait Değilim Olarak Kaydet")
                         </button>
@@ -368,7 +482,7 @@
             <div class="settings-card">
                 <div class="settings-card-header">
                     <h5 class="settings-card-title">
-                        <i class="fas fa-history text-secondary me-2"></i>
+                        <i class="fas fa-history me-2"></i>
                         @L("LeaveHistoryTitle", "Müsaitlik Geçmişi")
                     </h5>
 
@@ -377,7 +491,7 @@
                     </p>
                 </div>
 
-                <div>
+                <div class="availability-list">
                     @if (hasAvailabilityRecord)
                     {
                         <div class="availability-item @(isUpcomingOrActive ? "upcoming" : "")">
@@ -386,39 +500,43 @@
                                     <i class="fas @(isUpcomingOrActive ? "fa-clock" : "fa-check-circle")"></i>
                                     @(isUpcomingOrActive
                                         ? L("UpcomingPlanBadge", "Yaklaşan / Aktif")
-                                        : L("CompletedBadge", "Tamamlandı"))
+                                        : L("CompletedPlanBadge", "Geçmiş"))
                                 </span>
 
-                                <h6 class="availability-date @(isUpcomingOrActive ? "" : "text-muted text-decoration-line-through")">
-                                    @availabilityStart.ToString("dd.MM.yyyy") - @availabilityEnd.ToString("dd.MM.yyyy")
-                                </h6>
+                                <div class="availability-date">
+                                    @availabilityStart.ToString("dd MMMM yyyy") - @availabilityEnd.ToString("dd MMMM yyyy")
+                                </div>
 
-                                <div class="availability-reason @(isUpcomingOrActive ? "text-danger" : "")">
-                                    <i class="fas fa-calendar-times me-1"></i>
+                                <div class="availability-reason">
                                     @(string.IsNullOrWhiteSpace(unavailableReason)
                                         ? L("NoReasonText", "Açıklama belirtilmedi.")
                                         : unavailableReason)
                                 </div>
                             </div>
-
-                            <i class="fas @(isUpcomingOrActive ? "fa-calendar-times text-danger" : "fa-check-circle text-success") fs-4 opacity-50"></i>
                         </div>
                     }
                     else
                     {
-                        <div class="review-empty-card m-4">
-                            <div class="text-muted">
-                                <i class="fas fa-calendar-check fa-2x mb-3 opacity-50"></i>
-                                <div class="fw-bold">
-                                    @L("NoAvailabilityRecordTitle", "Kayıtlı müsait olmama aralığınız yok")
-                                </div>
-                                <div class="small mt-1">
-                                    @L("NoAvailabilityRecordText", "Yeni atamalarda uygun kabul edilirsiniz.")
-                                </div>
+                        <div class="review-empty-card">
+                            <div class="empty-icon">
+                                <i class="fas fa-calendar-check"></i>
                             </div>
+
+                            <h5 class="empty-title">
+                                @L("NoAvailabilityRecordTitle", "Kayıtlı müsait olmama aralığı yok")
+                            </h5>
+
+                            <p class="empty-text">
+                                @L("NoAvailabilityRecordText", "Değerlendirme yapamayacağınız tarihleri eklediğinizde burada görüntülenecek.")
+                            </p>
                         </div>
                     }
                 </div>
+            </div>
+
+            <div class="coming-soon-box">
+                <i class="fas fa-lightbulb me-2 text-warning"></i>
+                @L("AvailabilityInfoText", "Müsaitlik bilgisi, ileride otomatik hakem atama sürecinde kullanılabilir.")
             </div>
         </div>
     </div>

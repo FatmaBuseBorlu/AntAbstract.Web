@@ -35,15 +35,25 @@
         shortDisplayName = shortDisplayName.Substring(0, 22).Trim() + "...";
     }
 
-    var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
-        ? user.ProfileImagePath
-        : $"https://ui-avatars.com/api/?name={Uri.EscapeDataString(displayName)}&background=00aeef&color=fff&size=128&bold=true";
+var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
+    ? user.ProfileImagePath
+    : $"https://ui-avatars.com/api/?name={Uri.EscapeDataString(displayName)}&background=00aeef&color=fff&size=128&font-size=0.35&bold=true";
 
     var isSuperAdmin = User.IsInRole("SuperAdmin");
     var isAdmin = User.IsInRole("Admin");
-    var isAuthor = User.IsInRole("Author");
-    var isListener = User.IsInRole("Listener");
-    var isReferee = User.IsInRole("Referee");
+
+    var isAuthor =
+        User.IsInRole("Author") ||
+        User.IsInRole("Yazar");
+
+    var isListener =
+        User.IsInRole("Listener") ||
+        User.IsInRole("Dinleyici");
+
+    var isReferee =
+        User.IsInRole("Referee") ||
+        User.IsInRole("Hakem") ||
+        User.IsInRole("Reviewer");
 
     var isManagementTeam = isAdmin || isSuperAdmin;
 
@@ -77,6 +87,16 @@
                 ?? Tc.Current?.Slug
                 ?? Context.Session.GetString("SelectedConferenceSlug")
                 ?? "";
+
+    string BuildConferenceUrl(string cleanPath, string fallbackPath)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+        {
+            return fallbackPath;
+        }
+
+        return $"/{slug}{cleanPath}";
+    }
 
     string? confIdStr = null;
 
@@ -113,127 +133,135 @@
             ? "/Dashboard/MyConferences"
             : isReferee && !isManagementTeam
                 ? "/Dashboard"
-                : string.IsNullOrWhiteSpace(slug)
-                    ? "/Dashboard"
-                    : $"/{slug}/Dashboard";
+                : BuildConferenceUrl("/Dashboard", "/Dashboard");
 
     var changeSelectedConferenceUrl = isSuperAdmin
         ? "/Admin/ConferenceFlow?forceSelect=true"
         : dashboardMyConferencesUrl;
 
-    var submissionsAdminUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Admin/Submissions"
-        : $"/{slug}/Admin/Submissions";
+    var submissionsAdminUrl = BuildConferenceUrl(
+        "/Admin/Submissions",
+        "/Admin/Submissions"
+    );
 
-    var submissionIndexUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Submission/Index"
-        : $"/{slug}/Submission/Index";
+    var submissionIndexUrl = BuildConferenceUrl(
+        "/my-submissions",
+        "/Submission/Index"
+    );
 
-    var submissionCreateUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Submission/Create"
-        : $"/{slug}/Submission/Create";
+    var submissionCreateUrl = BuildConferenceUrl(
+        "/submit-abstract",
+        "/Submission/Create"
+    );
 
     var reviewIndexUrl = isReferee && !isManagementTeam
         ? "/Review/Index"
-        : string.IsNullOrWhiteSpace(slug)
-            ? "/Review/Index"
-            : $"/{slug}/Review/Index";
+        : BuildConferenceUrl("/Review/Index", "/Review/Index");
 
     var reviewInterestsUrl = isReferee && !isManagementTeam
         ? "/Review/Interests"
-        : string.IsNullOrWhiteSpace(slug)
-            ? "/Review/Interests"
-            : $"/{slug}/Review/Interests";
+        : BuildConferenceUrl("/Review/Interests", "/Review/Interests");
 
     var reviewAvailabilityUrl = isReferee && !isManagementTeam
         ? "/Review/Availability"
-        : string.IsNullOrWhiteSpace(slug)
-            ? "/Review/Availability"
-            : $"/{slug}/Review/Availability";
+        : BuildConferenceUrl("/Review/Availability", "/Review/Availability");
 
     var reviewConflictsUrl = isReferee && !isManagementTeam
         ? "/Review/Conflicts"
-        : string.IsNullOrWhiteSpace(slug)
-            ? "/Review/Conflicts"
-            : $"/{slug}/Review/Conflicts";
+        : BuildConferenceUrl("/Review/Conflicts", "/Review/Conflicts");
 
     var reviewGuidelinesUrl = isReferee && !isManagementTeam
         ? "/Review/Guidelines"
-        : string.IsNullOrWhiteSpace(slug)
-            ? "/Review/Guidelines"
-            : $"/{slug}/Review/Guidelines";
+        : BuildConferenceUrl("/Review/Guidelines", "/Review/Guidelines");
 
     var certificatesIndexUrl = isReferee && !isManagementTeam
         ? "/Certificates"
-        : string.IsNullOrWhiteSpace(slug)
-            ? "/Certificates"
-            : $"/{slug}/Certificates";
+        : BuildConferenceUrl("/Certificates", "/Certificates");
 
     var messageIndexUrl = isReferee && !isManagementTeam
         ? "/Message/Index"
-        : string.IsNullOrWhiteSpace(slug)
-            ? "/Message/Index"
-            : $"/{slug}/Message/Index";
+        : BuildConferenceUrl("/Message/Index", "/Message/Index");
 
-    var paymentMyUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Payment/My"
-        : $"/{slug}/Payment/My";
+    var paymentMyUrl = BuildConferenceUrl(
+        "/payments",
+        "/Payment/My"
+    );
 
-    var accommodationUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Accommodation/Index"
-        : $"/{slug}/Accommodation/Index";
+    var paymentNewUrl = BuildConferenceUrl(
+        "/payment",
+        "/Payment/New"
+    );
 
-    var programUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Program/Index"
-        : $"/{slug}/Program/Index";
+    var accommodationUrl = BuildConferenceUrl(
+        "/Accommodation/Index",
+        "/Accommodation/Index"
+    );
 
-    var proceedingsUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Dashboard/ProceedingBook"
-        : $"/{slug}/Dashboard/ProceedingBook";
+    var programUrl = BuildConferenceUrl(
+        "/Program/Index",
+        "/Program/Index"
+    );
+
+    var proceedingsUrl = BuildConferenceUrl(
+        "/Dashboard/ProceedingBook",
+        "/Dashboard/ProceedingBook"
+    );
 
     var conferenceFlowUrl = isSuperAdmin
         ? hasSelectedConference && selectedConferenceId.HasValue && !string.IsNullOrWhiteSpace(slug)
             ? $"/{slug}/Admin/ConferenceFlow?conferenceId={selectedConferenceId.Value}"
             : "/Admin/ConferenceFlow?forceSelect=true"
-        : string.IsNullOrWhiteSpace(slug)
-            ? "/Admin/ConferenceFlow"
-            : $"/{slug}/Admin/ConferenceFlow";
+        : BuildConferenceUrl("/Admin/ConferenceFlow", "/Admin/ConferenceFlow");
 
-    var reportsUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Admin/Reports"
-        : $"/{slug}/Admin/Reports";
+    var reportsUrl = BuildConferenceUrl(
+        "/Admin/Reports",
+        "/Admin/Reports"
+    );
 
-    var assignmentUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Admin/Assignment"
-        : $"/{slug}/Admin/Assignment";
+    var assignmentUrl = BuildConferenceUrl(
+        "/Admin/Assignment",
+        "/Admin/Assignment"
+    );
 
-    var decisionUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Admin/Decision"
-        : $"/{slug}/Admin/Decision";
+    var decisionUrl = BuildConferenceUrl(
+        "/Admin/Decision",
+        "/Admin/Decision"
+    );
 
-    var sessionUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Admin/Session"
-        : $"/{slug}/Admin/Session";
+    var sessionUrl = BuildConferenceUrl(
+        "/Admin/Session",
+        "/Admin/Session"
+    );
 
-    var conferencesUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Admin/Conferences"
-        : $"/{slug}/Admin/Conferences";
+    var conferencesUrl = BuildConferenceUrl(
+        "/Admin/Conferences",
+        "/Admin/Conferences"
+    );
 
-    var registrationsUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Admin/Registrations"
-        : $"/{slug}/Admin/Registrations";
+    var registrationsUrl = BuildConferenceUrl(
+        "/Admin/Registrations",
+        "/Admin/Registrations"
+    );
 
-    var registrationTypesUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Admin/RegistrationTypes"
-        : $"/{slug}/Admin/RegistrationTypes";
+    var registrationTypesUrl = BuildConferenceUrl(
+        "/Admin/RegistrationTypes",
+        "/Admin/RegistrationTypes"
+    );
 
-    var conferenceTopicsUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Admin/ConferenceTopics"
-        : $"/{slug}/Admin/ConferenceTopics";
+    var conferenceTopicsUrl = BuildConferenceUrl(
+        "/Admin/ConferenceTopics",
+        "/Admin/ConferenceTopics"
+    );
 
-    var websiteAdminUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Admin/Website"
-        : $"/{slug}/Admin/Website";
+    var websiteAdminUrl = BuildConferenceUrl(
+        "/Admin/Website",
+        "/Admin/Website"
+    );
+
+    var refereeAdminUrl = BuildConferenceUrl(
+        "/Admin/Referee",
+        "/Admin/Referee"
+    );
 
     var headerBadgeText = isSuperAdmin
         ? L("Header_SystemManagement", "Sistem Yönetimi")
@@ -342,14 +370,14 @@
             list-style: none;
         }
 
-            .sidebar-menu::-webkit-scrollbar {
-                width: 5px;
-            }
+        .sidebar-menu::-webkit-scrollbar {
+            width: 5px;
+        }
 
-            .sidebar-menu::-webkit-scrollbar-thumb {
-                background: #e2e8f0;
-                border-radius: 10px;
-            }
+        .sidebar-menu::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
 
         .menu-label {
             font-size: 0.7rem;
@@ -360,9 +388,9 @@
             margin: 1.5rem 0 0.5rem 0.8rem;
         }
 
-            .menu-label:first-child {
-                margin-top: 0.5rem;
-            }
+        .menu-label:first-child {
+            margin-top: 0.5rem;
+        }
 
         .nav-link {
             display: flex;
@@ -377,23 +405,23 @@
             text-decoration: none;
         }
 
-            .nav-link:hover {
-                background-color: var(--menu-hover-bg);
-                color: var(--primary-color);
-                transform: translateX(3px);
-            }
+        .nav-link:hover {
+            background-color: var(--menu-hover-bg);
+            color: var(--primary-color);
+            transform: translateX(3px);
+        }
 
-            .nav-link.active {
-                background-color: var(--menu-active-bg);
-                color: var(--menu-active-text);
-            }
+        .nav-link.active {
+            background-color: var(--menu-active-bg);
+            color: var(--menu-active-text);
+        }
 
-            .nav-link i {
-                width: 24px;
-                font-size: 1rem;
-                margin-right: 0.8rem;
-                text-align: center;
-            }
+        .nav-link i {
+            width: 24px;
+            font-size: 1rem;
+            margin-right: 0.8rem;
+            text-align: center;
+        }
 
         .main-content {
             margin-left: var(--sidebar-width);
@@ -446,12 +474,12 @@
             box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
         }
 
-            .sidebar-toggle-btn:hover {
-                background-color: rgba(0, 174, 239, 0.08);
-                color: var(--primary-color);
-                border-color: rgba(0, 174, 239, 0.22);
-                transform: translateY(-1px);
-            }
+        .sidebar-toggle-btn:hover {
+            background-color: rgba(0, 174, 239, 0.08);
+            color: var(--primary-color);
+            border-color: rgba(0, 174, 239, 0.22);
+            transform: translateY(-1px);
+        }
 
         .dashboard-title-block {
             min-width: 0;
@@ -526,13 +554,13 @@
             white-space: nowrap;
         }
 
-            .dashboard-site-link:hover {
-                color: var(--primary-color);
-                background-color: #ffffff;
-                border-color: rgba(0, 174, 239, 0.28);
-                box-shadow: 0 10px 24px rgba(0, 174, 239, 0.10);
-                transform: translateY(-1px);
-            }
+        .dashboard-site-link:hover {
+            color: var(--primary-color);
+            background-color: #ffffff;
+            border-color: rgba(0, 174, 239, 0.28);
+            box-shadow: 0 10px 24px rgba(0, 174, 239, 0.10);
+            transform: translateY(-1px);
+        }
 
         .language-dropdown {
             display: inline-flex;
@@ -555,17 +583,17 @@
             transition: all 0.2s ease;
         }
 
-            .language-dropdown-btn:hover {
-                border-color: rgba(0, 174, 239, 0.28);
-                color: var(--primary-color);
-                background-color: #ffffff;
-                box-shadow: 0 10px 24px rgba(0, 174, 239, 0.10);
-                transform: translateY(-1px);
-            }
+        .language-dropdown-btn:hover {
+            border-color: rgba(0, 174, 239, 0.28);
+            color: var(--primary-color);
+            background-color: #ffffff;
+            box-shadow: 0 10px 24px rgba(0, 174, 239, 0.10);
+            transform: translateY(-1px);
+        }
 
-            .language-dropdown-btn .fa-globe {
-                color: #64748b;
-            }
+        .language-dropdown-btn .fa-globe {
+            color: #64748b;
+        }
 
         .language-chevron {
             font-size: 0.65rem;
@@ -583,13 +611,13 @@
             margin-top: 10px !important;
         }
 
-            .language-dropdown-menu form {
-                margin: 0;
-            }
+        .language-dropdown-menu form {
+            margin: 0;
+        }
 
-            .language-dropdown-menu li + li {
-                margin-top: 4px;
-            }
+        .language-dropdown-menu li + li {
+            margin-top: 4px;
+        }
 
         .language-dropdown-item {
             width: 100%;
@@ -606,11 +634,11 @@
             transition: all 0.2s ease;
         }
 
-            .language-dropdown-item:hover,
-            .language-dropdown-item.active {
-                background-color: rgba(0, 174, 239, 0.12);
-                color: var(--primary-color);
-            }
+        .language-dropdown-item:hover,
+        .language-dropdown-item.active {
+            background-color: rgba(0, 174, 239, 0.12);
+            color: var(--primary-color);
+        }
 
         .language-code {
             min-width: 22px;
@@ -641,10 +669,10 @@
             text-decoration: none;
         }
 
-            .header-icon-btn:hover {
-                background-color: #f1f5f9;
-                color: var(--primary-color);
-            }
+        .header-icon-btn:hover {
+            background-color: #f1f5f9;
+            color: var(--primary-color);
+        }
 
         .position-relative .badge-notify {
             position: absolute;
@@ -674,13 +702,13 @@
             color: var(--text-dark);
         }
 
-            .user-menu-btn:hover,
-            .user-menu-btn.show {
-                border-color: rgba(0, 174, 239, 0.32);
-                box-shadow: 0 12px 28px rgba(0, 174, 239, 0.12);
-                transform: translateY(-1px);
-                background-color: #ffffff;
-            }
+        .user-menu-btn:hover,
+        .user-menu-btn.show {
+            border-color: rgba(0, 174, 239, 0.32);
+            box-shadow: 0 12px 28px rgba(0, 174, 239, 0.12);
+            transform: translateY(-1px);
+            background-color: #ffffff;
+        }
 
         .user-menu-name {
             max-width: 145px;
@@ -700,17 +728,17 @@
             min-width: 38px;
         }
 
-            .user-avatar-wrapper::after {
-                content: "";
-                width: 10px;
-                height: 10px;
-                border-radius: 999px;
-                background-color: #22c55e;
-                border: 2px solid #ffffff;
-                position: absolute;
-                right: 0;
-                bottom: 1px;
-            }
+        .user-avatar-wrapper::after {
+            content: "";
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background-color: #22c55e;
+            border: 2px solid #ffffff;
+            position: absolute;
+            right: 0;
+            bottom: 1px;
+        }
 
         .user-avatar {
             width: 38px;
@@ -826,10 +854,10 @@
             text-align: left;
         }
 
-            .account-dropdown-item:hover {
-                background-color: #f8fafc;
-                color: var(--primary-color);
-            }
+        .account-dropdown-item:hover {
+            background-color: #f8fafc;
+            color: var(--primary-color);
+        }
 
         .account-dropdown-item-icon {
             width: 38px;
@@ -881,10 +909,10 @@
             font-weight: 900;
         }
 
-            .account-dropdown-logout:hover {
-                background-color: rgba(239, 68, 68, 0.08);
-                color: var(--danger);
-            }
+        .account-dropdown-logout:hover {
+            background-color: rgba(239, 68, 68, 0.08);
+            color: var(--danger);
+        }
 
         .content-wrapper {
             padding: 1.5rem 1.75rem;
@@ -952,9 +980,9 @@
                 left: 0;
             }
 
-                .sidebar.show {
-                    transform: translateX(0);
-                }
+            .sidebar.show {
+                transform: translateX(0);
+            }
 
             .main-content {
                 margin-left: 0 !important;
@@ -1179,7 +1207,7 @@
                     <a href="@submissionIndexUrl"
                        class="nav-link @(currentController == "Submission" && currentAction == "Index" ? "active" : "")">
                         <i class="fas fa-file-contract text-info"></i>
-                        @L("Author_MySubmissions", "Başvurularım")
+                        @L("Author_MySubmissions", "Bildirilerim")
                     </a>
                 }
 
@@ -1251,7 +1279,7 @@
                         @L("Management_DecisionScreen", "Karar Ekranı")
                     </a>
 
-                    <a href="/Admin/Referee"
+                    <a href="@refereeAdminUrl"
                        class="nav-link @(currentController == "Referee" ? "active" : "")">
                         <i class="fas fa-user-check text-warning"></i>
                         @L("Management_Referees", "Hakemler")
@@ -1487,25 +1515,25 @@
                                 </span>
                             </a>
 
-                        @if (!isSuperAdmin && !isReferee)
-                        {
-                            <a class="account-dropdown-item"
-                            href="@dashboardMyConferencesUrl">
-                                <span class="account-dropdown-item-icon account-icon-info">
-                                    <i class="fas fa-exchange-alt"></i>
-                                </span>
-
-                                <span class="account-dropdown-item-content">
-                                    <span class="account-dropdown-item-title">
-                                        @L("Dropdown_ConferenceSelection", "Kongre Seçimi")
+                            @if (!isSuperAdmin && !isReferee)
+                            {
+                                <a class="account-dropdown-item"
+                                   href="@dashboardMyConferencesUrl">
+                                    <span class="account-dropdown-item-icon account-icon-info">
+                                        <i class="fas fa-exchange-alt"></i>
                                     </span>
 
-                                    <span class="account-dropdown-item-desc">
-                                        @L("Dropdown_ConferenceSelectionDescription", "Aktif kongreyi değiştir")
+                                    <span class="account-dropdown-item-content">
+                                        <span class="account-dropdown-item-title">
+                                            @L("Dropdown_ConferenceSelection", "Kongre Seçimi")
+                                        </span>
+
+                                        <span class="account-dropdown-item-desc">
+                                            @L("Dropdown_ConferenceSelectionDescription", "Aktif kongreyi değiştir")
+                                        </span>
                                     </span>
-                                </span>
-                            </a>
-                        }
+                                </a>
+                            }
                         </div>
 
                         <div class="account-dropdown-divider"></div>

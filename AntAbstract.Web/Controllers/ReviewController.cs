@@ -3,6 +3,7 @@ using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace AntAbstract.Web.Controllers
 {
-    [Authorize(Roles = "Referee")]
+    [Authorize(Roles = "Referee,Hakem,Reviewer")]
     public class ReviewController : Controller
     {
         private const int MaxDeclineReasonLength = 200;
@@ -100,17 +101,233 @@ namespace AntAbstract.Web.Controllers
             return reviewerName;
         }
 
+        private string? GetSlug(string? slug = null)
+        {
+            if (!string.IsNullOrWhiteSpace(slug))
+            {
+                return slug;
+            }
+
+            return RouteData.Values["slug"]?.ToString();
+        }
+
+        private static string BuildUrl(string? slug, string path)
+        {
+            if (string.IsNullOrWhiteSpace(slug))
+            {
+                return path;
+            }
+
+            return $"/{slug}{path}";
+        }
+
+        private static string GetCanonicalSlug(Conference? conference, string? fallbackSlug = null)
+        {
+            return conference?.Tenant?.Slug
+                   ?? conference?.Slug
+                   ?? fallbackSlug
+                   ?? "";
+        }
+
+        private static bool SlugMatches(Conference? conference, string? slug)
+        {
+            if (conference == null || string.IsNullOrWhiteSpace(slug))
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(conference.Slug) &&
+                string.Equals(conference.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (conference.Tenant != null &&
+                !string.IsNullOrWhiteSpace(conference.Tenant.Slug) &&
+                string.Equals(conference.Tenant.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private void SetSelectedConferenceSession(Conference conference, string slug)
+        {
+            if (conference.Id == Guid.Empty)
+            {
+                return;
+            }
+
+            HttpContext.Session.SetString("SelectedConferenceId", conference.Id.ToString());
+            HttpContext.Session.SetString("SelectedConferenceSlug", slug);
+            HttpContext.Session.SetString("SelectedConferenceTitle", conference.Title ?? "");
+
+            HttpContext.Session.SetString($"SelectedConferenceId:{conference.TenantId}", conference.Id.ToString());
+            HttpContext.Session.SetString($"SelectedConferenceSlug:{conference.TenantId}", slug);
+            HttpContext.Session.SetString($"SelectedConferenceTitle:{conference.TenantId}", conference.Title ?? "");
+        }
+
+        private async Task<Conference?> GetConferenceBySlugAsync(string? slug)
+        {
+            if (string.IsNullOrWhiteSpace(slug))
+            {
+                return null;
+            }
+
+            return await _context.Conferences
+                .AsNoTracking()
+                .Include(c => c.Tenant)
+                .Where(c =>
+                    c.Slug == slug ||
+                    (
+                        c.Tenant != null &&
+                        c.Tenant.Slug == slug
+                    ))
+                .OrderByDescending(c => c.StartDate)
+                .FirstOrDefaultAsync();
+        }
+
+        private async Task<Conference?> GetAssignmentConferenceAsync(
+            int assignmentId,
+            string reviewerId)
+        {
+            if (assignmentId <= 0 || string.IsNullOrWhiteSpace(reviewerId))
+            {
+                return null;
+            }
+
+            var conferenceId = await _context.ReviewAssignments
+                .AsNoTracking()
+                .Where(ra =>
+                    ra.Id == assignmentId &&
+                    ra.ReviewerId == reviewerId)
+                .Select(ra => ra.Submission.ConferenceId)
+                .FirstOrDefaultAsync();
+
+            if (conferenceId == Guid.Empty)
+            {
+                return null;
+            }
+
+            return await _context.Conferences
+                .AsNoTracking()
+                .Include(c => c.Tenant)
+                .FirstOrDefaultAsync(c => c.Id == conferenceId);
+        }
+
+        private async Task<IActionResult?> RedirectIfAssignmentSlugMismatchAsync(
+            int assignmentId,
+            string reviewerId,
+            string? slug,
+            Func<string, IActionResult> redirectFactory)
+        {
+            var currentSlug = GetSlug(slug);
+
+            if (string.IsNullOrWhiteSpace(currentSlug))
+            {
+                return null;
+            }
+
+            var conference = await GetAssignmentConferenceAsync(
+                assignmentId,
+                reviewerId);
+
+            if (conference == null)
+            {
+                return null;
+            }
+
+            var canonicalSlug = GetCanonicalSlug(conference, currentSlug);
+
+            if (!SlugMatches(conference, currentSlug) ||
+                !string.Equals(canonicalSlug, currentSlug, StringComparison.OrdinalIgnoreCase))
+            {
+                return redirectFactory(canonicalSlug);
+            }
+
+            SetSelectedConferenceSession(conference, canonicalSlug);
+
+            return null;
+        }
+
+        private IActionResult RedirectToReviewIndex(string? slug = null)
+        {
+            var currentSlug = GetSlug(slug);
+
+            if (string.IsNullOrWhiteSpace(currentSlug))
+            {
+                return RedirectToAction(nameof(Index));
+            }
+
+            return Redirect($"/{currentSlug}/Review/Index");
+        }
+
+        private IActionResult RedirectToEvaluatePage(int assignmentId, string? slug = null)
+        {
+            var currentSlug = GetSlug(slug);
+
+            if (string.IsNullOrWhiteSpace(currentSlug))
+            {
+                return RedirectToAction(nameof(Evaluate), new
+                {
+                    id = assignmentId
+                });
+            }
+
+            return Redirect($"/{currentSlug}/Review/Evaluate/{assignmentId}");
+        }
+
+        private IActionResult RedirectToReviewProfilePage(string actionName, string? slug)
+        {
+            var currentSlug = GetSlug(slug);
+
+            if (string.IsNullOrWhiteSpace(currentSlug))
+            {
+                return RedirectToAction(actionName);
+            }
+
+            return Redirect($"/{currentSlug}/Review/{actionName}");
+        }
+
         [HttpGet("/Review")]
         [HttpGet("/Review/Index")]
         [HttpGet("/{slug}/Review")]
         [HttpGet("/{slug}/Review/Index")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? slug = null)
         {
             var user = await _userManager.GetUserAsync(User);
 
             if (user == null)
             {
                 return Challenge();
+            }
+
+            var currentSlug = GetSlug(slug);
+
+            if (!string.IsNullOrWhiteSpace(currentSlug))
+            {
+                var conference = await GetConferenceBySlugAsync(currentSlug);
+
+                if (conference != null)
+                {
+                    var canonicalSlug = GetCanonicalSlug(conference, currentSlug);
+
+                    if (!string.Equals(canonicalSlug, currentSlug, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return Redirect(BuildUrl(canonicalSlug, "/Review/Index"));
+                    }
+
+                    SetSelectedConferenceSession(conference, canonicalSlug);
+
+                    ViewBag.CurrentConferenceId = conference.Id;
+                    ViewBag.CurrentConferenceTitle = conference.Title;
+                    ViewBag.Slug = canonicalSlug;
+                }
+                else
+                {
+                    ViewBag.Slug = currentSlug;
+                }
             }
 
             var assignments = await _reviewService.GetMyAssignmentsAsync(user.Id);
@@ -120,7 +337,9 @@ namespace AntAbstract.Web.Controllers
 
         [HttpGet("/Review/Evaluate/{id:int}")]
         [HttpGet("/{slug}/Review/Evaluate/{id:int}")]
-        public async Task<IActionResult> Evaluate(int id)
+        public async Task<IActionResult> Evaluate(
+            int id,
+            string? slug = null)
         {
             if (id <= 0)
             {
@@ -128,7 +347,7 @@ namespace AntAbstract.Web.Controllers
                     "InvalidAssignment",
                     "Geçersiz değerlendirme görevi.");
 
-                return RedirectToAction(nameof(Index));
+                return RedirectToReviewIndex(slug);
             }
 
             var user = await _userManager.GetUserAsync(User);
@@ -146,8 +365,21 @@ namespace AntAbstract.Web.Controllers
                     "AssignmentNotFoundOrUnauthorized",
                     "Değerlendirme görevi bulunamadı veya bu göreve erişim yetkiniz yok.");
 
-                return RedirectToAction(nameof(Index));
+                return RedirectToReviewIndex(slug);
             }
+
+            var redirectResult = await RedirectIfAssignmentSlugMismatchAsync(
+                id,
+                user.Id,
+                slug,
+                canonicalSlug => Redirect(BuildUrl(canonicalSlug, $"/Review/Evaluate/{id}")));
+
+            if (redirectResult != null)
+            {
+                return redirectResult;
+            }
+
+            ViewBag.Slug = GetSlug(slug);
 
             return View(assignmentDto);
         }
@@ -155,7 +387,9 @@ namespace AntAbstract.Web.Controllers
         [HttpPost("/Review/Evaluate")]
         [HttpPost("/{slug}/Review/Evaluate")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Evaluate(SubmitReviewDto model)
+        public async Task<IActionResult> Evaluate(
+            SubmitReviewDto model,
+            string? slug = null)
         {
             if (!ModelState.IsValid)
             {
@@ -163,10 +397,7 @@ namespace AntAbstract.Web.Controllers
                     "PleaseFillAllFields",
                     "Lütfen zorunlu alanları doldurun.");
 
-                return RedirectToAction(nameof(Evaluate), new
-                {
-                    id = model.ReviewAssignmentId
-                });
+                return RedirectToEvaluatePage(model.ReviewAssignmentId, slug);
             }
 
             var user = await _userManager.GetUserAsync(User);
@@ -186,7 +417,18 @@ namespace AntAbstract.Web.Controllers
                     "AssignmentNotFoundOrUnauthorized",
                     "Değerlendirme görevi bulunamadı veya bu göreve erişim yetkiniz yok.");
 
-                return RedirectToAction(nameof(Index));
+                return RedirectToReviewIndex(slug);
+            }
+
+            var redirectResult = await RedirectIfAssignmentSlugMismatchAsync(
+                model.ReviewAssignmentId,
+                user.Id,
+                slug,
+                canonicalSlug => Redirect(BuildUrl(canonicalSlug, $"/Review/Evaluate/{model.ReviewAssignmentId}")));
+
+            if (redirectResult != null)
+            {
+                return redirectResult;
             }
 
             if (assignmentDto.IsReviewed)
@@ -195,10 +437,7 @@ namespace AntAbstract.Web.Controllers
                     "ReviewAlreadyCompleted",
                     "Bu değerlendirme daha önce tamamlanmış. Tekrar gönderim yapılamaz.");
 
-                return RedirectToAction(nameof(Evaluate), new
-                {
-                    id = model.ReviewAssignmentId
-                });
+                return RedirectToEvaluatePage(model.ReviewAssignmentId, slug);
             }
 
             try
@@ -230,7 +469,7 @@ namespace AntAbstract.Web.Controllers
                     "ReviewSavedSuccessfully",
                     "Değerlendirme başarıyla kaydedildi.");
 
-                return RedirectToAction(nameof(Index));
+                return RedirectToReviewIndex(slug);
             }
             catch (Exception exception)
             {
@@ -240,10 +479,7 @@ namespace AntAbstract.Web.Controllers
                         "ReviewSaveFailed",
                         "Değerlendirme kaydedilirken bir hata oluştu."));
 
-                return RedirectToAction(nameof(Evaluate), new
-                {
-                    id = model.ReviewAssignmentId
-                });
+                return RedirectToEvaluatePage(model.ReviewAssignmentId, slug);
             }
         }
 
@@ -253,7 +489,8 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> DeclineAssignment(
             int id,
             string? Reason,
-            string? Note)
+            string? Note,
+            string? slug = null)
         {
             if (id <= 0)
             {
@@ -261,7 +498,7 @@ namespace AntAbstract.Web.Controllers
                     "InvalidAssignment",
                     "Geçersiz değerlendirme görevi.");
 
-                return RedirectToAction(nameof(Index));
+                return RedirectToReviewIndex(slug);
             }
 
             var user = await _userManager.GetUserAsync(User);
@@ -279,7 +516,18 @@ namespace AntAbstract.Web.Controllers
                     "AssignmentNotFoundOrUnauthorized",
                     "Değerlendirme görevi bulunamadı veya bu göreve erişim yetkiniz yok.");
 
-                return RedirectToAction(nameof(Index));
+                return RedirectToReviewIndex(slug);
+            }
+
+            var redirectResult = await RedirectIfAssignmentSlugMismatchAsync(
+                id,
+                user.Id,
+                slug,
+                canonicalSlug => Redirect(BuildUrl(canonicalSlug, "/Review/Index")));
+
+            if (redirectResult != null)
+            {
+                return redirectResult;
             }
 
             if (assignmentDto.IsReviewed)
@@ -288,7 +536,7 @@ namespace AntAbstract.Web.Controllers
                     "CannotDeclineReviewedAssignment",
                     "Tamamlanmış değerlendirme görevi iade edilemez.");
 
-                return RedirectToAction(nameof(Index));
+                return RedirectToReviewIndex(slug);
             }
 
             try
@@ -315,12 +563,14 @@ namespace AntAbstract.Web.Controllers
                         "İşlem sırasında bir hata oluştu."));
             }
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToReviewIndex(slug);
         }
 
         [HttpGet("/Review/DownloadCertificate/{id:int}")]
         [HttpGet("/{slug}/Review/DownloadCertificate/{id:int}")]
-        public async Task<IActionResult> DownloadCertificate(int id, string? slug = null)
+        public async Task<IActionResult> DownloadCertificate(
+            int id,
+            string? slug = null)
         {
             if (id <= 0)
             {
@@ -343,6 +593,17 @@ namespace AntAbstract.Web.Controllers
                 return NotFound(T(
                     "CertificateNotFound",
                     "Sertifika bulunamadı."));
+            }
+
+            var redirectResult = await RedirectIfAssignmentSlugMismatchAsync(
+                id,
+                user.Id,
+                slug,
+                canonicalSlug => Redirect(BuildUrl(canonicalSlug, $"/Review/DownloadCertificate/{id}")));
+
+            if (redirectResult != null)
+            {
+                return redirectResult;
             }
 
             var reviewerName = BuildReviewerName(
@@ -385,9 +646,7 @@ namespace AntAbstract.Web.Controllers
                     "CertificateNotReady",
                     "Hakemlik sertifikanız henüz oluşturulamadı.");
 
-                return string.IsNullOrWhiteSpace(slug)
-                    ? RedirectToAction(nameof(Index))
-                    : Redirect($"/{slug}/Review/Index");
+                return RedirectToReviewIndex(slug);
             }
 
             var bytes = await _certificateService.GetCertificateFileAsync(
@@ -422,7 +681,7 @@ namespace AntAbstract.Web.Controllers
 
         [HttpGet("/Review/Interests")]
         [HttpGet("/{slug}/Review/Interests")]
-        public async Task<IActionResult> Interests()
+        public async Task<IActionResult> Interests(string? slug = null)
         {
             var user = await _userManager.GetUserAsync(User);
 
@@ -432,6 +691,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             ViewBag.ExpertiseAreas = ParseCsv(user.ExpertiseAreas);
+            ViewBag.Slug = GetSlug(slug);
 
             return View();
         }
@@ -439,7 +699,9 @@ namespace AntAbstract.Web.Controllers
         [HttpPost("/Review/Interests")]
         [HttpPost("/{slug}/Review/Interests")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Interests(string? expertiseAreas, string? slug = null)
+        public async Task<IActionResult> Interests(
+            string? expertiseAreas,
+            string? slug = null)
         {
             var user = await _userManager.GetUserAsync(User);
 
@@ -465,14 +727,12 @@ namespace AntAbstract.Web.Controllers
                     "Uzmanlık alanları kaydedilirken bir hata oluştu.");
             }
 
-            return string.IsNullOrWhiteSpace(slug)
-                ? RedirectToAction(nameof(Interests))
-                : Redirect($"/{slug}/Review/Interests");
+            return RedirectToReviewProfilePage(nameof(Interests), slug);
         }
 
         [HttpGet("/Review/Availability")]
         [HttpGet("/{slug}/Review/Availability")]
-        public async Task<IActionResult> Availability()
+        public async Task<IActionResult> Availability(string? slug = null)
         {
             var user = await _userManager.GetUserAsync(User);
 
@@ -484,6 +744,7 @@ namespace AntAbstract.Web.Controllers
             ViewBag.UnavailableStartDate = user.ReviewerUnavailableStartDate;
             ViewBag.UnavailableEndDate = user.ReviewerUnavailableEndDate;
             ViewBag.UnavailableReason = user.ReviewerUnavailableReason;
+            ViewBag.Slug = GetSlug(slug);
 
             return View();
         }
@@ -549,7 +810,7 @@ namespace AntAbstract.Web.Controllers
 
         [HttpGet("/Review/Conflicts")]
         [HttpGet("/{slug}/Review/Conflicts")]
-        public async Task<IActionResult> Conflicts()
+        public async Task<IActionResult> Conflicts(string? slug = null)
         {
             var user = await _userManager.GetUserAsync(User);
 
@@ -560,6 +821,7 @@ namespace AntAbstract.Web.Controllers
 
             ViewBag.ConflictInstitutions = ParseCsv(user.ReviewerConflictInstitutions);
             ViewBag.ConflictPeople = ParseCsv(user.ReviewerConflictPeople);
+            ViewBag.Slug = GetSlug(slug);
 
             return View();
         }
@@ -593,16 +855,25 @@ namespace AntAbstract.Web.Controllers
 
         [HttpGet("/Review/Guidelines")]
         [HttpGet("/{slug}/Review/Guidelines")]
-        public IActionResult Guidelines()
+        public IActionResult Guidelines(string? slug = null)
         {
+            ViewBag.Slug = GetSlug(slug);
+
             return View();
         }
 
         [HttpGet("/Review/MyCertificates")]
         [HttpGet("/{slug}/Review/MyCertificates")]
-        public IActionResult MyCertificates()
+        public IActionResult MyCertificates(string? slug = null)
         {
-            return RedirectToAction("Index", "Certificates");
+            var currentSlug = GetSlug(slug);
+
+            if (string.IsNullOrWhiteSpace(currentSlug))
+            {
+                return RedirectToAction("Index", "Certificates");
+            }
+
+            return Redirect($"/{currentSlug}/Certificates");
         }
 
         private static List<string> ParseCsv(string? value)
@@ -631,16 +902,6 @@ namespace AntAbstract.Web.Controllers
             return normalized.Length > maxLength
                 ? normalized.Substring(0, maxLength).Trim().TrimEnd(',')
                 : normalized;
-        }
-
-        private IActionResult RedirectToReviewProfilePage(string actionName, string? slug)
-        {
-            if (string.IsNullOrWhiteSpace(slug))
-            {
-                return RedirectToAction(actionName);
-            }
-
-            return Redirect($"/{slug}/Review/{actionName}");
         }
     }
 }

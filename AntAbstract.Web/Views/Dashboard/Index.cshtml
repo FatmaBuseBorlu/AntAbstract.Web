@@ -1,740 +1,827 @@
-﻿@using AntAbstract.Web.Models.ViewModels.Admin.Dashboard
-@using Microsoft.AspNetCore.Mvc.Localization
-@using Microsoft.AspNetCore.Routing
-@using System.Globalization
-@model DashboardViewModel
+﻿@model AntAbstract.Web.Models.ViewModels.Admin.Dashboard.DashboardViewModel
 
-@inject AntAbstract.Infrastructure.Context.TenantContext Tc
-@inject IViewLocalizer Localizer
+@using AntAbstract.Domain.Entities
+@using Microsoft.AspNetCore.Http
+@using System
+@using System.Linq
+
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"].Value;
-    Layout = "_LayoutDashboard";
-
-    Func<string, string, string> L = (key, fallback) =>
+    string L(string key, string fallback)
     {
-        var text = Localizer[key].Value;
-        return string.Equals(text, key, StringComparison.OrdinalIgnoreCase) ? fallback : text;
-    };
+        var value = Localizer[key].Value;
 
-    bool isReferee = ViewBag.IsReferee ?? false;
-    bool isAuthor = ViewBag.IsAuthor ?? false;
-    bool isAdmin = User.IsInRole("Admin");
-
-    int pendingReviews = ViewBag.PendingReviews ?? 0;
-    int completedReviews = ViewBag.CompletedReviews ?? 0;
-
-    string? selectedConferenceIdStr = null;
-
-    if (Tc.Current != null)
-    {
-        selectedConferenceIdStr = Context.Session.GetString($"SelectedConferenceId:{Tc.Current.Id}");
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
     }
 
-    selectedConferenceIdStr ??= Context.Session.GetString("SelectedConferenceId");
+    ViewData["Title"] = L("PageTitle", "Panel");
+    Layout = "_LayoutDashboard";
 
-    Guid? selectedConferenceId = Guid.TryParse(selectedConferenceIdStr, out var parsedConferenceId)
-        ? parsedConferenceId
-        : null;
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString()
+        ?? Context.Session.GetString("SelectedConferenceSlug")
+        ?? "";
 
-    var hasSelectedConference = selectedConferenceId.HasValue;
+    var selectedConferenceTitle = Context.Session.GetString("SelectedConferenceTitle") ?? "";
 
-    string mainColumnClass = (isAdmin || isReferee) ? "col-12" : "col-xl-8 col-lg-8";
-    string sideColumnClass = (isAdmin || isReferee) ? "d-none" : "col-xl-4 col-lg-4";
+    var conferenceTitle = !string.IsNullOrWhiteSpace(selectedConferenceTitle)
+        ? selectedConferenceTitle
+        : Model?.ConferenceName ?? L("GeneralPanelTitle", "Genel Panel");
 
-    var slug = Context.GetRouteValue("slug")?.ToString() ?? Tc.Current?.Slug ?? "";
-    var baseUrl = string.IsNullOrWhiteSpace(slug) ? "" : $"/{slug}";
+    var isReviewer = ViewBag.IsReferee == true;
+    var isAuthor = ViewBag.IsAuthor == true;
 
-    var dashboardUrl = isReferee && !isAdmin
-        ? "/Dashboard"
-        : $"{baseUrl}/Dashboard";
+    var pendingReviews = ViewBag.PendingReviews is int pending
+        ? pending
+        : 0;
 
-    var dashboardMyConferencesUrl = $"{baseUrl}/Dashboard/MyConferences";
-    var submissionCreateUrl = $"{baseUrl}/Submission/Create";
-    var submissionIndexUrl = $"{baseUrl}/Submission/Index";
+    var completedReviews = ViewBag.CompletedReviews is int completed
+        ? completed
+        : 0;
 
-    var reviewIndexUrl = isReferee && !isAdmin
-        ? "/Review/Index"
-        : $"{baseUrl}/Review/Index";
+    string BuildUrl(string cleanPath, string fallbackPath)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+        {
+            return fallbackPath;
+        }
 
-    var reviewGuidelinesUrl = isReferee && !isAdmin
-        ? "/Review/Guidelines"
-        : $"{baseUrl}/Review/Guidelines";
+        return $"/{slug}{cleanPath}";
+    }
 
-    var assignmentUrl = string.IsNullOrWhiteSpace(slug)
-        ? "/Admin/Assignment"
-        : $"{baseUrl}/Admin/Assignment";
-
-    var certificatesIndexUrl = isReferee && !isAdmin
-        ? "/Certificates"
-        : $"{baseUrl}/Certificates";
-
-    var messageIndexUrl = isReferee && !isAdmin
-        ? "/Message/Index"
-        : $"{baseUrl}/Message/Index";
-
-    var conferenceDisplayName = isReferee && !isAdmin && !hasSelectedConference
-        ? L("RefereeDashboardTitle", "Hakem Paneli")
-        : string.IsNullOrWhiteSpace(Model.ConferenceName)
-            ? L("GeneralManagementPanel", "Genel Yönetim Paneli")
-            : Model.ConferenceName;
+    var mySubmissionsUrl = BuildUrl("/my-submissions", "/Submission/Index");
+    var submitAbstractUrl = BuildUrl("/submit-abstract", "/Submission/Create");
+    var programUrl = BuildUrl("/Program/Index", "/Program/Index");
+    var proceedingBookUrl = BuildUrl("/Dashboard/ProceedingBook", "/Dashboard/ProceedingBook");
+    var paymentsUrl = BuildUrl("/payments", "/Payment/My");
+    var accommodationUrl = BuildUrl("/Accommodation/Index", "/Accommodation/Index");
+    var certificatesUrl = BuildUrl("/Certificates", "/Certificates");
+    var changeConferenceUrl = "/Dashboard/ChangeConference";
 }
 
 <style>
-    .hero-card {
-        background: linear-gradient(135deg, #00aeef 0%, #0077b6 100%);
-        border-radius: 20px;
-        color: white;
-        padding: 30px;
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 10px 30px rgba(0, 174, 239, 0.25);
-        margin-bottom: 30px;
+    .dashboard-page {
+        padding: 2rem 1.5rem 4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
-    .hero-btn {
-        background: rgba(255,255,255,0.2);
-        border: 1px solid rgba(255,255,255,0.3);
-        color: white;
-        backdrop-filter: blur(5px);
-        transition: all 0.3s;
-    }
-
-        .hero-btn:hover {
-            background: white;
-            color: #0077b6;
-        }
-
-    .stat-card {
-        border: none;
-        border-radius: 16px;
-        background: #fff;
-        padding: 20px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-        transition: transform 0.2s;
-        height: 100%;
+    .program-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        padding: 1.45rem 1.55rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.055);
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 1.5rem;
     }
 
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-
-    .icon-box {
-        width: 50px;
-        height: 50px;
-        border-radius: 12px;
+    .program-hero-left {
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
+        gap: 1rem;
+        min-width: 0;
     }
 
-    .theme-blue {
-        background: #e0f2fe;
-        color: #00aeef;
-    }
-
-    .theme-orange {
-        background: #fff7ed;
-        color: #f97316;
-    }
-
-    .theme-green {
-        background: #dcfce7;
-        color: #22c55e;
-    }
-
-    .theme-red {
-        background: #fee2e2;
-        color: #ef4444;
-    }
-
-    .quick-btn {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 25px;
-        border-radius: 16px;
-        height: 100%;
-        border: 1px solid #e2e8f0;
-        background: #fff;
-        text-decoration: none;
-        color: #475569;
-        transition: all 0.2s;
-        gap: 10px;
-        text-align: center;
-    }
-
-        .quick-btn:hover {
-            background: #f8fafc;
-            border-color: #00aeef;
-            color: #00aeef;
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-        }
-
-        .quick-btn i {
-            font-size: 2rem;
-            margin-bottom: 5px;
-        }
-
-    .conf-list-card {
-        border: none;
-        border-radius: 20px;
-        background: #fff;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-        overflow: hidden;
-    }
-
-    .conf-item-btn {
-        width: 100%;
-        text-align: left;
-        background: none;
-        border: none;
-        padding: 0;
-        margin: 0;
-        display: block;
-    }
-
-    .conf-item {
-        padding: 15px 20px;
-        border-bottom: 1px solid #f1f5f9;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        width: 100%;
-    }
-
-        .conf-item:hover {
-            background-color: #f8fafc;
-        }
-
-        .conf-item.active {
-            background-color: #f0f9ff;
-            border-left: 4px solid #00aeef;
-        }
-
-    .date-box {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        width: 50px;
-        text-align: center;
-        margin-right: 15px;
-        flex-shrink: 0;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-    }
-
-    .date-month {
-        font-size: 0.6rem;
-        text-transform: uppercase;
-        color: #fff;
-        background: #94a3b8;
-        padding: 2px 0;
-        border-radius: 7px 7px 0 0;
-        font-weight: bold;
-    }
-
-    .date-day {
-        font-size: 1.1rem;
-        font-weight: 800;
-        color: #334155;
-        padding: 2px 0;
-    }
-
-    .active .date-month {
-        background: #00aeef;
-    }
-
-    .referee-empty-card {
-        background: #ffffff;
-        border: 1px dashed #cbd5e1;
-        border-radius: 20px;
-        padding: 2.5rem 1.5rem;
-        text-align: center;
-    }
-
-    .referee-empty-icon {
-        width: 82px;
-        height: 82px;
-        border-radius: 50%;
-        background: #f8fafc;
+    .program-hero-icon {
+        width: 62px;
+        height: 62px;
+        min-width: 62px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 1rem;
-        color: #94a3b8;
-        font-size: 2.2rem;
+        font-size: 1.45rem;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
+    }
+
+    .program-title {
+        color: #0f172a;
+        font-size: 1.65rem;
+        font-weight: 900;
+        letter-spacing: -0.6px;
+        margin-bottom: 0.25rem;
+        line-height: 1.2;
+    }
+
+    .program-lead {
+        color: #64748b;
+        font-size: 0.95rem;
+        font-weight: 650;
+        margin-bottom: 0;
+        line-height: 1.6;
+    }
+
+    .program-conference-pill {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border-radius: 999px;
+        background: #ffffff;
+        border: 1px solid #dbe4ef;
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 900;
+        padding: 0 0.95rem;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.045);
+        max-width: 380px;
+    }
+
+    .program-conference-pill span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .program-conference-pill i {
+        color: #00aeef;
+    }
+
+    .dashboard-hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .dashboard-hero-btn {
+        min-height: 42px;
+        border-radius: 999px;
+        padding: 0 1rem;
+        font-size: 0.84rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .dashboard-hero-btn-light {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+    }
+
+    .dashboard-hero-btn-light:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .dashboard-hero-btn-primary {
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        border: none;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.18);
+    }
+
+    .dashboard-hero-btn-primary:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(13, 110, 253, 0.26);
+        text-decoration: none;
+    }
+
+    .dashboard-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.4rem;
+    }
+
+    .dashboard-stat-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        padding: 1.05rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        min-height: 96px;
+    }
+
+    .dashboard-stat-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .stat-blue {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .stat-green {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+    }
+
+    .stat-orange {
+        background: rgba(245, 158, 11, 0.12);
+        color: #b45309;
+    }
+
+    .stat-red {
+        background: rgba(239, 68, 68, 0.10);
+        color: #dc2626;
+    }
+
+    .stat-purple {
+        background: rgba(124, 58, 237, 0.10);
+        color: #7c3aed;
+    }
+
+    .dashboard-stat-value {
+        color: #0f172a;
+        font-size: 1.35rem;
+        font-weight: 900;
+        line-height: 1.1;
+    }
+
+    .dashboard-stat-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 850;
+        margin-top: 0.25rem;
+    }
+
+    .dashboard-section-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    .dashboard-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
+        overflow: hidden;
+    }
+
+    .dashboard-card-header {
+        padding: 1.15rem 1.35rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .dashboard-card-title {
+        color: #0f172a;
+        font-size: 1.05rem;
+        font-weight: 900;
+        margin: 0;
+    }
+
+    .dashboard-card-subtitle {
+        color: #64748b;
+        font-size: 0.86rem;
+        font-weight: 650;
+        margin: 0.2rem 0 0;
+    }
+
+    .dashboard-card-body {
+        padding: 1.35rem;
+    }
+
+    .quick-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.85rem;
+    }
+
+    .quick-action-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        background: #ffffff;
+        padding: 1rem;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        transition: all 0.2s ease;
+        min-height: 92px;
+    }
+
+    .quick-action-card:hover {
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-2px);
+        box-shadow: 0 14px 32px rgba(15, 23, 42, 0.075);
+        text-decoration: none;
+    }
+
+    .quick-action-icon {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 16px;
+        background: rgba(0, 174, 239, 0.10);
+        color: #00aeef;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+    }
+
+    .quick-action-title {
+        color: #0f172a;
+        font-size: 0.92rem;
+        font-weight: 900;
+        margin-bottom: 0.15rem;
+    }
+
+    .quick-action-text {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 700;
+        line-height: 1.45;
+        margin: 0;
+    }
+
+    .conference-list {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .conference-mini-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 0.95rem;
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .conference-mini-icon {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        border-radius: 15px;
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .conference-mini-title {
+        color: #0f172a;
+        font-size: 0.86rem;
+        font-weight: 900;
+        line-height: 1.35;
+        margin-bottom: 0.15rem;
+    }
+
+    .conference-mini-date {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 750;
+    }
+
+    .empty-mini {
+        border: 1px dashed #cbd5e1;
+        border-radius: 18px;
+        padding: 1.2rem;
+        color: #64748b;
+        font-size: 0.86rem;
+        font-weight: 700;
+        text-align: center;
+        background: #f8fafc;
+    }
+
+    @@media (max-width: 1200px) {
+        .dashboard-stat-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .dashboard-section-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 992px) {
+        .program-hero {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .dashboard-hero-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .program-conference-pill {
+            max-width: 100%;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .dashboard-page {
+            padding: 1.5rem 1rem 3rem;
+        }
+
+        .program-hero-left {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .program-title {
+            font-size: 1.45rem;
+        }
+
+        .dashboard-stat-grid,
+        .quick-actions-grid {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
-<div class="container-fluid py-2">
+<div class="dashboard-page">
 
-    <div class="hero-card">
-        <div class="row align-items-center position-relative z-1">
-            <div class="col-lg-8">
-                <div class="d-flex align-items-center mb-2">
-                    <span class="badge bg-white text-primary bg-opacity-25 border border-white border-opacity-25 rounded-pill me-2 px-3">
-                        <i class="fas fa-satellite-dish me-1"></i>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm rounded-4 fw-bold mb-4">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+        </div>
+    }
 
-                        @(isReferee && !isAdmin
-                            ? L("RefereeWorkspaceBadge", "Hakem Çalışma Alanı")
-                            : L("WorkspaceBadge", "Çalışma Alanı"))
-                    </span>
-                </div>
+    @if (TempData["InfoMessage"] != null)
+    {
+        <div class="alert alert-info border-0 shadow-sm rounded-4 fw-bold mb-4">
+            <i class="fas fa-circle-info me-2"></i>
+            @TempData["InfoMessage"]
+        </div>
+    }
 
-                <h2 class="fw-bold mb-1">@conferenceDisplayName</h2>
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm rounded-4 fw-bold mb-4">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            @TempData["ErrorMessage"]
+        </div>
+    }
 
-                <p class="mb-0 opacity-75">
-                    <i class="far fa-calendar-alt me-1"></i>
-                    @DateTime.Now.ToString("dd MMMM yyyy, dddd", CultureInfo.CurrentUICulture)
+    <div class="program-hero">
+        <div class="program-hero-left">
+            <div class="program-hero-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+
+            <div>
+                <h3 class="program-title">
+                    @if (isReviewer && !isAuthor)
+                    {
+                        @L("ReviewerDashboardTitle", "Hakem Paneli")
+                    }
+                    else
+                    {
+                        @L("DashboardTitle", "Kontrol Paneli")
+                    }
+                </h3>
+
+                <p class="program-lead">
+                    @if (isReviewer && !isAuthor)
+                    {
+                        @L("ReviewerDashboardLead", "Size atanan değerlendirmeleri, tamamlanan incelemeleri ve kongre süreçlerini buradan takip edebilirsiniz.")
+                    }
+                    else
+                    {
+                        @L("DashboardLead", "Seçili kongreye ait bildiri, değerlendirme ve işlem özetlerinizi buradan takip edebilirsiniz.")
+                    }
                 </p>
             </div>
         </div>
+
+        <div class="dashboard-hero-actions">
+            @if (!string.IsNullOrWhiteSpace(conferenceTitle))
+            {
+                <div class="program-conference-pill">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>@conferenceTitle</span>
+                </div>
+            }
+
+            <a href="@changeConferenceUrl" class="dashboard-hero-btn dashboard-hero-btn-light">
+                <i class="fas fa-right-left"></i>
+                @L("ChangeConferenceButton", "Kongre Değiştir")
+            </a>
+
+            @if (isAuthor)
+            {
+                <a href="@submitAbstractUrl" class="dashboard-hero-btn dashboard-hero-btn-primary">
+                    <i class="fas fa-paper-plane"></i>
+                    @L("SubmitAbstractButton", "Bildiri Gönder")
+                </a>
+            }
+        </div>
     </div>
 
-    @if (!hasSelectedConference && !isAdmin && !isReferee)
-    {
-        <div class="alert alert-warning border-0 shadow-sm rounded-4 mb-4">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-exclamation-circle fs-3 me-3"></i>
-
-                <div>
-                    <h6 class="fw-bold mb-1">İşlem yapmak için önce kongre seçmelisiniz</h6>
-                    <small>
-                        Bildiri gönderme, ödeme ve program gibi işlemler seçili kongreye göre çalışır.
-                    </small>
-                </div>
-
-                <a href="@dashboardMyConferencesUrl" class="btn btn-warning rounded-pill fw-bold ms-auto px-4">
-                    Kongre Seç
-                </a>
+    <div class="dashboard-stat-grid">
+        <div class="dashboard-stat-card">
+            <div class="dashboard-stat-icon stat-blue">
+                <i class="fas fa-file-lines"></i>
             </div>
-        </div>
-    }
-
-    @if (isAdmin)
-    {
-        <div class="alert alert-primary bg-primary bg-opacity-10 border-primary border-opacity-25 text-primary d-flex align-items-center mb-4 rounded-4 shadow-sm">
-            <i class="fas fa-user-shield fs-3 me-3"></i>
 
             <div>
-                <h6 class="fw-bold mb-0">@L("AdminViewTitle", "Admin Görünümü")</h6>
-                <small>@L("AdminViewDescription", "Sistem yönetimi ve kongre süreçlerini buradan takip edebilirsiniz.")</small>
+                <div class="dashboard-stat-value">
+                    @(Model?.TotalSubmissions ?? 0)
+                </div>
+
+                <div class="dashboard-stat-label">
+                    @L("TotalSubmissionsLabel", "Toplam Bildiri")
+                </div>
             </div>
         </div>
-    }
 
-    <div class="row g-4">
-        <div class="@mainColumnClass">
+        <div class="dashboard-stat-card">
+            <div class="dashboard-stat-icon stat-green">
+                <i class="fas fa-circle-check"></i>
+            </div>
 
-            @if (isReferee && !isAdmin)
-            {
-                <h6 class="text-muted fw-bold small text-uppercase mb-3 ps-1">
-                    @L("RefereeStatus", "Hakemlik Durumu")
-                </h6>
+            <div>
+                <div class="dashboard-stat-value">
+                    @(Model?.AcceptedSubmissions ?? 0)
+                </div>
 
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <div class="stat-card border-start border-4 border-warning">
-                            <div>
-                                <h6 class="text-muted small fw-bold mb-1">@L("PendingReview", "Bekleyen Değerlendirme")</h6>
-                                <h3 class="fw-bold text-dark mb-0">@pendingReviews</h3>
-                            </div>
+                <div class="dashboard-stat-label">
+                    @L("AcceptedSubmissionsLabel", "Kabul Edilen")
+                </div>
+            </div>
+        </div>
 
-                            <div class="icon-box theme-orange bg-opacity-25">
-                                <i class="fas fa-gavel"></i>
-                            </div>
-                        </div>
+        <div class="dashboard-stat-card">
+            <div class="dashboard-stat-icon stat-orange">
+                <i class="fas fa-clock"></i>
+            </div>
+
+            <div>
+                <div class="dashboard-stat-value">
+                    @(Model?.AwaitingDecision ?? 0)
+                </div>
+
+                <div class="dashboard-stat-label">
+                    @L("AwaitingDecisionLabel", "Karar Bekleyen")
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-stat-card">
+            <div class="dashboard-stat-icon stat-red">
+                <i class="fas fa-circle-xmark"></i>
+            </div>
+
+            <div>
+                <div class="dashboard-stat-value">
+                    @(Model?.RejectedSubmissions ?? 0)
+                </div>
+
+                <div class="dashboard-stat-label">
+                    @L("RejectedSubmissionsLabel", "Reddedilen")
+                </div>
+            </div>
+        </div>
+
+        @if (isReviewer)
+        {
+            <div class="dashboard-stat-card">
+                <div class="dashboard-stat-icon stat-purple">
+                    <i class="fas fa-user-check"></i>
+                </div>
+
+                <div>
+                    <div class="dashboard-stat-value">
+                        @pendingReviews
                     </div>
 
-                    <div class="col-md-6">
-                        <div class="stat-card border-start border-4 border-success">
-                            <div>
-                                <h6 class="text-muted small fw-bold mb-1">@L("Completed", "Tamamlanan")</h6>
-                                <h3 class="fw-bold text-dark mb-0">@completedReviews</h3>
-                            </div>
-
-                            <div class="icon-box theme-green bg-opacity-25">
-                                <i class="fas fa-check-circle"></i>
-                            </div>
-                        </div>
+                    <div class="dashboard-stat-label">
+                        @L("PendingReviewsLabel", "Bekleyen Değerlendirme")
                     </div>
                 </div>
-            }
-            else if (!isAdmin)
-            {
-                <h6 class="text-muted fw-bold small text-uppercase mb-3 ps-1">
-                    @L("SubmissionStatus", "Bildiri Durumu")
-                </h6>
+            </div>
 
-                <div class="row g-3 mb-5">
-                    <div class="col-6 col-md-3">
-                        <div class="stat-card">
-                            <div>
-                                <h6 class="text-muted small fw-bold mb-1">@L("Total", "Toplam")</h6>
-                                <h3 class="fw-bold text-dark mb-0">@Model.TotalSubmissions</h3>
-                            </div>
+            <div class="dashboard-stat-card">
+                <div class="dashboard-stat-icon stat-green">
+                    <i class="fas fa-clipboard-check"></i>
+                </div>
 
-                            <div class="icon-box theme-blue">
-                                <i class="fas fa-file-alt"></i>
-                            </div>
-                        </div>
+                <div>
+                    <div class="dashboard-stat-value">
+                        @completedReviews
                     </div>
 
-                    <div class="col-6 col-md-3">
-                        <div class="stat-card">
-                            <div>
-                                <h6 class="text-muted small fw-bold mb-1">@L("Awaiting", "Bekleyen")</h6>
-                                <h3 class="fw-bold text-dark mb-0">@Model.AwaitingDecision</h3>
-                            </div>
-
-                            <div class="icon-box theme-orange">
-                                <i class="fas fa-hourglass-half"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-6 col-md-3">
-                        <div class="stat-card">
-                            <div>
-                                <h6 class="text-muted small fw-bold mb-1">@L("Accepted", "Kabul")</h6>
-                                <h3 class="fw-bold text-dark mb-0">@Model.AcceptedSubmissions</h3>
-                            </div>
-
-                            <div class="icon-box theme-green">
-                                <i class="fas fa-check-circle"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-6 col-md-3">
-                        <div class="stat-card">
-                            <div>
-                                <h6 class="text-muted small fw-bold mb-1">@L("Rejected", "Ret")</h6>
-                                <h3 class="fw-bold text-dark mb-0">@Model.RejectedSubmissions</h3>
-                            </div>
-
-                            <div class="icon-box theme-red">
-                                <i class="fas fa-times-circle"></i>
-                            </div>
-                        </div>
+                    <div class="dashboard-stat-label">
+                        @L("CompletedReviewsLabel", "Tamamlanan Değerlendirme")
                     </div>
                 </div>
-            }
+            </div>
+        }
+    </div>
 
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-                <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold mb-0">@L("QuickActions", "Hızlı İşlemler")</h6>
+    <div class="dashboard-section-grid">
+        <div class="dashboard-card">
+            <div class="dashboard-card-header">
+                <div>
+                    <h5 class="dashboard-card-title">
+                        @L("QuickActionsTitle", "Hızlı İşlemler")
+                    </h5>
 
-                    @if (!isAdmin && !isReferee && hasSelectedConference)
+                    <p class="dashboard-card-subtitle">
+                        @L("QuickActionsSubtitle", "Sık kullanılan modüllere buradan hızlıca ulaşabilirsiniz.")
+                    </p>
+                </div>
+            </div>
+
+            <div class="dashboard-card-body">
+                <div class="quick-actions-grid">
+                    @if (isAuthor)
                     {
-                        <a href="@submissionIndexUrl" class="btn btn-sm btn-light text-primary fw-bold rounded-pill px-3">
-                            @L("AllMySubmissions", "Tüm Bildirilerim")
-                            <i class="fas fa-arrow-right ms-1"></i>
+                        <a href="@submitAbstractUrl" class="quick-action-card">
+                            <div class="quick-action-icon">
+                                <i class="fas fa-paper-plane"></i>
+                            </div>
+
+                            <div>
+                                <div class="quick-action-title">
+                                    @L("SubmitAbstractAction", "Bildiri Gönder")
+                                </div>
+
+                                <p class="quick-action-text">
+                                    @L("SubmitAbstractActionText", "Yeni bildiriyi değerlendirme sürecine gönder.")
+                                </p>
+                            </div>
+                        </a>
+
+                        <a href="@mySubmissionsUrl" class="quick-action-card">
+                            <div class="quick-action-icon">
+                                <i class="fas fa-file-lines"></i>
+                            </div>
+
+                            <div>
+                                <div class="quick-action-title">
+                                    @L("MySubmissionsAction", "Bildirilerim")
+                                </div>
+
+                                <p class="quick-action-text">
+                                    @L("MySubmissionsActionText", "Gönderdiğin bildirileri ve durumlarını takip et.")
+                                </p>
+                            </div>
                         </a>
                     }
-                </div>
 
-                <div class="card-body p-4 text-center">
+                    <a href="@programUrl" class="quick-action-card">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-calendar-days"></i>
+                        </div>
 
-                    @if (!hasSelectedConference && !isAdmin && !isReferee)
-                    {
-                        <div class="py-4">
-                            <div class="mb-3">
-                                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                                    <i class="fas fa-hand-pointer fa-3x text-primary opacity-25"></i>
-                                </div>
+                        <div>
+                            <div class="quick-action-title">
+                                @L("ProgramAction", "Program")
                             </div>
 
-                            <h5 class="fw-bold text-dark">Önce Kongre Seçmelisiniz</h5>
-
-                            <p class="text-muted small mb-4">
-                                Başvuru, ödeme, program ve sertifika işlemleri seçili kongre üzerinden ilerler.
+                            <p class="quick-action-text">
+                                @L("ProgramActionText", "Kongre oturumlarını ve sunum saatlerini görüntüle.")
                             </p>
-
-                            <a href="@dashboardMyConferencesUrl" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm fw-bold">
-                                <i class="fas fa-calendar-check me-2"></i>
-                                Kongre Seç
-                            </a>
                         </div>
-                    }
-                    else if (Model.TotalSubmissions == 0 && !isAdmin && !isReferee)
-                    {
-                        <div class="py-4">
-                            <div class="mb-3">
-                                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                                    <i class="fas fa-paper-plane fa-3x text-primary opacity-25"></i>
-                                </div>
+                    </a>
+
+                    <a href="@proceedingBookUrl" class="quick-action-card">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+
+                        <div>
+                            <div class="quick-action-title">
+                                @L("ProceedingBookAction", "Bildiri Kitabı")
                             </div>
 
-                            <h5 class="fw-bold text-dark">@L("NoSubmissionTitle", "Henüz başvurunuz yok")</h5>
-
-                            <p class="text-muted small mb-4">
-                                @L("NoSubmissionDescription", "Seçili kongre için yeni bir bildiri başvurusu oluşturabilirsiniz.")
+                            <p class="quick-action-text">
+                                @L("ProceedingBookActionText", "Yayınlanan bildiri kitabını görüntüle veya indir.")
                             </p>
-
-                            <a href="@submissionCreateUrl" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm fw-bold">
-                                <i class="fas fa-plus me-2"></i>
-                                @L("CreateNewSubmission", "Yeni Bildiri Oluştur")
-                            </a>
                         </div>
-                    }
-                    else
-                    {
-                        <div class="row justify-content-center g-3">
+                    </a>
 
-                            @if (isReferee && !isAdmin)
-                            {
-                                <div class="col-md-3">
-                                    <a href="@reviewIndexUrl" class="quick-btn" style="border-left: 4px solid #f59e0b;">
-                                        <i class="fas fa-gavel text-warning"></i>
-                                        <span class="fw-bold text-dark">@L("ReviewPanel", "Görevlerim")</span>
-                                        <small class="text-muted" style="font-size: 0.7rem;">
-                                            @L("RefereeEntry", "Atanmış bildiriler")
-                                        </small>
-                                    </a>
-                                </div>
-
-                                <div class="col-md-3">
-                                    <a href="@certificatesIndexUrl" class="quick-btn" style="border-left: 4px solid #22c55e;">
-                                        <i class="fas fa-certificate text-success"></i>
-                                        <span class="fw-bold text-dark">@L("Certificates", "Sertifikalarım")</span>
-                                        <small class="text-muted" style="font-size: 0.7rem;">
-                                            @L("CertificatesDescription", "Belgelerinizi indirin")
-                                        </small>
-                                    </a>
-                                </div>
-
-                                <div class="col-md-3">
-                                    <a href="@reviewGuidelinesUrl" class="quick-btn" style="border-left: 4px solid #0d6efd;">
-                                        <i class="fas fa-book-open text-primary"></i>
-                                        <span class="fw-bold text-dark">@L("RefereeGuide", "Hakem Rehberi")</span>
-                                        <small class="text-muted" style="font-size: 0.7rem;">
-                                            @L("RefereeGuideDescription", "Değerlendirme kuralları")
-                                        </small>
-                                    </a>
-                                </div>
-
-                                <div class="col-md-3">
-                                    <a href="@messageIndexUrl" class="quick-btn" style="border-left: 4px solid #64748b;">
-                                        <i class="fas fa-envelope text-secondary"></i>
-                                        <span class="fw-bold text-dark">@L("Messages", "Mesajlar")</span>
-                                        <small class="text-muted" style="font-size: 0.7rem;">
-                                            @L("MessagesDescription", "İletişim kutusu")
-                                        </small>
-                                    </a>
-                                </div>
-                            }
-                            else
-                            {
-                                @if (isAdmin)
-                                {
-                                    <div class="col-md-4">
-                                        <a href="@assignmentUrl" class="quick-btn" style="border-left: 4px solid #f59e0b;">
-                                            <i class="fas fa-gavel text-warning"></i>
-                                            <span class="fw-bold text-dark">@L("ReviewAssignmentPanel", "Hakem Atamaları")</span>
-                                            <small class="text-muted" style="font-size: 0.7rem;">
-                                                @L("ReviewAssignmentEntry", "Değerlendirme sürecini yönetin")
-                                            </small>
-                                        </a>
-                                    </div>
-                                }
-
-                                @if (isAuthor || isAdmin)
-                                {
-                                    <div class="col-md-4">
-                                        <a href="@submissionCreateUrl" class="quick-btn">
-                                            <i class="fas fa-plus-circle text-primary"></i>
-                                            <span class="fw-bold">@L("AddNewSubmission", "Yeni Bildiri Ekle")</span>
-                                        </a>
-                                    </div>
-
-                                    <div class="col-md-4">
-                                        <a href="@submissionIndexUrl" class="quick-btn">
-                                            <i class="fas fa-list text-dark"></i>
-                                            <span class="fw-bold">@L("ViewMySubmissions", "Bildirilerimi Gör")</span>
-                                        </a>
-                                    </div>
-                                }
-
-                                <div class="col-md-4">
-                                    <a href="@messageIndexUrl" class="quick-btn">
-                                        <i class="fas fa-envelope text-secondary"></i>
-                                        <span class="fw-bold">@L("Messages", "Mesajlar")</span>
-                                    </a>
-                                </div>
-                            }
+                    <a href="@certificatesUrl" class="quick-action-card">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-award"></i>
                         </div>
-                    }
-                </div>
-            </div>
 
-            @if (isReferee && !isAdmin)
-            {
-                <div class="row g-4 mt-1">
-                    <div class="col-12">
-                        <div class="card border-0 shadow-sm rounded-4 h-100">
-                            <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
-                                <h6 class="fw-bold mb-0 text-dark">
-                                    <i class="far fa-clock text-danger me-2"></i>
-                                    @L("NeedsAttention", "Dikkat Gerektirenler")
-                                </h6>
-
-                                <span class="badge bg-danger bg-opacity-10 text-danger">
-                                    @L("Urgent", "Acil")
-                                </span>
+                        <div>
+                            <div class="quick-action-title">
+                                @L("CertificatesAction", "Sertifikalarım")
                             </div>
 
-                            <div class="card-body p-4">
-                                @if (pendingReviews > 0)
-                                {
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-danger bg-opacity-10 text-danger rounded-3 p-2 me-3 text-center" style="width: 50px;">
-                                            <i class="fas fa-gavel"></i>
-                                        </div>
-
-                                        <div class="flex-grow-1">
-                                            <h6 class="mb-1 fw-bold text-dark">
-                                                @L("PendingReviewNoticeTitle", "Bekleyen değerlendirmeleriniz var")
-                                            </h6>
-
-                                            <small class="text-danger fw-bold">
-                                                <i class="fas fa-exclamation-circle me-1"></i>
-                                                @pendingReviews @L("PendingReviewNoticeText", "değerlendirme bekliyor")
-                                            </small>
-                                        </div>
-
-                                        <a href="@reviewIndexUrl" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-3">
-                                            @L("Review", "İncele")
-                                        </a>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="referee-empty-card">
-                                        <div class="referee-empty-icon">
-                                            <i class="fas fa-clipboard-check"></i>
-                                        </div>
-
-                                        <h5 class="fw-bold text-dark mb-2">
-                                            @L("NoPendingReviewDashboardTitle", "Bekleyen değerlendirme bulunmuyor")
-                                        </h5>
-
-                                        <p class="text-muted small mb-0">
-                                            @L("NoPendingReviewDashboardDescription", "Size yeni bir değerlendirme görevi atandığında bu alanda görüntülenecektir.")
-                                        </p>
-                                    </div>
-                                }
-                            </div>
+                            <p class="quick-action-text">
+                                @L("CertificatesActionText", "Hak kazandığın belgeleri görüntüle.")
+                            </p>
                         </div>
-                    </div>
-                </div>
-            }
+                    </a>
 
-        </div>
+                    <a href="@paymentsUrl" class="quick-action-card">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
 
-        <div class="@sideColumnClass">
-            <div class="conf-list-card mb-4">
-                <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
-                    <h6 class="fw-bold mb-0 text-dark">
-                        @L("MyRegisteredCongresses", "Kayıtlı Kongrelerim")
-                    </h6>
+                        <div>
+                            <div class="quick-action-title">
+                                @L("PaymentsAction", "Ödemelerim")
+                            </div>
 
-                    <a href="@dashboardMyConferencesUrl" class="text-decoration-none small fw-bold">
-                        @L("AllCaps", "Tümü")
+                            <p class="quick-action-text">
+                                @L("PaymentsActionText", "Ödeme kayıtlarını takip et.")
+                            </p>
+                        </div>
+                    </a>
+
+                    <a href="@accommodationUrl" class="quick-action-card">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-hotel"></i>
+                        </div>
+
+                        <div>
+                            <div class="quick-action-title">
+                                @L("AccommodationAction", "Konaklama")
+                            </div>
+
+                            <p class="quick-action-text">
+                                @L("AccommodationActionText", "Kongreye ait otel seçeneklerini incele.")
+                            </p>
+                        </div>
                     </a>
                 </div>
-
-                <div class="list-group list-group-flush">
-                    @if (Model.MyConferences != null && Model.MyConferences.Any())
-                    {
-                        @foreach (var conf in Model.MyConferences.Take(5))
-                        {
-                            var tenantSlug = conf.Tenant?.Slug ?? conf.Slug ?? "";
-                            var isActive = selectedConferenceId.HasValue && selectedConferenceId.Value == conf.Id;
-
-                            var selectReturnUrl = string.IsNullOrWhiteSpace(tenantSlug)
-                                ? "/Dashboard"
-                                : $"/{tenantSlug}/Dashboard";
-
-                            <form asp-controller="Dashboard"
-                                  asp-action="SelectConferencePost"
-                                  asp-route-slug="@tenantSlug"
-                                  method="post">
-
-                                @Html.AntiForgeryToken()
-
-                                <input type="hidden" name="conferenceId" value="@conf.Id" />
-                                <input type="hidden" name="returnUrl" value="@selectReturnUrl" />
-
-                                <button type="submit" class="conf-item-btn">
-                                    <div class="conf-item @(isActive ? "active" : "")">
-                                        <div class="date-box">
-                                            <div class="date-month">
-                                                @conf.StartDate.ToString("MMM", CultureInfo.CurrentUICulture).ToUpper()
-                                            </div>
-
-                                            <div class="date-day">
-                                                @conf.StartDate.Day
-                                            </div>
-                                        </div>
-
-                                        <div class="flex-grow-1 overflow-hidden">
-                                            <h6 class="fw-bold text-dark mb-0 text-truncate small" title="@conf.Title">
-                                                @conf.Title
-                                            </h6>
-
-                                            <small class="text-muted d-block text-truncate" style="font-size: 0.7rem;">
-                                                <i class="fas fa-map-marker-alt me-1"></i>
-                                                @(conf.City ?? L("Online", "Online"))
-                                            </small>
-                                        </div>
-
-                                        @if (isActive)
-                                        {
-                                            <i class="fas fa-check-circle text-primary ms-2"></i>
-                                        }
-                                    </div>
-                                </button>
-                            </form>
-                        }
-                    }
-                    else
-                    {
-                        <div class="p-5 text-center text-muted">
-                            <i class="fas fa-calendar-times mb-2 fs-4"></i>
-                            <p class="small mb-0">
-                                @L("NoRegisteredCongressYet", "Henüz kayıtlı kongreniz yok.")
-                            </p>
-                        </div>
-                    }
-                </div>
             </div>
+        </div>
 
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden text-white position-relative"
-                 style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%);">
+        <aside class="dashboard-card">
+            <div class="dashboard-card-header">
+                <div>
+                    <h5 class="dashboard-card-title">
+                        @L("MyConferencesTitle", "Kongrelerim")
+                    </h5>
 
-                <div class="card-body p-4 position-relative z-1">
-                    <h6 class="fw-bold mb-2">@L("NeedHelp", "Yardıma mı ihtiyacınız var?")</h6>
-
-                    <p class="small opacity-75 mb-3">
-                        @L("SupportDescription", "Destek ekibimizden yardım alabilirsiniz.")
+                    <p class="dashboard-card-subtitle">
+                        @L("MyConferencesSubtitle", "Erişiminizin olduğu kongreler.")
                     </p>
-
-                    <a href="/Home/Contact" class="btn btn-light text-dark fw-bold w-100 rounded-pill shadow-sm btn-sm">
-                        <i class="fas fa-headset me-2"></i>
-                        @L("CreateSupportRequest", "Destek Talebi Oluştur")
-                    </a>
                 </div>
-
-                <i class="fas fa-life-ring position-absolute text-white opacity-10"
-                   style="font-size: 5rem; right: -20px; bottom: -20px;"></i>
             </div>
-        </div>
+
+            <div class="dashboard-card-body">
+                @if (Model?.MyConferences != null && Model.MyConferences.Any())
+                {
+                    <div class="conference-list">
+                        @foreach (var conference in Model.MyConferences.Take(5))
+                        {
+                            <div class="conference-mini-card">
+                                <div class="conference-mini-icon">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+
+                                <div>
+                                    <div class="conference-mini-title">
+                                        @conference.Title
+                                    </div>
+
+                                    <div class="conference-mini-date">
+                                        @conference.StartDate.ToString("dd.MM.yyyy")
+                                        -
+                                        @conference.EndDate.ToString("dd.MM.yyyy")
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-mini">
+                        <i class="fas fa-circle-info me-1"></i>
+                        @L("NoConferenceText", "Henüz görüntülenecek kongre bulunmuyor.")
+                    </div>
+                }
+            </div>
+        </aside>
     </div>
 </div>
