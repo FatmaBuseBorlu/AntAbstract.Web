@@ -1,5 +1,7 @@
 ﻿@using AntAbstract.Domain.Entities
 @using AntAbstract.Web.Models.ViewModels.Shared
+@using System
+@using System.Collections.Generic
 @using System.Linq
 
 @model SelectConferenceViewModel
@@ -12,41 +14,846 @@
     var conferences = Model.Conferences?.ToList() ?? new List<Conference>();
     var returnUrl = Model.ReturnUrl ?? "";
     var submitText = string.IsNullOrWhiteSpace(Model.SubmitText) ? "Devam Et" : Model.SubmitText;
+
+    var totalConferenceCount = conferences.Count;
+    var tenantCount = conferences
+        .Where(x => x.Tenant != null && !string.IsNullOrWhiteSpace(x.Tenant.Slug))
+        .Select(x => x.Tenant!.Slug)
+        .Distinct()
+        .Count();
+
+    var now = DateTime.Now;
+    var activeConferenceCount = conferences.Count(x => x.StartDate <= now && x.EndDate >= now);
+    var upcomingConferenceCount = conferences.Count(x => x.StartDate > now);
 }
 
-<div class="container-fluid select-conference-page">
+<style>
+    .select-conference-page {
+        padding: 2rem 1.5rem 4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
 
-    <div class="select-page-header mb-4">
-        <div>
-            <div class="select-section-label">
-                Kongre Operasyonları
+    .admin-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%),
+                    linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        padding: 1.45rem 1.55rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.055);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+    }
+
+    .admin-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 0;
+    }
+
+    .admin-hero-icon {
+        width: 62px;
+        height: 62px;
+        min-width: 62px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.45rem;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
+    }
+
+    .admin-hero-kicker {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .admin-hero-title {
+        color: #0f172a;
+        font-size: 1.65rem;
+        font-weight: 900;
+        letter-spacing: -0.6px;
+        margin-bottom: 0.25rem;
+        line-height: 1.2;
+    }
+
+    .admin-hero-lead {
+        color: #64748b;
+        font-size: 0.95rem;
+        font-weight: 650;
+        margin-bottom: 0;
+        line-height: 1.6;
+        max-width: 860px;
+    }
+
+    .admin-hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .admin-hero-btn {
+        min-height: 42px;
+        border-radius: 999px;
+        padding: 0 1rem;
+        font-size: 0.84rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .admin-hero-btn-light {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+    }
+
+    .admin-hero-btn-light:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .admin-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.4rem;
+    }
+
+    .admin-stat-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        padding: 1.05rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        min-height: 96px;
+        transition: all 0.2s ease;
+    }
+
+    .admin-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.075);
+    }
+
+    .admin-stat-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .stat-blue {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .stat-green {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+    }
+
+    .stat-cyan {
+        background: rgba(0, 174, 239, 0.10);
+        color: #0284c7;
+    }
+
+    .stat-orange {
+        background: rgba(245, 158, 11, 0.12);
+        color: #b45309;
+    }
+
+    .admin-stat-value {
+        color: #0f172a;
+        font-size: 1.35rem;
+        font-weight: 900;
+        line-height: 1.1;
+    }
+
+    .admin-stat-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 850;
+        margin-top: 0.25rem;
+    }
+
+    .admin-filter-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
+        padding: 1.15rem;
+        margin-bottom: 1.4rem;
+    }
+
+    .admin-filter-label {
+        color: #0f172a;
+        font-size: 0.78rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.55rem;
+    }
+
+    .admin-input-wrap {
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0 1rem;
+        border: 1px solid #dbe4ef;
+        border-radius: 15px;
+        background: #ffffff;
+        transition: all 0.2s ease;
+    }
+
+    .admin-input-wrap:focus-within {
+        border-color: #00aeef;
+        box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.10);
+    }
+
+    .admin-input-wrap i {
+        color: #94a3b8;
+    }
+
+    .admin-input-wrap input {
+        width: 100%;
+        border: none;
+        outline: none;
+        background: transparent;
+        color: #0f172a;
+        font-size: 0.92rem;
+        font-weight: 750;
+    }
+
+    .admin-input-wrap input::placeholder {
+        color: #94a3b8;
+        font-weight: 700;
+    }
+
+    .admin-filter-control {
+        min-height: 48px;
+        border-radius: 15px;
+        border: 1px solid #dbe4ef;
+        background: #ffffff;
+        color: #0f172a;
+        font-size: 0.92rem;
+        font-weight: 750;
+        box-shadow: none;
+        transition: all 0.2s ease;
+    }
+
+    .admin-filter-control:focus {
+        border-color: #00aeef;
+        box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.10);
+    }
+
+    .admin-filter-btn {
+        min-height: 48px;
+        border-radius: 15px;
+        border: none;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        font-size: 0.9rem;
+        font-weight: 950;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        box-shadow: 0 12px 24px rgba(13, 110, 253, 0.18);
+        transition: all 0.2s ease;
+    }
+
+    .admin-filter-btn:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 16px 30px rgba(13, 110, 253, 0.24);
+    }
+
+    .admin-reset-btn {
+        min-width: 52px;
+        min-height: 48px;
+        border-radius: 15px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        color: #64748b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .admin-reset-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .conference-list-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        overflow: hidden;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
+    }
+
+    .conference-list-header {
+        padding: 1.15rem 1.35rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .conference-list-header h5 {
+        color: #0f172a;
+        font-size: 1.08rem;
+        font-weight: 900;
+        margin: 0 0 0.25rem;
+    }
+
+    .conference-list-header p {
+        color: #64748b;
+        font-size: 0.86rem;
+        font-weight: 650;
+        line-height: 1.55;
+        margin-bottom: 0;
+    }
+
+    .conference-count-pill {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0 0.8rem;
+        border-radius: 999px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 0.78rem;
+        font-weight: 900;
+    }
+
+    .conference-card-list {
+        display: grid;
+        gap: 0.85rem;
+        padding: 1.25rem 1.35rem;
+    }
+
+    .conference-select-card {
+        position: relative;
+        display: grid;
+        grid-template-columns: 34px 64px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        border-radius: 22px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.025);
+    }
+
+    .conference-select-card:hover {
+        border-color: rgba(13, 110, 253, 0.26);
+        background: #f8fbff;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
+    }
+
+    .conference-select-card.is-selected {
+        border-color: rgba(13, 110, 253, 0.55);
+        background: linear-gradient(135deg, rgba(13, 110, 253, 0.08), rgba(0, 174, 239, 0.07));
+        box-shadow: 0 16px 36px rgba(13, 110, 253, 0.12);
+    }
+
+    .conference-radio {
+        display: none;
+    }
+
+    .conference-radio-visual {
+        width: 24px;
+        height: 24px;
+        border-radius: 999px;
+        border: 2px solid #cbd5e1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+    }
+
+    .conference-radio-visual span {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: transparent;
+        transition: all 0.2s ease;
+    }
+
+    .conference-select-card.is-selected .conference-radio-visual {
+        border-color: #0d6efd;
+    }
+
+    .conference-select-card.is-selected .conference-radio-visual span {
+        background: #0d6efd;
+    }
+
+    .conference-date-box {
+        width: 58px;
+        height: 58px;
+        border-radius: 18px;
+        background: rgba(13, 110, 253, 0.09);
+        color: #0d6efd;
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+    .conference-date-box strong {
+        font-size: 1.25rem;
+        font-weight: 900;
+    }
+
+    .conference-date-box span {
+        margin-top: 0.2rem;
+        font-size: 0.7rem;
+        font-weight: 900;
+    }
+
+    .conference-main-info {
+        min-width: 0;
+    }
+
+    .conference-title-row {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        flex-wrap: wrap;
+    }
+
+    .conference-title-row h6 {
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 900;
+        line-height: 1.35;
+        margin: 0;
+    }
+
+    .conference-status-pill {
+        min-height: 26px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0 0.65rem;
+        border-radius: 999px;
+        background: rgba(34, 197, 94, 0.12);
+        color: #15803d;
+        border: 1px solid rgba(34, 197, 94, 0.18);
+        font-size: 0.72rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .conference-status-pill i {
+        font-size: 0.45rem;
+    }
+
+    .conference-meta-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.8rem;
+        margin-top: 0.45rem;
+    }
+
+    .conference-meta-row span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .conference-meta-row i {
+        color: #0d6efd;
+    }
+
+    .conference-site-area {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .conference-site-btn {
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0 0.95rem;
+        border-radius: 14px;
+        border: 1px solid #dbe4ef;
+        background: #ffffff;
+        color: #475569;
+        text-decoration: none;
+        font-size: 0.86rem;
+        font-weight: 900;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+    }
+
+    .conference-site-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.28);
+        background: #f8fbff;
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .conference-no-site {
+        color: #94a3b8;
+        font-size: 0.82rem;
+        font-weight: 800;
+    }
+
+    .conference-list-footer {
+        padding: 1.1rem 1.35rem;
+        border-top: 1px solid #e2e8f0;
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .selected-info-text {
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 800;
+    }
+
+    .footer-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .select-cancel-btn,
+    .select-continue-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        padding: 0 1.2rem;
+        border-radius: 999px;
+        font-weight: 900;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .select-cancel-btn {
+        border: 1px solid #dbe4ef;
+        background: #ffffff;
+        color: #0f172a;
+    }
+
+    .select-cancel-btn:hover {
+        color: #0d6efd;
+        background: #f8fbff;
+        border-color: rgba(13, 110, 253, 0.25);
+        text-decoration: none;
+    }
+
+    .select-continue-btn {
+        border: none;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        min-width: 180px;
+        box-shadow: 0 14px 28px rgba(13, 110, 253, 0.22);
+    }
+
+    .select-continue-btn:hover:not(:disabled) {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 18px 34px rgba(13, 110, 253, 0.28);
+    }
+
+    .select-continue-btn:disabled {
+        opacity: 0.48;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+    .conference-empty-state,
+    .conference-no-result {
+        padding: 4rem 1.5rem;
+        text-align: center;
+    }
+
+    .empty-icon {
+        width: 76px;
+        height: 76px;
+        margin: 0 auto 1rem;
+        border-radius: 26px;
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.9rem;
+    }
+
+    .conference-empty-state h4,
+    .conference-no-result h4 {
+        color: #0f172a;
+        font-size: 1.15rem;
+        font-weight: 900;
+        margin-bottom: 0.45rem;
+    }
+
+    .conference-empty-state p,
+    .conference-no-result p {
+        color: #64748b;
+        font-weight: 650;
+        margin: 0 auto;
+        max-width: 520px;
+        line-height: 1.65;
+    }
+
+    @@media (max-width: 1200px) {
+        .admin-stat-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 992px) {
+        .admin-hero {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .admin-hero-left {
+            align-items: flex-start;
+        }
+
+        .admin-hero-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .conference-select-card {
+            grid-template-columns: 30px 58px 1fr;
+        }
+
+        .conference-site-area {
+            grid-column: 1 / -1;
+            justify-content: flex-start;
+            padding-left: 88px;
+        }
+
+        .conference-site-btn {
+            width: 100%;
+        }
+
+        .conference-list-footer {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .footer-actions,
+        .footer-actions a,
+        .footer-actions button {
+            width: 100%;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .select-conference-page {
+            padding: 1.5rem 1rem 3rem;
+        }
+
+        .admin-hero-left {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .admin-hero-title {
+            font-size: 1.45rem;
+        }
+
+        .admin-stat-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .admin-filter-btn,
+        .admin-reset-btn,
+        .admin-hero-btn {
+            width: 100%;
+        }
+
+        .conference-list-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .conference-select-card {
+            grid-template-columns: 28px 1fr;
+        }
+
+        .conference-date-box {
+            display: none;
+        }
+
+        .conference-site-area {
+            padding-left: 0;
+        }
+    }
+</style>
+
+<div class="select-conference-page">
+
+    <div class="admin-hero">
+        <div class="admin-hero-left">
+            <div class="admin-hero-icon">
+                <i class="fas fa-calendar-check"></i>
             </div>
 
-            <h2 class="select-page-title">
-                @Model.Title
-            </h2>
+            <div>
+                <div class="admin-hero-kicker">
+                    Kongre Operasyonları
+                </div>
 
-            <p class="select-page-description">
-                @Model.Lead
-            </p>
+                <h3 class="admin-hero-title">
+                    @Model.Title
+                </h3>
+
+                <p class="admin-hero-lead">
+                    @Model.Lead
+                </p>
+            </div>
         </div>
 
-        <a href="/Admin"
-           class="select-back-btn">
-            <i class="fas fa-arrow-left"></i>
-            Panele Dön
-        </a>
+        <div class="admin-hero-actions">
+            <a href="/Admin"
+               class="admin-hero-btn admin-hero-btn-light">
+                <i class="fas fa-arrow-left"></i>
+                Panele Dön
+            </a>
+        </div>
     </div>
 
-    <div class="select-filter-card mb-4">
+    <div class="admin-stat-grid">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-blue">
+                <i class="fas fa-calendar-days"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @totalConferenceCount
+                </div>
+
+                <div class="admin-stat-label">
+                    Toplam Kongre
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-green">
+                <i class="fas fa-play-circle"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @activeConferenceCount
+                </div>
+
+                <div class="admin-stat-label">
+                    Devam Eden
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-cyan">
+                <i class="fas fa-clock"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @upcomingConferenceCount
+                </div>
+
+                <div class="admin-stat-label">
+                    Yaklaşan
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-orange">
+                <i class="fas fa-building"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @tenantCount
+                </div>
+
+                <div class="admin-stat-label">
+                    Kurum
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-filter-card">
         <div class="row g-3 align-items-end">
 
             <div class="col-xl-5 col-lg-5">
-                <label class="select-label">
+                <label class="admin-filter-label">
                     Arama
                 </label>
 
-                <div class="select-input-wrap">
+                <div class="admin-input-wrap">
                     <i class="fas fa-search"></i>
 
                     <input type="text"
@@ -56,11 +863,11 @@
             </div>
 
             <div class="col-xl-4 col-lg-4">
-                <label class="select-label">
+                <label class="admin-filter-label">
                     Kurum
                 </label>
 
-                <select id="tenantFilterSelect" class="select-control">
+                <select id="tenantFilterSelect" class="form-select admin-filter-control">
                     <option value="">Tüm Kurumlar</option>
 
                     @foreach (var tenantSlug in conferences
@@ -79,7 +886,7 @@
             <div class="col-xl-2 col-lg-2">
                 <button type="button"
                         id="filterConferenceButton"
-                        class="select-filter-btn w-100">
+                        class="admin-filter-btn w-100">
                     <i class="fas fa-search"></i>
                     Filtrele
                 </button>
@@ -88,7 +895,7 @@
             <div class="col-xl-1 col-lg-1">
                 <button type="button"
                         id="resetConferenceButton"
-                        class="select-reset-btn w-100"
+                        class="admin-reset-btn w-100"
                         title="Temizle">
                     <i class="fas fa-rotate-left"></i>
                 </button>
@@ -115,6 +922,7 @@
                 </div>
 
                 <div class="conference-count-pill">
+                    <i class="fas fa-list-ul"></i>
                     <span id="visibleConferenceCount">@conferences.Count</span> / @conferences.Count kongre
                 </div>
             </div>
@@ -250,556 +1058,6 @@
     </form>
 
 </div>
-
-<style>
-    .select-conference-page {
-        font-family: 'Plus Jakarta Sans', sans-serif;
-    }
-
-    .select-page-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1.2rem;
-        flex-wrap: wrap;
-    }
-
-    .select-section-label {
-        color: #64748b;
-        font-size: 0.78rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        margin-bottom: 0.35rem;
-    }
-
-    .select-page-title {
-        color: #0f172a;
-        font-size: 2.1rem;
-        font-weight: 900;
-        letter-spacing: -0.055em;
-        margin: 0 0 0.45rem;
-    }
-
-    .select-page-description {
-        color: #64748b;
-        font-size: 0.98rem;
-        font-weight: 600;
-        line-height: 1.65;
-        margin: 0;
-        max-width: 900px;
-    }
-
-    .select-back-btn {
-        min-height: 46px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.55rem;
-        padding: 0 1.25rem;
-        border-radius: 999px;
-        border: 1px solid #dbe3ef;
-        background: #ffffff;
-        color: #0f172a;
-        font-weight: 900;
-        text-decoration: none;
-        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
-        transition: all 0.2s ease;
-    }
-
-        .select-back-btn:hover {
-            color: #0d6efd;
-            border-color: rgba(13, 110, 253, 0.25);
-            transform: translateY(-1px);
-        }
-
-    .select-filter-card {
-        background: #ffffff;
-        border: 1px solid #e8eef6;
-        border-radius: 24px;
-        padding: 1.2rem;
-        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
-    }
-
-    .select-label {
-        display: block;
-        color: #0f172a;
-        font-size: 0.86rem;
-        font-weight: 900;
-        margin-bottom: 0.45rem;
-    }
-
-    .select-input-wrap {
-        min-height: 50px;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0 1rem;
-        border: 1px solid #dbe3ef;
-        border-radius: 16px;
-        background: #ffffff;
-        transition: all 0.2s ease;
-    }
-
-        .select-input-wrap:focus-within {
-            border-color: rgba(13, 110, 253, 0.45);
-            box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.08);
-        }
-
-        .select-input-wrap i {
-            color: #94a3b8;
-        }
-
-        .select-input-wrap input {
-            width: 100%;
-            border: none;
-            outline: none;
-            background: transparent;
-            color: #0f172a;
-            font-weight: 700;
-        }
-
-            .select-input-wrap input::placeholder {
-                color: #94a3b8;
-            }
-
-    .select-control {
-        width: 100%;
-        min-height: 50px;
-        border: 1px solid #dbe3ef;
-        border-radius: 16px;
-        padding: 0 1rem;
-        background: #ffffff;
-        color: #0f172a;
-        font-weight: 800;
-        outline: none;
-    }
-
-        .select-control:focus {
-            border-color: rgba(13, 110, 253, 0.45);
-            box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.08);
-        }
-
-    .select-filter-btn {
-        min-height: 50px;
-        border: none;
-        border-radius: 16px;
-        background: #0d6efd;
-        color: #ffffff;
-        font-weight: 900;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.55rem;
-        box-shadow: 0 14px 28px rgba(13, 110, 253, 0.20);
-        transition: all 0.2s ease;
-    }
-
-        .select-filter-btn:hover {
-            background: #0b5ed7;
-            color: #ffffff;
-            transform: translateY(-1px);
-        }
-
-    .select-reset-btn {
-        min-height: 50px;
-        border: 1px solid #dbe3ef;
-        border-radius: 16px;
-        background: #ffffff;
-        color: #0f172a;
-        font-weight: 900;
-        transition: all 0.2s ease;
-    }
-
-        .select-reset-btn:hover {
-            color: #0d6efd;
-            border-color: rgba(13, 110, 253, 0.25);
-            background: #f8fbff;
-        }
-
-    .conference-list-card {
-        background: #ffffff;
-        border: 1px solid #e8eef6;
-        border-radius: 28px;
-        overflow: hidden;
-        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
-    }
-
-    .conference-list-header {
-        padding: 1.4rem 1.5rem;
-        border-bottom: 1px solid #edf2f7;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        flex-wrap: wrap;
-    }
-
-        .conference-list-header h5 {
-            color: #0f172a;
-            font-size: 1.25rem;
-            font-weight: 900;
-            margin: 0 0 0.25rem;
-        }
-
-        .conference-list-header p {
-            color: #64748b;
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin: 0;
-        }
-
-    .conference-count-pill {
-        min-height: 38px;
-        display: inline-flex;
-        align-items: center;
-        padding: 0 0.9rem;
-        border-radius: 999px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        color: #475569;
-        font-size: 0.82rem;
-        font-weight: 900;
-    }
-
-    .conference-card-list {
-        display: grid;
-        gap: 0.9rem;
-        padding: 1.2rem 1.5rem;
-    }
-
-    .conference-select-card {
-        position: relative;
-        display: grid;
-        grid-template-columns: 34px 64px 1fr auto;
-        align-items: center;
-        gap: 1rem;
-        padding: 1rem;
-        border-radius: 22px;
-        border: 1px solid #e2e8f0;
-        background: #ffffff;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-        .conference-select-card:hover {
-            border-color: rgba(13, 110, 253, 0.30);
-            background: #f8fbff;
-            transform: translateY(-1px);
-            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
-        }
-
-        .conference-select-card.is-selected {
-            border-color: rgba(13, 110, 253, 0.55);
-            background: linear-gradient(135deg, rgba(13, 110, 253, 0.08), rgba(0, 174, 239, 0.07));
-            box-shadow: 0 16px 36px rgba(13, 110, 253, 0.12);
-        }
-
-    .conference-radio {
-        display: none;
-    }
-
-    .conference-radio-visual {
-        width: 24px;
-        height: 24px;
-        border-radius: 999px;
-        border: 2px solid #cbd5e1;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: #ffffff;
-    }
-
-        .conference-radio-visual span {
-            width: 10px;
-            height: 10px;
-            border-radius: 999px;
-            background: transparent;
-            transition: all 0.2s ease;
-        }
-
-    .conference-select-card.is-selected .conference-radio-visual {
-        border-color: #0d6efd;
-    }
-
-        .conference-select-card.is-selected .conference-radio-visual span {
-            background: #0d6efd;
-        }
-
-    .conference-date-box {
-        width: 58px;
-        height: 58px;
-        border-radius: 18px;
-        background: rgba(13, 110, 253, 0.09);
-        color: #0d6efd;
-        display: inline-flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        line-height: 1;
-    }
-
-        .conference-date-box strong {
-            font-size: 1.25rem;
-            font-weight: 900;
-        }
-
-        .conference-date-box span {
-            margin-top: 0.2rem;
-            font-size: 0.7rem;
-            font-weight: 900;
-        }
-
-    .conference-main-info {
-        min-width: 0;
-    }
-
-    .conference-title-row {
-        display: flex;
-        align-items: center;
-        gap: 0.7rem;
-        flex-wrap: wrap;
-    }
-
-        .conference-title-row h6 {
-            color: #0f172a;
-            font-size: 1rem;
-            font-weight: 900;
-            line-height: 1.35;
-            margin: 0;
-        }
-
-    .conference-status-pill {
-        min-height: 26px;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-        padding: 0 0.65rem;
-        border-radius: 999px;
-        background: rgba(34, 197, 94, 0.10);
-        color: #16a34a;
-        font-size: 0.72rem;
-        font-weight: 900;
-    }
-
-        .conference-status-pill i {
-            font-size: 0.45rem;
-        }
-
-    .conference-meta-row {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 0.8rem;
-        margin-top: 0.45rem;
-    }
-
-        .conference-meta-row span {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            color: #64748b;
-            font-size: 0.82rem;
-            font-weight: 700;
-        }
-
-        .conference-meta-row i {
-            color: #0d6efd;
-        }
-
-    .conference-site-area {
-        display: flex;
-        justify-content: flex-end;
-    }
-
-    .conference-site-btn {
-        min-height: 40px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        padding: 0 0.95rem;
-        border-radius: 14px;
-        border: 1px solid #dbe3ef;
-        background: #ffffff;
-        color: #475569;
-        text-decoration: none;
-        font-size: 0.86rem;
-        font-weight: 900;
-        white-space: nowrap;
-        transition: all 0.2s ease;
-    }
-
-        .conference-site-btn:hover {
-            color: #0d6efd;
-            border-color: rgba(13, 110, 253, 0.28);
-            background: #f8fbff;
-        }
-
-    .conference-no-site {
-        color: #94a3b8;
-        font-size: 0.82rem;
-        font-weight: 800;
-    }
-
-    .conference-list-footer {
-        padding: 1.1rem 1.5rem;
-        border-top: 1px solid #edf2f7;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        flex-wrap: wrap;
-    }
-
-    .selected-info-text {
-        color: #64748b;
-        font-size: 0.9rem;
-        font-weight: 800;
-    }
-
-    .footer-actions {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-    }
-
-    .select-cancel-btn,
-    .select-continue-btn {
-        min-height: 48px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.55rem;
-        padding: 0 1.35rem;
-        border-radius: 999px;
-        font-weight: 900;
-        text-decoration: none;
-        transition: all 0.2s ease;
-    }
-
-    .select-cancel-btn {
-        border: 1px solid #dbe3ef;
-        background: #ffffff;
-        color: #0f172a;
-    }
-
-        .select-cancel-btn:hover {
-            color: #0d6efd;
-            background: #f8fbff;
-        }
-
-    .select-continue-btn {
-        border: none;
-        background: #0d6efd;
-        color: #ffffff;
-        min-width: 180px;
-        box-shadow: 0 14px 28px rgba(13, 110, 253, 0.22);
-    }
-
-        .select-continue-btn:hover:not(:disabled) {
-            color: #ffffff;
-            background: #0b5ed7;
-            transform: translateY(-1px);
-        }
-
-        .select-continue-btn:disabled {
-            opacity: 0.48;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
-    .conference-empty-state,
-    .conference-no-result {
-        padding: 4rem 1.5rem;
-        text-align: center;
-    }
-
-    .empty-icon {
-        width: 76px;
-        height: 76px;
-        margin: 0 auto 1rem;
-        border-radius: 26px;
-        background: rgba(13, 110, 253, 0.10);
-        color: #0d6efd;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.9rem;
-    }
-
-    .conference-empty-state h4,
-    .conference-no-result h4 {
-        color: #0f172a;
-        font-size: 1.28rem;
-        font-weight: 900;
-        margin-bottom: 0.45rem;
-    }
-
-    .conference-empty-state p,
-    .conference-no-result p {
-        color: #64748b;
-        font-weight: 600;
-        margin: 0 auto;
-        max-width: 520px;
-        line-height: 1.65;
-    }
-
-    @@media (max-width: 992px) {
-        .select-page-header {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-
-        .select-back-btn {
-            width: 100%;
-        }
-
-        .conference-select-card {
-            grid-template-columns: 30px 58px 1fr;
-        }
-
-        .conference-site-area {
-            grid-column: 1 / -1;
-            justify-content: flex-start;
-            padding-left: 88px;
-        }
-
-        .conference-site-btn {
-            width: 100%;
-        }
-
-        .conference-list-footer {
-            align-items: stretch;
-            flex-direction: column;
-        }
-
-        .footer-actions,
-        .footer-actions a,
-        .footer-actions button {
-            width: 100%;
-        }
-    }
-
-    @@media (max-width: 576px) {
-        .conference-select-card {
-            grid-template-columns: 28px 1fr;
-        }
-
-        .conference-date-box {
-            display: none;
-        }
-
-        .conference-site-area {
-            padding-left: 0;
-        }
-
-        .select-page-title {
-            font-size: 1.65rem;
-        }
-    }
-</style>
 
 @section Scripts {
     <script>

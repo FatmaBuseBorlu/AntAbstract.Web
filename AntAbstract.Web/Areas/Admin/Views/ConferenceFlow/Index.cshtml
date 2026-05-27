@@ -1,4 +1,5 @@
-﻿@using AntAbstract.Web.Models.ViewModels.Admin.ConferenceFlow
+﻿@using System
+@using AntAbstract.Web.Models.ViewModels.Admin.ConferenceFlow
 
 @model ConferenceFlowIndexViewModel
 
@@ -86,24 +87,540 @@
     var decisionProgressPercent = GetPercent(Model.DecidedSubmissionCount, Model.SubmissionCount);
 }
 
-<div class="container-fluid conference-flow-page">
+<style>
+    .conference-flow-page {
+        padding: 2rem 1.5rem 4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
 
-    <div class="flow-hero-card mb-4">
-        <div class="flow-hero-left">
-            <div class="flow-hero-icon">
+    .admin-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%),
+                    linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        padding: 1.45rem 1.55rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.055);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+    }
+
+    .admin-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 0;
+    }
+
+    .admin-hero-icon {
+        width: 62px;
+        height: 62px;
+        min-width: 62px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.45rem;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
+    }
+
+    .admin-hero-kicker {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .admin-hero-title {
+        color: #0f172a;
+        font-size: 1.65rem;
+        font-weight: 900;
+        letter-spacing: -0.6px;
+        margin-bottom: 0.25rem;
+        line-height: 1.2;
+    }
+
+    .admin-hero-lead {
+        color: #64748b;
+        font-size: 0.95rem;
+        font-weight: 650;
+        margin-bottom: 0;
+        line-height: 1.6;
+        max-width: 860px;
+    }
+
+    .admin-hero-lead strong {
+        color: #334155;
+        font-weight: 950;
+    }
+
+    .admin-hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .admin-hero-btn {
+        min-height: 42px;
+        border-radius: 999px;
+        padding: 0 1rem;
+        font-size: 0.84rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .admin-hero-btn-light {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+    }
+
+    .admin-hero-btn-light:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .admin-hero-btn-primary {
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        border: none;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.18);
+    }
+
+    .admin-hero-btn-primary:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(13, 110, 253, 0.26);
+        text-decoration: none;
+    }
+
+    .flow-chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        margin-top: 0.8rem;
+    }
+
+    .flow-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        border-radius: 999px;
+        padding: 0.48rem 0.78rem;
+        font-size: 0.78rem;
+        font-weight: 900;
+        background: #ffffff;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.035);
+    }
+
+    .flow-chip-primary {
+        background: rgba(0, 174, 239, 0.10);
+        border-color: rgba(0, 174, 239, 0.22);
+        color: #0d6efd;
+    }
+
+    .admin-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.4rem;
+    }
+
+    .admin-stat-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        padding: 1.05rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        min-height: 96px;
+        transition: all 0.2s ease;
+    }
+
+    .admin-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.075);
+    }
+
+    .admin-stat-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .stat-blue {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+    }
+
+    .stat-green {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+    }
+
+    .stat-orange {
+        background: rgba(245, 158, 11, 0.12);
+        color: #b45309;
+    }
+
+    .stat-red {
+        background: rgba(239, 68, 68, 0.10);
+        color: #dc2626;
+    }
+
+    .stat-cyan {
+        background: rgba(0, 174, 239, 0.10);
+        color: #0284c7;
+    }
+
+    .stat-purple {
+        background: rgba(124, 58, 237, 0.10);
+        color: #7c3aed;
+    }
+
+    .stat-slate {
+        background: rgba(100, 116, 139, 0.12);
+        color: #64748b;
+    }
+
+    .stat-dark {
+        background: rgba(15, 23, 42, 0.10);
+        color: #0f172a;
+    }
+
+    .admin-stat-value {
+        color: #0f172a;
+        font-size: 1.35rem;
+        font-weight: 900;
+        line-height: 1.1;
+    }
+
+    .admin-stat-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 850;
+        margin-top: 0.25rem;
+    }
+
+    .admin-flow-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    .admin-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
+        overflow: hidden;
+        height: 100%;
+    }
+
+    .admin-card-header {
+        padding: 1.15rem 1.35rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .admin-card-title {
+        color: #0f172a;
+        font-size: 1.08rem;
+        font-weight: 900;
+        margin: 0 0 0.25rem;
+    }
+
+    .admin-card-subtitle {
+        color: #64748b;
+        font-size: 0.86rem;
+        font-weight: 650;
+        line-height: 1.55;
+        margin-bottom: 0;
+    }
+
+    .admin-card-header-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+    }
+
+    .admin-card-body {
+        padding: 1.35rem;
+    }
+
+    .progress-block {
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        background: #ffffff;
+        padding: 1.1rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.035);
+    }
+
+    .progress-title {
+        color: #0f172a;
+        font-size: 0.94rem;
+        font-weight: 950;
+        margin-bottom: 0.16rem;
+    }
+
+    .progress-subtitle {
+        color: #64748b;
+        font-size: 0.84rem;
+        font-weight: 650;
+        line-height: 1.55;
+    }
+
+    .progress-percent {
+        background-color: #f1f5f9;
+        color: #0f172a;
+        border-radius: 999px;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.78rem;
+        font-weight: 950;
+        white-space: nowrap;
+        border: 1px solid #e2e8f0;
+    }
+
+    .progress-modern {
+        height: 11px;
+        border-radius: 999px;
+        background-color: #eef2f7;
+        overflow: hidden;
+    }
+
+    .progress-modern .progress-bar {
+        border-radius: 999px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+    }
+
+    .progress-modern .progress-bar-danger {
+        background: linear-gradient(135deg, #ef4444, #f97316);
+    }
+
+    .flow-note {
+        background-color: #f8fafc;
+        color: #64748b;
+        border: 1px dashed #cbd5e1;
+        border-radius: 20px;
+        padding: 1rem;
+        font-size: 0.86rem;
+        font-weight: 700;
+        line-height: 1.6;
+    }
+
+    .quick-actions-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .quick-action-card {
+        display: grid;
+        grid-template-columns: 46px 1fr 34px;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 0.95rem;
+        border-radius: 20px;
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.035);
+    }
+
+    .quick-action-card:hover {
+        background-color: #ffffff;
+        box-shadow: 0 14px 32px rgba(15, 23, 42, 0.075);
+        transform: translateY(-2px);
+        border-color: rgba(13, 110, 253, 0.22);
+        text-decoration: none;
+    }
+
+    .quick-action-card:hover .quick-action-title,
+    .quick-action-card:hover .quick-action-desc {
+        text-decoration: none;
+    }
+
+    .quick-action-highlight {
+        background: linear-gradient(135deg, rgba(0, 174, 239, 0.10), #ffffff);
+        border-color: rgba(0, 174, 239, 0.24);
+    }
+
+    .quick-action-icon {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+    }
+
+    .quick-action-title {
+        color: #0f172a;
+        font-size: 0.9rem;
+        font-weight: 950;
+        margin-bottom: 0.15rem;
+    }
+
+    .quick-action-desc {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 650;
+        line-height: 1.45;
+    }
+
+    .quick-action-arrow {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        background-color: #f8fafc;
+        color: #94a3b8;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        transition: all 0.2s ease;
+        border: 1px solid #e2e8f0;
+    }
+
+    .quick-action-card:hover .quick-action-arrow {
+        background-color: #0d6efd;
+        color: #ffffff;
+        transform: translateX(2px);
+        border-color: #0d6efd;
+    }
+
+    .proceeding-book-icon {
+        background: rgba(0, 174, 239, 0.12);
+        color: #00aeef;
+    }
+
+    .admin-alert {
+        border: none;
+        border-radius: 18px;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.055);
+        font-weight: 850;
+    }
+
+    @@media (max-width: 1200px) {
+        .admin-flow-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .admin-stat-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 992px) {
+        .admin-hero {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .admin-hero-left {
+            align-items: flex-start;
+        }
+
+        .admin-hero-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .conference-flow-page {
+            padding: 1.5rem 1rem 3rem;
+        }
+
+        .admin-hero-left {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .admin-hero-title {
+            font-size: 1.45rem;
+        }
+
+        .admin-stat-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .admin-card-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .quick-action-card {
+            grid-template-columns: 46px 1fr;
+        }
+
+        .quick-action-arrow {
+            grid-column: 1 / -1;
+            width: 100%;
+        }
+
+        .admin-hero-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="conference-flow-page">
+
+    <div class="admin-hero">
+        <div class="admin-hero-left">
+            <div class="admin-hero-icon">
                 <i class="fas fa-stream"></i>
             </div>
 
             <div>
-                <div class="flow-section-label">
+                <div class="admin-hero-kicker">
                     Kongre Operasyonları
                 </div>
 
-                <h2 class="flow-page-title">
+                <h3 class="admin-hero-title">
                     Kongre Akışı
-                </h2>
+                </h3>
 
-                <p class="flow-page-description">
+                <p class="admin-hero-lead">
                     <strong>@Model.ConferenceTitle</strong> kongresinin bildiri, hakem atama, karar, kayıt, program ve bildiri kitabı süreçlerini buradan takip edebilirsiniz.
                 </p>
 
@@ -129,9 +646,9 @@
             </div>
         </div>
 
-        <div class="flow-hero-actions">
+        <div class="admin-hero-actions">
             <a href="@changeConferenceUrl"
-               class="btn flow-outline-btn">
+               class="admin-hero-btn admin-hero-btn-light">
                 <i class="fas fa-exchange-alt"></i>
                 Kongre Değiştir
             </a>
@@ -140,7 +657,7 @@
             {
                 <a href="@publicSiteUrl"
                    target="_blank"
-                   class="btn flow-primary-btn">
+                   class="admin-hero-btn admin-hero-btn-primary">
                     <i class="fas fa-external-link-alt"></i>
                     Siteyi Gör
                 </a>
@@ -150,212 +667,369 @@
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-4 mb-4">
+        <div class="alert alert-success alert-dismissible fade show admin-alert mb-4">
             <i class="fas fa-check-circle me-2"></i>
             @TempData["SuccessMessage"]
 
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Kapat"></button>
         </div>
     }
 
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-4 mb-4">
+        <div class="alert alert-danger alert-dismissible fade show admin-alert mb-4">
             <i class="fas fa-times-circle me-2"></i>
             @TempData["ErrorMessage"]
 
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Kapat"></button>
         </div>
     }
 
-    <div class="row g-3 mb-4">
-        <div class="col-xl-3 col-md-6">
-            <div class="flow-stat-card">
-                <div class="flow-stat-icon stat-blue">
-                    <i class="fas fa-file-alt"></i>
+    <div class="admin-stat-grid">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-blue">
+                <i class="fas fa-file-alt"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @Model.SubmissionCount
                 </div>
 
-                <div>
-                    <div class="flow-stat-number">
-                        @Model.SubmissionCount
-                    </div>
-
-                    <div class="flow-stat-label">
-                        Toplam Bildiri
-                    </div>
+                <div class="admin-stat-label">
+                    Toplam Bildiri
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
-            <div class="flow-stat-card">
-                <div class="flow-stat-icon stat-green">
-                    <i class="fas fa-user-check"></i>
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-green">
+                <i class="fas fa-user-check"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @Model.AssignedSubmissionCount
                 </div>
 
-                <div>
-                    <div class="flow-stat-number">
-                        @Model.AssignedSubmissionCount
-                    </div>
-
-                    <div class="flow-stat-label">
-                        Hakeme Atanan
-                    </div>
+                <div class="admin-stat-label">
+                    Hakeme Atanan
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
-            <div class="flow-stat-card">
-                <div class="flow-stat-icon stat-orange">
-                    <i class="fas fa-user-clock"></i>
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-orange">
+                <i class="fas fa-user-clock"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @waitingAssignmentCount
                 </div>
 
-                <div>
-                    <div class="flow-stat-number">
-                        @waitingAssignmentCount
-                    </div>
-
-                    <div class="flow-stat-label">
-                        Atama Bekleyen
-                    </div>
+                <div class="admin-stat-label">
+                    Atama Bekleyen
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
-            <div class="flow-stat-card">
-                <div class="flow-stat-icon stat-red">
-                    <i class="fas fa-gavel"></i>
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-red">
+                <i class="fas fa-gavel"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @Model.DecidedSubmissionCount
                 </div>
 
-                <div>
-                    <div class="flow-stat-number">
-                        @Model.DecidedSubmissionCount
-                    </div>
-
-                    <div class="flow-stat-label">
-                        Karar Verilen
-                    </div>
+                <div class="admin-stat-label">
+                    Karar Verilen
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row g-4 mb-4">
+    <div class="admin-flow-grid">
 
-        <div class="col-xl-7">
-            <div class="flow-card h-100">
-                <div class="flow-card-header">
-                    <div>
-                        <h5 class="flow-card-title">
-                            Süreç Özeti
-                        </h5>
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div>
+                    <h5 class="admin-card-title">
+                        Süreç Özeti
+                    </h5>
 
-                        <p class="flow-card-text">
-                            Bildirilerin hakem atama ve karar aşamalarındaki ilerleme durumunu gösterir.
-                        </p>
+                    <p class="admin-card-subtitle">
+                        Bildirilerin hakem atama ve karar aşamalarındaki ilerleme durumunu gösterir.
+                    </p>
+                </div>
+
+                <div class="admin-card-header-icon stat-blue">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+            </div>
+
+            <div class="admin-card-body">
+
+                <div class="progress-block mb-4">
+                    <div class="d-flex justify-content-between align-items-center gap-3 mb-2">
+                        <div>
+                            <div class="progress-title">
+                                Hakem Atama İlerlemesi
+                            </div>
+
+                            <div class="progress-subtitle">
+                                @Model.AssignedSubmissionCount / @Model.SubmissionCount bildiri hakeme atanmış.
+                            </div>
+                        </div>
+
+                        <span class="progress-percent">
+                            %@assignmentProgressPercent
+                        </span>
                     </div>
 
-                    <div class="flow-card-header-icon stat-blue">
-                        <i class="fas fa-chart-line"></i>
+                    <div class="progress progress-modern">
+                        <div class="progress-bar"
+                             role="progressbar"
+                             style="width: @(assignmentProgressPercent)%;">
+                        </div>
                     </div>
                 </div>
 
-                <div class="flow-card-body">
-
-                    <div class="progress-block mb-4">
-                        <div class="d-flex justify-content-between align-items-center gap-3 mb-2">
-                            <div>
-                                <div class="progress-title">
-                                    Hakem Atama İlerlemesi
-                                </div>
-
-                                <div class="progress-subtitle">
-                                    @Model.AssignedSubmissionCount / @Model.SubmissionCount bildiri hakeme atanmış.
-                                </div>
+                <div class="progress-block">
+                    <div class="d-flex justify-content-between align-items-center gap-3 mb-2">
+                        <div>
+                            <div class="progress-title">
+                                Karar İlerlemesi
                             </div>
 
-                            <span class="progress-percent">
-                                %@assignmentProgressPercent
-                            </span>
-                        </div>
-
-                        <div class="progress progress-modern">
-                            <div class="progress-bar"
-                                 role="progressbar"
-                                 style="width: @(assignmentProgressPercent)%;">
+                            <div class="progress-subtitle">
+                                @Model.DecidedSubmissionCount / @Model.SubmissionCount bildiri için karar verilmiş.
                             </div>
                         </div>
+
+                        <span class="progress-percent">
+                            %@decisionProgressPercent
+                        </span>
                     </div>
 
-                    <div class="progress-block">
-                        <div class="d-flex justify-content-between align-items-center gap-3 mb-2">
-                            <div>
-                                <div class="progress-title">
-                                    Karar İlerlemesi
-                                </div>
-
-                                <div class="progress-subtitle">
-                                    @Model.DecidedSubmissionCount / @Model.SubmissionCount bildiri için karar verilmiş.
-                                </div>
-                            </div>
-
-                            <span class="progress-percent">
-                                %@decisionProgressPercent
-                            </span>
-                        </div>
-
-                        <div class="progress progress-modern">
-                            <div class="progress-bar progress-bar-danger"
-                                 role="progressbar"
-                                 style="width: @(decisionProgressPercent)%;">
-                            </div>
+                    <div class="progress progress-modern">
+                        <div class="progress-bar progress-bar-danger"
+                             role="progressbar"
+                             style="width: @(decisionProgressPercent)%;">
                         </div>
                     </div>
-
-                    <div class="flow-note mt-4">
-                        <i class="fas fa-circle-info me-2"></i>
-                        Akışın tamamlanması için bildirilerin hakeme atanması, karar ekranından sonuçlandırılması ve kabul edilen bildirilerin program/bildiri kitabı süreçlerine alınması gerekir.
-                    </div>
-
                 </div>
+
+                <div class="flow-note mt-4">
+                    <i class="fas fa-circle-info me-2"></i>
+                    Akışın tamamlanması için bildirilerin hakeme atanması, karar ekranından sonuçlandırılması ve kabul edilen bildirilerin program/bildiri kitabı süreçlerine alınması gerekir.
+                </div>
+
             </div>
         </div>
 
-        <div class="col-xl-5">
-            <div class="flow-card h-100">
-                <div class="flow-card-header">
-                    <div>
-                        <h5 class="flow-card-title">
-                            Hızlı İşlemler
-                        </h5>
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div>
+                    <h5 class="admin-card-title">
+                        Hızlı İşlemler
+                    </h5>
 
-                        <p class="flow-card-text">
-                            Seçili kongreyle ilgili operasyon ekranlarına hızlı geçiş yapabilirsiniz.
-                        </p>
-                    </div>
-
-                    <div class="flow-card-header-icon stat-green">
-                        <i class="fas fa-bolt"></i>
-                    </div>
+                    <p class="admin-card-subtitle">
+                        Seçili kongreyle ilgili operasyon ekranlarına hızlı geçiş yapabilirsiniz.
+                    </p>
                 </div>
 
-                <div class="flow-card-body">
-                    <div class="quick-actions-grid">
+                <div class="admin-card-header-icon stat-green">
+                    <i class="fas fa-bolt"></i>
+                </div>
+            </div>
 
-                        <a href="@submissionUrl" class="quick-action-card">
-                            <div class="quick-action-icon stat-blue">
-                                <i class="fas fa-file-alt"></i>
+            <div class="admin-card-body">
+                <div class="quick-actions-grid">
+
+                    <a href="@submissionUrl" class="quick-action-card">
+                        <div class="quick-action-icon stat-blue">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+
+                        <div>
+                            <div class="quick-action-title">
+                                Bildiri Yönetimi
+                            </div>
+
+                            <div class="quick-action-desc">
+                                Gönderilen bildirileri incele.
+                            </div>
+                        </div>
+
+                        <div class="quick-action-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </a>
+
+                    <a href="@assignmentUrl" class="quick-action-card">
+                        <div class="quick-action-icon stat-green">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+
+                        <div>
+                            <div class="quick-action-title">
+                                Hakem Atama
+                            </div>
+
+                            <div class="quick-action-desc">
+                                Bildirilere hakem ata.
+                            </div>
+                        </div>
+
+                        <div class="quick-action-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </a>
+
+                    <a href="@decisionUrl" class="quick-action-card">
+                        <div class="quick-action-icon stat-red">
+                            <i class="fas fa-gavel"></i>
+                        </div>
+
+                        <div>
+                            <div class="quick-action-title">
+                                Karar Ekranı
+                            </div>
+
+                            <div class="quick-action-desc">
+                                Kabul, ret veya revizyon kararı ver.
+                            </div>
+                        </div>
+
+                        <div class="quick-action-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </a>
+
+                    <a href="@reviewersUrl" class="quick-action-card">
+                        <div class="quick-action-icon stat-orange">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+
+                        <div>
+                            <div class="quick-action-title">
+                                Hakemler
+                            </div>
+
+                            <div class="quick-action-desc">
+                                Hakem havuzunu ve hakem listesini yönet.
+                            </div>
+                        </div>
+
+                        <div class="quick-action-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </a>
+
+                    <a href="@registrationsUrl" class="quick-action-card">
+                        <div class="quick-action-icon stat-cyan">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+
+                        <div>
+                            <div class="quick-action-title">
+                                Kayıtlar ve Ödemeler
+                            </div>
+
+                            <div class="quick-action-desc">
+                                Katılımcı kayıtlarını ve ödeme durumlarını kontrol et.
+                            </div>
+                        </div>
+
+                        <div class="quick-action-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </a>
+
+                    <a href="@sessionsUrl" class="quick-action-card">
+                        <div class="quick-action-icon stat-purple">
+                            <i class="fas fa-microphone-alt"></i>
+                        </div>
+
+                        <div>
+                            <div class="quick-action-title">
+                                Program / Oturumlar
+                            </div>
+
+                            <div class="quick-action-desc">
+                                Kongre programını ve oturumları düzenle.
+                            </div>
+                        </div>
+
+                        <div class="quick-action-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </a>
+
+                    <a href="@sessionsPrintUrl" class="quick-action-card">
+                        <div class="quick-action-icon stat-slate">
+                            <i class="fas fa-print"></i>
+                        </div>
+
+                        <div>
+                            <div class="quick-action-title">
+                                Programı Yazdır
+                            </div>
+
+                            <div class="quick-action-desc">
+                                Yayındaki oturum programının yazdırılabilir halini aç.
+                            </div>
+                        </div>
+
+                        <div class="quick-action-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </a>
+
+                    <a href="@proceedingBookUrl" class="quick-action-card quick-action-highlight">
+                        <div class="quick-action-icon proceeding-book-icon">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+
+                        <div>
+                            <div class="quick-action-title">
+                                Bildiri Kitabı
+                            </div>
+
+                            <div class="quick-action-desc">
+                                Kabul edilen bildirilerden PDF oluştur veya mevcut kitabı yönet.
+                            </div>
+                        </div>
+
+                        <div class="quick-action-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </a>
+
+                    @if (isSuperAdmin)
+                    {
+                        <a href="@tenantAdminAssignUrl" class="quick-action-card">
+                            <div class="quick-action-icon stat-dark">
+                                <i class="fas fa-user-shield"></i>
                             </div>
 
                             <div>
                                 <div class="quick-action-title">
-                                    Bildiri Yönetimi
+                                    Kurum Yöneticisi Ata
                                 </div>
 
                                 <div class="quick-action-desc">
-                                    Gönderilen bildirileri incele.
+                                    Bu kongrenin bağlı olduğu kuruma admin ata.
                                 </div>
                             </div>
 
@@ -363,171 +1037,8 @@
                                 <i class="fas fa-arrow-right"></i>
                             </div>
                         </a>
+                    }
 
-                        <a href="@assignmentUrl" class="quick-action-card">
-                            <div class="quick-action-icon stat-green">
-                                <i class="fas fa-tasks"></i>
-                            </div>
-
-                            <div>
-                                <div class="quick-action-title">
-                                    Hakem Atama
-                                </div>
-
-                                <div class="quick-action-desc">
-                                    Bildirilere hakem ata.
-                                </div>
-                            </div>
-
-                            <div class="quick-action-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </a>
-
-                        <a href="@decisionUrl" class="quick-action-card">
-                            <div class="quick-action-icon stat-red">
-                                <i class="fas fa-gavel"></i>
-                            </div>
-
-                            <div>
-                                <div class="quick-action-title">
-                                    Karar Ekranı
-                                </div>
-
-                                <div class="quick-action-desc">
-                                    Kabul, ret veya revizyon kararı ver.
-                                </div>
-                            </div>
-
-                            <div class="quick-action-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </a>
-
-                        <a href="@reviewersUrl" class="quick-action-card">
-                            <div class="quick-action-icon stat-orange">
-                                <i class="fas fa-user-check"></i>
-                            </div>
-
-                            <div>
-                                <div class="quick-action-title">
-                                    Hakemler
-                                </div>
-
-                                <div class="quick-action-desc">
-                                    Hakem havuzunu ve hakem listesini yönet.
-                                </div>
-                            </div>
-
-                            <div class="quick-action-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </a>
-
-                        <a href="@registrationsUrl" class="quick-action-card">
-                            <div class="quick-action-icon stat-cyan">
-                                <i class="fas fa-credit-card"></i>
-                            </div>
-
-                            <div>
-                                <div class="quick-action-title">
-                                    Kayıtlar ve Ödemeler
-                                </div>
-
-                                <div class="quick-action-desc">
-                                    Katılımcı kayıtlarını ve ödeme durumlarını kontrol et.
-                                </div>
-                            </div>
-
-                            <div class="quick-action-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </a>
-
-                        <a href="@sessionsUrl" class="quick-action-card">
-                            <div class="quick-action-icon stat-purple">
-                                <i class="fas fa-microphone-alt"></i>
-                            </div>
-
-                            <div>
-                                <div class="quick-action-title">
-                                    Program / Oturumlar
-                                </div>
-
-                                <div class="quick-action-desc">
-                                    Kongre programını ve oturumları düzenle.
-                                </div>
-                            </div>
-
-                            <div class="quick-action-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </a>
-
-                        <a href="@sessionsPrintUrl" class="quick-action-card">
-                            <div class="quick-action-icon stat-gray">
-                                <i class="fas fa-print"></i>
-                            </div>
-
-                            <div>
-                                <div class="quick-action-title">
-                                    Programı Yazdır
-                                </div>
-
-                                <div class="quick-action-desc">
-                                    Yayındaki oturum programının yazdırılabilir halini aç.
-                                </div>
-                            </div>
-
-                            <div class="quick-action-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </a>
-
-                        <a href="@proceedingBookUrl" class="quick-action-card quick-action-highlight">
-                            <div class="quick-action-icon proceeding-book-icon">
-                                <i class="fas fa-book-open"></i>
-                            </div>
-
-                            <div>
-                                <div class="quick-action-title">
-                                    Bildiri Kitabı
-                                </div>
-
-                                <div class="quick-action-desc">
-                                    Kabul edilen bildirilerden PDF oluştur veya mevcut kitabı yönet.
-                                </div>
-                            </div>
-
-                            <div class="quick-action-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </a>
-
-                        @if (isSuperAdmin)
-                        {
-                            <a href="@tenantAdminAssignUrl" class="quick-action-card">
-                                <div class="quick-action-icon stat-dark">
-                                    <i class="fas fa-user-shield"></i>
-                                </div>
-
-                                <div>
-                                    <div class="quick-action-title">
-                                        Kurum Yöneticisi Ata
-                                    </div>
-
-                                    <div class="quick-action-desc">
-                                        Bu kongrenin bağlı olduğu kuruma admin ata.
-                                    </div>
-                                </div>
-
-                                <div class="quick-action-arrow">
-                                    <i class="fas fa-arrow-right"></i>
-                                </div>
-                            </a>
-                        }
-
-                    </div>
                 </div>
             </div>
         </div>
@@ -535,430 +1046,3 @@
     </div>
 
 </div>
-
-<style>
-    .conference-flow-page {
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        padding-bottom: 2rem;
-    }
-
-    .flow-hero-card {
-        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
-        border: 1px solid #e8eef6;
-        border-radius: 28px;
-        padding: 1.55rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1.25rem;
-        flex-wrap: wrap;
-        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
-    }
-
-    .flow-hero-left {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        min-width: 300px;
-        flex: 1;
-    }
-
-    .flow-hero-icon {
-        width: 64px;
-        height: 64px;
-        min-width: 64px;
-        border-radius: 22px;
-        background: linear-gradient(135deg, #0d6efd, #00aeef);
-        color: #ffffff;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.55rem;
-        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.22);
-    }
-
-    .flow-section-label {
-        color: #64748b;
-        font-size: 0.78rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        margin-bottom: 0.35rem;
-    }
-
-    .flow-page-title {
-        margin: 0 0 0.35rem;
-        color: #0f172a;
-        font-size: 2rem;
-        font-weight: 950;
-        letter-spacing: -0.05em;
-        line-height: 1.2;
-    }
-
-    .flow-page-description {
-        margin: 0;
-        color: #64748b;
-        font-size: 0.96rem;
-        font-weight: 650;
-        line-height: 1.65;
-        max-width: 850px;
-    }
-
-    .flow-chip-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.55rem;
-        margin-top: 0.8rem;
-    }
-
-    .flow-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.45rem;
-        border-radius: 999px;
-        padding: 0.48rem 0.78rem;
-        font-size: 0.78rem;
-        font-weight: 900;
-        background: #f8fafc;
-        color: #475569;
-        border: 1px solid #e2e8f0;
-    }
-
-    .flow-chip-primary {
-        background: rgba(0, 174, 239, 0.10);
-        border-color: rgba(0, 174, 239, 0.22);
-        color: #0d6efd;
-    }
-
-    .flow-hero-actions {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-    }
-
-    .flow-primary-btn,
-    .flow-outline-btn {
-        min-height: 44px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.55rem;
-        border-radius: 999px;
-        font-weight: 900;
-        padding: 0 1.15rem;
-        text-decoration: none;
-        font-size: 0.9rem;
-        transition: all 0.2s ease;
-        white-space: nowrap;
-    }
-
-    .flow-primary-btn {
-        border: none;
-        background: linear-gradient(135deg, #0d6efd, #00aeef);
-        color: #ffffff;
-        box-shadow: 0 12px 26px rgba(13, 110, 253, 0.18);
-    }
-
-    .flow-primary-btn:hover {
-        color: #ffffff;
-        transform: translateY(-1px);
-        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.24);
-    }
-
-    .flow-outline-btn {
-        border: 1px solid #cbd5e1;
-        background: #ffffff;
-        color: #334155;
-    }
-
-    .flow-outline-btn:hover {
-        color: #0d6efd;
-        border-color: rgba(13, 110, 253, 0.32);
-        background: #ffffff;
-        transform: translateY(-1px);
-    }
-
-    .flow-stat-card {
-        min-height: 104px;
-        background: #ffffff;
-        border: 1px solid #e8eef6;
-        border-radius: 24px;
-        padding: 1.15rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
-        transition: all 0.2s ease;
-    }
-
-    .flow-stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
-    }
-
-    .flow-stat-icon,
-    .flow-card-header-icon,
-    .quick-action-icon {
-        width: 50px;
-        height: 50px;
-        min-width: 50px;
-        border-radius: 17px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.15rem;
-    }
-
-    .flow-stat-number {
-        color: #0f172a;
-        font-size: 1.65rem;
-        font-weight: 950;
-        line-height: 1;
-    }
-
-    .flow-stat-label {
-        color: #64748b;
-        font-size: 0.82rem;
-        font-weight: 850;
-        margin-top: 0.3rem;
-    }
-
-    .stat-blue {
-        background: rgba(13, 110, 253, 0.10);
-        color: #0d6efd;
-    }
-
-    .stat-green {
-        background: rgba(34, 197, 94, 0.10);
-        color: #16a34a;
-    }
-
-    .stat-orange {
-        background: rgba(245, 158, 11, 0.12);
-        color: #f59e0b;
-    }
-
-    .stat-red {
-        background: rgba(239, 68, 68, 0.10);
-        color: #ef4444;
-    }
-
-    .stat-cyan {
-        background: rgba(0, 174, 239, 0.12);
-        color: #00aeef;
-    }
-
-    .stat-purple {
-        background: rgba(124, 58, 237, 0.10);
-        color: #7c3aed;
-    }
-
-    .stat-gray {
-        background: rgba(100, 116, 139, 0.12);
-        color: #64748b;
-    }
-
-    .stat-dark {
-        background: rgba(15, 23, 42, 0.10);
-        color: #0f172a;
-    }
-
-    .flow-card {
-        background: #ffffff;
-        border: 1px solid #e8eef6;
-        border-radius: 28px;
-        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
-        overflow: hidden;
-    }
-
-    .flow-card-header {
-        padding: 1.25rem 1.35rem;
-        border-bottom: 1px solid #edf2f7;
-        background: #ffffff;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-    }
-
-    .flow-card-title {
-        color: #0f172a;
-        font-size: 1.12rem;
-        font-weight: 950;
-        margin-bottom: 0.2rem;
-    }
-
-    .flow-card-text {
-        color: #64748b;
-        font-size: 0.84rem;
-        font-weight: 650;
-        margin-bottom: 0;
-        line-height: 1.55;
-    }
-
-    .flow-card-body {
-        padding: 1.35rem;
-    }
-
-    .progress-title {
-        color: #0f172a;
-        font-weight: 950;
-        margin-bottom: 0.15rem;
-    }
-
-    .progress-subtitle {
-        color: #64748b;
-        font-size: 0.84rem;
-        font-weight: 650;
-    }
-
-    .progress-modern {
-        height: 11px;
-        border-radius: 999px;
-        background-color: #eef2f7;
-        overflow: hidden;
-    }
-
-    .progress-modern .progress-bar {
-        border-radius: 999px;
-        background: linear-gradient(135deg, #0d6efd, #00aeef);
-    }
-
-    .progress-modern .progress-bar-danger {
-        background: linear-gradient(135deg, #ef4444, #f97316);
-    }
-
-    .progress-percent {
-        background-color: #f1f5f9;
-        color: #0f172a;
-        border-radius: 999px;
-        padding: 0.35rem 0.75rem;
-        font-size: 0.78rem;
-        font-weight: 950;
-        white-space: nowrap;
-        border: 1px solid #e2e8f0;
-    }
-
-    .flow-note {
-        background-color: #f8fafc;
-        color: #64748b;
-        border: 1px solid #e2e8f0;
-        border-radius: 18px;
-        padding: 0.95rem 1rem;
-        font-size: 0.86rem;
-        font-weight: 650;
-        line-height: 1.6;
-    }
-
-    .quick-actions-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 0.75rem;
-    }
-
-    .quick-action-card {
-        display: grid;
-        grid-template-columns: 50px 1fr 34px;
-        align-items: center;
-        gap: 0.85rem;
-        padding: 0.95rem;
-        border-radius: 20px;
-        background-color: #f8fafc;
-        border: 1px solid #e2e8f0;
-        text-decoration: none;
-        transition: all 0.2s ease;
-    }
-
-    .quick-action-card:hover {
-        background-color: #ffffff;
-        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
-        transform: translateY(-1px);
-        border-color: rgba(13, 110, 253, 0.22);
-    }
-
-    .quick-action-highlight {
-        background: linear-gradient(135deg, rgba(0, 174, 239, 0.10), #f8fafc);
-        border-color: rgba(0, 174, 239, 0.24);
-    }
-
-    .proceeding-book-icon {
-        background: rgba(0, 174, 239, 0.12);
-        color: #00aeef;
-    }
-
-    .quick-action-title {
-        color: #0f172a;
-        font-size: 0.9rem;
-        font-weight: 950;
-        margin-bottom: 0.15rem;
-    }
-
-    .quick-action-desc {
-        color: #64748b;
-        font-size: 0.78rem;
-        font-weight: 650;
-        line-height: 1.45;
-    }
-
-    .quick-action-arrow {
-        width: 34px;
-        height: 34px;
-        border-radius: 999px;
-        background-color: #ffffff;
-        color: #94a3b8;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.8rem;
-        transition: all 0.2s ease;
-        border: 1px solid #e2e8f0;
-    }
-
-    .quick-action-card:hover .quick-action-arrow {
-        background-color: #0d6efd;
-        color: #ffffff;
-        transform: translateX(2px);
-        border-color: #0d6efd;
-    }
-
-    @@media (max-width: 992px) {
-        .flow-hero-card {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-
-        .flow-hero-left {
-            align-items: flex-start;
-        }
-
-        .flow-hero-actions,
-        .flow-hero-actions .btn {
-            width: 100%;
-        }
-
-        .flow-page-title {
-            font-size: 1.65rem;
-        }
-    }
-
-    @@media (max-width: 768px) {
-        .flow-hero-left {
-            flex-direction: column;
-        }
-
-        .flow-card-header {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-
-        .quick-action-card {
-            grid-template-columns: 46px 1fr;
-        }
-
-        .quick-action-arrow {
-            grid-column: 1 / -1;
-            width: 100%;
-        }
-    }
-</style>
