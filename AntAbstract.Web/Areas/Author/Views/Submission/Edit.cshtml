@@ -52,13 +52,16 @@
 
     var authors = Model.Authors ?? new List<SubmissionAuthorViewModel>();
     var hasExistingFile = !string.IsNullOrWhiteSpace(Model.ExistingFilePath);
+
+    var conferenceTitle = Context.Session.GetString("SelectedConferenceTitle") ?? "";
+
+    var presentationTypeValue = Model.PresentationType ?? "";
+    var selectedTopicValue = Model.ConferenceTopicId.ToString();
 }
 
 <style>
     .edit-submission-page {
-        max-width: 1320px;
-        margin: 0 auto;
-        padding: 1.25rem 1.5rem 4rem;
+        padding: 2rem 1.5rem 4rem;
         font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
@@ -565,6 +568,151 @@
             width: 100%;
         }
     }
+
+    .program-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        padding: 1.45rem 1.55rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.055);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+    }
+
+    .program-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 0;
+    }
+
+    .program-hero-icon {
+        width: 62px;
+        height: 62px;
+        min-width: 62px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.45rem;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
+    }
+
+    .program-title {
+        color: #0f172a;
+        font-size: 1.65rem;
+        font-weight: 900;
+        letter-spacing: -0.6px;
+        margin-bottom: 0.25rem;
+        line-height: 1.2;
+    }
+
+    .program-lead {
+        color: #64748b;
+        font-size: 0.95rem;
+        font-weight: 650;
+        margin-bottom: 0;
+        line-height: 1.6;
+        max-width: 780px;
+    }
+
+    .program-conference-pill {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border-radius: 999px;
+        background: #ffffff;
+        border: 1px solid #dbe4ef;
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 900;
+        padding: 0 0.95rem;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.045);
+        max-width: 380px;
+    }
+
+    .program-conference-pill span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .program-conference-pill i {
+        color: #00aeef;
+    }
+
+    .program-hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .program-hero-btn {
+        min-height: 42px;
+        border-radius: 999px;
+        padding: 0 1rem;
+        font-size: 0.84rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .program-hero-btn-light {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+    }
+
+    .program-hero-btn-light:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .program-hero-btn-primary {
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        border: none;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.18);
+    }
+
+    .program-hero-btn-primary:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(13, 110, 253, 0.26);
+        text-decoration: none;
+    }
+
+    @@media (max-width: 992px) {
+        .program-hero {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .program-hero-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .program-conference-pill {
+            max-width: 100%;
+        }
+    }
+
 </style>
 
 <div class="edit-submission-page">
@@ -593,41 +741,45 @@
         </div>
     }
 
-    <div class="edit-hero-card">
-        <div class="edit-hero-left">
-            <div class="edit-hero-icon">
+    <div class="program-hero">
+        <div class="program-hero-left">
+            <div class="program-hero-icon">
                 <i class="fas fa-pen-to-square"></i>
             </div>
 
             <div>
-                <div class="edit-section-label">
-                    @L("HeroSectionLabel", "Bildiri İşlemleri", "Abstract Operations")
-                </div>
-
-                <h2 class="edit-hero-title">
+                <h3 class="program-title">
                     @L("PageHeading", "Bildiriyi Düzenle", "Edit Abstract")
-                </h2>
+                </h3>
 
-                <p class="edit-hero-text">
+                <p class="program-lead">
                     @L("PageLead", "Bildiri bilgilerinizi güncelleyebilir, yazarları düzenleyebilir ve yeni dosya versiyonu yükleyebilirsiniz.", "You can update your abstract information, edit authors, and upload a new file version.")
                 </p>
-
-                @if (!string.IsNullOrWhiteSpace(slug))
-                {
-                    <div class="edit-slug-badge">
-                        /@slug
-                    </div>
-                }
             </div>
         </div>
 
-        <div class="edit-hero-actions">
-            <a href="@backUrl" class="edit-hero-btn edit-hero-btn-light">
+        <div class="program-hero-actions">
+            @if (!string.IsNullOrWhiteSpace(conferenceTitle))
+            {
+                <div class="program-conference-pill">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>@conferenceTitle</span>
+                </div>
+            }
+            else if (!string.IsNullOrWhiteSpace(slug))
+            {
+                <div class="program-conference-pill">
+                    <i class="fas fa-link"></i>
+                    <span>/@slug</span>
+                </div>
+            }
+
+            <a href="@backUrl" class="program-hero-btn program-hero-btn-light">
                 <i class="fas fa-arrow-left"></i>
                 @L("BackButton", "Listeye Dön", "Back to List")
             </a>
 
-            <a href="@detailsUrl" class="edit-hero-btn edit-hero-btn-primary">
+            <a href="@detailsUrl" class="program-hero-btn program-hero-btn-primary">
                 <i class="fas fa-eye"></i>
                 @L("DetailsButton", "Detayı Gör", "View Details")
             </a>
@@ -640,15 +792,12 @@
 
         @Html.AntiForgeryToken()
 
-        <input type="hidden" asp-for="Id" />
-        <input type="hidden" asp-for="ConferenceId" />
+        <input type="hidden" name="Id" value="@Model.Id" />
+        <input type="hidden" name="ConferenceId" value="@Model.ConferenceId" />
 
         @if (hasValidationErrors)
         {
-            <div asp-validation-summary="All"
-                 class="alert validation-summary-errors mb-4 shadow-sm"
-                 role="alert">
-            </div>
+            @Html.ValidationSummary(false, "", new { @class = "alert validation-summary-errors mb-4 shadow-sm", role = "alert" })
         }
 
         <div class="edit-card">
@@ -670,49 +819,53 @@
 
             <div class="edit-card-body">
                 <div class="mb-4">
-                    <label asp-for="Title" class="form-label">
+                    <label for="Title" class="form-label">
                         @L("TitleLabel", "Bildiri Başlığı", "Abstract Title")
                         <span class="text-danger">*</span>
                     </label>
 
-                    <input asp-for="Title"
+                    <input id="Title"
+                           name="Title"
+                           value="@Model.Title"
                            maxlength="200"
                            class="form-control-modern"
                            placeholder="@L("TitlePlaceholder", "Bildiri başlığını giriniz", "Enter abstract title")" />
 
-                    <span asp-validation-for="Title" class="text-danger small fw-bold mt-2 d-block"></span>
+                    @Html.ValidationMessageFor(m => m.Title, "", new { @class = "text-danger small fw-bold mt-2 d-block" })
                 </div>
 
                 <div class="row g-4">
                     <div class="col-md-6">
-                        <label asp-for="PresentationType" class="form-label">
+                        <label for="PresentationType" class="form-label">
                             @L("PresentationTypeLabel", "Sunum Türü", "Presentation Type")
                             <span class="text-danger">*</span>
                         </label>
 
-                        <select asp-for="PresentationType" class="form-select-modern">
+                        <select id="PresentationType"
+                                name="PresentationType"
+                                class="form-select-modern">
                             <option value="">
                                 @L("SelectPresentationTypeOption", "Sunum türü seçiniz", "Select presentation type")
                             </option>
 
-                            <option value="Oral">
+                            <option value="Oral" selected="@(string.Equals(presentationTypeValue, "Oral", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">
                                 @L("PresentationTypeOral", "Sözlü Sunum", "Oral Presentation")
                             </option>
 
-                            <option value="Poster">
+                            <option value="Poster" selected="@(string.Equals(presentationTypeValue, "Poster", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">
                                 @L("PresentationTypePoster", "Poster Sunum", "Poster Presentation")
                             </option>
 
-                            <option value="Online">
+                            <option value="Online" selected="@(string.Equals(presentationTypeValue, "Online", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">
                                 @L("PresentationTypeOnline", "Çevrimiçi Sunum", "Online Presentation")
                             </option>
                         </select>
 
-                        <span asp-validation-for="PresentationType" class="text-danger small fw-bold mt-2 d-block"></span>
+                        @Html.ValidationMessageFor(m => m.PresentationType, "", new { @class = "text-danger small fw-bold mt-2 d-block" })
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="ConferenceTopicId" class="form-label">
+                        <label for="ConferenceTopicId" class="form-label">
                             @L("TopicLabel", "Bildiri Konusu / Tema", "Abstract Topic / Theme")
                             <span class="text-danger">*</span>
                         </label>
@@ -728,46 +881,59 @@
                         }
                         else
                         {
-                            <select asp-for="ConferenceTopicId"
-                                    asp-items="Model.AvailableTopics"
+                            <select id="ConferenceTopicId"
+                                    name="ConferenceTopicId"
                                     class="form-select-modern">
                                 <option value="">
                                     @L("SelectTopicOption", "Bildiri konusu seçiniz", "Select abstract topic")
                                 </option>
+
+                                @foreach (var topic in Model.AvailableTopics)
+                                {
+                                    var selectedTopicAttribute = string.Equals(topic.Value, selectedTopicValue, StringComparison.OrdinalIgnoreCase)
+                                        ? "selected"
+                                        : null;
+
+                                    <option value="@topic.Value" selected="@selectedTopicAttribute">
+                                        @topic.Text
+                                    </option>
+                                }
                             </select>
                         }
 
-                        <span asp-validation-for="ConferenceTopicId" class="text-danger small fw-bold mt-2 d-block"></span>
+                        @Html.ValidationMessageFor(m => m.ConferenceTopicId, "", new { @class = "text-danger small fw-bold mt-2 d-block" })
                     </div>
 
                     <div class="col-md-12">
-                        <label asp-for="Keywords" class="form-label">
+                        <label for="Keywords" class="form-label">
                             @L("KeywordsLabel", "Anahtar Kelimeler", "Keywords")
                             <span class="text-danger">*</span>
                         </label>
 
-                        <input asp-for="Keywords"
+                        <input id="Keywords"
+                               name="Keywords"
+                               value="@Model.Keywords"
                                class="form-control-modern"
                                placeholder="@L("KeywordsPlaceholder", "Örn: yapay zeka, kırsal turizm, sürdürülebilirlik", "Example: AI, rural tourism, sustainability")" />
 
-                        <span asp-validation-for="Keywords" class="text-danger small fw-bold mt-2 d-block"></span>
+                        @Html.ValidationMessageFor(m => m.Keywords, "", new { @class = "text-danger small fw-bold mt-2 d-block" })
                     </div>
                 </div>
 
                 <div class="mt-4">
-                    <label asp-for="AbstractText" class="form-label">
+                    <label for="AbstractText" class="form-label">
                         @L("AbstractLabel", "Özet Metni", "Abstract Text")
                         <span class="text-danger">*</span>
                     </label>
 
-                    <textarea asp-for="AbstractText"
-                              id="AbstractText"
+                    <textarea id="AbstractText"
+                              name="AbstractText"
                               maxlength="5000"
                               class="form-control-modern"
                               rows="8"
-                              placeholder="@L("AbstractPlaceholder", "Özetinizi buraya yazın veya yapıştırın...", "Write or paste your abstract here...")"></textarea>
+                              placeholder="@L("AbstractPlaceholder", "Özetinizi buraya yazın veya yapıştırın...", "Write or paste your abstract here...")">@Model.AbstractText</textarea>
 
-                    <span asp-validation-for="AbstractText" class="text-danger small fw-bold mt-2 d-block"></span>
+                    @Html.ValidationMessageFor(m => m.AbstractText, "", new { @class = "text-danger small fw-bold mt-2 d-block" })
                 </div>
             </div>
         </div>
@@ -949,11 +1115,12 @@
                 }
 
                 <div class="mb-0">
-                    <label asp-for="SubmissionFile" class="form-label">
+                    <label for="SubmissionFile" class="form-label">
                         @L("NewFileLabel", "Yeni Dosya Yükle", "Upload New File")
                     </label>
 
-                    <input asp-for="SubmissionFile"
+                    <input id="SubmissionFile"
+                           name="SubmissionFile"
                            type="file"
                            class="form-control-modern"
                            accept=".pdf,.docx,.doc" />
@@ -962,7 +1129,7 @@
                         @L("FileHelpText", "PDF, DOC veya DOCX dosyası yükleyebilirsiniz. Maksimum dosya boyutu 10 MB olmalıdır.", "You can upload a PDF, DOC or DOCX file. Maximum file size should be 10 MB.")
                     </div>
 
-                    <span asp-validation-for="SubmissionFile" class="text-danger small fw-bold mt-2 d-block"></span>
+                    @Html.ValidationMessageFor(m => m.SubmissionFile, "", new { @class = "text-danger small fw-bold mt-2 d-block" })
                 </div>
             </div>
         </div>

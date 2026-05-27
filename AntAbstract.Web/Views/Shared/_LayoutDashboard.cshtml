@@ -35,9 +35,9 @@
         shortDisplayName = shortDisplayName.Substring(0, 22).Trim() + "...";
     }
 
-    var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
-        ? user.ProfileImagePath
-        : $"https://ui-avatars.com/api/?name={Uri.EscapeDataString(displayName)}&background=00aeef&color=fff&size=128&bold=true";
+var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
+    ? user.ProfileImagePath
+    : $"https://ui-avatars.com/api/?name={Uri.EscapeDataString(displayName)}&background=00aeef&color=fff&size=128&font-size=0.35&bold=true";
 
     var isSuperAdmin = User.IsInRole("SuperAdmin");
     var isAdmin = User.IsInRole("Admin");
@@ -1207,7 +1207,7 @@
                     <a href="@submissionIndexUrl"
                        class="nav-link @(currentController == "Submission" && currentAction == "Index" ? "active" : "")">
                         <i class="fas fa-file-contract text-info"></i>
-                        @L("Author_MySubmissions", "Başvurularım")
+                        @L("Author_MySubmissions", "Bildirilerim")
                     </a>
                 }
 

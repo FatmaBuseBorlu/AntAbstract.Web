@@ -1,4 +1,9 @@
-﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+﻿@using System
+@using System.Collections.Generic
+@using System.Linq
+@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Routing
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -12,6 +17,9 @@
             ? fallback
             : value;
     }
+
+    var slug = Context.GetRouteValue("slug")?.ToString() ?? "";
+    var conferenceTitle = Context.Session.GetString("SelectedConferenceTitle") ?? "";
 
     var criteria = new[]
     {
@@ -48,174 +56,225 @@
 
 <style>
     .review-guide-page {
-        max-width: 1180px;
-        margin: 0 auto;
-        padding: 1.25rem 1.5rem 4rem;
+        padding: 2rem 1.5rem 4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
-    .guide-hero {
-        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.18), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
-        border: 1px solid #e8eef6;
-        border-radius: 30px;
-        padding: 2rem;
+    .program-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%),
+                    linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        padding: 1.45rem 1.55rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.055);
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 1.5rem;
-        flex-wrap: wrap;
-        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.065);
-        margin-bottom: 1.5rem;
     }
 
-    .guide-hero-left {
+    .program-hero-left {
         display: flex;
         align-items: center;
-        gap: 1.1rem;
-        min-width: 280px;
-        flex: 1;
+        gap: 1rem;
+        min-width: 0;
     }
 
-    .guide-hero-icon {
-        width: 76px;
-        height: 76px;
-        min-width: 76px;
-        border-radius: 28px;
-        background: linear-gradient(135deg, #00aeef, #2563eb);
+    .program-hero-icon {
+        width: 62px;
+        height: 62px;
+        min-width: 62px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
         color: #ffffff;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 2rem;
-        box-shadow: 0 18px 36px rgba(0, 174, 239, 0.24);
+        font-size: 1.45rem;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
     }
 
-    .guide-kicker {
-        color: #64748b;
-        font-size: 0.76rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        margin-bottom: 0.35rem;
-    }
-
-    .guide-title {
-        margin: 0 0 0.45rem;
+    .program-title {
         color: #0f172a;
-        font-size: 2rem;
-        font-weight: 950;
-        letter-spacing: -0.045em;
-        line-height: 1.15;
+        font-size: 1.65rem;
+        font-weight: 900;
+        letter-spacing: -0.6px;
+        margin-bottom: 0.25rem;
+        line-height: 1.2;
     }
 
-    .guide-description {
-        margin: 0;
+    .program-lead {
         color: #64748b;
-        font-size: 0.98rem;
+        font-size: 0.95rem;
         font-weight: 650;
-        line-height: 1.7;
-        max-width: 760px;
+        margin-bottom: 0;
+        line-height: 1.6;
+        max-width: 780px;
     }
 
-    .download-guide-btn {
-        min-height: 46px;
-        border-radius: 999px;
-        padding: 0 1.25rem;
-        font-weight: 950;
+    .program-conference-pill {
+        min-height: 38px;
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        box-shadow: 0 12px 26px rgba(0, 174, 239, 0.18);
+        border-radius: 999px;
+        background: #ffffff;
+        border: 1px solid #dbe4ef;
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 900;
+        padding: 0 0.95rem;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.045);
+        max-width: 380px;
+    }
+
+    .program-conference-pill span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .program-conference-pill i {
+        color: #00aeef;
+    }
+
+    .program-hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .program-hero-btn {
+        min-height: 42px;
+        border-radius: 999px;
+        padding: 0 1rem;
+        font-size: 0.84rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        border: none;
+    }
+
+    .program-hero-btn-primary {
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.18);
+    }
+
+    .program-hero-btn-primary:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(13, 110, 253, 0.26);
+        text-decoration: none;
     }
 
     .guide-card {
         background: #ffffff;
         border: 1px solid #e2e8f0;
-        border-radius: 28px;
-        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.065);
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
         overflow: hidden;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.4rem;
     }
 
     .guide-card-header {
-        padding: 1.35rem 1.5rem;
+        padding: 1.15rem 1.35rem;
         border-bottom: 1px solid #e2e8f0;
         background: linear-gradient(135deg, #ffffff, #f8fbff);
     }
 
     .guide-card-title {
         color: #0f172a;
-        font-weight: 950;
-        margin-bottom: 0.25rem;
+        font-size: 1.05rem;
+        font-weight: 900;
+        margin: 0 0 0.25rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .guide-card-title i {
+        color: #00aeef;
     }
 
     .guide-card-subtitle {
         color: #64748b;
-        font-size: 0.85rem;
+        font-size: 0.86rem;
         font-weight: 650;
+        line-height: 1.55;
         margin-bottom: 0;
     }
 
     .guide-card-body {
-        padding: 1.5rem;
+        padding: 1.35rem;
     }
 
     .principle-box {
         display: flex;
         align-items: flex-start;
-        gap: 1rem;
+        gap: 0.85rem;
         background: rgba(0, 174, 239, 0.08);
-        border: 1px solid rgba(0, 174, 239, 0.15);
-        border-radius: 24px;
-        padding: 1.15rem 1.2rem;
+        border: 1px solid rgba(0, 174, 239, 0.16);
+        border-radius: 22px;
+        padding: 1rem 1.1rem;
         color: #475569;
+        font-size: 0.92rem;
         font-weight: 650;
         line-height: 1.75;
     }
 
     .principle-icon {
-        width: 48px;
-        height: 48px;
-        min-width: 48px;
-        border-radius: 18px;
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        border-radius: 16px;
         background: #ffffff;
         color: #00aeef;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
-        font-size: 1.2rem;
+        font-size: 1.1rem;
     }
 
     .principle-title {
         color: #0f172a;
+        font-size: 0.95rem;
         font-weight: 950;
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.18rem;
     }
 
     .criteria-card {
         height: 100%;
         background: #ffffff;
         border: 1px solid #e2e8f0;
-        border-radius: 24px;
-        padding: 1.25rem;
-        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.045);
+        border-radius: 22px;
+        padding: 1.15rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.035);
         transition: all 0.2s ease;
     }
 
     .criteria-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+        transform: translateY(-3px);
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.075);
     }
 
     .criteria-icon {
-        width: 52px;
-        height: 52px;
-        border-radius: 18px;
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.25rem;
-        margin-bottom: 1rem;
+        font-size: 1.15rem;
+        margin-bottom: 0.9rem;
     }
 
     .criteria-blue {
@@ -240,6 +299,7 @@
 
     .criteria-title {
         color: #0f172a;
+        font-size: 0.95rem;
         font-weight: 950;
         margin-bottom: 0.45rem;
     }
@@ -264,6 +324,7 @@
         padding: 1rem;
         background: #ffffff;
         min-height: 150px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.03);
     }
 
     .decision-badge {
@@ -335,39 +396,40 @@
     .support-box {
         display: flex;
         align-items: center;
-        gap: 1rem;
-        background: rgba(245, 158, 11, 0.12);
-        border: 1px solid rgba(245, 158, 11, 0.22);
-        border-radius: 24px;
-        padding: 1.15rem 1.25rem;
+        gap: 0.85rem;
+        background: rgba(245, 158, 11, 0.10);
+        border: 1px solid rgba(245, 158, 11, 0.20);
+        border-radius: 22px;
+        padding: 1rem 1.1rem;
         color: #475569;
+        font-size: 0.92rem;
         font-weight: 700;
         line-height: 1.65;
     }
 
     .support-icon {
-        width: 48px;
-        height: 48px;
-        min-width: 48px;
-        border-radius: 18px;
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        border-radius: 16px;
         background: #ffffff;
         color: #f59e0b;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.25rem;
+        font-size: 1.1rem;
         box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
     }
 
     .coming-soon-box {
-        margin-top: 1.5rem;
+        margin-top: 1.4rem;
         background: #f8fafc;
         border: 1px dashed #cbd5e1;
         border-radius: 22px;
         padding: 1rem;
         color: #64748b;
         font-size: 0.86rem;
-        font-weight: 700;
+        font-weight: 750;
         line-height: 1.6;
     }
 
@@ -376,63 +438,94 @@
         .ethics-list {
             grid-template-columns: 1fr;
         }
+
+        .program-hero {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .program-hero-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .program-conference-pill {
+            max-width: 100%;
+        }
     }
 
     @@media (max-width: 768px) {
         .review-guide-page {
-            padding: 1rem 1rem 3rem;
+            padding: 1.5rem 1rem 3rem;
         }
 
-        .guide-hero-left {
+        .program-hero-left {
             flex-direction: column;
             align-items: flex-start;
-            min-width: 100%;
         }
 
-        .guide-title {
-            font-size: 1.55rem;
+        .program-title {
+            font-size: 1.45rem;
         }
 
-        .support-box {
+        .support-box,
+        .principle-box {
             align-items: flex-start;
             flex-direction: column;
+        }
+
+        .program-hero-btn {
+            width: 100%;
         }
     }
 </style>
 
 <div class="review-guide-page">
 
-    <div class="guide-hero">
-        <div class="guide-hero-left">
-            <div class="guide-hero-icon">
+    <div class="program-hero">
+        <div class="program-hero-left">
+            <div class="program-hero-icon">
                 <i class="fas fa-book-reader"></i>
             </div>
 
             <div>
-                <div class="guide-kicker">
-                    @L("HeaderKicker", "Hakem Bilgilendirme")
-                </div>
-
-                <h1 class="guide-title">
+                <h3 class="program-title">
                     @L("HeroTitle", "Hakem Rehberi")
-                </h1>
+                </h3>
 
-                <p class="guide-description">
+                <p class="program-lead">
                     @L("HeroDescription", "Değerlendirme sürecinde dikkat edilmesi gereken temel ilkeleri, puanlama yaklaşımını ve karar önerilerini bu sayfadan inceleyebilirsiniz.")
                 </p>
             </div>
         </div>
 
-        <button class="btn btn-primary download-guide-btn" type="button" onclick="window.print()">
-            <i class="fas fa-file-pdf"></i>
-            @L("DownloadPdfButton", "PDF Rehberi İndir")
-        </button>
+        <div class="program-hero-actions">
+            @if (!string.IsNullOrWhiteSpace(conferenceTitle))
+            {
+                <div class="program-conference-pill">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>@conferenceTitle</span>
+                </div>
+            }
+            else if (!string.IsNullOrWhiteSpace(slug))
+            {
+                <div class="program-conference-pill">
+                    <i class="fas fa-link"></i>
+                    <span>/@slug</span>
+                </div>
+            }
+
+            <button class="program-hero-btn program-hero-btn-primary" type="button" onclick="window.print()">
+                <i class="fas fa-file-pdf"></i>
+                @L("DownloadPdfButton", "PDF Rehberi İndir")
+            </button>
+        </div>
     </div>
 
     <div class="guide-card">
         <div class="guide-card-header">
             <h5 class="guide-card-title">
-                <i class="fas fa-balance-scale text-primary me-2"></i>
+                <i class="fas fa-balance-scale me-2"></i>
                 @L("Section1Title", "Temel Değerlendirme İlkeleri")
             </h5>
 
@@ -465,7 +558,7 @@
     <div class="guide-card">
         <div class="guide-card-header">
             <h5 class="guide-card-title">
-                <i class="fas fa-clipboard-list text-primary me-2"></i>
+                <i class="fas fa-clipboard-list me-2"></i>
                 @L("Section2Title", "Değerlendirme Kriterleri")
             </h5>
 
@@ -501,7 +594,7 @@
     <div class="guide-card">
         <div class="guide-card-header">
             <h5 class="guide-card-title">
-                <i class="fas fa-gavel text-primary me-2"></i>
+                <i class="fas fa-gavel me-2"></i>
                 @L("DecisionGuideTitle", "Karar Önerileri")
             </h5>
 
@@ -562,7 +655,7 @@
     <div class="guide-card">
         <div class="guide-card-header">
             <h5 class="guide-card-title">
-                <i class="fas fa-user-shield text-primary me-2"></i>
+                <i class="fas fa-user-shield me-2"></i>
                 @L("EthicsTitle", "Etik ve Gizlilik Kuralları")
             </h5>
 

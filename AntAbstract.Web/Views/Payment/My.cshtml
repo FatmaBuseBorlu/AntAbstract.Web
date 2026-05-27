@@ -3,20 +3,14 @@
 @using System
 @using System.Globalization
 @using System.Linq
+
 @model IEnumerable<AntAbstract.Domain.Entities.Payment>
 
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"].Value;
-    Layout = "_LayoutDashboard";
-
     var culture = CultureInfo.CurrentUICulture;
     var isEnglish = culture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
-
-    var slug = ViewContext.RouteData.Values["slug"]?.ToString()
-        ?? Context.Session.GetString("SelectedConferenceSlug")
-        ?? "";
 
     string L(string key, string tr, string en)
     {
@@ -29,6 +23,13 @@
 
         return value;
     }
+
+    ViewData["Title"] = L("PageTitle", "Ödeme Geçmişi", "Payment History");
+    Layout = "_LayoutDashboard";
+
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString()
+        ?? Context.Session.GetString("SelectedConferenceSlug")
+        ?? "";
 
     string FormatMoney(decimal amount, string? currency)
     {
@@ -91,6 +92,7 @@
 
 <style>
     .payment-page {
+        padding: 2rem 1.5rem 4rem;
         font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
@@ -123,87 +125,93 @@
         color: #dc2626;
     }
 
-    .payment-hero-card {
-        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
-        border: 1px solid #e8eef6;
-        border-radius: 24px;
-        padding: 1.25rem;
+    .program-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        padding: 1.45rem 1.55rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.055);
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 1rem;
-        flex-wrap: wrap;
-        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.055);
+        gap: 1.5rem;
     }
 
-    .payment-hero-left {
+    .program-hero-left {
         display: flex;
         align-items: center;
-        gap: 0.9rem;
-        min-width: 300px;
-        flex: 1;
+        gap: 1rem;
+        min-width: 0;
     }
 
-    .payment-hero-icon {
-        width: 56px;
-        height: 56px;
-        min-width: 56px;
-        border-radius: 19px;
-        background: linear-gradient(135deg, #0d6efd, #00aeef);
+    .program-hero-icon {
+        width: 62px;
+        height: 62px;
+        min-width: 62px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
         color: #ffffff;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.35rem;
-        box-shadow: 0 14px 28px rgba(13, 110, 253, 0.20);
+        font-size: 1.45rem;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
     }
 
-    .payment-section-label {
-        color: #64748b;
-        font-size: 0.74rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        margin-bottom: 0.3rem;
-    }
-
-    .payment-page-title {
-        margin: 0 0 0.25rem;
+    .program-title {
         color: #0f172a;
         font-size: 1.65rem;
         font-weight: 900;
-        letter-spacing: -0.045em;
+        letter-spacing: -0.6px;
+        margin-bottom: 0.25rem;
         line-height: 1.2;
     }
 
-    .payment-page-description {
-        margin: 0;
+    .program-lead {
         color: #64748b;
-        font-size: 0.9rem;
-        font-weight: 600;
-        line-height: 1.55;
+        font-size: 0.95rem;
+        font-weight: 650;
+        margin-bottom: 0;
+        line-height: 1.6;
     }
 
-    .payment-conference-name {
+    .program-lead strong {
         color: #334155;
         font-weight: 900;
     }
 
-    .payment-slug-badge {
-        width: fit-content;
-        margin-top: 0.45rem;
-        padding: 0.32rem 0.7rem;
+    .program-conference-pill {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
         border-radius: 999px;
-        background: rgba(13, 110, 253, 0.09);
-        color: #0d6efd;
-        font-size: 0.74rem;
+        background: #ffffff;
+        border: 1px solid #dbe4ef;
+        color: #64748b;
+        font-size: 0.82rem;
         font-weight: 900;
+        padding: 0 0.95rem;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.045);
+        max-width: 380px;
+    }
+
+    .program-conference-pill span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .program-conference-pill i {
+        color: #00aeef;
     }
 
     .payment-hero-actions {
         display: flex;
         align-items: center;
-        gap: 0.65rem;
+        justify-content: flex-end;
+        gap: 0.75rem;
         flex-wrap: wrap;
     }
 
@@ -248,36 +256,35 @@
         text-decoration: none;
     }
 
+    .payment-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.4rem;
+    }
+
     .pay-stat-card {
         background: #ffffff;
-        border: 1px solid #eef2f6;
-        border-radius: 20px;
-        padding: 1.35rem 1.5rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        padding: 1.05rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
         display: flex;
         align-items: center;
         justify-content: space-between;
-        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.045);
-        transition: all 0.2s ease;
-        min-height: 108px;
-    }
-
-    .pay-stat-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.075);
+        gap: 0.85rem;
     }
 
     .pay-stat-title {
         color: #64748b;
-        font-size: 0.8rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
+        font-size: 0.78rem;
+        font-weight: 850;
         margin-bottom: 0.35rem;
     }
 
     .pay-stat-value {
         color: #0f172a;
-        font-size: 1.55rem;
+        font-size: 1.3rem;
         font-weight: 900;
         line-height: 1.1;
         margin: 0;
@@ -288,22 +295,22 @@
     }
 
     .stat-icon {
-        width: 52px;
-        height: 52px;
-        min-width: 52px;
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
         border-radius: 16px;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.35rem;
+        font-size: 1.1rem;
     }
 
     .payment-table-card {
         background: #ffffff;
-        border: 1px solid #e8eef6;
-        border-radius: 24px;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
         overflow: hidden;
-        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
     }
 
     .table-custom thead th {
@@ -410,44 +417,42 @@
     }
 
     @@media (max-width: 992px) {
-        .payment-hero-card {
-            align-items: flex-start;
+        .program-hero {
             flex-direction: column;
+            align-items: flex-start;
         }
 
-        .payment-hero-left {
-            min-width: 100%;
+        .program-conference-pill {
+            max-width: 100%;
         }
 
-        .payment-hero-actions,
-        .payment-hero-actions .btn,
-        .payment-hero-actions a {
+        .payment-hero-actions {
             width: 100%;
+            justify-content: flex-start;
+        }
+
+        .payment-primary-btn,
+        .payment-secondary-btn {
+            width: 100%;
+        }
+
+        .payment-stats {
+            grid-template-columns: 1fr;
         }
     }
 
     @@media (max-width: 768px) {
-        .payment-hero-left {
-            align-items: flex-start;
-            flex-direction: column;
+        .payment-page {
+            padding: 1.5rem 1rem 3rem;
         }
 
-        .payment-page-title {
+        .program-title {
             font-size: 1.45rem;
-        }
-
-        .pay-stat-card {
-            align-items: flex-start;
-            gap: 1rem;
-        }
-
-        .pay-stat-value {
-            font-size: 1.35rem;
         }
     }
 </style>
 
-<div class="container-fluid px-0 payment-page">
+<div class="payment-page">
 
     @if (TempData["SuccessMessage"] != null)
     {
@@ -473,43 +478,47 @@
         </div>
     }
 
-    <div class="payment-hero-card mb-4">
-        <div class="payment-hero-left">
-            <div class="payment-hero-icon">
+    <div class="program-hero">
+        <div class="program-hero-left">
+            <div class="program-hero-icon">
                 <i class="fas fa-credit-card"></i>
             </div>
 
             <div>
-                <div class="payment-section-label">
-                    @L("SectionLabel", "Kongre Ödeme İşlemleri", "Congress Payment Operations")
-                </div>
+                <h3 class="program-title">
+                    @L("PageHeading", "Ödeme Geçmişi", "Payment History")
+                </h3>
 
-                <h2 class="payment-page-title">
-                    @Localizer["PageHeading"]
-                </h2>
-
-                <p class="payment-page-description">
+                <p class="program-lead">
                     @if (!string.IsNullOrWhiteSpace(conferenceTitle))
                     {
-                        <span class="payment-conference-name">@conferenceTitle</span>
+                        <strong>@conferenceTitle</strong>
                         <text> @L("ConferencePaymentDescriptionSuffix", "kongresine ait ödeme kayıtlarınızı buradan takip edebilirsiniz.", "payment records can be tracked here.")</text>
                     }
                     else
                     {
-                        @Localizer["PageDescription"]
+                        @L("PageDescription", "Seçili kongreye ait ödeme kayıtlarınızı buradan takip edebilirsiniz.", "You can track your payment records for the selected congress here.")
                     }
                 </p>
-
-                @if (!string.IsNullOrWhiteSpace(slug))
-                {
-                    <div class="payment-slug-badge">
-                        /@slug
-                    </div>
-                }
             </div>
         </div>
 
         <div class="payment-hero-actions">
+            @if (!string.IsNullOrWhiteSpace(conferenceTitle))
+            {
+                <div class="program-conference-pill">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>@conferenceTitle</span>
+                </div>
+            }
+            else if (!string.IsNullOrWhiteSpace(slug))
+            {
+                <div class="program-conference-pill">
+                    <i class="fas fa-link"></i>
+                    <span>/@slug</span>
+                </div>
+            }
+
             <a href="@mySubmissionsUrl" class="payment-secondary-btn">
                 <i class="fas fa-file-lines me-2"></i>
                 @L("MySubmissionsButton", "Bildirilerim", "My Abstracts")
@@ -517,63 +526,57 @@
 
             <a href="@newPaymentUrl" class="payment-primary-btn">
                 <i class="fas fa-plus-circle me-2"></i>
-                @Localizer["NewPaymentButton"]
+                @L("NewPaymentButton", "Yeni Ödeme", "New Payment")
             </a>
         </div>
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-md-4">
-            <div class="pay-stat-card">
-                <div>
-                    <p class="pay-stat-title">
-                        @Localizer["TotalPaidTitle"]
-                    </p>
-
-                    <h3 class="pay-stat-value">
-                        @totalPaidText
-                    </h3>
+    <div class="payment-stats">
+        <div class="pay-stat-card">
+            <div>
+                <div class="pay-stat-title">
+                    @L("TotalPaidTitle", "Toplam Ödenen", "Total Paid")
                 </div>
 
-                <div class="stat-icon bg-success bg-opacity-10 text-success">
-                    <i class="fas fa-wallet"></i>
-                </div>
+                <h3 class="pay-stat-value">
+                    @totalPaidText
+                </h3>
+            </div>
+
+            <div class="stat-icon bg-success bg-opacity-10 text-success">
+                <i class="fas fa-wallet"></i>
             </div>
         </div>
 
-        <div class="col-md-4">
-            <div class="pay-stat-card">
-                <div>
-                    <p class="pay-stat-title">
-                        @Localizer["PendingTransactionTitle"]
-                    </p>
-
-                    <h3 class="pay-stat-value pay-stat-value-warning">
-                        @totalPendingText
-                    </h3>
+        <div class="pay-stat-card">
+            <div>
+                <div class="pay-stat-title">
+                    @L("PendingTransactionTitle", "Bekleyen İşlem", "Pending Transaction")
                 </div>
 
-                <div class="stat-icon bg-warning bg-opacity-10 text-warning">
-                    <i class="fas fa-hourglass-half"></i>
-                </div>
+                <h3 class="pay-stat-value pay-stat-value-warning">
+                    @totalPendingText
+                </h3>
+            </div>
+
+            <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                <i class="fas fa-hourglass-half"></i>
             </div>
         </div>
 
-        <div class="col-md-4">
-            <div class="pay-stat-card">
-                <div>
-                    <p class="pay-stat-title">
-                        @Localizer["LastTransactionDateTitle"]
-                    </p>
-
-                    <h5 class="fw-bold text-dark mb-0">
-                        @lastPaymentDate
-                    </h5>
+        <div class="pay-stat-card">
+            <div>
+                <div class="pay-stat-title">
+                    @L("LastTransactionDateTitle", "Son İşlem Tarihi", "Last Transaction Date")
                 </div>
 
-                <div class="stat-icon bg-primary bg-opacity-10 text-primary">
-                    <i class="fas fa-calendar-check"></i>
-                </div>
+                <h3 class="pay-stat-value">
+                    @lastPaymentDate
+                </h3>
+            </div>
+
+            <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                <i class="fas fa-calendar-check"></i>
             </div>
         </div>
     </div>
@@ -583,14 +586,14 @@
             <table class="table table-custom mb-0 w-100">
                 <thead>
                     <tr>
-                        <th>@Localizer["TransactionIdColumn"]</th>
-                        <th>@Localizer["ServiceConferenceColumn"]</th>
-                        <th>@Localizer["BillingInfoColumn"]</th>
-                        <th>@Localizer["DateColumn"]</th>
-                        <th>@Localizer["AmountColumn"]</th>
-                        <th>@Localizer["MethodColumn"]</th>
-                        <th>@Localizer["StatusColumn"]</th>
-                        <th class="text-end">@Localizer["ActionsColumn"]</th>
+                        <th>@L("TransactionIdColumn", "İşlem ID", "Transaction ID")</th>
+                        <th>@L("ServiceConferenceColumn", "Hizmet / Kongre", "Service / Congress")</th>
+                        <th>@L("BillingInfoColumn", "Fatura Bilgisi", "Billing Info")</th>
+                        <th>@L("DateColumn", "Tarih", "Date")</th>
+                        <th>@L("AmountColumn", "Tutar", "Amount")</th>
+                        <th>@L("MethodColumn", "Yöntem", "Method")</th>
+                        <th>@L("StatusColumn", "Durum", "Status")</th>
+                        <th class="text-end">@L("ActionsColumn", "İşlemler", "Actions")</th>
                     </tr>
                 </thead>
 
@@ -600,7 +603,7 @@
                         foreach (var item in payments)
                         {
                             var itemConferenceTitle = item.Conference?.Title
-                                ?? Localizer["GeneralPaymentText"].Value;
+                                ?? L("GeneralPaymentText", "Genel ödeme", "General payment");
 
                             var itemCurrency = string.IsNullOrWhiteSpace(item.Currency)
                                 ? "TRY"
@@ -652,7 +655,7 @@
                                             @if (item.RelatedSubmissionId.HasValue)
                                             {
                                                 <small class="text-muted">
-                                                    @Localizer["SubmissionIdLabel"]
+                                                    @L("SubmissionIdLabel", "Bildiri ID:", "Submission ID:")
                                                     @item.RelatedSubmissionId.Value.ToString().Substring(0, 6)...
                                                 </small>
                                             }
@@ -668,7 +671,8 @@
                                     @if (!string.IsNullOrWhiteSpace(item.TaxNumber))
                                     {
                                         <small class="text-muted" style="font-size: 0.7rem;">
-                                            @Localizer["TaxNumberShortLabel"] @item.TaxNumber
+                                            @L("TaxNumberShortLabel", "VN:", "Tax No:")
+                                            @item.TaxNumber
                                         </small>
                                     }
                                 </td>
@@ -699,28 +703,28 @@
                                         case PaymentStatus.Completed:
                                             <span class="badge-status status-completed">
                                                 <i class="fas fa-check-circle"></i>
-                                                @Localizer["StatusCompleted"]
+                                                @L("StatusCompleted", "Başarılı", "Completed")
                                             </span>
                                             break;
 
                                         case PaymentStatus.Pending:
                                             <span class="badge-status status-pending">
                                                 <i class="fas fa-clock"></i>
-                                                @Localizer["StatusPending"]
+                                                @L("StatusPending", "Bekliyor", "Pending")
                                             </span>
                                             break;
 
                                         case PaymentStatus.Failed:
                                             <span class="badge-status status-failed">
                                                 <i class="fas fa-times-circle"></i>
-                                                @Localizer["StatusFailed"]
+                                                @L("StatusFailed", "Başarısız", "Failed")
                                             </span>
                                             break;
 
                                         case PaymentStatus.Refunded:
                                             <span class="badge-status status-refunded">
                                                 <i class="fas fa-undo"></i>
-                                                @Localizer["StatusRefunded"]
+                                                @L("StatusRefunded", "İade Edildi", "Refunded")
                                             </span>
                                             break;
 
@@ -738,7 +742,7 @@
                                     {
                                         <a href="@receiptUrl"
                                            class="payment-action-btn"
-                                           title="@Localizer["ViewReceiptTitle"]">
+                                           title="@L("ViewReceiptTitle", "Makbuzu görüntüle", "View receipt")">
                                             <i class="fas fa-file-invoice"></i>
                                         </a>
                                     }
@@ -746,7 +750,7 @@
                                     {
                                         <a href="@retryUrl"
                                            class="payment-action-btn"
-                                           title="@Localizer["RetryTitle"]">
+                                           title="@L("RetryTitle", "Tekrar dene", "Retry")">
                                             <i class="fas fa-redo"></i>
                                         </a>
                                     }
@@ -764,11 +768,11 @@
                                     </div>
 
                                     <h5 class="empty-payment-title">
-                                        @Localizer["EmptyStateTitle"]
+                                        @L("EmptyStateTitle", "Henüz ödeme kaydınız bulunmuyor.", "You do not have any payment records yet.")
                                     </h5>
 
                                     <p class="empty-payment-text">
-                                        @Localizer["EmptyStateText"]
+                                        @L("EmptyStateText", "Ödeme işlemi yaptığınızda kayıtlarınız burada listelenecektir.", "Your payment records will be listed here after you make a payment.")
                                     </p>
 
                                     <div class="d-flex justify-content-center gap-2 flex-wrap">
@@ -779,7 +783,7 @@
 
                                         <a href="@newPaymentUrl" class="payment-primary-btn">
                                             <i class="fas fa-plus-circle me-2"></i>
-                                            @Localizer["NewPaymentButton"]
+                                            @L("NewPaymentButton", "Yeni Ödeme", "New Payment")
                                         </a>
                                     </div>
                                 </div>

@@ -1,342 +1,250 @@
 ﻿@model List<AntAbstract.Web.Models.ViewModels.Admin.Tenants.TenantListItemViewModel>
 
+@using System
+@using System.Linq
+
 @{
     ViewData["Title"] = "Kurum Yönetimi";
     Layout = "_LayoutDashboard";
 
-    var totalTenantCount = ViewBag.TotalTenantCount ?? 0;
-    var tenantWithAdminCount = ViewBag.TenantWithAdminCount ?? 0;
-    var totalConferenceCount = ViewBag.TotalConferenceCount ?? 0;
-    var totalUserCount = ViewBag.TotalUserCount ?? 0;
+    var tenants = Model ?? new List<AntAbstract.Web.Models.ViewModels.Admin.Tenants.TenantListItemViewModel>();
+
+    var totalTenantCount = ViewBag.TotalTenantCount ?? tenants.Count;
+    var tenantWithAdminCount = ViewBag.TenantWithAdminCount ?? tenants.Count(x => x.HasAdmin);
+    var totalConferenceCount = ViewBag.TotalConferenceCount ?? tenants.Sum(x => x.ConferenceCount);
+    var totalUserCount = ViewBag.TotalUserCount ?? tenants.Sum(x => x.UserCount);
 
     var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
 }
 
-<div class="container-fluid">
-
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-        <div>
-            <div class="text-uppercase text-muted fw-bold small mb-1">
-                Global Sistem
-            </div>
-
-            <h2 class="fw-bold mb-1 text-dark">
-                Kurum Yönetimi
-            </h2>
-
-            <p class="text-muted mb-0">
-                Sistemdeki kurumları, kurum adminlerini, bağlı kullanıcıları ve kongre sayılarını buradan takip edebilirsiniz.
-            </p>
-        </div>
-
-        <div class="page-header-right">
-            <a asp-area="Admin"
-               asp-controller="Tenants"
-               asp-action="Create"
-               class="btn btn-primary rounded-pill px-4 header-action-btn">
-                <i class="fas fa-plus me-2"></i>
-                Yeni Kurum Ekle
-            </a>
-        </div>
-    </div>
-
-    <div class="row g-3 mb-4">
-        <div class="col-xl-3 col-md-6">
-            <div class="info-card">
-                <div class="info-icon bg-primary bg-opacity-10 text-primary">
-                    <i class="fas fa-building"></i>
-                </div>
-
-                <div>
-                    <div class="info-number">@totalTenantCount</div>
-                    <div class="info-label">Toplam Kurum</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="info-card">
-                <div class="info-icon bg-success bg-opacity-10 text-success">
-                    <i class="fas fa-user-shield"></i>
-                </div>
-
-                <div>
-                    <div class="info-number">@tenantWithAdminCount</div>
-                    <div class="info-label">Admin Atanmış Kurum</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="info-card">
-                <div class="info-icon bg-info bg-opacity-10 text-info">
-                    <i class="fas fa-calendar-alt"></i>
-                </div>
-
-                <div>
-                    <div class="info-number">@totalConferenceCount</div>
-                    <div class="info-label">Toplam Kongre</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="info-card">
-                <div class="info-icon bg-warning bg-opacity-10 text-warning">
-                    <i class="fas fa-users"></i>
-                </div>
-
-                <div>
-                    <div class="info-number">@totalUserCount</div>
-                    <div class="info-label">Bağlı Kullanıcı</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="card-header bg-white border-0 px-4 py-3">
-            <h5 class="fw-bold mb-1">
-                Kurum Listesi
-            </h5>
-
-            <p class="text-muted small mb-0">
-                Bu listede sistemde kayıtlı kurumları, admin atama durumlarını ve bağlı kayıt sayılarını görebilirsiniz.
-            </p>
-        </div>
-
-        <div class="card-body p-0">
-
-            @if (Model == null || !Model.Any())
-            {
-                <div class="text-center py-5 text-muted">
-                    <i class="fas fa-building-circle-exclamation fa-3x mb-3 opacity-25"></i>
-
-                    <h6 class="fw-bold mb-1">
-                        Kurum bulunamadı
-                    </h6>
-
-                    <p class="mb-0">
-                        Henüz sisteme kayıtlı kurum bulunmuyor.
-                    </p>
-                </div>
-            }
-            else
-            {
-                <div class="table-responsive tenants-table-responsive">
-                    <table class="table table-hover align-middle mb-0 tenants-table">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="ps-4 py-3 text-muted fw-bold small" style="width: 26%;">
-                                    Kurum
-                                </th>
-
-                                <th class="py-3 text-muted fw-bold small" style="width: 14%;">
-                                    URL
-                                </th>
-
-                                <th class="py-3 text-muted fw-bold small" style="width: 22%;">
-                                    Kurum Admini
-                                </th>
-
-                                <th class="py-3 text-muted fw-bold small text-center" style="width: 10%;">
-                                    Kongre
-                                </th>
-
-                                <th class="py-3 text-muted fw-bold small text-center" style="width: 10%;">
-                                    Kullanıcı
-                                </th>
-
-                                <th class="py-3 text-muted fw-bold small text-center" style="width: 8%;">
-                                    Durum
-                                </th>
-
-                                <th class="pe-4 py-3 text-muted fw-bold small text-end" style="min-width: 260px;">
-                                    İşlemler
-                                </th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            @foreach (var item in Model)
-                            {
-                                var firstLetter = !string.IsNullOrWhiteSpace(item.Name)
-                                    ? item.Name.Trim().Substring(0, 1).ToUpper()
-                                    : "?";
-
-                                <tr>
-                                    <td class="ps-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="tenant-avatar me-3 bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold">
-                                                @firstLetter
-                                            </div>
-
-                                            <div>
-                                                <span class="fw-bold d-block text-dark">
-                                                    @item.Name
-                                                </span>
-
-                                                <small class="text-muted">
-                                                    ID: @item.Id.ToString().Substring(0, 8)...
-                                                </small>
-
-                                                @if (!string.IsNullOrWhiteSpace(item.ScientificFieldName) || !string.IsNullOrWhiteSpace(item.CongressTypeName))
-                                                {
-                                                    <div class="tenant-meta mt-1">
-                                                        @if (!string.IsNullOrWhiteSpace(item.ScientificFieldName))
-                                                        {
-                                                            <span class="tenant-meta-badge">
-                                                                <i class="fas fa-flask me-1"></i>
-                                                                @item.ScientificFieldName
-                                                            </span>
-                                                        }
-
-                                                        @if (!string.IsNullOrWhiteSpace(item.CongressTypeName))
-                                                        {
-                                                            <span class="tenant-meta-badge">
-                                                                <i class="fas fa-tag me-1"></i>
-                                                                @item.CongressTypeName
-                                                            </span>
-                                                        }
-                                                    </div>
-                                                }
-                                            </div>
-                                        </div>
-                                    </td>
-
-                                    <td>
-                                        @if (!string.IsNullOrWhiteSpace(item.Slug))
-                                        {
-                                            <a href="/@item.Slug"
-                                               target="_blank"
-                                               class="slug-link">
-                                                @item.SlugPath
-                                            </a>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">
-                                                -
-                                            </span>
-                                        }
-                                    </td>
-
-                                    <td>
-                                        @if (item.HasAdmin)
-                                        {
-                                            <span class="admin-badge bg-success bg-opacity-10 text-success">
-                                                <i class="fas fa-user-shield me-1"></i>
-                                                @item.AdminDisplayText
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="admin-badge bg-warning bg-opacity-10 text-warning">
-                                                <i class="fas fa-triangle-exclamation me-1"></i>
-                                                Admin atanmamış
-                                            </span>
-                                        }
-                                    </td>
-
-                                    <td class="text-center">
-                                        <span class="count-badge bg-primary bg-opacity-10 text-primary">
-                                            @item.ConferenceCount
-                                        </span>
-                                    </td>
-
-                                    <td class="text-center">
-                                        <span class="count-badge bg-info bg-opacity-10 text-info">
-                                            @item.UserCount
-                                        </span>
-                                    </td>
-
-                                    <td class="text-center">
-                                        <span class="badge rounded-pill bg-success bg-opacity-10 text-success px-3 py-2">
-                                            <i class="fas fa-check-circle me-1"></i>
-                                            Aktif
-                                        </span>
-                                    </td>
-
-                                    <td class="pe-4 text-end actions-cell">
-                                        <div class="action-buttons">
-
-                                            <a asp-area="Admin"
-                                               asp-controller="Tenants"
-                                               asp-action="Details"
-                                               asp-route-id="@item.Id"
-                                               class="btn btn-sm btn-outline-info rounded-3 action-icon-btn"
-                                               title="Detay">
-                                                <i class="fas fa-search"></i>
-                                            </a>
-
-
-                                            <a asp-area="Admin"
-                                               asp-controller="Tenants"
-                                               asp-action="Edit"
-                                               asp-route-id="@item.Id"
-                                               class="btn btn-sm btn-outline-warning rounded-3 action-icon-btn"
-                                               title="Düzenle">
-                                                <i class="fas fa-pen-to-square"></i>
-                                            </a>
-
-                                            <a asp-area="Admin"
-                                               asp-controller="Tenants"
-                                               asp-action="Delete"
-                                               asp-route-id="@item.Id"
-                                               class="btn btn-sm btn-outline-danger rounded-3 action-icon-btn"
-                                               title="Sil">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
-
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-
-        </div>
-    </div>
-</div>
-
 <style>
-    .info-card {
-        background-color: #fff;
-        border-radius: 1rem;
-        padding: 1rem;
+    .tenants-page {
+        padding: 2rem 1.5rem 4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .admin-hero {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%),
+                    linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        padding: 1.45rem 1.55rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.055);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+    }
+
+    .admin-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 0;
+    }
+
+    .admin-hero-icon {
+        width: 62px;
+        height: 62px;
+        min-width: 62px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #00aeef, #0d6efd);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.45rem;
+        box-shadow: 0 16px 34px rgba(0, 174, 239, 0.24);
+    }
+
+    .admin-hero-kicker {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .admin-hero-title {
+        color: #0f172a;
+        font-size: 1.65rem;
+        font-weight: 900;
+        letter-spacing: -0.6px;
+        margin-bottom: 0.25rem;
+        line-height: 1.2;
+    }
+
+    .admin-hero-lead {
+        color: #64748b;
+        font-size: 0.95rem;
+        font-weight: 650;
+        margin-bottom: 0;
+        line-height: 1.6;
+        max-width: 860px;
+    }
+
+    .admin-hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .admin-hero-btn {
+        min-height: 42px;
+        border-radius: 999px;
+        padding: 0 1rem;
+        font-size: 0.84rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .admin-hero-btn-light {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+    }
+
+    .admin-hero-btn-light:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.25);
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .admin-hero-btn-primary {
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        border: none;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.18);
+    }
+
+    .admin-hero-btn-primary:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(13, 110, 253, 0.26);
+        text-decoration: none;
+    }
+
+    .admin-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.4rem;
+    }
+
+    .admin-stat-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        padding: 1.05rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
         display: flex;
         align-items: center;
         gap: 0.85rem;
-        box-shadow: 0 8px 25px rgba(15, 23, 42, 0.05);
-        border: 1px solid #f1f5f9;
-        min-height: 95px;
+        min-height: 96px;
     }
 
-    .info-icon {
+    .admin-stat-icon {
         width: 46px;
         height: 46px;
         min-width: 46px;
-        border-radius: 15px;
-        display: flex;
+        border-radius: 16px;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
         font-size: 1.1rem;
     }
 
-    .info-number {
-        font-size: 1.55rem;
-        font-weight: 800;
-        color: #0f172a;
-        line-height: 1;
+    .stat-blue {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
     }
 
-    .info-label {
+    .stat-green {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+    }
+
+    .stat-cyan {
+        background: rgba(0, 174, 239, 0.10);
+        color: #0284c7;
+    }
+
+    .stat-orange {
+        background: rgba(245, 158, 11, 0.12);
+        color: #b45309;
+    }
+
+    .admin-stat-value {
+        color: #0f172a;
+        font-size: 1.35rem;
+        font-weight: 900;
+        line-height: 1.1;
+    }
+
+    .admin-stat-label {
         color: #64748b;
-        font-weight: 700;
-        font-size: 0.76rem;
+        font-size: 0.78rem;
+        font-weight: 850;
         margin-top: 0.25rem;
+    }
+
+    .tenants-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.045);
+        overflow: hidden;
+    }
+
+    .tenants-card-header {
+        padding: 1.15rem 1.35rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .tenants-card-title {
+        color: #0f172a;
+        font-size: 1.08rem;
+        font-weight: 900;
+        margin: 0 0 0.25rem;
+    }
+
+    .tenants-card-subtitle {
+        color: #64748b;
+        font-size: 0.86rem;
+        font-weight: 650;
+        line-height: 1.55;
+        margin-bottom: 0;
+    }
+
+    .tenants-card-count {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0 0.8rem;
+        border-radius: 999px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 0.78rem;
+        font-weight: 900;
     }
 
     .tenants-table-responsive {
@@ -345,76 +253,134 @@
 
     .tenants-table {
         min-width: 1180px;
+        margin-bottom: 0;
     }
 
     .tenants-table thead th {
-        font-size: 0.7rem;
-        letter-spacing: 0.8px;
-        border-bottom: none;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 950;
         text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 1rem 1.15rem;
+        border-bottom: 1px solid #edf2f7;
+        white-space: nowrap;
     }
 
-    .tenants-table tbody tr {
-        border-bottom: 1px solid #f8fafc;
-        transition: background-color 0.2s ease;
+    .tenants-table tbody td {
+        padding: 0.95rem 1.15rem;
+        border-bottom: 1px solid #edf2f7;
+        vertical-align: middle;
     }
 
     .tenants-table tbody tr:hover {
-        background-color: #fbfcfe !important;
+        background: #f8fbff;
+    }
+
+    .tenants-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .tenant-main {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        min-width: 0;
     }
 
     .tenant-avatar {
         width: 46px;
         height: 46px;
         min-width: 46px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         font-size: 0.95rem;
+        font-weight: 950;
+        box-shadow: 0 12px 24px rgba(13, 110, 253, 0.16);
+    }
+
+    .tenant-name {
+        color: #0f172a;
+        font-size: 0.92rem;
+        font-weight: 950;
+        line-height: 1.35;
+    }
+
+    .tenant-id {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 750;
+        margin-top: 0.15rem;
     }
 
     .tenant-meta {
         display: flex;
         flex-wrap: wrap;
         gap: 0.35rem;
+        margin-top: 0.42rem;
     }
 
     .tenant-meta-badge {
         display: inline-flex;
         align-items: center;
         border-radius: 999px;
-        background-color: #f8fafc;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
         color: #64748b;
         font-size: 0.68rem;
-        font-weight: 700;
-        padding: 0.18rem 0.45rem;
+        font-weight: 800;
+        padding: 0.2rem 0.48rem;
     }
 
     .slug-link {
         display: inline-flex;
         align-items: center;
+        gap: 0.35rem;
         border-radius: 999px;
-        background-color: rgba(13, 110, 253, 0.08);
+        background: rgba(13, 110, 253, 0.08);
         color: #0d6efd;
         text-decoration: none;
-        padding: 0.35rem 0.65rem;
+        padding: 0.38rem 0.68rem;
         font-size: 0.82rem;
-        font-weight: 800;
+        font-weight: 900;
+        border: 1px solid rgba(13, 110, 253, 0.12);
     }
 
     .slug-link:hover {
         color: #0a58ca;
-        background-color: rgba(13, 110, 253, 0.12);
+        background: rgba(13, 110, 253, 0.12);
+        text-decoration: none;
     }
 
-    .admin-badge {
+    .tenant-admin-badge {
         display: inline-flex;
         align-items: center;
+        gap: 0.38rem;
         border-radius: 999px;
-        padding: 0.4rem 0.7rem;
+        padding: 0.42rem 0.72rem;
         font-size: 0.76rem;
-        font-weight: 800;
+        font-weight: 900;
         max-width: 260px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+
+    .tenant-admin-ready {
+        background: rgba(34, 197, 94, 0.12);
+        color: #15803d;
+        border: 1px solid rgba(34, 197, 94, 0.18);
+    }
+
+    .tenant-admin-missing {
+        background: rgba(245, 158, 11, 0.12);
+        color: #b45309;
+        border: 1px solid rgba(245, 158, 11, 0.18);
     }
 
     .count-badge {
@@ -425,48 +391,487 @@
         height: 32px;
         border-radius: 999px;
         font-size: 0.85rem;
-        font-weight: 900;
+        font-weight: 950;
+        border: 1px solid transparent;
     }
 
-    .actions-cell {
-        min-width: 260px;
+    .count-blue {
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.14);
+    }
+
+    .count-cyan {
+        background: rgba(0, 174, 239, 0.10);
+        color: #0284c7;
+        border-color: rgba(0, 174, 239, 0.14);
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.38rem;
+        border-radius: 999px;
+        padding: 0.42rem 0.72rem;
+        font-size: 0.76rem;
+        font-weight: 950;
         white-space: nowrap;
     }
 
-    .action-buttons {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 0.45rem;
-        flex-wrap: nowrap;
+    .status-active {
+        background: rgba(34, 197, 94, 0.12);
+        color: #15803d;
+        border: 1px solid rgba(34, 197, 94, 0.18);
     }
 
-    .action-icon-btn {
-        width: 36px;
+    .admin-action-group {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.42rem;
+    }
+
+    .admin-action-btn {
+        width: 34px;
         height: 34px;
+        border-radius: 10px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-weight: 800;
+        font-size: 0.84rem;
+        font-weight: 900;
+        text-decoration: none;
+        border: 1px solid transparent;
+        background: #ffffff;
+        transition: all 0.2s ease;
+        line-height: 1;
+        padding: 0;
     }
 
-    .page-header-right {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 0.65rem;
-        flex-wrap: nowrap;
-        flex: 0 0 auto;
+    .admin-action-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10);
+        text-decoration: none;
     }
 
-    .header-action-btn {
-        min-height: 42px;
+    .admin-action-info {
+        color: #0284c7;
+        border-color: rgba(2, 132, 199, 0.26);
+    }
+
+    .admin-action-info:hover {
+        background: rgba(2, 132, 199, 0.08);
+        color: #0369a1;
+    }
+
+    .admin-action-edit {
+        color: #f59e0b;
+        border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    .admin-action-edit:hover {
+        background: rgba(245, 158, 11, 0.10);
+        color: #d97706;
+    }
+
+    .admin-action-delete {
+        color: #dc3545;
+        border-color: rgba(220, 53, 69, 0.30);
+    }
+
+    .admin-action-delete:hover {
+        background: rgba(220, 53, 69, 0.08);
+        color: #bb2d3b;
+    }
+
+    .tenants-empty-state {
+        padding: 4rem 1.5rem;
+        text-align: center;
+        color: #64748b;
+    }
+
+    .tenants-empty-icon {
+        width: 76px;
+        height: 76px;
+        border-radius: 26px;
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        white-space: nowrap;
-        font-weight: 800;
-        font-size: 0.95rem;
-        box-shadow: 0 12px 24px rgba(13, 110, 253, 0.16);
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .tenants-empty-title {
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 900;
+        margin-bottom: 0.35rem;
+    }
+
+    .tenants-empty-text {
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin-bottom: 0;
+    }
+
+    @@media (max-width: 1200px) {
+        .admin-stat-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 992px) {
+        .admin-hero {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .admin-hero-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .tenants-page {
+            padding: 1.5rem 1rem 3rem;
+        }
+
+        .admin-hero-left {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .admin-hero-title {
+            font-size: 1.45rem;
+        }
+
+        .admin-stat-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .tenants-card-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
     }
 </style>
+
+<div class="tenants-page">
+
+    <div class="admin-hero">
+        <div class="admin-hero-left">
+            <div class="admin-hero-icon">
+                <i class="fas fa-building"></i>
+            </div>
+
+            <div>
+                <div class="admin-hero-kicker">
+                    Global Sistem
+                </div>
+
+                <h3 class="admin-hero-title">
+                    Kurum Yönetimi
+                </h3>
+
+                <p class="admin-hero-lead">
+                    Sistemdeki kurumları, kurum adminlerini, bağlı kullanıcıları ve kongre sayılarını buradan takip edebilirsiniz.
+                </p>
+            </div>
+        </div>
+
+        <div class="admin-hero-actions">
+            <a asp-area="Admin"
+               asp-controller="Tenants"
+               asp-action="Create"
+               class="admin-hero-btn admin-hero-btn-primary">
+                <i class="fas fa-plus"></i>
+                Yeni Kurum Ekle
+            </a>
+
+            <a href="/Admin/AllConferences"
+               class="admin-hero-btn admin-hero-btn-light">
+                <i class="fas fa-calendar-alt"></i>
+                Tüm Kongreler
+            </a>
+        </div>
+    </div>
+
+    <div class="admin-stat-grid">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-blue">
+                <i class="fas fa-building"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @totalTenantCount
+                </div>
+
+                <div class="admin-stat-label">
+                    Toplam Kurum
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-green">
+                <i class="fas fa-user-shield"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @tenantWithAdminCount
+                </div>
+
+                <div class="admin-stat-label">
+                    Admin Atanmış Kurum
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-cyan">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @totalConferenceCount
+                </div>
+
+                <div class="admin-stat-label">
+                    Toplam Kongre
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-orange">
+                <i class="fas fa-users"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @totalUserCount
+                </div>
+
+                <div class="admin-stat-label">
+                    Bağlı Kullanıcı
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tenants-card">
+        <div class="tenants-card-header">
+            <div>
+                <h5 class="tenants-card-title">
+                    Kurum Listesi
+                </h5>
+
+                <p class="tenants-card-subtitle">
+                    Bu listede sistemde kayıtlı kurumları, admin atama durumlarını ve bağlı kayıt sayılarını görebilirsiniz.
+                </p>
+            </div>
+
+            <span class="tenants-card-count">
+                <i class="fas fa-list-ul"></i>
+                @tenants.Count kayıt
+            </span>
+        </div>
+
+        @if (!tenants.Any())
+        {
+            <div class="tenants-empty-state">
+                <div class="tenants-empty-icon">
+                    <i class="fas fa-building-circle-exclamation"></i>
+                </div>
+
+                <h6 class="tenants-empty-title">
+                    Kurum bulunamadı
+                </h6>
+
+                <p class="tenants-empty-text">
+                    Henüz sisteme kayıtlı kurum bulunmuyor.
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive tenants-table-responsive">
+                <table class="table table-hover align-middle tenants-table">
+                    <thead>
+                        <tr>
+                            <th class="ps-4" style="width: 26%;">
+                                Kurum
+                            </th>
+
+                            <th style="width: 14%;">
+                                URL
+                            </th>
+
+                            <th style="width: 22%;">
+                                Kurum Admini
+                            </th>
+
+                            <th class="text-center" style="width: 10%;">
+                                Kongre
+                            </th>
+
+                            <th class="text-center" style="width: 10%;">
+                                Kullanıcı
+                            </th>
+
+                            <th class="text-center" style="width: 8%;">
+                                Durum
+                            </th>
+
+                            <th class="text-end pe-4" style="min-width: 260px;">
+                                İşlemler
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var item in tenants)
+                        {
+                            var firstLetter = !string.IsNullOrWhiteSpace(item.Name)
+                                ? item.Name.Trim().Substring(0, 1).ToUpper()
+                                : "?";
+
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="tenant-main">
+                                        <div class="tenant-avatar">
+                                            @firstLetter
+                                        </div>
+
+                                        <div>
+                                            <div class="tenant-name">
+                                                @item.Name
+                                            </div>
+
+                                            <div class="tenant-id">
+                                                ID: @item.Id.ToString().Substring(0, 8)...
+                                            </div>
+
+                                            @if (!string.IsNullOrWhiteSpace(item.ScientificFieldName) || !string.IsNullOrWhiteSpace(item.CongressTypeName))
+                                            {
+                                                <div class="tenant-meta">
+                                                    @if (!string.IsNullOrWhiteSpace(item.ScientificFieldName))
+                                                    {
+                                                        <span class="tenant-meta-badge">
+                                                            <i class="fas fa-flask me-1"></i>
+                                                            @item.ScientificFieldName
+                                                        </span>
+                                                    }
+
+                                                    @if (!string.IsNullOrWhiteSpace(item.CongressTypeName))
+                                                    {
+                                                        <span class="tenant-meta-badge">
+                                                            <i class="fas fa-tag me-1"></i>
+                                                            @item.CongressTypeName
+                                                        </span>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(item.Slug))
+                                    {
+                                        <a href="/@item.Slug"
+                                           target="_blank"
+                                           class="slug-link">
+                                            <i class="fas fa-link"></i>
+                                            @item.SlugPath
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted fw-bold">
+                                            -
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (item.HasAdmin)
+                                    {
+                                        <span class="tenant-admin-badge tenant-admin-ready">
+                                            <i class="fas fa-user-shield"></i>
+                                            @item.AdminDisplayText
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="tenant-admin-badge tenant-admin-missing">
+                                            <i class="fas fa-triangle-exclamation"></i>
+                                            Admin atanmamış
+                                        </span>
+                                    }
+                                </td>
+
+                                <td class="text-center">
+                                    <span class="count-badge count-blue">
+                                        @item.ConferenceCount
+                                    </span>
+                                </td>
+
+                                <td class="text-center">
+                                    <span class="count-badge count-cyan">
+                                        @item.UserCount
+                                    </span>
+                                </td>
+
+                                <td class="text-center">
+                                    <span class="status-badge status-active">
+                                        <i class="fas fa-check-circle"></i>
+                                        Aktif
+                                    </span>
+                                </td>
+
+                                <td class="pe-4 text-end">
+                                    <div class="admin-action-group">
+                                        <a asp-area="Admin"
+                                           asp-controller="Tenants"
+                                           asp-action="Details"
+                                           asp-route-id="@item.Id"
+                                           class="admin-action-btn admin-action-info"
+                                           title="Detay">
+                                            <i class="fas fa-search"></i>
+                                        </a>
+
+                                        <a asp-area="Admin"
+                                           asp-controller="Tenants"
+                                           asp-action="Edit"
+                                           asp-route-id="@item.Id"
+                                           class="admin-action-btn admin-action-edit"
+                                           title="Düzenle">
+                                            <i class="fas fa-pen-to-square"></i>
+                                        </a>
+
+                                        <a asp-area="Admin"
+                                           asp-controller="Tenants"
+                                           asp-action="Delete"
+                                           asp-route-id="@item.Id"
+                                           class="admin-action-btn admin-action-delete"
+                                           title="Sil">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
