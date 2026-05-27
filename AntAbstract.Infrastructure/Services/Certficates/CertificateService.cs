@@ -5,7 +5,12 @@ using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Email;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace AntAbstract.Infrastructure.Services.Certficates
 {
@@ -28,7 +33,9 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             _pdfCertificateService = pdfCertificateService;
         }
 
-        public async Task<List<Certificate>> GetMyCertificatesAsync(string userId, Guid? conferenceId = null)
+        public async Task<List<Certificate>> GetMyCertificatesAsync(
+            string userId,
+            Guid? conferenceId = null)
         {
             if (string.IsNullOrWhiteSpace(userId))
             {
@@ -38,6 +45,7 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             var query = _context.Certificates
                 .AsNoTracking()
                 .Include(x => x.Conference)
+                    .ThenInclude(x => x.Tenant)
                 .Where(x => x.UserId == userId);
 
             if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
@@ -46,11 +54,13 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             }
 
             return await query
-                .OrderByDescending(x => x.EligibleAt)
+                .OrderByDescending(x => x.GeneratedAt ?? x.EligibleAt)
                 .ToListAsync();
         }
 
-        public async Task<byte[]?> GetCertificateFileAsync(Guid certificateId, string userId)
+        public async Task<byte[]?> GetCertificateFileAsync(
+            Guid certificateId,
+            string userId)
         {
             if (certificateId == Guid.Empty || string.IsNullOrWhiteSpace(userId))
             {
@@ -104,14 +114,24 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             return await File.ReadAllBytesAsync(absolutePath);
         }
 
-        public Task EnsureAuthorCertificateAsync(Guid conferenceId, string userId)
+        public Task EnsureAuthorCertificateAsync(
+            Guid conferenceId,
+            string userId)
         {
-            return EnsureCertificateAsync(conferenceId, userId, CertificateType.Author);
+            return EnsureCertificateAsync(
+                conferenceId,
+                userId,
+                CertificateType.Author);
         }
 
-        public Task EnsureReviewerCertificateAsync(Guid conferenceId, string userId)
+        public Task EnsureReviewerCertificateAsync(
+            Guid conferenceId,
+            string userId)
         {
-            return EnsureCertificateAsync(conferenceId, userId, CertificateType.Reviewer);
+            return EnsureCertificateAsync(
+                conferenceId,
+                userId,
+                CertificateType.Reviewer);
         }
 
         public Task EnsureReviewerCertificateAsync(
@@ -124,10 +144,13 @@ namespace AntAbstract.Infrastructure.Services.Certficates
                 conferenceId,
                 reviewerUserId,
                 CertificateType.Reviewer,
+                overrideFullName: reviewerFullName,
                 overrideEmail: email);
         }
 
-        public async Task RegenerateCertificateFileAsync(Guid certificateId, bool resendEmail = false)
+        public async Task RegenerateCertificateFileAsync(
+            Guid certificateId,
+            bool resendEmail = false)
         {
             if (certificateId == Guid.Empty)
             {
@@ -157,11 +180,15 @@ namespace AntAbstract.Infrastructure.Services.Certficates
 
             if (certificate.Type == CertificateType.Author)
             {
-                await EnsureAuthorCertificateAsync(certificate.ConferenceId, certificate.UserId);
+                await EnsureAuthorCertificateAsync(
+                    certificate.ConferenceId,
+                    certificate.UserId);
             }
             else if (certificate.Type == CertificateType.Reviewer)
             {
-                await EnsureReviewerCertificateAsync(certificate.ConferenceId, certificate.UserId);
+                await EnsureReviewerCertificateAsync(
+                    certificate.ConferenceId,
+                    certificate.UserId);
             }
         }
 
@@ -182,9 +209,16 @@ namespace AntAbstract.Infrastructure.Services.Certficates
                 return;
             }
 
-            if (certificate.GeneratedAt == null || string.IsNullOrWhiteSpace(certificate.FilePath))
+            var needsRegeneration =
+                certificate.GeneratedAt == null ||
+                string.IsNullOrWhiteSpace(certificate.FilePath) ||
+                !CertificateFileExists(certificate.FilePath);
+
+            if (needsRegeneration)
             {
-                await RegenerateCertificateFileAsync(certificateId, resendEmail: false);
+                await RegenerateCertificateFileAsync(
+                    certificateId,
+                    resendEmail: false);
 
                 certificate = await _context.Certificates
                     .Include(x => x.Conference)
@@ -193,7 +227,8 @@ namespace AntAbstract.Infrastructure.Services.Certficates
 
                 if (certificate == null ||
                     certificate.GeneratedAt == null ||
-                    string.IsNullOrWhiteSpace(certificate.FilePath))
+                    string.IsNullOrWhiteSpace(certificate.FilePath) ||
+                    !CertificateFileExists(certificate.FilePath))
                 {
                     return;
                 }
@@ -213,10 +248,16 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             await SendCertificateEmailAsync(certificate, email);
         }
 
+        public byte[] GenerateAcceptanceCertificate(CertificateDataDto data)
+        {
+            return _pdfCertificateService.GenerateAcceptanceCertificate(data);
+        }
+
         private async Task EnsureCertificateAsync(
             Guid conferenceId,
             string userId,
             CertificateType type,
+            string? overrideFullName = null,
             string? overrideEmail = null)
         {
             if (conferenceId == Guid.Empty || string.IsNullOrWhiteSpace(userId))
@@ -264,12 +305,21 @@ namespace AntAbstract.Infrastructure.Services.Certficates
                 };
 
                 _context.Certificates.Add(certificate);
+
                 await _context.SaveChangesAsync();
             }
 
-            if (certificate.GeneratedAt == null || string.IsNullOrWhiteSpace(certificate.FilePath))
+            var needsFileGeneration =
+                certificate.GeneratedAt == null ||
+                string.IsNullOrWhiteSpace(certificate.FilePath) ||
+                !CertificateFileExists(certificate.FilePath);
+
+            if (needsFileGeneration)
             {
-                await GenerateAndSaveCertificateFileAsync(certificate, conference);
+                await GenerateAndSaveCertificateFileAsync(
+                    certificate,
+                    conference,
+                    overrideFullName);
             }
 
             if (certificate.EmailSentAt == null)
@@ -292,14 +342,19 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             }
         }
 
-        private async Task<bool> IsAuthorEligibleAsync(Guid conferenceId, string userId)
+        private async Task<bool> IsAuthorEligibleAsync(
+            Guid conferenceId,
+            string userId)
         {
             var attendanceCompleted = await _context.ConferenceAttendances
                 .AsNoTracking()
                 .AnyAsync(x =>
                     x.ConferenceId == conferenceId &&
                     x.UserId == userId &&
-                    x.CompletedAt != null);
+                    (
+                        x.CompletedAt.HasValue ||
+                        x.TotalSeconds >= x.RequiredSeconds
+                    ));
 
             if (!attendanceCompleted)
             {
@@ -310,7 +365,11 @@ namespace AntAbstract.Infrastructure.Services.Certficates
                 .AsNoTracking()
                 .AnyAsync(s =>
                     s.ConferenceId == conferenceId &&
-                    s.AuthorId == userId);
+                    s.AuthorId == userId &&
+                    (
+                        s.Status == SubmissionStatus.Accepted ||
+                        s.Status == SubmissionStatus.Presented
+                    ));
 
             if (isMainAuthor)
             {
@@ -322,35 +381,32 @@ namespace AntAbstract.Infrastructure.Services.Certficates
                 .AnyAsync(a =>
                     a.Submission != null &&
                     a.Submission.ConferenceId == conferenceId &&
-                    a.AppUserId == userId);
+                    a.AppUserId == userId &&
+                    (
+                        a.Submission.Status == SubmissionStatus.Accepted ||
+                        a.Submission.Status == SubmissionStatus.Presented
+                    ));
 
             return isCoAuthor;
         }
 
-        private async Task<bool> IsReviewerEligibleAsync(Guid conferenceId, string userId)
+        private async Task<bool> IsReviewerEligibleAsync(
+            Guid conferenceId,
+            string userId)
         {
-            var completedReviewExists = await _context.ReviewAssignments
+            return await _context.ReviewAssignments
                 .AsNoTracking()
-                .Where(ra => ra.ReviewerId == userId)
-                .Join(
-                    _context.Submissions.AsNoTracking(),
-                    ra => ra.SubmissionId,
-                    s => s.Id,
-                    (ra, s) => new
-                    {
-                        Assignment = ra,
-                        Submission = s
-                    })
-                .AnyAsync(x =>
-                    x.Submission.ConferenceId == conferenceId &&
-                    x.Assignment.Review != null);
-
-            return completedReviewExists;
+                .AnyAsync(ra =>
+                    ra.ReviewerId == userId &&
+                    ra.Submission != null &&
+                    ra.Submission.ConferenceId == conferenceId &&
+                    ra.Review != null);
         }
 
         private async Task GenerateAndSaveCertificateFileAsync(
             Certificate certificate,
-            Conference conference)
+            Conference conference,
+            string? overrideFullName = null)
         {
             var user = await _context.Users
                 .AsNoTracking()
@@ -361,21 +417,33 @@ namespace AntAbstract.Infrastructure.Services.Certficates
                 return;
             }
 
+            /*
+             * Not:
+             * PdfCertificateService şu an AppUser üzerinden isim üretiyor.
+             * overrideFullName parametresini şimdilik akışı bozmamak için tuttuk.
+             * İleride PdfCertificateService'e özel isim parametresi eklersek burada kullanabiliriz.
+             */
             var pdfBytes = _pdfCertificateService.GenerateParticipationCertificate(
                 conference,
                 user,
                 certificate.Type);
 
-            var tenantSlug = conference.Tenant?.Slug ?? "tenant";
+            if (pdfBytes == null || pdfBytes.Length == 0)
+            {
+                return;
+            }
+
+            var tenantSlug = conference.Tenant?.Slug ?? conference.Slug ?? "tenant";
             var safeTenant = Slugify(tenantSlug);
-            var safeUser = Slugify(user.Email ?? user.Id);
+            var safeUser = Slugify(user.Email ?? user.UserName ?? user.Id);
 
             var relativeDirectory = Path.Combine(
                 "certificates",
                 safeTenant,
                 conference.Id.ToString());
 
-            var absoluteDirectory = Path.Combine(_env.WebRootPath, relativeDirectory);
+            var webRoot = GetSafeWebRootPath();
+            var absoluteDirectory = Path.Combine(webRoot, relativeDirectory);
 
             Directory.CreateDirectory(absoluteDirectory);
 
@@ -392,11 +460,32 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             await _context.SaveChangesAsync();
         }
 
-        private async Task SendCertificateEmailAsync(Certificate certificate, string email)
+        private async Task SendCertificateEmailAsync(
+            Certificate certificate,
+            string email)
         {
             try
             {
-                var downloadLink = $"/Certificates/Download/{certificate.Id}";
+                var conference = certificate.Conference;
+
+                if (conference == null)
+                {
+                    conference = await _context.Conferences
+                        .AsNoTracking()
+                        .Include(x => x.Tenant)
+                        .FirstOrDefaultAsync(x => x.Id == certificate.ConferenceId);
+                }
+
+                var slug = conference?.Tenant?.Slug ?? conference?.Slug ?? "";
+                var downloadLink = string.IsNullOrWhiteSpace(slug)
+                    ? $"/Certificates/Download/{certificate.Id}"
+                    : $"/{slug}/Certificates/Download/{certificate.Id}";
+
+                var certificateTypeText = certificate.Type == CertificateType.Author
+                    ? "Yazar Sertifikası"
+                    : "Hakem Sertifikası";
+
+                var conferenceTitle = conference?.Title ?? "Kongre";
 
                 var subject = certificate.Type == CertificateType.Author
                     ? "Yazar Sertifikanız Hazır"
@@ -404,8 +493,9 @@ namespace AntAbstract.Infrastructure.Services.Certficates
 
                 var body =
                     $"Merhaba,<br/><br/>" +
-                    $"Sertifikanız hazır. İndirmek için tıklayın:<br/>" +
-                    $"{downloadLink}<br/><br/>" +
+                    $"{conferenceTitle} için <strong>{certificateTypeText}</strong> belgeniz hazırlandı.<br/><br/>" +
+                    $"Sertifikanızı indirmek için aşağıdaki bağlantıyı kullanabilirsiniz:<br/>" +
+                    $"<a href=\"{downloadLink}\">{downloadLink}</a><br/><br/>" +
                     $"AntAbstract";
 
                 await _emailService.SendAsync(email, subject, body);
@@ -427,6 +517,18 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             }
         }
 
+        private bool CertificateFileExists(string? relativePath)
+        {
+            if (string.IsNullOrWhiteSpace(relativePath))
+            {
+                return false;
+            }
+
+            var absolutePath = ResolveSafeWebRootFilePath(relativePath);
+
+            return absolutePath != null && File.Exists(absolutePath);
+        }
+
         private string? ResolveSafeWebRootFilePath(string relativePath)
         {
             if (string.IsNullOrWhiteSpace(relativePath))
@@ -439,7 +541,7 @@ namespace AntAbstract.Infrastructure.Services.Certficates
                 .Replace("/", Path.DirectorySeparatorChar.ToString())
                 .Replace("\\", Path.DirectorySeparatorChar.ToString());
 
-            var webRoot = Path.GetFullPath(_env.WebRootPath);
+            var webRoot = Path.GetFullPath(GetSafeWebRootPath());
             var fullPath = Path.GetFullPath(Path.Combine(webRoot, normalizedRelativePath));
 
             if (!fullPath.StartsWith(webRoot, StringComparison.OrdinalIgnoreCase))
@@ -450,9 +552,20 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             return fullPath;
         }
 
-        public byte[] GenerateAcceptanceCertificate(CertificateDataDto data)
+        private string GetSafeWebRootPath()
         {
-            return _pdfCertificateService.GenerateAcceptanceCertificate(data);
+            if (!string.IsNullOrWhiteSpace(_env.WebRootPath))
+            {
+                return _env.WebRootPath;
+            }
+
+            var fallbackWebRoot = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "wwwroot");
+
+            Directory.CreateDirectory(fallbackWebRoot);
+
+            return fallbackWebRoot;
         }
 
         private static string Slugify(string value)
