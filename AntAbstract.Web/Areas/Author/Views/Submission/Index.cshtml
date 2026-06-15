@@ -537,6 +537,46 @@
 
     @if (hasSubmissions)
     {
+        var currentFilter = ViewBag.StatusFilter as string ?? "";
+        string FilterUrl(string f) => string.IsNullOrWhiteSpace(slug)
+            ? $"/Submission/Index?statusFilter={f}"
+            : $"/{slug}/my-submissions?statusFilter={f}";
+        <!-- Status Filter Bar -->
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            <a href="@FilterUrl("")"
+               class="btn btn-sm @(currentFilter == "" ? "btn-primary" : "btn-outline-secondary") rounded-pill">
+                <i class="fas fa-list me-1"></i> Tümü
+            </a>
+            <a href="@FilterUrl("New")"
+               class="btn btn-sm @(currentFilter == "New" ? "btn-primary" : "btn-outline-secondary") rounded-pill">
+                Taslak
+            </a>
+            <a href="@FilterUrl("Pending")"
+               class="btn btn-sm @(currentFilter == "Pending" ? "btn-warning" : "btn-outline-secondary") rounded-pill">
+                Beklemede
+            </a>
+            <a href="@FilterUrl("UnderReview")"
+               class="btn btn-sm @(currentFilter == "UnderReview" ? "btn-info" : "btn-outline-secondary") rounded-pill">
+                İncelemede
+            </a>
+            <a href="@FilterUrl("Accepted")"
+               class="btn btn-sm @(currentFilter == "Accepted" ? "btn-success" : "btn-outline-secondary") rounded-pill">
+                Kabul
+            </a>
+            <a href="@FilterUrl("Rejected")"
+               class="btn btn-sm @(currentFilter == "Rejected" ? "btn-danger" : "btn-outline-secondary") rounded-pill">
+                Red
+            </a>
+            <a href="@FilterUrl("RevisionRequired")"
+               class="btn btn-sm @(currentFilter == "RevisionRequired" ? "btn-warning" : "btn-outline-secondary") rounded-pill">
+                Revizyon
+            </a>
+            <a href="@FilterUrl("Withdrawn")"
+               class="btn btn-sm @(currentFilter == "Withdrawn" ? "btn-secondary" : "btn-outline-secondary") rounded-pill">
+                Geri Çekildi
+            </a>
+        </div>
+
         <div class="author-submission-grid">
             @foreach (var item in Model!)
             {
@@ -585,6 +625,11 @@
                 var revisionUrl = BuildConferenceUrl(
                     $"/my-submissions/{item.Id}/revision",
                     $"/Submission/UploadRevision/{item.Id}"
+                );
+
+                var withdrawUrl = BuildConferenceUrl(
+                    $"/my-submissions/{item.Id}/withdraw",
+                    $"/Submission/Withdraw/{item.Id}"
                 );
 
                 var acceptanceLetterUrl = BuildConferenceUrl(
@@ -668,6 +713,20 @@
                                     <i class="fas fa-trash-alt"></i>
                                     @Localizer["DeleteButton"]
                                 </a>
+
+                                <a href="@withdrawUrl"
+                                   class="author-action-btn author-action-warning">
+                                    <i class="fas fa-undo-alt"></i>
+                                    Geri Çek
+                                </a>
+                            }
+                            else if (statusEnum == SubmissionStatus.Pending || statusEnum == SubmissionStatus.UnderReview)
+                            {
+                                <a href="@withdrawUrl"
+                                   class="author-action-btn author-action-warning">
+                                    <i class="fas fa-undo-alt"></i>
+                                    Geri Çek
+                                </a>
                             }
                             else if (statusEnum == SubmissionStatus.RevisionRequired)
                             {
@@ -681,6 +740,12 @@
                                    class="author-action-btn author-action-light">
                                     <i class="fas fa-edit text-warning"></i>
                                     Düzenle
+                                </a>
+
+                                <a href="@withdrawUrl"
+                                   class="author-action-btn author-action-warning">
+                                    <i class="fas fa-undo-alt"></i>
+                                    Geri Çek
                                 </a>
                             }
                             else if (statusEnum == SubmissionStatus.Accepted || statusEnum == SubmissionStatus.Presented)
