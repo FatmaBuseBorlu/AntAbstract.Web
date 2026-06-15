@@ -2,9 +2,11 @@
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Localization;
 
 namespace AntAbstract.Web.Controllers
@@ -17,19 +19,22 @@ namespace AntAbstract.Web.Controllers
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly UserManager<AppUser> _userManager;
         private readonly IStringLocalizer<AccommodationController> _localizer;
+        private readonly IWebHostEnvironment _env;
 
         public AccommodationController(
             AppDbContext context,
             TenantContext tenantContext,
             ISelectedConferenceService selectedConferenceService,
             UserManager<AppUser> userManager,
-            IStringLocalizer<AccommodationController> localizer)
+            IStringLocalizer<AccommodationController> localizer,
+            IWebHostEnvironment env)
         {
             _context = context;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
             _userManager = userManager;
             _localizer = localizer;
+            _env = env;
         }
 
         private string T(string key, string fallback)
@@ -119,10 +124,16 @@ namespace AntAbstract.Web.Controllers
             return View(hotels);
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "SuperAdmin")]
         [HttpGet("/Admin/Accommodation/SeedData")]
         public async Task<IActionResult> SeedData(Guid? conferenceId = null)
         {
+            // Bu action yalnızca Development ortamında çalışır
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
             Conference? conference = null;
 
             if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)

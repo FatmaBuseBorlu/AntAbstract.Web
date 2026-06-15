@@ -96,22 +96,38 @@ namespace AntAbstract.Web.Controllers
                 return Challenge();
             }
 
-            if (submissionId.HasValue && submissionId.Value != Guid.Empty)
+            // Anket yalnızca bildiri sahibi yazarlar için geçerli; submissionId zorunlu
+            if (!submissionId.HasValue || submissionId.Value == Guid.Empty)
             {
-                var submissionExists = await _context.Submissions
-                    .AsNoTracking()
-                    .AnyAsync(s =>
-                        s.Id == submissionId.Value &&
-                        s.AuthorId == user.Id);
+                TempData["ErrorMessage"] = T(
+                    "SurveySubmissionRequired",
+                    "Anket doldurabilmek için geçerli bir bildiri bağlantısı gereklidir.");
 
-                if (!submissionExists)
-                {
-                    TempData["ErrorMessage"] = T(
-                        "UnauthorizedSubmissionSurvey",
-                        "Bu bildiri için anket doldurma yetkiniz yok.");
+                return RedirectToAction("Index", "Dashboard");
+            }
 
-                    return RedirectToAction("Index", "Dashboard");
-                }
+            var submission = await _context.Submissions
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s =>
+                    s.Id == submissionId.Value &&
+                    s.AuthorId == user.Id);
+
+            if (submission == null)
+            {
+                TempData["ErrorMessage"] = T(
+                    "UnauthorizedSubmissionSurvey",
+                    "Bu bildiri için anket doldurma yetkiniz yok.");
+
+                return RedirectToAction("Index", "Dashboard");
+            }
+
+            if (submission.IsFeedbackGiven)
+            {
+                TempData["InfoMessage"] = T(
+                    "SurveyAlreadySubmitted",
+                    "Bu bildiri için anket daha önce doldurulmuştur.");
+
+                return RedirectToAction("Index", "Dashboard");
             }
 
             ViewBag.SubmissionId = submissionId;
