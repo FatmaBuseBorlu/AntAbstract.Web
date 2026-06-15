@@ -2,6 +2,7 @@
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
+using AntAbstract.Infrastructure.Services.Email;
 using AntAbstract.Web.Files;
 using AntAbstract.Web.Models.ViewModels.Admin.Submissions;
 using AntAbstract.Web.Models.ViewModels.Shared;
@@ -36,6 +37,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly IStringLocalizer<SubmissionsController> _localizer;
         private readonly IUploadFileValidator _uploadFileValidator;
         private readonly IAuditService _audit;
+        private readonly INotificationService _notificationService;
+        private readonly IEmailService _emailService;
 
         public SubmissionsController(
             AppDbContext context,
@@ -48,7 +51,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             IWebHostEnvironment env,
             IStringLocalizer<SubmissionsController> localizer,
             IUploadFileValidator uploadFileValidator,
-            IAuditService audit)
+            IAuditService audit,
+            INotificationService notificationService,
+            IEmailService emailService)
         {
             _context = context;
             _submissionService = submissionService;
@@ -61,6 +66,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _localizer = localizer;
             _uploadFileValidator = uploadFileValidator;
             _audit = audit;
+            _notificationService = notificationService;
+            _emailService = emailService;
         }
 
         private string T(string key, string fallback)
@@ -851,6 +858,73 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     oldValues: oldStatus,
                     newValues: newStatus.ToString());
+
+                // Yazara in-app bildirim + e-posta
+                try
+                {
+                    var submission = await _context.Submissions
+                        .AsNoTracking()
+                        .Include(s => s.Conference)
+                        .Include(s => s.Author)
+                        .FirstOrDefaultAsync(s => s.Id == id);
+
+                    if (submission?.Author != null)
+                    {
+                        var (icon, color, statusLabel) = newStatus switch
+                        {
+                            SubmissionStatus.Accepted        => ("✅", "success", "Kabul Edildi"),
+                            SubmissionStatus.Rejected        => ("❌", "danger",  "Reddedildi"),
+                            SubmissionStatus.RevisionRequired => ("✏️", "warning", "Revizyon Gerekiyor"),
+                            SubmissionStatus.UnderReview     => ("🔍", "info",    "İncelemede"),
+                            SubmissionStatus.Pending         => ("⏳", "secondary","Beklemede"),
+                            SubmissionStatus.Presented       => ("🎤", "primary", "Sunuldu"),
+                            SubmissionStatus.Withdrawn       => ("↩️", "dark",    "Geri Çekildi"),
+                            _                                => ("📋", "secondary", localizedStatus)
+                        };
+
+                        var conferenceName = submission.Conference?.Title ?? "Kongre";
+                        var submissionTitle = submission.Title ?? "Bildiriniz";
+
+                        // In-app bildirim
+                        await _notificationService.CreateAsync(
+                            userId: submission.AuthorId,
+                            title: $"Bildiri Durumu: {statusLabel}",
+                            message: $"\"{submissionTitle}\" başlıklı bildirinizin durumu güncellendi: {statusLabel}",
+                            icon: icon,
+                            color: color,
+                            link: $"/Author/Submission/Details/{id}");
+
+                        // E-posta bildirimi
+                        if (!string.IsNullOrWhiteSpace(submission.Author.Email))
+                        {
+                            var fullName = $"{submission.Author.FirstName} {submission.Author.LastName}".Trim();
+                            if (string.IsNullOrWhiteSpace(fullName)) fullName = submission.Author.Email;
+
+                            var noteHtml = string.IsNullOrWhiteSpace(adminNote)
+                                ? ""
+                                : $"<p><strong>Yönetici Notu:</strong> {System.Net.WebUtility.HtmlEncode(adminNote)}</p>";
+
+                            await _emailService.SendAsync(
+                                submission.Author.Email,
+                                $"Bildiri Durumu Güncellendi — {conferenceName}",
+                                $@"<div style='font-family:Arial,sans-serif;max-width:600px;margin:auto'>
+                                  <div style='background:#1a2d5a;color:#fff;padding:24px 32px;border-radius:8px 8px 0 0'>
+                                    <h2 style='margin:0'>{icon} Bildiri Durumu: {statusLabel}</h2>
+                                  </div>
+                                  <div style='background:#f9fafb;padding:24px 32px;border-radius:0 0 8px 8px'>
+                                    <p>Sayın <strong>{System.Net.WebUtility.HtmlEncode(fullName)}</strong>,</p>
+                                    <p><strong>{conferenceName}</strong> kongresine gönderdiğiniz
+                                       <strong>{System.Net.WebUtility.HtmlEncode(submissionTitle)}</strong>
+                                       başlıklı bildirinin durumu güncellendi.</p>
+                                    <p><strong>Yeni Durum:</strong> {statusLabel}</p>
+                                    {noteHtml}
+                                    <p style='margin-top:24px;color:#6b7280;font-size:13px'>Bu e-posta otomatik olarak gönderilmiştir.</p>
+                                  </div>
+                                </div>");
+                        }
+                    }
+                }
+                catch { /* bildirim hatası işlemi durdurmaz */ }
             }
             else
             {
