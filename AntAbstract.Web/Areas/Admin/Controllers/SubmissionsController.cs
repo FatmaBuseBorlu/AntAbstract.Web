@@ -2,10 +2,8 @@
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
-using AntAbstract.Web.Files;
 using AntAbstract.Web.Models.ViewModels.Admin.Submissions;
 using AntAbstract.Web.Models.ViewModels.Shared;
-using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -22,42 +20,36 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = AdminPolicies.TenantAdmin)]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public class SubmissionsController : Controller
     {
         private readonly AppDbContext _context;
         private readonly ISubmissionService _submissionService;
         private readonly IReviewService _reviewService;
         private readonly UserManager<AppUser> _userManager;
-        private readonly IAdminTenantAccessService _tenantAccess;
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly IWebHostEnvironment _env;
         private readonly IStringLocalizer<SubmissionsController> _localizer;
-        private readonly IUploadFileValidator _uploadFileValidator;
 
         public SubmissionsController(
             AppDbContext context,
             ISubmissionService submissionService,
             IReviewService reviewService,
             UserManager<AppUser> userManager,
-            IAdminTenantAccessService tenantAccess,
             TenantContext tenantContext,
             ISelectedConferenceService selectedConferenceService,
             IWebHostEnvironment env,
-            IStringLocalizer<SubmissionsController> localizer,
-            IUploadFileValidator uploadFileValidator)
+            IStringLocalizer<SubmissionsController> localizer)
         {
             _context = context;
             _submissionService = submissionService;
             _reviewService = reviewService;
             _userManager = userManager;
-            _tenantAccess = tenantAccess;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
             _env = env;
             _localizer = localizer;
-            _uploadFileValidator = uploadFileValidator;
         }
 
         private string T(string key, string fallback)
@@ -71,7 +63,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private bool IsSuperAdminUser()
         {
-            return _tenantAccess.IsSuperAdmin(User);
+            return User.IsInRole("SuperAdmin");
         }
 
         private async Task<AppUser?> GetCurrentUserAsync()
@@ -81,7 +73,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private async Task<Guid?> GetCurrentAdminTenantIdAsync()
         {
-            return await _tenantAccess.GetAdminTenantIdAsync(User);
+            var user = await GetCurrentUserAsync();
+
+            return user?.TenantId;
         }
 
         private async Task<bool> CurrentAdminHasTenantAsync()
@@ -103,20 +97,47 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return true;
             }
 
-            return await _tenantAccess.CanAccessCurrentTenantAsync(
-                User,
-                slug,
-                allowSuperAdmin: false);
+            if (_tenantContext.Current == null)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(slug) &&
+                !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var tenantId = await GetCurrentAdminTenantIdAsync();
+
+            if (!tenantId.HasValue)
+            {
+                return false;
+            }
+
+            return tenantId.Value == _tenantContext.Current.Id;
         }
 
         private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync()
         {
-            var query = await _tenantAccess.GetAccessibleConferenceQueryAsync(User);
-
-            return query
+            var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .AsQueryable();
+
+            if (IsSuperAdminUser())
+            {
+                return query;
+            }
+
+            var tenantId = await GetCurrentAdminTenantIdAsync();
+
+            if (!tenantId.HasValue)
+            {
+                return query.Where(c => false);
+            }
+
+            return query.Where(c => c.TenantId == tenantId.Value);
         }
 
         private async Task<Conference?> GetAccessibleConferenceAsync(
@@ -428,31 +449,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (model.SubmissionFile != null && model.SubmissionFile.Length > 0)
             {
-                var validation = await _uploadFileValidator.ValidateAsync(
-                    model.SubmissionFile,
-                    UploadFileProfile.SubmissionDocument);
-
-                if (!validation.IsValid)
-                {
-                    var errorMessage = validation.Error switch
-                    {
-                        UploadValidationError.TooLarge =>
-                            T("Error_FileTooLarge", "Dosya boyutu en fazla 10 MB olabilir."),
-                        UploadValidationError.InvalidExtension =>
-                            T("Error_InvalidFileExtension", "Sadece PDF, DOC ve DOCX dosyaları yüklenebilir."),
-                        _ =>
-                            T("Error_InvalidFileContent", "Dosya içeriği seçilen formatla eşleşmiyor.")
-                    };
-
-                    ModelState.AddModelError(
-                        nameof(model.SubmissionFile),
-                        errorMessage);
-
-                    await LoadAvailableConferencesAsync(model);
-
-                    return View("~/Areas/Admin/Views/Submissions/Create.cshtml", model);
-                }
-
                 var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "submissions");
 
                 if (!Directory.Exists(uploadsFolder))
@@ -460,9 +456,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     Directory.CreateDirectory(uploadsFolder);
                 }
 
-                var uniqueFileName = _uploadFileValidator.CreateStoredFileName(
-                    validation.Extension,
-                    "submission");
+                var uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(model.SubmissionFile.FileName)}";
                 var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
                 await using (var fileStream = new FileStream(filePath, FileMode.Create))
@@ -472,8 +466,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                 newSubmission.Files.Add(new SubmissionFile
                 {
-                    FileName = validation.SafeOriginalFileName,
-                    StoredFileName = uniqueFileName,
+                    FileName = model.SubmissionFile.FileName,
                     FilePath = "/uploads/submissions/" + uniqueFileName,
                     UploadedAt = DateTime.UtcNow
                 });

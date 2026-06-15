@@ -18,9 +18,6 @@ using System.Globalization;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Localization;
 using AntAbstract.Infrastructure.Services.ProceedingBooks;
-using AntAbstract.Web.Files;
-using AntAbstract.Web.Security;
-using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -122,21 +119,6 @@ builder.Services
         };
     });
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy(
-        AdminPolicies.TenantAdmin,
-        policy => policy
-            .RequireAuthenticatedUser()
-            .AddRequirements(new TenantAdminRequirement(allowSuperAdmin: true)));
-
-    options.AddPolicy(
-        AdminPolicies.TenantAdminOnly,
-        policy => policy
-            .RequireAuthenticatedUser()
-            .AddRequirements(new TenantAdminRequirement(allowSuperAdmin: false)));
-});
-
 #endregion
 
 #region 3. Uygulama, Altyap� ve Tenant Servisleri
@@ -149,9 +131,6 @@ builder.Services.AddScoped<IProceedingBookPdfService, ProceedingBookPdfService>(
 
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();
-builder.Services.AddScoped<IAdminTenantAccessService, AdminTenantAccessService>();
-builder.Services.AddScoped<IAuthorizationHandler, TenantAdminAuthorizationHandler>();
-builder.Services.AddSingleton<IUploadFileValidator, UploadFileValidator>();
 
 #endregion
 

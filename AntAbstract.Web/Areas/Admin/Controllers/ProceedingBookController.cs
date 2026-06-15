@@ -3,9 +3,7 @@ using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Infrastructure.Services.ProceedingBooks;
-using AntAbstract.Web.Files;
 using AntAbstract.Web.Models.ViewModels.Admin.ProceedingBooks;
-using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -21,58 +19,76 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = AdminPolicies.TenantAdmin)]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public class ProceedingBookController : Controller
     {
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly UserManager<AppUser> _userManager;
-        private readonly IAdminTenantAccessService _tenantAccess;
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly IProceedingBookPdfService _proceedingBookPdfService;
         private readonly INotificationService _notificationService;
-        private readonly IUploadFileValidator _uploadFileValidator;
 
         public ProceedingBookController(
             AppDbContext context,
             TenantContext tenantContext,
             ISelectedConferenceService selectedConferenceService,
             UserManager<AppUser> userManager,
-            IAdminTenantAccessService tenantAccess,
             IWebHostEnvironment webHostEnvironment,
             IProceedingBookPdfService proceedingBookPdfService,
-            INotificationService notificationService,
-            IUploadFileValidator uploadFileValidator)
+            INotificationService notificationService)
         {
             _context = context;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
             _userManager = userManager;
-            _tenantAccess = tenantAccess;
             _webHostEnvironment = webHostEnvironment;
             _proceedingBookPdfService = proceedingBookPdfService;
             _notificationService = notificationService;
-            _uploadFileValidator = uploadFileValidator;
         }
 
         private bool IsSuperAdminUser()
         {
-            return _tenantAccess.IsSuperAdmin(User);
+            return User.IsInRole("SuperAdmin");
+        }
+
+        private async Task<AppUser?> GetCurrentUserAsync()
+        {
+            return await _userManager.GetUserAsync(User);
         }
 
         private async Task<Guid?> GetCurrentAdminTenantIdAsync()
         {
-            return await _tenantAccess.GetAdminTenantIdAsync(User);
+            var user = await GetCurrentUserAsync();
+
+            if (user == null || !user.TenantId.HasValue)
+            {
+                return null;
+            }
+
+            return user.TenantId.Value;
         }
 
         private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync()
         {
-            var query = await _tenantAccess.GetAccessibleConferenceQueryAsync(User);
-
-            return query
+            var query = _context.Conferences
                 .Include(c => c.Tenant)
                 .AsQueryable();
+
+            if (IsSuperAdminUser())
+            {
+                return query;
+            }
+
+            var tenantId = await GetCurrentAdminTenantIdAsync();
+
+            if (!tenantId.HasValue)
+            {
+                return query.Where(c => false);
+            }
+
+            return query.Where(c => c.TenantId == tenantId.Value);
         }
 
         private static string GetConferenceSlug(Conference conference)
@@ -228,6 +244,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             };
         }
 
+        private static bool IsPdfFile(IFormFile file)
+        {
+            var extension = Path.GetExtension(file.FileName);
+
+            return string.Equals(extension, ".pdf", StringComparison.OrdinalIgnoreCase) &&
+                   string.Equals(file.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase);
+        }
+
         private async Task<string> SaveProceedingBookFileAsync(
             IFormFile file,
             Guid conferenceId)
@@ -243,9 +267,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 Directory.CreateDirectory(uploadsRoot);
             }
 
-            var safeFileName = _uploadFileValidator.CreateStoredFileName(
-                ".pdf",
-                $"proceeding-book-{DateTime.UtcNow:yyyyMMddHHmmss}");
+            var safeFileName = $"proceeding-book-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid():N}.pdf";
             var fullPath = Path.Combine(uploadsRoot, safeFileName);
 
             await using (var stream = new FileStream(fullPath, FileMode.Create))
@@ -455,8 +477,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         [HttpPost("/Admin/ProceedingBook")]
         [HttpPost("/{slug}/Admin/ProceedingBook")]
-        [RequestSizeLimit(52 * 1024 * 1024)]
-        [RequestFormLimits(MultipartBodyLengthLimit = 52 * 1024 * 1024)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Index(
             string? slug,
@@ -493,25 +513,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (model.ProceedingBookFile != null && model.ProceedingBookFile.Length > 0)
             {
-                var validation = await _uploadFileValidator.ValidateAsync(
-                    model.ProceedingBookFile,
-                    UploadFileProfile.ProceedingBookPdf);
+                const long maxFileSize = 50 * 1024 * 1024;
 
-                if (!validation.IsValid)
+                if (model.ProceedingBookFile.Length > maxFileSize)
                 {
-                    var errorMessage = validation.Error switch
-                    {
-                        UploadValidationError.TooLarge =>
-                            "PDF dosyası en fazla 50 MB olabilir.",
-                        UploadValidationError.InvalidExtension =>
-                            "Lütfen sadece PDF dosyası yükleyiniz.",
-                        _ =>
-                            "PDF dosyasının içeriği geçerli bir PDF ile eşleşmiyor."
-                    };
-
                     ModelState.AddModelError(
                         nameof(model.ProceedingBookFile),
-                        errorMessage);
+                        "PDF dosyası en fazla 50 MB olabilir.");
+                }
+
+                if (!IsPdfFile(model.ProceedingBookFile))
+                {
+                    ModelState.AddModelError(
+                        nameof(model.ProceedingBookFile),
+                        "Lütfen sadece PDF dosyası yükleyiniz.");
                 }
             }
 
