@@ -640,6 +640,16 @@ namespace AntAbstract.Web.Controllers
                 return View();
             }
 
+            // Dosya boyutu: maks 5 MB
+            const long MaxReceiptSize = 5 * 1024 * 1024;
+            if (receiptFile.Length > MaxReceiptSize)
+            {
+                ModelState.AddModelError("", "Makbuz dosyası en fazla 5 MB olabilir.");
+                ViewBag.Registration = registration;
+                ViewBag.Slug = slug ?? registration.Conference?.Tenant?.Slug ?? "";
+                return View();
+            }
+
             // Yalnızca PDF, PNG, JPG
             var ext = Path.GetExtension(receiptFile.FileName).ToLowerInvariant();
             if (!new[] { ".pdf", ".png", ".jpg", ".jpeg" }.Contains(ext))
