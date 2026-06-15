@@ -23,19 +23,22 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly IAdminTenantAccessService _tenantAccess;
         private readonly IAuditService _audit;
         private readonly UserManager<AppUser> _userManager;
+        private readonly INotificationService _notificationService;
 
         public PaymentsController(
             AppDbContext context,
             IEmailService emailService,
             IAdminTenantAccessService tenantAccess,
             IAuditService audit,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            INotificationService notificationService)
         {
             _context = context;
             _emailService = emailService;
             _tenantAccess = tenantAccess;
             _audit = audit;
             _userManager = userManager;
+            _notificationService = notificationService;
         }
 
         // GET /{slug}/Admin/Payments  —  tüm ödemeler + makbuz bekleyenler
@@ -216,6 +219,22 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             TempData["SuccessMessage"] = "Ödeme başarıyla onaylandı ve kullanıcıya e-posta gönderildi.";
 
+            // In-app bildirim
+            if (registration.AppUserId != null)
+            {
+                try
+                {
+                    await _notificationService.CreateAsync(
+                        userId: registration.AppUserId,
+                        title: "Ödemeniz Onaylandı ✅",
+                        message: $"{registration.Conference?.Title} kongresine ait ödemeniz onaylandı.",
+                        icon: "✅",
+                        color: "success",
+                        link: "/Registration/Details/" + registration.Id);
+                }
+                catch { }
+            }
+
             var adminUser = await _userManager.GetUserAsync(User);
             _ = _audit.LogAsync(
                 category: "Payment",
@@ -283,6 +302,22 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             catch { }
 
             TempData["SuccessMessage"] = "Makbuz reddedildi ve kullanıcıya bildirim gönderildi.";
+
+            // In-app bildirim
+            if (registration.AppUserId != null)
+            {
+                try
+                {
+                    await _notificationService.CreateAsync(
+                        userId: registration.AppUserId,
+                        title: "Makbuzunuz Onaylanamadı ❌",
+                        message: "Yüklediğiniz ödeme makbuzu onaylanamamıştır. Lütfen tekrar yükleyiniz.",
+                        icon: "❌",
+                        color: "danger",
+                        link: "/Registration/Details/" + registration.Id);
+                }
+                catch { }
+            }
 
             var adminUser2 = await _userManager.GetUserAsync(User);
             _ = _audit.LogAsync(
@@ -358,6 +393,22 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             catch { }
 
             TempData["SuccessMessage"] = "Kayıt iptal edildi ve kullanıcıya bildirim gönderildi.";
+
+            // In-app bildirim
+            if (registration.AppUserId != null)
+            {
+                try
+                {
+                    await _notificationService.CreateAsync(
+                        userId: registration.AppUserId,
+                        title: "Kongre Kaydınız İptal Edildi 🚫",
+                        message: $"{registration.Conference?.Title} kongresine ait kaydınız iptal edildi.",
+                        icon: "🚫",
+                        color: "dark",
+                        link: "/Registration/Details/" + registration.Id);
+                }
+                catch { }
+            }
 
             var adminUser = await _userManager.GetUserAsync(User);
             _ = _audit.LogAsync(
