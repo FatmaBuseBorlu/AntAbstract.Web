@@ -299,6 +299,81 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return RedirectBack(returnUrl);
         }
 
+        // POST — Kaydı İptal Et
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Cancel(Guid registrationId, string? note, string? returnUrl)
+        {
+            var accessibleRegistrations = await _tenantAccess
+                .GetAccessibleRegistrationQueryAsync(User);
+            var registration = await accessibleRegistrations
+                .Include(r => r.AppUser)
+                .Include(r => r.Conference)
+                .FirstOrDefaultAsync(r => r.Id == registrationId);
+
+            if (registration == null)
+            {
+                TempData["ErrorMessage"] = "Kayıt bulunamadı.";
+                return RedirectBack(returnUrl);
+            }
+
+            if (registration.Status == RegistrationStatus.Cancelled)
+            {
+                TempData["InfoMessage"] = "Bu kayıt zaten iptal edilmiş.";
+                return RedirectBack(returnUrl);
+            }
+
+            registration.Status = RegistrationStatus.Cancelled;
+            registration.AdminPaymentNote = string.IsNullOrWhiteSpace(note)
+                ? registration.AdminPaymentNote
+                : note;
+            await _context.SaveChangesAsync();
+
+            // Kullanıcıya bildir
+            try
+            {
+                var user = registration.AppUser;
+                if (user?.Email != null)
+                {
+                    var fullName = $"{user.FirstName} {user.LastName}".Trim();
+                    if (string.IsNullOrWhiteSpace(fullName)) fullName = user.Email;
+
+                    await _emailService.SendAsync(user.Email,
+                        $"Kongre Kaydınız İptal Edildi — {registration.Conference?.Title}",
+                        $@"<div style='font-family:Arial,sans-serif;max-width:600px;margin:auto'>
+                          <div style='background:#111827;color:#fff;padding:24px 32px;border-radius:8px 8px 0 0'>
+                            <h2 style='margin:0'>🚫 Kaydınız İptal Edildi</h2>
+                          </div>
+                          <div style='background:#f9fafb;padding:24px 32px;border-radius:0 0 8px 8px'>
+                            <p>Sayın <strong>{System.Net.WebUtility.HtmlEncode(fullName)}</strong>,</p>
+                            <p><strong>{System.Net.WebUtility.HtmlEncode(registration.Conference?.Title ?? "")}</strong>
+                               kongresine ait kaydınız yönetici tarafından iptal edilmiştir.</p>
+                            {(string.IsNullOrWhiteSpace(note) ? "" : $"<p><strong>Açıklama:</strong> {System.Net.WebUtility.HtmlEncode(note)}</p>")}
+                            <p>Daha fazla bilgi için lütfen kongre organizasyonu ile iletişime geçiniz.</p>
+                            <p style='margin-top:24px;color:#6b7280;font-size:13px'>Bu e-posta otomatik olarak gönderilmiştir.</p>
+                          </div>
+                        </div>");
+                }
+            }
+            catch { }
+
+            TempData["SuccessMessage"] = "Kayıt iptal edildi ve kullanıcıya bildirim gönderildi.";
+
+            var adminUser = await _userManager.GetUserAsync(User);
+            _ = _audit.LogAsync(
+                category: "Registration",
+                action: "RegistrationCancelled",
+                userId: adminUser?.Id,
+                userName: adminUser != null ? $"{adminUser.FirstName} {adminUser.LastName}".Trim() : null,
+                entityType: "Registration",
+                entityId: registrationId.ToString(),
+                description: $"Kayıt iptal edildi: {registration.AppUser?.Email} — Not: {note}",
+                conferenceId: registration.ConferenceId,
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            return RedirectBack(returnUrl);
+        }
+
         private IActionResult RedirectBack(string? returnUrl)
         {
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))

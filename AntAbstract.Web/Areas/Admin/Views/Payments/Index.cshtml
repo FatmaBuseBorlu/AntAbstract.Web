@@ -162,7 +162,11 @@
                                     }
                                 </td>
                                 <td class="text-end">
-                                    @if (!reg.IsPaid)
+                                    @if (reg.Status == AntAbstract.Domain.Entities.RegistrationStatus.Cancelled)
+                                    {
+                                        <span class="text-muted small">İptal edildi</span>
+                                    }
+                                    else if (!reg.IsPaid)
                                     {
                                         <button type="button" class="btn btn-sm btn-success"
                                                 data-bs-toggle="modal" data-bs-target="#approveModal"
@@ -177,10 +181,20 @@
                                                 ❌ Reddet
                                             </button>
                                         }
+                                        <button type="button" class="btn btn-sm btn-outline-dark ms-1"
+                                                data-bs-toggle="modal" data-bs-target="#cancelModal"
+                                                data-reg-id="@reg.Id" data-name="@fullName" data-return="@returnUrl">
+                                            🚫 İptal
+                                        </button>
                                     }
                                     else
                                     {
                                         <span class="text-success small">Tamamlandı</span>
+                                        <button type="button" class="btn btn-sm btn-outline-dark ms-1"
+                                                data-bs-toggle="modal" data-bs-target="#cancelModal"
+                                                data-reg-id="@reg.Id" data-name="@fullName" data-return="@returnUrl">
+                                            🚫 İptal
+                                        </button>
                                     }
                                 </td>
                             </tr>
@@ -248,6 +262,36 @@
     </div>
 </div>
 
+<!-- İptal Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">🚫 Kaydı İptal Et</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="Cancel" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="registrationId" id="cancelRegId" />
+                <input type="hidden" name="returnUrl" id="cancelReturnUrl" />
+                <div class="modal-body">
+                    <div class="alert alert-warning py-2 mb-3">
+                        <strong id="cancelName"></strong> adlı katılımcının kaydı iptal edilecek. Bu işlem geri alınamaz.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">İptal Nedeni (opsiyonel)</label>
+                        <textarea name="note" class="form-control" rows="2" placeholder="İptal açıklaması..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Vazgeç</button>
+                    <button type="submit" class="btn btn-dark px-4">İptal Et</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
 document.addEventListener('DOMContentLoaded', () => {
@@ -262,6 +306,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('rejectRegId').value    = btn.dataset.regId;
         document.getElementById('rejectReturnUrl').value = btn.dataset.return;
         document.getElementById('rejectName').textContent = btn.dataset.name;
+    });
+    document.getElementById('cancelModal').addEventListener('show.bs.modal', e => {
+        const btn = e.relatedTarget;
+        document.getElementById('cancelRegId').value    = btn.dataset.regId;
+        document.getElementById('cancelReturnUrl').value = btn.dataset.return;
+        document.getElementById('cancelName').textContent = btn.dataset.name;
     });
 });
 </script>
