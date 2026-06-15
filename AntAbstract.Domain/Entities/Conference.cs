@@ -60,6 +60,12 @@ namespace AntAbstract.Domain.Entities
         // Bildiri kitabının yayınlanma tarihi
         public DateTime? ProceedingBookPublishedDate { get; set; }
 
+        /// <summary>Maksimum kayıt sayısı. null = sınırsız.</summary>
+        public int? MaxRegistrations { get; set; }
+
+        /// <summary>Kayıt açık mı? (Admin elle kapatabilir)</summary>
+        public bool IsRegistrationOpen { get; set; } = true;
+
         // Sertifika birinci imza bilgileri
         public string? CertificateFirstSignerName { get; set; }
 
