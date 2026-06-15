@@ -54,6 +54,7 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<EmailTemplate> EmailTemplates { get; set; }
 
         public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<SurveyAnswer> SurveyAnswers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
