@@ -342,11 +342,17 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Property<bool>("IsProceedingBookPublished")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsRegistrationOpen")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsSubmissionOpen")
                         .HasColumnType("bit");
 
                     b.Property<string>("LogoPath")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("MaxRegistrations")
+                        .HasColumnType("int");
 
                     b.Property<string>("ProceedingBookFilePath")
                         .HasColumnType("nvarchar(max)");
