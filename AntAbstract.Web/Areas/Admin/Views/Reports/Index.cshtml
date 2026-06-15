@@ -14,6 +14,10 @@
     var excelUrl = string.IsNullOrWhiteSpace(slug)
         ? $"/Admin/Reports/Excel?conferenceId={Model.ConferenceId}"
         : $"/{slug}/Admin/Reports/Excel?conferenceId={Model.ConferenceId}";
+
+    var pdfUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Reports/Pdf?conferenceId={Model.ConferenceId}"
+        : $"/{slug}/Admin/Reports/Pdf?conferenceId={Model.ConferenceId}";
 }
 
 <div class="container-fluid py-4">
@@ -30,6 +34,9 @@
         <div class="btn-group shadow-sm">
             <a href="@excelUrl" class="btn btn-success btn-sm">
                 <i class="fas fa-file-excel me-1"></i> @Localizer["DownloadExcelButton"]
+            </a>
+            <a href="@pdfUrl" class="btn btn-danger btn-sm">
+                <i class="fas fa-file-pdf me-1"></i> PDF İndir
             </a>
         </div>
     </div>
