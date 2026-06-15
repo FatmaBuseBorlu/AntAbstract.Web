@@ -75,7 +75,9 @@
 
     var files = Model.Files?.ToList() ?? new List<SubmissionFile>();
     var authors = Model.SubmissionAuthors?.OrderBy(x => x.Order).ToList() ?? new List<SubmissionAuthor>();
-    var assignments = Model.ReviewAssignments?.ToList() ?? new List<ReviewAssignment>();
+    var allAssignments   = Model.ReviewAssignments?.ToList() ?? new List<ReviewAssignment>();
+    var assignments      = allAssignments.Where(a => !a.IsDeclined).ToList();
+    var declinedAssignments = allAssignments.Where(a => a.IsDeclined).ToList();
 }
 
 <div class="container-fluid submission-detail-page">
@@ -376,6 +378,41 @@
                                     <span>
                                         @(assignment.Review == null ? "Değerlendirme bekliyor" : "Değerlendirildi")
                                     </span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (declinedAssignments.Any())
+                {
+                    <hr class="my-3" />
+                    <div class="mb-2">
+                        <small class="text-muted fw-semibold">
+                            <i class="fas fa-ban me-1 text-danger"></i> Reddeden Hakemler (@declinedAssignments.Count)
+                        </small>
+                    </div>
+                    <div class="review-list">
+                        @foreach (var da in declinedAssignments)
+                        {
+                            var dName = da.Reviewer == null ? "Hakem bilgisi yok"
+                                : $"{da.Reviewer.FirstName} {da.Reviewer.LastName}".Trim();
+                            if (string.IsNullOrWhiteSpace(dName))
+                                dName = da.Reviewer?.Email ?? "Hakem bilgisi yok";
+
+                            <div class="review-list-item" style="opacity:.7">
+                                <div class="reviewer-avatar" style="background:#fee2e2;color:#dc2626">
+                                    <i class="fas fa-ban"></i>
+                                </div>
+                                <div>
+                                    <strong>@dName</strong>
+                                    <span class="text-danger">
+                                        Reddetti — @da.DeclinedAt?.ToString("dd.MM.yyyy HH:mm")
+                                    </span>
+                                    @if (!string.IsNullOrWhiteSpace(da.DeclineReason))
+                                    {
+                                        <small class="d-block text-muted">@da.DeclineReason</small>
+                                    }
                                 </div>
                             </div>
                         }

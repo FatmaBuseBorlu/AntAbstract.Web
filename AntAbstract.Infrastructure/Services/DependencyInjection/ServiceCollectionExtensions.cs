@@ -33,6 +33,10 @@ namespace AntAbstract.Infrastructure.Services.DependencyInjection
 
             services.AddSingleton<IAuditService, AuditService>();
 
+            // E-posta kuyruğu
+            services.AddSingleton<IEmailQueue, EmailQueue>();
+            services.AddHostedService<EmailQueueWorker>();
+
             return services;
         }
     }

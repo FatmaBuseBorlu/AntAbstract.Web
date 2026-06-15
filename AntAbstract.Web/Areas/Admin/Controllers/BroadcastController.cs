@@ -1,6 +1,6 @@
+using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
-using AntAbstract.Infrastructure.Services.Email;
 using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,16 +18,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IAdminTenantAccessService _tenantAccess;
-        private readonly IEmailService _emailService;
+        private readonly IEmailQueue _emailQueue;
 
         public BroadcastController(
             AppDbContext context,
             IAdminTenantAccessService tenantAccess,
-            IEmailService emailService)
+            IEmailQueue emailQueue)
         {
             _context = context;
             _tenantAccess = tenantAccess;
-            _emailService = emailService;
+            _emailQueue = emailQueue;
         }
 
         private async Task<Guid?> GetTenantIdAsync()
@@ -96,24 +96,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var emails = await GetRecipientEmailsAsync(conferenceId, group, tenantId.Value);
 
-            int sent = 0, failed = 0;
-
+            // Kuyruğa al — HTTP isteği bloke olmaz, arka planda gönderilir
             foreach (var email in emails)
             {
-                try
-                {
-                    await _emailService.SendAsync(email, subject, body);
-                    sent++;
-                }
-                catch
-                {
-                    failed++;
-                }
+                _emailQueue.Enqueue(new EmailQueueItem(email, subject, body));
             }
 
-            TempData["SuccessMessage"] = failed == 0
-                ? $"E-posta başarıyla {sent} kişiye gönderildi."
-                : $"{sent} kişiye gönderildi, {failed} başarısız oldu.";
+            TempData["SuccessMessage"] = $"{emails.Count} kişi için e-posta kuyruğa alındı. Arka planda gönderilecek.";
 
             return RedirectToAction(nameof(Index), new { slug });
         }
