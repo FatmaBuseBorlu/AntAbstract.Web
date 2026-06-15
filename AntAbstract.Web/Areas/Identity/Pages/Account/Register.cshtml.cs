@@ -8,7 +8,6 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
-using AntAbstract.Web.Files;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -41,7 +40,6 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
         private readonly AppDbContext _context;
         private readonly IStringLocalizer<RegisterModel> _localizer;
         private readonly IWebHostEnvironment _environment;
-        private readonly IUploadFileValidator _uploadFileValidator;
 
         public RegisterModel(
             UserManager<AppUser> userManager,
@@ -50,8 +48,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             ILogger<RegisterModel> logger,
             AppDbContext context,
             IStringLocalizer<RegisterModel> localizer,
-            IWebHostEnvironment environment,
-            IUploadFileValidator uploadFileValidator)
+            IWebHostEnvironment environment)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -60,7 +57,6 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             _context = context;
             _localizer = localizer;
             _environment = environment;
-            _uploadFileValidator = uploadFileValidator;
         }
 
         [BindProperty]
@@ -818,26 +814,24 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
 
         private async Task<(bool Success, string? FilePath, string ErrorMessage)> TryUploadProfileImageAsync(IFormFile file)
         {
-            var validation = await _uploadFileValidator.ValidateAsync(
-                file,
-                UploadFileProfile.RegistrationProfileImage);
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 
-            if (!validation.IsValid)
+            if (!allowedExtensions.Contains(extension))
             {
-                var errorMessage = validation.Error switch
-                {
-                    UploadValidationError.TooLarge =>
-                        "Profil resmi en fazla 10 MB olabilir.",
-                    UploadValidationError.InvalidExtension =>
-                        "Profil resmi yalnızca JPG, JPEG, PNG veya WEBP formatında olabilir.",
-                    _ =>
-                        "Profil resminin içeriği seçilen formatla eşleşmiyor."
-                };
-
                 return (
                     false,
                     null,
-                    errorMessage
+                    "Profil resmi yalnızca JPG, JPEG, PNG veya WEBP formatında olabilir."
+                );
+            }
+
+            if (file.Length > 10 * 1024 * 1024)
+            {
+                return (
+                    false,
+                    null,
+                    "Profil resmi en fazla 10 MB olabilir."
                 );
             }
 
@@ -856,9 +850,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
 
                 Directory.CreateDirectory(folderPath);
 
-                var newFileName = _uploadFileValidator.CreateStoredFileName(
-                    validation.Extension,
-                    "profile");
+                var newFileName = $"{Guid.NewGuid()}{extension}";
                 var physicalFilePath = Path.Combine(folderPath, newFileName);
 
                 await using var stream = new FileStream(physicalFilePath, FileMode.Create);
