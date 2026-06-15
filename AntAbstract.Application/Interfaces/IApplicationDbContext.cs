@@ -13,6 +13,8 @@ namespace AntAbstract.Application.Interfaces
         DbSet<Conference> Conferences{ get; }
         DbSet<Review> Reviews { get; }
         DbSet<ReviewAssignment> ReviewAssignments { get; }
+        DbSet<ReviewCriterion> ReviewCriteria { get; }
+        DbSet<ReviewCriterionScore> ReviewCriterionScores { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }

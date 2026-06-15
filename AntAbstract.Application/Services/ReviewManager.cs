@@ -256,6 +256,22 @@ namespace AntAbstract.Application.Services
 
             await _context.Reviews.AddAsync(review);
             await _context.SaveChangesAsync();
+
+            // Özel değerlendirme kriterleri varsa kaydet
+            if (input.CustomCriteria != null && input.CustomCriteria.Count > 0)
+            {
+                foreach (var kv in input.CustomCriteria)
+                {
+                    var score100 = Math.Max(0, Math.Min(100, kv.Value));
+                    _context.ReviewCriterionScores.Add(new AntAbstract.Domain.Entities.ReviewCriterionScore
+                    {
+                        ReviewCriterionId = kv.Key,
+                        ReviewId = review.Id,
+                        Score = score100
+                    });
+                }
+                await _context.SaveChangesAsync();
+            }
         }
 
         public async Task DeclineAssignmentAsync(

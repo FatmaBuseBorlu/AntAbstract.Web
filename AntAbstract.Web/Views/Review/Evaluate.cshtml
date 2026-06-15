@@ -714,6 +714,45 @@
                                     Alt Kriter Puanları <small class="fw-normal text-muted">(isteğe bağlı, 0–100)</small>
                                 </label>
                                 @{
+                                    var customCriteria = ViewBag.CustomCriteria as List<AntAbstract.Domain.Entities.ReviewCriterion>;
+                                    var hasCustom = customCriteria != null && customCriteria.Count > 0;
+                                }
+                                <div class="row g-3">
+                                @if (hasCustom)
+                                {
+                                    // Konferansa özel kriterler
+                                    foreach (var crit in customCriteria!)
+                                    {
+                                        var fieldId = $"crit_{crit.Id:N}";
+                                        <div class="col-md-6">
+                                            <div class="p-3 border rounded-3 bg-light">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span class="small fw-semibold">
+                                                        <i class="fas fa-star me-1 text-warning"></i>@crit.Name
+                                                        @if (crit.Weight > 1)
+                                                        {
+                                                            <span class="badge bg-primary ms-1">×@crit.Weight</span>
+                                                        }
+                                                    </span>
+                                                    <span class="badge bg-secondary" id="@(fieldId)Val">0</span>
+                                                </div>
+                                                @if (!string.IsNullOrWhiteSpace(crit.Description))
+                                                {
+                                                    <p class="text-muted" style="font-size:11px;margin-bottom:4px">@crit.Description</p>
+                                                }
+                                                <input type="range" class="form-range custom-crit-range"
+                                                       name="CustomCriteria[@crit.Id]"
+                                                       id="@fieldId"
+                                                       data-weight="@crit.Weight"
+                                                       min="0" max="100" value="0"
+                                                       oninput="document.getElementById('@(fieldId)Val').textContent=this.value; autoCalcScore();" />
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    // Standart 4 kriter (fallback)
                                     var subCriteria = new[]
                                     {
                                         ("ScoreOriginality",  "Özgünlük",    "fas fa-lightbulb"),
@@ -721,9 +760,7 @@
                                         ("ScorePresentation", "Sunum/Yazım", "fas fa-align-left"),
                                         ("ScoreRelevance",    "Konu Uygunluğu", "fas fa-bullseye")
                                     };
-                                }
-                                <div class="row g-3">
-                                    @foreach (var (fieldName, label, icon) in subCriteria)
+                                    foreach (var (fieldName, label, icon) in subCriteria)
                                     {
                                         <div class="col-md-6">
                                             <div class="p-3 border rounded-3 bg-light">
@@ -740,6 +777,7 @@
                                             </div>
                                         </div>
                                     }
+                                }
                                 </div>
                                 <div class="form-text mt-2">
                                     <i class="fas fa-info-circle me-1"></i>
@@ -887,11 +925,30 @@
         }
 
         function autoCalcScore() {
-            const fields = ['ScoreOriginality', 'ScoreMethodology', 'ScorePresentation', 'ScoreRelevance'];
-            const values = fields.map(f => parseInt(document.getElementById(f)?.value || '0'));
-            const nonZero = values.filter(v => v > 0);
-            if (nonZero.length === 0) return;
-            const avg = Math.round(nonZero.reduce((a, b) => a + b, 0) / nonZero.length);
+            const customInputs = document.querySelectorAll('.custom-crit-range');
+            let avg = 0;
+            if (customInputs.length > 0) {
+                // Ağırlıklı ortalama: her kriterin data-weight değeri kullanılır
+                let weightedSum = 0;
+                let totalWeight = 0;
+                customInputs.forEach(input => {
+                    const val = parseInt(input.value || '0');
+                    const weight = parseInt(input.dataset.weight || '1');
+                    if (val > 0) {
+                        weightedSum += val * weight;
+                        totalWeight += weight;
+                    }
+                });
+                if (totalWeight === 0) return;
+                avg = Math.round(weightedSum / totalWeight);
+            } else {
+                // Standart 4 alan: basit ortalama
+                const fields = ['ScoreOriginality', 'ScoreMethodology', 'ScorePresentation', 'ScoreRelevance'];
+                const values = fields.map(f => parseInt(document.getElementById(f)?.value || '0'));
+                const nonZero = values.filter(v => v > 0);
+                if (nonZero.length === 0) return;
+                avg = Math.round(nonZero.reduce((a, b) => a + b, 0) / nonZero.length);
+            }
             const slider = document.getElementById('scoreRange');
             if (slider) {
                 slider.value = avg;
