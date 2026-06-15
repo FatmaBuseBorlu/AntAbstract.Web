@@ -95,6 +95,35 @@
                             <span asp-validation-for="Description" class="text-danger small"></span>
                         </div>
 
+                        @* Bildiri Başvuru Ayarları *@
+                        <div class="card border-0 bg-light rounded-3 p-3 mb-4">
+                            <h6 class="fw-bold mb-3 text-muted">
+                                <i class="fas fa-calendar-check me-1"></i>
+                                Bildiri Başvuru Ayarları
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">Özet Son Gönderim Tarihi</label>
+                                    <input asp-for="AbstractSubmissionDeadline" type="datetime-local" class="form-control" />
+                                    <div class="form-text">Boş bırakırsanız sınır uygulanmaz.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">Tam Metin Son Gönderim Tarihi</label>
+                                    <input asp-for="FullTextSubmissionDeadline" type="datetime-local" class="form-control" />
+                                    <div class="form-text">Boş bırakırsanız sınır uygulanmaz.</div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check form-switch">
+                                        <input asp-for="IsSubmissionOpen" class="form-check-input" type="checkbox" role="switch" />
+                                        <label asp-for="IsSubmissionOpen" class="form-check-label fw-medium">
+                                            Bildiri Başvuruları Açık
+                                            <small class="text-muted ms-1">(kapatmak için işareti kaldırın)</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <hr class="my-5 border-secondary opacity-25" />
 
                         <div class="p-4 border rounded-4 bg-light bg-opacity-75 mb-5">
