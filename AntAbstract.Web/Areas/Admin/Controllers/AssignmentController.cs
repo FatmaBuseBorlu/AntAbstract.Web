@@ -1,4 +1,5 @@
-﻿using AntAbstract.Domain.Entities;
+﻿using AntAbstract.Application.Interfaces;
+using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Infrastructure.Services.Email;
@@ -25,6 +26,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly IEmailService _emailService;
+        private readonly INotificationService _notificationService;
         private readonly IReviewerRecommendationService _recommendationService;
         private readonly UserManager<AppUser> _userManager;
         private readonly ISelectedConferenceService _selectedConferenceService;
@@ -34,6 +36,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             AppDbContext context,
             TenantContext tenantContext,
             IEmailService emailService,
+            INotificationService notificationService,
             UserManager<AppUser> userManager,
             IReviewerRecommendationService recommendationService,
             ISelectedConferenceService selectedConferenceService,
@@ -42,6 +45,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _context = context;
             _tenantContext = tenantContext;
             _emailService = emailService;
+            _notificationService = notificationService;
             _userManager = userManager;
             _recommendationService = recommendationService;
             _selectedConferenceService = selectedConferenceService;
@@ -650,11 +654,24 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 AllOtherReviewers = others
             };
 
+            // Her hakemin bu kongredeki mevcut görev sayısını hesapla
+            var allReviewerIds = allAccessibleReferees.Select(r => r.Id).ToList();
+            var reviewerLoads = await _context.ReviewAssignments
+                .AsNoTracking()
+                .Where(ra => allReviewerIds.Contains(ra.ReviewerId) &&
+                             ra.Submission != null &&
+                             ra.Submission.ConferenceId == conference.Id)
+                .GroupBy(ra => ra.ReviewerId)
+                .Select(g => new { ReviewerId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.ReviewerId, x => x.Count);
+
             ViewBag.ConferenceId = conference.Id;
             ViewBag.ConferenceTitle = conference.Title;
             ViewBag.Slug = slug;
             ViewBag.TotalAccessibleReviewerCount = allAccessibleReferees.Count;
             ViewBag.AssignableReviewerCount = assignableReferees.Count;
+            ViewBag.ReviewerLoads = reviewerLoads;
+            ViewBag.MaxAssignmentsPerReviewer = 10;
 
             return View(vm);
         }
@@ -768,6 +785,24 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return Redirect(BuildAssignUrl(slug, submissionId, conference.Id));
             }
 
+            // Hakem yük dengesi: aynı kongrede max 10 bildiri
+            const int MaxAssignmentsPerReviewer = 10;
+            var currentLoad = await _context.ReviewAssignments
+                .AsNoTracking()
+                .CountAsync(ra =>
+                    ra.ReviewerId == reviewerId &&
+                    ra.Submission != null &&
+                    ra.Submission.ConferenceId == conference.Id);
+
+            if (currentLoad >= MaxAssignmentsPerReviewer)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_ReviewerOverloaded",
+                    $"Bu hakem bu kongre için zaten {MaxAssignmentsPerReviewer} bildiri değerlendirmesine atanmış. Farklı bir hakem seçiniz.");
+
+                return Redirect(BuildAssignUrl(slug, submissionId, conference.Id));
+            }
+
             _context.ReviewAssignments.Add(new ReviewAssignment
             {
                 SubmissionId = submissionId,
@@ -786,34 +821,63 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             try
             {
                 var reviewerFullName = $"{reviewer.FirstName} {reviewer.LastName}".Trim();
-
                 if (string.IsNullOrWhiteSpace(reviewerFullName))
+                    reviewerFullName = reviewer.UserName ?? reviewer.Email ?? "Hakem";
+
+                var conferenceTitle = conference.Title ?? "";
+                var submissionTitle = submission.Title ?? "";
+                var reviewUrl = $"/{slug}/Review/Index";
+
+                // ── İn-app bildirim (Hakem) ────────────────────────────────────
+                await _notificationService.CreateAsync(
+                    userId: reviewer.Id,
+                    title: "Yeni Değerlendirme Görevi",
+                    message: $"\"{submissionTitle}\" bildirisi değerlendirmeniz için atandı.",
+                    icon: "📋",
+                    color: "primary",
+                    link: reviewUrl);
+
+                // ── İn-app bildirim (Yazar — bildirisinin incelemeye alındığı) ─
+                if (!string.IsNullOrWhiteSpace(submission.AuthorId))
                 {
-                    reviewerFullName = reviewer.UserName ?? reviewer.Email ?? T("Mail_Reviewer", "Hakem");
+                    await _notificationService.CreateAsync(
+                        userId: submission.AuthorId,
+                        title: "Bildiriniz İncelemede",
+                        message: $"\"{submissionTitle}\" başlıklı bildiriniz hakem incelemesine alındı.",
+                        icon: "🔍",
+                        color: "info",
+                        link: null);
                 }
 
-                var mailSubject = T(
-                    "Mail_NewAssignmentSubject",
-                    "Yeni Hakem Ataması");
-
-                var mailBody =
-                    $"{T("Mail_Greeting", $"Sayın {reviewerFullName},")}<br><br>" +
-                    $"{T("Mail_NewAssignmentIntro", "Yeni bir bildiri değerlendirme göreviniz bulunmaktadır.")}<br><br>" +
-                    $"<strong>{T("Mail_SubmissionTitleLabel", "Bildiri Başlığı:")}</strong> {submission.Title}<br><br>" +
-                    $"{T("Mail_FillReviewForm", "Lütfen sisteme giriş yaparak değerlendirme formunu doldurunuz.")}<br><br>" +
-                    $"{T("Mail_BestRegards", "Saygılarımızla.")}";
-
+                // ── Hakem e-postası (güzel HTML) ───────────────────────────────
                 if (!string.IsNullOrWhiteSpace(reviewer.Email))
                 {
+                    var htmlBody = $@"
+<div style='font-family:Arial,sans-serif;max-width:600px;margin:auto'>
+  <div style='background:#1a2d5a;color:#fff;padding:24px 32px;border-radius:8px 8px 0 0'>
+    <h2 style='margin:0'>📋 Yeni Değerlendirme Görevi</h2>
+    <p style='margin:6px 0 0;opacity:.85;font-size:14px'>{System.Net.WebUtility.HtmlEncode(conferenceTitle)}</p>
+  </div>
+  <div style='background:#f9fafb;padding:24px 32px'>
+    <p>Sayın <strong>{System.Net.WebUtility.HtmlEncode(reviewerFullName)}</strong>,</p>
+    <p>Aşağıdaki bildiri sizin değerlendirmeniz için atanmıştır:</p>
+    <div style='background:#fff;border-left:4px solid #1a2d5a;padding:12px 16px;margin:16px 0;border-radius:4px'>
+      <p style='margin:0;font-weight:600;color:#1a2d5a'>{System.Net.WebUtility.HtmlEncode(submissionTitle)}</p>
+    </div>
+    <p>Lütfen sisteme giriş yaparak değerlendirme formunu doldurunuz.</p>
+    <p style='margin-top:24px;color:#6b7280;font-size:13px'>Bu e-posta otomatik olarak gönderilmiştir.</p>
+  </div>
+</div>";
+
                     await _emailService.SendAsync(
                         reviewer.Email,
-                        mailSubject,
-                        mailBody);
+                        $"Yeni Değerlendirme Görevi — {conferenceTitle}",
+                        htmlBody);
                 }
             }
             catch
             {
-                // Mail gönderimi başarısız olsa bile hakem ataması tamamlanmış olur.
+                // Bildirim/mail hatası atama işlemini durdurmaz.
             }
 
             TempData["SuccessMessage"] = T(
@@ -869,8 +933,27 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return Redirect(BuildAssignmentUrl(slug, conference.Id));
             }
 
+            var reviewerId   = assignment.ReviewerId;
+            var submissionTitle = assignment.Submission?.Title ?? "";
+
             _context.ReviewAssignments.Remove(assignment);
             await _context.SaveChangesAsync();
+
+            // Hakeme in-app bildirim
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(reviewerId))
+                {
+                    await _notificationService.CreateAsync(
+                        userId: reviewerId,
+                        title: "Değerlendirme Görevi İptal Edildi",
+                        message: $"\"{submissionTitle}\" bildirisi için atama yönetici tarafından kaldırıldı.",
+                        icon: "❌",
+                        color: "warning",
+                        link: null);
+                }
+            }
+            catch { }
 
             TempData["SuccessMessage"] = T(
                 "Success_AssignmentRemoved",

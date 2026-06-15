@@ -21,9 +21,18 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Dashboard
 
         public List<Conference> MyConferences { get; set; } = new List<Conference>();
 
+        // Admin özgü istatistikler
+        public int TotalRegistrations { get; set; }
+        public int PendingPayments { get; set; }
+        public int ReceiptWaiting { get; set; }
+        public int PendingAssignments { get; set; }   // Henüz hakeme atanmamış bildiri
+        public int TotalReferees { get; set; }
+        public decimal TotalRevenue { get; set; }
+        public string RevenueCurrency { get; set; } = "TRY";
+        public Conference? SelectedConference { get; set; }
+
         public DashboardViewModel()
         {
-         
             ChartLabels = new List<string>();
             ChartData = new List<int>();
         }

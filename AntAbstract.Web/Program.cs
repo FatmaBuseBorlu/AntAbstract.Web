@@ -21,7 +21,7 @@ using AntAbstract.Infrastructure.Services.ProceedingBooks;
 
 var builder = WebApplication.CreateBuilder(args);
 
-#region 1. Veritabaný ve Temel Servisler
+#region 1. Veritabanï¿½ ve Temel Servisler
 
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
@@ -41,7 +41,7 @@ builder.Services.AddSession(options =>
 
 #endregion
 
-#region 2. Kimlik Doðrulama ve Identity
+#region 2. Kimlik Doï¿½rulama ve Identity
 
 builder.Services.AddIdentity<AppUser, IdentityRole>(opt =>
 {
@@ -121,7 +121,7 @@ builder.Services
 
 #endregion
 
-#region 3. Uygulama, Altyapý ve Tenant Servisleri
+#region 3. Uygulama, Altyapï¿½ ve Tenant Servisleri
 
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration, builder.Environment);
@@ -134,7 +134,7 @@ builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();
 
 #endregion
 
-#region 4. Çoklu Dil ve MVC Ayarlarý
+#region 4. ï¿½oklu Dil ve MVC Ayarlarï¿½
 
 builder.Services.AddLocalization(options =>
 {
@@ -145,6 +145,19 @@ builder.Services.Configure<RouteOptions>(options =>
 {
     options.LowercaseUrls = false;
     options.AppendTrailingSlash = false;
+});
+
+// Global form / dosya upload limitleri
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 20 * 1024 * 1024; // 20 MB (bildiri PDF)
+    options.ValueLengthLimit            = int.MaxValue;
+    options.MultipartHeadersLengthLimit = int.MaxValue;
+});
+
+builder.WebHost.ConfigureKestrel(kestrel =>
+{
+    kestrel.Limits.MaxRequestBodySize = 20 * 1024 * 1024; // 20 MB
 });
 
 builder.Services.AddControllersWithViews()
@@ -182,7 +195,7 @@ builder.Services.AddRazorPages(options =>
 
 var app = builder.Build();
 
-#region 5. Veritabaný Baþlatma ve Ayarlar
+#region 5. Veritabanï¿½ Baï¿½latma ve Ayarlar
 
 using (var scope = app.Services.CreateScope())
 {
@@ -207,7 +220,7 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Migration/Seeding sýrasýnda bir hata oluþtu.");
+        logger.LogError(ex, "Migration/Seeding sï¿½rasï¿½nda bir hata oluï¿½tu.");
     }
 }
 
@@ -215,7 +228,7 @@ StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
 #endregion
 
-#region 6. HTTP Ýstek Hattý
+#region 6. HTTP ï¿½stek Hattï¿½
 
 if (app.Environment.IsDevelopment())
 {
@@ -267,7 +280,7 @@ app.UseRotativa();
 
 #endregion
 
-#region 7. Yönlendirmeler
+#region 7. Yï¿½nlendirmeler
 
 app.MapRazorPages();
 

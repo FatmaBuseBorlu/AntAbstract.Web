@@ -2,7 +2,6 @@
 @using AntAbstract.Web.Models.ViewModels
 @using AntAbstract.Web.Models.ViewModels.Admin.RegistrationTypes
 
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @model AdminRegistrationTypeFormModel
 
@@ -245,6 +244,21 @@
                         <span class="text-danger small" asp-validation-for="Currency"></span>
                     </div>
 
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        @T("Katılımcı Rolü", "Participant Role")
+                        <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" asp-for="RoleName">
+                        <option value="Author">@T("Yazar (Bildiri gönderebilir)", "Author (Can submit abstracts)")</option>
+                        <option value="Listener">@T("Dinleyici (Programa ve sertifikaya erişir)", "Listener (Access to program and certificate)")</option>
+                    </select>
+                    <div class="form-text text-muted">
+                        @T("Kayıt yapan kullanıcının sisteme hangi rolde gireceğini belirler.", "Determines the role the registering user will have in the system.")
+                    </div>
+                    <span class="text-danger small" asp-validation-for="RoleName"></span>
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 mt-4">

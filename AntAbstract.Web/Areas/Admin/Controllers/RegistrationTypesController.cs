@@ -292,7 +292,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     Description = t.Description,
                     DescriptionEn = t.DescriptionEn,
                     Price = t.Price,
-                    Currency = t.Currency
+                    Currency = t.Currency,
+                    RoleName = string.IsNullOrWhiteSpace(t.RoleName) ? "Author" : t.RoleName
                 })
                 .ToListAsync();
 
@@ -394,10 +395,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (model.Id.HasValue)
             {
-                entity = await _context.RegistrationTypes
+                entity = (await _context.RegistrationTypes
                     .FirstOrDefaultAsync(t =>
                         t.Id == model.Id.Value &&
-                        t.ConferenceId == conference.Id);
+                        t.ConferenceId == conference.Id))!;
 
                 if (entity == null)
                 {
@@ -434,6 +435,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             entity.Currency = string.IsNullOrWhiteSpace(model.Currency)
                 ? "TRY"
                 : model.Currency.Trim();
+
+            var allowedRoles = new[] { "Author", "Listener" };
+            entity.RoleName = allowedRoles.Contains(model.RoleName, StringComparer.OrdinalIgnoreCase)
+                ? model.RoleName
+                : "Author";
 
             await _context.SaveChangesAsync();
 
@@ -584,6 +590,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 DescriptionEn = entity.DescriptionEn,
                 Price = entity.Price,
                 Currency = entity.Currency,
+                RoleName = string.IsNullOrWhiteSpace(entity.RoleName) ? "Author" : entity.RoleName,
                 ReturnUrl = effectiveReturnUrl
             };
         }

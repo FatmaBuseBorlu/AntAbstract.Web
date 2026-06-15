@@ -20,6 +20,8 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.RegistrationTypes
 
         public string Currency { get; set; } = "TRY";
 
+        public string RoleName { get; set; } = "Author";
+
         public int UsageCount { get; set; }
     }
 
@@ -63,6 +65,11 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.RegistrationTypes
         [Required(ErrorMessage = "Para birimi zorunludur.")]
         [StringLength(10, ErrorMessage = "Para birimi en fazla 10 karakter olabilir.")]
         public string Currency { get; set; } = "TRY";
+
+        /// <summary>Kayıt yapan kullanıcının alacağı rol: "Author" veya "Listener"</summary>
+        [Required]
+        [StringLength(50)]
+        public string RoleName { get; set; } = "Author";
 
         public string ReturnUrl { get; set; } = "";
     }

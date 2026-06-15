@@ -300,6 +300,9 @@ namespace AntAbstract.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("AbstractSubmissionDeadline")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("AbstractTemplatePath")
                         .HasColumnType("nvarchar(max)");
 
@@ -330,14 +333,26 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("FullTextSubmissionDeadline")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("FullTextTemplatePath")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsProceedingBookPublished")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsRegistrationOpen")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsSubmissionOpen")
+                        .HasColumnType("bit");
+
                     b.Property<string>("LogoPath")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("MaxRegistrations")
+                        .HasColumnType("int");
 
                     b.Property<string>("ProceedingBookFilePath")
                         .HasColumnType("nvarchar(max)");
@@ -390,7 +405,8 @@ namespace AntAbstract.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("IpAddress")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -399,16 +415,21 @@ namespace AntAbstract.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<int>("RequiredSeconds")
-                        .HasColumnType("int");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(600);
 
                     b.Property<int>("TotalSeconds")
-                        .HasColumnType("int");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("UserAgent")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -547,6 +568,44 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("CongressTypes");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.EmailTemplate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("HtmlBody")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("EmailTemplates");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.Hotel", b =>
@@ -751,6 +810,10 @@ namespace AntAbstract.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AdminPaymentNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,2)");
 
@@ -777,6 +840,13 @@ namespace AntAbstract.Infrastructure.Migrations
 
                     b.Property<string>("PaymentTransactionId")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReceiptFilePath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("ReceiptUploadedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("RegistrationDate")
                         .HasColumnType("datetime2");
@@ -845,6 +915,11 @@ namespace AntAbstract.Infrastructure.Migrations
 
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("RoleName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
 
@@ -1587,7 +1662,7 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.HasOne("AntAbstract.Domain.Entities.AppUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Conference");

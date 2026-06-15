@@ -1,15 +1,28 @@
-﻿using AntAbstract.Domain.Entities;
+using AntAbstract.Domain.Entities;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace AntAbstract.Infrastructure.Services.ProceedingBooks
 {
+    // ─────────────────────────────────────────────────────────────────────────
+    //  ProceedingBookPdfService  —  Akademik Bildiri Kitabı (PDF)
+    // ─────────────────────────────────────────────────────────────────────────
     public class ProceedingBookPdfService : IProceedingBookPdfService
     {
+        // Renk paleti
+        private const string Navy    = "#1a2d5a";
+        private const string Gold    = "#b8972a";
+        private const string Cream   = "#fdf8ee";
+        private const string LightBg = "#f4f6fa";
+        private const string TextDark = "#1e1e2e";
+        private const string TextMid  = "#4a4a6a";
+        private const string TextLight = "#888899";
+
         public byte[] GenerateProceedingBookPdf(
             Conference conference,
             IReadOnlyList<Submission> acceptedSubmissions)
@@ -17,356 +30,412 @@ namespace AntAbstract.Infrastructure.Services.ProceedingBooks
             QuestPDF.Settings.License = LicenseType.Community;
 
             var submissions = acceptedSubmissions
-                .OrderBy(x => x.Topic)
+                .OrderBy(x => x.ConferenceTopic?.Name ?? x.Topic ?? "")
                 .ThenBy(x => x.Title)
                 .ToList();
 
             return Document.Create(container =>
             {
+                // ── 1. Kapak Sayfası ───────────────────────────────────────────
                 container.Page(page =>
                 {
                     page.Size(PageSizes.A4);
-                    page.Margin(40);
+                    page.Margin(0);
                     page.PageColor(Colors.White);
-                    page.DefaultTextStyle(x => x.FontSize(10).FontColor(Colors.Grey.Darken4));
 
-                    page.Header().Element(header =>
+                    page.Content().Column(col =>
                     {
-                        ComposeHeader(header, conference);
-                    });
+                        // Üst lacivert bant
+                        col.Item().Height(240).Background(Navy).PaddingVertical(40).PaddingHorizontal(48).Column(top =>
+                        {
+                            var logoPath = GetExistingFilePath(conference.LogoPath);
+                            if (logoPath != null)
+                            {
+                                top.Item().MaxHeight(72).AlignLeft().Image(logoPath).FitArea();
+                                top.Item().Height(20);
+                            }
 
-                    page.Content().Element(content =>
-                    {
-                        ComposeContent(content, conference, submissions);
-                    });
+                            top.Item()
+                                .Text("BİLDİRİ KİTABI")
+                                .FontFamily("Arial").FontSize(10)
+                                .LetterSpacing(5).Bold()
+                                .FontColor(Gold);
 
-                    page.Footer().Element(footer =>
-                    {
-                        ComposeFooter(footer);
+                            top.Item().Height(8);
+
+                            top.Item()
+                                .Text(conference.Title ?? "Kongre")
+                                .FontFamily("Arial").FontSize(24).Bold()
+                                .FontColor(Colors.White)
+                                .LineHeight(1.3f);
+                        });
+
+                        // Altın bant
+                        col.Item().Height(6).Background(Gold);
+
+                        // Orta krem bölge
+                        col.Item().Background(Cream).PaddingHorizontal(48).PaddingTop(36).PaddingBottom(24).Column(mid =>
+                        {
+                            var location = BuildLocation(conference);
+                            if (!string.IsNullOrWhiteSpace(location))
+                            {
+                                mid.Item().Text($"📍  {location}")
+                                    .FontFamily("Arial").FontSize(11).FontColor(TextMid);
+                                mid.Item().Height(8);
+                            }
+
+                            mid.Item().Text($"🗓  {conference.StartDate:dd MMMM yyyy}  –  {conference.EndDate:dd MMMM yyyy}")
+                                .FontFamily("Arial").FontSize(11).FontColor(TextMid);
+
+                            mid.Item().Height(32);
+
+                            // İstatistik kutuları
+                            mid.Item().Row(row =>
+                            {
+                                StatBox(row, submissions.Count.ToString(), "Kabul Edilen Bildiri");
+                                row.ConstantItem(16);
+
+                                var topicCount = submissions
+                                    .Select(s => s.ConferenceTopic?.Name ?? s.Topic ?? "")
+                                    .Where(t => !string.IsNullOrWhiteSpace(t))
+                                    .Distinct().Count();
+                                StatBox(row, topicCount == 0 ? "-" : topicCount.ToString(), "Konu Alanı");
+                                row.ConstantItem(16);
+
+                                StatBox(row, DateTime.UtcNow.Year.ToString(), "Yayın Yılı");
+                            });
+
+                            mid.Item().Height(36);
+
+                            // Editör / imza bilgisi
+                            if (!string.IsNullOrWhiteSpace(conference.CertificateFirstSignerName))
+                            {
+                                mid.Item().Text("Editör").FontFamily("Arial").FontSize(8)
+                                    .FontColor(TextLight).LetterSpacing(2);
+                                mid.Item().Height(2);
+                                mid.Item().Text(conference.CertificateFirstSignerName)
+                                    .FontFamily("Arial").FontSize(13).Bold().FontColor(Navy);
+                                if (!string.IsNullOrWhiteSpace(conference.CertificateFirstSignerTitle))
+                                {
+                                    mid.Item().Text(conference.CertificateFirstSignerTitle)
+                                        .FontFamily("Arial").FontSize(10).FontColor(TextMid);
+                                }
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(conference.CertificateSecondSignerName))
+                            {
+                                mid.Item().Height(8);
+                                mid.Item().Text(conference.CertificateSecondSignerName)
+                                    .FontFamily("Arial").FontSize(13).Bold().FontColor(Navy);
+                                if (!string.IsNullOrWhiteSpace(conference.CertificateSecondSignerTitle))
+                                {
+                                    mid.Item().Text(conference.CertificateSecondSignerTitle)
+                                        .FontFamily("Arial").FontSize(10).FontColor(TextMid);
+                                }
+                            }
+                        });
+
+                        // Alt lacivert bant
+                        col.Item().Background(Navy).PaddingHorizontal(48).PaddingVertical(20).Column(foot =>
+                        {
+                            foot.Item().Text($"Yayın Tarihi: {DateTime.UtcNow:MMMM yyyy}")
+                                .FontFamily("Arial").FontSize(9).FontColor(Colors.White);
+                        });
                     });
                 });
-            }).GeneratePdf();
-        }
 
-        private static void ComposeHeader(IContainer container, Conference conference)
-        {
-            container.Column(column =>
-            {
-                column.Item().Row(row =>
+                // ── 2. İçindekiler Sayfası ─────────────────────────────────────
+                if (submissions.Any())
                 {
-                    row.RelativeItem().Column(left =>
+                    container.Page(page =>
                     {
-                        left.Item().Text("ANTABSTRACT")
-                            .FontSize(18)
-                            .Bold()
-                            .FontColor(Colors.Blue.Darken2);
+                        page.Size(PageSizes.A4);
+                        page.Margin(0);
+                        page.PageColor(Colors.White);
+                        page.DefaultTextStyle(x => x.FontFamily("Arial"));
 
-                        left.Item().Text("Bildiri Kitabı")
-                            .FontSize(26)
-                            .Bold()
-                            .FontColor(Colors.Grey.Darken4);
+                        page.Header().Element(h => PageHeader(h, conference));
+                        page.Footer().Element(PageFooter);
+
+                        page.Content().PaddingHorizontal(48).PaddingTop(24).Column(col =>
+                        {
+                            col.Item().Text("İÇİNDEKİLER")
+                                .FontSize(8).LetterSpacing(4).Bold().FontColor(Gold);
+                            col.Item().Height(6);
+                            col.Item().Text("Contents")
+                                .FontSize(22).Bold().FontColor(Navy);
+                            col.Item().PaddingTop(4).LineHorizontal(2).LineColor(Gold);
+                            col.Item().Height(20);
+
+                            // Konuya göre gruplama
+                            var grouped = submissions
+                                .GroupBy(s => s.ConferenceTopic?.Name ?? s.Topic ?? "Genel")
+                                .OrderBy(g => g.Key)
+                                .ToList();
+
+                            foreach (var group in grouped)
+                            {
+                                col.Item().PaddingTop(12)
+                                    .Text(group.Key.ToUpperInvariant())
+                                    .FontSize(8).LetterSpacing(2).Bold().FontColor(Gold);
+
+                                col.Item().Height(6);
+
+                                foreach (var s in group)
+                                {
+                                    col.Item().PaddingVertical(4).Row(row =>
+                                    {
+                                        row.RelativeItem().Text(text =>
+                                        {
+                                            text.Span(TruncateText(s.Title, 80))
+                                                .FontSize(10).FontColor(TextDark);
+                                        });
+                                        row.ConstantItem(12);
+                                        row.AutoItem().Text(GetAuthorName(s))
+                                            .FontSize(9).Italic().FontColor(TextMid);
+                                    });
+                                    col.Item().PaddingVertical(2).LineHorizontal(0.3f).LineColor("#e0e0e0");
+                                }
+
+                                col.Item().Height(8);
+                            }
+                        });
                     });
+                }
 
-                    row.ConstantItem(130).AlignRight().Column(right =>
-                    {
-                        right.Item().AlignRight().Text(DateTime.Now.ToString("dd.MM.yyyy"))
-                            .FontSize(9)
-                            .FontColor(Colors.Grey.Darken1);
-                    });
-                });
-
-                column.Item().PaddingTop(12).LineHorizontal(1).LineColor(Colors.Blue.Medium);
-            });
-        }
-
-        private static void ComposeContent(
-            IContainer container,
-            Conference conference,
-            IReadOnlyList<Submission> submissions)
-        {
-            container.PaddingTop(22).Column(column =>
-            {
-                ComposeCoverInfo(column, conference);
-
-                column.Item().PaddingTop(22);
-
+                // ── 3. Bildiri Sayfaları ───────────────────────────────────────
                 if (!submissions.Any())
                 {
-                    column.Item().Element(ComposeEmptyState);
+                    container.Page(page =>
+                    {
+                        page.Size(PageSizes.A4);
+                        page.Margin(48);
+                        page.DefaultTextStyle(x => x.FontFamily("Arial"));
+                        page.Header().Element(h => PageHeader(h, conference));
+                        page.Footer().Element(PageFooter);
+                        page.Content().AlignCenter().AlignMiddle().Column(col =>
+                        {
+                            col.Item().AlignCenter()
+                                .Text("Henüz kabul edilmiş bildiri bulunmamaktadır.")
+                                .FontSize(13).FontColor(TextMid);
+                        });
+                    });
                     return;
                 }
 
-                for (var i = 0; i < submissions.Count; i++)
+                var submissionGroups = submissions
+                    .GroupBy(s => s.ConferenceTopic?.Name ?? s.Topic ?? "Genel")
+                    .OrderBy(g => g.Key)
+                    .ToList();
+
+                foreach (var group in submissionGroups)
                 {
-                    var submission = submissions[i];
-
-                    column.Item().Element(item =>
+                    // Konu başlığı ayracı
+                    container.Page(page =>
                     {
-                        ComposeSubmission(item, submission, i + 1);
+                        page.Size(PageSizes.A4);
+                        page.Margin(0);
+                        page.DefaultTextStyle(x => x.FontFamily("Arial"));
+                        page.Header().Element(h => PageHeader(h, conference));
+                        page.Footer().Element(PageFooter);
+
+                        page.Content().PaddingHorizontal(48).PaddingTop(24).Column(col =>
+                        {
+                            // Konu bölüm başlığı
+                            col.Item()
+                                .Background(Navy).PaddingVertical(14).PaddingHorizontal(20)
+                                .Text(group.Key.ToUpperInvariant())
+                                .FontSize(8).LetterSpacing(3).Bold()
+                                .FontColor(Colors.White);
+
+                            col.Item().PaddingTop(4)
+                                .LineHorizontal(3).LineColor(Gold);
+
+                            col.Item().Height(24);
+
+                            // Bildirileri listele
+                            foreach (var submission in group)
+                            {
+                                col.Item().Element(item => ComposeSubmissionCard(item, submission));
+                                col.Item().Height(20);
+                            }
+                        });
                     });
-
-                    if (i < submissions.Count - 1)
-                    {
-                        column.Item().PaddingVertical(12).LineHorizontal(0.5f).LineColor(Colors.Grey.Lighten2);
-                    }
                 }
-            });
+            }).GeneratePdf();
         }
 
-        private static void ComposeCoverInfo(ColumnDescriptor column, Conference conference)
-        {
-            column.Item().Border(1)
-                .BorderColor(Colors.Blue.Lighten3)
-                .Background(Colors.Blue.Lighten5)
-                .Padding(18)
-                .Column(info =>
-                {
-                    info.Item().Text(conference.Title ?? "Kongre")
-                        .FontSize(20)
-                        .Bold()
-                        .FontColor(Colors.Grey.Darken4);
-
-                    if (!string.IsNullOrWhiteSpace(conference.Description))
-                    {
-                        info.Item().PaddingTop(8).Text(conference.Description)
-                            .FontSize(10)
-                            .FontColor(Colors.Grey.Darken1);
-                    }
-
-                    info.Item().PaddingTop(12).Row(row =>
-                    {
-                        row.RelativeItem().Text(text =>
-                        {
-                            text.Span("Tarih: ").Bold();
-                            text.Span($"{conference.StartDate:dd.MM.yyyy} - {conference.EndDate:dd.MM.yyyy}");
-                        });
-
-                        row.RelativeItem().Text(text =>
-                        {
-                            text.Span("Yer: ").Bold();
-
-                            var location = BuildLocation(conference);
-                            text.Span(location);
-                        });
-                    });
-                });
-        }
-
-        private static void ComposeEmptyState(IContainer container)
-        {
-            container.Border(1)
-                .BorderColor(Colors.Grey.Lighten2)
-                .Background(Colors.Grey.Lighten5)
-                .Padding(24)
-                .AlignCenter()
-                .Column(column =>
-                {
-                    column.Item().Text("Bu kongre için bildiri bulunamadı.")
-                        .FontSize(13)
-                        .Bold()
-                        .FontColor(Colors.Grey.Darken2);
-
-                    column.Item().PaddingTop(6).Text("Bildiri kitabı oluşturmak için en az bir bildirinin kabul edilmiş olması gerekir.")
-                        .FontSize(10)
-                        .FontColor(Colors.Grey.Darken1);
-                });
-        }
-
-        private static void ComposeSubmission(
-            IContainer container,
-            Submission submission,
-            int number)
+        // ─── Bildiri Kartı ─────────────────────────────────────────────────────
+        private static void ComposeSubmissionCard(IContainer container, Submission submission)
         {
             container
-                .Border(1)
-                .BorderColor(Colors.Grey.Lighten2)
+                .Border(0.5f).BorderColor("#d8dce8")
                 .Background(Colors.White)
-                .Padding(14)
-                .Column(column =>
+                .Column(col =>
                 {
-                    column.Item().Row(row =>
+                    // Üst şerit (lacivert sol çizgi)
+                    col.Item().Row(row =>
                     {
-                        row.ConstantItem(38)
-                            .Height(38)
-                            .Background(Colors.Blue.Lighten4)
-                            .AlignCenter()
-                            .AlignMiddle()
-                            .Text(number.ToString())
-                            .FontSize(11)
-                            .Bold()
-                            .FontColor(Colors.Blue.Darken2);
-
-                        row.RelativeItem().PaddingLeft(12).Column(titleColumn =>
+                        row.ConstantItem(5).Background(Navy);
+                        row.RelativeItem().PaddingVertical(14).PaddingHorizontal(18).Column(header =>
                         {
-                            titleColumn.Item().Text(submission.Title)
-                                .FontSize(14)
-                                .Bold()
-                                .FontColor(Colors.Grey.Darken4);
+                            header.Item().Text(submission.Title ?? "-")
+                                .FontSize(13).Bold().FontColor(Navy).LineHeight(1.3f);
 
-                            titleColumn.Item().PaddingTop(3).Text(GetAuthorName(submission))
-                                .FontSize(10)
-                                .SemiBold()
-                                .FontColor(Colors.Blue.Darken2);
+                            header.Item().PaddingTop(4).Text(GetAuthorName(submission))
+                                .FontSize(9.5f).Italic().FontColor(Gold);
+
+                            // Meta bilgiler satırı
+                            header.Item().PaddingTop(8).Row(meta =>
+                            {
+                                if (!string.IsNullOrWhiteSpace(submission.SubmissionIdCode))
+                                {
+                                    MetaBadge(meta, "ID", submission.SubmissionIdCode);
+                                    meta.ConstantItem(8);
+                                }
+                                if (!string.IsNullOrWhiteSpace(submission.PresentationType))
+                                {
+                                    MetaBadge(meta, "Sunum", submission.PresentationType);
+                                    meta.ConstantItem(8);
+                                }
+                                var topic = submission.ConferenceTopic?.Name ?? submission.Topic;
+                                if (!string.IsNullOrWhiteSpace(topic))
+                                {
+                                    MetaBadge(meta, "Konu", TruncateText(topic, 40));
+                                }
+                            });
                         });
                     });
 
-                    column.Item().PaddingTop(12).Grid(grid =>
+                    // Özet bölümü
+                    if (!string.IsNullOrWhiteSpace(submission.Abstract))
                     {
-                        grid.Columns(3);
-                        grid.Spacing(8);
-
-                        grid.Item().Element(item =>
+                        col.Item().Background(LightBg).PaddingVertical(14).PaddingHorizontal(18).Column(body =>
                         {
-                            ComposeInfoBox(
-                                item,
-                                "Bildiri Kodu",
-                                string.IsNullOrWhiteSpace(submission.SubmissionIdCode)
-                                    ? "-"
-                                    : submission.SubmissionIdCode);
-                        });
+                            body.Item().Text("ÖZET")
+                                .FontSize(7).LetterSpacing(2).Bold()
+                                .FontColor(Gold);
 
-                        grid.Item().Element(item =>
-                        {
-                            ComposeInfoBox(
-                                item,
-                                "Sunum Türü",
-                                string.IsNullOrWhiteSpace(submission.PresentationType)
-                                    ? "-"
-                                    : submission.PresentationType);
-                        });
+                            body.Item().PaddingTop(5)
+                                .Text(CleanText(submission.Abstract))
+                                .FontSize(9.5f).FontColor(TextDark)
+                                .LineHeight(1.55f);
 
-                        grid.Item().Element(item =>
-                        {
-                            ComposeInfoBox(
-                                item,
-                                "Konu / Tema",
-                                !string.IsNullOrWhiteSpace(submission.Topic)
-                                    ? submission.Topic
-                                    : submission.ConferenceTopic?.Name ?? "-");
-                        });
-                    });
-
-                    column.Item().PaddingTop(12).Text("Özet")
-                        .FontSize(10)
-                        .Bold()
-                        .FontColor(Colors.Grey.Darken4);
-
-                    column.Item()
-                        .PaddingTop(5)
-                        .Background(Colors.Grey.Lighten5)
-                        .Border(1)
-                        .BorderColor(Colors.Grey.Lighten3)
-                        .Padding(10)
-                        .Text(CleanText(submission.Abstract))
-                        .FontSize(9.5f)
-                        .LineHeight(1.35f)
-                        .FontColor(Colors.Grey.Darken2);
-
-                    if (!string.IsNullOrWhiteSpace(submission.Keywords))
-                    {
-                        column.Item().PaddingTop(10).Text(text =>
-                        {
-                            text.Span("Anahtar Kelimeler: ")
-                                .Bold()
-                                .FontColor(Colors.Grey.Darken4);
-
-                            text.Span(submission.Keywords)
-                                .FontColor(Colors.Grey.Darken2);
+                            if (!string.IsNullOrWhiteSpace(submission.Keywords))
+                            {
+                                body.Item().PaddingTop(8).Text(text =>
+                                {
+                                    text.Span("Anahtar Kelimeler: ").FontSize(8)
+                                        .Bold().FontColor(Navy);
+                                    text.Span(submission.Keywords).FontSize(8)
+                                        .Italic().FontColor(TextMid);
+                                });
+                            }
                         });
                     }
                 });
         }
 
-        private static void ComposeInfoBox(
-            IContainer container,
-            string label,
-            string value)
+        // ─── Sayfa Başlığı ─────────────────────────────────────────────────────
+        private static void PageHeader(IContainer container, Conference conference)
         {
-            container
-                .Background(Colors.Grey.Lighten5)
-                .Border(1)
-                .BorderColor(Colors.Grey.Lighten3)
-                .Padding(8)
-                .Column(column =>
+            container.Column(col =>
+            {
+                col.Item().PaddingHorizontal(48).PaddingTop(24).Row(row =>
                 {
-                    column.Item().Text(label)
-                        .FontSize(7.5f)
-                        .Bold()
-                        .FontColor(Colors.Grey.Darken1);
+                    row.RelativeItem().Text(conference.Title ?? "Kongre")
+                        .FontFamily("Arial").FontSize(9).FontColor(Navy).SemiBold();
 
-                    column.Item().PaddingTop(3).Text(value)
-                        .FontSize(9)
-                        .SemiBold()
-                        .FontColor(Colors.Grey.Darken4);
+                    row.AutoItem().Text("Bildiri Kitabı")
+                        .FontFamily("Arial").FontSize(9).FontColor(TextLight);
                 });
+                col.Item().LineHorizontal(0.5f).LineColor(Gold);
+            });
         }
 
-        private static void ComposeFooter(IContainer container)
+        // ─── Sayfa Altlığı ─────────────────────────────────────────────────────
+        private static void PageFooter(IContainer container)
         {
-            container.Row(row =>
+            container.PaddingHorizontal(48).PaddingBottom(16).Column(col =>
             {
-                row.RelativeItem().Text("ANTABSTRACT")
-                    .FontSize(9)
-                    .FontColor(Colors.Grey.Medium);
-
-                row.RelativeItem().AlignCenter().Text(DateTime.Now.ToString("dd.MM.yyyy HH:mm"))
-                    .FontSize(9)
-                    .FontColor(Colors.Grey.Medium);
-
-                row.RelativeItem().AlignRight().Text(text =>
+                col.Item().LineHorizontal(0.5f).LineColor("#d8dce8");
+                col.Item().PaddingTop(6).Row(row =>
                 {
-                    text.Span("Sayfa ");
-                    text.CurrentPageNumber();
-                    text.Span(" / ");
-                    text.TotalPages();
+                    row.RelativeItem().Text(DateTime.Now.ToString("dd.MM.yyyy"))
+                        .FontFamily("Arial").FontSize(8).FontColor(TextLight);
+
+                    row.RelativeItem().AlignRight().Text(text =>
+                    {
+                        text.Span("Sayfa ").FontFamily("Arial").FontSize(8).FontColor(TextLight);
+                        text.CurrentPageNumber().FontFamily("Arial").FontSize(8).FontColor(Navy);
+                        text.Span(" / ").FontFamily("Arial").FontSize(8).FontColor(TextLight);
+                        text.TotalPages().FontFamily("Arial").FontSize(8).FontColor(Navy);
+                    });
                 });
             });
         }
 
+        // ─── Stat Kutusu (kapak) ──────────────────────────────────────────────
+        private static void StatBox(RowDescriptor row, string value, string label)
+        {
+            row.RelativeItem()
+                .Border(1).BorderColor(Gold)
+                .Background(Colors.White)
+                .PaddingVertical(14).PaddingHorizontal(12)
+                .AlignCenter()
+                .Column(c =>
+                {
+                    c.Item().AlignCenter().Text(value)
+                        .FontFamily("Arial").FontSize(22).Bold().FontColor(Navy);
+                    c.Item().AlignCenter().PaddingTop(2).Text(label)
+                        .FontFamily("Arial").FontSize(8).FontColor(TextMid);
+                });
+        }
+
+        // ─── Meta Rozet ───────────────────────────────────────────────────────
+        private static void MetaBadge(RowDescriptor row, string label, string value)
+        {
+            row.AutoItem()
+                .Background(LightBg)
+                .Border(0.5f).BorderColor("#d8dce8")
+                .PaddingVertical(3).PaddingHorizontal(7)
+                .Text(text =>
+                {
+                    text.Span($"{label}: ").FontFamily("Arial").FontSize(7.5f)
+                        .Bold().FontColor(TextLight);
+                    text.Span(value).FontFamily("Arial").FontSize(7.5f)
+                        .FontColor(TextDark);
+                });
+        }
+
+        // ─── Yardımcılar ──────────────────────────────────────────────────────
         private static string BuildLocation(Conference conference)
         {
-            var parts = new[]
-            {
-                conference.Venue,
-                conference.City,
-                conference.Country
-            };
-
-            var location = string.Join(", ", parts.Where(x => !string.IsNullOrWhiteSpace(x)));
-
-            return string.IsNullOrWhiteSpace(location)
-                ? "-"
-                : location;
+            var parts = new[] { conference.Venue, conference.City, conference.Country };
+            var loc = string.Join(", ", parts.Where(x => !string.IsNullOrWhiteSpace(x)));
+            return string.IsNullOrWhiteSpace(loc) ? "-" : loc;
         }
 
         private static string GetAuthorName(Submission submission)
         {
-            var authorName = $"{submission.Author?.FirstName} {submission.Author?.LastName}".Trim();
-
-            if (!string.IsNullOrWhiteSpace(authorName))
-            {
-                return authorName;
-            }
-
-            if (!string.IsNullOrWhiteSpace(submission.Author?.Email))
-            {
-                return submission.Author.Email;
-            }
-
-            return "Yazar belirtilmedi";
+            var name = $"{submission.Author?.FirstName} {submission.Author?.LastName}".Trim();
+            if (!string.IsNullOrWhiteSpace(name)) return name;
+            return submission.Author?.Email ?? "Yazar belirtilmedi";
         }
 
         private static string CleanText(string? value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return "-";
-            }
-
-            return value
-                .Replace("\r\n", "\n")
-                .Replace("\r", "\n")
-                .Trim();
+            if (string.IsNullOrWhiteSpace(value)) return "-";
+            return value.Replace("\r\n", " ").Replace("\r", " ").Replace("\n", " ").Trim();
         }
+
+        private static string TruncateText(string? value, int max)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return "-";
+            return value.Length <= max ? value : value[..max] + "…";
+        }
+
+        private static string? GetExistingFilePath(string? path)
+            => !string.IsNullOrWhiteSpace(path) && File.Exists(path) ? path : null;
     }
 }

@@ -34,6 +34,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly AppDbContext _context;
         private readonly IStringLocalizer<SubmissionController> _localizer;
+        private readonly INotificationService _notificationService;
 
         public SubmissionController(
             ISubmissionService submissionService,
@@ -42,7 +43,8 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             IMapper mapper,
             ISelectedConferenceService selectedConferenceService,
             AppDbContext context,
-            IStringLocalizer<SubmissionController> localizer)
+            IStringLocalizer<SubmissionController> localizer,
+            INotificationService notificationService)
         {
             _submissionService = submissionService;
             _userManager = userManager;
@@ -51,6 +53,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             _selectedConferenceService = selectedConferenceService;
             _context = context;
             _localizer = localizer;
+            _notificationService = notificationService;
         }
 
         private string GetSlug()
@@ -242,6 +245,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             var query = _context.Submissions
                 .Include(s => s.Conference)
                     .ThenInclude(c => c.Tenant)
+                .Include(s => s.SubmissionAuthors)
                 .Include(s => s.Files)
                 .AsQueryable();
 
@@ -259,7 +263,10 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
 
-            if (!isAdmin && submission.AuthorId != user.Id)
+            // Baş yazar veya ortak yazar (co-author) ise erişim izni var
+            var isCoAuthor = submission.SubmissionAuthors?.Any(a => a.AppUserId == user.Id) == true;
+
+            if (!isAdmin && submission.AuthorId != user.Id && !isCoAuthor)
             {
                 return null;
             }
@@ -286,7 +293,40 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             if (isAdmin)
             {
-                return null;
+                return null; // Admin her zaman bildiri gönderebilir
+            }
+
+            // Bildiri başvuruları kapalı mı?
+            if (!conference.IsSubmissionOpen)
+            {
+                TempData["ErrorMessage"] = T(
+                    "SubmissionsClosed",
+                    "Bu kongre için bildiri başvuruları kapatılmıştır.");
+
+                return Redirect(BuildUrl(canonicalSlug, ""));
+            }
+
+            // Son başvuru tarihi geçmiş mi?
+            var now = DateTime.UtcNow;
+            if (conference.FullTextSubmissionDeadline.HasValue &&
+                now > conference.FullTextSubmissionDeadline.Value)
+            {
+                TempData["ErrorMessage"] = T(
+                    "SubmissionDeadlinePassed",
+                    $"Bildiri gönderim süresi {conference.FullTextSubmissionDeadline.Value:dd.MM.yyyy} tarihinde sona ermiştir.");
+
+                return Redirect(BuildUrl(canonicalSlug, ""));
+            }
+
+            if (conference.AbstractSubmissionDeadline.HasValue &&
+                !conference.FullTextSubmissionDeadline.HasValue &&
+                now > conference.AbstractSubmissionDeadline.Value)
+            {
+                TempData["ErrorMessage"] = T(
+                    "AbstractDeadlinePassed",
+                    $"Özet gönderim süresi {conference.AbstractSubmissionDeadline.Value:dd.MM.yyyy} tarihinde sona ermiştir.");
+
+                return Redirect(BuildUrl(canonicalSlug, ""));
             }
 
             var registration = await GetUserRegistrationAsync(user.Id, conference.Id);
@@ -383,7 +423,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [HttpGet("/Submission/Index")]
         [HttpGet("/{slug}/Submission/Index")]
         [HttpGet("/{slug}/my-submissions")]
-        public async Task<IActionResult> Index(string? slug = null)
+        public async Task<IActionResult> Index(string? slug = null, string? statusFilter = null)
         {
             if (string.IsNullOrWhiteSpace(slug))
             {
@@ -440,6 +480,20 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             submissionDtos = submissionDtos
                 .Where(s => s.ConferenceId == conference.Id)
                 .ToList();
+
+            // Status filter
+            if (!string.IsNullOrWhiteSpace(statusFilter) &&
+                Enum.TryParse<SubmissionStatus>(statusFilter, out var parsedStatus))
+            {
+                submissionDtos = submissionDtos.Where(s =>
+                {
+                    Enum.TryParse<SubmissionStatus>(s.Status, out var ss);
+                    return ss == parsedStatus;
+                }).ToList();
+            }
+
+            ViewBag.StatusFilter = statusFilter ?? "";
+            ViewBag.AllCount = submissionDtos.Count;
 
             return View(submissionDtos);
         }
@@ -653,7 +707,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                     {
                         FirstName = user.FirstName ?? T("DefaultFirstName", "Ad"),
                         LastName = user.LastName ?? T("DefaultLastName", "Soyad"),
-                        Email = user.Email,
+                        Email = user.Email ?? "",
                         Institution = user.Institution ?? T("DefaultInstitution", "Kurum belirtilmedi"),
                         IsCorrespondingAuthor = true,
                         Order = 1
@@ -1290,6 +1344,31 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
                 await _context.SaveChangesAsync();
 
+                // Konferans adminine bildirim gönder
+                try
+                {
+                    var conferenceId = submission.ConferenceId;
+                    var adminUsers = await _context.Users
+                        .AsNoTracking()
+                        .Where(u => u.TenantId.HasValue &&
+                            _context.Conferences
+                                .Any(c => c.Id == conferenceId && c.TenantId == u.TenantId.Value))
+                        .Select(u => u.Id)
+                        .ToListAsync();
+
+                    foreach (var adminId in adminUsers)
+                    {
+                        await _notificationService.CreateAsync(
+                            userId: adminId,
+                            title: "Revizyon Yüklendi",
+                            message: $"\"{submission.Title}\" bildirisine revizyon dosyası yüklendi.",
+                            icon: "📤",
+                            color: "info",
+                            link: null);
+                    }
+                }
+                catch { }
+
                 TempData["SuccessMessage"] = T(
                     "RevisionUploadSuccess",
                     "Revizyon dosyası başarıyla yüklendi.");
@@ -1454,6 +1533,106 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 PageMargins = new Rotativa.AspNetCore.Options.Margins(0, 0, 0, 0)
             };
         }
+
+        // ── Withdraw ──────────────────────────────────────────────────────────────
+
+        [HttpGet("/Submission/Withdraw/{id:guid}")]
+        [HttpGet("/{slug}/Submission/Withdraw/{id:guid}")]
+        [HttpGet("/{slug}/my-submissions/{id:guid}/withdraw")]
+        public async Task<IActionResult> Withdraw(Guid id, string? slug = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var submission = await GetAuthorizedSubmissionAsync(id, user);
+            if (submission == null) return Forbid();
+
+            var canonicalSlug = GetCanonicalSlug(submission.Conference!, slug);
+            if (!SlugMatches(submission.Conference, slug))
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/withdraw"));
+
+            SetSelectedConferenceSession(submission.Conference!, canonicalSlug);
+
+            var withdrawableStatuses = new[]
+            {
+                SubmissionStatus.New,
+                SubmissionStatus.Pending,
+                SubmissionStatus.UnderReview,
+                SubmissionStatus.RevisionRequired
+            };
+
+            if (!withdrawableStatuses.Contains(submission.Status))
+            {
+                TempData["ErrorMessage"] = "Kabul veya reddedilmiş bildiriler geri çekilemez.";
+                return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
+            }
+
+            ViewBag.Submission = submission;
+            ViewBag.Slug = canonicalSlug;
+            return View(submission);
+        }
+
+        [HttpPost("/Submission/Withdraw/{id:guid}")]
+        [HttpPost("/{slug}/Submission/Withdraw/{id:guid}")]
+        [HttpPost("/{slug}/my-submissions/{id:guid}/withdraw")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> WithdrawConfirmed(Guid id, string? slug = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var submission = await GetAuthorizedSubmissionAsync(id, user);
+            if (submission == null) return Forbid();
+
+            var canonicalSlug = GetCanonicalSlug(submission.Conference!, slug);
+
+            var withdrawableStatuses = new[]
+            {
+                SubmissionStatus.New,
+                SubmissionStatus.Pending,
+                SubmissionStatus.UnderReview,
+                SubmissionStatus.RevisionRequired
+            };
+
+            if (!withdrawableStatuses.Contains(submission.Status))
+            {
+                TempData["ErrorMessage"] = "Kabul veya reddedilmiş bildiriler geri çekilemez.";
+                return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
+            }
+
+            submission.Status = SubmissionStatus.Withdrawn;
+            _context.Submissions.Update(submission);
+            await _context.SaveChangesAsync();
+
+            // Admin bildirim
+            try
+            {
+                var conferenceId = submission.ConferenceId;
+                var adminUsers = await _context.Users
+                    .Where(u => u.TenantId.HasValue &&
+                        _context.Conferences
+                            .Any(c => c.Id == conferenceId && c.TenantId == u.TenantId.Value))
+                    .Select(u => u.Id)
+                    .ToListAsync();
+
+                foreach (var adminId in adminUsers)
+                {
+                    await _notificationService.CreateAsync(
+                        userId: adminId,
+                        title: "Bildiri Geri Çekildi",
+                        message: $"\"{submission.Title}\" bildirisi yazar tarafından geri çekildi.",
+                        icon: "🔙",
+                        color: "warning",
+                        link: null);
+                }
+            }
+            catch { }
+
+            TempData["SuccessMessage"] = "Bildiriniz başarıyla geri çekildi.";
+            return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
 
         private async Task<(string FilePathDb, string StoredFileName, string OriginalFileName)> UploadFileAsync(IFormFile file)
         {

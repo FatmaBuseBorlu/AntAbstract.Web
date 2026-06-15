@@ -888,6 +888,17 @@
                         @L("WithdrawnInfo", "Bu bildiri geri çekilmiştir.", "This abstract has been withdrawn.")
                     </div>
                 }
+
+                @if (!string.IsNullOrWhiteSpace(Model.AdminDecisionNote))
+                {
+                    <div class="alert alert-info border-0 small mt-3">
+                        <div class="fw-semibold mb-1">
+                            <i class="fas fa-comment-dots me-1"></i>
+                            Yönetici Notu
+                        </div>
+                        <p class="mb-0">@Model.AdminDecisionNote</p>
+                    </div>
+                }
             </div>
         </div>
 
