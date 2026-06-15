@@ -41,6 +41,16 @@ namespace AntAbstract.Domain.Entities
 
         public string? FullTextTemplatePath { get; set; }
 
+        // Bildiri başvuru son tarihleri
+        /// <summary>Özet (abstract) gönderim son tarihi. Null ise sınır yok.</summary>
+        public DateTime? AbstractSubmissionDeadline { get; set; }
+
+        /// <summary>Tam metin gönderim son tarihi. Null ise sınır yok.</summary>
+        public DateTime? FullTextSubmissionDeadline { get; set; }
+
+        /// <summary>Bildiri başvuruları açık mı? (Admin elle kapatabilir)</summary>
+        public bool IsSubmissionOpen { get; set; } = true;
+
         // Bildiri kitabı yayında mı?
         public bool IsProceedingBookPublished { get; set; } = false;
 

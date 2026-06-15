@@ -34,6 +34,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly AppDbContext _context;
         private readonly IStringLocalizer<SubmissionController> _localizer;
+        private readonly INotificationService _notificationService;
 
         public SubmissionController(
             ISubmissionService submissionService,
@@ -42,7 +43,8 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             IMapper mapper,
             ISelectedConferenceService selectedConferenceService,
             AppDbContext context,
-            IStringLocalizer<SubmissionController> localizer)
+            IStringLocalizer<SubmissionController> localizer,
+            INotificationService notificationService)
         {
             _submissionService = submissionService;
             _userManager = userManager;
@@ -51,6 +53,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             _selectedConferenceService = selectedConferenceService;
             _context = context;
             _localizer = localizer;
+            _notificationService = notificationService;
         }
 
         private string GetSlug()
@@ -290,7 +293,40 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             if (isAdmin)
             {
-                return null;
+                return null; // Admin her zaman bildiri gönderebilir
+            }
+
+            // Bildiri başvuruları kapalı mı?
+            if (!conference.IsSubmissionOpen)
+            {
+                TempData["ErrorMessage"] = T(
+                    "SubmissionsClosed",
+                    "Bu kongre için bildiri başvuruları kapatılmıştır.");
+
+                return Redirect(BuildUrl(canonicalSlug, ""));
+            }
+
+            // Son başvuru tarihi geçmiş mi?
+            var now = DateTime.UtcNow;
+            if (conference.FullTextSubmissionDeadline.HasValue &&
+                now > conference.FullTextSubmissionDeadline.Value)
+            {
+                TempData["ErrorMessage"] = T(
+                    "SubmissionDeadlinePassed",
+                    $"Bildiri gönderim süresi {conference.FullTextSubmissionDeadline.Value:dd.MM.yyyy} tarihinde sona ermiştir.");
+
+                return Redirect(BuildUrl(canonicalSlug, ""));
+            }
+
+            if (conference.AbstractSubmissionDeadline.HasValue &&
+                !conference.FullTextSubmissionDeadline.HasValue &&
+                now > conference.AbstractSubmissionDeadline.Value)
+            {
+                TempData["ErrorMessage"] = T(
+                    "AbstractDeadlinePassed",
+                    $"Özet gönderim süresi {conference.AbstractSubmissionDeadline.Value:dd.MM.yyyy} tarihinde sona ermiştir.");
+
+                return Redirect(BuildUrl(canonicalSlug, ""));
             }
 
             var registration = await GetUserRegistrationAsync(user.Id, conference.Id);
@@ -1293,6 +1329,31 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 submission.UpdatedDate = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
+
+                // Konferans adminine bildirim gönder
+                try
+                {
+                    var conferenceId = submission.ConferenceId;
+                    var adminUsers = await _context.Users
+                        .AsNoTracking()
+                        .Where(u => u.TenantId.HasValue &&
+                            _context.Conferences
+                                .Any(c => c.Id == conferenceId && c.TenantId == u.TenantId.Value))
+                        .Select(u => u.Id)
+                        .ToListAsync();
+
+                    foreach (var adminId in adminUsers)
+                    {
+                        await _notificationService.CreateAsync(
+                            userId: adminId,
+                            title: "Revizyon Yüklendi",
+                            message: $"\"{submission.Title}\" bildirisine revizyon dosyası yüklendi.",
+                            icon: "📤",
+                            color: "info",
+                            link: null);
+                    }
+                }
+                catch { }
 
                 TempData["SuccessMessage"] = T(
                     "RevisionUploadSuccess",
