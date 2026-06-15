@@ -17,6 +17,10 @@
     var pdfUrl = string.IsNullOrWhiteSpace(slug)
         ? $"/Admin/Reports/Pdf?conferenceId={Model.ConferenceId}"
         : $"/{slug}/Admin/Reports/Pdf?conferenceId={Model.ConferenceId}";
+
+    var refereeReportUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Reports/Referees?conferenceId={Model.ConferenceId}"
+        : $"/{slug}/Admin/Reports/Referees?conferenceId={Model.ConferenceId}";
 }
 
 <div class="container-fluid py-4">
@@ -36,6 +40,9 @@
             </a>
             <a href="@pdfUrl" class="btn btn-danger btn-sm">
                 <i class="fas fa-file-pdf me-1"></i> PDF İndir
+            </a>
+            <a href="@refereeReportUrl" class="btn btn-info btn-sm text-white">
+                <i class="fas fa-user-graduate me-1"></i> Hakem Raporu
             </a>
         </div>
     </div>
