@@ -1,6 +1,7 @@
 ﻿using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
+using AntAbstract.Web.Files;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -32,6 +33,7 @@ namespace AntAbstract.Web.Controllers
         private readonly IWebHostEnvironment _env;
         private readonly IConfiguration _configuration;
         private readonly ILogger<PaymentController> _logger;
+        private readonly IUploadFileValidator _uploadFileValidator;
 
         public PaymentController(
             AppDbContext context,
@@ -41,7 +43,8 @@ namespace AntAbstract.Web.Controllers
             IStringLocalizer<PaymentController> localizer,
             IWebHostEnvironment env,
             IConfiguration configuration,
-            ILogger<PaymentController> logger)
+            ILogger<PaymentController> logger,
+            IUploadFileValidator uploadFileValidator)
         {
             _context = context;
             _userManager = userManager;
@@ -51,6 +54,7 @@ namespace AntAbstract.Web.Controllers
             _env = env;
             _configuration = configuration;
             _logger = logger;
+            _uploadFileValidator = uploadFileValidator;
         }
 
         #region Helper Methods
@@ -357,6 +361,7 @@ namespace AntAbstract.Web.Controllers
             payment.TransactionId = checkoutSessionId;
 
             registration.IsPaid = true;
+            registration.Status = AntAbstract.Domain.Entities.RegistrationStatus.Confirmed;
             registration.PaymentDate = now;
             registration.PaymentTransactionId = !string.IsNullOrWhiteSpace(paymentIntentId)
                 ? paymentIntentId
@@ -1004,36 +1009,40 @@ namespace AntAbstract.Web.Controllers
                 return View();
             }
 
-            // Dosya boyutu: maks 5 MB
-            const long MaxReceiptSize = 5 * 1024 * 1024;
-            if (receiptFile.Length > MaxReceiptSize)
+            var validation = await _uploadFileValidator.ValidateAsync(
+                receiptFile,
+                UploadFileProfile.PaymentReceipt);
+
+            if (!validation.IsValid)
             {
-                ModelState.AddModelError("", "Makbuz dosyası en fazla 5 MB olabilir.");
+                var errorMessage = validation.Error switch
+                {
+                    UploadValidationError.TooLarge =>
+                        "Makbuz dosyası en fazla 5 MB olabilir.",
+                    UploadValidationError.InvalidExtension =>
+                        "Yalnızca PDF, PNG veya JPG dosyası yükleyebilirsiniz.",
+                    _ =>
+                        "Makbuz dosyasının içeriği seçilen formatla eşleşmiyor."
+                };
+
+                ModelState.AddModelError("", errorMessage);
                 ViewBag.Registration = registration;
                 ViewBag.Slug = slug ?? registration.Conference?.Tenant?.Slug ?? "";
                 return View();
             }
 
-            // Yalnızca PDF, PNG, JPG
-            var ext = Path.GetExtension(receiptFile.FileName).ToLowerInvariant();
-            if (!new[] { ".pdf", ".png", ".jpg", ".jpeg" }.Contains(ext))
-            {
-                ModelState.AddModelError("", "Yalnızca PDF, PNG veya JPG dosyası yükleyebilirsiniz.");
-                ViewBag.Registration = registration;
-                ViewBag.Slug = slug ?? registration.Conference?.Tenant?.Slug ?? "";
-                return View();
-            }
-
-            // Kaydet
             var folder = Path.Combine(_env.WebRootPath, "uploads", "receipts");
             Directory.CreateDirectory(folder);
-            var fileName = $"{registrationId:N}{ext}";
+            var fileName = _uploadFileValidator.CreateStoredFileName(
+                validation.Extension,
+                $"receipt-{registrationId:N}");
             var filePath = Path.Combine(folder, fileName);
             using (var fs = new FileStream(filePath, FileMode.Create))
                 await receiptFile.CopyToAsync(fs);
 
             registration.ReceiptFilePath = $"/uploads/receipts/{fileName}";
             registration.ReceiptUploadedAt = DateTime.UtcNow;
+            registration.Status = AntAbstract.Domain.Entities.RegistrationStatus.AwaitingApproval;
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Makbuzunuz başarıyla yüklendi. Yönetici onayından sonra kaydınız aktif olacaktır.";

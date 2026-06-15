@@ -1,4 +1,5 @@
 ﻿using AntAbstract.Application.Interfaces;
+using AntAbstract.Infrastructure.Services;
 using AntAbstract.Infrastructure.Services.Certficates;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Infrastructure.Services.Email;
@@ -30,6 +31,11 @@ namespace AntAbstract.Infrastructure.Services.DependencyInjection
             services.AddScoped<IReviewerRecommendationService, ReviewerRecommendationService>();
             services.AddScoped<IConferencePageBlockService, ConferencePageBlockService>();
 
+            services.AddSingleton<IAuditService, AuditService>();
+
+            // E-posta kuyruğu
+            services.AddSingleton<IEmailQueue, EmailQueue>();
+            services.AddHostedService<EmailQueueWorker>();
 
             return services;
         }

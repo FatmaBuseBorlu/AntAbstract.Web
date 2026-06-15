@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using AntAbstract.Domain.Entities;
+using AntAbstract.Web.Files;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -24,13 +25,16 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
 
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager;
+        private readonly IUploadFileValidator _uploadFileValidator;
 
         public IndexModel(
             UserManager<AppUser> userManager,
-            SignInManager<AppUser> signInManager)
+            SignInManager<AppUser> signInManager,
+            IUploadFileValidator uploadFileValidator)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _uploadFileValidator = uploadFileValidator;
         }
 
         public string Username { get; set; } = string.Empty;
@@ -167,23 +171,25 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
 
             if (Input.ProfileImage != null && Input.ProfileImage.Length > 0)
             {
-                var extension = Path.GetExtension(Input.ProfileImage.FileName).ToLowerInvariant();
+                var validation = await _uploadFileValidator.ValidateAsync(
+                    Input.ProfileImage,
+                    UploadFileProfile.ProfileImage);
 
-                if (!AllowedImageExtensions.Contains(extension))
+                if (!validation.IsValid)
                 {
+                    var errorMessage = validation.Error switch
+                    {
+                        UploadValidationError.TooLarge =>
+                            "Profil fotoğrafı en fazla 2 MB olabilir.",
+                        UploadValidationError.InvalidExtension =>
+                            "Profil fotoğrafı sadece JPG, JPEG veya PNG formatında olmalıdır.",
+                        _ =>
+                            "Profil fotoğrafının içeriği seçilen formatla eşleşmiyor."
+                    };
+
                     ModelState.AddModelError(
                         "Input.ProfileImage",
-                        "Profil fotoğrafı sadece JPG, JPEG veya PNG formatında olmalıdır.");
-
-                    await LoadAsync(user);
-                    return Page();
-                }
-
-                if (Input.ProfileImage.Length > MaxProfileImageSize)
-                {
-                    ModelState.AddModelError(
-                        "Input.ProfileImage",
-                        "Profil fotoğrafı en fazla 2 MB olabilir.");
+                        errorMessage);
 
                     await LoadAsync(user);
                     return Page();
@@ -200,7 +206,9 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
                     Directory.CreateDirectory(folderPath);
                 }
 
-                var newFileName = $"profile_{user.Id}_{Guid.NewGuid():N}{extension}";
+                var newFileName = _uploadFileValidator.CreateStoredFileName(
+                    validation.Extension,
+                    $"profile-{user.Id}");
                 var filePath = Path.Combine(folderPath, newFileName);
 
                 await using (var stream = new FileStream(filePath, FileMode.Create))

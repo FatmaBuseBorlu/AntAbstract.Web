@@ -23,5 +23,11 @@ namespace AntAbstract.Domain.Entities
         public AppUser Reviewer { get; set; }
 
         public Review Review { get; set; }
+
+        // ── Ret bilgisi ──────────────────────────────────────────────────────────
+        /// <summary>Hakem görevi reddettiyse true; kayıt silinmez, saklanır.</summary>
+        public bool IsDeclined { get; set; } = false;
+        public string? DeclineReason { get; set; }
+        public DateTime? DeclinedAt { get; set; }
     }
 }

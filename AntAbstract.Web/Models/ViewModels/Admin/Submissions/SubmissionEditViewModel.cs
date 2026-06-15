@@ -7,5 +7,6 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Submissions
         public Guid Id { get; set; }
 
         public string ExistingFilePath { get; set; } = string.Empty;
+        public int ExistingFileId { get; set; }
     }
 }

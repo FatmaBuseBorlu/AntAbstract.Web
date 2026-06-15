@@ -1,15 +1,18 @@
-﻿using AntAbstract.Domain;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using AntAbstract.Domain.Entities;
+﻿using AntAbstract.Domain.Entities;
 
 namespace AntAbstract.Infrastructure.Context
 {
     public class TenantContext
     {
-        public Tenant Current { get; set; }
+        public Tenant? Current { get; set; }
+
+        /// <summary>
+        /// SuperAdmin veya seeding gibi kasıtlı global erişim bağlamlarında
+        /// true yapılır. Bu bayrak set edilmeden CurrentTenantId null ise
+        /// tenant filtresi hiçbir satırı döndürmez (güvenli varsayılan).
+        /// </summary>
+        public bool IsGlobalContext { get; set; } = false;
+
+        public Guid? CurrentTenantId => Current?.Id;
     }
 }

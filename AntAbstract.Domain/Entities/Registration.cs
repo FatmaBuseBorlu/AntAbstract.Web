@@ -74,5 +74,28 @@ namespace AntAbstract.Domain.Entities
         /// <summary>Yönetici onay notu</summary>
         [StringLength(500)]
         public string? AdminPaymentNote { get; set; }
+
+        /// <summary>
+        /// Kayıt yaşam döngüsü durumu.
+        /// IsPaid=true iken Status=Confirmed olmalıdır (senkronize tutulur).
+        /// </summary>
+        public RegistrationStatus Status { get; set; } = RegistrationStatus.Pending;
+
+        /// <summary>
+        /// QR check-in için benzersiz token. Registration oluşturulurken
+        /// otomatik atanır; değişmez.
+        /// </summary>
+        [StringLength(64)]
+        public string QrToken { get; set; } = GenerateQrToken();
+
+        /// <summary>İlk fiziksel check-in zamanı.</summary>
+        public DateTime? CheckedInAt { get; set; }
+
+        /// <summary>Check-in yapan görevlinin ID'si.</summary>
+        public string? CheckedInByUserId { get; set; }
+
+        private static string GenerateQrToken()
+            => Convert.ToBase64String(Guid.NewGuid().ToByteArray())
+                .Replace("/", "_").Replace("+", "-").Replace("=", "").Substring(0, 22);
     }
 }

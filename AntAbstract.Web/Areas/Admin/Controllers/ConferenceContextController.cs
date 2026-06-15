@@ -2,9 +2,9 @@
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.ViewModels.Shared;
+using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
@@ -15,23 +15,23 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AdminPolicies.TenantAdminOnly)]
     public class ConferenceContextController : Controller
     {
         private readonly AppDbContext _context;
         private readonly ISelectedConferenceService _selectedConferenceService;
-        private readonly UserManager<AppUser> _userManager;
+        private readonly IAdminTenantAccessService _tenantAccess;
         private readonly IStringLocalizer<ConferenceContextController> _localizer;
 
         public ConferenceContextController(
             AppDbContext context,
             ISelectedConferenceService selectedConferenceService,
-            UserManager<AppUser> userManager,
+            IAdminTenantAccessService tenantAccess,
             IStringLocalizer<ConferenceContextController> localizer)
         {
             _context = context;
             _selectedConferenceService = selectedConferenceService;
-            _userManager = userManager;
+            _tenantAccess = tenantAccess;
             _localizer = localizer;
         }
 
@@ -44,38 +44,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 : value.Value;
         }
 
-        private async Task<AppUser?> GetCurrentUserAsync()
-        {
-            return await _userManager.GetUserAsync(User);
-        }
-
-        private async Task<Guid?> GetCurrentAdminTenantIdAsync()
-        {
-            var user = await GetCurrentUserAsync();
-
-            if (user == null || !user.TenantId.HasValue)
-            {
-                return null;
-            }
-
-            return user.TenantId.Value;
-        }
-
         private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync()
         {
-            var tenantId = await GetCurrentAdminTenantIdAsync();
+            var query = await _tenantAccess
+                .GetAccessibleConferenceQueryAsync(User);
 
-            var query = _context.Conferences
+            return query
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .AsQueryable();
-
-            if (!tenantId.HasValue)
-            {
-                return query.Where(c => false);
-            }
-
-            return query.Where(c => c.TenantId == tenantId.Value);
         }
 
         [HttpGet("/Admin/SelectConference")]
@@ -84,7 +61,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             string? title = null,
             string? lead = null)
         {
-            var tenantId = await GetCurrentAdminTenantIdAsync();
+            var tenantId = await _tenantAccess.GetAdminTenantIdAsync(User);
 
             if (!tenantId.HasValue)
             {

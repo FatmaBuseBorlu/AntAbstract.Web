@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace AntAbstract.Domain.Entities
@@ -15,6 +16,16 @@ namespace AntAbstract.Domain.Entities
         public string CommentsToAuthor { get; set; }
         public string Recommendation { get; set; }
         public int Score { get; set; }
+
+        // Alt kriter puanları (0 = girilmemiş)
+        public int ScoreOriginality { get; set; }       // Özgünlük
+        public int ScoreMethodology { get; set; }       // Metodoloji
+        public int ScorePresentation { get; set; }      // Sunum / Yazım
+        public int ScoreRelevance { get; set; }         // Konu uygunluğu
+
         public DateTime ReviewedAt { get; set; } = DateTime.UtcNow;
+
+        /// <summary>Konferansa özel kriter puanları (opsiyonel).</summary>
+        public ICollection<ReviewCriterionScore> CriterionScores { get; set; } = new List<ReviewCriterionScore>();
     }
 }

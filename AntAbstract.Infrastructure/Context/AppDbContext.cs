@@ -53,23 +53,25 @@ namespace AntAbstract.Infrastructure.Context
 
         public DbSet<EmailTemplate> EmailTemplates { get; set; }
 
+        public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<SurveyAnswer> SurveyAnswers { get; set; }
+        public DbSet<ReviewCriterion> ReviewCriteria { get; set; }
+        public DbSet<ReviewCriterionScore> ReviewCriterionScores { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            var currentTenantId = _tenantContext.Current?.Id;
-
-            if (currentTenantId != null)
+            foreach (var entityType in builder.Model.GetEntityTypes())
             {
-                foreach (var entityType in builder.Model.GetEntityTypes())
+                if (typeof(IMustHaveTenant).IsAssignableFrom(entityType.ClrType))
                 {
-                    if (typeof(IMustHaveTenant).IsAssignableFrom(entityType.ClrType))
-                    {
-                        var method = SetGlobalQueryMethod.MakeGenericMethod(entityType.ClrType);
-                        method.Invoke(this, new object[] { builder, currentTenantId });
-                    }
+                    var method = SetGlobalQueryMethod.MakeGenericMethod(entityType.ClrType);
+                    method.Invoke(this, new object[] { builder });
                 }
             }
+
+            ApplyRelatedTenantQueryFilters(builder);
 
             builder.Entity<Submission>(entity =>
             {
@@ -228,26 +230,144 @@ namespace AntAbstract.Infrastructure.Context
             .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
             .Single(t => t.IsGenericMethod && t.Name == nameof(SetGlobalQuery));
 
-        private void SetGlobalQuery<T>(ModelBuilder builder, Guid tenantId)
+        private void SetGlobalQuery<T>(ModelBuilder builder)
             where T : class, IMustHaveTenant
         {
-            builder.Entity<T>().HasQueryFilter(e => e.TenantId == tenantId);
+            builder.Entity<T>().HasQueryFilter(e =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && e.TenantId == CurrentTenantId));
+        }
+
+        private Guid? CurrentTenantId => _tenantContext.CurrentTenantId;
+
+        private void ApplyRelatedTenantQueryFilters(ModelBuilder builder)
+        {
+            builder.Entity<ConferenceTopic>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference.TenantId == CurrentTenantId));
+
+            builder.Entity<Session>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference.TenantId == CurrentTenantId));
+
+            builder.Entity<Registration>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference.TenantId == CurrentTenantId));
+
+            builder.Entity<RegistrationType>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference.TenantId == CurrentTenantId));
+
+            builder.Entity<Payment>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference != null &&
+                entity.Conference.TenantId == CurrentTenantId));
+
+            builder.Entity<Certificate>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference != null &&
+                entity.Conference.TenantId == CurrentTenantId));
+
+            builder.Entity<ConferenceAttendance>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference != null &&
+                entity.Conference.TenantId == CurrentTenantId));
+
+            builder.Entity<Hotel>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference.TenantId == CurrentTenantId));
+
+            builder.Entity<RoomType>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Hotel.Conference.TenantId == CurrentTenantId));
+
+            builder.Entity<TransferOption>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference.TenantId == CurrentTenantId));
+
+            builder.Entity<AccommodationBooking>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference.TenantId == CurrentTenantId));
+
+            builder.Entity<ReviewAssignment>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Submission.TenantId == CurrentTenantId));
+
+            builder.Entity<Review>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.ReviewAssignment.Submission.TenantId == CurrentTenantId));
+
+            builder.Entity<SubmissionAuthor>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Submission.TenantId == CurrentTenantId));
+
+            builder.Entity<SubmissionFile>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Submission.TenantId == CurrentTenantId));
+        }
+
+        public override int SaveChanges()
+        {
+            EnforceTenantIsolation();
+            return base.SaveChanges();
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
+            EnforceTenantIsolation();
+            return await base.SaveChangesAsync(cancellationToken);
+        }
+
+        private void EnforceTenantIsolation()
+        {
             var entries = ChangeTracker.Entries<IMustHaveTenant>()
-                .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
+                .Where(e =>
+                    e.State == EntityState.Added ||
+                    e.State == EntityState.Modified ||
+                    e.State == EntityState.Deleted);
 
             foreach (var entry in entries)
             {
-                if (entry.State == EntityState.Added && _tenantContext.Current != null)
+                if (entry.State == EntityState.Added)
                 {
-                    entry.Entity.TenantId = _tenantContext.Current.Id;
+                    if (CurrentTenantId.HasValue)
+                    {
+                        if (entry.Entity.TenantId == Guid.Empty)
+                        {
+                            entry.Entity.TenantId = CurrentTenantId.Value;
+                        }
+                        else if (entry.Entity.TenantId != CurrentTenantId.Value)
+                        {
+                            throw new InvalidOperationException(
+                                "A tenant-bound entity cannot be added to another tenant.");
+                        }
+                    }
+                    else if (entry.Entity.TenantId == Guid.Empty)
+                    {
+                        throw new InvalidOperationException(
+                            "A tenant-bound entity must have a tenant.");
+                    }
+
+                    continue;
+                }
+
+                var tenantProperty = entry.Property(nameof(IMustHaveTenant.TenantId));
+
+                if (entry.State == EntityState.Modified &&
+                    tenantProperty.IsModified &&
+                    !Equals(tenantProperty.OriginalValue, tenantProperty.CurrentValue))
+                {
+                    throw new InvalidOperationException(
+                        "The tenant of an existing entity cannot be changed.");
+                }
+
+                if (CurrentTenantId.HasValue &&
+                    entry.Entity.TenantId != CurrentTenantId.Value)
+                {
+                    throw new InvalidOperationException(
+                        "A tenant-bound entity cannot be changed or deleted from another tenant.");
                 }
             }
-
-            return await base.SaveChangesAsync(cancellationToken);
         }
     }
 }

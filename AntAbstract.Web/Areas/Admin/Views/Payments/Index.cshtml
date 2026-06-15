@@ -125,31 +125,34 @@
                                 </td>
                                 <td class="text-end fw-semibold">@reg.Amount.ToString("N2")</td>
                                 <td class="text-center">
-                                    @if (reg.IsPaid)
-                                    {
-                                        <span class="badge bg-success">✅ Ödendi</span>
-                                        if (reg.PaymentDate.HasValue)
+                                    @{
+                                        var statusBadge = reg.Status switch
                                         {
-                                            <div><small class="text-muted">@reg.PaymentDate.Value.ToString("dd.MM.yyyy")</small></div>
-                                        }
+                                            AntAbstract.Domain.Entities.RegistrationStatus.Confirmed       => "<span class='badge bg-success'>✅ Onaylandı</span>",
+                                            AntAbstract.Domain.Entities.RegistrationStatus.AwaitingApproval => "<span class='badge bg-warning text-dark'>⏳ Onay Bekliyor</span>",
+                                            AntAbstract.Domain.Entities.RegistrationStatus.PaymentRejected  => "<span class='badge bg-danger'>❌ Makbuz Reddedildi</span>",
+                                            AntAbstract.Domain.Entities.RegistrationStatus.Cancelled        => "<span class='badge bg-dark'>İptal</span>",
+                                            _ => reg.IsPaid
+                                                ? "<span class='badge bg-success'>✅ Ödendi</span>"
+                                                : (reg.ReceiptFilePath != null
+                                                    ? "<span class='badge bg-warning text-dark'>⏳ Makbuz Yüklendi</span>"
+                                                    : "<span class='badge bg-secondary'>Bekliyor</span>")
+                                        };
                                     }
-                                    else if (reg.ReceiptFilePath != null)
+                                    @Html.Raw(statusBadge)
+                                    @if (reg.PaymentDate.HasValue && reg.IsPaid)
                                     {
-                                        <span class="badge bg-warning text-dark">⏳ Makbuz Yüklendi</span>
-                                        if (reg.ReceiptUploadedAt.HasValue)
-                                        {
-                                            <div><small class="text-muted">@reg.ReceiptUploadedAt.Value.ToString("dd.MM.yyyy HH:mm")</small></div>
-                                        }
+                                        <div><small class="text-muted">@reg.PaymentDate.Value.ToString("dd.MM.yyyy")</small></div>
                                     }
-                                    else
+                                    else if (reg.ReceiptUploadedAt.HasValue)
                                     {
-                                        <span class="badge bg-secondary">Bekliyor</span>
+                                        <div><small class="text-muted">@reg.ReceiptUploadedAt.Value.ToString("dd.MM.yyyy HH:mm")</small></div>
                                     }
                                 </td>
                                 <td class="text-center">
                                     @if (reg.ReceiptFilePath != null)
                                     {
-                                        <a href="@reg.ReceiptFilePath" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <a href="/download/receipt/@reg.Id" target="_blank" class="btn btn-sm btn-outline-primary">
                                             📄 Görüntüle
                                         </a>
                                     }
@@ -159,7 +162,11 @@
                                     }
                                 </td>
                                 <td class="text-end">
-                                    @if (!reg.IsPaid)
+                                    @if (reg.Status == AntAbstract.Domain.Entities.RegistrationStatus.Cancelled)
+                                    {
+                                        <span class="text-muted small">İptal edildi</span>
+                                    }
+                                    else if (!reg.IsPaid)
                                     {
                                         <button type="button" class="btn btn-sm btn-success"
                                                 data-bs-toggle="modal" data-bs-target="#approveModal"
@@ -174,10 +181,20 @@
                                                 ❌ Reddet
                                             </button>
                                         }
+                                        <button type="button" class="btn btn-sm btn-outline-dark ms-1"
+                                                data-bs-toggle="modal" data-bs-target="#cancelModal"
+                                                data-reg-id="@reg.Id" data-name="@fullName" data-return="@returnUrl">
+                                            🚫 İptal
+                                        </button>
                                     }
                                     else
                                     {
                                         <span class="text-success small">Tamamlandı</span>
+                                        <button type="button" class="btn btn-sm btn-outline-dark ms-1"
+                                                data-bs-toggle="modal" data-bs-target="#cancelModal"
+                                                data-reg-id="@reg.Id" data-name="@fullName" data-return="@returnUrl">
+                                            🚫 İptal
+                                        </button>
                                     }
                                 </td>
                             </tr>
@@ -245,6 +262,36 @@
     </div>
 </div>
 
+<!-- İptal Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">🚫 Kaydı İptal Et</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="Cancel" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="registrationId" id="cancelRegId" />
+                <input type="hidden" name="returnUrl" id="cancelReturnUrl" />
+                <div class="modal-body">
+                    <div class="alert alert-warning py-2 mb-3">
+                        <strong id="cancelName"></strong> adlı katılımcının kaydı iptal edilecek. Bu işlem geri alınamaz.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">İptal Nedeni (opsiyonel)</label>
+                        <textarea name="note" class="form-control" rows="2" placeholder="İptal açıklaması..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Vazgeç</button>
+                    <button type="submit" class="btn btn-dark px-4">İptal Et</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
 document.addEventListener('DOMContentLoaded', () => {
@@ -259,6 +306,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('rejectRegId').value    = btn.dataset.regId;
         document.getElementById('rejectReturnUrl').value = btn.dataset.return;
         document.getElementById('rejectName').textContent = btn.dataset.name;
+    });
+    document.getElementById('cancelModal').addEventListener('show.bs.modal', e => {
+        const btn = e.relatedTarget;
+        document.getElementById('cancelRegId').value    = btn.dataset.regId;
+        document.getElementById('cancelReturnUrl').value = btn.dataset.return;
+        document.getElementById('cancelName').textContent = btn.dataset.name;
     });
 });
 </script>

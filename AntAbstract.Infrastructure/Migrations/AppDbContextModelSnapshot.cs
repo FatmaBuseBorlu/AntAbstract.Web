@@ -229,6 +229,57 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("AntAbstract.Domain.Entities.AuditLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ConferenceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EntityId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EntityType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IpAddress")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NewValues")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OldValues")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AuditLogs");
+                });
+
             modelBuilder.Entity("AntAbstract.Domain.Entities.Certificate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -829,6 +880,12 @@ namespace AntAbstract.Infrastructure.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
+                    b.Property<DateTime?>("CheckedInAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CheckedInByUserId")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Guid>("ConferenceId")
                         .HasColumnType("uniqueidentifier");
 
@@ -840,6 +897,11 @@ namespace AntAbstract.Infrastructure.Migrations
 
                     b.Property<string>("PaymentTransactionId")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("QrToken")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.Property<string>("ReceiptFilePath")
                         .HasMaxLength(500)
@@ -853,6 +915,9 @@ namespace AntAbstract.Infrastructure.Migrations
 
                     b.Property<Guid>("RegistrationTypeId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.Property<string>("TaxNumber")
                         .HasMaxLength(50)
@@ -957,6 +1022,18 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Property<int>("Score")
                         .HasColumnType("int");
 
+                    b.Property<int>("ScoreMethodology")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ScoreOriginality")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ScorePresentation")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ScoreRelevance")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ReviewAssignmentId")
@@ -976,8 +1053,17 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Property<DateTime>("AssignedDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("DeclineReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeclinedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime?>("EvaluationDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeclined")
+                        .HasColumnType("bit");
 
                     b.Property<string>("ReviewerId")
                         .IsRequired()
@@ -993,6 +1079,75 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.HasIndex("SubmissionId");
 
                     b.ToTable("ReviewAssignments");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewCriterion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ConferenceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("NameEn")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Weight")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConferenceId");
+
+                    b.ToTable("ReviewCriteria");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewCriterionScore", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("ReviewCriterionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("ReviewId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReviewCriterionId");
+
+                    b.HasIndex("ReviewId");
+
+                    b.ToTable("ReviewCriterionScores");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.RoomType", b =>
@@ -1183,6 +1338,9 @@ namespace AntAbstract.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("AdminDecisionNote")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("AuthorId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
@@ -1340,6 +1498,56 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.HasIndex("SubmissionId");
 
                     b.ToTable("SubmissionFiles");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.SurveyAnswer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Answer1")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Answer2")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Answer3")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Answer4")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Answer5")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid>("ConferenceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("SubmissionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConferenceId");
+
+                    b.HasIndex("SubmissionId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("SurveyAnswers");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.SystemParameter", b =>
@@ -1820,6 +2028,36 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Navigation("Submission");
                 });
 
+            modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewCriterion", b =>
+                {
+                    b.HasOne("AntAbstract.Domain.Entities.Conference", "Conference")
+                        .WithMany()
+                        .HasForeignKey("ConferenceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conference");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewCriterionScore", b =>
+                {
+                    b.HasOne("AntAbstract.Domain.Entities.ReviewCriterion", "Criterion")
+                        .WithMany("Scores")
+                        .HasForeignKey("ReviewCriterionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AntAbstract.Domain.Entities.Review", "Review")
+                        .WithMany("CriterionScores")
+                        .HasForeignKey("ReviewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Criterion");
+
+                    b.Navigation("Review");
+                });
+
             modelBuilder.Entity("AntAbstract.Domain.Entities.RoomType", b =>
                 {
                     b.HasOne("AntAbstract.Domain.Entities.Hotel", "Hotel")
@@ -1900,6 +2138,31 @@ namespace AntAbstract.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Submission");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.SurveyAnswer", b =>
+                {
+                    b.HasOne("AntAbstract.Domain.Entities.Conference", "Conference")
+                        .WithMany()
+                        .HasForeignKey("ConferenceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AntAbstract.Domain.Entities.Submission", "Submission")
+                        .WithMany()
+                        .HasForeignKey("SubmissionId");
+
+                    b.HasOne("AntAbstract.Domain.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conference");
+
+                    b.Navigation("Submission");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.Tenant", b =>
@@ -1989,10 +2252,20 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Navigation("RoomTypes");
                 });
 
+            modelBuilder.Entity("AntAbstract.Domain.Entities.Review", b =>
+                {
+                    b.Navigation("CriterionScores");
+                });
+
             modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewAssignment", b =>
                 {
                     b.Navigation("Review")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewCriterion", b =>
+                {
+                    b.Navigation("Scores");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.Session", b =>

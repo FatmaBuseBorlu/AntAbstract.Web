@@ -1,0 +1,133 @@
+@{
+    ViewData["Title"] = "QR Check-In";
+    Layout = "_LayoutDashboard";
+    var slug = ViewBag.Slug as string;
+    var selectedConferenceId = ViewBag.SelectedConferenceId as Guid?;
+    var conferences = ViewBag.Conferences as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+
+<div class="container-fluid py-4" style="max-width:640px">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-dark text-white d-flex align-items-center gap-2">
+            <i class="fas fa-qrcode fs-5"></i>
+            <span class="fw-bold">QR Kod ile Check-In</span>
+        </div>
+        <div class="card-body">
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Kongre</label>
+                <select id="conferenceSelect" class="form-select">
+                    <option value="">-- Kongre Seçin --</option>
+                    @foreach (var c in conferences)
+                    {
+                        var cId = (Guid)c.Id;
+                        if (selectedConferenceId.HasValue && selectedConferenceId.Value == cId)
+                        {
+                            <option value="@cId" selected="selected">@c.Title</option>
+                        }
+                        else
+                        {
+                            <option value="@cId">@c.Title</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">QR Token / Manuel Giriş</label>
+                <div class="input-group">
+                    <input type="text" id="qrInput" class="form-control" placeholder="QR kodu veya token girin…" autocomplete="off" />
+                    <button class="btn btn-primary" id="checkInBtn" type="button">
+                        <i class="fas fa-check me-1"></i> Onayla
+                    </button>
+                </div>
+                <div class="form-text">
+                    Barkod okuyucu veya kamera uygulamasıyla QR kodu tarayın; alan otomatik dolar.
+                </div>
+            </div>
+
+            <div id="resultBox" class="d-none mt-3 p-3 rounded border"></div>
+
+            <hr />
+
+            <div class="d-flex justify-content-between">
+                <a href="@(string.IsNullOrEmpty(slug) ? "/Admin/Attendance" : $"/{slug}/Admin/Attendance")"
+                   class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-list me-1"></i> Katılımcı Listesi
+                </a>
+                <span class="text-muted small align-self-center">Son tarama saniyeler önce otomatik temizlenir</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+    (function () {
+        const input = document.getElementById('qrInput');
+        const btn   = document.getElementById('checkInBtn');
+        const box   = document.getElementById('resultBox');
+        const confSel = document.getElementById('conferenceSelect');
+        let autoTimer = null;
+
+        // QR okuyucu genellikle token'ı Enter ile bitirir
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); doCheckIn(); }
+        });
+
+        btn.addEventListener('click', doCheckIn);
+
+        async function doCheckIn() {
+            const token = input.value.trim();
+            const confId = confSel.value;
+
+            if (!token) { showResult('warning', 'Lütfen bir QR token girin.'); return; }
+            if (!confId) { showResult('warning', 'Lütfen bir kongre seçin.'); return; }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+            try {
+                const form = new FormData();
+                form.append('qrToken', token);
+                form.append('conferenceId', confId);
+                form.append('__RequestVerificationToken', getAntiForgery());
+
+                const res = await fetch('@(string.IsNullOrEmpty(slug) ? "/Admin/Attendance/CheckIn" : $"/{slug}/Admin/Attendance/CheckIn")', {
+                    method: 'POST',
+                    body: form
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    const cls = data.alreadyCheckedIn ? 'warning' : 'success';
+                    showResult(cls, `<strong>${data.message}</strong><br>
+                        <small>${data.name} &bull; ${data.email ?? ''} &bull; ${data.registrationType ?? ''}</small>`);
+                } else {
+                    showResult('danger', data.message);
+                }
+            } catch (err) {
+                showResult('danger', 'Sunucu hatası: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check me-1"></i> Onayla';
+                input.value = '';
+                input.focus();
+                if (autoTimer) clearTimeout(autoTimer);
+                autoTimer = setTimeout(() => box.classList.add('d-none'), 8000);
+            }
+        }
+
+        function showResult(type, html) {
+            box.className = `mt-3 p-3 rounded border alert alert-${type}`;
+            box.innerHTML = html;
+        }
+
+        function getAntiForgery() {
+            const el = document.querySelector('input[name="__RequestVerificationToken"]');
+            return el ? el.value : '';
+        }
+    })();
+    </script>
+    @Html.AntiForgeryToken()
+}
