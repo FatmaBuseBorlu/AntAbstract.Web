@@ -789,8 +789,36 @@ namespace AntAbstract.Web.Controllers
                     .CountAsync(s => s.Status == SubmissionStatus.Rejected),
 
                 ConferenceName = currentConferenceName,
-                MyConferences = myConferences
+                MyConferences = myConferences,
+                SelectedConference = selectedConference
             };
+
+            // Admin özgü istatistikler — sadece konferans seçiliyse
+            if (isAdmin && selectedConferenceId.HasValue)
+            {
+                var confId = selectedConferenceId.Value;
+
+                var regQuery = _context.Registrations.AsNoTracking()
+                    .Where(r => r.ConferenceId == confId);
+
+                viewModel.TotalRegistrations = await regQuery.CountAsync();
+                viewModel.PendingPayments    = await regQuery.CountAsync(r => !r.IsPaid && r.ReceiptFilePath == null);
+                viewModel.ReceiptWaiting     = await regQuery.CountAsync(r => !r.IsPaid && r.ReceiptFilePath != null);
+                viewModel.TotalRevenue       = await regQuery.Where(r => r.IsPaid).SumAsync(r => r.Amount);
+
+                // Hakeme atanmamış kabul edilmiş / bekleyen bildirileri say
+                viewModel.PendingAssignments = await _context.Submissions.AsNoTracking()
+                    .CountAsync(s =>
+                        s.ConferenceId == confId &&
+                        (s.Status == SubmissionStatus.Pending || s.Status == SubmissionStatus.New) &&
+                        !_context.ReviewAssignments.Any(ra => ra.SubmissionId == s.Id));
+
+                viewModel.TotalReferees = await _context.ReviewAssignments.AsNoTracking()
+                    .Where(ra => ra.Submission != null && ra.Submission.ConferenceId == confId)
+                    .Select(ra => ra.ReviewerId)
+                    .Distinct()
+                    .CountAsync();
+            }
 
             return View(viewModel);
         }

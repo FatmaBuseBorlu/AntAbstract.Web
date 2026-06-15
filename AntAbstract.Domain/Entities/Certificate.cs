@@ -5,7 +5,8 @@ namespace AntAbstract.Domain.Entities
     public enum CertificateType
     {
         Author = 1,
-        Reviewer = 2
+        Reviewer = 2,
+        Attendee = 3
     }
 
     public class Certificate : BaseEntity
