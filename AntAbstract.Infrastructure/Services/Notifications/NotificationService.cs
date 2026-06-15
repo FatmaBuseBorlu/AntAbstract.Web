@@ -55,7 +55,7 @@ namespace AntAbstract.Infrastructure.Services.Notifications
                 Message = message,
                 Icon = icon,
                 Color = color,
-                Link = link,
+                Link = link!,
                 IsRead = false,
                 CreatedDate = DateTime.UtcNow
             };

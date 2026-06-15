@@ -235,7 +235,6 @@ namespace AntAbstract.Web.Controllers
             }
         }
 
-        [HttpGet("/{slug}/program")]
         [HttpGet("/{slug}/Program")]
         [HttpGet("/{slug}/Program/Index")]
         public async Task<IActionResult> Index(string slug)
@@ -278,7 +277,6 @@ namespace AntAbstract.Web.Controllers
             return View(sessions);
         }
 
-        [HttpGet("/{slug}/program/details/{id:guid}")]
         [HttpGet("/{slug}/Program/Details/{id:guid}")]
         public async Task<IActionResult> Details(string slug, Guid id)
         {

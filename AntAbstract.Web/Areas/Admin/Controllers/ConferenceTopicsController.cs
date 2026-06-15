@@ -389,10 +389,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (model.Id.HasValue)
             {
-                entity = await _context.ConferenceTopics
+                entity = (await _context.ConferenceTopics
                     .FirstOrDefaultAsync(t =>
                         t.Id == model.Id.Value &&
-                        t.ConferenceId == conference.Id);
+                        t.ConferenceId == conference.Id))!;
 
                 if (entity == null)
                 {
