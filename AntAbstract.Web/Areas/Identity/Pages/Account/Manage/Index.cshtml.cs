@@ -69,6 +69,27 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
             [StringLength(1000, ErrorMessage = "Uzmanlık alanları en fazla 1000 karakter olabilir.")]
             public string? ExpertiseAreas { get; set; }
 
+            [Display(Name = "Fakülte")]
+            [StringLength(250)]
+            public string? Faculty { get; set; }
+
+            [Display(Name = "Bölüm")]
+            [StringLength(250)]
+            public string? Department { get; set; }
+
+            [Display(Name = "ORCID ID")]
+            [StringLength(100)]
+            public string? OrcidId { get; set; }
+
+            [Display(Name = "ResearcherID")]
+            [StringLength(100)]
+            public string? ResearcherId { get; set; }
+
+            [Display(Name = "Google Scholar Profil Linki")]
+            [StringLength(500)]
+            [Url(ErrorMessage = "Lütfen geçerli bir URL giriniz.")]
+            public string? GoogleScholarLink { get; set; }
+
             [Display(Name = "Profil Fotoğrafı")]
             public IFormFile? ProfileImage { get; set; }
         }
@@ -88,7 +109,12 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
                 LastName = user.LastName,
                 Title = user.Title,
                 University = user.University,
-                ExpertiseAreas = user.ExpertiseAreas
+                ExpertiseAreas = user.ExpertiseAreas,
+                Faculty = user.Faculty,
+                Department = user.Department,
+                OrcidId = user.OrcidId,
+                ResearcherId = user.ResearcherId,
+                GoogleScholarLink = user.GoogleScholarLink
             };
         }
 
@@ -133,6 +159,11 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
             user.Title = Input.Title?.Trim();
             user.University = Input.University?.Trim();
             user.ExpertiseAreas = Input.ExpertiseAreas?.Trim();
+            user.Faculty = Input.Faculty?.Trim();
+            user.Department = Input.Department?.Trim();
+            user.OrcidId = Input.OrcidId?.Trim();
+            user.ResearcherId = Input.ResearcherId?.Trim();
+            user.GoogleScholarLink = Input.GoogleScholarLink?.Trim();
 
             if (Input.ProfileImage != null && Input.ProfileImage.Length > 0)
             {
