@@ -535,6 +535,30 @@ namespace AntAbstract.Web.Controllers
                 return Redirect(BuildUrl(canonicalSlug, "/submit-abstract"));
             }
 
+            // Kota kontrolü
+            if (!conference.IsRegistrationOpen)
+            {
+                TempData["ErrorMessage"] = T(
+                    "RegistrationClosed",
+                    "Bu kongreye kayıt şu anda kapalıdır.");
+                return Redirect(BuildUrl(canonicalSlug, "/registration"));
+            }
+
+            if (conference.MaxRegistrations.HasValue)
+            {
+                var currentCount = await _context.Registrations
+                    .AsNoTracking()
+                    .CountAsync(r => r.ConferenceId == conference.Id);
+
+                if (currentCount >= conference.MaxRegistrations.Value)
+                {
+                    TempData["ErrorMessage"] = T(
+                        "RegistrationQuotaFull",
+                        "Bu kongre için kayıt kontenjanı dolmuştur.");
+                    return Redirect(BuildUrl(canonicalSlug, "/registration"));
+                }
+            }
+
             var newRegistration = new Registration
             {
                 Id = Guid.NewGuid(),
