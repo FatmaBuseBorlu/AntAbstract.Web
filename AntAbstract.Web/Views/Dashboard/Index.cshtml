@@ -31,7 +31,8 @@
         : Model?.ConferenceName ?? L("GeneralPanelTitle", "Genel Panel");
 
     var isReviewer = ViewBag.IsReferee == true;
-    var isAuthor = ViewBag.IsAuthor == true;
+    var isAuthor   = ViewBag.IsAuthor == true;
+    var isAdmin    = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
 
     var pendingReviews = ViewBag.PendingReviews is int pending
         ? pending
@@ -51,14 +52,22 @@
         return $"/{slug}{cleanPath}";
     }
 
-    var mySubmissionsUrl = BuildUrl("/my-submissions", "/Submission/Index");
-    var submitAbstractUrl = BuildUrl("/submit-abstract", "/Submission/Create");
-    var programUrl = BuildUrl("/Program/Index", "/Program/Index");
-    var proceedingBookUrl = BuildUrl("/Dashboard/ProceedingBook", "/Dashboard/ProceedingBook");
-    var paymentsUrl = BuildUrl("/payments", "/Payment/My");
-    var accommodationUrl = BuildUrl("/Accommodation/Index", "/Accommodation/Index");
-    var certificatesUrl = BuildUrl("/Certificates", "/Certificates");
+    var mySubmissionsUrl   = BuildUrl("/my-submissions", "/Submission/Index");
+    var submitAbstractUrl  = BuildUrl("/submit-abstract", "/Submission/Create");
+    var programUrl         = BuildUrl("/Program/Index", "/Program/Index");
+    var proceedingBookUrl  = BuildUrl("/Dashboard/ProceedingBook", "/Dashboard/ProceedingBook");
+    var paymentsUrl        = BuildUrl("/payments", "/Payment/My");
+    var accommodationUrl   = BuildUrl("/Accommodation/Index", "/Accommodation/Index");
+    var certificatesUrl    = BuildUrl("/Certificates", "/Certificates");
     var changeConferenceUrl = "/Dashboard/ChangeConference";
+
+    // Admin özgü URL'ler
+    var adminDecisionUrl    = BuildUrl("/Admin/Decision", "/Admin/Decision");
+    var adminAssignmentUrl  = BuildUrl("/Admin/Assignment", "/Admin/Assignment");
+    var adminPaymentsUrl    = BuildUrl("/Admin/Payments", "/Admin/Payments");
+    var adminRegistrationsUrl = BuildUrl("/Admin/ConferenceFlow/RegistrationsAndPayments", "/Admin/ConferenceFlow/RegistrationsAndPayments");
+    var adminSubmissionsUrl = BuildUrl("/Admin/Submissions", "/Admin/Submissions");
+    var adminReportsUrl     = BuildUrl("/Admin/Reports", "/Admin/Reports");
 }
 
 <style>
@@ -641,6 +650,87 @@
         }
     </div>
 
+    @if (isAdmin && Model?.SelectedConference != null)
+    {
+        <!-- Admin Kongre Özet Paneli -->
+        <div class="dashboard-card mb-4" style="border-left:4px solid #1a2d5a">
+            <div class="dashboard-card-header">
+                <div>
+                    <h5 class="dashboard-card-title">🏛️ Kongre Yönetim Özeti</h5>
+                    <p class="dashboard-card-subtitle">@Model.SelectedConference.Title</p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="@adminDecisionUrl" class="btn btn-sm btn-outline-primary">Kararlar</a>
+                    <a href="@adminAssignmentUrl" class="btn btn-sm btn-outline-secondary">Atamalar</a>
+                    <a href="@adminPaymentsUrl" class="btn btn-sm btn-outline-success">Ödemeler</a>
+                </div>
+            </div>
+            <div class="dashboard-card-body">
+                <div class="row g-3">
+                    <div class="col-6 col-md-2">
+                        <div class="text-center p-3 rounded-3" style="background:#f0f4ff">
+                            <div class="fw-bold fs-3 text-primary">@(Model.TotalRegistrations)</div>
+                            <div class="text-muted small">Toplam Kayıt</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <a href="@(adminPaymentsUrl + "?status=receipt")" class="text-decoration-none">
+                            <div class="text-center p-3 rounded-3 @(Model.ReceiptWaiting > 0 ? "bg-warning bg-opacity-25" : "")" style="@(Model.ReceiptWaiting == 0 ? "background:#f8f9fa" : "")">
+                                <div class="fw-bold fs-3 @(Model.ReceiptWaiting > 0 ? "text-warning" : "text-secondary")">@(Model.ReceiptWaiting)</div>
+                                <div class="text-muted small">Makbuz Bekliyor</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <a href="@(adminPaymentsUrl + "?status=pending")" class="text-decoration-none">
+                            <div class="text-center p-3 rounded-3" style="background:#f8f9fa">
+                                <div class="fw-bold fs-3 text-secondary">@(Model.PendingPayments)</div>
+                                <div class="text-muted small">Ödeme Bekliyor</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <a href="@adminAssignmentUrl" class="text-decoration-none">
+                            <div class="text-center p-3 rounded-3 @(Model.PendingAssignments > 0 ? "bg-danger bg-opacity-10" : "")" style="@(Model.PendingAssignments == 0 ? "background:#f8f9fa" : "")">
+                                <div class="fw-bold fs-3 @(Model.PendingAssignments > 0 ? "text-danger" : "text-secondary")">@(Model.PendingAssignments)</div>
+                                <div class="text-muted small">Atamasız Bildiri</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <div class="text-center p-3 rounded-3" style="background:#f0fff4">
+                            <div class="fw-bold fs-3 text-success">@(Model.TotalReferees)</div>
+                            <div class="text-muted small">Aktif Hakem</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <div class="text-center p-3 rounded-3" style="background:#f0fff4">
+                            <div class="fw-bold fs-4 text-success">@(Model.TotalRevenue.ToString("N0")) <small class="fs-6">@Model.RevenueCurrency</small></div>
+                            <div class="text-muted small">Toplam Gelir</div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model.ReceiptWaiting > 0)
+                {
+                    <div class="alert alert-warning border-0 rounded-3 mt-3 mb-0 d-flex align-items-center gap-2">
+                        <span>⚠️</span>
+                        <span><strong>@Model.ReceiptWaiting</strong> ödeme makbuzu onayınızı bekliyor.</span>
+                        <a href="@(adminPaymentsUrl + "?status=receipt")" class="btn btn-sm btn-warning ms-auto">İncele</a>
+                    </div>
+                }
+                @if (Model.PendingAssignments > 0)
+                {
+                    <div class="alert alert-danger border-0 rounded-3 mt-2 mb-0 d-flex align-items-center gap-2">
+                        <span>📋</span>
+                        <span><strong>@Model.PendingAssignments</strong> bildiri henüz hakeme atanmadı.</span>
+                        <a href="@adminAssignmentUrl" class="btn btn-sm btn-danger ms-auto">Ata</a>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
     <div class="dashboard-section-grid">
         <div class="dashboard-card">
             <div class="dashboard-card-header">
@@ -657,6 +747,59 @@
 
             <div class="dashboard-card-body">
                 <div class="quick-actions-grid">
+                    @if (isAdmin)
+                    {
+                        <a href="@adminDecisionUrl" class="quick-action-card">
+                            <div class="quick-action-icon" style="background:linear-gradient(135deg,#1a2d5a,#2d4a8a)">
+                                <i class="fas fa-gavel"></i>
+                            </div>
+                            <div>
+                                <div class="quick-action-title">Bildiri Kararları</div>
+                                <p class="quick-action-text">Bildiri kabul, ret ve revizyon kararlarını yönet.</p>
+                            </div>
+                        </a>
+
+                        <a href="@adminAssignmentUrl" class="quick-action-card">
+                            <div class="quick-action-icon" style="background:linear-gradient(135deg,#0d6efd,#0dcaf0)">
+                                <i class="fas fa-user-check"></i>
+                            </div>
+                            <div>
+                                <div class="quick-action-title">Hakem Atamaları</div>
+                                <p class="quick-action-text">Bildirilere hakem ata ve değerlendirme sürecini yönet.</p>
+                            </div>
+                        </a>
+
+                        <a href="@adminPaymentsUrl" class="quick-action-card">
+                            <div class="quick-action-icon" style="background:linear-gradient(135deg,#198754,#20c997)">
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+                            <div>
+                                <div class="quick-action-title">Ödemeler</div>
+                                <p class="quick-action-text">Ödeme makbuzlarını onayla, kayıtları yönet.</p>
+                            </div>
+                        </a>
+
+                        <a href="@adminSubmissionsUrl" class="quick-action-card">
+                            <div class="quick-action-icon" style="background:linear-gradient(135deg,#6f42c1,#d63384)">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div>
+                                <div class="quick-action-title">Bildiriler</div>
+                                <p class="quick-action-text">Tüm bildiri başvurularını görüntüle ve yönet.</p>
+                            </div>
+                        </a>
+
+                        <a href="@adminReportsUrl" class="quick-action-card">
+                            <div class="quick-action-icon" style="background:linear-gradient(135deg,#fd7e14,#ffc107)">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            <div>
+                                <div class="quick-action-title">Raporlar</div>
+                                <p class="quick-action-text">Kongre istatistiklerini ve Excel raporlarını al.</p>
+                            </div>
+                        </a>
+                    }
+
                     @if (isAuthor)
                     {
                         <a href="@submitAbstractUrl" class="quick-action-card">

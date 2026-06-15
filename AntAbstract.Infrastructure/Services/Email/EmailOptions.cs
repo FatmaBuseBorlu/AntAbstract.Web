@@ -19,6 +19,8 @@ namespace AntAbstract.Infrastructure.Services.Email
         public string SenderName { get; set; } = "";
         public string SenderEmail { get; set; } = "";
 
-        public bool UseSsl { get; set; } = true; 
+        public bool UseSsl { get; set; } = true;
+
+        public string BaseUrl { get; set; } = "";
     }
 }

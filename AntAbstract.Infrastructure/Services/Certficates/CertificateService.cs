@@ -5,6 +5,7 @@ using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Email;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,17 +21,20 @@ namespace AntAbstract.Infrastructure.Services.Certficates
         private readonly IWebHostEnvironment _env;
         private readonly IEmailService _emailService;
         private readonly PdfCertificateService _pdfCertificateService;
+        private readonly EmailOptions _emailOptions;
 
         public CertificateService(
             AppDbContext context,
             IWebHostEnvironment env,
             IEmailService emailService,
-            PdfCertificateService pdfCertificateService)
+            PdfCertificateService pdfCertificateService,
+            IOptions<EmailOptions> emailOptions)
         {
             _context = context;
             _env = env;
             _emailService = emailService;
             _pdfCertificateService = pdfCertificateService;
+            _emailOptions = emailOptions.Value;
         }
 
         public async Task<List<Certificate>> GetMyCertificatesAsync(
@@ -146,6 +150,14 @@ namespace AntAbstract.Infrastructure.Services.Certficates
                 CertificateType.Reviewer,
                 overrideFullName: reviewerFullName,
                 overrideEmail: email);
+        }
+
+        public Task EnsureAttendeeCertificateAsync(Guid conferenceId, string userId)
+        {
+            return EnsureCertificateAsync(
+                conferenceId,
+                userId,
+                CertificateType.Attendee);
         }
 
         public async Task RegenerateCertificateFileAsync(
@@ -279,6 +291,7 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             {
                 CertificateType.Author => await IsAuthorEligibleAsync(conferenceId, userId),
                 CertificateType.Reviewer => await IsReviewerEligibleAsync(conferenceId, userId),
+                CertificateType.Attendee => await IsAttendeeEligibleAsync(conferenceId, userId),
                 _ => false
             };
 
@@ -403,6 +416,29 @@ namespace AntAbstract.Infrastructure.Services.Certficates
                     ra.Review != null);
         }
 
+        private async Task<bool> IsAttendeeEligibleAsync(
+            Guid conferenceId,
+            string userId)
+        {
+            var attendanceCompleted = await _context.ConferenceAttendances
+                .AsNoTracking()
+                .AnyAsync(x =>
+                    x.ConferenceId == conferenceId &&
+                    x.UserId == userId &&
+                    (x.CompletedAt.HasValue || x.TotalSeconds >= x.RequiredSeconds));
+
+            if (!attendanceCompleted)
+            {
+                return false;
+            }
+
+            return await _context.Registrations
+                .AsNoTracking()
+                .AnyAsync(r =>
+                    r.ConferenceId == conferenceId &&
+                    r.AppUserId == userId);
+        }
+
         private async Task GenerateAndSaveCertificateFileAsync(
             Certificate certificate,
             Conference conference,
@@ -477,26 +513,32 @@ namespace AntAbstract.Infrastructure.Services.Certficates
                 }
 
                 var slug = conference?.Tenant?.Slug ?? conference?.Slug ?? "";
-                var downloadLink = string.IsNullOrWhiteSpace(slug)
+                var relativePath = string.IsNullOrWhiteSpace(slug)
                     ? $"/Certificates/Download/{certificate.Id}"
                     : $"/{slug}/Certificates/Download/{certificate.Id}";
 
-                var certificateTypeText = certificate.Type == CertificateType.Author
-                    ? "Yazar Sertifikası"
-                    : "Hakem Sertifikası";
+                var baseUrl = _emailOptions.BaseUrl.TrimEnd('/');
+                var downloadLink = string.IsNullOrWhiteSpace(baseUrl)
+                    ? relativePath
+                    : $"{baseUrl}{relativePath}";
+
+                var (certificateTypeText, subject) = certificate.Type switch
+                {
+                    CertificateType.Author => ("Yazar Katılım Sertifikası", "Yazar Katılım Sertifikanız Hazır"),
+                    CertificateType.Reviewer => ("Hakem Sertifikası", "Hakem Sertifikanız Hazır"),
+                    CertificateType.Attendee => ("Katılım Sertifikası", "Katılım Sertifikanız Hazır"),
+                    _ => ("Katılım Sertifikası", "Sertifikanız Hazır")
+                };
 
                 var conferenceTitle = conference?.Title ?? "Kongre";
 
-                var subject = certificate.Type == CertificateType.Author
-                    ? "Yazar Sertifikanız Hazır"
-                    : "Hakem Sertifikanız Hazır";
-
                 var body =
-                    $"Merhaba,<br/><br/>" +
-                    $"{conferenceTitle} için <strong>{certificateTypeText}</strong> belgeniz hazırlandı.<br/><br/>" +
-                    $"Sertifikanızı indirmek için aşağıdaki bağlantıyı kullanabilirsiniz:<br/>" +
-                    $"<a href=\"{downloadLink}\">{downloadLink}</a><br/><br/>" +
-                    $"AntAbstract";
+                    $"<p>Merhaba,</p>" +
+                    $"<p><strong>{conferenceTitle}</strong> için <strong>{certificateTypeText}</strong> belgeniz hazırlandı.</p>" +
+                    $"<p>Sertifikanızı indirmek için aşağıdaki bağlantıya tıklayabilirsiniz:</p>" +
+                    $"<p><a href=\"{downloadLink}\" style=\"background:#0d6efd;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;\">Sertifikamı İndir</a></p>" +
+                    $"<p style=\"color:#6c757d;font-size:12px;\">{downloadLink}</p>" +
+                    $"<br/><p>Kongre Yönetim Sistemi</p>";
 
                 await _emailService.SendAsync(email, subject, body);
 

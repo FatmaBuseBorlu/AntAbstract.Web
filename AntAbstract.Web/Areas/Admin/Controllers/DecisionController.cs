@@ -1,4 +1,5 @@
-﻿using AntAbstract.Domain.Entities;
+﻿using AntAbstract.Application.Interfaces;
+using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Infrastructure.Services.Email;
@@ -26,6 +27,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly IStringLocalizer<DecisionController> _localizer;
         private readonly IEmailService _emailService;
+        private readonly INotificationService _notificationService;
 
         public DecisionController(
             AppDbContext context,
@@ -33,7 +35,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ISelectedConferenceService selectedConferenceService,
             UserManager<AppUser> userManager,
             IStringLocalizer<DecisionController> localizer,
-            IEmailService emailService)
+            IEmailService emailService,
+            INotificationService notificationService)
         {
             _context = context;
             _tenantContext = tenantContext;
@@ -41,6 +44,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _userManager = userManager;
             _localizer = localizer;
             _emailService = emailService;
+            _notificationService = notificationService;
         }
 
         private string T(string key, string fallback)
@@ -781,6 +785,30 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             // Yazara karar bildirimi emaili gönder
             await SendDecisionEmailAsync(submission, conference, decision, note);
+
+            // Yazara in-app bildirim
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(submission.AuthorId))
+                {
+                    var (notifIcon, notifColor, notifTitle) = decision switch
+                    {
+                        "Accept"   => ("✅", "success", "Bildiriniz Kabul Edildi"),
+                        "Reject"   => ("❌", "danger",  "Bildiri Değerlendirme Sonucu"),
+                        "Revision" => ("🔄", "warning", "Bildiriniz Revizyon Gerektiriyor"),
+                        _          => ("📋", "info",    "Bildiri Güncellendi")
+                    };
+
+                    await _notificationService.CreateAsync(
+                        userId: submission.AuthorId,
+                        title: notifTitle,
+                        message: $"\"{submission.Title}\" başlıklı bildiriniz hakkında karar açıklandı.",
+                        icon: notifIcon,
+                        color: notifColor,
+                        link: null);
+                }
+            }
+            catch { }
 
             TempData["SuccessMessage"] = T(
                 "Success_SubmissionDecisionSaved",
