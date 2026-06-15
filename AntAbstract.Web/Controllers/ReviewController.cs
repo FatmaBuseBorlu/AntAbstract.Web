@@ -381,6 +381,21 @@ namespace AntAbstract.Web.Controllers
 
             ViewBag.Slug = GetSlug(slug);
 
+            // Konferansa özel değerlendirme kriterleri varsa yükle
+            var conferenceId = await _context.ReviewAssignments
+                .AsNoTracking()
+                .Where(ra => ra.Id == id)
+                .Select(ra => ra.Submission.ConferenceId)
+                .FirstOrDefaultAsync();
+
+            var customCriteria = await _context.ReviewCriteria
+                .AsNoTracking()
+                .Where(c => c.ConferenceId == conferenceId && c.IsActive)
+                .OrderBy(c => c.SortOrder).ThenBy(c => c.Name)
+                .ToListAsync();
+
+            ViewBag.CustomCriteria = customCriteria;
+
             return View(assignmentDto);
         }
 
