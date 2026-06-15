@@ -229,8 +229,8 @@ namespace AntAbstract.Infrastructure.Context
             where T : class, IMustHaveTenant
         {
             builder.Entity<T>().HasQueryFilter(e =>
-                !CurrentTenantId.HasValue ||
-                e.TenantId == CurrentTenantId);
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && e.TenantId == CurrentTenantId));
         }
 
         private Guid? CurrentTenantId => _tenantContext.CurrentTenantId;
@@ -238,67 +238,67 @@ namespace AntAbstract.Infrastructure.Context
         private void ApplyRelatedTenantQueryFilters(ModelBuilder builder)
         {
             builder.Entity<ConferenceTopic>().HasQueryFilter(entity =>
-                !CurrentTenantId.HasValue ||
-                entity.Conference.TenantId == CurrentTenantId);
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference.TenantId == CurrentTenantId));
 
             builder.Entity<Session>().HasQueryFilter(entity =>
-                !CurrentTenantId.HasValue ||
-                entity.Conference.TenantId == CurrentTenantId);
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference.TenantId == CurrentTenantId));
 
             builder.Entity<Registration>().HasQueryFilter(entity =>
-                !CurrentTenantId.HasValue ||
-                entity.Conference.TenantId == CurrentTenantId);
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference.TenantId == CurrentTenantId));
 
             builder.Entity<RegistrationType>().HasQueryFilter(entity =>
-                !CurrentTenantId.HasValue ||
-                entity.Conference.TenantId == CurrentTenantId);
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference.TenantId == CurrentTenantId));
 
             builder.Entity<Payment>().HasQueryFilter(entity =>
-                !CurrentTenantId.HasValue ||
-                entity.Conference != null &&
-                entity.Conference.TenantId == CurrentTenantId);
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference != null &&
+                entity.Conference.TenantId == CurrentTenantId));
 
             builder.Entity<Certificate>().HasQueryFilter(entity =>
-                !CurrentTenantId.HasValue ||
-                entity.Conference != null &&
-                entity.Conference.TenantId == CurrentTenantId);
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference != null &&
+                entity.Conference.TenantId == CurrentTenantId));
 
             builder.Entity<ConferenceAttendance>().HasQueryFilter(entity =>
-                !CurrentTenantId.HasValue ||
-                entity.Conference != null &&
-                entity.Conference.TenantId == CurrentTenantId);
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference != null &&
+                entity.Conference.TenantId == CurrentTenantId));
 
             builder.Entity<Hotel>().HasQueryFilter(entity =>
-                !CurrentTenantId.HasValue ||
-                entity.Conference.TenantId == CurrentTenantId);
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference.TenantId == CurrentTenantId));
 
             builder.Entity<RoomType>().HasQueryFilter(entity =>
-                !CurrentTenantId.HasValue ||
-                entity.Hotel.Conference.TenantId == CurrentTenantId);
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Hotel.Conference.TenantId == CurrentTenantId));
 
             builder.Entity<TransferOption>().HasQueryFilter(entity =>
-                !CurrentTenantId.HasValue ||
-                entity.Conference.TenantId == CurrentTenantId);
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference.TenantId == CurrentTenantId));
 
             builder.Entity<AccommodationBooking>().HasQueryFilter(entity =>
-                !CurrentTenantId.HasValue ||
-                entity.Conference.TenantId == CurrentTenantId);
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference.TenantId == CurrentTenantId));
 
             builder.Entity<ReviewAssignment>().HasQueryFilter(entity =>
-                !CurrentTenantId.HasValue ||
-                entity.Submission.TenantId == CurrentTenantId);
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Submission.TenantId == CurrentTenantId));
 
             builder.Entity<Review>().HasQueryFilter(entity =>
-                !CurrentTenantId.HasValue ||
-                entity.ReviewAssignment.Submission.TenantId == CurrentTenantId);
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.ReviewAssignment.Submission.TenantId == CurrentTenantId));
 
             builder.Entity<SubmissionAuthor>().HasQueryFilter(entity =>
-                !CurrentTenantId.HasValue ||
-                entity.Submission.TenantId == CurrentTenantId);
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Submission.TenantId == CurrentTenantId));
 
             builder.Entity<SubmissionFile>().HasQueryFilter(entity =>
-                !CurrentTenantId.HasValue ||
-                entity.Submission.TenantId == CurrentTenantId);
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Submission.TenantId == CurrentTenantId));
         }
 
         public override int SaveChanges()

@@ -301,6 +301,9 @@ app.UseRouting();
 
 app.UseSession();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.Use(async (ctx, next) =>
 {
     var resolver = ctx.RequestServices.GetRequiredService<ITenantResolver>();
@@ -308,11 +311,16 @@ app.Use(async (ctx, next) =>
 
     tenantContext.Current = await resolver.ResolveAsync(ctx);
 
+    // Slug bulunamazsa (global rota) ve kullanıcı SuperAdmin ise
+    // tüm tenant verisine erişime izin ver (güvenli global bağlam).
+    // Aksi hâlde null CurrentTenantId hiçbir veri döndürmez.
+    if (tenantContext.Current == null && ctx.User.IsInRole("SuperAdmin"))
+    {
+        tenantContext.IsGlobalContext = true;
+    }
+
     await next();
 });
-
-app.UseAuthentication();
-app.UseAuthorization();
 
 app.UseRotativa();
 
