@@ -2,7 +2,6 @@
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.ViewModels.Admin.Referee;
-using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -17,14 +16,13 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = AdminPolicies.TenantAdmin)]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public class RefereeController : Controller
     {
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly IAdminTenantAccessService _tenantAccess;
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly IStringLocalizer<RefereeController> _localizer;
 
@@ -42,7 +40,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             TenantContext tenantContext,
             UserManager<AppUser> userManager,
             RoleManager<IdentityRole> roleManager,
-            IAdminTenantAccessService tenantAccess,
             ISelectedConferenceService selectedConferenceService,
             IStringLocalizer<RefereeController> localizer)
         {
@@ -50,7 +47,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _tenantContext = tenantContext;
             _userManager = userManager;
             _roleManager = roleManager;
-            _tenantAccess = tenantAccess;
             _selectedConferenceService = selectedConferenceService;
             _localizer = localizer;
         }
@@ -66,7 +62,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private bool IsSuperAdminUser()
         {
-            return _tenantAccess.IsSuperAdmin(User);
+            return User.IsInRole("SuperAdmin");
         }
 
         private async Task<AppUser?> GetCurrentUserAsync()
@@ -76,7 +72,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private async Task<Guid?> GetCurrentAdminTenantIdAsync()
         {
-            return await _tenantAccess.GetAdminTenantIdAsync(User);
+            var currentUser = await GetCurrentUserAsync();
+
+            return currentUser?.TenantId;
         }
 
         private async Task EnsurePrimaryReviewerRoleExistsAsync()

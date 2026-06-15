@@ -4,9 +4,9 @@ using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.ViewModels;
 using AntAbstract.Web.Models.ViewModels.Admin.Registrations;
 using AntAbstract.Web.Models.ViewModels.Shared;
-using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -16,47 +16,85 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = AdminPolicies.TenantAdminOnly)]
+    [Authorize(Roles = "Admin")]
     public class RegistrationsController : Controller
     {
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
-        private readonly IAdminTenantAccessService _tenantAccess;
+        private readonly UserManager<AppUser> _userManager;
 
         public RegistrationsController(
             AppDbContext context,
             TenantContext tenantContext,
             ISelectedConferenceService selectedConferenceService,
-            IAdminTenantAccessService tenantAccess)
+            UserManager<AppUser> userManager)
         {
             _context = context;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
-            _tenantAccess = tenantAccess;
+            _userManager = userManager;
+        }
+
+        private async Task<AppUser?> GetCurrentUserAsync()
+        {
+            return await _userManager.GetUserAsync(User);
         }
 
         private async Task<Guid?> GetCurrentAdminTenantIdAsync()
         {
-            return await _tenantAccess.GetAdminTenantIdAsync(User);
+            var user = await GetCurrentUserAsync();
+
+            if (user == null || !user.TenantId.HasValue)
+            {
+                return null;
+            }
+
+            return user.TenantId.Value;
         }
 
         private async Task<bool> CanAccessCurrentTenantAsync(string slug)
         {
-            return await _tenantAccess.CanAccessCurrentTenantAsync(
-                User,
-                slug,
-                allowSuperAdmin: false);
+            if (string.IsNullOrWhiteSpace(slug))
+            {
+                return false;
+            }
+
+            if (_tenantContext.Current == null)
+            {
+                return false;
+            }
+
+            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var tenantId = await GetCurrentAdminTenantIdAsync();
+
+            if (!tenantId.HasValue)
+            {
+                return false;
+            }
+
+            return tenantId.Value == _tenantContext.Current.Id;
         }
 
         private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync()
         {
-            var query = await _tenantAccess.GetAccessibleConferenceQueryAsync(User);
+            var tenantId = await GetCurrentAdminTenantIdAsync();
 
-            return query
+            var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .AsQueryable();
+
+            if (!tenantId.HasValue)
+            {
+                return query.Where(c => false);
+            }
+
+            return query.Where(c => c.TenantId == tenantId.Value);
         }
 
         private Guid? GetSelectedConferenceIdFromSession(Guid? tenantId = null)
