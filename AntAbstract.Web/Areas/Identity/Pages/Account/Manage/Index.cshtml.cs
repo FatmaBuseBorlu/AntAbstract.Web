@@ -14,6 +14,15 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
 {
     public class IndexModel : PageModel
     {
+        private const long MaxProfileImageSize = 2 * 1024 * 1024; // 2 MB
+
+        private static readonly string[] AllowedImageExtensions =
+        {
+            ".jpg",
+            ".jpeg",
+            ".png"
+        };
+
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager;
         private readonly IUploadFileValidator _uploadFileValidator;
