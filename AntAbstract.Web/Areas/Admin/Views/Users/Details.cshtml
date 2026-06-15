@@ -1,0 +1,202 @@
+@using AntAbstract.Domain.Entities
+@{
+    ViewData["Title"] = "Kullanıcı Detayı";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+
+    var user          = ViewBag.User as AppUser;
+    var roles         = ViewBag.Roles as List<string> ?? new List<string>();
+    var isLockedOut   = ViewBag.IsLockedOut as bool? ?? false;
+    var submCount     = ViewBag.SubmissionCount as int? ?? 0;
+    var payCount      = ViewBag.PaymentCount as int? ?? 0;
+    var certCount     = ViewBag.CertCount as int? ?? 0;
+    var slug          = ViewContext.RouteData.Values["slug"]?.ToString() ?? "";
+    var backUrl       = string.IsNullOrWhiteSpace(slug) ? "/Admin/Users" : $"/{slug}/Admin/Users";
+    var fullName      = $"{user?.FirstName} {user?.LastName}".Trim();
+}
+
+<div class="container-fluid py-4" style="max-width:900px;">
+
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <a href="@backUrl" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Kullanıcılar
+        </a>
+        <h4 class="fw-bold mb-0">@(string.IsNullOrWhiteSpace(fullName) ? user?.Email : fullName)</h4>
+        @if (isLockedOut)
+        {
+            <span class="badge bg-danger">Askıya Alındı</span>
+        }
+        else if (user?.EmailConfirmed == true)
+        {
+            <span class="badge bg-success">Aktif</span>
+        }
+        else
+        {
+            <span class="badge bg-warning text-dark">E-posta Doğrulanmamış</span>
+        }
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm mb-3">
+            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm mb-3">
+            <i class="fas fa-times-circle me-2"></i>@TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="row g-4">
+
+        <!-- Bilgi Kartı -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0"><i class="fas fa-user me-2 text-primary"></i>Hesap Bilgileri</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tr><th class="text-muted" style="width:40%">Ad Soyad</th><td>@(string.IsNullOrWhiteSpace(fullName) ? "—" : fullName)</td></tr>
+                        <tr><th class="text-muted">E-posta</th><td>@user?.Email</td></tr>
+                        <tr><th class="text-muted">Üniversite</th><td>@(string.IsNullOrWhiteSpace(user?.University) ? "—" : user.University)</td></tr>
+                        <tr><th class="text-muted">Kurum</th><td>@(string.IsNullOrWhiteSpace(user?.Institution) ? "—" : user.Institution)</td></tr>
+                        <tr><th class="text-muted">Şehir</th><td>@(string.IsNullOrWhiteSpace(user?.City) ? "—" : user.City)</td></tr>
+                        <tr><th class="text-muted">E-posta Doğrulandı</th><td>@(user?.EmailConfirmed == true ? "✅ Evet" : "❌ Hayır")</td></tr>
+                        <tr><th class="text-muted">Durum</th><td>@(isLockedOut ? "🔒 Askıya Alındı" : "✅ Aktif")</td></tr>
+                        <tr>
+                            <th class="text-muted">Roller</th>
+                            <td>
+                                @if (roles.Any())
+                                {
+                                    @foreach (var r in roles)
+                                    {
+                                        <span class="badge bg-secondary me-1">@r</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Özet İstatistik -->
+        <div class="col-lg-5">
+            <div class="row g-3 mb-3">
+                <div class="col-6">
+                    <div class="card border-0 shadow-sm text-center p-3">
+                        <div class="fs-2 fw-bold text-primary">@submCount</div>
+                        <div class="text-muted small">Bildiri</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card border-0 shadow-sm text-center p-3">
+                        <div class="fs-2 fw-bold text-success">@payCount</div>
+                        <div class="text-muted small">Ödeme</div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm text-center p-3">
+                        <div class="fs-2 fw-bold text-warning">@certCount</div>
+                        <div class="text-muted small">Sertifika</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- İşlemler -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0"><i class="fas fa-tools me-2 text-warning"></i>İşlemler</h6>
+                </div>
+                <div class="card-body d-flex flex-column gap-2">
+
+                    <!-- Rol Yönetimi -->
+                    <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Users/ManageRoles?userId={user?.Id}" : $"/{slug}/Admin/Users/ManageRoles?userId={user?.Id}")"
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-user-tag me-1"></i> Rolleri Düzenle
+                    </a>
+
+                    <!-- E-posta doğrulama -->
+                    @if (user?.EmailConfirmed == false)
+                    {
+                        <form asp-action="ConfirmEmailManual" asp-route-slug="@slug" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="userId" value="@user?.Id" />
+                            <button type="submit" class="btn btn-outline-info btn-sm w-100">
+                                <i class="fas fa-envelope-circle-check me-1"></i> E-postayı Onayla
+                            </button>
+                        </form>
+                    }
+
+                    <!-- Kilitle / Aktif Et -->
+                    @if (isLockedOut)
+                    {
+                        <form asp-action="Unlock" asp-route-slug="@slug" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="userId" value="@user?.Id" />
+                            <button type="submit" class="btn btn-outline-success btn-sm w-100">
+                                <i class="fas fa-lock-open me-1"></i> Kilidi Aç
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form asp-action="Lock" asp-route-slug="@slug" method="post"
+                              onsubmit="return confirm('Bu kullanıcıyı askıya almak istediğinizden emin misiniz?');">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="userId" value="@user?.Id" />
+                            <button type="submit" class="btn btn-outline-warning btn-sm w-100">
+                                <i class="fas fa-ban me-1"></i> Hesabı Askıya Al
+                            </button>
+                        </form>
+                    }
+
+                    <!-- Şifre Sıfırla -->
+                    <button type="button" class="btn btn-outline-danger btn-sm"
+                            data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
+                        <i class="fas fa-key me-1"></i> Şifre Sıfırla
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Şifre Sıfırla Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Şifre Sıfırla</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="ResetPassword" asp-route-slug="@slug" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="userId" value="@user?.Id" />
+                <div class="modal-body">
+                    <div class="alert alert-warning border-0 small mb-3">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Belirlediğiniz yeni şifre kullanıcıya bildirilmelidir.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Yeni Şifre</label>
+                        <input type="password" name="newPassword" class="form-control"
+                               minlength="6" required placeholder="En az 6 karakter" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-key me-1"></i> Şifreyi Sıfırla
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
