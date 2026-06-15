@@ -7,8 +7,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
+using Stripe;
+using Stripe.Checkout;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,6 +30,8 @@ namespace AntAbstract.Web.Controllers
         private readonly INotificationService _notificationService;
         private readonly IStringLocalizer<PaymentController> _localizer;
         private readonly IWebHostEnvironment _env;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<PaymentController> _logger;
 
         public PaymentController(
             AppDbContext context,
@@ -32,7 +39,9 @@ namespace AntAbstract.Web.Controllers
             TenantContext tenantContext,
             INotificationService notificationService,
             IStringLocalizer<PaymentController> localizer,
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            IConfiguration configuration,
+            ILogger<PaymentController> logger)
         {
             _context = context;
             _userManager = userManager;
@@ -40,6 +49,8 @@ namespace AntAbstract.Web.Controllers
             _notificationService = notificationService;
             _localizer = localizer;
             _env = env;
+            _configuration = configuration;
+            _logger = logger;
         }
 
         #region Helper Methods
@@ -203,10 +214,13 @@ namespace AntAbstract.Web.Controllers
         {
             return await _context.Payments
                 .AsNoTracking()
-                .FirstOrDefaultAsync(p =>
+                .Where(p =>
                     p.AppUserId == userId &&
                     p.ConferenceId == registration.ConferenceId &&
-                    p.RelatedSubmissionId == registration.Id);
+                    p.RelatedSubmissionId == registration.Id)
+                .OrderByDescending(p => p.Status == PaymentStatus.Completed)
+                .ThenByDescending(p => p.PaymentDate)
+                .FirstOrDefaultAsync();
         }
 
         private static string BuildPaymentSuccessUrl(string canonicalSlug, Guid? paymentId = null)
@@ -217,6 +231,163 @@ namespace AntAbstract.Web.Controllers
             }
 
             return $"/{canonicalSlug}/payment/success";
+        }
+
+        private static bool IsConfiguredSecret(string? value)
+        {
+            return !string.IsNullOrWhiteSpace(value) &&
+                   !value.StartsWith("#{", StringComparison.Ordinal);
+        }
+
+        private bool IsStripeConfigured()
+        {
+            return IsConfiguredSecret(_configuration["Stripe:SecretKey"]);
+        }
+
+        private string GetPublicBaseUrl()
+        {
+            var configuredBaseUrl = _configuration["Stripe:BaseUrl"]
+                                    ?? _configuration["Email:BaseUrl"];
+
+            if (!string.IsNullOrWhiteSpace(configuredBaseUrl) &&
+                Uri.TryCreate(configuredBaseUrl, UriKind.Absolute, out var configuredUri))
+            {
+                return configuredUri.GetLeftPart(UriPartial.Authority).TrimEnd('/');
+            }
+
+            return $"{Request.Scheme}://{Request.Host}{Request.PathBase}".TrimEnd('/');
+        }
+
+        private static long ToMinorUnit(decimal amount)
+        {
+            if (amount <= 0)
+            {
+                throw new InvalidOperationException("Ödeme tutarı sıfırdan büyük olmalıdır.");
+            }
+
+            return checked((long)Math.Round(
+                amount * 100m,
+                0,
+                MidpointRounding.AwayFromZero));
+        }
+
+        private async Task<bool> CompleteStripePaymentAsync(
+            Guid paymentId,
+            string checkoutSessionId,
+            string? paymentIntentId,
+            long? amountTotal,
+            string? currency)
+        {
+            var payment = await _context.Payments
+                .Include(p => p.Conference)
+                    .ThenInclude(c => c.Tenant)
+                .FirstOrDefaultAsync(p => p.Id == paymentId);
+
+            if (payment == null || payment.Status == PaymentStatus.Refunded)
+            {
+                return false;
+            }
+
+            if (payment.Status == PaymentStatus.Completed)
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(payment.TransactionId) &&
+                !string.Equals(
+                    payment.TransactionId,
+                    checkoutSessionId,
+                    StringComparison.Ordinal))
+            {
+                _logger.LogError(
+                    "Stripe session mismatch for payment {PaymentId}. Expected {ExpectedSessionId}, received {SessionId}.",
+                    payment.Id,
+                    payment.TransactionId,
+                    checkoutSessionId);
+
+                return false;
+            }
+
+            if (amountTotal.HasValue &&
+                amountTotal.Value != ToMinorUnit(payment.Amount))
+            {
+                _logger.LogError(
+                    "Stripe amount mismatch for payment {PaymentId}. Expected {ExpectedAmount}, received {Amount}.",
+                    payment.Id,
+                    ToMinorUnit(payment.Amount),
+                    amountTotal.Value);
+
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(currency) &&
+                !string.Equals(
+                    payment.Currency,
+                    currency,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogError(
+                    "Stripe currency mismatch for payment {PaymentId}. Expected {ExpectedCurrency}, received {Currency}.",
+                    payment.Id,
+                    payment.Currency,
+                    currency);
+
+                return false;
+            }
+
+            var registration = await _context.Registrations
+                .FirstOrDefaultAsync(r =>
+                    r.Id == payment.RelatedSubmissionId &&
+                    r.AppUserId == payment.AppUserId &&
+                    r.ConferenceId == payment.ConferenceId);
+
+            if (registration == null)
+            {
+                _logger.LogError(
+                    "Stripe payment {PaymentId} has no matching registration.",
+                    payment.Id);
+
+                return false;
+            }
+
+            var now = DateTime.UtcNow;
+
+            payment.Status = PaymentStatus.Completed;
+            payment.PaymentDate = now;
+            payment.TransactionId = checkoutSessionId;
+
+            registration.IsPaid = true;
+            registration.PaymentDate = now;
+            registration.PaymentTransactionId = !string.IsNullOrWhiteSpace(paymentIntentId)
+                ? paymentIntentId
+                : checkoutSessionId;
+
+            await _context.SaveChangesAsync();
+
+            var canonicalSlug = GetCanonicalSlug(payment.Conference);
+
+            try
+            {
+                await _notificationService.CreateAsync(
+                    userId: payment.AppUserId,
+                    title: T("PaymentSuccessfulNotificationTitle", "Ödeme Başarılı"),
+                    message: string.Format(
+                        T("PaymentSuccessfulNotificationMessage", "{0} {1} tutarındaki ödemeniz başarıyla tamamlandı."),
+                        payment.Amount,
+                        payment.Currency),
+                    icon: "fas fa-check-circle",
+                    color: "success",
+                    link: BuildUrl(canonicalSlug, "/payments"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Payment {PaymentId} completed but notification could not be created.",
+                    payment.Id);
+            }
+
+            return true;
         }
 
         #endregion
@@ -490,15 +661,19 @@ namespace AntAbstract.Web.Controllers
                 return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
             }
 
+            if (!IsStripeConfigured())
+            {
+                _logger.LogError("Stripe secret key is not configured.");
+
+                TempData["ErrorMessage"] = T(
+                    "StripeNotConfigured",
+                    "Online ödeme sistemi şu anda yapılandırılmamış. Lütfen kongre yönetimiyle iletişime geçin.");
+
+                return Redirect(BuildUrl(canonicalSlug, $"/payment/checkout/{registration.Id}"));
+            }
+
             var amount = registration.RegistrationType?.Price ?? registration.Amount;
             var currency = registration.RegistrationType?.Currency ?? "TRY";
-
-            var transactionId = Guid.NewGuid()
-                .ToString("N")
-                .Substring(0, 12)
-                .ToUpper();
-
-            var paymentDate = DateTime.UtcNow;
 
             var payment = new Payment
             {
@@ -507,8 +682,8 @@ namespace AntAbstract.Web.Controllers
                 ConferenceId = registration.ConferenceId,
                 RelatedSubmissionId = registration.Id,
 
-                PaymentDate = paymentDate,
-                Status = PaymentStatus.Completed,
+                PaymentDate = DateTime.UtcNow,
+                Status = PaymentStatus.Pending,
 
                 Amount = amount,
                 Currency = currency,
@@ -521,43 +696,108 @@ namespace AntAbstract.Web.Controllers
                 TaxNumber = model.TaxNumber,
                 TaxOffice = model.TaxOffice,
 
-                PaymentMethod = "CreditCard",
-                TransactionId = transactionId
+                PaymentMethod = "StripeCheckout"
             };
 
             _context.Payments.Add(payment);
 
-            registration.IsPaid = true;
-            registration.PaymentDate = paymentDate;
-            registration.PaymentTransactionId = transactionId;
+            registration.BillingName = payment.BillingName;
+            registration.BillingAddress = payment.BillingAddress;
+            registration.TaxNumber = payment.TaxNumber;
+            registration.TaxOffice = payment.TaxOffice;
 
             await _context.SaveChangesAsync();
 
-            await _notificationService.CreateAsync(
-                userId: user.Id,
-                title: T("PaymentSuccessfulNotificationTitle", "Ödeme Başarılı"),
-                message: string.Format(
-                    T("PaymentSuccessfulNotificationMessage", "{0} {1} tutarındaki ödemeniz başarıyla tamamlandı."),
-                    payment.Amount,
-                    payment.Currency),
-                icon: "fas fa-check-circle",
-                color: "success",
-                link: BuildUrl(canonicalSlug, "/payments")
-            );
+            var baseUrl = GetPublicBaseUrl();
+            var successUrl =
+                $"{baseUrl}/{canonicalSlug}/payment/success?session_id={{CHECKOUT_SESSION_ID}}";
+            var cancelUrl =
+                $"{baseUrl}/{canonicalSlug}/payment/cancel?paymentId={payment.Id}";
 
-            return Redirect(BuildPaymentSuccessUrl(canonicalSlug, payment.Id));
+            var metadata = new Dictionary<string, string>
+            {
+                ["payment_id"] = payment.Id.ToString(),
+                ["registration_id"] = registration.Id.ToString(),
+                ["conference_id"] = registration.ConferenceId.ToString(),
+                ["user_id"] = user.Id
+            };
+
+            var options = new SessionCreateOptions
+            {
+                Mode = "payment",
+                SuccessUrl = successUrl,
+                CancelUrl = cancelUrl,
+                CustomerEmail = user.Email,
+                ClientReferenceId = payment.Id.ToString(),
+                Metadata = metadata,
+                PaymentMethodTypes = new List<string> { "card" },
+                PaymentIntentData = new SessionPaymentIntentDataOptions
+                {
+                    Metadata = metadata
+                },
+                LineItems = new List<SessionLineItemOptions>
+                {
+                    new()
+                    {
+                        Quantity = 1,
+                        PriceData = new SessionLineItemPriceDataOptions
+                        {
+                            Currency = currency.ToLowerInvariant(),
+                            UnitAmount = ToMinorUnit(amount),
+                            ProductData = new SessionLineItemPriceDataProductDataOptions
+                            {
+                                Name = registration.Conference?.Title
+                                       ?? T("ConferenceRegistration", "Kongre katılım kaydı"),
+                                Description = registration.RegistrationType?.Name
+                            }
+                        }
+                    }
+                }
+            };
+
+            try
+            {
+                var sessionService = new SessionService();
+                var checkoutSession = await sessionService.CreateAsync(
+                    options,
+                    new RequestOptions
+                    {
+                        IdempotencyKey = payment.Id.ToString("N")
+                    });
+
+                if (string.IsNullOrWhiteSpace(checkoutSession.Url))
+                {
+                    throw new StripeException("Stripe Checkout URL oluşturmadı.");
+                }
+
+                payment.TransactionId = checkoutSession.Id;
+                await _context.SaveChangesAsync();
+
+                return Redirect(checkoutSession.Url);
+            }
+            catch (Exception ex)
+            {
+                payment.Status = PaymentStatus.Failed;
+                await _context.SaveChangesAsync();
+
+                _logger.LogError(
+                    ex,
+                    "Stripe Checkout session could not be created for payment {PaymentId}.",
+                    payment.Id);
+
+                TempData["ErrorMessage"] = T(
+                    "StripeSessionCreateFailed",
+                    "Güvenli ödeme sayfası açılamadı. Lütfen tekrar deneyin.");
+
+                return Redirect(BuildUrl(canonicalSlug, $"/payment/checkout/{registration.Id}"));
+            }
         }
 
         [HttpGet("Success")]
         [HttpGet("/{slug}/payment/success")]
-        public async Task<IActionResult> Success(Guid? id)
+        public async Task<IActionResult> Success(string? session_id, Guid? id)
         {
             var slug = GetSlug();
-
-            if (id == null)
-            {
-                return View();
-            }
 
             var user = await _userManager.GetUserAsync(User);
 
@@ -566,21 +806,66 @@ namespace AntAbstract.Web.Controllers
                 return Challenge();
             }
 
-            var payment = await _context.Payments
-                .Include(p => p.Conference)
-                    .ThenInclude(c => c.Tenant)
-                .FirstOrDefaultAsync(p =>
-                    p.Id == id &&
-                    p.AppUserId == user.Id);
+            Payment? payment = null;
+
+            if (!string.IsNullOrWhiteSpace(session_id))
+            {
+                payment = await _context.Payments
+                    .Include(p => p.Conference)
+                        .ThenInclude(c => c.Tenant)
+                    .FirstOrDefaultAsync(p =>
+                        p.TransactionId == session_id &&
+                        p.AppUserId == user.Id);
+
+                if (payment != null &&
+                    payment.Status != PaymentStatus.Completed &&
+                    IsStripeConfigured())
+                {
+                    try
+                    {
+                        var sessionService = new SessionService();
+                        var checkoutSession = await sessionService.GetAsync(session_id);
+
+                        if (string.Equals(
+                                checkoutSession.PaymentStatus,
+                                "paid",
+                                StringComparison.OrdinalIgnoreCase))
+                        {
+                            await CompleteStripePaymentAsync(
+                                payment.Id,
+                                checkoutSession.Id,
+                                checkoutSession.PaymentIntentId,
+                                checkoutSession.AmountTotal,
+                                checkoutSession.Currency);
+
+                            payment = await _context.Payments
+                                .Include(p => p.Conference)
+                                    .ThenInclude(c => c.Tenant)
+                                .FirstOrDefaultAsync(p => p.Id == payment.Id);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(
+                            ex,
+                            "Stripe session {SessionId} could not be verified on the success page.",
+                            session_id);
+                    }
+                }
+            }
+            else if (id.HasValue)
+            {
+                payment = await _context.Payments
+                    .Include(p => p.Conference)
+                        .ThenInclude(c => c.Tenant)
+                    .FirstOrDefaultAsync(p =>
+                        p.Id == id.Value &&
+                        p.AppUserId == user.Id);
+            }
 
             if (payment == null)
             {
-                if (!string.IsNullOrWhiteSpace(slug))
-                {
-                    return Redirect(BuildUrl(slug, "/payments"));
-                }
-
-                return RedirectToAction(nameof(My));
+                return Redirect(BuildUrl(slug, "/payments"));
             }
 
             var canonicalSlug = GetCanonicalSlug(payment.Conference, slug);
@@ -591,6 +876,85 @@ namespace AntAbstract.Web.Controllers
             }
 
             return View(payment);
+        }
+
+        [AllowAnonymous]
+        [HttpPost("/payment/stripe-webhook")]
+        public async Task<IActionResult> StripeWebhook()
+        {
+            var webhookSecret = _configuration["Stripe:WebhookSecret"];
+
+            if (!IsConfiguredSecret(webhookSecret))
+            {
+                _logger.LogError("Stripe webhook secret is not configured.");
+                return StatusCode(StatusCodes.Status503ServiceUnavailable);
+            }
+
+            var json = await new StreamReader(Request.Body).ReadToEndAsync();
+            var signature = Request.Headers["Stripe-Signature"].ToString();
+
+            Event stripeEvent;
+
+            try
+            {
+                stripeEvent = EventUtility.ConstructEvent(
+                    json,
+                    signature,
+                    webhookSecret);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Invalid Stripe webhook signature.");
+                return BadRequest();
+            }
+
+            if (stripeEvent.Data.Object is not Stripe.Checkout.Session checkoutSession)
+            {
+                return Ok();
+            }
+
+            if (!checkoutSession.Metadata.TryGetValue("payment_id", out var paymentIdText) ||
+                !Guid.TryParse(paymentIdText, out var paymentId))
+            {
+                _logger.LogWarning(
+                    "Stripe event {EventId} has no valid payment_id metadata.",
+                    stripeEvent.Id);
+
+                return Ok();
+            }
+
+            switch (stripeEvent.Type)
+            {
+                case "checkout.session.completed":
+                case "checkout.session.async_payment_succeeded":
+                    if (string.Equals(
+                            checkoutSession.PaymentStatus,
+                            "paid",
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        await CompleteStripePaymentAsync(
+                            paymentId,
+                            checkoutSession.Id,
+                            checkoutSession.PaymentIntentId,
+                            checkoutSession.AmountTotal,
+                            checkoutSession.Currency);
+                    }
+                    break;
+
+                case "checkout.session.expired":
+                case "checkout.session.async_payment_failed":
+                    var payment = await _context.Payments
+                        .FirstOrDefaultAsync(p => p.Id == paymentId);
+
+                    if (payment != null && payment.Status == PaymentStatus.Pending)
+                    {
+                        payment.Status = PaymentStatus.Failed;
+                        await _context.SaveChangesAsync();
+                    }
+                    break;
+            }
+
+            return Ok();
         }
 
         // ─── Makbuz Yükleme ────────────────────────────────────────────────────
@@ -678,8 +1042,27 @@ namespace AntAbstract.Web.Controllers
 
         [HttpGet("Cancel")]
         [HttpGet("/{slug}/payment/cancel")]
-        public IActionResult Cancel()
+        public async Task<IActionResult> Cancel(Guid? paymentId)
         {
+            if (paymentId.HasValue)
+            {
+                var user = await _userManager.GetUserAsync(User);
+
+                if (user != null)
+                {
+                    var payment = await _context.Payments
+                        .FirstOrDefaultAsync(p =>
+                            p.Id == paymentId.Value &&
+                            p.AppUserId == user.Id);
+
+                    if (payment != null && payment.Status == PaymentStatus.Pending)
+                    {
+                        payment.Status = PaymentStatus.Failed;
+                        await _context.SaveChangesAsync();
+                    }
+                }
+            }
+
             return View();
         }
     }

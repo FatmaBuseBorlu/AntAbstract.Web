@@ -491,103 +491,42 @@
                                     </div>
                                 </div>
 
-                                <h5 class="fw-bold text-dark mb-4">
-                                    <i class="far fa-credit-card me-2 text-primary"></i>
-                                    @Localizer["CardInfoTitle"]
-                                </h5>
-
-                                <div class="row g-4">
-                                    <div class="col-md-5 d-none d-md-block">
-                                        <div class="credit-card-box d-flex flex-column justify-content-between">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <div class="card-chip"></div>
-                                                <i class="fab fa-cc-visa fa-2x opacity-50"></i>
-                                            </div>
-
-                                            <div>
-                                                <div class="fs-5" style="letter-spacing: 2px; font-family: monospace;">
-                                                    **** **** **** ****
-                                                </div>
-                                            </div>
-
-                                            <div class="d-flex justify-content-between small opacity-75">
-                                                <span>@Localizer["CardHolderPreview"]</span>
-                                                <span>@Localizer["ExpiryPreview"]</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-md-7">
-                                        <div class="form-floating mb-3">
-                                            <input type="text"
-                                                   class="form-control"
-                                                   id="cc-name"
-                                                   placeholder="@Localizer["CardHolderNamePlaceholder"]"
-                                                   required />
-
-                                            <label>
-                                                @Localizer["CardHolderNameLabel"]
-                                            </label>
+                                <div class="alert alert-light border rounded-4 p-4">
+                                    <div class="d-flex align-items-start gap-3">
+                                        <div class="text-primary fs-3">
+                                            <i class="fas fa-shield-halved"></i>
                                         </div>
 
-                                        <div class="form-floating mb-3">
-                                            <input type="text"
-                                                   class="form-control"
-                                                   id="cc-number"
-                                                   placeholder="@Localizer["CardNumberPlaceholder"]"
-                                                   maxlength="19"
-                                                   required />
+                                        <div>
+                                            <h5 class="fw-bold text-dark mb-2">
+                                                @L("StripeCheckoutTitle", "Stripe güvenli ödeme sayfası", "Stripe secure checkout")
+                                            </h5>
 
-                                            <label>
-                                                @Localizer["CardNumberLabel"]
-                                            </label>
-                                        </div>
-
-                                        <div class="row g-2">
-                                            <div class="col-6">
-                                                <div class="form-floating">
-                                                    <input type="text"
-                                                           class="form-control"
-                                                           id="cc-expiry"
-                                                           placeholder="@Localizer["ExpiryPlaceholder"]"
-                                                           maxlength="5"
-                                                           required />
-
-                                                    <label>
-                                                        @Localizer["ExpiryLabel"]
-                                                    </label>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-6">
-                                                <div class="form-floating">
-                                                    <input type="text"
-                                                           class="form-control"
-                                                           id="cc-cvc"
-                                                           placeholder="@Localizer["CvcPlaceholder"]"
-                                                           maxlength="3"
-                                                           required />
-
-                                                    <label>
-                                                        @Localizer["CvcLabel"]
-                                                    </label>
-                                                </div>
-                                            </div>
+                                            <p class="text-muted fw-semibold mb-0">
+                                                @L(
+                                                    "StripeCheckoutDescription",
+                                                    "Devam ettiğinizde Stripe'ın güvenli ödeme sayfasına yönlendirilirsiniz. Kart bilgileriniz AntAbstract sunucularında girilmez veya saklanmaz.",
+                                                    "When you continue, you will be redirected to Stripe's secure checkout page. Your card details are never entered or stored on AntAbstract servers.")
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="mt-5">
+                                <div class="mt-4">
                                     <button type="submit"
                                             class="btn btn-primary w-100 py-3 pay-submit-btn">
 
-                                        <i class="fas fa-lock me-2"></i>
-                                        @rawAmountText @currency @Localizer["PayButtonSuffix"]
+                                        <i class="fas fa-arrow-up-right-from-square me-2"></i>
+                                        @rawAmountText @currency
+                                        @L("ContinueToStripeButton", "Stripe ile Öde", "Pay with Stripe")
                                     </button>
 
                                     <p class="text-center secure-note mt-3">
                                         <i class="fas fa-shield-alt text-success me-1"></i>
-                                        @Localizer["SslInfoText"]
+                                        @L(
+                                            "StripeSecurityNote",
+                                            "Ödeme sonucu yalnızca Stripe doğrulamasından sonra kesinleşir.",
+                                            "The payment is completed only after Stripe verification.")
                                     </p>
                                 </div>
                             </form>
