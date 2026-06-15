@@ -100,7 +100,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     Roles = roles
                         .Where(IsAllowedRole)
                         .OrderBy(roleName => roleName)
-                        .ToList()
+                        .ToList(),
+                    IsLockedOut = user.LockoutEnabled &&
+                                  user.LockoutEnd.HasValue &&
+                                  user.LockoutEnd.Value > DateTimeOffset.UtcNow,
+                    EmailConfirmed = user.EmailConfirmed
                 });
             }
 
@@ -353,6 +357,154 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             TempData["SuccessMessage"] = T(
                 "Success_RoleAssigned",
                 "Rol başarıyla atandı.");
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ── Details ──────────────────────────────────────────────────────────────
+
+        [HttpGet("/Admin/Users/Details/{userId}")]
+        [HttpGet("/{slug}/Admin/Users/Details/{userId}")]
+        public async Task<IActionResult> Details(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId)) return NotFound();
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound();
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            var submissionCount = await _context.Submissions
+                .AsNoTracking()
+                .CountAsync(s => s.UserId == userId);
+
+            var paymentCount = await _context.Payments
+                .AsNoTracking()
+                .CountAsync(p => p.AppUserId == userId);
+
+            var certCount = await _context.Certificates
+                .AsNoTracking()
+                .CountAsync(c => c.UserId == userId);
+
+            ViewBag.User = user;
+            ViewBag.Roles = roles.Where(IsAllowedRole).ToList();
+            ViewBag.SubmissionCount = submissionCount;
+            ViewBag.PaymentCount = paymentCount;
+            ViewBag.CertCount = certCount;
+            ViewBag.IsLockedOut = user.LockoutEnabled &&
+                                   user.LockoutEnd.HasValue &&
+                                   user.LockoutEnd.Value > DateTimeOffset.UtcNow;
+
+            return View();
+        }
+
+        // ── Lock / Unlock ─────────────────────────────────────────────────────────
+
+        [HttpPost("/Admin/Users/Lock")]
+        [HttpPost("/{slug}/Admin/Users/Lock")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Lock(string userId)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var targetUser = await _userManager.FindByIdAsync(userId);
+
+            if (targetUser == null)
+            {
+                TempData["ErrorMessage"] = "Kullanıcı bulunamadı.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (currentUser?.Id == targetUser.Id)
+            {
+                TempData["ErrorMessage"] = "Kendi hesabınızı kilitleyemezsiniz.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            await _userManager.SetLockoutEnabledAsync(targetUser, true);
+            await _userManager.SetLockoutEndDateAsync(targetUser, DateTimeOffset.UtcNow.AddYears(100));
+
+            TempData["SuccessMessage"] = $"{targetUser.Email} hesabı askıya alındı.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost("/Admin/Users/Unlock")]
+        [HttpPost("/{slug}/Admin/Users/Unlock")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Unlock(string userId)
+        {
+            var targetUser = await _userManager.FindByIdAsync(userId);
+
+            if (targetUser == null)
+            {
+                TempData["ErrorMessage"] = "Kullanıcı bulunamadı.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            await _userManager.SetLockoutEndDateAsync(targetUser, null);
+            await _userManager.ResetAccessFailedCountAsync(targetUser);
+
+            TempData["SuccessMessage"] = $"{targetUser.Email} hesabı yeniden aktif edildi.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ── Admin Şifre Sıfırlama ─────────────────────────────────────────────────
+
+        [HttpPost("/Admin/Users/ResetPassword")]
+        [HttpPost("/{slug}/Admin/Users/ResetPassword")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(string userId, string newPassword)
+        {
+            if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(newPassword))
+            {
+                TempData["ErrorMessage"] = "Kullanıcı ID veya şifre boş olamaz.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var targetUser = await _userManager.FindByIdAsync(userId);
+            if (targetUser == null)
+            {
+                TempData["ErrorMessage"] = "Kullanıcı bulunamadı.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(targetUser);
+            var result = await _userManager.ResetPasswordAsync(targetUser, token, newPassword);
+
+            if (!result.Succeeded)
+            {
+                TempData["ErrorMessage"] = "Şifre sıfırlanamadı: " +
+                    string.Join(", ", result.Errors.Select(e => e.Description));
+                return RedirectToAction(nameof(Index));
+            }
+
+            TempData["SuccessMessage"] = $"{targetUser.Email} şifresi başarıyla sıfırlandı.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ── E-posta Doğrulama Manuel Onayla ──────────────────────────────────────
+
+        [HttpPost("/Admin/Users/ConfirmEmail")]
+        [HttpPost("/{slug}/Admin/Users/ConfirmEmail")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfirmEmailManual(string userId)
+        {
+            var targetUser = await _userManager.FindByIdAsync(userId);
+            if (targetUser == null)
+            {
+                TempData["ErrorMessage"] = "Kullanıcı bulunamadı.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (!targetUser.EmailConfirmed)
+            {
+                var token = await _userManager.GenerateEmailConfirmationTokenAsync(targetUser);
+                await _userManager.ConfirmEmailAsync(targetUser, token);
+                TempData["SuccessMessage"] = $"{targetUser.Email} e-postası manuel olarak doğrulandı.";
+            }
+            else
+            {
+                TempData["InfoMessage"] = "Bu kullanıcının e-postası zaten doğrulanmış.";
+            }
 
             return RedirectToAction(nameof(Index));
         }

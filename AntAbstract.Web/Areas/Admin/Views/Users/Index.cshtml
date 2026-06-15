@@ -1043,14 +1043,38 @@
                                 </td>
 
                                 <td class="text-center">
-                                    <span class="status-badge status-active">
-                                        <i class="fas fa-check-circle"></i>
-                                        Aktif
-                                    </span>
+                                    @if (item.IsLockedOut)
+                                    {
+                                        <span class="badge bg-danger rounded-pill">
+                                            <i class="fas fa-ban me-1"></i>Askıda
+                                        </span>
+                                    }
+                                    else if (!item.EmailConfirmed)
+                                    {
+                                        <span class="badge bg-warning text-dark rounded-pill">
+                                            <i class="fas fa-envelope me-1"></i>Doğrulanmamış
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-badge status-active">
+                                            <i class="fas fa-check-circle"></i>
+                                            Aktif
+                                        </span>
+                                    }
                                 </td>
 
                                 <td class="pe-4 text-end actions-cell">
                                     <div class="action-buttons">
+                                        <a asp-area="Admin"
+                                           asp-controller="Users"
+                                           asp-action="Details"
+                                           asp-route-userId="@item.UserId"
+                                           class="user-action-btn user-action-roles">
+                                            <i class="fas fa-eye"></i>
+                                            Detay
+                                        </a>
+
                                         <a asp-area="Admin"
                                            asp-controller="Users"
                                            asp-action="ManageRoles"
@@ -1059,6 +1083,32 @@
                                             <i class="fas fa-user-gear"></i>
                                             Roller
                                         </a>
+
+                                        @if (item.IsLockedOut)
+                                        {
+                                            <form asp-area="Admin" asp-controller="Users"
+                                                  asp-action="Unlock" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="userId" value="@item.UserId" />
+                                                <button type="submit" class="user-action-btn"
+                                                        style="background:#d1fae5;color:#065f46;border:1.5px solid #a7f3d0;">
+                                                    <i class="fas fa-lock-open"></i> Aktif Et
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <form asp-area="Admin" asp-controller="Users"
+                                                  asp-action="Lock" method="post" class="d-inline"
+                                                  onsubmit="return confirm('Bu kullanıcıyı askıya almak istediğinizden emin misiniz?');">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="userId" value="@item.UserId" />
+                                                <button type="submit" class="user-action-btn"
+                                                        style="background:#fef3c7;color:#92400e;border:1.5px solid #fde68a;">
+                                                    <i class="fas fa-ban"></i> Askıya Al
+                                                </button>
+                                            </form>
+                                        }
 
                                         <div class="dropdown user-role-dropdown-wrapper">
                                             <button class="user-action-btn user-action-permission dropdown-toggle"
