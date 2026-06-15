@@ -23,6 +23,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
     [Authorize(Policy = AdminPolicies.TenantAdmin)]
     public class ConferencesController : Controller
     {
+        private const long MaxTemplateFileSize = 10 * 1024 * 1024;
+
+        private static readonly HashSet<string> AllowedTemplateExtensions = new(
+            new[] { ".pdf", ".doc", ".docx" },
+            StringComparer.OrdinalIgnoreCase
+        );
+
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
