@@ -14,6 +14,7 @@ namespace AntAbstract.Application.DTOs.Submission
         public DateTime? DecisionDate { get; set; }
 
         public string Status { get; set; }
+        public string? AdminDecisionNote { get; set; }
 
         public Guid ConferenceId { get; set; }
         public string ConferenceTitle { get; set; }
