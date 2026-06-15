@@ -423,7 +423,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [HttpGet("/Submission/Index")]
         [HttpGet("/{slug}/Submission/Index")]
         [HttpGet("/{slug}/my-submissions")]
-        public async Task<IActionResult> Index(string? slug = null)
+        public async Task<IActionResult> Index(string? slug = null, string? statusFilter = null)
         {
             if (string.IsNullOrWhiteSpace(slug))
             {
@@ -480,6 +480,20 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             submissionDtos = submissionDtos
                 .Where(s => s.ConferenceId == conference.Id)
                 .ToList();
+
+            // Status filter
+            if (!string.IsNullOrWhiteSpace(statusFilter) &&
+                Enum.TryParse<SubmissionStatus>(statusFilter, out var parsedStatus))
+            {
+                submissionDtos = submissionDtos.Where(s =>
+                {
+                    Enum.TryParse<SubmissionStatus>(s.Status, out var ss);
+                    return ss == parsedStatus;
+                }).ToList();
+            }
+
+            ViewBag.StatusFilter = statusFilter ?? "";
+            ViewBag.AllCount = submissionDtos.Count;
 
             return View(submissionDtos);
         }
@@ -1519,6 +1533,106 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 PageMargins = new Rotativa.AspNetCore.Options.Margins(0, 0, 0, 0)
             };
         }
+
+        // ── Withdraw ──────────────────────────────────────────────────────────────
+
+        [HttpGet("/Submission/Withdraw/{id:guid}")]
+        [HttpGet("/{slug}/Submission/Withdraw/{id:guid}")]
+        [HttpGet("/{slug}/my-submissions/{id:guid}/withdraw")]
+        public async Task<IActionResult> Withdraw(Guid id, string? slug = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var submission = await GetAuthorizedSubmissionAsync(id, user);
+            if (submission == null) return Forbid();
+
+            var canonicalSlug = GetCanonicalSlug(submission.Conference!, slug);
+            if (!SlugMatches(submission.Conference, slug))
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/withdraw"));
+
+            SetSelectedConferenceSession(submission.Conference!, canonicalSlug);
+
+            var withdrawableStatuses = new[]
+            {
+                SubmissionStatus.New,
+                SubmissionStatus.Pending,
+                SubmissionStatus.UnderReview,
+                SubmissionStatus.RevisionRequired
+            };
+
+            if (!withdrawableStatuses.Contains(submission.Status))
+            {
+                TempData["ErrorMessage"] = "Kabul veya reddedilmiş bildiriler geri çekilemez.";
+                return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
+            }
+
+            ViewBag.Submission = submission;
+            ViewBag.Slug = canonicalSlug;
+            return View(submission);
+        }
+
+        [HttpPost("/Submission/Withdraw/{id:guid}")]
+        [HttpPost("/{slug}/Submission/Withdraw/{id:guid}")]
+        [HttpPost("/{slug}/my-submissions/{id:guid}/withdraw")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> WithdrawConfirmed(Guid id, string? slug = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var submission = await GetAuthorizedSubmissionAsync(id, user);
+            if (submission == null) return Forbid();
+
+            var canonicalSlug = GetCanonicalSlug(submission.Conference!, slug);
+
+            var withdrawableStatuses = new[]
+            {
+                SubmissionStatus.New,
+                SubmissionStatus.Pending,
+                SubmissionStatus.UnderReview,
+                SubmissionStatus.RevisionRequired
+            };
+
+            if (!withdrawableStatuses.Contains(submission.Status))
+            {
+                TempData["ErrorMessage"] = "Kabul veya reddedilmiş bildiriler geri çekilemez.";
+                return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
+            }
+
+            submission.Status = SubmissionStatus.Withdrawn;
+            _context.Submissions.Update(submission);
+            await _context.SaveChangesAsync();
+
+            // Admin bildirim
+            try
+            {
+                var conferenceId = submission.ConferenceId;
+                var adminUsers = await _context.Users
+                    .Where(u => u.TenantId.HasValue &&
+                        _context.Conferences
+                            .Any(c => c.Id == conferenceId && c.TenantId == u.TenantId.Value))
+                    .Select(u => u.Id)
+                    .ToListAsync();
+
+                foreach (var adminId in adminUsers)
+                {
+                    await _notificationService.CreateAsync(
+                        userId: adminId,
+                        title: "Bildiri Geri Çekildi",
+                        message: $"\"{submission.Title}\" bildirisi yazar tarafından geri çekildi.",
+                        icon: "🔙",
+                        color: "warning",
+                        link: null);
+                }
+            }
+            catch { }
+
+            TempData["SuccessMessage"] = "Bildiriniz başarıyla geri çekildi.";
+            return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
 
         private async Task<(string FilePathDb, string StoredFileName, string OriginalFileName)> UploadFileAsync(IFormFile file)
         {

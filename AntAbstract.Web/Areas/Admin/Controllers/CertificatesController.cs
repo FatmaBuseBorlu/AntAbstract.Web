@@ -228,5 +228,103 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "application/pdf",
                 $"certificate_{id}.pdf");
         }
+
+        // ── Bulk Trigger ─────────────────────────────────────────────────────────
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> TriggerBulk(Guid conferenceId)
+        {
+            var tenantId = await GetCurrentAdminTenantIdAsync();
+
+            if (!tenantId.HasValue)
+            {
+                TempData["ErrorMessage"] = T("Error_AdminTenantNotFound", "Admin hesabınıza bağlı kurum bulunamadı.");
+                return RedirectToAction("Index", new { conferenceId });
+            }
+
+            // Verify conference belongs to admin's tenant
+            var conference = await _context.Conferences
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == conferenceId && c.TenantId == tenantId.Value);
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                return RedirectToAction("Index");
+            }
+
+            int generated = 0;
+            int errors = 0;
+
+            // 1. Author certificates — all accepted/presented submissions
+            var authorSubmissions = await _context.Submissions
+                .AsNoTracking()
+                .Include(s => s.User)
+                .Where(s => s.ConferenceId == conferenceId &&
+                    (s.Status == AntAbstract.Domain.Entities.SubmissionStatus.Accepted ||
+                     s.Status == AntAbstract.Domain.Entities.SubmissionStatus.Presented) &&
+                    s.UserId != null)
+                .ToListAsync();
+
+            foreach (var sub in authorSubmissions)
+            {
+                try
+                {
+                    await _certificateService.EnsureAuthorCertificateAsync(conferenceId, sub.UserId!);
+                    generated++;
+                }
+                catch { errors++; }
+            }
+
+            // 2. Reviewer certificates — all who completed at least one review
+            var reviewerIds = await _context.ReviewAssignments
+                .AsNoTracking()
+                .Include(ra => ra.Submission)
+                .Include(ra => ra.Review)
+                .Where(ra => ra.Submission != null &&
+                    ra.Submission.ConferenceId == conferenceId &&
+                    ra.Review != null && ra.Review.Score > 0)
+                .Select(ra => ra.ReviewerId)
+                .Distinct()
+                .ToListAsync();
+
+            foreach (var reviewerId in reviewerIds)
+            {
+                try
+                {
+                    await _certificateService.EnsureReviewerCertificateAsync(conferenceId, reviewerId);
+                    generated++;
+                }
+                catch { errors++; }
+            }
+
+            // 3. Attendee certificates — all with completed attendance
+            var attendeeIds = await _context.ConferenceAttendances
+                .AsNoTracking()
+                .Where(a => a.ConferenceId == conferenceId &&
+                    (a.CompletedAt.HasValue || a.TotalSeconds >= a.RequiredSeconds) &&
+                    a.UserId != null)
+                .Select(a => a.UserId)
+                .Distinct()
+                .ToListAsync();
+
+            foreach (var attendeeId in attendeeIds)
+            {
+                try
+                {
+                    await _certificateService.EnsureAttendeeCertificateAsync(conferenceId, attendeeId!);
+                    generated++;
+                }
+                catch { errors++; }
+            }
+
+            if (errors == 0)
+                TempData["SuccessMessage"] = $"Toplu sertifika oluşturma tamamlandı. {generated} sertifika işlendi.";
+            else
+                TempData["SuccessMessage"] = $"{generated} sertifika işlendi, {errors} hata oluştu.";
+
+            return RedirectToAction("Index", new { conferenceId });
+        }
     }
 }
