@@ -3,9 +3,9 @@ using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.ViewModels.Admin.Sessions;
 using AntAbstract.Web.Models.ViewModels.Shared;
-using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
@@ -16,26 +16,26 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = AdminPolicies.TenantAdmin)]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public class SessionController : Controller
     {
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
-        private readonly IAdminTenantAccessService _tenantAccess;
+        private readonly UserManager<AppUser> _userManager;
         private readonly IStringLocalizer<SessionController> _localizer;
 
         public SessionController(
             AppDbContext context,
             TenantContext tenantContext,
             ISelectedConferenceService selectedConferenceService,
-            IAdminTenantAccessService tenantAccess,
+            UserManager<AppUser> userManager,
             IStringLocalizer<SessionController> localizer)
         {
             _context = context;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
-            _tenantAccess = tenantAccess;
+            _userManager = userManager;
             _localizer = localizer;
         }
 
@@ -50,7 +50,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private bool IsSuperAdminUser()
         {
-            return _tenantAccess.IsSuperAdmin(User);
+            return User.IsInRole("SuperAdmin");
+        }
+
+        private async Task<AppUser?> GetCurrentUserAsync()
+        {
+            return await _userManager.GetUserAsync(User);
         }
 
         private async Task<Guid?> GetCurrentAdminTenantIdAsync()
@@ -60,27 +65,68 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return null;
             }
 
-            return await _tenantAccess.GetAdminTenantIdAsync(User);
+            var user = await GetCurrentUserAsync();
+
+            if (user == null || !user.TenantId.HasValue)
+            {
+                return null;
+            }
+
+            return user.TenantId.Value;
         }
 
         private async Task<bool> CanAccessCurrentTenantAsync(string? slug)
         {
+            if (_tenantContext.Current == null)
+            {
+                return false;
+            }
+
             if (string.IsNullOrWhiteSpace(slug))
             {
                 return false;
             }
 
-            return await _tenantAccess.CanAccessCurrentTenantAsync(User, slug);
+            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (IsSuperAdminUser())
+            {
+                return true;
+            }
+
+            var tenantId = await GetCurrentAdminTenantIdAsync();
+
+            if (!tenantId.HasValue)
+            {
+                return false;
+            }
+
+            return tenantId.Value == _tenantContext.Current.Id;
         }
 
         private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync()
         {
-            var query = await _tenantAccess.GetAccessibleConferenceQueryAsync(User);
-
-            return query
+            var query = _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .AsQueryable();
+
+            if (IsSuperAdminUser())
+            {
+                return query;
+            }
+
+            var tenantId = await GetCurrentAdminTenantIdAsync();
+
+            if (!tenantId.HasValue)
+            {
+                return query.Where(c => false);
+            }
+
+            return query.Where(c => c.TenantId == tenantId.Value);
         }
 
         private void SetSelectedConferenceSession(Conference conference)
