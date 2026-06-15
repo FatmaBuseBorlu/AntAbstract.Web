@@ -1365,6 +1365,24 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                         <i class="fas fa-paper-plane text-primary"></i>
                         Toplu E-posta
                     </a>
+
+                    var attendanceUrl = string.IsNullOrWhiteSpace(slug)
+                        ? "/Admin/Attendance/Scan"
+                        : $"/{slug}/Admin/Attendance/Scan";
+                    <a href="@attendanceUrl"
+                       class="nav-link @(currentController == "Attendance" ? "active" : "")">
+                        <i class="fas fa-qrcode text-success"></i>
+                        QR Check-In
+                    </a>
+
+                    var attendanceListUrl = string.IsNullOrWhiteSpace(slug)
+                        ? "/Admin/Attendance"
+                        : $"/{slug}/Admin/Attendance";
+                    <a href="@attendanceListUrl"
+                       class="nav-link @(currentController == "Attendance" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+                        <i class="fas fa-clipboard-check text-info"></i>
+                        Katılımcı Listesi
+                    </a>
                 }
             }
         </div>

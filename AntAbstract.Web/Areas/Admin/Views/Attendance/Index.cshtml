@@ -1,0 +1,101 @@
+@model IEnumerable<AntAbstract.Domain.Entities.Registration>
+
+@{
+    ViewData["Title"] = "Katılımcı Check-In Listesi";
+    Layout = "_LayoutDashboard";
+    var conference  = ViewBag.Conference as AntAbstract.Domain.Entities.Conference;
+    var slug        = ViewBag.Slug as string;
+    var totalIn     = (int)(ViewBag.TotalCheckedIn ?? 0);
+    var total       = (int)(ViewBag.TotalRegistrations ?? 0);
+    var scanUrl     = string.IsNullOrEmpty(slug)
+        ? $"/Admin/Attendance/Scan?conferenceId={conference?.Id}"
+        : $"/{slug}/Admin/Attendance/Scan?conferenceId={conference?.Id}";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+        <div>
+            <h4 class="fw-bold mb-0">
+                <i class="fas fa-clipboard-check me-2 text-primary"></i>Check-In Listesi
+            </h4>
+            @if (conference != null)
+            {
+                <small class="text-muted">@conference.Title</small>
+            }
+        </div>
+        <a href="@scanUrl" class="btn btn-primary">
+            <i class="fas fa-qrcode me-2"></i> QR Tarayıcı Aç
+        </a>
+    </div>
+
+    @if (ViewBag.NoConference == true)
+    {
+        <div class="alert alert-warning">Erişilebilir kongre bulunamadı.</div>
+    }
+    else
+    {
+        <div class="row g-3 mb-4">
+            <div class="col-sm-4">
+                <div class="card border-0 shadow-sm text-center p-3">
+                    <div class="fs-1 fw-bold text-primary">@total</div>
+                    <div class="text-muted small">Toplam Kayıtlı (Ödenen)</div>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div class="card border-0 shadow-sm text-center p-3">
+                    <div class="fs-1 fw-bold text-success">@totalIn</div>
+                    <div class="text-muted small">Check-In Yapıldı</div>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div class="card border-0 shadow-sm text-center p-3">
+                    <div class="fs-1 fw-bold text-warning">@(total - totalIn)</div>
+                    <div class="text-muted small">Henüz Gelmedi</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Ad Soyad</th>
+                                <th>E-posta</th>
+                                <th>Kayıt Türü</th>
+                                <th class="text-center">Durum</th>
+                                <th>Check-In Zamanı</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var reg in Model)
+                            {
+                                var fullName = $"{reg.AppUser?.FirstName} {reg.AppUser?.LastName}".Trim();
+                                if (string.IsNullOrWhiteSpace(fullName)) fullName = reg.AppUser?.Email ?? "?";
+                                <tr>
+                                    <td class="fw-semibold">@fullName</td>
+                                    <td class="text-muted small">@reg.AppUser?.Email</td>
+                                    <td>@(reg.RegistrationType?.Name ?? "—")</td>
+                                    <td class="text-center">
+                                        @if (reg.CheckedInAt.HasValue)
+                                        {
+                                            <span class="badge bg-success">✓ Giriş Yapıldı</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Bekleniyor</span>
+                                        }
+                                    </td>
+                                    <td class="text-muted small">
+                                        @(reg.CheckedInAt?.ToString("dd.MM.yyyy HH:mm") ?? "—")
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
