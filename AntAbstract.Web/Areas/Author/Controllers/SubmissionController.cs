@@ -892,6 +892,11 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                     .FirstOrDefault()
                     ?.FilePath ?? "",
 
+                ExistingFileId = submissionEntity.Files?
+                    .OrderByDescending(f => f.UploadedAt)
+                    .FirstOrDefault()
+                    ?.Id ?? 0,
+
                 Authors = submissionDto.Authors?.Select(a => new SubmissionAuthorViewModel
                 {
                     FirstName = a.FirstName,
@@ -990,6 +995,11 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 .OrderByDescending(f => f.UploadedAt)
                 .FirstOrDefault()
                 ?.FilePath ?? "";
+
+            model.ExistingFileId = submissionEntity.Files?
+                .OrderByDescending(f => f.UploadedAt)
+                .FirstOrDefault()
+                ?.Id ?? 0;
 
             model.AvailableTopics = await GetConferenceTopicSelectListAsync(
                 conference,
@@ -1109,6 +1119,11 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                     .OrderByDescending(f => f.UploadedAt)
                     .FirstOrDefault()
                     ?.FilePath ?? "";
+
+                model.ExistingFileId = submissionEntity.Files?
+                    .OrderByDescending(f => f.UploadedAt)
+                    .FirstOrDefault()
+                    ?.Id ?? 0;
 
                 return View(model);
             }

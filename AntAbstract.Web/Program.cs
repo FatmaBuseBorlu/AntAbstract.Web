@@ -262,7 +262,24 @@ else
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+
+// Hassas upload klasörlerine doğrudan erişimi engelle
+// (submissions, receipts, templates) — profil resimleri ve proceeding-books herkese açık
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var path = ctx.Context.Request.Path.Value ?? "";
+        var blocked = new[] { "/uploads/submissions/", "/uploads/receipts/", "/uploads/templates/" };
+        if (blocked.Any(b => path.StartsWith(b, StringComparison.OrdinalIgnoreCase)))
+        {
+            ctx.Context.Response.StatusCode = 403;
+            ctx.Context.Response.Headers["Cache-Control"] = "no-store";
+            ctx.Context.Response.ContentLength = 0;
+            ctx.Context.Response.Body = System.IO.Stream.Null;
+        }
+    }
+});
 
 var supportedCultures = new[] { "tr-TR", "en-US" };
 
