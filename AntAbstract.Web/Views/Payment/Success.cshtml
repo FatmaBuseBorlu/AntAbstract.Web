@@ -1,6 +1,7 @@
 ﻿@using System
 @using System.Globalization
 @using Microsoft.AspNetCore.Http
+@using AntAbstract.Domain.Entities
 @model AntAbstract.Domain.Entities.Payment
 
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
@@ -90,17 +91,29 @@
         ? L("CreditCardText", "Kredi Kartı", "Credit Card")
         : Model!.PaymentMethod;
 
-    var successHeading = L(
-        "SuccessHeading",
-        "Ödeme Başarıyla Tamamlandı",
-        "Payment Completed Successfully"
-    );
+    var isCompleted = Model?.Status == PaymentStatus.Completed;
+    var isFailed = Model?.Status == PaymentStatus.Failed;
 
-    var successDescription = L(
-        "SuccessDescription",
-        "Kongre katılım ödemeniz başarıyla alınmıştır. Ödeme kaydınız sistemde saklanmıştır.",
-        "Your congress participation payment has been received successfully. Your payment record has been saved in the system."
-    );
+    var successHeading = isCompleted
+        ? L("SuccessHeading", "Ödeme Başarıyla Tamamlandı", "Payment Completed Successfully")
+        : isFailed
+            ? L("FailedHeading", "Ödeme Tamamlanamadı", "Payment Could Not Be Completed")
+            : L("PendingHeading", "Ödeme Doğrulanıyor", "Payment Is Being Verified");
+
+    var successDescription = isCompleted
+        ? L(
+            "SuccessDescription",
+            "Kongre katılım ödemeniz başarıyla alınmıştır. Ödeme kaydınız sistemde saklanmıştır.",
+            "Your congress participation payment has been received successfully. Your payment record has been saved in the system.")
+        : isFailed
+            ? L(
+                "FailedDescription",
+                "Stripe ödeme işlemini tamamlanmış olarak doğrulamadı. Ödeme geçmişinizi kontrol edip tekrar deneyebilirsiniz.",
+                "Stripe did not verify the payment as completed. You can check your payment history and try again.")
+            : L(
+                "PendingDescription",
+                "Ödemeniz Stripe tarafından doğrulanıyor. Bu sayfayı yenileyebilir veya ödeme geçmişinden durumu takip edebilirsiniz.",
+                "Your payment is being verified by Stripe. Refresh this page or follow its status from payment history.");
 
     var nextStepTitle = L(
         "NextStepTitle",
@@ -381,7 +394,18 @@
 
                         <div class="mb-4">
                             <div class="success-icon-wrapper">
-                                <i class="fas fa-check fa-3x text-success"></i>
+                                @if (isCompleted)
+                                {
+                                    <i class="fas fa-check fa-3x text-success"></i>
+                                }
+                                else if (isFailed)
+                                {
+                                    <i class="fas fa-xmark fa-3x text-danger"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-clock fa-3x text-warning"></i>
+                                }
                             </div>
                         </div>
 
@@ -393,23 +417,26 @@
                             @successDescription
                         </p>
 
-                        <div class="next-step-box no-print">
-                            <div class="next-step-inner">
-                                <div class="next-step-icon">
-                                    <i class="fas fa-file-lines"></i>
-                                </div>
-
-                                <div>
-                                    <div class="next-step-title">
-                                        @nextStepTitle
+                        @if (isCompleted)
+                        {
+                            <div class="next-step-box no-print">
+                                <div class="next-step-inner">
+                                    <div class="next-step-icon">
+                                        <i class="fas fa-file-lines"></i>
                                     </div>
 
-                                    <p class="next-step-description">
-                                        @nextStepDescription
-                                    </p>
+                                    <div>
+                                        <div class="next-step-title">
+                                            @nextStepTitle
+                                        </div>
+
+                                        <p class="next-step-description">
+                                            @nextStepDescription
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        }
 
                         @if (Model != null)
                         {
@@ -477,10 +504,20 @@
                         }
 
                         <div class="d-grid gap-2 no-print">
-                            <a href="@mySubmissionsUrl" class="success-main-btn">
-                                <i class="fas fa-file-lines"></i>
-                                @mySubmissionsButtonText
-                            </a>
+                            @if (isCompleted)
+                            {
+                                <a href="@mySubmissionsUrl" class="success-main-btn">
+                                    <i class="fas fa-file-lines"></i>
+                                    @mySubmissionsButtonText
+                                </a>
+                            }
+                            else
+                            {
+                                <a href="@paymentNewUrl" class="success-main-btn">
+                                    <i class="fas fa-rotate-right"></i>
+                                    @L("RetryPaymentButton", "Ödemeyi Tekrar Dene", "Try Payment Again")
+                                </a>
+                            }
 
                             <a href="@myConferencesUrl" class="btn btn-outline-primary success-secondary-btn">
                                 <i class="fas fa-calendar-check me-2"></i>

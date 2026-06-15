@@ -102,7 +102,7 @@ namespace AntAbstract.Web.Controllers
 
             var newMessage = new Message
             {
-                SenderId = _userManager.GetUserId(User),
+                SenderId = _userManager.GetUserId(User)!,
                 ReceiverId = receiverId,
                 Subject = subject,
                 Content = content,

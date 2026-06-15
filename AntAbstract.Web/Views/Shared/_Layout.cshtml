@@ -658,7 +658,7 @@
         var hasSelectedConference = selectedConferenceId.HasValue;
 
         var assignmentUrl = (hasSelectedConference && !string.IsNullOrWhiteSpace(slug))
-        ? $"/{slug}/Admin/Assignment?conferenceId={selectedConferenceId.Value}"
+        ? $"/{slug}/Admin/Assignment?conferenceId={selectedConferenceId!.Value}"
         : "/Admin/Assignment";
 
         var superAdminPanelUrl = "/Dashboard/SuperAdmin";
@@ -962,6 +962,22 @@
                                                     </span>
                                                 </span>
                                             </a>
+
+                                            @if (isSuperAdmin || isAdminLike)
+                                            {
+                                                <a class="public-account-item"
+                                                   href="/Admin/EmailTemplates">
+                                                    <span class="public-account-item-icon public-icon-warning">
+                                                        <i class="fas fa-envelope-open-text"></i>
+                                                    </span>
+
+                                                    <span class="public-account-item-content">
+                                                        <span class="public-account-item-title">
+                                                            @L("Dropdown_EmailTemplates", "E-posta Şablonları")
+                                                        </span>
+                                                    </span>
+                                                </a>
+                                            }
 
                                             <a class="public-account-item"
                                                href="/Identity/Account/Manage">

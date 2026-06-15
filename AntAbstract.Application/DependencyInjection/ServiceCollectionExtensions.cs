@@ -9,7 +9,7 @@ namespace AntAbstract.Application.DependencyInjection
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
-            services.AddAutoMapper(typeof(GeneralMappingProfile));
+            services.AddAutoMapper(cfg => cfg.AddProfile<GeneralMappingProfile>());
 
             services.AddScoped<ISubmissionService, SubmissionManager>();
             services.AddScoped<IReviewService, ReviewManager>();

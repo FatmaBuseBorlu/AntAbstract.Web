@@ -1,245 +1,379 @@
-﻿@{
+@using AntAbstract.Domain.Entities
+@using System
+@using System.Collections.Generic
+
+@{
     ViewData["Title"] = "Sistem Yönetim Paneli";
     Layout = "_LayoutDashboard";
 
-    var totalTenants = ViewBag.TotalTenants ?? 0;
-    var totalConferences = ViewBag.TotalConferences ?? 0;
-    var totalUsers = ViewBag.TotalUsers ?? 0;
-    var totalAdmins = ViewBag.TotalAdmins ?? 0;
-    var totalAuthors = ViewBag.TotalAuthors ?? 0;
-    var totalReferees = ViewBag.TotalReferees ?? 0;
+    var totalTenants       = (int)(ViewBag.TotalTenants       ?? 0);
+    var totalConferences   = (int)(ViewBag.TotalConferences   ?? 0);
+    var totalUsers         = (int)(ViewBag.TotalUsers         ?? 0);
+    var totalSubmissions   = (int)(ViewBag.TotalSubmissions   ?? 0);
+    var totalRegistrations = (int)(ViewBag.TotalRegistrations ?? 0);
+    var totalCertificates  = (int)(ViewBag.TotalCertificates  ?? 0);
+    var activeConferences  = (int)(ViewBag.ActiveConferences  ?? 0);
+
+    var totalAdmins    = (int)(ViewBag.TotalAdmins    ?? 0);
+    var totalAuthors   = (int)(ViewBag.TotalAuthors   ?? 0);
+    var totalReferees  = (int)(ViewBag.TotalReferees  ?? 0);
+    var totalListeners = (int)(ViewBag.TotalListeners ?? 0);
+
+    var submissionAccepted    = (int)(ViewBag.SubmissionAccepted    ?? 0);
+    var submissionRejected    = (int)(ViewBag.SubmissionRejected    ?? 0);
+    var submissionPending     = (int)(ViewBag.SubmissionPending     ?? 0);
+    var submissionUnderReview = (int)(ViewBag.SubmissionUnderReview ?? 0);
+
+    var recentConferences   = ViewBag.RecentConferences   as List<Conference>   ?? new List<Conference>();
+    var recentRegistrations = ViewBag.RecentRegistrations as List<Registration> ?? new List<Registration>();
 }
 
 <style>
-    .super-admin-hero {
-        background: linear-gradient(135deg, #0f172a, #1e293b);
-        color: #ffffff;
-        border-radius: 28px;
-        padding: 34px;
-        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
-        margin-bottom: 26px;
-    }
-
-        .super-admin-hero h3 {
-            font-weight: 900;
-            margin-bottom: 10px;
-        }
-
-        .super-admin-hero p {
-            color: #cbd5e1;
-            margin-bottom: 0;
-            line-height: 1.7;
-        }
-
-    .system-card {
-        border: 1px solid #e2e8f0;
-        border-radius: 24px;
-        background: #ffffff;
-        box-shadow: 0 16px 42px rgba(15, 23, 42, 0.06);
-        padding: 24px;
-        height: 100%;
-        transition: all 0.22s ease;
-    }
-
-        .system-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.10);
-        }
-
-    .system-icon {
-        width: 58px;
-        height: 58px;
+    .sa-hero {
+        background: linear-gradient(135deg, #0f172a, #1e3a5f);
+        color: #fff;
         border-radius: 20px;
-        background: rgba(0, 174, 239, 0.10);
-        color: #0284c7;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        margin-bottom: 16px;
+        padding: 32px 36px;
+        margin-bottom: 28px;
+        box-shadow: 0 16px 48px rgba(15,23,42,.18);
     }
-
-    .system-card h5 {
-        color: #0f172a;
-        font-weight: 900;
-        margin-bottom: 8px;
-    }
-
-    .system-card p {
+    .sa-section-title {
+        font-size: .7rem;
+        font-weight: 800;
+        letter-spacing: .12em;
+        text-transform: uppercase;
         color: #64748b;
-        line-height: 1.65;
-        min-height: 52px;
+        margin-bottom: 14px;
     }
-
-    .system-card a {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        border-radius: 999px;
-        padding: 10px 18px;
-        background: linear-gradient(135deg, #00aeef, #0284c7);
-        color: #ffffff;
-        text-decoration: none;
-        font-weight: 900;
-    }
-
-    .stat-box {
+    .stat-card {
+        background: #fff;
         border: 1px solid #e2e8f0;
-        border-radius: 22px;
-        background: #ffffff;
-        padding: 22px;
-        box-shadow: 0 12px 34px rgba(15, 23, 42, 0.05);
+        border-radius: 16px;
+        padding: 20px 22px;
+        box-shadow: 0 4px 18px rgba(15,23,42,.05);
+        height: 100%;
     }
-
-    .stat-number {
-        color: #0f172a;
+    .stat-card .number {
         font-size: 2rem;
         font-weight: 900;
         line-height: 1;
+        color: #0f172a;
     }
-
-    .stat-label {
+    .stat-card .label {
+        font-size: .78rem;
+        font-weight: 700;
         color: #64748b;
-        font-weight: 800;
-        margin-top: 8px;
+        margin-top: 6px;
+    }
+    .stat-card .icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        margin-bottom: 14px;
+    }
+    .action-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 22px;
+        box-shadow: 0 4px 18px rgba(15,23,42,.05);
+        transition: transform .18s, box-shadow .18s;
+        height: 100%;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+    }
+    .action-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 32px rgba(15,23,42,.10);
+        color: inherit;
+    }
+    .action-card .ac-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        margin-bottom: 14px;
+    }
+    .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .bar-label { width: 120px; font-size: .8rem; color: #475569; }
+    .bar-wrap { flex: 1; background: #f1f5f9; border-radius: 99px; height: 8px; }
+    .bar-fill { height: 8px; border-radius: 99px; }
+    .bar-count { width: 40px; text-align: right; font-size: .8rem; font-weight: 700; color: #0f172a; }
+    .recent-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+    .recent-row:last-child { border-bottom: none; }
+    .recent-avatar {
+        width: 34px; height: 34px; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: .7rem; font-weight: 800; color: #fff; flex-shrink: 0;
+        background: linear-gradient(135deg, #3b82f6, #6366f1);
     }
 </style>
 
-<div class="container-fluid">
+<div class="container-fluid px-4 py-4">
 
-    <div class="super-admin-hero">
-        <h3>
-            <i class="fas fa-shield-alt me-2 text-info"></i>
-            Sistem Yönetim Paneli
-        </h3>
+    <!-- Hero -->
+    <div class="sa-hero">
+        <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+            <div>
+                <p class="mb-1 opacity-75" style="font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;">Sistem Yönetim Paneli</p>
+                <h3 class="fw-black mb-2" style="font-size:1.6rem;">
+                    <i class="fas fa-shield-alt me-2 text-info"></i>Süper Admin
+                </h3>
+                <p class="mb-0 opacity-75" style="font-size:.9rem;">
+                    Tüm kurumlar, kongreler ve kullanıcılar tek panelden yönetilir.
+                </p>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="/Admin/Tenants" class="btn btn-sm btn-light fw-semibold">
+                    <i class="fas fa-building me-1"></i> Kurumlar
+                </a>
+                <a href="/Admin/Users" class="btn btn-sm btn-info text-white fw-semibold">
+                    <i class="fas fa-users me-1"></i> Kullanıcılar
+                </a>
+                <a href="/Admin/SystemReports" class="btn btn-sm btn-outline-light fw-semibold">
+                    <i class="fas fa-chart-bar me-1"></i> Raporlar
+                </a>
+            </div>
+        </div>
+    </div>
 
-        <p>
-            Bu alan sadece sistem sahibine özeldir. Kurumları, kurum adminlerini ve genel kullanıcı yapısını buradan yönetebilirsiniz.
-            Kongre kayıt, hakem atama ve bildiri operasyonları kurum adminleri tarafından yapılır.
-        </p>
+    <!-- Ana Metrikler -->
+    <p class="sa-section-title">Genel İstatistikler</p>
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="stat-card">
+                <div class="icon bg-primary bg-opacity-10 text-primary"><i class="fas fa-building"></i></div>
+                <div class="number">@totalTenants</div>
+                <div class="label">Kurum</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="stat-card">
+                <div class="icon bg-success bg-opacity-10 text-success"><i class="fas fa-calendar-alt"></i></div>
+                <div class="number">@totalConferences</div>
+                <div class="label">
+                    Kongre
+                    @if (activeConferences > 0)
+                    {
+                        <span class="badge bg-success ms-1" style="font-size:.6rem;">@activeConferences aktif</span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="stat-card">
+                <div class="icon bg-info bg-opacity-10 text-info"><i class="fas fa-users"></i></div>
+                <div class="number">@totalUsers</div>
+                <div class="label">Kullanıcı</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="stat-card">
+                <div class="icon bg-warning bg-opacity-10 text-warning"><i class="fas fa-file-alt"></i></div>
+                <div class="number">@totalSubmissions</div>
+                <div class="label">Bildiri</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="stat-card">
+                <div class="icon bg-secondary bg-opacity-10 text-secondary"><i class="fas fa-id-card"></i></div>
+                <div class="number">@totalRegistrations</div>
+                <div class="label">Kayıt</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="stat-card">
+                <div class="icon bg-danger bg-opacity-10 text-danger"><i class="fas fa-certificate"></i></div>
+                <div class="number">@totalCertificates</div>
+                <div class="label">Sertifika</div>
+            </div>
+        </div>
     </div>
 
     <div class="row g-4 mb-4">
-        <div class="col-md-4 col-xl-2">
-            <div class="stat-box">
-                <div class="stat-number">@totalTenants</div>
-                <div class="stat-label">Kurum</div>
+
+        <!-- Kullanıcı Rol Dağılımı -->
+        <div class="col-12 col-lg-4">
+            <div class="stat-card h-100">
+                <p class="sa-section-title mb-3">Rol Dağılımı</p>
+                @{
+                    var roleRows = new[]
+                    {
+                        ("Admin",     totalAdmins,    "#3b82f6"),
+                        ("Yazar",     totalAuthors,   "#22c55e"),
+                        ("Hakem",     totalReferees,  "#f59e0b"),
+                        ("Dinleyici", totalListeners, "#a855f7"),
+                    };
+                    var maxRole = roleRows.Max(r => r.Item2) is int mx && mx > 0 ? mx : 1;
+                }
+                @foreach (var (roleName, count, color) in roleRows)
+                {
+                    var pct = (int)Math.Round((double)count / maxRole * 100);
+                    <div class="bar-row">
+                        <span class="bar-label">@roleName</span>
+                        <div class="bar-wrap">
+                            <div class="bar-fill" style="width:@(pct)%;background:@color;"></div>
+                        </div>
+                        <span class="bar-count">@count</span>
+                    </div>
+                }
             </div>
         </div>
 
-        <div class="col-md-4 col-xl-2">
-            <div class="stat-box">
-                <div class="stat-number">@totalConferences</div>
-                <div class="stat-label">Kongre</div>
+        <!-- Bildiri Durum Dağılımı -->
+        <div class="col-12 col-lg-4">
+            <div class="stat-card h-100">
+                <p class="sa-section-title mb-3">Bildiri Durumları</p>
+                @{
+                    var subRows = new[]
+                    {
+                        ("Kabul Edildi",     submissionAccepted,    "#22c55e"),
+                        ("İncelemede",       submissionUnderReview, "#3b82f6"),
+                        ("Karar Bekliyor",   submissionPending,     "#f59e0b"),
+                        ("Reddedildi",       submissionRejected,    "#ef4444"),
+                    };
+                    var maxSub = subRows.Max(r => r.Item2) is int ms && ms > 0 ? ms : 1;
+                }
+                @foreach (var (label, count, color) in subRows)
+                {
+                    var pct = (int)Math.Round((double)count / maxSub * 100);
+                    <div class="bar-row">
+                        <span class="bar-label">@label</span>
+                        <div class="bar-wrap">
+                            <div class="bar-fill" style="width:@(pct)%;background:@color;"></div>
+                        </div>
+                        <span class="bar-count">@count</span>
+                    </div>
+                }
             </div>
         </div>
 
-        <div class="col-md-4 col-xl-2">
-            <div class="stat-box">
-                <div class="stat-number">@totalUsers</div>
-                <div class="stat-label">Kullanıcı</div>
-            </div>
-        </div>
-
-        <div class="col-md-4 col-xl-2">
-            <div class="stat-box">
-                <div class="stat-number">@totalAdmins</div>
-                <div class="stat-label">Admin</div>
-            </div>
-        </div>
-
-        <div class="col-md-4 col-xl-2">
-            <div class="stat-box">
-                <div class="stat-number">@totalAuthors</div>
-                <div class="stat-label">Yazar</div>
-            </div>
-        </div>
-
-        <div class="col-md-4 col-xl-2">
-            <div class="stat-box">
-                <div class="stat-number">@totalReferees</div>
-                <div class="stat-label">Hakem</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row g-4">
-
-        <div class="col-md-6 col-xl-3">
-            <div class="system-card">
-                <div class="system-icon">
-                    <i class="fas fa-building"></i>
-                </div>
-
-                <h5>Kurum Yönetimi</h5>
-
-                <p>
-                    Sisteme kurum ekleyin, kurum bilgilerini düzenleyin ve tenant yapısını yönetin.
-                </p>
-
-                <a href="/Admin/Tenants">
-                    Yönet
-                    <i class="fas fa-arrow-right"></i>
-                </a>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-xl-3">
-            <div class="system-card">
-                <div class="system-icon">
-                    <i class="fas fa-user-tie"></i>
-                </div>
-
-                <h5>Kurum Adminleri</h5>
-
-                <p>
-                    Kurumlara admin atayın. Adminler kendi kurumlarının kongre süreçlerini yönetir.
-                </p>
-
-                <a href="/Admin/Users">
-                    Yönet
-                    <i class="fas fa-arrow-right"></i>
-                </a>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-xl-3">
-            <div class="system-card">
-                <div class="system-icon">
-                    <i class="fas fa-users"></i>
-                </div>
-
-                <h5>Kullanıcı Yönetimi</h5>
-
-                <p>
-                    Sistemdeki kullanıcıları, rolleri ve genel erişim durumlarını takip edin.
-                </p>
-
-                <a href="/Admin/Users">
-                    Yönet
-                    <i class="fas fa-arrow-right"></i>
-                </a>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-xl-3">
-            <div class="system-card">
-                <div class="system-icon">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-
-                <h5>Sistem Raporları</h5>
-
-                <p>
-                    Kurum, kullanıcı ve kongre sayıları gibi genel sistem istatistiklerini inceleyin.
-                </p>
-
-                <a href="#">
-                    İncele
-                    <i class="fas fa-clock"></i>
-                </a>
+        <!-- Son Kayıtlar -->
+        <div class="col-12 col-lg-4">
+            <div class="stat-card h-100">
+                <p class="sa-section-title mb-3">Son Kayıtlar</p>
+                @if (!recentRegistrations.Any())
+                {
+                    <p class="text-muted small">Henüz kayıt yok.</p>
+                }
+                @foreach (var reg in recentRegistrations)
+                {
+                    var userName = reg.AppUser != null
+                        ? $"{reg.AppUser.FirstName} {reg.AppUser.LastName}".Trim()
+                        : reg.BillingName ?? "—";
+                    var initial = string.IsNullOrWhiteSpace(userName) ? "?" : userName[0].ToString().ToUpper();
+                    <div class="recent-row">
+                        <div class="recent-avatar">@initial</div>
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="fw-semibold text-truncate" style="font-size:.85rem;">@(string.IsNullOrWhiteSpace(userName) ? "—" : userName)</div>
+                            <div class="text-muted text-truncate" style="font-size:.75rem;">@(reg.Conference?.Title ?? "—")</div>
+                        </div>
+                        <span class="badge @(reg.IsPaid ? "bg-success" : "bg-warning text-dark")" style="font-size:.65rem;">
+                            @(reg.IsPaid ? "Ödendi" : "Bekliyor")
+                        </span>
+                    </div>
+                }
             </div>
         </div>
 
     </div>
+
+    <!-- Son Kongreler -->
+    <p class="sa-section-title">Son Kongreler</p>
+    <div class="stat-card mb-4">
+        @if (!recentConferences.Any())
+        {
+            <p class="text-muted small mb-0">Henüz kongre eklenmemiş.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Kongre</th>
+                            <th>Kurum</th>
+                            <th>Başlangıç</th>
+                            <th>Bitiş</th>
+                            <th class="text-center">Durum</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in recentConferences)
+                        {
+                            var now2 = DateTime.UtcNow;
+                            var isActive = c.StartDate <= now2 && c.EndDate >= now2;
+                            var isUpcoming = c.StartDate > now2;
+                            var slug2 = c.Tenant?.Slug ?? c.Slug ?? "";
+                            <tr>
+                                <td class="fw-semibold">@(c.Title ?? "—")</td>
+                                <td class="text-muted">@(c.Tenant?.Name ?? "—")</td>
+                                <td class="text-muted" style="font-size:.82rem;">@c.StartDate.ToString("dd.MM.yyyy")</td>
+                                <td class="text-muted" style="font-size:.82rem;">@c.EndDate.ToString("dd.MM.yyyy")</td>
+                                <td class="text-center">
+                                    @if (isActive)
+                                    {
+                                        <span class="badge bg-success">Aktif</span>
+                                    }
+                                    else if (isUpcoming)
+                                    {
+                                        <span class="badge bg-info text-dark">Yaklaşan</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Tamamlandı</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(slug2))
+                                    {
+                                        <a href="/@slug2/Admin/ConferenceFlow" class="btn btn-xs btn-outline-primary btn-sm py-0 px-2" style="font-size:.75rem;">
+                                            Yönet
+                                        </a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <!-- Hızlı Erişim -->
+    <p class="sa-section-title">Hızlı Erişim</p>
+    <div class="row g-3">
+        @{
+            var quickLinks = new[]
+            {
+                ("/Admin/Tenants",        "fas fa-building",    "bg-primary bg-opacity-10 text-primary",   "Kurum Yönetimi",    "Kurum ekle, düzenle, yönet."),
+                ("/Admin/Users",          "fas fa-user-tie",    "bg-info bg-opacity-10 text-info",         "Kullanıcılar",      "Admin ata, rolleri görüntüle."),
+                ("/Admin/AllConferences", "fas fa-calendar",    "bg-success bg-opacity-10 text-success",   "Tüm Kongreler",     "Sistemdeki tüm kongreleri listele."),
+                ("/Admin/SystemReports",  "fas fa-chart-bar",   "bg-warning bg-opacity-10 text-warning",   "Sistem Raporları",  "Sistem geneli istatistikler."),
+                ("/Admin/SystemParameters","fas fa-sliders",    "bg-secondary bg-opacity-10 text-secondary","Sistem Parametreleri","Genel sistem ayarlarını düzenle."),
+                ("/Admin/CentralVitrin",  "fas fa-store",       "bg-danger bg-opacity-10 text-danger",     "Merkezi Vitrin",    "Ana sayfada gösterilen kongre vitrinini yönet."),
+            };
+        }
+        @foreach (var (href, icon, iconCls, title, desc) in quickLinks)
+        {
+            <div class="col-12 col-sm-6 col-xl-4">
+                <a href="@href" class="action-card">
+                    <div class="ac-icon @iconCls"><i class="@icon"></i></div>
+                    <strong class="mb-1">@title</strong>
+                    <small class="text-muted mt-1">@desc</small>
+                </a>
+            </div>
+        }
+    </div>
+
 </div>

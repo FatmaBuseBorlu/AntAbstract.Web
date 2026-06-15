@@ -33,6 +33,10 @@
         ? $"/{slug}/Admin/Decision/MakeDecision"
         : "#";
 
+    var bulkDecisionUrl = hasSlug
+        ? $"/{slug}/Admin/Decision/BulkDecision"
+        : "#";
+
     string StatusLabel(SubmissionStatus status)
     {
         return status switch
@@ -349,10 +353,43 @@
             }
             else
             {
+                <!-- Toplu işlem toolbar -->
+                <div id="bulkToolbar" class="d-none mb-3 p-3 bg-light border rounded d-flex align-items-center gap-3 flex-wrap">
+                    <span id="bulkSelectedCount" class="fw-semibold text-secondary">0 seçili</span>
+                    <form method="post" action="@bulkDecisionUrl" id="bulkForm" class="d-flex gap-2 flex-wrap">
+                        @Html.AntiForgeryToken()
+                        <div id="bulkHiddenInputs"></div>
+                        <input type="hidden" name="decision" id="bulkDecisionValue" value="" />
+                        <button type="button" class="btn btn-sm btn-success"
+                                onclick="submitBulk('Accept')"
+                                title="Seçilenleri Kabul Et">
+                            <i class="fas fa-check me-1"></i> Kabul Et
+                        </button>
+                        <button type="button" class="btn btn-sm btn-warning text-white"
+                                onclick="submitBulk('Revision')"
+                                title="Seçilenler için Revizyon İste">
+                            <i class="fas fa-rotate me-1"></i> Revizyon İste
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger"
+                                onclick="submitBulk('Reject')"
+                                title="Seçilenleri Reddet">
+                            <i class="fas fa-xmark me-1"></i> Reddet
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                onclick="clearBulkSelection()">
+                            Seçimi Temizle
+                        </button>
+                    </form>
+                </div>
+
                 <div class="decision-table-wrap">
                     <table class="decision-table">
                         <thead>
                             <tr>
+                                <th style="width:40px;">
+                                    <input type="checkbox" id="checkAll" class="form-check-input"
+                                           title="Tümünü Seç" onchange="toggleAllCheckboxes(this)" />
+                                </th>
                                 <th>Bildiri</th>
                                 <th>Yazar</th>
                                 <th>Hakem Durumu</th>
@@ -369,6 +406,10 @@
                                     : $"/Admin/Submissions/Details/{item.Id}?conferenceId={conferenceId}";
 
                                 <tr>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input bulk-cb"
+                                               value="@item.Id" onchange="updateBulkToolbar()" />
+                                    </td>
                                     <td>
                                         <div class="submission-title-cell">
                                             <div class="submission-mini-icon">
@@ -1312,5 +1353,60 @@
                 });
             });
         });
+    </script>
+
+    <script>
+        function updateBulkToolbar() {
+            const checked = document.querySelectorAll('.bulk-cb:checked');
+            const toolbar = document.getElementById('bulkToolbar');
+            const countEl = document.getElementById('bulkSelectedCount');
+            if (checked.length > 0) {
+                toolbar.classList.remove('d-none');
+                toolbar.classList.add('d-flex');
+                countEl.textContent = checked.length + ' bildiri seçili';
+            } else {
+                toolbar.classList.add('d-none');
+                toolbar.classList.remove('d-flex');
+            }
+            // checkAll durumunu güncelle
+            const allCbs = document.querySelectorAll('.bulk-cb');
+            document.getElementById('checkAll').indeterminate =
+                checked.length > 0 && checked.length < allCbs.length;
+            document.getElementById('checkAll').checked =
+                allCbs.length > 0 && checked.length === allCbs.length;
+        }
+
+        function toggleAllCheckboxes(master) {
+            document.querySelectorAll('.bulk-cb').forEach(cb => {
+                cb.checked = master.checked;
+            });
+            updateBulkToolbar();
+        }
+
+        function clearBulkSelection() {
+            document.querySelectorAll('.bulk-cb').forEach(cb => cb.checked = false);
+            document.getElementById('checkAll').checked = false;
+            updateBulkToolbar();
+        }
+
+        function submitBulk(decision) {
+            const checked = document.querySelectorAll('.bulk-cb:checked');
+            if (checked.length === 0) return;
+
+            const labels = { Accept: 'kabul etmek', Reject: 'reddetmek', Revision: 'revizyon istemek' };
+            if (!confirm(checked.length + ' bildiri için ' + (labels[decision] || 'işlem yapmak') + ' istediğinize emin misiniz?')) return;
+
+            const container = document.getElementById('bulkHiddenInputs');
+            container.innerHTML = '';
+            checked.forEach(cb => {
+                const inp = document.createElement('input');
+                inp.type = 'hidden';
+                inp.name = 'submissionIds';
+                inp.value = cb.value;
+                container.appendChild(inp);
+            });
+            document.getElementById('bulkDecisionValue').value = decision;
+            document.getElementById('bulkForm').submit();
+        }
     </script>
 }

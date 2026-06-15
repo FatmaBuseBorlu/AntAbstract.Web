@@ -1,7 +1,6 @@
 ﻿@using AntAbstract.Web.Models.ViewModels.Admin.Assignment
 @using Microsoft.AspNetCore.Http
 @model AssignReviewerViewModel
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -67,6 +66,15 @@
         return Model.Submission.ReviewAssignments != null &&
                Model.Submission.ReviewAssignments.Any(x => x.ReviewerId == reviewerId);
     }
+
+    var reviewerLoads = ViewBag.ReviewerLoads as Dictionary<string, int> ?? new Dictionary<string, int>();
+    var maxLoad = (int)(ViewBag.MaxAssignmentsPerReviewer ?? 10);
+
+    int GetReviewerLoad(string reviewerId)
+        => reviewerLoads.TryGetValue(reviewerId, out var count) ? count : 0;
+
+    bool IsOverloaded(string reviewerId)
+        => GetReviewerLoad(reviewerId) >= maxLoad;
 
     string GetReviewerName(dynamic reviewer)
     {
@@ -808,8 +816,10 @@
                             var reviewerName = GetReviewerName(reviewer);
                             var firstLetter = GetFirstLetter(reviewerName);
                             var alreadyAssigned = IsAlreadyAssigned(reviewer.Id);
+                            var load = GetReviewerLoad(reviewer.Id);
+                            var overloaded = IsOverloaded(reviewer.Id);
 
-                            <tr>
+                            <tr class="@(overloaded ? "table-warning" : "")">
                                 <td>
                                     <div class="reviewer-profile">
                                         <span class="reviewer-avatar">
@@ -843,12 +853,31 @@
                                     </span>
                                 </td>
 
+                                <td>
+                                    @{
+                                        var loadColor = load >= maxLoad ? "danger" : load >= maxLoad * 0.7 ? "warning" : "success";
+                                    }
+                                    <span class="badge bg-@loadColor">
+                                        <i class="fas fa-tasks me-1"></i>@load / @maxLoad
+                                    </span>
+                                    @if (overloaded)
+                                    {
+                                        <div class="small text-danger mt-1">Limit dolu</div>
+                                    }
+                                </td>
+
                                 <td class="text-end">
                                     @if (alreadyAssigned)
                                     {
                                         <span class="already-assigned-badge">
                                             <i class="fas fa-check"></i>
                                             @L("AlreadyAssignedText", "Atanmış")
+                                        </span>
+                                    }
+                                    else if (overloaded)
+                                    {
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-ban me-1"></i>Limit Dolu
                                         </span>
                                     }
                                     else

@@ -1354,6 +1354,18 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                     <i class="fas fa-envelope text-warning"></i>
                     @L("Common_Messages", "Mesajlar")
                 </a>
+
+                @if (isManagementTeam)
+                {
+                    var broadcastUrl = string.IsNullOrWhiteSpace(slug)
+                        ? "/Admin/Broadcast"
+                        : $"/{slug}/Admin/Broadcast";
+                    <a href="@broadcastUrl"
+                       class="nav-link @(currentController == "Broadcast" ? "active" : "")">
+                        <i class="fas fa-paper-plane text-primary"></i>
+                        Toplu E-posta
+                    </a>
+                }
             }
         </div>
 

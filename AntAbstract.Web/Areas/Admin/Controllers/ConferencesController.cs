@@ -556,6 +556,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             existingConference.CertificateSecondSignerName = conference.CertificateSecondSignerName;
             existingConference.CertificateSecondSignerTitle = conference.CertificateSecondSignerTitle;
 
+            existingConference.AbstractSubmissionDeadline = conference.AbstractSubmissionDeadline;
+            existingConference.FullTextSubmissionDeadline = conference.FullTextSubmissionDeadline;
+            existingConference.IsSubmissionOpen = conference.IsSubmissionOpen;
+            existingConference.MaxRegistrations = conference.MaxRegistrations;
+            existingConference.IsRegistrationOpen = conference.IsRegistrationOpen;
+
             if (!string.IsNullOrWhiteSpace(existingConference.Title))
             {
                 existingConference.Slug = await GenerateUniqueConferenceSlugAsync(

@@ -783,7 +783,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             string status,
             string? slug = null,
             Guid? conferenceId = null,
-            string? returnUrl = null)
+            string? returnUrl = null,
+            string? adminNote = null)
         {
             var accessibleSubmission = await GetAccessibleSubmissionAsync(
                 id,
@@ -807,6 +808,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (Enum.TryParse<SubmissionStatus>(status, out var newStatus))
             {
                 await _submissionService.UpdateStatusAsync(id, newStatus);
+
+                // Karar notunu kaydet
+                if (!string.IsNullOrWhiteSpace(adminNote))
+                {
+                    var submissionEntity = await _context.Submissions.FindAsync(id);
+                    if (submissionEntity != null)
+                    {
+                        submissionEntity.AdminDecisionNote = adminNote.Trim();
+                        await _context.SaveChangesAsync();
+                    }
+                }
 
                 var localizedStatus = GetLocalizedSubmissionStatus(newStatus);
 

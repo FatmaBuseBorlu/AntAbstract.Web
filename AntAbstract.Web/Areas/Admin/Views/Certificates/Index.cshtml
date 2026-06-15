@@ -1,5 +1,4 @@
 ﻿@using AntAbstract.Domain.Entities
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model List<Certificate>
 
 @{
@@ -12,7 +11,26 @@
     var onlyEmailNotSent = Context.Request.Query["onlyEmailNotSent"] == "true";
 }
 
-<h3 class="mb-3">@ViewData["Title"]</h3>
+@{
+    var qConferenceId = Context.Request.Query["conferenceId"].ToString();
+    Guid.TryParse(qConferenceId, out var bulkConferenceId);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">@ViewData["Title"]</h3>
+
+    @if (bulkConferenceId != Guid.Empty)
+    {
+        <form asp-action="TriggerBulk" method="post" class="d-inline"
+              onsubmit="return confirm('Tüm katılımcılar için sertifika oluşturulsun mu?');">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="conferenceId" value="@bulkConferenceId" />
+            <button type="submit" class="btn btn-success btn-sm">
+                <i class="fas fa-certificate me-1"></i> Toplu Sertifika Oluştur
+            </button>
+        </form>
+    }
+</div>
 
 <form method="get" class="row g-2 mb-3">
     <div class="col-md-3">
