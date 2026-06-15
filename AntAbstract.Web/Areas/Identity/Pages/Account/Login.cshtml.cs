@@ -3,26 +3,34 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
+using AntAbstract.Application.Interfaces;
+using AntAbstract.Domain.Entities;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
-using AntAbstract.Domain.Entities; // AppUser'ı tanıması için zorunlu
 
 namespace AntAbstract.Web.Areas.Identity.Pages.Account
 {
     public class LoginModel : PageModel
     {
-        // KRİTİK DEĞİŞİKLİK: IdentityUser yerine AppUser
         private readonly SignInManager<AppUser> _signInManager;
+        private readonly UserManager<AppUser> _userManager;
         private readonly ILogger<LoginModel> _logger;
+        private readonly IAuditService _audit;
 
-        public LoginModel(SignInManager<AppUser> signInManager, ILogger<LoginModel> logger)
+        public LoginModel(
+            SignInManager<AppUser> signInManager,
+            UserManager<AppUser> userManager,
+            ILogger<LoginModel> logger,
+            IAuditService audit)
         {
             _signInManager = signInManager;
+            _userManager = userManager;
             _logger = logger;
+            _audit = audit;
         }
 
         [BindProperty]
@@ -82,6 +90,14 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("Kullanıcı giriş yaptı.");
+                    var loggedUser = await _userManager.FindByEmailAsync(Input.Email);
+                    _ = _audit.LogAsync(
+                        category: "Auth",
+                        action: "Login",
+                        userId: loggedUser?.Id,
+                        userName: loggedUser != null ? $"{loggedUser.FirstName} {loggedUser.LastName}".Trim() : Input.Email,
+                        description: "Başarılı giriş",
+                        ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
                     return LocalRedirect(returnUrl);
                 }
                 if (result.RequiresTwoFactor)
@@ -91,10 +107,20 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 if (result.IsLockedOut)
                 {
                     _logger.LogWarning("Kullanıcı hesabı kilitlendi.");
+                    _ = _audit.LogAsync(
+                        category: "Auth",
+                        action: "LoginLockedOut",
+                        description: $"Kilitli hesap giriş denemesi: {Input.Email}",
+                        ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
                     return RedirectToPage("./Lockout");
                 }
                 else
                 {
+                    _ = _audit.LogAsync(
+                        category: "Auth",
+                        action: "LoginFailed",
+                        description: $"Başarısız giriş denemesi: {Input.Email}",
+                        ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
                     ModelState.AddModelError(string.Empty, "Giriş başarısız. E-posta veya şifre hatalı.");
                     return Page();
                 }

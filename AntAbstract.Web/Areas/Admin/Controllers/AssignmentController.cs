@@ -33,6 +33,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly IAdminTenantAccessService _tenantAccess;
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly IStringLocalizer<AssignmentController> _localizer;
+        private readonly IAuditService _audit;
 
         public AssignmentController(
             AppDbContext context,
@@ -43,7 +44,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             IAdminTenantAccessService tenantAccess,
             IReviewerRecommendationService recommendationService,
             ISelectedConferenceService selectedConferenceService,
-            IStringLocalizer<AssignmentController> localizer)
+            IStringLocalizer<AssignmentController> localizer,
+            IAuditService audit)
         {
             _context = context;
             _tenantContext = tenantContext;
@@ -54,6 +56,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _recommendationService = recommendationService;
             _selectedConferenceService = selectedConferenceService;
             _localizer = localizer;
+            _audit = audit;
         }
 
         private string T(string key, string fallback)
@@ -862,6 +865,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "Success_ReviewerAssigned",
                 "Hakem başarıyla atandı.");
 
+            var adminUser = await _userManager.GetUserAsync(User);
+            _ = _audit.LogAsync(
+                category: "Review",
+                action: "ReviewerAssigned",
+                userId: adminUser?.Id,
+                userName: adminUser != null ? $"{adminUser.FirstName} {adminUser.LastName}".Trim() : null,
+                entityType: "Submission",
+                entityId: submissionId.ToString(),
+                description: $"Hakem atandı: {reviewer.Email} → '{submission.Title}'",
+                conferenceId: conference.Id,
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
+
             return Redirect(BuildAssignmentUrl(slug, conference.Id));
         }
 
@@ -936,6 +951,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             TempData["SuccessMessage"] = T(
                 "Success_AssignmentRemoved",
                 "Hakem ataması kaldırıldı.");
+
+            var adminUser2 = await _userManager.GetUserAsync(User);
+            _ = _audit.LogAsync(
+                category: "Review",
+                action: "ReviewerRemoved",
+                userId: adminUser2?.Id,
+                userName: adminUser2 != null ? $"{adminUser2.FirstName} {adminUser2.LastName}".Trim() : null,
+                entityType: "ReviewAssignment",
+                entityId: assignmentId.ToString(),
+                description: $"Hakem ataması kaldırıldı: '{submissionTitle}'",
+                conferenceId: conference.Id,
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
 
             return Redirect(BuildAssignmentUrl(slug, conference.Id));
         }

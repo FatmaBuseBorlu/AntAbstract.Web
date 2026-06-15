@@ -1,8 +1,10 @@
+using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Email;
 using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -19,15 +21,21 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly AppDbContext _context;
         private readonly IEmailService _emailService;
         private readonly IAdminTenantAccessService _tenantAccess;
+        private readonly IAuditService _audit;
+        private readonly UserManager<AppUser> _userManager;
 
         public PaymentsController(
             AppDbContext context,
             IEmailService emailService,
-            IAdminTenantAccessService tenantAccess)
+            IAdminTenantAccessService tenantAccess,
+            IAuditService audit,
+            UserManager<AppUser> userManager)
         {
             _context = context;
             _emailService = emailService;
             _tenantAccess = tenantAccess;
+            _audit = audit;
+            _userManager = userManager;
         }
 
         // GET /{slug}/Admin/Payments  —  tüm ödemeler + makbuz bekleyenler
@@ -206,6 +214,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             catch { /* email hatası işlemi durdurmaz */ }
 
             TempData["SuccessMessage"] = "Ödeme başarıyla onaylandı ve kullanıcıya e-posta gönderildi.";
+
+            var adminUser = await _userManager.GetUserAsync(User);
+            _ = _audit.LogAsync(
+                category: "Payment",
+                action: "PaymentApproved",
+                userId: adminUser?.Id,
+                userName: adminUser != null ? $"{adminUser.FirstName} {adminUser.LastName}".Trim() : null,
+                entityType: "Registration",
+                entityId: registrationId.ToString(),
+                description: $"Manuel ödeme onayı: {registration.Amount:N2} {registration.RegistrationType?.Currency ?? "TRY"} — {registration.AppUser?.Email}",
+                conferenceId: registration.ConferenceId,
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
+
             return RedirectBack(returnUrl);
         }
 
@@ -260,6 +281,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             catch { }
 
             TempData["SuccessMessage"] = "Makbuz reddedildi ve kullanıcıya bildirim gönderildi.";
+
+            var adminUser2 = await _userManager.GetUserAsync(User);
+            _ = _audit.LogAsync(
+                category: "Payment",
+                action: "PaymentRejected",
+                userId: adminUser2?.Id,
+                userName: adminUser2 != null ? $"{adminUser2.FirstName} {adminUser2.LastName}".Trim() : null,
+                entityType: "Registration",
+                entityId: registrationId.ToString(),
+                description: $"Makbuz reddedildi: {registration.AppUser?.Email} — Not: {note}",
+                conferenceId: registration.ConferenceId,
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
+
             return RedirectBack(returnUrl);
         }
 

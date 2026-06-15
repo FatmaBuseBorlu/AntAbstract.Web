@@ -35,6 +35,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly IWebHostEnvironment _env;
         private readonly IStringLocalizer<SubmissionsController> _localizer;
         private readonly IUploadFileValidator _uploadFileValidator;
+        private readonly IAuditService _audit;
 
         public SubmissionsController(
             AppDbContext context,
@@ -46,7 +47,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ISelectedConferenceService selectedConferenceService,
             IWebHostEnvironment env,
             IStringLocalizer<SubmissionsController> localizer,
-            IUploadFileValidator uploadFileValidator)
+            IUploadFileValidator uploadFileValidator,
+            IAuditService audit)
         {
             _context = context;
             _submissionService = submissionService;
@@ -58,6 +60,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _env = env;
             _localizer = localizer;
             _uploadFileValidator = uploadFileValidator;
+            _audit = audit;
         }
 
         private string T(string key, string fallback)
@@ -814,6 +817,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (Enum.TryParse<SubmissionStatus>(status, out var newStatus))
             {
+                // Eski statüyü audit için sakla
+                var submissionForAudit = await _context.Submissions.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id);
+                var oldStatus = submissionForAudit?.Status.ToString() ?? "?";
+
                 await _submissionService.UpdateStatusAsync(id, newStatus);
 
                 // Karar notunu kaydet
@@ -828,8 +835,22 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 }
 
                 var localizedStatus = GetLocalizedSubmissionStatus(newStatus);
-
                 TempData["SuccessMessage"] = $"Bildiri durumu başarıyla güncellendi: {localizedStatus}";
+
+                // Audit log
+                var currentUser = await _userManager.GetUserAsync(User);
+                _ = _audit.LogAsync(
+                    category: "Submission",
+                    action: "StatusChanged",
+                    userId: currentUser?.Id,
+                    userName: currentUser != null ? $"{currentUser.FirstName} {currentUser.LastName}".Trim() : null,
+                    entityType: "Submission",
+                    entityId: id.ToString(),
+                    description: $"Durum: {oldStatus} → {newStatus}",
+                    conferenceId: accessibleSubmission.ConferenceId,
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    oldValues: oldStatus,
+                    newValues: newStatus.ToString());
             }
             else
             {
