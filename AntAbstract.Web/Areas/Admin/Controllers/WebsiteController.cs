@@ -1,7 +1,7 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
+using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AdminPolicies.TenantAdminOnly)]
     public class WebsiteController : Controller
     {
         private const int MaxContentJsonLength = 10000;
@@ -31,18 +31,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
-        private readonly UserManager<AppUser> _userManager;
+        private readonly IAdminTenantAccessService _tenantAccess;
         private readonly IStringLocalizer<WebsiteController> _localizer;
 
         public WebsiteController(
             AppDbContext context,
             TenantContext tenantContext,
-            UserManager<AppUser> userManager,
+            IAdminTenantAccessService tenantAccess,
             IStringLocalizer<WebsiteController> localizer)
         {
             _context = context;
             _tenantContext = tenantContext;
-            _userManager = userManager;
+            _tenantAccess = tenantAccess;
             _localizer = localizer;
         }
 
@@ -84,46 +84,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 : "Home";
         }
 
-        private async Task<AppUser?> GetCurrentUserAsync()
-        {
-            return await _userManager.GetUserAsync(User);
-        }
-
         private async Task<Guid?> GetCurrentAdminTenantIdAsync()
         {
-            var user = await GetCurrentUserAsync();
-
-            if (user == null || !user.TenantId.HasValue)
-            {
-                return null;
-            }
-
-            return user.TenantId.Value;
+            return await _tenantAccess.GetAdminTenantIdAsync(User);
         }
 
         private async Task<bool> CanAccessCurrentTenantAsync(string? slug = null)
         {
-            var tenant = _tenantContext.Current;
-
-            if (tenant == null)
-            {
-                return false;
-            }
-
-            if (!string.IsNullOrWhiteSpace(slug) &&
-                !string.Equals(tenant.Slug, slug, StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            var adminTenantId = await GetCurrentAdminTenantIdAsync();
-
-            if (!adminTenantId.HasValue)
-            {
-                return false;
-            }
-
-            return adminTenantId.Value == tenant.Id;
+            return await _tenantAccess.CanAccessCurrentTenantAsync(
+                User,
+                slug,
+                allowSuperAdmin: false);
         }
 
         private async Task<bool> ConferenceBelongsToCurrentTenantAsync(Guid conferenceId)
