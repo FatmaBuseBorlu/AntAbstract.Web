@@ -1319,6 +1319,12 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                         @L("Management_Session", "Program / Oturumlar")
                     </a>
 
+                    <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/ReviewCriteria?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/ReviewCriteria?conferenceId={selectedConferenceId}")"
+                       class="nav-link @(currentController == "ReviewCriteria" ? "active" : "")">
+                        <i class="fas fa-star-half-alt text-warning"></i>
+                        Değerlendirme Kriterleri
+                    </a>
+
                     <a href="@reportsUrl"
                        class="nav-link @(currentController == "Reports" ? "active" : "")">
                         <i class="fas fa-chart-pie text-warning"></i>

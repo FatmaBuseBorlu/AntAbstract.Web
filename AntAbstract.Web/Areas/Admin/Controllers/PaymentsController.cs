@@ -151,6 +151,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var txId = $"MANUAL-{now:yyyyMMddHHmmss}-{shortId}";
 
             registration.IsPaid = true;
+            registration.Status = RegistrationStatus.Confirmed;
             registration.PaymentDate = now;
             registration.PaymentTransactionId = txId;
             registration.AdminPaymentNote = note;
@@ -248,10 +249,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return RedirectBack(returnUrl);
             }
 
-            // Makbuzu temizle, notu sakla
+            // Makbuzu temizle, notu sakla, durumu güncelle
             registration.ReceiptFilePath = null;
             registration.ReceiptUploadedAt = null;
             registration.AdminPaymentNote = note;
+            registration.Status = RegistrationStatus.PaymentRejected;
             await _context.SaveChangesAsync();
 
             // Kullanıcıya bildir

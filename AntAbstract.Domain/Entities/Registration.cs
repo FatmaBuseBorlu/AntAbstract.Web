@@ -76,6 +76,12 @@ namespace AntAbstract.Domain.Entities
         public string? AdminPaymentNote { get; set; }
 
         /// <summary>
+        /// Kayıt yaşam döngüsü durumu.
+        /// IsPaid=true iken Status=Confirmed olmalıdır (senkronize tutulur).
+        /// </summary>
+        public RegistrationStatus Status { get; set; } = RegistrationStatus.Pending;
+
+        /// <summary>
         /// QR check-in için benzersiz token. Registration oluşturulurken
         /// otomatik atanır; değişmez.
         /// </summary>

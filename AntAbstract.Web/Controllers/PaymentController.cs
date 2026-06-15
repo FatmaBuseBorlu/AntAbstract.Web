@@ -361,6 +361,7 @@ namespace AntAbstract.Web.Controllers
             payment.TransactionId = checkoutSessionId;
 
             registration.IsPaid = true;
+            registration.Status = AntAbstract.Domain.Entities.RegistrationStatus.Confirmed;
             registration.PaymentDate = now;
             registration.PaymentTransactionId = !string.IsNullOrWhiteSpace(paymentIntentId)
                 ? paymentIntentId
@@ -1041,6 +1042,7 @@ namespace AntAbstract.Web.Controllers
 
             registration.ReceiptFilePath = $"/uploads/receipts/{fileName}";
             registration.ReceiptUploadedAt = DateTime.UtcNow;
+            registration.Status = AntAbstract.Domain.Entities.RegistrationStatus.AwaitingApproval;
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Makbuzunuz başarıyla yüklendi. Yönetici onayından sonra kaydınız aktif olacaktır.";

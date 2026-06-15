@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace AntAbstract.Domain.Entities
@@ -23,5 +24,8 @@ namespace AntAbstract.Domain.Entities
         public int ScoreRelevance { get; set; }         // Konu uygunluğu
 
         public DateTime ReviewedAt { get; set; } = DateTime.UtcNow;
+
+        /// <summary>Konferansa özel kriter puanları (opsiyonel).</summary>
+        public ICollection<ReviewCriterionScore> CriterionScores { get; set; } = new List<ReviewCriterionScore>();
     }
 }

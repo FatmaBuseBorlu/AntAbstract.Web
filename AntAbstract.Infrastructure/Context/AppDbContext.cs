@@ -55,6 +55,8 @@ namespace AntAbstract.Infrastructure.Context
 
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<SurveyAnswer> SurveyAnswers { get; set; }
+        public DbSet<ReviewCriterion> ReviewCriteria { get; set; }
+        public DbSet<ReviewCriterionScore> ReviewCriterionScores { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
