@@ -1,4 +1,5 @@
 ﻿using AntAbstract.Domain.Entities;
+using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.ViewModels.Admin.Reports;
@@ -10,7 +11,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -429,7 +434,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                 if (submissions[i].DecisionDate.HasValue)
                 {
-                    submissionsSheet.Cell(row, 6).Value = submissions[i].DecisionDate.Value;
+                    submissionsSheet.Cell(row, 6).Value = submissions[i].DecisionDate!.Value;
                 }
                 else
                 {
@@ -462,7 +467,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                 if (registrationsData[i].PaymentDate.HasValue)
                 {
-                    registrationsSheet.Cell(row, 5).Value = registrationsData[i].PaymentDate.Value;
+                    registrationsSheet.Cell(row, 5).Value = registrationsData[i].PaymentDate!.Value;
                 }
                 else
                 {
@@ -490,6 +495,178 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 fileName
             );
+        }
+
+        [HttpGet("/{slug}/Admin/Reports/Pdf")]
+        public async Task<IActionResult> ExportPdf(
+            string slug,
+            Guid? conferenceId = null)
+        {
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_SelectConferenceFirst",
+                    "Lütfen yetkili olduğunuz geçerli bir kongre seçiniz.");
+
+                return RedirectToAction(
+                    nameof(SelectConference),
+                    new { returnUrl = $"/{slug}/Admin/Reports" });
+            }
+
+            SetSelectedConferenceSession(conference);
+
+            var confId = conference.Id;
+
+            var submissions = await _context.Submissions
+                .AsNoTracking()
+                .Include(s => s.Author)
+                .Where(s => s.ConferenceId == confId)
+                .OrderBy(s => s.CreatedDate)
+                .Select(s => new
+                {
+                    s.Title,
+                    AuthorName = s.Author != null
+                        ? (s.Author.FirstName + " " + s.Author.LastName).Trim()
+                        : (s.Author != null ? s.Author.Email : ""),
+                    AuthorEmail = s.Author != null ? s.Author.Email : "",
+                    s.Status,
+                    s.CreatedDate,
+                    s.DecisionDate
+                })
+                .ToListAsync();
+
+            var totalCount    = submissions.Count;
+            var acceptedCount = submissions.Count(s => s.Status == SubmissionStatus.Accepted);
+            var rejectedCount = submissions.Count(s => s.Status == SubmissionStatus.Rejected);
+            var pendingCount  = submissions.Count(s => s.Status != SubmissionStatus.Accepted && s.Status != SubmissionStatus.Rejected);
+
+            const string Navy  = "#1a2d5a";
+            const string Gold  = "#b8972a";
+            const string Cream = "#fdf8ee";
+
+            var pdfBytes = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.MarginTop(18);
+                    page.MarginBottom(18);
+                    page.MarginHorizontal(22);
+                    page.DefaultTextStyle(x => x.FontFamily("Arial").FontSize(9));
+
+                    page.Header().Column(col =>
+                    {
+                        col.Item().Background(Navy).PaddingVertical(10).PaddingHorizontal(14).Row(row =>
+                        {
+                            row.RelativeItem().Column(inner =>
+                            {
+                                inner.Item().Text(conference.Title ?? "Kongre Bildiri Raporu")
+                                    .FontColor(Colors.White).FontSize(14).Bold();
+                                inner.Item().Text($"Üretim tarihi: {DateTime.Now:dd.MM.yyyy HH:mm}")
+                                    .FontColor("#cccccc").FontSize(8);
+                            });
+                            row.ConstantItem(90).AlignRight().AlignMiddle()
+                                .Text("BİLDİRİ RAPORU").FontColor(Gold).Bold().FontSize(10);
+                        });
+
+                        col.Item().Background(Gold).Height(3);
+
+                        // Özet istatistik satırı
+                        col.Item().Background(Cream).PaddingVertical(7).PaddingHorizontal(14).Row(row =>
+                        {
+                            void StatBox(string label, string val, string color)
+                            {
+                                row.RelativeItem().Border(1).BorderColor("#dddddd").PaddingVertical(4).PaddingHorizontal(8).Column(c =>
+                                {
+                                    c.Item().Text(label).FontSize(7).FontColor("#666666");
+                                    c.Item().Text(val).FontSize(16).Bold().FontColor(color);
+                                });
+                            }
+                            StatBox("Toplam Bildiri", totalCount.ToString(), Navy);
+                            row.ConstantItem(6);
+                            StatBox("Kabul", acceptedCount.ToString(), "#16a34a");
+                            row.ConstantItem(6);
+                            StatBox("Red", rejectedCount.ToString(), "#dc2626");
+                            row.ConstantItem(6);
+                            StatBox("Beklemede", pendingCount.ToString(), "#ca8a04");
+                        });
+
+                        col.Item().Height(6);
+                    });
+
+                    page.Content().Column(col =>
+                    {
+                        // Tablo başlığı
+                        col.Item().Background(Navy).PaddingVertical(5).PaddingHorizontal(6).Row(row =>
+                        {
+                            row.ConstantItem(22).Text("#").FontColor(Colors.White).Bold().FontSize(8);
+                            row.RelativeItem(4).Text("Bildiri Başlığı").FontColor(Colors.White).Bold().FontSize(8);
+                            row.RelativeItem(2).Text("Yazar").FontColor(Colors.White).Bold().FontSize(8);
+                            row.RelativeItem(2).Text("E-posta").FontColor(Colors.White).Bold().FontSize(8);
+                            row.ConstantItem(55).Text("Durum").FontColor(Colors.White).Bold().FontSize(8);
+                            row.ConstantItem(52).Text("Tarih").FontColor(Colors.White).Bold().FontSize(8);
+                        });
+
+                        for (var i = 0; i < submissions.Count; i++)
+                        {
+                            var s = submissions[i];
+                            var bg = i % 2 == 0 ? "#ffffff" : "#f8fafc";
+                            var statusLabel = s.Status switch
+                            {
+                                SubmissionStatus.Accepted        => "Kabul",
+                                SubmissionStatus.Rejected        => "Red",
+                                SubmissionStatus.RevisionRequired => "Revizyon",
+                                SubmissionStatus.Pending         => "Beklemede",
+                                SubmissionStatus.UnderReview     => "İncelemede",
+                                _                                => s.Status.ToString()
+                            };
+                            var statusColor = s.Status switch
+                            {
+                                SubmissionStatus.Accepted         => "#16a34a",
+                                SubmissionStatus.Rejected         => "#dc2626",
+                                SubmissionStatus.RevisionRequired => "#d97706",
+                                _                                 => "#6b7280"
+                            };
+
+                            col.Item().Background(bg).BorderBottom(1).BorderColor("#e5e7eb")
+                                .PaddingVertical(4).PaddingHorizontal(6).Row(row =>
+                            {
+                                row.ConstantItem(22).Text((i + 1).ToString()).FontSize(8).FontColor("#6b7280");
+                                row.RelativeItem(4).Text(s.Title ?? "").FontSize(8);
+                                row.RelativeItem(2).Text(s.AuthorName ?? "").FontSize(8);
+                                row.RelativeItem(2).Text(s.AuthorEmail ?? "").FontSize(7).FontColor("#6b7280");
+                                row.ConstantItem(55).Text(statusLabel).FontSize(8).Bold().FontColor(statusColor);
+                                row.ConstantItem(52).Text(s.CreatedDate.ToString("dd.MM.yyyy")).FontSize(8).FontColor("#6b7280");
+                            });
+                        }
+                    });
+
+                    page.Footer().PaddingHorizontal(6).Row(row =>
+                    {
+                        row.RelativeItem().Text($"AntAbstract — {conference.Title}")
+                            .FontSize(7).FontColor("#9ca3af");
+                        row.ConstantItem(80).AlignRight()
+                            .Text(x =>
+                            {
+                                x.Span("Sayfa ").FontSize(7).FontColor("#9ca3af");
+                                x.CurrentPageNumber().FontSize(7).FontColor("#9ca3af");
+                                x.Span(" / ").FontSize(7).FontColor("#9ca3af");
+                                x.TotalPages().FontSize(7).FontColor("#9ca3af");
+                            });
+                    });
+                });
+            }).GeneratePdf();
+
+            var safeTitle = string.Join(
+                "_",
+                (conference.Title ?? "conference")
+                    .Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+
+            var fileName = $"rapor_{safeTitle}_{DateTime.UtcNow:yyyyMMdd_HHmm}.pdf";
+
+            return File(pdfBytes, "application/pdf", fileName);
         }
 
         [HttpGet("/Reports/Index")]
