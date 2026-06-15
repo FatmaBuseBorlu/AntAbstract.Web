@@ -44,6 +44,14 @@ namespace AntAbstract.Domain.Entities
         [Display(Name = "Aktif mi?")]
         public bool IsActive { get; set; } = true;
 
+        /// <summary>
+        /// Bu kayıt türüne sahip kullanıcının alacağı sistem rolü.
+        /// Örn: "Author", "Listener". Boş bırakılırsa "Author" varsayılır.
+        /// </summary>
+        [StringLength(50)]
+        [Display(Name = "Katılımcı Rolü")]
+        public string RoleName { get; set; } = "Author";
+
         [Required]
         [Display(Name = "Kongre")]
         public Guid ConferenceId { get; set; }
