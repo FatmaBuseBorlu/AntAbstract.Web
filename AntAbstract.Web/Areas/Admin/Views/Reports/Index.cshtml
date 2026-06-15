@@ -1,6 +1,5 @@
 ﻿@using AntAbstract.Web.Models.ViewModels
 @using AntAbstract.Web.Models.ViewModels.Admin.Reports
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @model ReportsIndexViewModel
 
 @{
@@ -14,6 +13,14 @@
     var excelUrl = string.IsNullOrWhiteSpace(slug)
         ? $"/Admin/Reports/Excel?conferenceId={Model.ConferenceId}"
         : $"/{slug}/Admin/Reports/Excel?conferenceId={Model.ConferenceId}";
+
+    var pdfUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Reports/Pdf?conferenceId={Model.ConferenceId}"
+        : $"/{slug}/Admin/Reports/Pdf?conferenceId={Model.ConferenceId}";
+
+    var refereeReportUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Reports/Referees?conferenceId={Model.ConferenceId}"
+        : $"/{slug}/Admin/Reports/Referees?conferenceId={Model.ConferenceId}";
 }
 
 <div class="container-fluid py-4">
@@ -30,6 +37,12 @@
         <div class="btn-group shadow-sm">
             <a href="@excelUrl" class="btn btn-success btn-sm">
                 <i class="fas fa-file-excel me-1"></i> @Localizer["DownloadExcelButton"]
+            </a>
+            <a href="@pdfUrl" class="btn btn-danger btn-sm">
+                <i class="fas fa-file-pdf me-1"></i> PDF İndir
+            </a>
+            <a href="@refereeReportUrl" class="btn btn-info btn-sm text-white">
+                <i class="fas fa-user-graduate me-1"></i> Hakem Raporu
             </a>
         </div>
     </div>

@@ -221,6 +221,55 @@
                 </div>
             </div>
 
+            @* Akademik Kimlik *@
+            <div class="row g-3 mt-1">
+                <div class="col-12">
+                    <h6 class="fw-semibold text-muted mb-2" style="border-bottom:1px solid #dee2e6;padding-bottom:6px;">
+                        <i class="fas fa-id-badge me-1"></i> Akademik Kimlik
+                    </h6>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label asp-for="Input.Faculty" class="form-label fw-medium">Fakülte</label>
+                        <input asp-for="Input.Faculty" class="form-control" placeholder="Örn: Mühendislik Fakültesi" />
+                        <span asp-validation-for="Input.Faculty" class="text-danger small"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label asp-for="Input.Department" class="form-label fw-medium">Bölüm</label>
+                        <input asp-for="Input.Department" class="form-control" placeholder="Örn: Bilgisayar Mühendisliği" />
+                        <span asp-validation-for="Input.Department" class="text-danger small"></span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label asp-for="Input.OrcidId" class="form-label fw-medium">
+                            ORCID ID
+                            <a href="https://orcid.org" target="_blank" rel="noopener" class="text-muted ms-1" title="ORCID nedir?">
+                                <i class="fas fa-circle-question small"></i>
+                            </a>
+                        </label>
+                        <input asp-for="Input.OrcidId" class="form-control font-monospace" placeholder="0000-0000-0000-0000" />
+                        <span asp-validation-for="Input.OrcidId" class="text-danger small"></span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label asp-for="Input.ResearcherId" class="form-label fw-medium">ResearcherID</label>
+                        <input asp-for="Input.ResearcherId" class="form-control font-monospace" placeholder="A-0000-0000" />
+                        <span asp-validation-for="Input.ResearcherId" class="text-danger small"></span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label asp-for="Input.GoogleScholarLink" class="form-label fw-medium">Google Scholar</label>
+                        <input asp-for="Input.GoogleScholarLink" class="form-control" placeholder="https://scholar.google.com/..." />
+                        <span asp-validation-for="Input.GoogleScholarLink" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+
             <div class="profile-actions">
                 <a href="@backUrl" class="btn btn-light border rounded-pill px-4">
                     @T("CancelButton", "Vazgeç")

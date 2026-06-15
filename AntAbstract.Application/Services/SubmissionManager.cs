@@ -51,9 +51,9 @@ namespace AntAbstract.Application.Services
                     new SubmissionFile
                     {
                         SubmissionId = submission.Id,
-                        FileName = input.OriginalFileName,
-                        StoredFileName = input.StoredFileName,
-                        FilePath = input.FilePath,
+                        FileName = input.OriginalFileName!,
+                        StoredFileName = input.StoredFileName!,
+                        FilePath = input.FilePath!,
                         Type = SubmissionFileType.FullText,
                         UploadedAt = DateTime.UtcNow,
                         Version = 1
@@ -109,12 +109,15 @@ namespace AntAbstract.Application.Services
 
         public async Task<List<SubmissionDto>> GetMySubmissionsAsync(string userId)
         {
+            // Hem baş yazar (AuthorId) hem de ortak yazar (SubmissionAuthor.AppUserId) olduğu bildiriler
             var list = await _context.Submissions
                 .Include(s => s.SubmissionAuthors)
                 .Include(s => s.Files)
                 .Include(s => s.Conference)
                 .Include(s => s.ConferenceTopic)
-                .Where(s => s.AuthorId == userId)
+                .Where(s =>
+                    s.AuthorId == userId ||
+                    s.SubmissionAuthors.Any(a => a.AppUserId == userId))
                 .OrderByDescending(s => s.CreatedDate)
                 .ToListAsync();
 
@@ -202,9 +205,9 @@ namespace AntAbstract.Application.Services
                 var newFile = new SubmissionFile
                 {
                     SubmissionId = submission.Id,
-                    FileName = input.OriginalFileName,
-                    StoredFileName = input.StoredFileName,
-                    FilePath = input.FilePath,
+                    FileName = input.OriginalFileName!,
+                    StoredFileName = input.StoredFileName!,
+                    FilePath = input.FilePath!,
                     Type = SubmissionFileType.FullText,
                     Version = newVersion,
                     UploadedAt = DateTime.UtcNow

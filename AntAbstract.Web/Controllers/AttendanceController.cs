@@ -233,6 +233,7 @@ namespace AntAbstract.Web.Controllers
             if (attendance.CompletedAt.HasValue || attendance.TotalSeconds >= attendance.RequiredSeconds)
             {
                 await _certificateService.EnsureAuthorCertificateAsync(conference.Id, user.Id);
+                await _certificateService.EnsureAttendeeCertificateAsync(conference.Id, user.Id);
             }
 
             return Json(new
@@ -322,6 +323,7 @@ namespace AntAbstract.Web.Controllers
             if (attendance.CompletedAt.HasValue || attendance.TotalSeconds >= attendance.RequiredSeconds)
             {
                 await _certificateService.EnsureAuthorCertificateAsync(conference.Id, user.Id);
+                await _certificateService.EnsureAttendeeCertificateAsync(conference.Id, user.Id);
             }
 
             return Json(new

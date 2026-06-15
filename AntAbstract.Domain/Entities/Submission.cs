@@ -68,6 +68,9 @@ namespace AntAbstract.Domain.Entities
 
         public SubmissionStatus Status { get; set; }
 
+        /// <summary>Admin'in karar sırasında yazara bıraktığı not.</summary>
+        public string? AdminDecisionNote { get; set; }
+
         public bool IsFeedbackGiven { get; set; }
 
         public Guid ConferenceId { get; set; }

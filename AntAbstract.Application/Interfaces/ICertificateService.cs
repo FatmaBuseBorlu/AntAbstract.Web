@@ -24,6 +24,8 @@ namespace AntAbstract.Application.Interfaces
             string reviewerFullName,
             string email);
 
+        Task EnsureAttendeeCertificateAsync(Guid conferenceId, string userId);
+
         byte[] GenerateAcceptanceCertificate(CertificateDataDto data);
 
         Task RegenerateCertificateFileAsync(Guid certificateId, bool resendEmail = false);

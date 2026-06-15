@@ -20,6 +20,7 @@ namespace AntAbstract.Web.Controllers
     public class DashboardController : Controller
     {
         private readonly UserManager<AppUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly IStringLocalizer<DashboardController> _localizer;
@@ -46,11 +47,13 @@ namespace AntAbstract.Web.Controllers
         public DashboardController(
             AppDbContext context,
             UserManager<AppUser> userManager,
+            RoleManager<IdentityRole> roleManager,
             TenantContext tenantContext,
             IStringLocalizer<DashboardController> localizer)
         {
             _context = context;
             _userManager = userManager;
+            _roleManager = roleManager;
             _tenantContext = tenantContext;
             _localizer = localizer;
         }
@@ -82,25 +85,60 @@ namespace AntAbstract.Web.Controllers
         {
             ClearSelectedConference();
 
-            ViewBag.TotalTenants = await _context.Tenants
-                .AsNoTracking()
-                .CountAsync();
+            var now = DateTime.UtcNow;
 
-            ViewBag.TotalUsers = await _context.Users
-                .AsNoTracking()
-                .CountAsync();
+            // --- Temel sayılar ---
+            ViewBag.TotalTenants      = await _context.Tenants.AsNoTracking().CountAsync();
+            ViewBag.TotalConferences  = await _context.Conferences.AsNoTracking().CountAsync();
+            ViewBag.TotalUsers        = await _context.Users.AsNoTracking().CountAsync();
+            ViewBag.TotalSubmissions  = await _context.Submissions.AsNoTracking().CountAsync();
+            ViewBag.TotalRegistrations = await _context.Registrations.AsNoTracking().CountAsync();
+            ViewBag.TotalCertificates = await _context.Certificates.AsNoTracking().CountAsync();
 
-            ViewBag.TotalConferences = await _context.Conferences
+            // --- Aktif kongreler (bugün başladı/henüz bitmedi) ---
+            ViewBag.ActiveConferences = await _context.Conferences
                 .AsNoTracking()
-                .CountAsync();
+                .CountAsync(c => c.StartDate <= now && c.EndDate >= now);
 
-            ViewBag.TotalSubmissions = await _context.Submissions
-                .AsNoTracking()
-                .CountAsync();
+            // --- Rol bazlı kullanıcı sayıları ---
+            var adminRole    = await _roleManager.FindByNameAsync("Admin");
+            var authorRole   = await _roleManager.FindByNameAsync("Author");
+            var refereeRole  = await _roleManager.FindByNameAsync("Referee");
+            var listenerRole = await _roleManager.FindByNameAsync("Listener");
 
-            ViewBag.TotalRegistrations = await _context.Registrations
+            ViewBag.TotalAdmins    = adminRole    != null ? (await _userManager.GetUsersInRoleAsync("Admin")).Count    : 0;
+            ViewBag.TotalAuthors   = authorRole   != null ? (await _userManager.GetUsersInRoleAsync("Author")).Count   : 0;
+            ViewBag.TotalReferees  = refereeRole  != null ? (await _userManager.GetUsersInRoleAsync("Referee")).Count  : 0;
+            ViewBag.TotalListeners = listenerRole != null ? (await _userManager.GetUsersInRoleAsync("Listener")).Count : 0;
+
+            // --- Bildiri durum dağılımı ---
+            var submissionStats = await _context.Submissions
                 .AsNoTracking()
-                .CountAsync();
+                .GroupBy(s => s.Status)
+                .Select(g => new { Status = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            ViewBag.SubmissionAccepted  = submissionStats.FirstOrDefault(x => x.Status == SubmissionStatus.Accepted)?.Count  ?? 0;
+            ViewBag.SubmissionRejected  = submissionStats.FirstOrDefault(x => x.Status == SubmissionStatus.Rejected)?.Count  ?? 0;
+            ViewBag.SubmissionPending   = submissionStats.FirstOrDefault(x => x.Status == SubmissionStatus.Pending)?.Count   ?? 0;
+            ViewBag.SubmissionUnderReview = submissionStats.FirstOrDefault(x => x.Status == SubmissionStatus.UnderReview)?.Count ?? 0;
+
+            // --- Son 5 kongre ---
+            ViewBag.RecentConferences = await _context.Conferences
+                .AsNoTracking()
+                .Include(c => c.Tenant)
+                .OrderByDescending(c => c.StartDate)
+                .Take(5)
+                .ToListAsync();
+
+            // --- Son 5 kayıt ---
+            ViewBag.RecentRegistrations = await _context.Registrations
+                .AsNoTracking()
+                .Include(r => r.AppUser)
+                .Include(r => r.Conference)
+                .OrderByDescending(r => r.RegistrationDate)
+                .Take(5)
+                .ToListAsync();
 
             return View();
         }
@@ -558,7 +596,7 @@ namespace AntAbstract.Web.Controllers
 
                 if (isListener)
                 {
-                    return Redirect($"/{selectedSlug}/Program/Index");
+                    return Redirect($"/{selectedSlug}/listener-panel");
                 }
 
                 return Redirect($"/{selectedSlug}/Dashboard");
@@ -751,8 +789,36 @@ namespace AntAbstract.Web.Controllers
                     .CountAsync(s => s.Status == SubmissionStatus.Rejected),
 
                 ConferenceName = currentConferenceName,
-                MyConferences = myConferences
+                MyConferences = myConferences,
+                SelectedConference = selectedConference
             };
+
+            // Admin özgü istatistikler — sadece konferans seçiliyse
+            if (isAdmin && selectedConferenceId.HasValue)
+            {
+                var confId = selectedConferenceId.Value;
+
+                var regQuery = _context.Registrations.AsNoTracking()
+                    .Where(r => r.ConferenceId == confId);
+
+                viewModel.TotalRegistrations = await regQuery.CountAsync();
+                viewModel.PendingPayments    = await regQuery.CountAsync(r => !r.IsPaid && r.ReceiptFilePath == null);
+                viewModel.ReceiptWaiting     = await regQuery.CountAsync(r => !r.IsPaid && r.ReceiptFilePath != null);
+                viewModel.TotalRevenue       = await regQuery.Where(r => r.IsPaid).SumAsync(r => r.Amount);
+
+                // Hakeme atanmamış kabul edilmiş / bekleyen bildirileri say
+                viewModel.PendingAssignments = await _context.Submissions.AsNoTracking()
+                    .CountAsync(s =>
+                        s.ConferenceId == confId &&
+                        (s.Status == SubmissionStatus.Pending || s.Status == SubmissionStatus.New) &&
+                        !_context.ReviewAssignments.Any(ra => ra.SubmissionId == s.Id));
+
+                viewModel.TotalReferees = await _context.ReviewAssignments.AsNoTracking()
+                    .Where(ra => ra.Submission != null && ra.Submission.ConferenceId == confId)
+                    .Select(ra => ra.ReviewerId)
+                    .Distinct()
+                    .CountAsync();
+            }
 
             return View(viewModel);
         }
@@ -830,6 +896,89 @@ namespace AntAbstract.Web.Controllers
             }
 
             return View("~/Views/Dashboard/ProceedingBook.cshtml", model);
+        }
+
+        [Authorize(Roles = "Listener,Dinleyici")]
+        [HttpGet("/listener-panel")]
+        [HttpGet("/{slug}/listener-panel")]
+        public async Task<IActionResult> ListenerPanel(string? slug = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            var selectedConferenceId = GetSelectedConferenceId();
+            var currentSlug = slug ?? GetSlug();
+
+            Conference? conference = null;
+
+            if (selectedConferenceId.HasValue && selectedConferenceId.Value != Guid.Empty)
+            {
+                conference = await _context.Conferences
+                    .AsNoTracking()
+                    .Include(c => c.Tenant)
+                    .FirstOrDefaultAsync(c => c.Id == selectedConferenceId.Value);
+            }
+
+            if (conference == null && !string.IsNullOrWhiteSpace(currentSlug))
+            {
+                conference = await _context.Conferences
+                    .AsNoTracking()
+                    .Include(c => c.Tenant)
+                    .FirstOrDefaultAsync(c =>
+                        c.Slug == currentSlug ||
+                        (c.Tenant != null && c.Tenant.Slug == currentSlug));
+            }
+
+            if (conference == null)
+            {
+                return RedirectToAction(nameof(MyConferences));
+            }
+
+            var canonicalSlug = conference.Tenant?.Slug ?? conference.Slug ?? currentSlug ?? "";
+
+            // Kayıt bilgisi
+            var registration = await _context.Registrations
+                .AsNoTracking()
+                .Include(r => r.RegistrationType)
+                .FirstOrDefaultAsync(r =>
+                    r.ConferenceId == conference.Id &&
+                    r.AppUserId == user.Id);
+
+            // Katılım bilgisi
+            var attendance = await _context.ConferenceAttendances
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a =>
+                    a.ConferenceId == conference.Id &&
+                    a.UserId == user.Id);
+
+            // Sertifika bilgisi
+            var certificate = await _context.Certificates
+                .AsNoTracking()
+                .Where(c =>
+                    c.ConferenceId == conference.Id &&
+                    c.UserId == user.Id &&
+                    c.Type == AntAbstract.Domain.Entities.CertificateType.Attendee)
+                .OrderByDescending(c => c.GeneratedAt)
+                .FirstOrDefaultAsync();
+
+            // Oturum (program) sayısı
+            var sessionCount = await _context.Sessions
+                .AsNoTracking()
+                .CountAsync(s => s.ConferenceId == conference.Id);
+
+            ViewBag.Conference = conference;
+            ViewBag.Slug = canonicalSlug;
+            ViewBag.Registration = registration;
+            ViewBag.Attendance = attendance;
+            ViewBag.Certificate = certificate;
+            ViewBag.SessionCount = sessionCount;
+            ViewBag.FullName = $"{user.FirstName} {user.LastName}".Trim();
+
+            return View();
         }
 
         public async Task<IActionResult> MyConferences()
