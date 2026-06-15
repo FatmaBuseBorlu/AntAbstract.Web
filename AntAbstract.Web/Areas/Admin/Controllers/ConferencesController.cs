@@ -1,10 +1,11 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
+using AntAbstract.Web.Files;
+using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -19,37 +20,33 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = AdminPolicies.TenantAdmin)]
     public class ConferencesController : Controller
     {
-        private const long MaxTemplateFileSize = 10 * 1024 * 1024;
-
-        private static readonly HashSet<string> AllowedTemplateExtensions = new(
-            new[] { ".pdf", ".doc", ".docx" },
-            StringComparer.OrdinalIgnoreCase
-        );
-
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
-        private readonly UserManager<AppUser> _userManager;
+        private readonly IAdminTenantAccessService _tenantAccess;
         private readonly IWebHostEnvironment _env;
         private readonly IStringLocalizer<ConferencesController> _localizer;
+        private readonly IUploadFileValidator _uploadFileValidator;
 
         public ConferencesController(
             AppDbContext context,
             TenantContext tenantContext,
             ISelectedConferenceService selectedConferenceService,
-            UserManager<AppUser> userManager,
+            IAdminTenantAccessService tenantAccess,
             IWebHostEnvironment env,
-            IStringLocalizer<ConferencesController> localizer)
+            IStringLocalizer<ConferencesController> localizer,
+            IUploadFileValidator uploadFileValidator)
         {
             _context = context;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
-            _userManager = userManager;
+            _tenantAccess = tenantAccess;
             _env = env;
             _localizer = localizer;
+            _uploadFileValidator = uploadFileValidator;
         }
 
         private string T(string key, string fallback)
@@ -61,48 +58,24 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 : value.Value;
         }
 
-        private async Task<AppUser?> GetCurrentUserAsync()
+        private bool IsSuperAdminUser()
         {
-            return await _userManager.GetUserAsync(User);
+            return _tenantAccess.IsSuperAdmin(User);
         }
 
         private async Task<Guid?> GetCurrentAdminTenantIdAsync()
         {
-            var user = await GetCurrentUserAsync();
-
-            if (user == null || !user.TenantId.HasValue)
-            {
-                return null;
-            }
-
-            return user.TenantId.Value;
+            return await _tenantAccess.GetAdminTenantIdAsync(User);
         }
 
         private async Task<bool> CanAccessCurrentTenantAsync()
         {
-            if (_tenantContext.Current == null)
-            {
-                return false;
-            }
-
-            if (User.IsInRole("SuperAdmin"))
-            {
-                return true;
-            }
-
-            var tenantId = await GetCurrentAdminTenantIdAsync();
-
-            if (!tenantId.HasValue)
-            {
-                return false;
-            }
-
-            return tenantId.Value == _tenantContext.Current.Id;
+            return await _tenantAccess.CanAccessCurrentTenantAsync(User);
         }
 
         private async Task FillTenantViewBagAsync(Guid? selectedTenantId = null)
         {
-            if (User.IsInRole("SuperAdmin"))
+            if (IsSuperAdminUser())
             {
                 var allTenants = await _context.Tenants
                     .AsNoTracking()
@@ -210,25 +183,29 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private async Task<string> UploadTemplateFileAsync(IFormFile file)
         {
-            if (file == null || file.Length == 0)
-            {
-                throw new InvalidOperationException(
-                    T("Error_FileRequired", "Dosya seçilmedi."));
-            }
+            var validation = await _uploadFileValidator.ValidateAsync(
+                file,
+                UploadFileProfile.ConferenceTemplate);
 
-            if (file.Length > MaxTemplateFileSize)
+            if (!validation.IsValid)
             {
-                throw new InvalidOperationException(
-                    T("Error_FileTooLarge", "Dosya boyutu en fazla 10 MB olabilir."));
-            }
+                var errorMessage = validation.Error switch
+                {
+                    UploadValidationError.Empty => T(
+                        "Error_FileRequired",
+                        "Dosya seçilmedi."),
+                    UploadValidationError.TooLarge => T(
+                        "Error_FileTooLarge",
+                        "Dosya boyutu en fazla 10 MB olabilir."),
+                    UploadValidationError.InvalidExtension => T(
+                        "Error_InvalidTemplateFileExtension",
+                        "Sadece PDF, DOC ve DOCX dosyaları yüklenebilir."),
+                    _ => T(
+                        "Error_InvalidTemplateFileContent",
+                        "Dosya içeriği seçilen formatla eşleşmiyor.")
+                };
 
-            var extension = Path.GetExtension(file.FileName);
-
-            if (string.IsNullOrWhiteSpace(extension) ||
-                !AllowedTemplateExtensions.Contains(extension))
-            {
-                throw new InvalidOperationException(
-                    T("Error_InvalidTemplateFileExtension", "Sadece PDF, DOC ve DOCX dosyaları yüklenebilir."));
+                throw new InvalidOperationException(errorMessage);
             }
 
             var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "templates");
@@ -238,7 +215,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 Directory.CreateDirectory(uploadsFolder);
             }
 
-            var uniqueFileName = $"{Guid.NewGuid()}{extension.ToLowerInvariant()}";
+            var uniqueFileName = _uploadFileValidator.CreateStoredFileName(
+                validation.Extension,
+                "template");
             var absolutePath = Path.Combine(uploadsFolder, uniqueFileName);
 
             await using var fileStream = new FileStream(absolutePath, FileMode.Create);
@@ -266,7 +245,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpGet("/Admin/Conferences")]
         public async Task<IActionResult> RootIndex()
         {
-            if (User.IsInRole("SuperAdmin"))
+            if (IsSuperAdminUser())
             {
                 return Redirect("/Admin/AllConferences");
             }
@@ -304,7 +283,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                return Redirect(User.IsInRole("SuperAdmin")
+                return Redirect(IsSuperAdminUser()
                     ? "/Admin/AllConferences"
                     : "/Dashboard/MyConferences");
             }
@@ -315,7 +294,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_UnauthorizedTenant",
                     "Bu kongreleri görüntüleme yetkiniz yok.");
 
-                return Redirect(User.IsInRole("SuperAdmin")
+                return Redirect(IsSuperAdminUser()
                     ? "/Admin/AllConferences"
                     : "/Dashboard/MyConferences");
             }
@@ -326,7 +305,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
-            ViewBag.IsSuperAdmin = User.IsInRole("SuperAdmin");
+            ViewBag.IsSuperAdmin = IsSuperAdminUser();
             ViewBag.IsAdmin = User.IsInRole("Admin");
 
             return View(conferences);
@@ -338,7 +317,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                return Redirect(User.IsInRole("SuperAdmin")
+                return Redirect(IsSuperAdminUser()
                     ? "/Admin/AllConferences"
                     : "/Dashboard/MyConferences");
             }
@@ -349,7 +328,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_CreatePermission",
                     "Bu kurum için kongre oluşturma yetkiniz yok.");
 
-                return Redirect(User.IsInRole("SuperAdmin")
+                return Redirect(IsSuperAdminUser()
                     ? "/Admin/AllConferences"
                     : "/Dashboard/MyConferences");
             }
@@ -371,7 +350,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                return Redirect(User.IsInRole("SuperAdmin")
+                return Redirect(IsSuperAdminUser()
                     ? "/Admin/AllConferences"
                     : "/Dashboard/MyConferences");
             }
@@ -382,7 +361,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_CreatePermission",
                     "Bu kurum için kongre oluşturma yetkiniz yok.");
 
-                return Redirect(User.IsInRole("SuperAdmin")
+                return Redirect(IsSuperAdminUser()
                     ? "/Admin/AllConferences"
                     : "/Dashboard/MyConferences");
             }
@@ -428,7 +407,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                return Redirect(User.IsInRole("SuperAdmin")
+                return Redirect(IsSuperAdminUser()
                     ? "/Admin/AllConferences"
                     : "/Dashboard/MyConferences");
             }
@@ -439,7 +418,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_UnauthorizedTenant",
                     "Bu kongreyi düzenleme yetkiniz yok.");
 
-                return Redirect(User.IsInRole("SuperAdmin")
+                return Redirect(IsSuperAdminUser()
                     ? "/Admin/AllConferences"
                     : "/Dashboard/MyConferences");
             }
@@ -473,7 +452,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                return Redirect(User.IsInRole("SuperAdmin")
+                return Redirect(IsSuperAdminUser()
                     ? "/Admin/AllConferences"
                     : "/Dashboard/MyConferences");
             }
@@ -484,7 +463,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_UnauthorizedTenant",
                     "Bu kongreyi güncelleme yetkiniz yok.");
 
-                return Redirect(User.IsInRole("SuperAdmin")
+                return Redirect(IsSuperAdminUser()
                     ? "/Admin/AllConferences"
                     : "/Dashboard/MyConferences");
             }
@@ -585,7 +564,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "Success_ConferenceUpdated",
                 "Kongre başarıyla güncellendi.");
 
-            return Redirect(User.IsInRole("SuperAdmin")
+            return Redirect(IsSuperAdminUser()
                 ? "/Admin/AllConferences"
                 : $"/{slug}/Admin/Conferences");
         }
@@ -597,7 +576,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
             {
-                return Redirect(User.IsInRole("SuperAdmin")
+                return Redirect(IsSuperAdminUser()
                     ? "/Admin/AllConferences"
                     : "/Dashboard/MyConferences");
             }
@@ -608,7 +587,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_DeletePermission",
                     "Bu kongreyi silme yetkiniz yok.");
 
-                return Redirect(User.IsInRole("SuperAdmin")
+                return Redirect(IsSuperAdminUser()
                     ? "/Admin/AllConferences"
                     : "/Dashboard/MyConferences");
             }
@@ -620,7 +599,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conference == null)
             {
-                return Redirect(User.IsInRole("SuperAdmin")
+                return Redirect(IsSuperAdminUser()
                     ? "/Admin/AllConferences"
                     : $"/{slug}/Admin/Conferences");
             }
@@ -642,7 +621,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     "Error_ConferenceHasRelatedData",
                     "Bu kongreye bağlı kayıt, bildiri, oturum, website bloğu veya hakem değerlendirmesi olduğu için silinemez.");
 
-                return Redirect(User.IsInRole("SuperAdmin")
+                return Redirect(IsSuperAdminUser()
                     ? "/Admin/AllConferences"
                     : $"/{slug}/Admin/Conferences");
             }
@@ -656,7 +635,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "Success_ConferenceDeleted",
                 "Kongre başarıyla silindi.");
 
-            return Redirect(User.IsInRole("SuperAdmin")
+            return Redirect(IsSuperAdminUser()
                 ? "/Admin/AllConferences"
                 : $"/{slug}/Admin/Conferences");
         }

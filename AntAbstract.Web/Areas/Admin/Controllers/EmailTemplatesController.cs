@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
+    [Authorize(Roles = "SuperAdmin")]
     public class EmailTemplatesController : Controller
     {
         private readonly AppDbContext _context;

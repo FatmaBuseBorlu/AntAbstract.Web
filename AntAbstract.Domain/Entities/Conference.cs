@@ -1,10 +1,11 @@
-﻿using System;
+﻿using AntAbstract.Domain.Common;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace AntAbstract.Domain.Entities
 {
-    public class Conference
+    public class Conference : IMustHaveTenant
     {
         public Guid Id { get; set; } = Guid.NewGuid();
 
