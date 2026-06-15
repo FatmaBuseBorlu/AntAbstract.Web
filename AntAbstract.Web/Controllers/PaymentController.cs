@@ -2,12 +2,14 @@
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -22,19 +24,22 @@ namespace AntAbstract.Web.Controllers
         private readonly TenantContext _tenantContext;
         private readonly INotificationService _notificationService;
         private readonly IStringLocalizer<PaymentController> _localizer;
+        private readonly IWebHostEnvironment _env;
 
         public PaymentController(
             AppDbContext context,
             UserManager<AppUser> userManager,
             TenantContext tenantContext,
             INotificationService notificationService,
-            IStringLocalizer<PaymentController> localizer)
+            IStringLocalizer<PaymentController> localizer,
+            IWebHostEnvironment env)
         {
             _context = context;
             _userManager = userManager;
             _tenantContext = tenantContext;
             _notificationService = notificationService;
             _localizer = localizer;
+            _env = env;
         }
 
         #region Helper Methods
@@ -586,6 +591,79 @@ namespace AntAbstract.Web.Controllers
             }
 
             return View(payment);
+        }
+
+        // ─── Makbuz Yükleme ────────────────────────────────────────────────────
+        [HttpGet("/payment/upload-receipt/{registrationId:guid}")]
+        [HttpGet("/{slug}/payment/upload-receipt/{registrationId:guid}")]
+        public async Task<IActionResult> UploadReceipt(Guid registrationId, string? slug = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var registration = await _context.Registrations
+                .Include(r => r.RegistrationType)
+                .Include(r => r.Conference).ThenInclude(c => c!.Tenant)
+                .FirstOrDefaultAsync(r => r.Id == registrationId && r.AppUserId == user.Id);
+
+            if (registration == null) return NotFound();
+            if (registration.IsPaid)
+            {
+                TempData["InfoMessage"] = "Bu kayıt zaten ödenmiş olarak işaretlenmiş.";
+                return RedirectToAction(nameof(My));
+            }
+
+            ViewBag.Registration = registration;
+            ViewBag.Slug = slug ?? registration.Conference?.Tenant?.Slug ?? registration.Conference?.Slug ?? "";
+            return View();
+        }
+
+        [HttpPost("/payment/upload-receipt/{registrationId:guid}")]
+        [HttpPost("/{slug}/payment/upload-receipt/{registrationId:guid}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadReceipt(Guid registrationId, IFormFile? receiptFile, string? slug = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var registration = await _context.Registrations
+                .Include(r => r.Conference).ThenInclude(c => c!.Tenant)
+                .FirstOrDefaultAsync(r => r.Id == registrationId && r.AppUserId == user.Id);
+
+            if (registration == null) return NotFound();
+
+            if (receiptFile == null || receiptFile.Length == 0)
+            {
+                ModelState.AddModelError("", "Lütfen makbuz dosyası seçin.");
+                ViewBag.Registration = registration;
+                ViewBag.Slug = slug ?? registration.Conference?.Tenant?.Slug ?? "";
+                return View();
+            }
+
+            // Yalnızca PDF, PNG, JPG
+            var ext = Path.GetExtension(receiptFile.FileName).ToLowerInvariant();
+            if (!new[] { ".pdf", ".png", ".jpg", ".jpeg" }.Contains(ext))
+            {
+                ModelState.AddModelError("", "Yalnızca PDF, PNG veya JPG dosyası yükleyebilirsiniz.");
+                ViewBag.Registration = registration;
+                ViewBag.Slug = slug ?? registration.Conference?.Tenant?.Slug ?? "";
+                return View();
+            }
+
+            // Kaydet
+            var folder = Path.Combine(_env.WebRootPath, "uploads", "receipts");
+            Directory.CreateDirectory(folder);
+            var fileName = $"{registrationId:N}{ext}";
+            var filePath = Path.Combine(folder, fileName);
+            using (var fs = new FileStream(filePath, FileMode.Create))
+                await receiptFile.CopyToAsync(fs);
+
+            registration.ReceiptFilePath = $"/uploads/receipts/{fileName}";
+            registration.ReceiptUploadedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Makbuzunuz başarıyla yüklendi. Yönetici onayından sonra kaydınız aktif olacaktır.";
+            return RedirectToAction(nameof(My));
         }
 
         [HttpGet("Cancel")]

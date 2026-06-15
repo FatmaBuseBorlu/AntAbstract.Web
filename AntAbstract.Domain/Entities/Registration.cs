@@ -63,5 +63,16 @@ namespace AntAbstract.Domain.Entities
         [Display(Name = "Fatura Adresi")]
         [DataType(DataType.MultilineText)]
         public string? BillingAddress { get; set; }
+
+        /// <summary>Banka havalesi / EFT makbuzu dosya yolu</summary>
+        [StringLength(500)]
+        public string? ReceiptFilePath { get; set; }
+
+        /// <summary>Makbuz yükleme tarihi</summary>
+        public DateTime? ReceiptUploadedAt { get; set; }
+
+        /// <summary>Yönetici onay notu</summary>
+        [StringLength(500)]
+        public string? AdminPaymentNote { get; set; }
     }
 }
