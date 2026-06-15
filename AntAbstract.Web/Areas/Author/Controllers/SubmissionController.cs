@@ -3,7 +3,6 @@ using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
-using AntAbstract.Web.Files;
 using AntAbstract.Web.Models.ViewModels.Admin.Submissions;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
@@ -36,7 +35,6 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         private readonly AppDbContext _context;
         private readonly IStringLocalizer<SubmissionController> _localizer;
         private readonly INotificationService _notificationService;
-        private readonly IUploadFileValidator _uploadFileValidator;
 
         public SubmissionController(
             ISubmissionService submissionService,
@@ -46,8 +44,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             ISelectedConferenceService selectedConferenceService,
             AppDbContext context,
             IStringLocalizer<SubmissionController> localizer,
-            INotificationService notificationService,
-            IUploadFileValidator uploadFileValidator)
+            INotificationService notificationService)
         {
             _submissionService = submissionService;
             _userManager = userManager;
@@ -57,7 +54,6 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             _context = context;
             _localizer = localizer;
             _notificationService = notificationService;
-            _uploadFileValidator = uploadFileValidator;
         }
 
         private string GetSlug()
@@ -1640,26 +1636,21 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
         private async Task<(string FilePathDb, string StoredFileName, string OriginalFileName)> UploadFileAsync(IFormFile file)
         {
-            var validation = await _uploadFileValidator.ValidateAsync(
-                file,
-                UploadFileProfile.SubmissionDocument);
+            var allowedExtensions = new[] { ".pdf", ".doc", ".docx" };
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 
-            if (!validation.IsValid)
+            if (!allowedExtensions.Contains(extension))
             {
-                var errorMessage = validation.Error switch
-                {
-                    UploadValidationError.TooLarge => T(
-                        "FileTooLarge",
-                        "Dosya boyutu en fazla 10 MB olabilir."),
-                    UploadValidationError.InvalidExtension => T(
-                        "InvalidFileExtension",
-                        "Sadece PDF, DOC ve DOCX dosyaları yüklenebilir."),
-                    _ => T(
-                        "InvalidFileContent",
-                        "Dosya içeriği seçilen formatla eşleşmiyor.")
-                };
+                throw new Exception(T(
+                    "InvalidFileExtension",
+                    "Sadece PDF, DOC ve DOCX dosyaları yüklenebilir."));
+            }
 
-                throw new InvalidOperationException(errorMessage);
+            if (file.Length > 10 * 1024 * 1024)
+            {
+                throw new Exception(T(
+                    "FileTooLarge",
+                    "Dosya boyutu en fazla 10 MB olabilir."));
             }
 
             string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "submissions");
@@ -1669,9 +1660,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 Directory.CreateDirectory(uploadsFolder);
             }
 
-            string uniqueFileName = _uploadFileValidator.CreateStoredFileName(
-                validation.Extension,
-                "submission");
+            string uniqueFileName = Guid.NewGuid().ToString() + extension;
             string filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
             await using (var stream = new FileStream(filePath, FileMode.Create))
@@ -1682,7 +1671,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             return (
                 "/uploads/submissions/" + uniqueFileName,
                 uniqueFileName,
-                validation.SafeOriginalFileName
+                Path.GetFileName(file.FileName)
             );
         }
     }

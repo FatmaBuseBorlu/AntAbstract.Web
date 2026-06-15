@@ -1,8 +1,8 @@
 ﻿using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
-using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
@@ -13,23 +13,23 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = AdminPolicies.TenantAdminOnly)]
+    [Authorize(Roles = "Admin")]
     public class CertificatesController : Controller
     {
         private readonly AppDbContext _context;
         private readonly ICertificateService _certificateService;
-        private readonly IAdminTenantAccessService _tenantAccess;
+        private readonly UserManager<AppUser> _userManager;
         private readonly IStringLocalizer<CertificatesController> _localizer;
 
         public CertificatesController(
             AppDbContext context,
             ICertificateService certificateService,
-            IAdminTenantAccessService tenantAccess,
+            UserManager<AppUser> userManager,
             IStringLocalizer<CertificatesController> localizer)
         {
             _context = context;
             _certificateService = certificateService;
-            _tenantAccess = tenantAccess;
+            _userManager = userManager;
             _localizer = localizer;
         }
 
@@ -42,9 +42,21 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 : value.Value;
         }
 
+        private async Task<AppUser?> GetCurrentUserAsync()
+        {
+            return await _userManager.GetUserAsync(User);
+        }
+
         private async Task<Guid?> GetCurrentAdminTenantIdAsync()
         {
-            return await _tenantAccess.GetAdminTenantIdAsync(User);
+            var user = await GetCurrentUserAsync();
+
+            if (user == null || !user.TenantId.HasValue)
+            {
+                return null;
+            }
+
+            return user.TenantId.Value;
         }
 
         private async Task<bool> CanAccessCertificateAsync(Guid certificateId)
