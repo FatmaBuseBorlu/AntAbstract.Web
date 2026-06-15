@@ -1,0 +1,140 @@
+@{
+    ViewData["Title"] = "Toplu E-posta Gönder";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+
+    var slug        = ViewBag.Slug as string ?? "";
+    var conferences = ViewBag.Conferences as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var previewUrl  = string.IsNullOrWhiteSpace(slug) ? "/Admin/Broadcast/Preview" : $"/{slug}/Admin/Broadcast/Preview";
+    var sendUrl     = string.IsNullOrWhiteSpace(slug) ? "/Admin/Broadcast/Send"    : $"/{slug}/Admin/Broadcast/Send";
+}
+
+<div class="container-fluid py-4" style="max-width:800px;">
+
+    <div class="mb-4">
+        <h4 class="fw-bold mb-1"><i class="fas fa-paper-plane me-2 text-primary"></i>Toplu E-posta Gönder</h4>
+        <p class="text-muted mb-0">Seçilen katılımcı grubuna duyuru veya bilgilendirme e-postası gönderin.</p>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm mb-4">
+            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm mb-4">
+            <i class="fas fa-times-circle me-2"></i>@TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form id="broadcastForm" action="@sendUrl" method="post">
+                @Html.AntiForgeryToken()
+                @if (!string.IsNullOrWhiteSpace(slug))
+                {
+                    <input type="hidden" name="slug" value="@slug" />
+                }
+
+                <!-- Kongre -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Kongre <span class="text-danger">*</span></label>
+                    <select name="conferenceId" id="conferenceId" class="form-select" required>
+                        <option value="">— Kongre seçin —</option>
+                        @foreach (var c in conferences)
+                        {
+                            <option value="@c.Id">@c.Title</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Hedef Grup -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Alıcı Grubu <span class="text-danger">*</span></label>
+                    <select name="group" id="groupSelect" class="form-select" required>
+                        <option value="all">Tüm Bildiri Sahipleri</option>
+                        <option value="accepted">Kabul Edilenler</option>
+                        <option value="reviewers">Hakemler</option>
+                        <option value="registered">Kayıt Yaptıranlar</option>
+                        <option value="paid">Ödeme Yapanlar</option>
+                    </select>
+                </div>
+
+                <!-- Önizleme -->
+                <div class="mb-3">
+                    <button type="button" id="previewBtn" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-users me-1"></i> Alıcı Sayısını Gör
+                    </button>
+                    <span id="previewResult" class="ms-2 text-muted small"></span>
+                </div>
+
+                <!-- Konu -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">E-posta Konusu <span class="text-danger">*</span></label>
+                    <input type="text" name="subject" class="form-control" required
+                           placeholder="Örn: Kongre programı hakkında duyuru" />
+                </div>
+
+                <!-- İçerik -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">
+                        E-posta İçeriği (HTML desteklenir) <span class="text-danger">*</span>
+                    </label>
+                    <textarea name="body" id="emailBody" class="form-control" rows="12" required
+                              placeholder="&lt;p&gt;Sayın katılımcı,&lt;/p&gt;&#10;&lt;p&gt;...&lt;/p&gt;"></textarea>
+                    <div class="form-text">
+                        <i class="fas fa-info-circle me-1"></i>
+                        HTML etiketleri kullanabilirsiniz. Örnek: &lt;b&gt;kalın&lt;/b&gt;, &lt;a href="..."&gt;link&lt;/a&gt;
+                    </div>
+                </div>
+
+                <!-- Gönder -->
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-4"
+                            onclick="return confirm('E-posta gönderilsin mi? Bu işlem geri alınamaz.');">
+                        <i class="fas fa-paper-plane me-2"></i>Gönder
+                    </button>
+                    <button type="reset" class="btn btn-outline-secondary">Temizle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.getElementById('previewBtn').addEventListener('click', async function () {
+    const conferenceId = document.getElementById('conferenceId').value;
+    const group        = document.getElementById('groupSelect').value;
+    const result       = document.getElementById('previewResult');
+
+    if (!conferenceId) {
+        result.textContent = 'Önce bir kongre seçin.';
+        result.className = 'ms-2 text-warning small';
+        return;
+    }
+
+    result.textContent = 'Yükleniyor...';
+    result.className = 'ms-2 text-muted small';
+
+    try {
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        const resp = await fetch('@previewUrl', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'RequestVerificationToken': token
+            },
+            body: `conferenceId=${conferenceId}&group=${group}`
+        });
+        const data = await resp.json();
+        result.textContent = `${data.count} alıcı bulundu.`;
+        result.className = `ms-2 ${data.count > 0 ? 'text-success' : 'text-warning'} small fw-semibold`;
+    } catch (e) {
+        result.textContent = 'Sorgu başarısız.';
+        result.className = 'ms-2 text-danger small';
+    }
+});
+</script>
+}
