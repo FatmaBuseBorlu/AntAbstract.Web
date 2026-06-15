@@ -1391,6 +1391,18 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                     </a>
                 }
             }
+
+            @if (isAdmin)
+            {
+                var auditUrl = string.IsNullOrWhiteSpace(slug)
+                    ? "/Admin/AuditLogs"
+                    : $"/{slug}/Admin/AuditLogs";
+                <a href="@auditUrl"
+                   class="nav-link @(currentController == "AuditLogs" ? "active" : "")">
+                    <i class="fas fa-history text-secondary"></i>
+                    Denetim Günlüğü
+                </a>
+            }
         </div>
 
         <div class="p-3 border-top mt-auto">
