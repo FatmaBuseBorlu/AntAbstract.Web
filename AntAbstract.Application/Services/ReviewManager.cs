@@ -106,7 +106,7 @@ namespace AntAbstract.Application.Services
                 .Include(ra => ra.Submission)
                     .ThenInclude(s => s.Conference)
                 .Include(ra => ra.Review)
-                .Where(ra => ra.ReviewerId == reviewerId)
+                .Where(ra => ra.ReviewerId == reviewerId && !ra.IsDeclined)
                 .OrderByDescending(ra => ra.AssignedDate)
                 .ToListAsync();
 
@@ -284,7 +284,10 @@ namespace AntAbstract.Application.Services
                 throw new Exception("Değerlendirme görevi bulunamadı.");
             }
 
-            _context.ReviewAssignments.Remove(assignment);
+            // Soft-delete: kaydı silmek yerine ret olarak işaretle
+            assignment.IsDeclined  = true;
+            assignment.DeclineReason = string.IsNullOrWhiteSpace(reason) ? note : reason;
+            assignment.DeclinedAt  = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
         }
@@ -334,6 +337,9 @@ namespace AntAbstract.Application.Services
                     SubmissionId = assignment.SubmissionId,
                     AssignedDate = assignment.AssignedDate,
                     IsReviewed = assignment.Review != null,
+                    IsDeclined = assignment.IsDeclined,
+                    DeclineReason = assignment.DeclineReason,
+                    DeclinedAt = assignment.DeclinedAt,
                     ReviewerName = reviewerName,
                     Score = assignment.Review?.Score,
                     Recommendation = assignment.Review?.Recommendation ?? string.Empty,

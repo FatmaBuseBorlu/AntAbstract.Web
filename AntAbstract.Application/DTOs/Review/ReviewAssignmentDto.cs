@@ -22,6 +22,10 @@ namespace AntAbstract.Application.DTOs.Review
 
         public bool IsReviewed { get; set; }
 
+        public bool IsDeclined { get; set; }
+        public string? DeclineReason { get; set; }
+        public DateTime? DeclinedAt { get; set; }
+
         public string ReviewerName { get; set; } = string.Empty;
 
         public int? Score { get; set; }
