@@ -639,5 +639,99 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 ? "/Admin/AllConferences"
                 : $"/{slug}/Admin/Conferences");
         }
+
+        // ── Konferans Klonlama ────────────────────────────────────────────────────
+
+        [HttpPost("/{slug}/Admin/Conferences/Clone/{id:guid}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Clone(string slug, Guid id)
+        {
+            if (!await CanAccessCurrentTenantAsync())
+            {
+                TempData["ErrorMessage"] = T("Error_ClonePermission", "Bu işlem için yetkiniz yok.");
+                return Redirect($"/{slug}/Admin/Conferences");
+            }
+
+            var source = await _context.Conferences
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c =>
+                    c.Id == id &&
+                    c.TenantId == _tenantContext.Current!.Id);
+
+            if (source == null)
+            {
+                TempData["ErrorMessage"] = T("Error_ConferenceNotFound", "Kongre bulunamadı.");
+                return Redirect($"/{slug}/Admin/Conferences");
+            }
+
+            // Yeni kongre — tüm temel alanları kopyala, tarihler/başlık sıfırlanır
+            var clone = new Conference
+            {
+                Id = Guid.NewGuid(),
+                TenantId = source.TenantId,
+                Title = source.Title + " (Kopya)",
+                Description = source.Description,
+                City = source.City,
+                Country = source.Country,
+                Venue = source.Venue,
+                StartDate = source.StartDate,
+                EndDate = source.EndDate,
+                IsSubmissionOpen = false,       // Kopyada kapalı başlar
+                IsRegistrationOpen = false,
+                MaxRegistrations = source.MaxRegistrations,
+                IsProceedingBookPublished = false,
+                CertificateFirstSignerName = source.CertificateFirstSignerName,
+                CertificateFirstSignerTitle = source.CertificateFirstSignerTitle,
+                CertificateSecondSignerName = source.CertificateSecondSignerName,
+                CertificateSecondSignerTitle = source.CertificateSecondSignerTitle,
+            };
+
+            clone.Slug = await GenerateUniqueConferenceSlugAsync(clone.Title, clone.Id);
+
+            _context.Conferences.Add(clone);
+
+            // Konuları kopyala
+            var topics = await _context.ConferenceTopics
+                .AsNoTracking()
+                .Where(t => t.ConferenceId == id)
+                .ToListAsync();
+
+            foreach (var topic in topics)
+            {
+                _context.ConferenceTopics.Add(new ConferenceTopic
+                {
+                    Id = Guid.NewGuid(),
+                    ConferenceId = clone.Id,
+                    Name = topic.Name,
+                    IsActive = topic.IsActive
+                });
+            }
+
+            // Kayıt türlerini kopyala
+            var regTypes = await _context.RegistrationTypes
+                .AsNoTracking()
+                .Where(r => r.ConferenceId == id)
+                .ToListAsync();
+
+            foreach (var rt in regTypes)
+            {
+                _context.RegistrationTypes.Add(new RegistrationType
+                {
+                    Id = Guid.NewGuid(),
+                    ConferenceId = clone.Id,
+                    Name = rt.Name,
+                    Price = rt.Price,
+                    IsActive = rt.IsActive,
+                    Deadline = rt.Deadline,
+                    RoleName = rt.RoleName
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"\"{source.Title}\" kongresi başarıyla kopyalandı. Yeni kongre: \"{clone.Title}\"";
+
+            return Redirect($"/{slug}/Admin/Conferences");
+        }
     }
 }
