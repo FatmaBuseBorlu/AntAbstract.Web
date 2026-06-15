@@ -246,6 +246,10 @@ namespace AntAbstract.Application.Services
                 CommentsToAuthor = commentsToAuthor,
                 Recommendation = recommendation,
                 Score = score,
+                ScoreOriginality   = Math.Max(0, Math.Min(100, input.ScoreOriginality)),
+                ScoreMethodology   = Math.Max(0, Math.Min(100, input.ScoreMethodology)),
+                ScorePresentation  = Math.Max(0, Math.Min(100, input.ScorePresentation)),
+                ScoreRelevance     = Math.Max(0, Math.Min(100, input.ScoreRelevance)),
                 ReviewerName = reviewerName,
                 ReviewedAt = DateTime.UtcNow
             };
