@@ -51,6 +51,8 @@ namespace AntAbstract.Infrastructure.Context
 
         public DbSet<SystemParameter> SystemParameters { get; set; }
 
+        public DbSet<EmailTemplate> EmailTemplates { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);

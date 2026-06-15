@@ -1,6 +1,7 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
+using AntAbstract.Infrastructure.Services.Email;
 using AntAbstract.Web.Models.ViewModels.Admin.Decision;
 using AntAbstract.Web.Models.ViewModels.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -24,19 +25,22 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly UserManager<AppUser> _userManager;
         private readonly IStringLocalizer<DecisionController> _localizer;
+        private readonly IEmailService _emailService;
 
         public DecisionController(
             AppDbContext context,
             TenantContext tenantContext,
             ISelectedConferenceService selectedConferenceService,
             UserManager<AppUser> userManager,
-            IStringLocalizer<DecisionController> localizer)
+            IStringLocalizer<DecisionController> localizer,
+            IEmailService emailService)
         {
             _context = context;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
             _userManager = userManager;
             _localizer = localizer;
+            _emailService = emailService;
         }
 
         private string T(string key, string fallback)
@@ -261,6 +265,192 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             HttpContext.Session.SetString($"SelectedConferenceId:{tenantId}", conference.Id.ToString());
             HttpContext.Session.SetString($"SelectedConferenceSlug:{tenantId}", slug);
             HttpContext.Session.SetString($"SelectedConferenceTitle:{tenantId}", conference.Title ?? "");
+        }
+
+        [HttpPost("/{slug}/Admin/Decision/BulkDecision")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BulkDecision(
+            string slug,
+            Guid[] submissionIds,
+            string decision)
+        {
+            if (submissionIds == null || submissionIds.Length == 0)
+            {
+                TempData["ErrorMessage"] = T("Error_NoBulkSelection", "Lütfen işlem yapılacak bildiri seçin.");
+                return Redirect($"/{slug}/Admin/Decision");
+            }
+
+            var validDecisions = new[] { "Accept", "Reject", "Revision" };
+            if (!validDecisions.Contains(decision))
+            {
+                TempData["ErrorMessage"] = T("Error_InvalidDecision", "Geçersiz karar seçimi.");
+                return Redirect($"/{slug}/Admin/Decision");
+            }
+
+            var conference = await _context.Conferences
+                .Include(c => c.Tenant)
+                .FirstOrDefaultAsync(c =>
+                    c.Slug == slug ||
+                    (c.Tenant != null && c.Tenant.Slug == slug));
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = T("Error_ConferenceNotFound", "Kongre bulunamadı.");
+                return Redirect($"/{slug}/Admin/Decision");
+            }
+
+            var submissions = await _context.Submissions
+                .Where(s =>
+                    submissionIds.Contains(s.Id) &&
+                    s.ConferenceId == conference.Id &&
+                    (s.Status == SubmissionStatus.Pending || s.Status == SubmissionStatus.UnderReview))
+                .ToListAsync();
+
+            if (submissions.Count == 0)
+            {
+                TempData["ErrorMessage"] = T("Error_NoBulkSelection", "Seçilen bildirilerde işlem yapılabilecek kayıt bulunamadı.");
+                return Redirect($"/{slug}/Admin/Decision");
+            }
+
+            var newStatus = decision switch
+            {
+                "Accept"   => SubmissionStatus.Accepted,
+                "Reject"   => SubmissionStatus.Rejected,
+                "Revision" => SubmissionStatus.RevisionRequired,
+                _          => SubmissionStatus.Pending
+            };
+
+            var now = DateTime.UtcNow;
+
+            foreach (var s in submissions)
+            {
+                s.Status = newStatus;
+                s.DecisionDate = now;
+                s.UpdatedDate = now;
+            }
+
+            await _context.SaveChangesAsync();
+
+            // Her yazara email gönder (arka planda, hata olsa bile devam et)
+            foreach (var s in submissions)
+            {
+                await SendDecisionEmailAsync(s, conference, decision, null);
+            }
+
+            var decisionLabel = decision switch
+            {
+                "Accept"   => "kabul edildi",
+                "Reject"   => "reddedildi",
+                "Revision" => "revizyon istendi",
+                _          => "güncellendi"
+            };
+
+            TempData["SuccessMessage"] = $"{submissions.Count} bildiri {decisionLabel}.";
+
+            return Redirect($"/{slug}/Admin/Decision");
+        }
+
+        private async Task SendDecisionEmailAsync(
+            Submission submission,
+            Conference conference,
+            string decision,
+            string? note)
+        {
+            try
+            {
+                var author = await _userManager.FindByIdAsync(submission.AuthorId ?? "");
+
+                if (author == null || string.IsNullOrWhiteSpace(author.Email))
+                {
+                    return;
+                }
+
+                var fullName = $"{author.FirstName} {author.LastName}".Trim();
+
+                if (string.IsNullOrWhiteSpace(fullName))
+                {
+                    fullName = author.UserName ?? author.Email;
+                }
+
+                var (subject, statusLabel, badgeColor, statusMessage) = decision switch
+                {
+                    "Accept" => (
+                        $"Bildiriniz Kabul Edildi — {conference.Title}",
+                        "Kabul Edildi",
+                        "#28a745",
+                        "Bildiriniz kongre bilim kurulu tarafından değerlendirilmiş ve <strong>kabul edilmiştir</strong>. Tebrikler!"
+                    ),
+                    "Reject" => (
+                        $"Bildiriniz Hakkında Karar — {conference.Title}",
+                        "Reddedildi",
+                        "#dc3545",
+                        "Bildiriniz kongre bilim kurulu tarafından değerlendirilmiş, ancak bu aşamada programa alınamamıştır."
+                    ),
+                    "Revision" => (
+                        $"Bildiriniz İçin Revizyon İstendi — {conference.Title}",
+                        "Revizyon Gerekli",
+                        "#fd7e14",
+                        "Bildiriniz kongre bilim kurulu tarafından değerlendirilmiş ve bazı düzeltmeler yapılması istenmiştir. Lütfen aşağıdaki notları inceleyerek bildirinizi güncelleyiniz."
+                    ),
+                    _ => (
+                        $"Bildiriniz Hakkında Bilgi — {conference.Title}",
+                        "Değerlendirildi",
+                        "#6c757d",
+                        "Bildiriniz değerlendirilmiştir."
+                    )
+                };
+
+                var noteHtml = !string.IsNullOrWhiteSpace(note)
+                    ? $@"<div style='background:#f8f9fa;border-left:4px solid #6c757d;padding:12px 16px;margin:16px 0;border-radius:4px;'>
+                           <p style='margin:0 0 4px 0;font-weight:600;color:#495057;'>Değerlendirici Notu:</p>
+                           <p style='margin:0;color:#495057;'>{System.Net.WebUtility.HtmlEncode(note)}</p>
+                         </div>"
+                    : "";
+
+                // Önce DB şablonunu dene; bulamazsa sabit HTML ile gönder
+                var templateKey = decision switch
+                {
+                    "Accept"   => "decision.accept",
+                    "Reject"   => "decision.reject",
+                    "Revision" => "decision.revision",
+                    _          => ""
+                };
+
+                if (!string.IsNullOrEmpty(templateKey))
+                {
+                    await _emailService.SendTemplatedAsync(author.Email, templateKey, new Dictionary<string, string>
+                    {
+                        { "{FullName}",         fullName },
+                        { "{ConferenceTitle}",  conference.Title ?? "" },
+                        { "{SubmissionTitle}",  submission.Title ?? "" },
+                        { "{StatusLabel}",      statusLabel },
+                        { "{Note}",             noteHtml }
+                    });
+                }
+                else
+                {
+                    var html = $@"
+<!DOCTYPE html><html lang='tr'><head><meta charset='UTF-8'></head>
+<body style='font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px;'>
+  <div style='max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;'>
+    <div style='background:{badgeColor};padding:24px 32px;'>
+      <h1 style='color:#fff;margin:0;font-size:22px;'>Bildiri Kararı</h1>
+    </div>
+    <div style='padding:32px;'>
+      <p>Sayın <strong>{System.Net.WebUtility.HtmlEncode(fullName)}</strong>,</p>
+      <p>{statusMessage}</p>
+      <p><strong>Bildiri:</strong> {System.Net.WebUtility.HtmlEncode(submission.Title ?? "")}</p>
+      {noteHtml}
+    </div>
+  </div>
+</body></html>";
+                    await _emailService.SendAsync(author.Email, subject, html);
+                }
+            }
+            catch
+            {
+                // Email gönderilemese bile işlem başarısız sayılmaz — sadece loglanır
+            }
         }
 
         private string BuildDecisionUrl(string slug, Guid conferenceId)
@@ -588,6 +778,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             submission.UpdatedDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+
+            // Yazara karar bildirimi emaili gönder
+            await SendDecisionEmailAsync(submission, conference, decision, note);
 
             TempData["SuccessMessage"] = T(
                 "Success_SubmissionDecisionSaved",

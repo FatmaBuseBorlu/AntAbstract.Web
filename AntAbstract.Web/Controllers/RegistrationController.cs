@@ -154,23 +154,54 @@ namespace AntAbstract.Web.Controllers
 
         private async Task EnsureAuthorRoleAsync(AppUser user)
         {
-            const string authorRoleName = "Author";
+            await EnsureRoleAsync(user, "Author");
+        }
 
-            var roleExists = await _roleManager.RoleExistsAsync(authorRoleName);
+        /// <summary>
+        /// Kullanıcıya belirtilen rolü atar. Rol yoksa önce oluşturur.
+        /// Geçerli roller: Author, Listener. Bilinmeyen roller için Author varsayılır.
+        /// </summary>
+        private async Task EnsureRoleAsync(AppUser user, string roleName)
+        {
+            // Güvenlik: yalnızca izin verilen katılımcı rollerine atama yapılır
+            var allowed = new[] { "Author", "Listener", "Dinleyici", "Yazar" };
+
+            if (!allowed.Contains(roleName, StringComparer.OrdinalIgnoreCase))
+            {
+                roleName = "Author";
+            }
+
+            var roleExists = await _roleManager.RoleExistsAsync(roleName);
 
             if (!roleExists)
             {
-                await _roleManager.CreateAsync(new IdentityRole(authorRoleName));
+                await _roleManager.CreateAsync(new IdentityRole(roleName));
             }
 
-            var userIsAuthor = await _userManager.IsInRoleAsync(user, authorRoleName);
+            var alreadyInRole = await _userManager.IsInRoleAsync(user, roleName);
 
-            if (!userIsAuthor)
+            if (!alreadyInRole)
             {
-                await _userManager.AddToRoleAsync(user, authorRoleName);
+                await _userManager.AddToRoleAsync(user, roleName);
 
                 await _signInManager.RefreshSignInAsync(user);
             }
+        }
+
+        /// <summary>
+        /// Kayıt türündeki RoleName bilgisine göre kullanıcıya doğru rolü atar.
+        /// </summary>
+        private async Task EnsureRoleFromRegistrationTypeAsync(AppUser user, Guid registrationTypeId)
+        {
+            var regType = await _context.RegistrationTypes
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Id == registrationTypeId);
+
+            var roleName = !string.IsNullOrWhiteSpace(regType?.RoleName)
+                ? regType.RoleName
+                : "Author";
+
+            await EnsureRoleAsync(user, roleName);
         }
 
         private void SetSelectedConferenceSession(Conference conference, string slug)
@@ -297,7 +328,14 @@ namespace AntAbstract.Web.Controllers
 
                     if (existingRegistration != null)
                     {
-                        await EnsureAuthorRoleAsync(user);
+                        if (existingRegistration.RegistrationTypeId != Guid.Empty)
+                        {
+                            await EnsureRoleFromRegistrationTypeAsync(user, existingRegistration.RegistrationTypeId);
+                        }
+                        else
+                        {
+                            await EnsureAuthorRoleAsync(user);
+                        }
 
                         if (existingRegistration.IsPaid)
                         {
@@ -401,7 +439,7 @@ namespace AntAbstract.Web.Controllers
 
             if (existingRegistration != null)
             {
-                await EnsureAuthorRoleAsync(user);
+                await EnsureRoleFromRegistrationTypeAsync(user, ticketType.Id);
 
                 TempData["InfoMessage"] = T(
                     "AlreadyRegisteredCanSubmitAbstract",
@@ -488,7 +526,7 @@ namespace AntAbstract.Web.Controllers
 
             if (existingRegistration != null)
             {
-                await EnsureAuthorRoleAsync(user);
+                await EnsureRoleFromRegistrationTypeAsync(user, ticketType.Id);
 
                 TempData["InfoMessage"] = T(
                     "AlreadyRegisteredCanSubmitAbstract",
@@ -519,7 +557,8 @@ namespace AntAbstract.Web.Controllers
 
             await _context.SaveChangesAsync();
 
-            await EnsureAuthorRoleAsync(user);
+            // Kayıt türüne göre doğru rolü ata (Yazar veya Dinleyici)
+            await EnsureRoleFromRegistrationTypeAsync(user, ticketType.Id);
 
             TempData["SuccessMessage"] = T(
                 "RegistrationSuccessSubmitAbstract",

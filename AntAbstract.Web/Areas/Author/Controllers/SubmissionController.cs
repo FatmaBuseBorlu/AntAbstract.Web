@@ -242,6 +242,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             var query = _context.Submissions
                 .Include(s => s.Conference)
                     .ThenInclude(c => c.Tenant)
+                .Include(s => s.SubmissionAuthors)
                 .Include(s => s.Files)
                 .AsQueryable();
 
@@ -259,7 +260,10 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
 
-            if (!isAdmin && submission.AuthorId != user.Id)
+            // Baş yazar veya ortak yazar (co-author) ise erişim izni var
+            var isCoAuthor = submission.SubmissionAuthors?.Any(a => a.AppUserId == user.Id) == true;
+
+            if (!isAdmin && submission.AuthorId != user.Id && !isCoAuthor)
             {
                 return null;
             }
@@ -653,7 +657,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                     {
                         FirstName = user.FirstName ?? T("DefaultFirstName", "Ad"),
                         LastName = user.LastName ?? T("DefaultLastName", "Soyad"),
-                        Email = user.Email,
+                        Email = user.Email ?? "",
                         Institution = user.Institution ?? T("DefaultInstitution", "Kurum belirtilmedi"),
                         IsCorrespondingAuthor = true,
                         Order = 1

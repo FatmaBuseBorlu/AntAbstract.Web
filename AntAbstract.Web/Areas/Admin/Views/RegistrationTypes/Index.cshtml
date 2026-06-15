@@ -77,6 +77,10 @@
                             @Localizer["TableHeaderUsage"]
                         </th>
 
+                        <th style="width:110px;">
+                            Rol
+                        </th>
+
                         <th style="width:220px;">
                             @Localizer["TableHeaderAction"]
                         </th>
@@ -133,6 +137,17 @@
                                     <span class="badge bg-light text-dark border">
                                         @item.UsageCount
                                     </span>
+                                </td>
+
+                                <td>
+                                    @if (string.Equals(item.RoleName, "Listener", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <span class="badge bg-info text-dark">Dinleyici</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">Yazar</span>
+                                    }
                                 </td>
 
                                 <td>
