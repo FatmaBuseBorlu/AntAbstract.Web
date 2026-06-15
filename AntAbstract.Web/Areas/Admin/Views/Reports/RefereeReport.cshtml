@@ -1,0 +1,150 @@
+@{
+    ViewData["Title"] = "Hakem Performans Raporu";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+
+    var slug         = ViewBag.Slug as string ?? "";
+    var conferenceId = ViewBag.ConferenceId as Guid? ?? Guid.Empty;
+    var title        = ViewBag.ConferenceTitle as string ?? "";
+    var rows         = ViewBag.Rows as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var backUrl      = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Reports?conferenceId={conferenceId}"
+        : $"/{slug}/Admin/Reports?conferenceId={conferenceId}";
+}
+
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1 text-dark">
+                <i class="fas fa-user-graduate me-2 text-primary"></i>Hakem Performans Raporu
+            </h3>
+            <p class="text-muted mb-0">
+                <span class="badge bg-light text-dark border">@title</span>
+            </p>
+        </div>
+        <a href="@backUrl" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Raporlar
+        </a>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm">
+            <i class="fas fa-times-circle me-2"></i> @TempData["ErrorMessage"]
+        </div>
+    }
+
+    @{
+        var rowList = rows.ToList();
+        var totalReviewers  = rowList.Count;
+        var totalAssigned   = rowList.Sum(r => (int)r.TotalAssigned);
+        var totalCompleted  = rowList.Sum(r => (int)r.TotalCompleted);
+        var totalPending    = rowList.Sum(r => (int)r.Pending);
+    }
+
+    <!-- Özet Kartlar -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3">
+                <div class="fs-2 fw-bold text-primary">@totalReviewers</div>
+                <div class="text-muted small">Toplam Hakem</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3">
+                <div class="fs-2 fw-bold text-info">@totalAssigned</div>
+                <div class="text-muted small">Toplam Atama</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3">
+                <div class="fs-2 fw-bold text-success">@totalCompleted</div>
+                <div class="text-muted small">Tamamlandı</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3">
+                <div class="fs-2 fw-bold text-warning">@totalPending</div>
+                <div class="text-muted small">Beklemede</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tablo -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            @if (!rowList.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-user-slash fa-3x mb-3 opacity-25"></i>
+                    <p>Bu kongre için henüz hakem atama bulunmuyor.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead style="background:#1a2d5a;color:#fff;">
+                            <tr>
+                                <th class="ps-4">Hakem</th>
+                                <th>Kurum</th>
+                                <th class="text-center">Atanan</th>
+                                <th class="text-center">Tamamlanan</th>
+                                <th class="text-center">Bekleyen</th>
+                                <th class="text-center">Ort. Skor</th>
+                                <th class="text-center">Tamamlanma</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in rowList)
+                            {
+                                var completionPct = row.TotalAssigned > 0
+                                    ? (int)(row.TotalCompleted * 100.0 / row.TotalAssigned)
+                                    : 0;
+                                var barColor = completionPct >= 80 ? "bg-success"
+                                             : completionPct >= 40 ? "bg-warning"
+                                             : "bg-danger";
+
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-semibold">@row.FullName</div>
+                                        <small class="text-muted">@row.Email</small>
+                                    </td>
+                                    <td class="text-muted small">@(string.IsNullOrWhiteSpace(row.University) ? "—" : row.University)</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary rounded-pill">@row.TotalAssigned</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success rounded-pill">@row.TotalCompleted</span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if ((int)row.Pending > 0)
+                                        {
+                                            <span class="badge bg-warning text-dark rounded-pill">@row.Pending</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="fw-bold">@row.AverageScore</span>
+                                    </td>
+                                    <td class="text-center" style="min-width:120px">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height:8px">
+                                                <div class="progress-bar @barColor"
+                                                     style="width:@completionPct%"></div>
+                                            </div>
+                                            <small class="fw-semibold" style="min-width:32px">@completionPct%</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

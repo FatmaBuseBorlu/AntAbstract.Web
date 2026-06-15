@@ -1,5 +1,4 @@
 ﻿using AntAbstract.Domain.Entities;
-using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.ViewModels.Admin.Reports;
@@ -667,6 +666,75 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var fileName = $"rapor_{safeTitle}_{DateTime.UtcNow:yyyyMMdd_HHmm}.pdf";
 
             return File(pdfBytes, "application/pdf", fileName);
+        }
+
+        [HttpGet("/{slug}/Admin/Reports/Referees")]
+        public async Task<IActionResult> RefereeReport(
+            string slug,
+            Guid? conferenceId = null)
+        {
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_SelectConferenceFirst",
+                    "Lütfen yetkili olduğunuz geçerli bir kongre seçiniz.");
+
+                return RedirectToAction(nameof(SelectConference),
+                    new { returnUrl = $"/{slug}/Admin/Reports" });
+            }
+
+            SetSelectedConferenceSession(conference);
+
+            var stats = await _context.ReviewAssignments
+                .AsNoTracking()
+                .Where(ra => ra.Submission != null && ra.Submission.ConferenceId == conference.Id)
+                .GroupBy(ra => ra.ReviewerId)
+                .Select(g => new
+                {
+                    ReviewerId = g.Key,
+                    TotalAssigned  = g.Count(),
+                    TotalCompleted = g.Count(ra => ra.Review != null),
+                    AverageScore   = g.Where(ra => ra.Review != null && ra.Review.Score > 0)
+                                      .Select(ra => (double?)ra.Review.Score)
+                                      .Average()
+                })
+                .ToListAsync();
+
+            var reviewerIds = stats.Select(s => s.ReviewerId).ToList();
+            var reviewers = await _context.Users
+                .AsNoTracking()
+                .Where(u => reviewerIds.Contains(u.Id))
+                .Select(u => new { u.Id, u.FirstName, u.LastName, u.Email, u.University })
+                .ToDictionaryAsync(u => u.Id);
+
+            var rows = stats.Select(s =>
+            {
+                reviewers.TryGetValue(s.ReviewerId, out var rev);
+                return new
+                {
+                    FullName   = rev != null ? $"{rev.FirstName} {rev.LastName}".Trim() : s.ReviewerId,
+                    Email      = rev?.Email ?? "",
+                    University = rev?.University ?? "",
+                    s.TotalAssigned,
+                    s.TotalCompleted,
+                    Pending    = s.TotalAssigned - s.TotalCompleted,
+                    AverageScore = s.AverageScore.HasValue
+                        ? Math.Round(s.AverageScore.Value, 1).ToString("F1")
+                        : "-",
+                    CompletionRate = s.TotalAssigned > 0
+                        ? $"{(int)(s.TotalCompleted * 100.0 / s.TotalAssigned)}%"
+                        : "0%"
+                };
+            }).OrderByDescending(r => r.TotalCompleted).ToList();
+
+            ViewBag.Slug = slug;
+            ViewBag.ConferenceId = conference.Id;
+            ViewBag.ConferenceTitle = conference.Title;
+            ViewBag.Rows = rows;
+
+            return View("~/Areas/Admin/Views/Reports/RefereeReport.cshtml");
         }
 
         [HttpGet("/Reports/Index")]
