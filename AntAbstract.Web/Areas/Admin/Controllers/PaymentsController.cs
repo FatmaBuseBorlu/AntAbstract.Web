@@ -1,8 +1,8 @@
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Email;
+using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -13,21 +13,21 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
+    [Authorize(Policy = AdminPolicies.TenantAdmin)]
     public class PaymentsController : Controller
     {
         private readonly AppDbContext _context;
-        private readonly UserManager<AppUser> _userManager;
         private readonly IEmailService _emailService;
+        private readonly IAdminTenantAccessService _tenantAccess;
 
         public PaymentsController(
             AppDbContext context,
-            UserManager<AppUser> userManager,
-            IEmailService emailService)
+            IEmailService emailService,
+            IAdminTenantAccessService tenantAccess)
         {
             _context = context;
-            _userManager = userManager;
             _emailService = emailService;
+            _tenantAccess = tenantAccess;
         }
 
         // GET /{slug}/Admin/Payments  —  tüm ödemeler + makbuz bekleyenler
@@ -37,17 +37,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             string? status = "all",
             string? search = null)
         {
+            var accessibleConferences = await _tenantAccess
+                .GetAccessibleConferenceQueryAsync(User);
+
             // Kongreyi belirle
             Conference? conference = null;
             if (conferenceId.HasValue && conferenceId != Guid.Empty)
             {
-                conference = await _context.Conferences
+                conference = await accessibleConferences
                     .Include(c => c.Tenant)
                     .FirstOrDefaultAsync(c => c.Id == conferenceId);
             }
             else if (!string.IsNullOrWhiteSpace(slug))
             {
-                conference = await _context.Conferences
+                conference = await accessibleConferences
                     .Include(c => c.Tenant)
                     .FirstOrDefaultAsync(c => c.Slug == slug || (c.Tenant != null && c.Tenant.Slug == slug));
             }
@@ -55,7 +58,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (conference == null)
             {
                 // Konferans listesi sun
-                var conferences = await _context.Conferences
+                var conferences = await accessibleConferences
                     .Include(c => c.Tenant)
                     .OrderByDescending(c => c.StartDate)
                     .Take(20)
@@ -115,7 +118,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Approve(Guid registrationId, string? note, string? returnUrl)
         {
-            var registration = await _context.Registrations
+            var accessibleRegistrations = await _tenantAccess
+                .GetAccessibleRegistrationQueryAsync(User);
+            var registration = await accessibleRegistrations
                 .Include(r => r.AppUser)
                 .Include(r => r.RegistrationType)
                 .Include(r => r.Conference).ThenInclude(c => c!.Tenant)
@@ -209,7 +214,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Reject(Guid registrationId, string? note, string? returnUrl)
         {
-            var registration = await _context.Registrations
+            var accessibleRegistrations = await _tenantAccess
+                .GetAccessibleRegistrationQueryAsync(User);
+            var registration = await accessibleRegistrations
                 .Include(r => r.AppUser)
                 .Include(r => r.Conference)
                 .FirstOrDefaultAsync(r => r.Id == registrationId);

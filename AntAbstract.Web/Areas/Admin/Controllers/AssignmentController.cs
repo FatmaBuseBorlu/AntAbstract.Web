@@ -6,6 +6,7 @@ using AntAbstract.Infrastructure.Services.Email;
 using AntAbstract.Infrastructure.Services.ReviewerRecommendation;
 using AntAbstract.Web.Models.ViewModels.Admin.Assignment;
 using AntAbstract.Web.Models.ViewModels.Shared;
+using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -20,7 +21,7 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = AdminPolicies.TenantAdmin)]
     public class AssignmentController : Controller
     {
         private readonly AppDbContext _context;
@@ -29,6 +30,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly INotificationService _notificationService;
         private readonly IReviewerRecommendationService _recommendationService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IAdminTenantAccessService _tenantAccess;
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly IStringLocalizer<AssignmentController> _localizer;
 
@@ -38,6 +40,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             IEmailService emailService,
             INotificationService notificationService,
             UserManager<AppUser> userManager,
+            IAdminTenantAccessService tenantAccess,
             IReviewerRecommendationService recommendationService,
             ISelectedConferenceService selectedConferenceService,
             IStringLocalizer<AssignmentController> localizer)
@@ -47,6 +50,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _emailService = emailService;
             _notificationService = notificationService;
             _userManager = userManager;
+            _tenantAccess = tenantAccess;
             _recommendationService = recommendationService;
             _selectedConferenceService = selectedConferenceService;
             _localizer = localizer;
@@ -63,7 +67,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private bool IsSuperAdminUser()
         {
-            return User.IsInRole("SuperAdmin");
+            return _tenantAccess.IsSuperAdmin(User);
         }
 
         private async Task<AppUser?> GetCurrentUserAsync()
@@ -78,16 +82,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return true;
             }
 
-            var user = await GetCurrentUserAsync();
-
-            return user != null && user.TenantId.HasValue;
+            return (await _tenantAccess.GetAdminTenantIdAsync(User)).HasValue;
         }
 
         private async Task<Guid?> GetCurrentAdminTenantIdAsync()
         {
-            var user = await GetCurrentUserAsync();
-
-            return user?.TenantId;
+            return await _tenantAccess.GetAdminTenantIdAsync(User);
         }
 
         private async Task<bool> CanAccessCurrentTenantAsync()
@@ -97,41 +97,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return true;
             }
 
-            if (_tenantContext.Current == null)
-            {
-                return false;
-            }
-
-            var user = await GetCurrentUserAsync();
-
-            if (user == null || !user.TenantId.HasValue)
-            {
-                return false;
-            }
-
-            return user.TenantId.Value == _tenantContext.Current.Id;
+            return await _tenantAccess.CanAccessCurrentTenantAsync(
+                User,
+                allowSuperAdmin: false);
         }
 
         private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync()
         {
-            var query = _context.Conferences
+            var query = await _tenantAccess.GetAccessibleConferenceQueryAsync(User);
+
+            return query
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .AsQueryable();
-
-            if (IsSuperAdminUser())
-            {
-                return query;
-            }
-
-            var tenantId = await GetCurrentAdminTenantIdAsync();
-
-            if (!tenantId.HasValue)
-            {
-                return query.Where(c => false);
-            }
-
-            return query.Where(c => c.TenantId == tenantId.Value);
         }
 
         private async Task<Conference?> GetAccessibleConferenceAsync(

@@ -2,9 +2,9 @@
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.WebsiteBlocks;
+using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
@@ -17,26 +17,26 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = AdminPolicies.TenantAdmin)]
     public class PageBlocksController : Controller
     {
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
-        private readonly UserManager<AppUser> _userManager;
+        private readonly IAdminTenantAccessService _tenantAccess;
         private readonly IStringLocalizer<PageBlocksController> _localizer;
 
         public PageBlocksController(
             AppDbContext context,
             TenantContext tenantContext,
             ISelectedConferenceService selectedConferenceService,
-            UserManager<AppUser> userManager,
+            IAdminTenantAccessService tenantAccess,
             IStringLocalizer<PageBlocksController> localizer)
         {
             _context = context;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
-            _userManager = userManager;
+            _tenantAccess = tenantAccess;
             _localizer = localizer;
         }
 
@@ -49,43 +49,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 : value.Value;
         }
 
-        private async Task<AppUser?> GetCurrentUserAsync()
-        {
-            return await _userManager.GetUserAsync(User);
-        }
-
         private async Task<Guid?> GetCurrentAdminTenantIdAsync()
         {
-            var user = await GetCurrentUserAsync();
-
-            if (user == null || !user.TenantId.HasValue)
-            {
-                return null;
-            }
-
-            return user.TenantId.Value;
+            return await _tenantAccess.GetAdminTenantIdAsync(User);
         }
 
         private async Task<bool> CanAccessCurrentTenantAsync(string slug)
         {
-            if (_tenantContext.Current == null)
-            {
-                return false;
-            }
-
-            if (!string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            var tenantId = await GetCurrentAdminTenantIdAsync();
-
-            if (!tenantId.HasValue)
-            {
-                return false;
-            }
-
-            return tenantId.Value == _tenantContext.Current.Id;
+            return await _tenantAccess.CanAccessCurrentTenantAsync(
+                User,
+                slug,
+                allowSuperAdmin: false);
         }
 
         private async Task<Conference?> GetSelectedAccessibleConferenceAsync(string slug)
@@ -483,7 +457,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         // =========================================================
 
         [HttpGet("/{slug}/Admin/PageBlocks")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = AdminPolicies.TenantAdminOnly)]
         public async Task<IActionResult> Index(string slug)
         {
             var conference = await GetSelectedAccessibleConferenceAsync(slug);
@@ -558,7 +532,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         [HttpGet("/{slug}/Admin/PageBlocks/Edit/{id:int}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = AdminPolicies.TenantAdminOnly)]
         public async Task<IActionResult> Edit(string slug, int id)
         {
             if (!await CanAccessCurrentTenantAsync(slug))
@@ -615,7 +589,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         [HttpPost("/{slug}/Admin/PageBlocks/Edit/{id:int}")]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = AdminPolicies.TenantAdminOnly)]
         public async Task<IActionResult> Edit(
             string slug,
             int id,
