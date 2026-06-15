@@ -1,8 +1,8 @@
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Email;
+using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -13,27 +13,26 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = AdminPolicies.TenantAdmin)]
     public class BroadcastController : Controller
     {
         private readonly AppDbContext _context;
-        private readonly UserManager<AppUser> _userManager;
+        private readonly IAdminTenantAccessService _tenantAccess;
         private readonly IEmailService _emailService;
 
         public BroadcastController(
             AppDbContext context,
-            UserManager<AppUser> userManager,
+            IAdminTenantAccessService tenantAccess,
             IEmailService emailService)
         {
             _context = context;
-            _userManager = userManager;
+            _tenantAccess = tenantAccess;
             _emailService = emailService;
         }
 
         private async Task<Guid?> GetTenantIdAsync()
         {
-            var user = await _userManager.GetUserAsync(User);
-            return user?.TenantId;
+            return await _tenantAccess.GetAdminTenantIdAsync(User);
         }
 
         // ── GET ───────────────────────────────────────────────────────────────────

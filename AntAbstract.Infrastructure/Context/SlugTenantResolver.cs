@@ -10,8 +10,9 @@ namespace AntAbstract.Infrastructure.Services
   
     public interface ITenantResolver
     {
-        Task<Tenant> ResolveAsync(HttpContext context);
+        Task<Tenant?> ResolveAsync(HttpContext context);
     }
+
     public class SlugTenantResolver : ITenantResolver
     {
         private readonly AppDbContext _context;
@@ -21,25 +22,22 @@ namespace AntAbstract.Infrastructure.Services
             _context = context;
         }
 
-        public async Task<Tenant> ResolveAsync(HttpContext context)
+        public async Task<Tenant?> ResolveAsync(HttpContext context)
         {
-        
             var path = context.Request.Path.Value;
 
             if (string.IsNullOrEmpty(path) || path == "/")
             {
-                return null; 
+                return null;
             }
 
             var firstSegment = path.Split('/', System.StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
 
             if (!string.IsNullOrEmpty(firstSegment))
             {
-              
-                var tenant = await _context.Tenants
+                return await _context.Tenants
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(t => t.Slug == firstSegment);
-
-                return tenant; 
             }
 
             return null;
