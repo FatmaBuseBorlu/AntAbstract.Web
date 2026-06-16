@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Rotativa.AspNetCore;
@@ -612,6 +613,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [ValidateAntiForgeryToken]
         [RequestSizeLimit(20 * 1024 * 1024)]
         [RequestFormLimits(MultipartBodyLengthLimit = 20 * 1024 * 1024)]
+        [EnableRateLimiting("upload")]
         public async Task<IActionResult> Create(SubmissionCreateViewModel model, string? slug = null)
         {
             if (string.IsNullOrWhiteSpace(slug))
@@ -1301,6 +1303,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [ValidateAntiForgeryToken]
         [RequestSizeLimit(20 * 1024 * 1024)]
         [RequestFormLimits(MultipartBodyLengthLimit = 20 * 1024 * 1024)]
+        [EnableRateLimiting("upload")]
         public async Task<IActionResult> UploadRevision(Guid id, IFormFile? revisionFile, string? slug = null)
         {
             var user = await _userManager.GetUserAsync(User);

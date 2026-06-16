@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -885,6 +886,7 @@ namespace AntAbstract.Web.Controllers
 
         [AllowAnonymous]
         [HttpPost("/payment/stripe-webhook")]
+        [EnableRateLimiting("webhook")]
         public async Task<IActionResult> StripeWebhook()
         {
             var webhookSecret = _configuration["Stripe:WebhookSecret"];
@@ -992,6 +994,7 @@ namespace AntAbstract.Web.Controllers
         [ValidateAntiForgeryToken]
         [RequestSizeLimit(20 * 1024 * 1024)]
         [RequestFormLimits(MultipartBodyLengthLimit = 20 * 1024 * 1024)]
+        [EnableRateLimiting("upload")]
         public async Task<IActionResult> UploadReceipt(Guid registrationId, IFormFile? receiptFile, string? slug = null)
         {
             var user = await _userManager.GetUserAsync(User);

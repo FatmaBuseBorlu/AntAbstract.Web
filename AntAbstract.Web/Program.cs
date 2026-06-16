@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -16,6 +17,7 @@ using Rotativa.AspNetCore;
 using Stripe;
 using System.Globalization;
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Localization;
 using AntAbstract.Infrastructure.Services.ProceedingBooks;
 using AntAbstract.Web.Files;
@@ -197,6 +199,43 @@ builder.WebHost.ConfigureKestrel(kestrel =>
     kestrel.Limits.MaxRequestBodySize = 52 * 1024 * 1024; // 52 MB
 });
 
+// ── Rate Limiting ────────────────────────────────────────────────────────────
+// IP bazlı sliding-window limitleri. Development'ta daha gevşek tutulur.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Login / Register / ForgotPassword: 10 istek / 5 dakika / IP
+    options.AddSlidingWindowLimiter("auth", opt =>
+    {
+        opt.Window            = TimeSpan.FromMinutes(5);
+        opt.SegmentsPerWindow = 5;
+        opt.PermitLimit       = 10;
+        opt.QueueLimit        = 0;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+
+    // Dosya/makbuz yükleme: 20 istek / dakika / IP
+    options.AddSlidingWindowLimiter("upload", opt =>
+    {
+        opt.Window            = TimeSpan.FromMinutes(1);
+        opt.SegmentsPerWindow = 4;
+        opt.PermitLimit       = 20;
+        opt.QueueLimit        = 0;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+
+    // Stripe webhook: 60 istek / dakika (Stripe yeniden dener)
+    options.AddSlidingWindowLimiter("webhook", opt =>
+    {
+        opt.Window            = TimeSpan.FromMinutes(1);
+        opt.SegmentsPerWindow = 6;
+        opt.PermitLimit       = 60;
+        opt.QueueLimit        = 0;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+});
+
 builder.Services.AddControllersWithViews()
     .AddViewLocalization(Microsoft.AspNetCore.Mvc.Razor.LanguageViewLocationExpanderFormat.Suffix)
     .AddDataAnnotationsLocalization();
@@ -301,6 +340,46 @@ else
 }
 
 app.UseHttpsRedirection();
+
+// ── Security Headers ─────────────────────────────────────────────────────────
+app.Use(async (ctx, next) =>
+{
+    var h = ctx.Response.Headers;
+
+    // Clickjacking koruması
+    h["X-Frame-Options"] = "SAMEORIGIN";
+
+    // MIME-sniffing koruması
+    h["X-Content-Type-Options"] = "nosniff";
+
+    // Referer bilgisi kontrolü
+    h["Referrer-Policy"] = "strict-origin-when-cross-origin";
+
+    // Tarayıcı özellik erişim kısıtlamaları
+    h["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=(self)";
+
+    // Content Security Policy
+    // 'unsafe-inline' script: Stripe.js, Bootstrap tooltips ve mevcut inline scriptler
+    // için gerekli — hashes ile kaldırılabilir ileride.
+    h["Content-Security-Policy"] =
+        "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline' https://js.stripe.com https://cdn.jsdelivr.net; " +
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
+        "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; " +
+        "img-src 'self' data: https:; " +
+        "connect-src 'self' https://api.stripe.com; " +
+        "frame-src https://js.stripe.com https://hooks.stripe.com; " +
+        "object-src 'none'; " +
+        "base-uri 'self'; " +
+        "form-action 'self';";
+
+    await next();
+});
+
+// ── Rate Limiter ─────────────────────────────────────────────────────────────
+// Named policy'ler [EnableRateLimiting("...")] attribute veya
+// .RequireRateLimiting("...") ile endpoint'lere uygulanır.
+app.UseRateLimiter();
 
 // Hassas dosyalar (submissions, receipts, templates) artık wwwroot dışında
 // ContentRoot/private-uploads altında tutulur; SecureDownloadController ile serve edilir.
