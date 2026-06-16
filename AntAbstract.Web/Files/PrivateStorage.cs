@@ -66,9 +66,11 @@ namespace AntAbstract.Web.Files
                 {
                     var relative = normalized.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
                     var full = Path.GetFullPath(Path.Combine(env.WebRootPath, relative));
-                    // İkinci güvenlik katmanı: canonical path wwwroot içinde kalmalı
-                    var wwwroot = Path.GetFullPath(env.WebRootPath);
-                    if (!full.StartsWith(wwwroot, StringComparison.OrdinalIgnoreCase))
+                    // Güvenlik: canonical path izin verilen alt klasör içinde kalmalı
+                    var allowedFolder = Path.GetFullPath(
+                        Path.Combine(env.WebRootPath,
+                            prefix.TrimStart('/').Replace('/', Path.DirectorySeparatorChar)));
+                    if (!full.StartsWith(allowedFolder, StringComparison.OrdinalIgnoreCase))
                         throw new UnauthorizedAccessException("İzin verilmeyen dosya yolu.");
                     return full;
                 }
@@ -82,8 +84,11 @@ namespace AntAbstract.Web.Files
                 {
                     var relative = normalizedNoSlash.Replace('/', Path.DirectorySeparatorChar);
                     var full = Path.GetFullPath(Path.Combine(env.ContentRootPath, relative));
-                    var contentRoot = Path.GetFullPath(env.ContentRootPath);
-                    if (!full.StartsWith(contentRoot, StringComparison.OrdinalIgnoreCase))
+                    // Güvenlik: canonical path izin verilen alt klasör içinde kalmalı
+                    var allowedFolder = Path.GetFullPath(
+                        Path.Combine(env.ContentRootPath,
+                            prefix.Replace('/', Path.DirectorySeparatorChar)));
+                    if (!full.StartsWith(allowedFolder, StringComparison.OrdinalIgnoreCase))
                         throw new UnauthorizedAccessException("İzin verilmeyen dosya yolu.");
                     return full;
                 }
