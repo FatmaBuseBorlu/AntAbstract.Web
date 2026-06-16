@@ -1,3 +1,4 @@
+using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Web.Files;
@@ -23,17 +24,20 @@ namespace AntAbstract.Web.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly IWebHostEnvironment _env;
         private readonly TenantContext _tenantContext;
+        private readonly IAuditService _audit;
 
         public SecureDownloadController(
             AppDbContext context,
             UserManager<AppUser> userManager,
             IWebHostEnvironment env,
-            TenantContext tenantContext)
+            TenantContext tenantContext,
+            IAuditService audit)
         {
             _context = context;
             _userManager = userManager;
             _env = env;
             _tenantContext = tenantContext;
+            _audit = audit;
         }
 
         // ── Bildiri Dosyası ──────────────────────────────────────────────────────
@@ -75,6 +79,17 @@ namespace AntAbstract.Web.Controllers
             if (!isOwner && !isAdmin && !isReviewer)
                 return Forbid();
 
+            _ = _audit.LogAsync(
+                category: "FileDownload",
+                action: "SubmissionFileDownloaded",
+                userId: user.Id,
+                userName: $"{user.FirstName} {user.LastName}".Trim(),
+                entityType: "SubmissionFile",
+                entityId: fileId.ToString(),
+                description: $"Bildiri dosyası indirildi: {file.FileName} (SubmissionId={submission.Id})",
+                conferenceId: submission.ConferenceId,
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
+
             return ServeFile(file.FilePath, file.FileName ?? "dosya");
         }
 
@@ -104,6 +119,17 @@ namespace AntAbstract.Web.Controllers
 
             if (!isOwner && !isSuperAdmin && !isTenantAdmin)
                 return Forbid();
+
+            _ = _audit.LogAsync(
+                category: "FileDownload",
+                action: "ReceiptDownloaded",
+                userId: user.Id,
+                userName: $"{user.FirstName} {user.LastName}".Trim(),
+                entityType: "Registration",
+                entityId: registrationId.ToString(),
+                description: $"Ödeme makbuzu indirildi. RegistrationId={registrationId}",
+                conferenceId: registration.ConferenceId,
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
 
             var fileName = Path.GetFileName(registration.ReceiptFilePath);
             return ServeFile(registration.ReceiptFilePath, $"makbuz_{registrationId:N}.pdf");

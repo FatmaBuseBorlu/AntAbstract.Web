@@ -1,4 +1,5 @@
-﻿using AntAbstract.Domain.Entities;
+﻿using AntAbstract.Application.Interfaces;
+using AntAbstract.Domain.Entities;
 using AntAbstract.Web.Models.ViewModels.Admin.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -21,6 +22,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IStringLocalizer<UsersController> _localizer;
         private readonly AppDbContext _context;
+        private readonly IAuditService _audit;
+        private readonly ILogger<UsersController> _logger;
 
         private static readonly string[] AllowedRoles =
         {
@@ -35,13 +38,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             UserManager<AppUser> userManager,
             RoleManager<IdentityRole> roleManager,
             IStringLocalizer<UsersController> localizer,
-            AppDbContext context)
-            
+            AppDbContext context,
+            IAuditService audit,
+            ILogger<UsersController> logger)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _localizer = localizer;
             _context = context;
+            _audit = audit;
+            _logger = logger;
         }
 
         private string T(string key, string fallback)
@@ -352,6 +358,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                     return RedirectToAction(nameof(Index));
                 }
+
+                var adminUser = await _userManager.GetUserAsync(User);
+                _ = _audit.LogAsync(
+                    category: "RoleChange",
+                    action: "RoleAdded",
+                    userId: adminUser?.Id,
+                    userName: adminUser != null ? $"{adminUser.FirstName} {adminUser.LastName}".Trim() : null,
+                    entityType: "AppUser",
+                    entityId: targetUser.Id,
+                    description: $"{targetUser.Email} kullanıcısına '{roleName}' rolü atandı.",
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
             }
 
             TempData["SuccessMessage"] = T(
@@ -574,6 +591,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                     return RedirectToAction(nameof(Index));
                 }
+
+                var adminUser = await _userManager.GetUserAsync(User);
+                _ = _audit.LogAsync(
+                    category: "RoleChange",
+                    action: "RoleRemoved",
+                    userId: adminUser?.Id,
+                    userName: adminUser != null ? $"{adminUser.FirstName} {adminUser.LastName}".Trim() : null,
+                    entityType: "AppUser",
+                    entityId: targetUser.Id,
+                    description: $"{targetUser.Email} kullanıcısından '{roleName}' rolü kaldırıldı.",
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
             }
 
             TempData["SuccessMessage"] = T(
