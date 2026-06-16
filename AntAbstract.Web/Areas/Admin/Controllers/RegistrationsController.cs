@@ -269,7 +269,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             Guid? conferenceId = null,
             string? search = null,
             string? paid = null,
-            Guid? registrationTypeId = null)
+            Guid? registrationTypeId = null,
+            int page = 1)
         {
             var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
 
@@ -340,8 +341,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 );
             }
 
-            var items = await query
-                .OrderByDescending(r => r.RegistrationDate)
+            const int pageSize = 50;
+            if (page < 1) page = 1;
+
+            var orderedQuery = query.OrderByDescending(r => r.RegistrationDate);
+            var totalCount = await orderedQuery.CountAsync();
+
+            var items = await orderedQuery
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(r => new AdminRegistrationRowModel
                 {
                     Id = r.Id,
@@ -384,7 +392,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 Paid = paid,
                 RegistrationTypeId = registrationTypeId,
                 RegistrationTypes = registrationTypes,
-                Items = items
+                Items = items,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount
             };
 
             return View("~/Areas/Admin/Views/Registrations/Index.cshtml", model);

@@ -655,7 +655,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             string slug,
             Guid? conferenceId = null,
             string? search = null,
-            string? status = null)
+            string? status = null,
+            int page = 1)
         {
             var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
 
@@ -699,8 +700,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 query = query.Where(x => x.Status == parsedStatus);
             }
 
-            var items = await query
-                .OrderByDescending(x => x.CreatedDate)
+            const int pageSize = 50;
+            if (page < 1) page = 1;
+
+            var orderedQuery = query.OrderByDescending(x => x.CreatedDate);
+            var totalCount = await orderedQuery.CountAsync();
+
+            var items = await orderedQuery
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(x => new AdminSubmissionRowModel
                 {
                     Id = x.Id,
@@ -721,7 +729,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 ConferenceTitle = conference.Title,
                 Search = search,
                 Status = status,
-                Items = items
+                Items = items,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount
             };
 
             return View("~/Areas/Admin/Views/Submissions/Index.cshtml", model);

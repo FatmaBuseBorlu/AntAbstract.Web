@@ -52,5 +52,13 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Registrations
         public List<RegistrationTypeLookupItem> RegistrationTypes { get; set; } = new();
 
         public List<AdminRegistrationRowModel> Items { get; set; } = new();
+
+        // Pagination
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 50;
+        public int TotalCount { get; set; }
+        public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
+        public bool HasPrev => Page > 1;
+        public bool HasNext => Page < TotalPages;
     }
 }
