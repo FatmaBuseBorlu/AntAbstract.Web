@@ -915,8 +915,34 @@ namespace AntAbstract.Web.Controllers
                 return BadRequest();
             }
 
+            // İdempotency: aynı event tekrar gelirse işleme
+            var isDuplicate = await _context.StripeWebhookEvents
+                .AnyAsync(e => e.StripeEventId == stripeEvent.Id);
+
+            if (isDuplicate)
+            {
+                _context.StripeWebhookEvents.Add(new StripeWebhookEvent
+                {
+                    StripeEventId = stripeEvent.Id,
+                    EventType = stripeEvent.Type,
+                    Status = "skipped",
+                    IsDuplicate = true,
+                    PayloadPreview = json.Length > 4000 ? json[..4000] : json
+                });
+                await _context.SaveChangesAsync();
+                return Ok();
+            }
+
             if (stripeEvent.Data.Object is not Stripe.Checkout.Session checkoutSession)
             {
+                _context.StripeWebhookEvents.Add(new StripeWebhookEvent
+                {
+                    StripeEventId = stripeEvent.Id,
+                    EventType = stripeEvent.Type,
+                    Status = "skipped",
+                    PayloadPreview = json.Length > 4000 ? json[..4000] : json
+                });
+                await _context.SaveChangesAsync();
                 return Ok();
             }
 
@@ -927,39 +953,102 @@ namespace AntAbstract.Web.Controllers
                     "Stripe event {EventId} has no valid payment_id metadata.",
                     stripeEvent.Id);
 
+                _context.StripeWebhookEvents.Add(new StripeWebhookEvent
+                {
+                    StripeEventId = stripeEvent.Id,
+                    EventType = stripeEvent.Type,
+                    Status = "failed",
+                    StripeObjectId = checkoutSession.Id,
+                    ErrorMessage = "No valid payment_id in metadata",
+                    PayloadPreview = json.Length > 4000 ? json[..4000] : json
+                });
+                await _context.SaveChangesAsync();
                 return Ok();
             }
 
-            switch (stripeEvent.Type)
+            string webhookStatus = "processed";
+            string? webhookError = null;
+
+            try
             {
-                case "checkout.session.completed":
-                case "checkout.session.async_payment_succeeded":
-                    if (string.Equals(
-                            checkoutSession.PaymentStatus,
-                            "paid",
-                            StringComparison.OrdinalIgnoreCase))
-                    {
-                        await CompleteStripePaymentAsync(
-                            paymentId,
-                            checkoutSession.Id,
-                            checkoutSession.PaymentIntentId,
-                            checkoutSession.AmountTotal,
-                            checkoutSession.Currency);
-                    }
-                    break;
+                switch (stripeEvent.Type)
+                {
+                    case "checkout.session.completed":
+                    case "checkout.session.async_payment_succeeded":
+                        if (string.Equals(
+                                checkoutSession.PaymentStatus,
+                                "paid",
+                                StringComparison.OrdinalIgnoreCase))
+                        {
+                            await CompleteStripePaymentAsync(
+                                paymentId,
+                                checkoutSession.Id,
+                                checkoutSession.PaymentIntentId,
+                                checkoutSession.AmountTotal,
+                                checkoutSession.Currency);
 
-                case "checkout.session.expired":
-                case "checkout.session.async_payment_failed":
-                    var payment = await _context.Payments
-                        .FirstOrDefaultAsync(p => p.Id == paymentId);
+                            // Durum geçmişi
+                            var completedPayment = await _context.Payments
+                                .FirstOrDefaultAsync(p => p.Id == paymentId);
+                            if (completedPayment != null)
+                            {
+                                _context.PaymentStatusHistories.Add(new PaymentStatusHistory
+                                {
+                                    PaymentId = completedPayment.Id,
+                                    OldStatus = PaymentStatus.Pending,
+                                    NewStatus = PaymentStatus.Completed,
+                                    Note = $"Stripe session: {checkoutSession.Id}",
+                                    Source = "Stripe"
+                                });
+                            }
+                        }
+                        break;
 
-                    if (payment != null && payment.Status == PaymentStatus.Pending)
-                    {
-                        payment.Status = PaymentStatus.Failed;
-                        await _context.SaveChangesAsync();
-                    }
-                    break;
+                    case "checkout.session.expired":
+                    case "checkout.session.async_payment_failed":
+                        var payment = await _context.Payments
+                            .FirstOrDefaultAsync(p => p.Id == paymentId);
+
+                        if (payment != null && payment.Status == PaymentStatus.Pending)
+                        {
+                            var oldStatus = payment.Status;
+                            payment.Status = PaymentStatus.Failed;
+                            await _context.SaveChangesAsync();
+
+                            _context.PaymentStatusHistories.Add(new PaymentStatusHistory
+                            {
+                                PaymentId = payment.Id,
+                                OldStatus = oldStatus,
+                                NewStatus = PaymentStatus.Failed,
+                                Note = $"Stripe event: {stripeEvent.Type}",
+                                Source = "Stripe"
+                            });
+                        }
+                        break;
+
+                    default:
+                        webhookStatus = "skipped";
+                        break;
+                }
             }
+            catch (Exception ex)
+            {
+                webhookStatus = "failed";
+                webhookError = ex.Message;
+                _logger.LogError(ex, "Stripe webhook processing failed for event {EventId}", stripeEvent.Id);
+            }
+
+            _context.StripeWebhookEvents.Add(new StripeWebhookEvent
+            {
+                StripeEventId = stripeEvent.Id,
+                EventType = stripeEvent.Type,
+                Status = webhookStatus,
+                PaymentId = paymentId,
+                StripeObjectId = checkoutSession.Id,
+                ErrorMessage = webhookError,
+                PayloadPreview = json.Length > 4000 ? json[..4000] : json
+            });
+            await _context.SaveChangesAsync();
 
             return Ok();
         }

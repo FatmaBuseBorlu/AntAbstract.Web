@@ -1,0 +1,125 @@
+@using AntAbstract.Domain.Entities
+@model List<PaymentStatusHistory>
+
+@{
+    ViewData["Title"] = "Ödeme Durum Geçmişi";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    var payment = (Payment)ViewBag.Payment;
+
+    string StatusBadge(PaymentStatus? s) => s switch
+    {
+        PaymentStatus.Pending   => "bg-warning text-dark",
+        PaymentStatus.Completed => "bg-success",
+        PaymentStatus.Failed    => "bg-danger",
+        PaymentStatus.Refunded  => "bg-secondary",
+        _                       => "bg-light text-dark"
+    };
+    string StatusLabel(PaymentStatus? s) => s switch
+    {
+        PaymentStatus.Pending   => "Bekliyor",
+        PaymentStatus.Completed => "Tamamlandı",
+        PaymentStatus.Failed    => "Başarısız",
+        PaymentStatus.Refunded  => "İade Edildi",
+        _                       => "—"
+    };
+    string SourceIcon(string src) => src switch
+    {
+        "Stripe" => "fab fa-stripe-s text-primary",
+        "Admin"  => "fas fa-user-shield text-success",
+        _        => "fas fa-cog text-secondary"
+    };
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1 text-dark">Ödeme Durum Geçmişi</h3>
+            <p class="text-muted mb-0">
+                <span class="badge bg-light text-dark border">@payment.AppUser?.Email</span>
+                &nbsp;·&nbsp;
+                <span class="badge bg-light text-dark border">@payment.Conference?.Title</span>
+                &nbsp;·&nbsp;
+                <strong>@payment.Amount.ToString("N2") @payment.Currency</strong>
+            </p>
+        </div>
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Geri
+        </a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info border-0 shadow-sm">
+            <i class="fas fa-info-circle me-2"></i>
+            Bu ödeme için henüz durum geçmişi kaydı bulunmuyor.
+        </div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="timeline position-relative ps-4">
+                    @foreach (var item in Model)
+                    {
+                        <div class="timeline-item mb-4 position-relative">
+                            <div class="timeline-dot position-absolute"
+                                 style="left:-20px;top:4px;width:12px;height:12px;
+                                        border-radius:50%;background:var(--bs-primary)"></div>
+
+                            <div class="card border-0 bg-light">
+                                <div class="card-body py-3 px-4">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            @if (item.OldStatus.HasValue)
+                                            {
+                                                <span class="badge @StatusBadge(item.OldStatus)">@StatusLabel(item.OldStatus)</span>
+                                                <i class="fas fa-arrow-right text-muted small"></i>
+                                            }
+                                            <span class="badge @StatusBadge(item.NewStatus)">@StatusLabel(item.NewStatus)</span>
+                                        </div>
+                                        <small class="text-muted">
+                                            @item.ChangedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")
+                                        </small>
+                                    </div>
+
+                                    <div class="d-flex align-items-center gap-3 text-muted small">
+                                        <span>
+                                            <i class="@SourceIcon(item.Source) me-1"></i>
+                                            @item.Source
+                                        </span>
+                                        @if (!string.IsNullOrWhiteSpace(item.ChangedByUserName))
+                                        {
+                                            <span>
+                                                <i class="fas fa-user me-1"></i>
+                                                @item.ChangedByUserName
+                                            </span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(item.Note))
+                                        {
+                                            <span>
+                                                <i class="fas fa-comment me-1"></i>
+                                                @item.Note
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: -14px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #dee2e6;
+    }
+</style>

@@ -54,6 +54,8 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<EmailTemplate> EmailTemplates { get; set; }
 
         public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<PaymentStatusHistory> PaymentStatusHistories { get; set; }
+        public DbSet<StripeWebhookEvent> StripeWebhookEvents { get; set; }
         public DbSet<SurveyAnswer> SurveyAnswers { get; set; }
         public DbSet<ReviewCriterion> ReviewCriteria { get; set; }
         public DbSet<ReviewCriterionScore> ReviewCriterionScores { get; set; }
