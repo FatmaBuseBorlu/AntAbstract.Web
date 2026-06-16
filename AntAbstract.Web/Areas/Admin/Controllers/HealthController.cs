@@ -92,6 +92,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 Total: await _context.EmailLogs.CountAsync(e => e.SentAt >= since24h),
                 Failed: await _context.EmailLogs.CountAsync(e => e.SentAt >= since24h && e.Status == "failed"));
 
+            // ── Hatırlatıcı şablon kontrolü ──────────────────────────────────
+            var reminderTemplateKeys = new[] { "deadline_reminder", "payment_pending_reminder" };
+            var existingKeys = await _context.EmailTemplates
+                .AsNoTracking()
+                .Where(t => reminderTemplateKeys.Contains(t.Key) && t.IsActive)
+                .Select(t => t.Key)
+                .ToListAsync();
+            var missingReminderTemplates = reminderTemplateKeys
+                .Where(k => !existingKeys.Contains(k))
+                .ToList();
+
             ViewBag.DbOk = dbOk;
             ViewBag.DbError = dbError;
             ViewBag.StripeOk = stripeOk;
@@ -100,6 +111,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ViewBag.RecentMailErrors = recentMailErrors;
             ViewBag.WebhookStats = webhookStats;
             ViewBag.MailStats = mailStats;
+            ViewBag.MissingReminderTemplates = missingReminderTemplates;
             ViewBag.Slug = slug;
             ViewBag.GeneratedAt = DateTime.UtcNow;
 

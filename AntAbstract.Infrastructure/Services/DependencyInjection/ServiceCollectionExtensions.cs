@@ -40,6 +40,9 @@ namespace AntAbstract.Infrastructure.Services.DependencyInjection
             services.AddSingleton<IEmailQueue, EmailQueue>();
             services.AddHostedService<EmailQueueWorker>();
 
+            // Zamanlanmış mail hatırlatıcıları (deadline, ödeme bekleyen)
+            services.AddHostedService<MailReminderWorker>();
+
             return services;
         }
     }

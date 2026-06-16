@@ -9,6 +9,7 @@
     var auditPending  = (int)ViewBag.AuditQueuePending;
     var generatedAt   = (DateTime)ViewBag.GeneratedAt;
 
+    var missingTemplates = (List<string>)ViewBag.MissingReminderTemplates;
     var webhookErrors = (List<WebhookErrorRow>)ViewBag.RecentWebhookErrors;
     var mailErrors    = (List<MailErrorRow>)ViewBag.RecentMailErrors;
     var wStats        = (WebhookStats)ViewBag.WebhookStats;
@@ -203,6 +204,25 @@
             }
         </div>
     </div>
+
+    @* ── Eksik Hatırlatıcı Şablonları ──────────────────────────────── *@
+    @if (missingTemplates.Any())
+    {
+        <div class="alert alert-warning border-0 rounded-4 mb-4">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Eksik mail şablonları:</strong> Aşağıdaki şablon key'leri tanımlı değil veya pasif —
+            mail hatırlatıcıları çalışsa da bu şablon bulunamaz ve sessizce atlanır.
+            <ul class="mb-0 mt-2 ps-3">
+                @foreach (var key in missingTemplates)
+                {
+                    <li>
+                        <code>@key</code>
+                        <a href="/Admin/EmailTemplates/Create" class="btn btn-sm btn-outline-warning ms-2">Şablon Oluştur</a>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
 
     @* ── Webhook İstatistikleri (24 saat) ─────────────────────────── *@
     @if (wStats.Duplicate > 0)
