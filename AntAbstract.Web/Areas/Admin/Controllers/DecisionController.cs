@@ -30,6 +30,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly IStringLocalizer<DecisionController> _localizer;
         private readonly IEmailService _emailService;
         private readonly INotificationService _notificationService;
+        private readonly ILogger<DecisionController> _logger;
 
         public DecisionController(
             AppDbContext context,
@@ -39,7 +40,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             IAdminTenantAccessService tenantAccess,
             IStringLocalizer<DecisionController> localizer,
             IEmailService emailService,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            ILogger<DecisionController> logger)
         {
             _context = context;
             _tenantContext = tenantContext;
@@ -49,6 +51,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _localizer = localizer;
             _emailService = emailService;
             _notificationService = notificationService;
+            _logger = logger;
         }
 
         private string T(string key, string fallback)
@@ -783,7 +786,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         link: null);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Karar bildirimi gönderilemedi. SubmissionId={Id}", submission.Id);
+            }
 
             TempData["SuccessMessage"] = T(
                 "Success_SubmissionDecisionSaved",

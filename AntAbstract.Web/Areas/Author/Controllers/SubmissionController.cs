@@ -37,6 +37,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         private readonly IStringLocalizer<SubmissionController> _localizer;
         private readonly INotificationService _notificationService;
         private readonly IUploadFileValidator _uploadFileValidator;
+        private readonly ILogger<SubmissionController> _logger;
 
         public SubmissionController(
             ISubmissionService submissionService,
@@ -47,7 +48,8 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             AppDbContext context,
             IStringLocalizer<SubmissionController> localizer,
             INotificationService notificationService,
-            IUploadFileValidator uploadFileValidator)
+            IUploadFileValidator uploadFileValidator,
+            ILogger<SubmissionController> logger)
         {
             _submissionService = submissionService;
             _userManager = userManager;
@@ -58,6 +60,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             _localizer = localizer;
             _notificationService = notificationService;
             _uploadFileValidator = uploadFileValidator;
+            _logger = logger;
         }
 
         private string GetSlug()
@@ -1390,7 +1393,10 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                             link: null);
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Revizyon yükleme bildirimi gönderilemedi.");
+                }
 
                 TempData["SuccessMessage"] = T(
                     "RevisionUploadSuccess",
@@ -1649,7 +1655,10 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                         link: null);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Bildiri geri çekme bildirimi gönderilemedi.");
+            }
 
             TempData["SuccessMessage"] = "Bildiriniz başarıyla geri çekildi.";
             return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));

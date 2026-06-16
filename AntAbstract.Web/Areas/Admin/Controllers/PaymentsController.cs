@@ -24,6 +24,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly IAuditService _audit;
         private readonly UserManager<AppUser> _userManager;
         private readonly INotificationService _notificationService;
+        private readonly ILogger<PaymentsController> _logger;
 
         public PaymentsController(
             AppDbContext context,
@@ -31,7 +32,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             IAdminTenantAccessService tenantAccess,
             IAuditService audit,
             UserManager<AppUser> userManager,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            ILogger<PaymentsController> logger)
         {
             _context = context;
             _emailService = emailService;
@@ -39,6 +41,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _audit = audit;
             _userManager = userManager;
             _notificationService = notificationService;
+            _logger = logger;
         }
 
         // GET /{slug}/Admin/Payments  —  tüm ödemeler + makbuz bekleyenler
@@ -215,7 +218,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         </div>");
                 }
             }
-            catch { /* email hatası işlemi durdurmaz */ }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Ödeme onay e-postası gönderilemedi. RegistrationId={Id}", registrationId);
+            }
 
             TempData["SuccessMessage"] = "Ödeme başarıyla onaylandı ve kullanıcıya e-posta gönderildi.";
 
@@ -232,7 +238,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         color: "success",
                         link: "/Registration/Details/" + registration.Id);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Ödeme onay bildirimi gönderilemedi. RegistrationId={Id}", registrationId);
+                }
             }
 
             var adminUser = await _userManager.GetUserAsync(User);
@@ -299,7 +308,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         </div>");
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Makbuz ret e-postası gönderilemedi. RegistrationId={Id}", registrationId);
+            }
 
             TempData["SuccessMessage"] = "Makbuz reddedildi ve kullanıcıya bildirim gönderildi.";
 
@@ -316,7 +328,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         color: "danger",
                         link: "/Registration/Details/" + registration.Id);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Makbuz ret bildirimi gönderilemedi. RegistrationId={Id}", registrationId);
+                }
             }
 
             var adminUser2 = await _userManager.GetUserAsync(User);
@@ -390,7 +405,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         </div>");
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Kayıt iptal e-postası gönderilemedi. RegistrationId={Id}", registrationId);
+            }
 
             TempData["SuccessMessage"] = "Kayıt iptal edildi ve kullanıcıya bildirim gönderildi.";
 
@@ -407,7 +425,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         color: "dark",
                         link: "/Registration/Details/" + registration.Id);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Kayıt iptal bildirimi gönderilemedi. RegistrationId={Id}", registrationId);
+                }
             }
 
             var adminUser = await _userManager.GetUserAsync(User);
