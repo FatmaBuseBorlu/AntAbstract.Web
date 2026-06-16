@@ -52,8 +52,11 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<SystemParameter> SystemParameters { get; set; }
 
         public DbSet<EmailTemplate> EmailTemplates { get; set; }
+        public DbSet<EmailLog> EmailLogs { get; set; }
 
         public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<PaymentStatusHistory> PaymentStatusHistories { get; set; }
+        public DbSet<StripeWebhookEvent> StripeWebhookEvents { get; set; }
         public DbSet<SurveyAnswer> SurveyAnswers { get; set; }
         public DbSet<ReviewCriterion> ReviewCriteria { get; set; }
         public DbSet<ReviewCriterionScore> ReviewCriterionScores { get; set; }
@@ -224,6 +227,53 @@ namespace AntAbstract.Infrastructure.Context
                 .WithOne(r => r.ReviewAssignment)
                 .HasForeignKey<Review>(r => r.ReviewAssignmentId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // ── Performans Index'leri ────────────────────────────────────────────
+            // Sık kullanılan sorgulardaki filtre kolonlarını kapsar:
+            // TenantId, ConferenceId, UserId, Status, CreatedDate
+
+            builder.Entity<Submission>(entity =>
+            {
+                entity.HasIndex(x => x.ConferenceId);
+                entity.HasIndex(x => x.AuthorId);
+                entity.HasIndex(x => new { x.ConferenceId, x.Status });
+                entity.HasIndex(x => new { x.TenantId, x.ConferenceId });
+            });
+
+            builder.Entity<Registration>(entity =>
+            {
+                entity.HasIndex(x => x.ConferenceId);
+                entity.HasIndex(x => x.AppUserId);
+                entity.HasIndex(x => new { x.ConferenceId, x.Status });
+            });
+
+            builder.Entity<ReviewAssignment>(entity =>
+            {
+                entity.HasIndex(x => x.SubmissionId);
+                entity.HasIndex(x => x.ReviewerId);
+                entity.HasIndex(x => new { x.SubmissionId, x.ReviewerId }).IsUnique();
+            });
+
+            builder.Entity<AuditLog>(entity =>
+            {
+                entity.HasIndex(x => x.UserId);
+                entity.HasIndex(x => x.ConferenceId);
+                entity.HasIndex(x => x.Category);
+                entity.HasIndex(x => x.CreatedAt);
+                entity.HasIndex(x => new { x.ConferenceId, x.CreatedAt });
+            });
+
+            builder.Entity<Notification>(entity =>
+            {
+                entity.HasIndex(x => x.UserId);
+                entity.HasIndex(x => new { x.UserId, x.IsRead });
+            });
+
+            builder.Entity<Conference>(entity =>
+            {
+                entity.HasIndex(x => x.TenantId);
+                entity.HasIndex(x => x.Slug);
+            });
         }
 
         static readonly MethodInfo SetGlobalQueryMethod = typeof(AppDbContext)

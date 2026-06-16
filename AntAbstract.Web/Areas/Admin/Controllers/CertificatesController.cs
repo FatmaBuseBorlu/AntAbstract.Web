@@ -20,17 +20,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly ICertificateService _certificateService;
         private readonly IAdminTenantAccessService _tenantAccess;
         private readonly IStringLocalizer<CertificatesController> _localizer;
+        private readonly ILogger<CertificatesController> _logger;
 
         public CertificatesController(
             AppDbContext context,
             ICertificateService certificateService,
             IAdminTenantAccessService tenantAccess,
-            IStringLocalizer<CertificatesController> localizer)
+            IStringLocalizer<CertificatesController> localizer,
+            ILogger<CertificatesController> logger)
         {
             _context = context;
             _certificateService = certificateService;
             _tenantAccess = tenantAccess;
             _localizer = localizer;
+            _logger = logger;
         }
 
         private string T(string key, string fallback)
@@ -262,7 +265,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     await _certificateService.EnsureAuthorCertificateAsync(conferenceId, sub.UserId!);
                     generated++;
                 }
-                catch { errors++; }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Yazar sertifikası oluşturulamadı. UserId={UserId}", sub.UserId);
+                    errors++;
+                }
             }
 
             // 2. Reviewer certificates — all who completed at least one review
@@ -284,7 +291,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     await _certificateService.EnsureReviewerCertificateAsync(conferenceId, reviewerId);
                     generated++;
                 }
-                catch { errors++; }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Hakem sertifikası oluşturulamadı. ReviewerId={ReviewerId}", reviewerId);
+                    errors++;
+                }
             }
 
             // 3. Attendee certificates — all with completed attendance
@@ -304,7 +315,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     await _certificateService.EnsureAttendeeCertificateAsync(conferenceId, attendeeId!);
                     generated++;
                 }
-                catch { errors++; }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Katılımcı sertifikası oluşturulamadı. UserId={UserId}", attendeeId);
+                    errors++;
+                }
             }
 
             if (errors == 0)

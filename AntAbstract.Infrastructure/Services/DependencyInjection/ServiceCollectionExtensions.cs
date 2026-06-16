@@ -31,7 +31,10 @@ namespace AntAbstract.Infrastructure.Services.DependencyInjection
             services.AddScoped<IReviewerRecommendationService, ReviewerRecommendationService>();
             services.AddScoped<IConferencePageBlockService, ConferencePageBlockService>();
 
+            // Audit log kuyruğu + background worker
+            services.AddSingleton<AuditQueue>();
             services.AddSingleton<IAuditService, AuditService>();
+            services.AddHostedService<AuditWorker>();
 
             // E-posta kuyruğu
             services.AddSingleton<IEmailQueue, EmailQueue>();

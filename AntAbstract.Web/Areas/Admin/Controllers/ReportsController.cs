@@ -704,6 +704,143 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return View("~/Areas/Admin/Views/Reports/RefereeReport.cshtml");
         }
 
+        // ── Katılımcı Raporu (CSV) ──────────────────────────────────────────────
+
+        [HttpGet("/Admin/Reports/ParticipantsExport")]
+        [HttpGet("/{slug}/Admin/Reports/ParticipantsExport")]
+        public async Task<IActionResult> ParticipantsExport(string slug, Guid? conferenceId = null)
+        {
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
+            if (conference == null)
+                return NotFound();
+
+            var rows = await _context.Registrations
+                .AsNoTracking()
+                .Include(r => r.AppUser)
+                .Include(r => r.RegistrationType)
+                .Where(r => r.ConferenceId == conference.Id)
+                .OrderBy(r => r.AppUser!.LastName)
+                .ToListAsync();
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("Ad,Soyad,E-posta,Kurum,Kayıt Tipi,Ödeme Durumu,Kayıt Tarihi");
+
+            foreach (var r in rows)
+            {
+                var u = r.AppUser;
+                sb.AppendLine(string.Join(",",
+                    CsvEsc(u?.FirstName ?? ""),
+                    CsvEsc(u?.LastName ?? ""),
+                    CsvEsc(u?.Email ?? ""),
+                    CsvEsc(u?.University ?? ""),
+                    CsvEsc(r.RegistrationType?.Name ?? ""),
+                    CsvEsc(r.IsPaid ? "Ödendi" : (r.ReceiptFilePath != null ? "Makbuz Bekleniyor" : "Ödenmedi")),
+                    CsvEsc(r.RegistrationDate.ToString("dd.MM.yyyy"))));
+            }
+
+            var bytes = System.Text.Encoding.UTF8.GetPreamble()
+                .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+            return File(bytes, "text/csv; charset=utf-8",
+                $"katilimcilar-{conference.Slug}-{DateTime.UtcNow:yyyyMMdd}.csv");
+        }
+
+        // ── Gelir Raporu (CSV) ──────────────────────────────────────────────────
+
+        [HttpGet("/Admin/Reports/RevenueExport")]
+        [HttpGet("/{slug}/Admin/Reports/RevenueExport")]
+        public async Task<IActionResult> RevenueExport(string slug, Guid? conferenceId = null)
+        {
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
+            if (conference == null)
+                return NotFound();
+
+            var rows = await _context.Registrations
+                .AsNoTracking()
+                .Include(r => r.AppUser)
+                .Include(r => r.RegistrationType)
+                .Where(r => r.ConferenceId == conference.Id && r.IsPaid)
+                .OrderByDescending(r => r.RegistrationDate)
+                .ToListAsync();
+
+            var totalRevenue = rows.Sum(r => r.Amount);
+            var currency = rows.FirstOrDefault()?.RegistrationType?.Currency ?? "TRY";
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"Kongre: {conference.Title}");
+            sb.AppendLine($"Toplam Gelir: {totalRevenue:N2} {currency}");
+            sb.AppendLine($"Ödenen Kayıt Sayısı: {rows.Count.ToString()}");
+            sb.AppendLine("");
+            sb.AppendLine("Ad,Soyad,E-posta,Kayıt Tipi,Tutar,Para Birimi,Tarih");
+
+            foreach (var r in rows)
+            {
+                var u = r.AppUser;
+                sb.AppendLine(string.Join(",",
+                    CsvEsc(u?.FirstName ?? ""),
+                    CsvEsc(u?.LastName ?? ""),
+                    CsvEsc(u?.Email ?? ""),
+                    CsvEsc(r.RegistrationType?.Name ?? ""),
+                    CsvEsc(r.Amount.ToString("N2")),
+                    CsvEsc(r.RegistrationType?.Currency ?? "TRY"),
+                    CsvEsc(r.RegistrationDate.ToString("dd.MM.yyyy"))));
+            }
+
+            var bytes = System.Text.Encoding.UTF8.GetPreamble()
+                .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+            return File(bytes, "text/csv; charset=utf-8",
+                $"gelir-raporu-{conference.Slug ?? "conf"}-{DateTime.UtcNow:yyyyMMdd}.csv");
+        }
+
+        // ── Bildiri Özet Raporu ─────────────────────────────────────────────────
+
+        [HttpGet("/Admin/Reports/SubmissionsExport")]
+        [HttpGet("/{slug}/Admin/Reports/SubmissionsExport")]
+        public async Task<IActionResult> SubmissionsExport(string slug, Guid? conferenceId = null)
+        {
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
+            if (conference == null)
+                return NotFound();
+
+            var rows = await _context.Submissions
+                .AsNoTracking()
+                .Include(s => s.Author)
+                .Include(s => s.ConferenceTopic)
+                .Where(s => s.ConferenceId == conference.Id)
+                .OrderByDescending(s => s.CreatedDate)
+                .ToListAsync();
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("Başlık,Yazar,Konu,Sunum Türü,Durum,Gönderim Tarihi");
+
+            foreach (var s in rows)
+            {
+                sb.AppendLine(string.Join(",",
+                    CsvEsc(s.Title ?? ""),
+                    CsvEsc(s.Author != null ? $"{s.Author.FirstName} {s.Author.LastName}".Trim() : ""),
+                    CsvEsc(s.ConferenceTopic?.Name ?? s.Topic ?? ""),
+                    CsvEsc(s.PresentationType ?? ""),
+                    CsvEsc(s.Status.ToString()),
+                    CsvEsc(s.CreatedDate.ToString("dd.MM.yyyy"))));
+            }
+
+            var bytes = System.Text.Encoding.UTF8.GetPreamble()
+                .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+            return File(bytes, "text/csv; charset=utf-8",
+                $"bildiriler-{conference.Slug}-{DateTime.UtcNow:yyyyMMdd}.csv");
+        }
+
+        private static string CsvEsc(string v)
+        {
+            // Excel formula injection koruması: =, +, -, @ ile başlayan
+            // hücreler prefix tırnak eklenerek metin olarak yorumlanır.
+            if (v.Length > 0 && v[0] is '=' or '+' or '-' or '@')
+                v = "'" + v;
+
+            if (v.Contains(',') || v.Contains('"') || v.Contains('\n'))
+                return $"\"{v.Replace("\"", "\"\"")}\"";
+            return v;
+        }
+
         [HttpGet("/Reports/Index")]
         public IActionResult LegacyRoot()
         {

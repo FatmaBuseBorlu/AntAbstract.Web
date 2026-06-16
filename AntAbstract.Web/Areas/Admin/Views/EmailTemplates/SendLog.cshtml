@@ -1,0 +1,164 @@
+@using AntAbstract.Domain.Entities
+@model List<EmailLog>
+
+@{
+    ViewData["Title"] = "E-posta Gönderim Geçmişi";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+
+    int page         = (int)ViewBag.Page;
+    int totalPages   = (int)ViewBag.TotalPages;
+    int total        = (int)ViewBag.Total;
+    string? filterEmail       = ViewBag.FilterEmail as string;
+    string? filterStatus      = ViewBag.FilterStatus as string;
+    string? filterTemplateKey = ViewBag.FilterTemplateKey as string;
+    var templateKeys          = ViewBag.TemplateKeys as List<string> ?? new();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">
+            <i class="fas fa-history me-2 text-secondary"></i> E-posta Gönderim Geçmişi
+        </h4>
+        <p class="text-muted mb-0">Toplam <strong>@total</strong> kayıt</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Şablonlar
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+        <form method="get" class="d-flex gap-2 align-items-end flex-wrap">
+            <div>
+                <label class="form-label small mb-1">Alıcı E-posta</label>
+                <input name="email" value="@filterEmail" class="form-control form-control-sm"
+                       placeholder="ornek@eposta.com" style="width:220px" />
+            </div>
+            <div>
+                <label class="form-label small mb-1">Durum</label>
+                <select name="status" class="form-select form-select-sm" style="width:130px">
+                    <option value="">Tümü</option>
+                    @if (filterStatus == "sent")   { <option value="sent" selected>sent</option> }   else { <option value="sent">sent</option> }
+                    @if (filterStatus == "failed") { <option value="failed" selected>failed</option> } else { <option value="failed">failed</option> }
+                </select>
+            </div>
+            <div>
+                <label class="form-label small mb-1">Şablon</label>
+                <select name="templateKey" class="form-select form-select-sm" style="width:200px">
+                    <option value="">Tümü</option>
+                    @foreach (var key in templateKeys)
+                    {
+                        @if (filterTemplateKey == key)
+                        {
+                            <option value="@key" selected>@key</option>
+                        }
+                        else
+                        {
+                            <option value="@key">@key</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="fas fa-search me-1"></i> Filtrele
+                </button>
+                <a href="@Url.Action("SendLog")" class="btn btn-outline-secondary btn-sm ms-1">Temizle</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 small">
+                <thead class="table-light">
+                    <tr>
+                        <th class="px-4 py-3">Tarih</th>
+                        <th>Alıcı</th>
+                        <th>Konu</th>
+                        <th>Şablon</th>
+                        <th>Kaynak</th>
+                        <th>Durum</th>
+                        <th>Hata</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">Kayıt bulunamadı.</td>
+                        </tr>
+                    }
+                    @foreach (var log in Model)
+                    {
+                        <tr>
+                            <td class="px-4 text-nowrap">
+                                @log.SentAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                            </td>
+                            <td>@log.ToEmail</td>
+                            <td class="text-muted" style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                @log.Subject
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(log.TemplateKey))
+                                {
+                                    <code class="small">@log.TemplateKey</code>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(log.Source))
+                                {
+                                    <span class="badge bg-light text-dark border">@log.Source</span>
+                                }
+                            </td>
+                            <td>
+                                @if (log.Status == "sent")
+                                {
+                                    <span class="badge bg-success">sent</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">failed</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(log.ErrorMessage))
+                                {
+                                    <span class="text-danger" title="@log.ErrorMessage">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                        @(log.ErrorMessage.Length > 60
+                                            ? log.ErrorMessage[..60] + "…"
+                                            : log.ErrorMessage)
+                                    </span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@if (totalPages > 1)
+{
+    <nav class="mt-3">
+        <ul class="pagination pagination-sm justify-content-end mb-0">
+            @for (int p = 1; p <= totalPages; p++)
+            {
+                <li class="page-item @(p == page ? "active" : "")">
+                    <a class="page-link"
+                       href="@Url.Action("SendLog", new { page = p, email = filterEmail, status = filterStatus, templateKey = filterTemplateKey })">
+                        @p
+                    </a>
+                </li>
+            }
+        </ul>
+    </nav>
+}

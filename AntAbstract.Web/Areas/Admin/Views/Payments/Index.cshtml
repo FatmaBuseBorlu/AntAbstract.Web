@@ -16,6 +16,11 @@
         <h4 class="fw-bold mb-1">💳 @Localizer["PageTitle"]</h4>
         <p class="text-muted mb-0">@(conference?.Title ?? "Kongre")</p>
     </div>
+    <div class="d-flex gap-2">
+        <a asp-action="WebhookLog" class="btn btn-outline-primary btn-sm">
+            <i class="fab fa-stripe-s me-1"></i> Stripe Webhook Log
+        </a>
+    </div>
 </div>
 
 @if (TempData["SuccessMessage"] != null)
@@ -190,6 +195,18 @@
                                     else
                                     {
                                         <span class="text-success small">Tamamlandı</span>
+                                        @if (reg.PaymentTransactionId != null)
+                                        {
+                                            var histPayment = ViewBag.PaymentMap as System.Collections.Generic.Dictionary<string, System.Guid?>;
+                                            var payId = histPayment != null && histPayment.ContainsKey(reg.AppUserId ?? "") ? histPayment[reg.AppUserId!] : (System.Guid?)null;
+                                            if (payId.HasValue)
+                                            {
+                                                <a asp-action="History" asp-route-paymentId="@payId"
+                                                   class="btn btn-sm btn-outline-info ms-1" title="Durum Geçmişi">
+                                                    <i class="fas fa-history"></i>
+                                                </a>
+                                            }
+                                        }
                                         <button type="button" class="btn btn-sm btn-outline-dark ms-1"
                                                 data-bs-toggle="modal" data-bs-target="#cancelModal"
                                                 data-reg-id="@reg.Id" data-name="@fullName" data-return="@returnUrl">

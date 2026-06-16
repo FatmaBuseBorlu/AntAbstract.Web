@@ -39,6 +39,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly IAuditService _audit;
         private readonly INotificationService _notificationService;
         private readonly IEmailService _emailService;
+        private readonly ILogger<SubmissionsController> _logger;
 
         public SubmissionsController(
             AppDbContext context,
@@ -53,7 +54,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             IUploadFileValidator uploadFileValidator,
             IAuditService audit,
             INotificationService notificationService,
-            IEmailService emailService)
+            IEmailService emailService,
+            ILogger<SubmissionsController> logger)
         {
             _context = context;
             _submissionService = submissionService;
@@ -61,6 +63,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _userManager = userManager;
             _tenantAccess = tenantAccess;
             _tenantContext = tenantContext;
+            _logger = logger;
             _selectedConferenceService = selectedConferenceService;
             _env = env;
             _localizer = localizer;
@@ -463,12 +466,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     return View("~/Areas/Admin/Views/Submissions/Create.cshtml", model);
                 }
 
-                var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "submissions");
-
-                if (!Directory.Exists(uploadsFolder))
-                {
-                    Directory.CreateDirectory(uploadsFolder);
-                }
+                var uploadsFolder = PrivateStorage.EnsureFolder(_env, PrivateStorage.SubmissionsFolder);
 
                 var uniqueFileName = _uploadFileValidator.CreateStoredFileName(
                     validation.Extension,
@@ -484,7 +482,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 {
                     FileName = validation.SafeOriginalFileName,
                     StoredFileName = uniqueFileName,
-                    FilePath = "/uploads/submissions/" + uniqueFileName,
+                    FilePath = PrivateStorage.ToRelativePath(PrivateStorage.SubmissionsFolder, uniqueFileName),
                     UploadedAt = DateTime.UtcNow
                 });
             }
@@ -846,7 +844,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                 // Audit log
                 var currentUser = await _userManager.GetUserAsync(User);
-                _ = _audit.LogAsync(
+                await _audit.LogAsync(
                     category: "Submission",
                     action: "StatusChanged",
                     userId: currentUser?.Id,
@@ -924,7 +922,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         }
                     }
                 }
-                catch { /* bildirim hatası işlemi durdurmaz */ }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Durum değişikliği bildirimi/e-postası gönderilemedi. SubmissionId={Id}", id);
+                }
             }
             else
             {

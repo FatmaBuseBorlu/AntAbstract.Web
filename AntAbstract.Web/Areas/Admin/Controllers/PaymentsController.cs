@@ -24,6 +24,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly IAuditService _audit;
         private readonly UserManager<AppUser> _userManager;
         private readonly INotificationService _notificationService;
+        private readonly ILogger<PaymentsController> _logger;
 
         public PaymentsController(
             AppDbContext context,
@@ -31,7 +32,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             IAdminTenantAccessService tenantAccess,
             IAuditService audit,
             UserManager<AppUser> userManager,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            ILogger<PaymentsController> logger)
         {
             _context = context;
             _emailService = emailService;
@@ -39,6 +41,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _audit = audit;
             _userManager = userManager;
             _notificationService = notificationService;
+            _logger = logger;
         }
 
         // GET /{slug}/Admin/Payments  —  tüm ödemeler + makbuz bekleyenler
@@ -121,6 +124,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ViewBag.PendingCount   = allForConf.Count(r => !r.IsPaid && r.ReceiptFilePath == null);
             ViewBag.TotalRevenue   = allForConf.Where(r => r.IsPaid).Sum(r => r.Amount);
 
+            // userId → PaymentId haritası (History butonları için)
+            var userIds = registrations.Where(r => r.IsPaid && r.AppUserId != null)
+                .Select(r => r.AppUserId!).Distinct().ToList();
+            var paymentMap = await _context.Payments
+                .Where(p => p.ConferenceId == conference.Id && userIds.Contains(p.AppUserId))
+                .GroupBy(p => p.AppUserId)
+                .Select(g => new { UserId = g.Key, PaymentId = g.OrderByDescending(p => p.PaymentDate).First().Id })
+                .ToDictionaryAsync(x => x.UserId, x => (Guid?)x.PaymentId);
+            ViewBag.PaymentMap = paymentMap;
+
             return View(registrations);
         }
 
@@ -168,9 +181,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 p.AppUserId == registration.AppUserId &&
                 p.Status == PaymentStatus.Completed);
 
+            Payment? approvedPayment = null;
             if (!alreadyExists)
             {
-                _context.Payments.Add(new Payment
+                approvedPayment = new Payment
                 {
                     Amount = registration.Amount,
                     Currency = registration.RegistrationType?.Currency ?? "TRY",
@@ -184,10 +198,36 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     TaxNumber = registration.TaxNumber,
                     AppUserId = registration.AppUserId,
                     ConferenceId = registration.ConferenceId
-                });
+                };
+                _context.Payments.Add(approvedPayment);
+            }
+            else
+            {
+                approvedPayment = await _context.Payments.FirstOrDefaultAsync(p =>
+                    p.ConferenceId == registration.ConferenceId &&
+                    p.AppUserId == registration.AppUserId &&
+                    p.Status == PaymentStatus.Completed);
             }
 
             await _context.SaveChangesAsync();
+
+            // Durum geçmişi kaydet
+            if (approvedPayment != null)
+            {
+                var adminForHistory = await _userManager.GetUserAsync(User);
+                _context.PaymentStatusHistories.Add(new PaymentStatusHistory
+                {
+                    PaymentId = approvedPayment.Id,
+                    OldStatus = PaymentStatus.Pending,
+                    NewStatus = PaymentStatus.Completed,
+                    ChangedByUserId = adminForHistory?.Id,
+                    ChangedByUserName = adminForHistory != null
+                        ? $"{adminForHistory.FirstName} {adminForHistory.LastName}".Trim() : null,
+                    Note = note,
+                    Source = "Admin"
+                });
+                await _context.SaveChangesAsync();
+            }
 
             // E-posta bildir
             try
@@ -215,7 +255,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         </div>");
                 }
             }
-            catch { /* email hatası işlemi durdurmaz */ }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Ödeme onay e-postası gönderilemedi. RegistrationId={Id}", registrationId);
+            }
 
             TempData["SuccessMessage"] = "Ödeme başarıyla onaylandı ve kullanıcıya e-posta gönderildi.";
 
@@ -232,11 +275,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         color: "success",
                         link: "/Registration/Details/" + registration.Id);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Ödeme onay bildirimi gönderilemedi. RegistrationId={Id}", registrationId);
+                }
             }
 
             var adminUser = await _userManager.GetUserAsync(User);
-            _ = _audit.LogAsync(
+            await _audit.LogAsync(
                 category: "Payment",
                 action: "PaymentApproved",
                 userId: adminUser?.Id,
@@ -275,6 +321,29 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             registration.Status = RegistrationStatus.PaymentRejected;
             await _context.SaveChangesAsync();
 
+            // Durum geçmişi — ilgili Payment kaydı varsa ekle
+            var rejectedPayment = await _context.Payments
+                .Where(p => p.ConferenceId == registration.ConferenceId &&
+                            p.AppUserId == registration.AppUserId)
+                .OrderByDescending(p => p.PaymentDate)
+                .FirstOrDefaultAsync();
+            if (rejectedPayment != null)
+            {
+                var adminForHistory = await _userManager.GetUserAsync(User);
+                _context.PaymentStatusHistories.Add(new PaymentStatusHistory
+                {
+                    PaymentId = rejectedPayment.Id,
+                    OldStatus = rejectedPayment.Status,
+                    NewStatus = PaymentStatus.Failed,
+                    ChangedByUserId = adminForHistory?.Id,
+                    ChangedByUserName = adminForHistory != null
+                        ? $"{adminForHistory.FirstName} {adminForHistory.LastName}".Trim() : null,
+                    Note = note,
+                    Source = "Admin"
+                });
+                await _context.SaveChangesAsync();
+            }
+
             // Kullanıcıya bildir
             try
             {
@@ -299,7 +368,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         </div>");
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Makbuz ret e-postası gönderilemedi. RegistrationId={Id}", registrationId);
+            }
 
             TempData["SuccessMessage"] = "Makbuz reddedildi ve kullanıcıya bildirim gönderildi.";
 
@@ -316,11 +388,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         color: "danger",
                         link: "/Registration/Details/" + registration.Id);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Makbuz ret bildirimi gönderilemedi. RegistrationId={Id}", registrationId);
+                }
             }
 
             var adminUser2 = await _userManager.GetUserAsync(User);
-            _ = _audit.LogAsync(
+            await _audit.LogAsync(
                 category: "Payment",
                 action: "PaymentRejected",
                 userId: adminUser2?.Id,
@@ -364,6 +439,29 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 : note;
             await _context.SaveChangesAsync();
 
+            // Durum geçmişi
+            var cancelledPayment = await _context.Payments
+                .Where(p => p.ConferenceId == registration.ConferenceId &&
+                            p.AppUserId == registration.AppUserId)
+                .OrderByDescending(p => p.PaymentDate)
+                .FirstOrDefaultAsync();
+            if (cancelledPayment != null)
+            {
+                var adminForHistory = await _userManager.GetUserAsync(User);
+                _context.PaymentStatusHistories.Add(new PaymentStatusHistory
+                {
+                    PaymentId = cancelledPayment.Id,
+                    OldStatus = cancelledPayment.Status,
+                    NewStatus = PaymentStatus.Refunded,
+                    ChangedByUserId = adminForHistory?.Id,
+                    ChangedByUserName = adminForHistory != null
+                        ? $"{adminForHistory.FirstName} {adminForHistory.LastName}".Trim() : null,
+                    Note = note,
+                    Source = "Admin"
+                });
+                await _context.SaveChangesAsync();
+            }
+
             // Kullanıcıya bildir
             try
             {
@@ -390,7 +488,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         </div>");
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Kayıt iptal e-postası gönderilemedi. RegistrationId={Id}", registrationId);
+            }
 
             TempData["SuccessMessage"] = "Kayıt iptal edildi ve kullanıcıya bildirim gönderildi.";
 
@@ -407,11 +508,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         color: "dark",
                         link: "/Registration/Details/" + registration.Id);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Kayıt iptal bildirimi gönderilemedi. RegistrationId={Id}", registrationId);
+                }
             }
 
             var adminUser = await _userManager.GetUserAsync(User);
-            _ = _audit.LogAsync(
+            await _audit.LogAsync(
                 category: "Registration",
                 action: "RegistrationCancelled",
                 userId: adminUser?.Id,
@@ -423,6 +527,66 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
 
             return RedirectBack(returnUrl);
+        }
+
+        // GET /{slug}/Admin/Payments/History?paymentId=...
+        public async Task<IActionResult> History(Guid paymentId)
+        {
+            var accessibleConfs = await _tenantAccess.GetAccessibleConferenceQueryAsync(User);
+
+            var payment = await _context.Payments
+                .Include(p => p.Conference)
+                .Include(p => p.AppUser)
+                .Where(p => accessibleConfs.Select(c => c.Id).Contains(p.ConferenceId))
+                .FirstOrDefaultAsync(p => p.Id == paymentId);
+
+            if (payment == null)
+                return NotFound();
+
+            var history = await _context.PaymentStatusHistories
+                .Where(h => h.PaymentId == paymentId)
+                .OrderBy(h => h.ChangedAt)
+                .ToListAsync();
+
+            ViewBag.Payment = payment;
+            return View(history);
+        }
+
+        // GET /{slug}/Admin/Payments/WebhookLog
+        public async Task<IActionResult> WebhookLog(
+            string? eventType = null,
+            string? status = null,
+            int page = 1)
+        {
+            // Yalnızca SuperAdmin veya TenantAdmin erişebilir
+            // (TenantAdmin politikası zaten controller seviyesinde)
+            const int pageSize = 50;
+
+            var query = _context.StripeWebhookEvents
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(eventType))
+                query = query.Where(e => e.EventType.Contains(eventType));
+
+            if (!string.IsNullOrWhiteSpace(status))
+                query = query.Where(e => e.Status == status);
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(e => e.ReceivedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            ViewBag.Page = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.Total = total;
+            ViewBag.TotalPages = (int)Math.Ceiling((double)total / pageSize);
+            ViewBag.EventType = eventType;
+            ViewBag.Status = status;
+
+            return View(items);
         }
 
         private IActionResult RedirectBack(string? returnUrl)

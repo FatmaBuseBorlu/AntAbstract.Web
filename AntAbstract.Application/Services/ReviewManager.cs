@@ -180,6 +180,7 @@ namespace AntAbstract.Application.Services
                 Files = assignment.Submission?.Files?
                     .Select(file => new SubmissionFileDto
                     {
+                        Id = file.Id,
                         FileName = file.FileName,
                         FilePath = file.FilePath,
                         Type = file.Type.ToString()

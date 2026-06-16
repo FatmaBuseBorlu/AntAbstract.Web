@@ -21,6 +21,18 @@
     var refereeReportUrl = string.IsNullOrWhiteSpace(slug)
         ? $"/Admin/Reports/Referees?conferenceId={Model.ConferenceId}"
         : $"/{slug}/Admin/Reports/Referees?conferenceId={Model.ConferenceId}";
+
+    var participantsExportUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Reports/ParticipantsExport?conferenceId={Model.ConferenceId}"
+        : $"/{slug}/Admin/Reports/ParticipantsExport?conferenceId={Model.ConferenceId}";
+
+    var revenueExportUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Reports/RevenueExport?conferenceId={Model.ConferenceId}"
+        : $"/{slug}/Admin/Reports/RevenueExport?conferenceId={Model.ConferenceId}";
+
+    var submissionsExportUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Reports/SubmissionsExport?conferenceId={Model.ConferenceId}"
+        : $"/{slug}/Admin/Reports/SubmissionsExport?conferenceId={Model.ConferenceId}";
 }
 
 <div class="container-fluid py-4">
@@ -116,6 +128,25 @@
                     <div class="display-6 fw-bold">@Model.TotalRevenue.ToString("N2") ₺</div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom-0">
+            <h6 class="fw-bold m-0">
+                <i class="fas fa-download me-2 text-success"></i> CSV Dışa Aktarma
+            </h6>
+        </div>
+        <div class="card-body d-flex flex-wrap gap-2">
+            <a href="@participantsExportUrl" class="btn btn-outline-success btn-sm">
+                <i class="fas fa-users me-1"></i> Katılımcılar CSV
+            </a>
+            <a href="@revenueExportUrl" class="btn btn-outline-success btn-sm">
+                <i class="fas fa-coins me-1"></i> Gelir Raporu CSV
+            </a>
+            <a href="@submissionsExportUrl" class="btn btn-outline-success btn-sm">
+                <i class="fas fa-file-alt me-1"></i> Bildiriler CSV
+            </a>
         </div>
     </div>
 

@@ -34,6 +34,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly IStringLocalizer<AssignmentController> _localizer;
         private readonly IAuditService _audit;
+        private readonly ILogger<AssignmentController> _logger;
 
         public AssignmentController(
             AppDbContext context,
@@ -45,7 +46,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             IReviewerRecommendationService recommendationService,
             ISelectedConferenceService selectedConferenceService,
             IStringLocalizer<AssignmentController> localizer,
-            IAuditService audit)
+            IAuditService audit,
+            ILogger<AssignmentController> logger)
         {
             _context = context;
             _tenantContext = tenantContext;
@@ -54,6 +56,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _userManager = userManager;
             _tenantAccess = tenantAccess;
             _recommendationService = recommendationService;
+            _logger = logger;
             _selectedConferenceService = selectedConferenceService;
             _localizer = localizer;
             _audit = audit;
@@ -866,7 +869,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "Hakem başarıyla atandı.");
 
             var adminUser = await _userManager.GetUserAsync(User);
-            _ = _audit.LogAsync(
+            await _audit.LogAsync(
                 category: "Review",
                 action: "ReviewerAssigned",
                 userId: adminUser?.Id,
@@ -946,14 +949,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         link: null);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Atama iptal bildirimi gönderilemedi.");
+            }
 
             TempData["SuccessMessage"] = T(
                 "Success_AssignmentRemoved",
                 "Hakem ataması kaldırıldı.");
 
             var adminUser2 = await _userManager.GetUserAsync(User);
-            _ = _audit.LogAsync(
+            await _audit.LogAsync(
                 category: "Review",
                 action: "ReviewerRemoved",
                 userId: adminUser2?.Id,

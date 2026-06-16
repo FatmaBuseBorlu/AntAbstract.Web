@@ -94,7 +94,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     trackedReg.CheckedInByUserId = adminUser?.Id;
                     await _context.SaveChangesAsync();
 
-                    _ = _audit.LogAsync(
+                    await _audit.LogAsync(
                         category: "Attendance",
                         action: "CheckIn",
                         userId: adminUser?.Id,

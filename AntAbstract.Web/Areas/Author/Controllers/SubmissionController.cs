@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Rotativa.AspNetCore;
@@ -37,6 +38,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         private readonly IStringLocalizer<SubmissionController> _localizer;
         private readonly INotificationService _notificationService;
         private readonly IUploadFileValidator _uploadFileValidator;
+        private readonly ILogger<SubmissionController> _logger;
 
         public SubmissionController(
             ISubmissionService submissionService,
@@ -47,7 +49,8 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             AppDbContext context,
             IStringLocalizer<SubmissionController> localizer,
             INotificationService notificationService,
-            IUploadFileValidator uploadFileValidator)
+            IUploadFileValidator uploadFileValidator,
+            ILogger<SubmissionController> logger)
         {
             _submissionService = submissionService;
             _userManager = userManager;
@@ -58,6 +61,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             _localizer = localizer;
             _notificationService = notificationService;
             _uploadFileValidator = uploadFileValidator;
+            _logger = logger;
         }
 
         private string GetSlug()
@@ -607,6 +611,9 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [HttpPost("/{slug}/Submission/Create")]
         [HttpPost("/{slug}/submit-abstract")]
         [ValidateAntiForgeryToken]
+        [RequestSizeLimit(20 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 20 * 1024 * 1024)]
+        [EnableRateLimiting("upload")]
         public async Task<IActionResult> Create(SubmissionCreateViewModel model, string? slug = null)
         {
             if (string.IsNullOrWhiteSpace(slug))
@@ -1294,6 +1301,9 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [HttpPost("/{slug}/Submission/UploadRevision/{id:guid}")]
         [HttpPost("/{slug}/my-submissions/{id:guid}/revision")]
         [ValidateAntiForgeryToken]
+        [RequestSizeLimit(20 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 20 * 1024 * 1024)]
+        [EnableRateLimiting("upload")]
         public async Task<IActionResult> UploadRevision(Guid id, IFormFile? revisionFile, string? slug = null)
         {
             var user = await _userManager.GetUserAsync(User);
@@ -1386,7 +1396,10 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                             link: null);
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Revizyon yükleme bildirimi gönderilemedi.");
+                }
 
                 TempData["SuccessMessage"] = T(
                     "RevisionUploadSuccess",
@@ -1645,7 +1658,10 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                         link: null);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Bildiri geri çekme bildirimi gönderilemedi.");
+            }
 
             TempData["SuccessMessage"] = "Bildiriniz başarıyla geri çekildi.";
             return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
@@ -1677,12 +1693,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 throw new InvalidOperationException(errorMessage);
             }
 
-            string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "submissions");
-
-            if (!Directory.Exists(uploadsFolder))
-            {
-                Directory.CreateDirectory(uploadsFolder);
-            }
+            var uploadsFolder = PrivateStorage.EnsureFolder(_env, PrivateStorage.SubmissionsFolder);
 
             string uniqueFileName = _uploadFileValidator.CreateStoredFileName(
                 validation.Extension,
@@ -1695,7 +1706,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             }
 
             return (
-                "/uploads/submissions/" + uniqueFileName,
+                PrivateStorage.ToRelativePath(PrivateStorage.SubmissionsFolder, uniqueFileName),
                 uniqueFileName,
                 validation.SafeOriginalFileName
             );

@@ -1,5 +1,8 @@
+using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
+using AntAbstract.Web.Files;
+using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -13,7 +16,8 @@ namespace AntAbstract.Web.Controllers
 {
     /// <summary>
     /// Hassas dosyaları (bildiri, makbuz) yetki kontrolüyle serve eder.
-    /// wwwroot/uploads/* doğrudan erişim Program.cs'te engellenmiştir.
+    /// Tenant izolasyonu: Admin, DB'deki kendi TenantId'si üzerinden doğrulanır;
+    /// route'ta slug olup olmamasından bağımsız çalışır.
     /// </summary>
     [Authorize]
     public class SecureDownloadController : Controller
@@ -21,15 +25,24 @@ namespace AntAbstract.Web.Controllers
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
         private readonly IWebHostEnvironment _env;
+        private readonly IAdminTenantAccessService _tenantAccess;
+        private readonly IAuditService _audit;
+        private readonly ILogger<SecureDownloadController> _logger;
 
         public SecureDownloadController(
             AppDbContext context,
             UserManager<AppUser> userManager,
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            IAdminTenantAccessService tenantAccess,
+            IAuditService audit,
+            ILogger<SecureDownloadController> logger)
         {
             _context = context;
             _userManager = userManager;
             _env = env;
+            _tenantAccess = tenantAccess;
+            _audit = audit;
+            _logger = logger;
         }
 
         // ── Bildiri Dosyası ──────────────────────────────────────────────────────
@@ -51,16 +64,43 @@ namespace AntAbstract.Web.Controllers
             var submission = file.Submission;
             if (submission == null) return NotFound();
 
-            // Yetki: ya dosyanın sahibidir ya da admin/hakem
-            var isOwner = submission.AuthorId == user.Id;
-            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
-            var isReviewer = User.IsInRole("Referee") &&
-                await _context.ReviewAssignments
-                    .AsNoTracking()
-                    .AnyAsync(ra => ra.SubmissionId == submission.Id && ra.ReviewerId == user.Id);
+            // Yetki: dosya sahibi, SuperAdmin veya aynı tenant'ın Admin'i
+            var isSuperAdmin = User.IsInRole("SuperAdmin");
+            var isOwner      = submission.AuthorId == user.Id;
+
+            // Admin: DB'deki TenantId ile karşılaştır — slug gerektirmez
+            var isTenantAdmin = false;
+            if (!isOwner && !isSuperAdmin && User.IsInRole("Admin") && submission.Conference != null)
+            {
+                var adminTenantId = await _tenantAccess.GetAdminTenantIdAsync(User);
+                isTenantAdmin = adminTenantId.HasValue &&
+                                adminTenantId.Value == submission.Conference.TenantId;
+            }
+
+            var isAdmin = isSuperAdmin || isTenantAdmin;
+
+            var isReviewer = false;
+            if (!isOwner && !isAdmin)
+            {
+                isReviewer = User.IsInRole("Referee") &&
+                    await _context.ReviewAssignments
+                        .AsNoTracking()
+                        .AnyAsync(ra => ra.SubmissionId == submission.Id && ra.ReviewerId == user.Id);
+            }
 
             if (!isOwner && !isAdmin && !isReviewer)
                 return Forbid();
+
+            await _audit.LogAsync(
+                category: "FileDownload",
+                action: "SubmissionFileDownloaded",
+                userId: user.Id,
+                userName: $"{user.FirstName} {user.LastName}".Trim(),
+                entityType: "SubmissionFile",
+                entityId: fileId.ToString(),
+                description: $"Bildiri dosyası indirildi: {file.FileName} (SubmissionId={submission.Id})",
+                conferenceId: submission.ConferenceId,
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
 
             return ServeFile(file.FilePath, file.FileName ?? "dosya");
         }
@@ -81,14 +121,32 @@ namespace AntAbstract.Web.Controllers
             if (registration == null || string.IsNullOrWhiteSpace(registration.ReceiptFilePath))
                 return NotFound();
 
-            // Yetki: kayıt sahibi veya admin
-            var isOwner = registration.AppUserId == user.Id;
-            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+            // Yetki: kayıt sahibi, SuperAdmin veya aynı tenant'ın Admin'i
+            var isOwner      = registration.AppUserId == user.Id;
+            var isSuperAdmin = User.IsInRole("SuperAdmin");
 
-            if (!isOwner && !isAdmin)
+            var isTenantAdmin = false;
+            if (!isOwner && !isSuperAdmin && User.IsInRole("Admin") && registration.Conference != null)
+            {
+                var adminTenantId = await _tenantAccess.GetAdminTenantIdAsync(User);
+                isTenantAdmin = adminTenantId.HasValue &&
+                                adminTenantId.Value == registration.Conference.TenantId;
+            }
+
+            if (!isOwner && !isSuperAdmin && !isTenantAdmin)
                 return Forbid();
 
-            var fileName = Path.GetFileName(registration.ReceiptFilePath);
+            await _audit.LogAsync(
+                category: "FileDownload",
+                action: "ReceiptDownloaded",
+                userId: user.Id,
+                userName: $"{user.FirstName} {user.LastName}".Trim(),
+                entityType: "Registration",
+                entityId: registrationId.ToString(),
+                description: $"Ödeme makbuzu indirildi. RegistrationId={registrationId}",
+                conferenceId: registration.ConferenceId,
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
+
             return ServeFile(registration.ReceiptFilePath, $"makbuz_{registrationId:N}.pdf");
         }
 
@@ -96,18 +154,20 @@ namespace AntAbstract.Web.Controllers
 
         private IActionResult ServeFile(string relativePath, string downloadName)
         {
-            // /uploads/... → wwwroot/uploads/...
-            var fullPath = Path.Combine(_env.WebRootPath,
-                relativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+            string fullPath;
+            try
+            {
+                // PrivateStorage.Resolve: whitelist dışı her yol UnauthorizedAccessException fırlatır
+                fullPath = PrivateStorage.Resolve(_env, relativePath);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "İzin verilmeyen dosya yolu istendi: {Path}", relativePath);
+                return BadRequest();
+            }
 
             if (!System.IO.File.Exists(fullPath))
                 return NotFound();
-
-            // Path traversal koruması: dosya wwwroot altında olmalı
-            var wwwroot = Path.GetFullPath(_env.WebRootPath);
-            var resolved = Path.GetFullPath(fullPath);
-            if (!resolved.StartsWith(wwwroot, StringComparison.OrdinalIgnoreCase))
-                return BadRequest();
 
             var ext = Path.GetExtension(fullPath).ToLowerInvariant();
             var contentType = ext switch
@@ -120,7 +180,7 @@ namespace AntAbstract.Web.Controllers
                 _       => "application/octet-stream"
             };
 
-            return PhysicalFile(resolved, contentType, downloadName);
+            return PhysicalFile(fullPath, contentType, downloadName);
         }
     }
 }
