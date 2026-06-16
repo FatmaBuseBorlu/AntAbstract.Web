@@ -168,17 +168,22 @@ builder.Services.Configure<RouteOptions>(options =>
     options.AppendTrailingSlash = false;
 });
 
-// Global form / dosya upload limitleri
+// Global upload limitleri.
+// Kestrel ve FormOptions üst sınırı bildiri kitabına göre 52 MB ayarlıyoruz;
+// bireysel action'lar [RequestSizeLimit] / [RequestFormLimits] ile daha düşük
+// sınır uygular (örn. bildiri PDF ve makbuz için 20 MB).
+// Bu sayede Kestrel isteği middleware katmanında kesmez; limit kontrolü
+// controller seviyesinde yapılır.
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
 {
-    options.MultipartBodyLengthLimit = 20 * 1024 * 1024; // 20 MB (bildiri PDF)
+    options.MultipartBodyLengthLimit    = 52 * 1024 * 1024; // 52 MB (bildiri kitabı için üst sınır)
     options.ValueLengthLimit            = int.MaxValue;
     options.MultipartHeadersLengthLimit = int.MaxValue;
 });
 
 builder.WebHost.ConfigureKestrel(kestrel =>
 {
-    kestrel.Limits.MaxRequestBodySize = 20 * 1024 * 1024; // 20 MB
+    kestrel.Limits.MaxRequestBodySize = 52 * 1024 * 1024; // 52 MB
 });
 
 builder.Services.AddControllersWithViews()

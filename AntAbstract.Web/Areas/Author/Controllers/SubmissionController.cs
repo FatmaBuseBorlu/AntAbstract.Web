@@ -607,6 +607,8 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [HttpPost("/{slug}/Submission/Create")]
         [HttpPost("/{slug}/submit-abstract")]
         [ValidateAntiForgeryToken]
+        [RequestSizeLimit(20 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 20 * 1024 * 1024)]
         public async Task<IActionResult> Create(SubmissionCreateViewModel model, string? slug = null)
         {
             if (string.IsNullOrWhiteSpace(slug))
@@ -1294,6 +1296,8 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         [HttpPost("/{slug}/Submission/UploadRevision/{id:guid}")]
         [HttpPost("/{slug}/my-submissions/{id:guid}/revision")]
         [ValidateAntiForgeryToken]
+        [RequestSizeLimit(20 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 20 * 1024 * 1024)]
         public async Task<IActionResult> UploadRevision(Guid id, IFormFile? revisionFile, string? slug = null)
         {
             var user = await _userManager.GetUserAsync(User);
@@ -1677,12 +1681,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 throw new InvalidOperationException(errorMessage);
             }
 
-            string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "submissions");
-
-            if (!Directory.Exists(uploadsFolder))
-            {
-                Directory.CreateDirectory(uploadsFolder);
-            }
+            var uploadsFolder = PrivateStorage.EnsureFolder(_env, PrivateStorage.SubmissionsFolder);
 
             string uniqueFileName = _uploadFileValidator.CreateStoredFileName(
                 validation.Extension,
@@ -1695,7 +1694,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             }
 
             return (
-                "/uploads/submissions/" + uniqueFileName,
+                PrivateStorage.ToRelativePath(PrivateStorage.SubmissionsFolder, uniqueFileName),
                 uniqueFileName,
                 validation.SafeOriginalFileName
             );

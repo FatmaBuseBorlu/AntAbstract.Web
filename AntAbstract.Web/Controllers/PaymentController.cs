@@ -990,6 +990,8 @@ namespace AntAbstract.Web.Controllers
         [HttpPost("/payment/upload-receipt/{registrationId:guid}")]
         [HttpPost("/{slug}/payment/upload-receipt/{registrationId:guid}")]
         [ValidateAntiForgeryToken]
+        [RequestSizeLimit(20 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 20 * 1024 * 1024)]
         public async Task<IActionResult> UploadReceipt(Guid registrationId, IFormFile? receiptFile, string? slug = null)
         {
             var user = await _userManager.GetUserAsync(User);
@@ -1031,16 +1033,14 @@ namespace AntAbstract.Web.Controllers
                 return View();
             }
 
-            var folder = Path.Combine(_env.WebRootPath, "uploads", "receipts");
-            Directory.CreateDirectory(folder);
+            var folder = PrivateStorage.EnsureFolder(_env, PrivateStorage.ReceiptsFolder);
 
             // Önceki makbuz varsa diskten sil
             if (!string.IsNullOrWhiteSpace(registration.ReceiptFilePath))
             {
-                var oldFileName = Path.GetFileName(registration.ReceiptFilePath);
-                var oldFilePath = Path.Combine(folder, oldFileName);
-                if (System.IO.File.Exists(oldFilePath))
-                    System.IO.File.Delete(oldFilePath);
+                var oldPhysical = PrivateStorage.Resolve(_env, registration.ReceiptFilePath);
+                if (System.IO.File.Exists(oldPhysical))
+                    System.IO.File.Delete(oldPhysical);
             }
 
             var fileName = _uploadFileValidator.CreateStoredFileName(
@@ -1050,7 +1050,7 @@ namespace AntAbstract.Web.Controllers
             using (var fs = new FileStream(filePath, FileMode.Create))
                 await receiptFile.CopyToAsync(fs);
 
-            registration.ReceiptFilePath = $"/uploads/receipts/{fileName}";
+            registration.ReceiptFilePath = PrivateStorage.ToRelativePath(PrivateStorage.ReceiptsFolder, fileName);
             registration.ReceiptUploadedAt = DateTime.UtcNow;
             registration.Status = AntAbstract.Domain.Entities.RegistrationStatus.AwaitingApproval;
             await _context.SaveChangesAsync();
