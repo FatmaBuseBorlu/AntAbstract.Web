@@ -124,6 +124,7 @@ public sealed class AdminTenantAccessService : IAdminTenantAccessService
 
         if (IsSuperAdmin(principal))
         {
+            _tenantContext.IsGlobalContext = true;
             return query;
         }
 
@@ -147,6 +148,7 @@ public sealed class AdminTenantAccessService : IAdminTenantAccessService
 
         if (IsSuperAdmin(principal))
         {
+            _tenantContext.IsGlobalContext = true;
             return query;
         }
 
