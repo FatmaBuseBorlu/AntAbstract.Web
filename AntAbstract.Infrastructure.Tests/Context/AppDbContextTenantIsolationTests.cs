@@ -135,8 +135,9 @@ public class AppDbContextTenantIsolationTests
     }
 
     [Fact]
-    public async Task QueryFilters_AllowGlobalQueries_WhenNoTenantIsResolved()
+    public async Task QueryFilters_BlockAllAccess_WhenNoTenantAndNotGlobalContext()
     {
+        // Güvenlik değişikliği: tenant atanmamış + IsGlobalContext=false → hiçbir kayıt görünmez
         var options = CreateOptions();
         var tenantA = CreateTenant("tenant-a");
         var tenantB = CreateTenant("tenant-b");
@@ -150,6 +151,29 @@ public class AppDbContextTenantIsolationTests
         }
 
         await using var context = new AppDbContext(options, new TenantContext());
+
+        Assert.Equal(0, await context.Conferences.CountAsync());
+    }
+
+    [Fact]
+    public async Task QueryFilters_AllowGlobalQueries_WhenIsGlobalContextIsTrue()
+    {
+        // SuperAdmin için IsGlobalContext=true ayarlanınca tüm kongreler görünür
+        var options = CreateOptions();
+        var tenantA = CreateTenant("tenant-a");
+        var tenantB = CreateTenant("tenant-b");
+
+        await using (var seedContext = new AppDbContext(options, new TenantContext()))
+        {
+            seedContext.Conferences.AddRange(
+                CreateConference(tenantA.Id, "Conference A"),
+                CreateConference(tenantB.Id, "Conference B"));
+            await seedContext.SaveChangesAsync();
+        }
+
+        await using var context = new AppDbContext(
+            options,
+            new TenantContext { IsGlobalContext = true });
 
         Assert.Equal(2, await context.Conferences.CountAsync());
     }
