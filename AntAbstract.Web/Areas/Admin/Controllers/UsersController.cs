@@ -360,7 +360,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 }
 
                 var adminUser = await _userManager.GetUserAsync(User);
-                _ = _audit.LogAsync(
+                await _audit.LogAsync(
                     category: "RoleChange",
                     action: "RoleAdded",
                     userId: adminUser?.Id,
@@ -593,7 +593,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 }
 
                 var adminUser = await _userManager.GetUserAsync(User);
-                _ = _audit.LogAsync(
+                await _audit.LogAsync(
                     category: "RoleChange",
                     action: "RoleRemoved",
                     userId: adminUser?.Id,

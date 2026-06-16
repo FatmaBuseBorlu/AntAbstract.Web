@@ -869,7 +869,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "Hakem başarıyla atandı.");
 
             var adminUser = await _userManager.GetUserAsync(User);
-            _ = _audit.LogAsync(
+            await _audit.LogAsync(
                 category: "Review",
                 action: "ReviewerAssigned",
                 userId: adminUser?.Id,
@@ -959,7 +959,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "Hakem ataması kaldırıldı.");
 
             var adminUser2 = await _userManager.GetUserAsync(User);
-            _ = _audit.LogAsync(
+            await _audit.LogAsync(
                 category: "Review",
                 action: "ReviewerRemoved",
                 userId: adminUser2?.Id,

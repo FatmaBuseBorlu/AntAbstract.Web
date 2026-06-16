@@ -282,7 +282,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             var adminUser = await _userManager.GetUserAsync(User);
-            _ = _audit.LogAsync(
+            await _audit.LogAsync(
                 category: "Payment",
                 action: "PaymentApproved",
                 userId: adminUser?.Id,
@@ -395,7 +395,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             var adminUser2 = await _userManager.GetUserAsync(User);
-            _ = _audit.LogAsync(
+            await _audit.LogAsync(
                 category: "Payment",
                 action: "PaymentRejected",
                 userId: adminUser2?.Id,
@@ -515,7 +515,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             var adminUser = await _userManager.GetUserAsync(User);
-            _ = _audit.LogAsync(
+            await _audit.LogAsync(
                 category: "Registration",
                 action: "RegistrationCancelled",
                 userId: adminUser?.Id,

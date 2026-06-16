@@ -91,7 +91,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 {
                     _logger.LogInformation("Kullanıcı giriş yaptı.");
                     var loggedUser = await _userManager.FindByEmailAsync(Input.Email);
-                    _ = _audit.LogAsync(
+                    await _audit.LogAsync(
                         category: "Auth",
                         action: "Login",
                         userId: loggedUser?.Id,
@@ -107,7 +107,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 if (result.IsLockedOut)
                 {
                     _logger.LogWarning("Kullanıcı hesabı kilitlendi.");
-                    _ = _audit.LogAsync(
+                    await _audit.LogAsync(
                         category: "Auth",
                         action: "LoginLockedOut",
                         description: $"Kilitli hesap giriş denemesi: {Input.Email}",
@@ -116,7 +116,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 }
                 else
                 {
-                    _ = _audit.LogAsync(
+                    await _audit.LogAsync(
                         category: "Auth",
                         action: "LoginFailed",
                         description: $"Başarısız giriş denemesi: {Input.Email}",

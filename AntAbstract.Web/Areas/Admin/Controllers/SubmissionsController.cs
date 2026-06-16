@@ -844,7 +844,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                 // Audit log
                 var currentUser = await _userManager.GetUserAsync(User);
-                _ = _audit.LogAsync(
+                await _audit.LogAsync(
                     category: "Submission",
                     action: "StatusChanged",
                     userId: currentUser?.Id,
