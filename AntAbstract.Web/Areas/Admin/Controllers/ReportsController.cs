@@ -826,11 +826,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var bytes = System.Text.Encoding.UTF8.GetPreamble()
                 .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
             return File(bytes, "text/csv; charset=utf-8",
-                $"bildirier-{conference.Slug}-{DateTime.UtcNow:yyyyMMdd}.csv");
+                $"bildiriler-{conference.Slug}-{DateTime.UtcNow:yyyyMMdd}.csv");
         }
 
         private static string CsvEsc(string v)
         {
+            // Excel formula injection koruması: =, +, -, @ ile başlayan
+            // hücreler prefix tırnak eklenerek metin olarak yorumlanır.
+            if (v.Length > 0 && v[0] is '=' or '+' or '-' or '@')
+                v = "'" + v;
+
             if (v.Contains(',') || v.Contains('"') || v.Contains('\n'))
                 return $"\"{v.Replace("\"", "\"\"")}\"";
             return v;

@@ -204,12 +204,14 @@ builder.WebHost.ConfigureKestrel(kestrel =>
 // ── Response Compression ─────────────────────────────────────────────────────
 builder.Services.AddResponseCompression(options =>
 {
-    options.EnableForHttps = true; // HTTPS üzerinde de sıkıştır (BREACH riski minimize edildi: CSP + anti-CSRF aktif)
+    options.EnableForHttps = true;
     options.Providers.Add<BrotliCompressionProvider>();
     options.Providers.Add<GzipCompressionProvider>();
+    // text/html kasıtlı olarak dışarıda: authenticated HTML + CSRF token
+    // içeren sayfalar BREACH saldırısına karşı sıkıştırılmıyor.
     options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
     {
-        "text/html", "text/css", "text/javascript", "application/javascript",
+        "text/css", "text/javascript", "application/javascript",
         "application/json", "image/svg+xml", "font/woff2"
     });
 });
@@ -395,10 +397,9 @@ app.Use(async (ctx, next) =>
     await next();
 });
 
-// ── Rate Limiter ─────────────────────────────────────────────────────────────
-// Named policy'ler [EnableRateLimiting("...")] attribute veya
-// .RequireRateLimiting("...") ile endpoint'lere uygulanır.
-app.UseRateLimiter();
+// UseRateLimiter() UseRouting()'den sonra konumlandırılmıştır çünkü
+// named policy'lerin ([EnableRateLimiting]) endpoint metadata'yı okuyabilmesi
+// için routing'in daha önce çalışması gerekir.
 
 // Hassas dosyalar (submissions, receipts, templates) artık wwwroot dışında
 // ContentRoot/private-uploads altında tutulur; SecureDownloadController ile serve edilir.
@@ -437,6 +438,8 @@ localizationOptions.RequestCultureProviders = new List<IRequestCultureProvider>
 app.UseRequestLocalization(localizationOptions);
 
 app.UseRouting();
+
+app.UseRateLimiter(); // UseRouting'den SONRA — named policy'ler endpoint metadata'ya ihtiyaç duyar
 
 app.UseSession();
 

@@ -176,6 +176,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         private static string CsvEscape(string value)
         {
+            if (value.Length > 0 && value[0] is '=' or '+' or '-' or '@')
+                value = "'" + value;
+
             if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
                 return $"\"{value.Replace("\"", "\"\"")}\"";
             return value;
