@@ -1033,6 +1033,16 @@ namespace AntAbstract.Web.Controllers
 
             var folder = Path.Combine(_env.WebRootPath, "uploads", "receipts");
             Directory.CreateDirectory(folder);
+
+            // Önceki makbuz varsa diskten sil
+            if (!string.IsNullOrWhiteSpace(registration.ReceiptFilePath))
+            {
+                var oldFileName = Path.GetFileName(registration.ReceiptFilePath);
+                var oldFilePath = Path.Combine(folder, oldFileName);
+                if (System.IO.File.Exists(oldFilePath))
+                    System.IO.File.Delete(oldFilePath);
+            }
+
             var fileName = _uploadFileValidator.CreateStoredFileName(
                 validation.Extension,
                 $"receipt-{registrationId:N}");
