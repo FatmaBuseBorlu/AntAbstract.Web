@@ -1402,6 +1402,15 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                     <i class="fas fa-history text-secondary"></i>
                     Denetim Günlüğü
                 </a>
+
+                var healthUrl = string.IsNullOrWhiteSpace(slug)
+                    ? "/Admin/Health"
+                    : $"/{slug}/Admin/Health";
+                <a href="@healthUrl"
+                   class="nav-link @(currentController == "Health" ? "active" : "")">
+                    <i class="fas fa-heartbeat text-danger"></i>
+                    Sistem Sağlığı
+                </a>
             }
         </div>
 

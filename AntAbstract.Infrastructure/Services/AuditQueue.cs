@@ -35,6 +35,9 @@ namespace AntAbstract.Infrastructure.Services
         public IAsyncEnumerable<AuditLog> ReadAllAsync(CancellationToken ct) =>
             _channel.Reader.ReadAllAsync(ct);
 
+        /// <summary>Şu an kuyrukta bekleyen (henüz DB'ye yazılmamış) kayıt sayısı.</summary>
+        public int PendingCount => _channel.Reader.CanCount ? _channel.Reader.Count : -1;
+
         /// <summary>Uygulama kapanırken çağrılır.</summary>
         public void Complete() => _channel.Writer.Complete();
     }
