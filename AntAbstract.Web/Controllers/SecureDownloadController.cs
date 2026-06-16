@@ -14,7 +14,7 @@ namespace AntAbstract.Web.Controllers
 {
     /// <summary>
     /// Hassas dosyaları (bildiri, makbuz) yetki kontrolüyle serve eder.
-    /// wwwroot/uploads/* doğrudan erişim Program.cs'te engellenmiştir.
+    /// Tenant izolasyonu: Admin yalnızca kendi konferanslarına ait dosyalara erişebilir.
     /// </summary>
     [Authorize]
     public class SecureDownloadController : Controller
@@ -22,15 +22,18 @@ namespace AntAbstract.Web.Controllers
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
         private readonly IWebHostEnvironment _env;
+        private readonly TenantContext _tenantContext;
 
         public SecureDownloadController(
             AppDbContext context,
             UserManager<AppUser> userManager,
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            TenantContext tenantContext)
         {
             _context = context;
             _userManager = userManager;
             _env = env;
+            _tenantContext = tenantContext;
         }
 
         // ── Bildiri Dosyası ──────────────────────────────────────────────────────
@@ -52,9 +55,18 @@ namespace AntAbstract.Web.Controllers
             var submission = file.Submission;
             if (submission == null) return NotFound();
 
-            // Yetki: ya dosyanın sahibidir ya da admin/hakem
-            var isOwner = submission.AuthorId == user.Id;
-            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+            // Yetki: ya dosyanın sahibidir ya da aynı tenant'ın admin/hakemi
+            var isSuperAdmin = User.IsInRole("SuperAdmin");
+            var isOwner     = submission.AuthorId == user.Id;
+
+            // Tenant Admin: yalnızca kendi konferanslarına ait dosyalara erişebilir
+            var isTenantAdmin = User.IsInRole("Admin") &&
+                submission.Conference != null &&
+                _tenantContext.Current != null &&
+                submission.Conference.TenantId == _tenantContext.Current.Id;
+
+            var isAdmin = isSuperAdmin || isTenantAdmin;
+
             var isReviewer = User.IsInRole("Referee") &&
                 await _context.ReviewAssignments
                     .AsNoTracking()
@@ -82,11 +94,15 @@ namespace AntAbstract.Web.Controllers
             if (registration == null || string.IsNullOrWhiteSpace(registration.ReceiptFilePath))
                 return NotFound();
 
-            // Yetki: kayıt sahibi veya admin
-            var isOwner = registration.AppUserId == user.Id;
-            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+            // Yetki: kayıt sahibi veya aynı tenant'ın admin/SuperAdmin'i
+            var isOwner     = registration.AppUserId == user.Id;
+            var isSuperAdmin = User.IsInRole("SuperAdmin");
+            var isTenantAdmin = User.IsInRole("Admin") &&
+                registration.Conference != null &&
+                _tenantContext.Current != null &&
+                registration.Conference.TenantId == _tenantContext.Current.Id;
 
-            if (!isOwner && !isAdmin)
+            if (!isOwner && !isSuperAdmin && !isTenantAdmin)
                 return Forbid();
 
             var fileName = Path.GetFileName(registration.ReceiptFilePath);
