@@ -14,6 +14,7 @@ public class AdminTenantAuthorizationTests
 {
     [Theory]
     [InlineData("AssignmentController", AdminPolicies.TenantAdmin)]
+    [InlineData("AttendanceController", AdminPolicies.TenantAdmin)]
     [InlineData("BroadcastController", AdminPolicies.TenantAdmin)]
     [InlineData("ConferenceFlowController", AdminPolicies.TenantAdmin)]
     [InlineData("ConferencesController", AdminPolicies.TenantAdmin)]
@@ -22,6 +23,7 @@ public class AdminTenantAuthorizationTests
     [InlineData("PaymentsController", AdminPolicies.TenantAdmin)]
     [InlineData("ProceedingBookController", AdminPolicies.TenantAdmin)]
     [InlineData("RefereeController", AdminPolicies.TenantAdmin)]
+    [InlineData("ReviewCriteriaController", AdminPolicies.TenantAdmin)]
     [InlineData("SessionController", AdminPolicies.TenantAdmin)]
     [InlineData("SubmissionsController", AdminPolicies.TenantAdmin)]
     [InlineData("AuditLogsController", AdminPolicies.TenantAdmin)]
@@ -52,6 +54,36 @@ public class AdminTenantAuthorizationTests
         Assert.Contains(
             authorizeAttributes,
             attribute => attribute.Policy == expectedPolicy);
+    }
+
+    [Theory]
+    [InlineData("AllConferencesController")]
+    [InlineData("CentralVitrinController")]
+    [InlineData("EmailTemplatesController")]
+    [InlineData("SystemParametersController")]
+    [InlineData("SystemReportsController")]
+    [InlineData("TenantsController")]
+    [InlineData("UsersController")]
+    public void SuperAdminOnlyControllers_RequireSuperAdminRole(string controllerName)
+    {
+        var controllerType = typeof(AdminPolicies).Assembly
+            .GetTypes()
+            .Single(type =>
+                type.Name == controllerName &&
+                type.Namespace?.Contains(
+                    ".Areas.Admin.Controllers",
+                    StringComparison.Ordinal) == true &&
+                typeof(Controller).IsAssignableFrom(type));
+
+        var authorizeAttrs = controllerType
+            .GetCustomAttributes<AuthorizeAttribute>()
+            .ToList();
+
+        Assert.Contains(
+            authorizeAttrs,
+            a => a.Roles != null && a.Roles.Split(',')
+                .Select(r => r.Trim())
+                .Contains("SuperAdmin"));
     }
 
     [Fact]

@@ -79,6 +79,28 @@ public sealed class SmokeTests(SmokeTestFactory factory) : IClassFixture<SmokeTe
             $"Beklenen 302/401/404 yerine {(int)response.StatusCode} döndü.");
     }
 
+    // ── Health/Status JSON endpoint ──────────────────────────────────────────
+
+    [Fact]
+    public async Task HealthStatus_Returns401WhenNoApiKey()
+    {
+        var response = await _client.GetAsync("/Admin/Health/Status");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task HealthStatus_Returns401WhenApiKeyNotConfigured()
+    {
+        // appsettings'te SET_VIA_ENV_OR_SECRETS placeholder'ı var — yapılandırılmamış sayılır
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Admin/Health/Status");
+        request.Headers.Add("X-Health-Key", "herhangi-bir-deger");
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
     // ── 404 beklenen rotalar — asla 500 dönmemeli ────────────────────────────
 
     [Theory]
