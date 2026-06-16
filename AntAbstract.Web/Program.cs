@@ -10,12 +10,14 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Rotativa.AspNetCore;
 using Stripe;
 using System.Globalization;
+using System.IO.Compression;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Localization;
@@ -199,6 +201,21 @@ builder.WebHost.ConfigureKestrel(kestrel =>
     kestrel.Limits.MaxRequestBodySize = 52 * 1024 * 1024; // 52 MB
 });
 
+// ── Response Compression ─────────────────────────────────────────────────────
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true; // HTTPS üzerinde de sıkıştır (BREACH riski minimize edildi: CSP + anti-CSRF aktif)
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
+    {
+        "text/html", "text/css", "text/javascript", "application/javascript",
+        "application/json", "image/svg+xml", "font/woff2"
+    });
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+
 // ── Rate Limiting ────────────────────────────────────────────────────────────
 // IP bazlı sliding-window limitleri. Development'ta daha gevşek tutulur.
 builder.Services.AddRateLimiter(options =>
@@ -339,6 +356,8 @@ else
     app.UseHsts();
 }
 
+app.UseResponseCompression();
+
 app.UseHttpsRedirection();
 
 // ── Security Headers ─────────────────────────────────────────────────────────
@@ -384,7 +403,22 @@ app.UseRateLimiter();
 // Hassas dosyalar (submissions, receipts, templates) artık wwwroot dışında
 // ContentRoot/private-uploads altında tutulur; SecureDownloadController ile serve edilir.
 // wwwroot'ta yalnızca herkese açık statik varlıklar kaldı.
-app.UseStaticFiles();
+// CSS/JS/font'lar için 30 günlük cache; HTML değiştiğinde yeni fingerprint (bundler/versioning ile).
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var path = ctx.Context.Request.Path.Value ?? "";
+        var ext  = Path.GetExtension(path).ToLowerInvariant();
+
+        // Versiyonlanmış varlıklar (css, js, font, resim) uzun süre cache'lenebilir
+        if (ext is ".css" or ".js" or ".woff" or ".woff2" or ".ttf" or ".eot"
+                or ".png" or ".jpg" or ".jpeg" or ".gif" or ".ico" or ".svg" or ".webp")
+        {
+            ctx.Context.Response.Headers["Cache-Control"] = "public, max-age=2592000, immutable"; // 30 gün
+        }
+    }
+});
 
 var supportedCultures = new[] { "tr-TR", "en-US" };
 

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using System;
 using System.Collections.Generic;
@@ -25,6 +26,7 @@ namespace AntAbstract.Web.Controllers
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly IStringLocalizer<DashboardController> _localizer;
+        private readonly IConfiguration _configuration;
 
         private static readonly string[] ReviewerRoleNames =
         {
@@ -50,13 +52,15 @@ namespace AntAbstract.Web.Controllers
             UserManager<AppUser> userManager,
             RoleManager<IdentityRole> roleManager,
             TenantContext tenantContext,
-            IStringLocalizer<DashboardController> localizer)
+            IStringLocalizer<DashboardController> localizer,
+            IConfiguration configuration)
         {
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
             _tenantContext = tenantContext;
             _localizer = localizer;
+            _configuration = configuration;
         }
 
         [Authorize(Policy = AdminPolicies.TenantAdmin)]
@@ -819,6 +823,35 @@ namespace AntAbstract.Web.Controllers
                     .Select(ra => ra.ReviewerId)
                     .Distinct()
                     .CountAsync();
+
+                // ── Eksik Yapılandırma Uyarıları ────────────────────────────────
+                var warnings = new List<string>();
+
+                var hasRegTypes = await _context.RegistrationTypes.AsNoTracking()
+                    .AnyAsync(rt => rt.ConferenceId == confId);
+                if (!hasRegTypes)
+                    warnings.Add("Kayıt tipi tanımlanmamış — katılımcılar kayıt yaptıramaz.");
+
+                var hasTopics = await _context.ConferenceTopics.AsNoTracking()
+                    .AnyAsync(t => t.ConferenceId == confId && t.IsActive);
+                if (!hasTopics)
+                    warnings.Add("Aktif konu alanı yok — bildiri gönderimleri konusuz kalır.");
+
+                if (selectedConference != null)
+                {
+                    if (!selectedConference.IsSubmissionOpen)
+                        warnings.Add("Bildiri gönderimi kapalı.");
+
+                    if (selectedConference.AbstractSubmissionDeadline.HasValue &&
+                        selectedConference.AbstractSubmissionDeadline < DateTime.UtcNow)
+                        warnings.Add($"Özet gönderim son tarihi geçti ({selectedConference.AbstractSubmissionDeadline:dd.MM.yyyy}).");
+                }
+
+                var stripeKey = _configuration["Stripe:SecretKey"];
+                if (string.IsNullOrWhiteSpace(stripeKey) || stripeKey.StartsWith("SET_VIA"))
+                    warnings.Add("Stripe ödeme entegrasyonu yapılandırılmamış — ödemeler çalışmaz.");
+
+                viewModel.ConfigWarnings = warnings;
             }
 
             return View(viewModel);

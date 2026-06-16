@@ -31,6 +31,9 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Dashboard
         public string RevenueCurrency { get; set; } = "TRY";
         public Conference? SelectedConference { get; set; }
 
+        /// <summary>Kongre yöneticisine gösterilecek eksik yapılandırma uyarıları.</summary>
+        public List<string> ConfigWarnings { get; set; } = new();
+
         public DashboardViewModel()
         {
             ChartLabels = new List<string>();
