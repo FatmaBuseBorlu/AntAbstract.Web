@@ -21,7 +21,12 @@ namespace AntAbstract.Infrastructure.Services.Email
         }
 
         public Task SendAsync(string toEmail, string subject, string htmlMessage)
-            => SendEmailAsync(toEmail, subject, htmlMessage);
+            => SendEmailAsync(toEmail, subject, htmlMessage, source: null, templateKey: null);
+
+        // IEmailSender (ASP.NET Core Identity UI) — üç parametreli overload
+        Task Microsoft.AspNetCore.Identity.UI.Services.IEmailSender.SendEmailAsync(
+            string email, string subject, string htmlMessage)
+            => SendEmailAsync(email, subject, htmlMessage, source: null, templateKey: null);
 
         public async Task SendTemplatedAsync(
             string toEmail,
@@ -40,25 +45,63 @@ namespace AntAbstract.Infrastructure.Services.Email
             var subject = ApplyPlaceholders(template.Subject, placeholders);
             var body    = ApplyPlaceholders(template.HtmlBody, placeholders);
 
-            await SendEmailAsync(toEmail, subject, body);
+            await SendEmailAsync(toEmail, subject, body, source: templateKey, templateKey: templateKey);
         }
 
-        public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage)
+        public async Task SendEmailAsync(
+            string toEmail,
+            string subject,
+            string htmlMessage,
+            string? source = null,
+            string? templateKey = null)
         {
-            var email = new MimeMessage();
-            email.Sender = new MailboxAddress(_emailSettings.SenderName, _emailSettings.SenderEmail);
-            email.From.Add(new MailboxAddress(_emailSettings.SenderName, _emailSettings.SenderEmail));
-            email.To.Add(MailboxAddress.Parse(toEmail));
-            email.Subject = subject;
+            string status = "sent";
+            string? error = null;
 
-            var builder = new BodyBuilder { HtmlBody = htmlMessage };
-            email.Body = builder.ToMessageBody();
+            try
+            {
+                var email = new MimeMessage();
+                email.Sender = new MailboxAddress(_emailSettings.SenderName, _emailSettings.SenderEmail);
+                email.From.Add(new MailboxAddress(_emailSettings.SenderName, _emailSettings.SenderEmail));
+                email.To.Add(MailboxAddress.Parse(toEmail));
+                email.Subject = subject;
 
-            using var smtp = new SmtpClient();
-            await smtp.ConnectAsync(_emailSettings.SmtpServer, _emailSettings.Port, SecureSocketOptions.StartTls);
-            await smtp.AuthenticateAsync(_emailSettings.Username, _emailSettings.Password);
-            await smtp.SendAsync(email);
-            await smtp.DisconnectAsync(true);
+                var builder = new BodyBuilder { HtmlBody = htmlMessage };
+                email.Body = builder.ToMessageBody();
+
+                using var smtp = new SmtpClient();
+                await smtp.ConnectAsync(_emailSettings.SmtpServer, _emailSettings.Port, SecureSocketOptions.StartTls);
+                await smtp.AuthenticateAsync(_emailSettings.Username, _emailSettings.Password);
+                await smtp.SendAsync(email);
+                await smtp.DisconnectAsync(true);
+            }
+            catch (Exception ex)
+            {
+                status = "failed";
+                error = ex.Message;
+                throw;
+            }
+            finally
+            {
+                try
+                {
+                    _context.EmailLogs.Add(new AntAbstract.Domain.Entities.EmailLog
+                    {
+                        ToEmail = toEmail,
+                        Subject = subject,
+                        Status = status,
+                        ErrorMessage = error,
+                        TemplateKey = templateKey,
+                        Source = source,
+                        SentAt = System.DateTime.UtcNow
+                    });
+                    await _context.SaveChangesAsync();
+                }
+                catch
+                {
+                    // Log yazma hatası asıl akışı engellemesin
+                }
+            }
         }
 
         private static string ApplyPlaceholders(string text, Dictionary<string, string> placeholders)
