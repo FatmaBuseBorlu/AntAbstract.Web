@@ -134,21 +134,59 @@
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white py-3 border-bottom-0">
             <h6 class="fw-bold m-0">
-                <i class="fas fa-download me-2 text-success"></i> CSV Dışa Aktarma
+                <i class="fas fa-download me-2 text-success"></i> Dışa Aktarma
             </h6>
         </div>
-        <div class="card-body d-flex flex-wrap gap-2">
-            <a href="@participantsExportUrl" class="btn btn-outline-success btn-sm">
-                <i class="fas fa-users me-1"></i> Katılımcılar CSV
-            </a>
-            <a href="@revenueExportUrl" class="btn btn-outline-success btn-sm">
-                <i class="fas fa-coins me-1"></i> Gelir Raporu CSV
-            </a>
-            <a href="@submissionsExportUrl" class="btn btn-outline-success btn-sm">
-                <i class="fas fa-file-alt me-1"></i> Bildiriler CSV
-            </a>
+        <div class="card-body">
+            <form id="exportForm" method="get" class="row g-2 align-items-end mb-3">
+                <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
+                <div class="col-sm-4 col-md-3">
+                    <label class="form-label small fw-semibold">Başlangıç Tarihi</label>
+                    <input type="date" name="dateFrom" id="exportDateFrom" class="form-control form-control-sm" />
+                </div>
+                <div class="col-sm-4 col-md-3">
+                    <label class="form-label small fw-semibold">Bitiş Tarihi</label>
+                    <input type="date" name="dateTo" id="exportDateTo" class="form-control form-control-sm" />
+                </div>
+                <div class="col-sm-4 col-md-2">
+                    <label class="form-label small fw-semibold">Format</label>
+                    <select name="format" id="exportFormat" class="form-select form-select-sm">
+                        <option value="csv">CSV</option>
+                        <option value="xlsx">Excel (XLSX)</option>
+                    </select>
+                </div>
+            </form>
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-outline-success btn-sm"
+                        onclick="triggerExport('@participantsExportUrl')">
+                    <i class="fas fa-users me-1"></i> Katılımcılar
+                </button>
+                <button type="button" class="btn btn-outline-success btn-sm"
+                        onclick="triggerExport('@revenueExportUrl')">
+                    <i class="fas fa-coins me-1"></i> Gelir Raporu
+                </button>
+                <button type="button" class="btn btn-outline-success btn-sm"
+                        onclick="triggerExport('@submissionsExportUrl')">
+                    <i class="fas fa-file-alt me-1"></i> Bildiriler
+                </button>
+            </div>
         </div>
     </div>
+
+    <script>
+    function triggerExport(baseUrl) {
+        const dateFrom = document.getElementById('exportDateFrom').value;
+        const dateTo   = document.getElementById('exportDateTo').value;
+        const format   = document.getElementById('exportFormat').value;
+        let url = baseUrl;
+        const params = new URLSearchParams();
+        if (dateFrom) params.append('dateFrom', dateFrom);
+        if (dateTo)   params.append('dateTo', dateTo);
+        if (format)   params.append('format', format);
+        const qs = params.toString();
+        window.location.href = url + (url.includes('?') ? '&' : '?') + qs;
+    }
+    </script>
 
     <div class="row g-4">
         <div class="col-lg-6">
