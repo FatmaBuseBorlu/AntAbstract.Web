@@ -23,8 +23,11 @@ namespace AntAbstract.WebUI.Areas.Admin.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(string? search, Guid? tenantId)
+        public async Task<IActionResult> Index(string? search, Guid? tenantId, int page = 1)
         {
+            const int pageSize = 50;
+            if (page < 1) page = 1;
+
             var query = _context.Conferences
                 .AsNoTracking()
                 .Include(x => x.Tenant)
@@ -48,28 +51,62 @@ namespace AntAbstract.WebUI.Areas.Admin.Controllers
                 query = query.Where(x => x.TenantId == tenantId.Value);
             }
 
-            var conferences = await query
-                .OrderByDescending(x => x.StartDate)
-                .Select(x => new AllConferenceListItemViewModel
-                {
-                    Id = x.Id,
-                    Title = x.Title ?? "",
-                    Slug = x.Slug,
+            var ordered = query.OrderByDescending(x => x.StartDate);
+            var totalCount = await ordered.CountAsync();
 
-                    TenantId = x.TenantId,
+            // Sayfalanmış konferans listesi — correlated subquery yok
+            var raw = await ordered
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(x => new
+                {
+                    x.Id, x.Title, x.Slug,
+                    x.TenantId,
                     TenantName = x.Tenant != null ? x.Tenant.Name : "-",
                     TenantSlug = x.Tenant != null ? x.Tenant.Slug : null,
-
-                    City = x.City,
-                    Country = x.Country,
-                    Venue = x.Venue,
-                    StartDate = x.StartDate,
-                    EndDate = x.EndDate,
-
-                    SubmissionCount = _context.Submissions.Count(s => s.ConferenceId == x.Id),
-                    RegistrationCount = _context.Registrations.Count(r => r.ConferenceId == x.Id)
+                    x.City, x.Country, x.Venue,
+                    x.StartDate, x.EndDate
                 })
                 .ToListAsync();
+
+            // Submission ve Registration sayılarını tek sorguda çek (N+1 yok)
+            var confIds = raw.Select(x => x.Id).ToList();
+
+            var submissionCounts = await _context.Submissions
+                .AsNoTracking()
+                .Where(s => confIds.Contains(s.ConferenceId))
+                .GroupBy(s => s.ConferenceId)
+                .Select(g => new { ConferenceId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(g => g.ConferenceId, g => g.Count);
+
+            var registrationCounts = await _context.Registrations
+                .AsNoTracking()
+                .Where(r => confIds.Contains(r.ConferenceId))
+                .GroupBy(r => r.ConferenceId)
+                .Select(g => new { ConferenceId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(g => g.ConferenceId, g => g.Count);
+
+            var conferences = raw.Select(x => new AllConferenceListItemViewModel
+            {
+                Id = x.Id,
+                Title = x.Title ?? "",
+                Slug = x.Slug,
+                TenantId = x.TenantId,
+                TenantName = x.TenantName,
+                TenantSlug = x.TenantSlug,
+                City = x.City,
+                Country = x.Country,
+                Venue = x.Venue,
+                StartDate = x.StartDate,
+                EndDate = x.EndDate,
+                SubmissionCount = submissionCounts.GetValueOrDefault(x.Id),
+                RegistrationCount = registrationCounts.GetValueOrDefault(x.Id)
+            }).ToList();
+
+            ViewBag.Page = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalCount = totalCount;
+            ViewBag.TotalPages = (int)Math.Ceiling((double)totalCount / pageSize);
 
             ViewBag.Search = search;
             ViewBag.TenantId = tenantId;
