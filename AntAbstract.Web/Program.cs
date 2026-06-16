@@ -302,8 +302,10 @@ app.UseRouting();
 app.UseSession();
 
 app.UseAuthentication();
-app.UseAuthorization();
 
+// Tenant middleware: UseAuthentication'dan SONRA, UseAuthorization'dan ÖNCE olmalı.
+// TenantAdminRequirement gibi authorization handler'ları TenantContext'i okur;
+// bu sıra sayesinde policy değerlendirmesi sırasında tenant zaten set edilmiş olur.
 app.Use(async (ctx, next) =>
 {
     var resolver = ctx.RequestServices.GetRequiredService<ITenantResolver>();
@@ -321,6 +323,8 @@ app.Use(async (ctx, next) =>
 
     await next();
 });
+
+app.UseAuthorization();
 
 app.UseRotativa();
 
