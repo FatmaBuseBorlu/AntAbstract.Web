@@ -863,10 +863,13 @@ namespace AntAbstract.Web.Controllers
 
                 var stripeKey = _configuration["Stripe:SecretKey"];
                 if (string.IsNullOrWhiteSpace(stripeKey) || stripeKey.StartsWith("SET_VIA"))
+                {
+                    var callerIsSuperAdmin = User.IsInRole("SuperAdmin");
                     warnings.Add(new ConfigWarning(
                         "Stripe ödeme entegrasyonu yapılandırılmamış — ödemeler çalışmaz.",
-                        $"{pfx}/Admin/Settings",
-                        "Ayarlara Git"));
+                        callerIsSuperAdmin ? "/Admin/SystemParameters" : null,
+                        callerIsSuperAdmin ? "Sistem Parametreleri" : null));
+                }
 
                 viewModel.ConfigWarnings = warnings;
             }

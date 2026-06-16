@@ -52,6 +52,7 @@ public sealed class SmokeTests(SmokeTestFactory factory) : IClassFixture<SmokeTe
     [InlineData("/Admin/Reports")]
     [InlineData("/Admin/EmailTemplates")]
     [InlineData("/Admin/Payments")]
+    [InlineData("/Admin/Health")]
     public async Task AdminRoutes_RedirectToLoginWhenUnauthenticated(string url)
     {
         var response = await _client.GetAsync(url);

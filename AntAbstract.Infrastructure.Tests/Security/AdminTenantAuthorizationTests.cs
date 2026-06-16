@@ -24,6 +24,8 @@ public class AdminTenantAuthorizationTests
     [InlineData("RefereeController", AdminPolicies.TenantAdmin)]
     [InlineData("SessionController", AdminPolicies.TenantAdmin)]
     [InlineData("SubmissionsController", AdminPolicies.TenantAdmin)]
+    [InlineData("AuditLogsController", AdminPolicies.TenantAdmin)]
+    [InlineData("HealthController", AdminPolicies.TenantAdmin)]
     [InlineData("CertificatesController", AdminPolicies.TenantAdminOnly)]
     [InlineData("ConferenceContextController", AdminPolicies.TenantAdminOnly)]
     [InlineData("ConferenceTopicsController", AdminPolicies.TenantAdminOnly)]

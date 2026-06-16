@@ -84,62 +84,75 @@ namespace AntAbstract.Infrastructure.Services
             AppDbContext db, IEmailService email, CancellationToken ct)
         {
             var now = DateTime.UtcNow;
-            var warningStart = now;
             var warningEnd = now.AddDays(DeadlineWarningDays);
 
-            // Deadline penceresi içindeki aktif kongreler
             var conferences = await db.Conferences
                 .AsNoTracking()
                 .Where(c =>
                     c.IsSubmissionOpen &&
                     c.AbstractSubmissionDeadline.HasValue &&
-                    c.AbstractSubmissionDeadline.Value >= warningStart &&
+                    c.AbstractSubmissionDeadline.Value >= now &&
                     c.AbstractSubmissionDeadline.Value <= warningEnd)
                 .Include(c => c.Registrations)
                     .ThenInclude(r => r.AppUser)
                 .ToListAsync(ct);
+
+            if (conferences.Count == 0) return;
+
+            const string templateKey = "deadline_reminder";
+            var confIds = conferences.Select(c => c.Id).ToList();
+
+            // Tüm kongreler için özet gönderen kullanıcı ID'leri — tek sorgu
+            var submittedUserIds = await db.Submissions
+                .AsNoTracking()
+                .Where(s => confIds.Contains(s.ConferenceId))
+                .Select(s => new { s.ConferenceId, s.AuthorId })
+                .ToListAsync(ct);
+            var submittedSet = submittedUserIds
+                .Select(x => (x.ConferenceId, x.AuthorId))
+                .ToHashSet();
+
+            // Potansiyel alıcı e-postaları — dedup kontrolü için tek toplu sorgu
+            var candidateEmails = conferences
+                .SelectMany(c => c.Registrations)
+                .Select(r => r.AppUser?.Email)
+                .Where(e => e != null)
+                .Distinct()
+                .ToList();
+
+            var recentlySent = await RecentlySentSetAsync(db, candidateEmails!, templateKey, ct);
 
             foreach (var conf in conferences)
             {
                 var deadline = conf.AbstractSubmissionDeadline!.Value;
                 var daysLeft = (int)Math.Ceiling((deadline - now).TotalDays);
 
-                // Bu kongreye kayıtlı, henüz özet göndermemiş kullanıcılar
-                var submittedUserIds = await db.Submissions
-                    .AsNoTracking()
-                    .Where(s => s.ConferenceId == conf.Id)
-                    .Select(s => s.AuthorId)
-                    .ToListAsync(ct);
-
                 foreach (var reg in conf.Registrations)
                 {
                     var user = reg.AppUser;
                     if (user?.Email == null) continue;
-                    if (submittedUserIds.Contains(user.Id)) continue;
-
-                    const string templateKey = "deadline_reminder";
-
-                    if (await WasRecentlySentAsync(db, user.Email, templateKey, ct)) continue;
+                    if (submittedSet.Contains((conf.Id, user.Id))) continue;
+                    if (recentlySent.Contains(user.Email)) continue;
 
                     var placeholders = new Dictionary<string, string>
                     {
-                        ["{FullName}"]        = $"{user.FirstName} {user.LastName}".Trim(),
-                        ["{ConferenceName}"]  = conf.Title,
-                        ["{Deadline}"]        = deadline.ToString("dd.MM.yyyy HH:mm"),
-                        ["{DaysLeft}"]        = daysLeft.ToString(),
+                        ["{FullName}"]       = $"{user.FirstName} {user.LastName}".Trim(),
+                        ["{ConferenceName}"] = conf.Title,
+                        ["{Deadline}"]       = deadline.ToString("dd.MM.yyyy HH:mm"),
+                        ["{DaysLeft}"]       = daysLeft.ToString(),
                     };
 
                     try
                     {
                         await email.SendTemplatedAsync(user.Email, templateKey, placeholders);
+                        recentlySent.Add(user.Email); // aynı çalışmada tekrar gönderme
                         _logger.LogInformation(
                             "Deadline hatırlatma gönderildi: {Email} ({Conf}, {Days} gün kaldı)",
                             user.Email, conf.Title, daysLeft);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex,
-                            "Deadline hatırlatma gönderilemedi: {Email}", user.Email);
+                        _logger.LogWarning(ex, "Deadline hatırlatma gönderilemedi: {Email}", user.Email);
                     }
                 }
             }
@@ -161,52 +174,67 @@ namespace AntAbstract.Infrastructure.Services
                     p.PaymentDate <= cutoff)
                 .ToListAsync(ct);
 
+            if (pendingPayments.Count == 0) return;
+
+            const string templateKey = "payment_pending_reminder";
+
+            var candidateEmails = pendingPayments
+                .Select(p => p.AppUser?.Email)
+                .Where(e => e != null)
+                .Distinct()
+                .ToList();
+
+            var recentlySent = await RecentlySentSetAsync(db, candidateEmails!, templateKey, ct);
+
             foreach (var payment in pendingPayments)
             {
                 var user = payment.AppUser;
                 if (user?.Email == null) continue;
-
-                const string templateKey = "payment_pending_reminder";
-
-                if (await WasRecentlySentAsync(db, user.Email, templateKey, ct)) continue;
+                if (recentlySent.Contains(user.Email)) continue;
 
                 var placeholders = new Dictionary<string, string>
                 {
-                    ["{FullName}"]        = $"{user.FirstName} {user.LastName}".Trim(),
-                    ["{ConferenceName}"]  = payment.Conference?.Title ?? "",
-                    ["{Amount}"]          = $"{payment.Amount:N2} {payment.Currency}",
-                    ["{PaymentDate}"]     = payment.PaymentDate.ToString("dd.MM.yyyy"),
+                    ["{FullName}"]       = $"{user.FirstName} {user.LastName}".Trim(),
+                    ["{ConferenceName}"] = payment.Conference?.Title ?? "",
+                    ["{Amount}"]         = $"{payment.Amount:N2} {payment.Currency}",
+                    ["{PaymentDate}"]    = payment.PaymentDate.ToString("dd.MM.yyyy"),
                 };
 
                 try
                 {
                     await email.SendTemplatedAsync(user.Email, templateKey, placeholders);
+                    recentlySent.Add(user.Email);
                     _logger.LogInformation(
                         "Ödeme hatırlatma gönderildi: {Email} (PaymentId={Id})",
                         user.Email, payment.Id);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex,
-                        "Ödeme hatırlatma gönderilemedi: {Email}", user.Email);
+                    _logger.LogWarning(ex, "Ödeme hatırlatma gönderilemedi: {Email}", user.Email);
                 }
             }
         }
 
-        // ── Deduplication ────────────────────────────────────────────────────
+        // ── Deduplication — toplu sorgu, N+1 yok ────────────────────────────
 
-        private static async Task<bool> WasRecentlySentAsync(
-            AppDbContext db, string toEmail, string templateKey, CancellationToken ct)
+        private static async Task<HashSet<string>> RecentlySentSetAsync(
+            AppDbContext db,
+            List<string> emails,
+            string templateKey,
+            CancellationToken ct)
         {
             var since = DateTime.UtcNow.AddDays(-DedupWindowDays);
-            return await db.EmailLogs
+            var sent = await db.EmailLogs
                 .AsNoTracking()
-                .AnyAsync(l =>
-                    l.ToEmail == toEmail &&
+                .Where(l =>
+                    emails.Contains(l.ToEmail) &&
                     l.TemplateKey == templateKey &&
                     l.SentAt >= since &&
-                    l.Status == "sent",
-                    ct);
+                    l.Status == "sent")
+                .Select(l => l.ToEmail)
+                .Distinct()
+                .ToListAsync(ct);
+            return new HashSet<string>(sent, StringComparer.OrdinalIgnoreCase);
         }
     }
 }
