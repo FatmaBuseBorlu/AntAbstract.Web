@@ -1,6 +1,7 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Web.Models.ViewModels.Admin.Dashboard;
+using AntAbstract.Web.Security;
 using AntAbstract.Web.Models.ViewModels.Proceedings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -58,7 +59,7 @@ namespace AntAbstract.Web.Controllers
             _localizer = localizer;
         }
 
-        [Authorize(Roles = "SuperAdmin,Admin")]
+        [Authorize(Policy = AdminPolicies.TenantAdmin)]
         public async Task<IActionResult> WhoAmI()
         {
             var user = await _userManager.GetUserAsync(User);
