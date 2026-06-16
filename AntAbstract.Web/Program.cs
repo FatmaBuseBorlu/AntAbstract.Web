@@ -308,11 +308,12 @@ using (var scope = app.Services.CreateScope())
         //   dotnet ef database update --project AntAbstract.Infrastructure \
         //     --startup-project AntAbstract.Web
         // Development ortamında kolaylık için migration uygulanır.
+        // Testing ortamında (InMemory) relational migration API'si yoktur, atlanır.
         if (app.Environment.IsDevelopment())
         {
             await context.Database.MigrateAsync();
         }
-        else
+        else if (!app.Environment.IsEnvironment("Testing"))
         {
             // Production'da veritabanının güncel olduğunu doğrula; değilse başlatmayı durdur
             var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
@@ -585,3 +586,4 @@ app.MapControllers();
 #endregion
 
 app.Run();
+public partial class Program { }
