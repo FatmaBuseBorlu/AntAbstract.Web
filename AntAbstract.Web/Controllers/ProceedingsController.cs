@@ -172,13 +172,29 @@ namespace AntAbstract.Web.Controllers
 
             var filePath = conference.ProceedingBookFilePath ?? "";
 
-            if (filePath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            // Harici URL: yalnızca http/https protokollerine izin ver (javascript: vb. engelle)
+            if (filePath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                filePath.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
+                // Sadece mutlak HTTP(S) URL'lere yönlendir
+                if (!Uri.TryCreate(filePath, UriKind.Absolute, out var uri) ||
+                    (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+                {
+                    return BadRequest("Geçersiz yönlendirme adresi.");
+                }
                 return Redirect(filePath);
             }
 
+            // Yerel dosya: path traversal koruması
             var normalizedPath = filePath.TrimStart('/', '\\');
-            var physicalPath = Path.Combine(_webHostEnvironment.WebRootPath, normalizedPath);
+            var wwwroot = Path.GetFullPath(_webHostEnvironment.WebRootPath);
+            var physicalPath = Path.GetFullPath(Path.Combine(wwwroot, normalizedPath));
+
+            // Dosya wwwroot dışına çıkmamalı
+            if (!physicalPath.StartsWith(wwwroot, StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest("Geçersiz dosya yolu.");
+            }
 
             if (!System.IO.File.Exists(physicalPath))
             {
