@@ -3,6 +3,10 @@
     var slug         = ViewBag.Slug as string ?? "";
     var category     = ViewBag.Category as string ?? "";
     var search       = ViewBag.Search as string ?? "";
+    var actionFilter = ViewBag.Action as string ?? "";
+    var userIdFilter = ViewBag.UserId as string ?? "";
+    var dateFrom     = ViewBag.DateFrom as string ?? "";
+    var dateTo       = ViewBag.DateTo as string ?? "";
     var page         = (int)(ViewBag.Page ?? 1);
     var totalPages   = (int)(ViewBag.TotalPages ?? 1);
     var total        = (int)(ViewBag.Total ?? 0);
@@ -18,8 +22,17 @@
         "Review"       => "bg-info text-dark",
         "Payment"      => "bg-success",
         "Registration" => "bg-warning text-dark",
+        "FileDownload" => "bg-danger",
+        "RoleChange"   => "bg-dark",
         "Admin"        => "bg-dark",
         _              => "bg-light text-dark"
+    };
+
+    // Export URL — mevcut filtreleri taşı
+    var exportRoute = new {
+        slug, conferenceId, category = (string?)category, search = (string?)search,
+        action = (string?)actionFilter, userId = (string?)userIdFilter,
+        dateFrom = (string?)dateFrom, dateTo = (string?)dateTo
     };
 }
 
@@ -28,6 +41,9 @@
         <h4 class="fw-bold mb-1">🔍 Denetim Günlüğü</h4>
         <p class="text-muted mb-0">Toplam @total kayıt</p>
     </div>
+    <a href="@Url.Action("Export", exportRoute)" class="btn btn-sm btn-outline-success">
+        ⬇️ CSV İndir
+    </a>
 </div>
 
 @if (TempData["SuccessMessage"] != null)
@@ -45,7 +61,7 @@
                 <input type="hidden" name="conferenceId" value="@conferenceId" />
             }
 
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label small fw-semibold">Kategori</label>
                 <select name="category" class="form-select form-select-sm">
                     <option value="">— Tümü —</option>
@@ -63,12 +79,22 @@
                 </select>
             </div>
 
-            <div class="col-md-5">
-                <label class="form-label small fw-semibold">Arama (kullanıcı, işlem, açıklama)</label>
-                <input type="text" name="search" value="@search" class="form-control form-control-sm" placeholder="Ara..." />
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold">Başlangıç</label>
+                <input type="date" name="dateFrom" value="@dateFrom" class="form-control form-control-sm" />
             </div>
 
             <div class="col-md-2">
+                <label class="form-label small fw-semibold">Bitiş</label>
+                <input type="date" name="dateTo" value="@dateTo" class="form-control form-control-sm" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">Arama (kullanıcı, işlem, açıklama, ID)</label>
+                <input type="text" name="search" value="@search" class="form-control form-control-sm" placeholder="Ara..." />
+            </div>
+
+            <div class="col-md-1">
                 <button type="submit" class="btn btn-sm btn-primary w-100">Filtrele</button>
             </div>
             <div class="col-md-2">
@@ -159,19 +185,19 @@
                             @if (page > 1)
                             {
                                 <li class="page-item">
-                                    <a class="page-link" href="@Url.Action("Index", new { slug, conferenceId, category, search, page = page - 1 })">‹</a>
+                                    <a class="page-link" href="@Url.Action("Index", new { slug, conferenceId, category, search, dateFrom, dateTo, page = page - 1 })">‹</a>
                                 </li>
                             }
                             @for (int p = Math.Max(1, page - 2); p <= Math.Min(totalPages, page + 2); p++)
                             {
                                 <li class="page-item @(p == page ? "active" : "")">
-                                    <a class="page-link" href="@Url.Action("Index", new { slug, conferenceId, category, search, page = p })">@p</a>
+                                    <a class="page-link" href="@Url.Action("Index", new { slug, conferenceId, category, search, dateFrom, dateTo, page = p })">@p</a>
                                 </li>
                             }
                             @if (page < totalPages)
                             {
                                 <li class="page-item">
-                                    <a class="page-link" href="@Url.Action("Index", new { slug, conferenceId, category, search, page = page + 1 })">›</a>
+                                    <a class="page-link" href="@Url.Action("Index", new { slug, conferenceId, category, search, dateFrom, dateTo, page = page + 1 })">›</a>
                                 </li>
                             }
                         </ul>
