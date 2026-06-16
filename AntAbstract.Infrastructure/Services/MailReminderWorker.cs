@@ -2,6 +2,7 @@ using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Email;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -26,18 +27,19 @@ namespace AntAbstract.Infrastructure.Services
         // Aynı kişiye aynı şablon ne kadar süre içinde tekrar gönderilmesin (dedup penceresi)
         private const int DedupWindowDays = 5;
 
-        // Worker tetiklenme sıklığı
-        private static readonly TimeSpan Interval = TimeSpan.FromHours(6);
-
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<MailReminderWorker> _logger;
+        private readonly TimeSpan _interval;
 
         public MailReminderWorker(
             IServiceScopeFactory scopeFactory,
-            ILogger<MailReminderWorker> logger)
+            ILogger<MailReminderWorker> logger,
+            IConfiguration configuration)
         {
             _scopeFactory = scopeFactory;
             _logger = logger;
+            var hours = configuration.GetValue<double>("MailReminder:IntervalHours", 6);
+            _interval = TimeSpan.FromHours(hours);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -62,7 +64,7 @@ namespace AntAbstract.Infrastructure.Services
                     _logger.LogWarning(ex, "Mail hatırlatıcı döngüsünde hata oluştu.");
                 }
 
-                await Task.Delay(Interval, stoppingToken);
+                await Task.Delay(_interval, stoppingToken);
             }
 
             _logger.LogInformation("Mail hatırlatıcı işçisi durdu.");

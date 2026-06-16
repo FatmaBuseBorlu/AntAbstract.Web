@@ -138,25 +138,46 @@
             </h6>
         </div>
         <div class="card-body">
-            <form id="exportForm" method="get" class="row g-2 align-items-end mb-3">
-                <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
+            @* Ortak filtre alanları; JS ile her export formuna senkronize edilir *@
+            <div class="row g-2 align-items-end mb-3">
                 <div class="col-sm-4 col-md-3">
                     <label class="form-label small fw-semibold">Başlangıç Tarihi</label>
-                    <input type="date" name="dateFrom" id="exportDateFrom" class="form-control form-control-sm" />
+                    <input type="date" id="exportDateFrom" class="form-control form-control-sm" />
                 </div>
                 <div class="col-sm-4 col-md-3">
                     <label class="form-label small fw-semibold">Bitiş Tarihi</label>
-                    <input type="date" name="dateTo" id="exportDateTo" class="form-control form-control-sm" />
+                    <input type="date" id="exportDateTo" class="form-control form-control-sm" />
                 </div>
                 <div class="col-sm-4 col-md-2">
                     <label class="form-label small fw-semibold">Format</label>
-                    <select name="format" id="exportFormat" class="form-select form-select-sm">
+                    <select id="exportFormat" class="form-select form-select-sm">
                         <option value="csv">CSV</option>
                         <option value="xlsx">Excel (XLSX)</option>
                     </select>
                 </div>
-            </form>
-            <div class="d-flex flex-wrap gap-2">
+            </div>
+
+            @* noscript: bağımsız formlar, JS olmadan da çalışır *@
+            <noscript>
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var (label, icon, url) in new[] {
+                        ("Katılımcılar",  "fa-users",    participantsExportUrl),
+                        ("Gelir Raporu",  "fa-coins",    revenueExportUrl),
+                        ("Bildiriler",    "fa-file-alt", submissionsExportUrl)
+                    })
+                    {
+                        <form method="get" action="@url" class="d-inline">
+                            <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
+                            <button type="submit" class="btn btn-outline-success btn-sm">
+                                <i class="fas @icon me-1"></i> @label
+                            </button>
+                        </form>
+                    }
+                </div>
+            </noscript>
+
+            @* JS: tek tıkla tüm filtreler ile export *@
+            <div class="d-flex flex-wrap gap-2 js-export-buttons">
                 <button type="button" class="btn btn-outline-success btn-sm"
                         onclick="triggerExport('@participantsExportUrl')">
                     <i class="fas fa-users me-1"></i> Katılımcılar
@@ -174,17 +195,17 @@
     </div>
 
     <script>
+    document.querySelector('.js-export-buttons').style.display = '';
+
     function triggerExport(baseUrl) {
         const dateFrom = document.getElementById('exportDateFrom').value;
         const dateTo   = document.getElementById('exportDateTo').value;
         const format   = document.getElementById('exportFormat').value;
-        let url = baseUrl;
-        const params = new URLSearchParams();
+        const params = new URLSearchParams({ conferenceId: '@Model.ConferenceId' });
         if (dateFrom) params.append('dateFrom', dateFrom);
         if (dateTo)   params.append('dateTo', dateTo);
         if (format)   params.append('format', format);
-        const qs = params.toString();
-        window.location.href = url + (url.includes('?') ? '&' : '?') + qs;
+        window.location.href = baseUrl + (baseUrl.includes('?') ? '&' : '?') + params.toString();
     }
     </script>
 

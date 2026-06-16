@@ -119,11 +119,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         // ── JSON endpoint: uptime monitoring araçları için ───────────────────
+        // Erişim: oturum açmış Admin VEYA X-Health-Key header ile API key doğrulaması.
+        // appsettings.json → Health:StatusApiKey (ortam değişkeni ile override edilmeli).
 
+        [AllowAnonymous]
         [HttpGet("/Admin/Health/Status")]
         [HttpGet("/{slug}/Admin/Health/Status")]
         public async Task<IActionResult> Status()
         {
+            if (!IsStatusAuthorized())
+                return Unauthorized(new { error = "Geçersiz veya eksik API anahtarı." });
+
             var dbOk = false;
             try { dbOk = await _context.Database.CanConnectAsync(); } catch { }
 
@@ -141,6 +147,22 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     auditQueuePending = _auditQueue.PendingCount
                 }
             });
+        }
+
+        private bool IsStatusAuthorized()
+        {
+            // Oturum açmış admin her zaman erişebilir
+            if (User.Identity?.IsAuthenticated == true &&
+                (User.IsInRole("Admin") || User.IsInRole("SuperAdmin")))
+                return true;
+
+            // Dış araçlar için X-Health-Key header kontrolü
+            var configuredKey = _configuration["Health:StatusApiKey"];
+            if (string.IsNullOrWhiteSpace(configuredKey) || configuredKey.StartsWith("SET_VIA"))
+                return false;
+
+            var providedKey = Request.Headers["X-Health-Key"].FirstOrDefault();
+            return string.Equals(configuredKey, providedKey, StringComparison.Ordinal);
         }
     }
 
