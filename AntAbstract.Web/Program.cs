@@ -48,9 +48,20 @@ builder.Services.AddSession(options =>
 
 builder.Services.AddIdentity<AppUser, IdentityRole>(opt =>
 {
-    opt.Password.RequiredLength = 6;
+    // Şifre politikası: en az 8 karakter, büyük harf, rakam zorunlu;
+    // özel karakter isteğe bağlı bırakıldı (kullanıcı deneyimi korunuyor).
+    opt.Password.RequiredLength         = 8;
+    opt.Password.RequireDigit           = true;
+    opt.Password.RequireUppercase       = true;
+    opt.Password.RequireLowercase       = true;
     opt.Password.RequireNonAlphanumeric = false;
-    opt.Password.RequireUppercase = false;
+    opt.Password.RequiredUniqueChars    = 4;
+
+    // Hesap kilitleme: 5 başarısız denemeden sonra 15 dakika kilitle
+    opt.Lockout.DefaultLockoutTimeSpan  = TimeSpan.FromMinutes(15);
+    opt.Lockout.MaxFailedAccessAttempts = 5;
+    opt.Lockout.AllowedForNewUsers      = true;
+
     opt.User.RequireUniqueEmail = true;
 })
 .AddEntityFrameworkStores<AppDbContext>()
