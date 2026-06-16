@@ -1,5 +1,6 @@
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
+using AntAbstract.Web.Files;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -96,17 +97,19 @@ namespace AntAbstract.Web.Controllers
 
         private IActionResult ServeFile(string relativePath, string downloadName)
         {
-            // /uploads/... → wwwroot/uploads/...
-            var fullPath = Path.Combine(_env.WebRootPath,
-                relativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+            // Yeni format: private-uploads/... → ContentRoot
+            // Eski format: /uploads/... → wwwroot (backward compat)
+            var fullPath = PrivateStorage.Resolve(_env, relativePath);
 
             if (!System.IO.File.Exists(fullPath))
                 return NotFound();
 
-            // Path traversal koruması: dosya wwwroot altında olmalı
-            var wwwroot = Path.GetFullPath(_env.WebRootPath);
-            var resolved = Path.GetFullPath(fullPath);
-            if (!resolved.StartsWith(wwwroot, StringComparison.OrdinalIgnoreCase))
+            // Path traversal koruması: dosya ya wwwroot ya da ContentRoot altında olmalı
+            var wwwroot     = Path.GetFullPath(_env.WebRootPath);
+            var contentRoot = Path.GetFullPath(_env.ContentRootPath);
+            var resolved    = Path.GetFullPath(fullPath);
+            if (!resolved.StartsWith(wwwroot, StringComparison.OrdinalIgnoreCase) &&
+                !resolved.StartsWith(contentRoot, StringComparison.OrdinalIgnoreCase))
                 return BadRequest();
 
             var ext = Path.GetExtension(fullPath).ToLowerInvariant();

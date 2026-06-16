@@ -215,12 +215,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 throw new InvalidOperationException(errorMessage);
             }
 
-            var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "templates");
-
-            if (!Directory.Exists(uploadsFolder))
-            {
-                Directory.CreateDirectory(uploadsFolder);
-            }
+            var uploadsFolder = PrivateStorage.EnsureFolder(_env, PrivateStorage.TemplatesFolder);
 
             var uniqueFileName = _uploadFileValidator.CreateStoredFileName(
                 validation.Extension,
@@ -230,7 +225,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             await using var fileStream = new FileStream(absolutePath, FileMode.Create);
             await file.CopyToAsync(fileStream);
 
-            return "/uploads/templates/" + uniqueFileName;
+            return PrivateStorage.ToRelativePath(PrivateStorage.TemplatesFolder, uniqueFileName);
         }
 
         private void SetSelectedConferenceSession(Conference conference)
