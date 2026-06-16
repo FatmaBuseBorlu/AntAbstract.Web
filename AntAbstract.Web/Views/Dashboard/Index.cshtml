@@ -504,7 +504,15 @@
             <ul class="mb-0 ps-3">
                 @foreach (var w in Model.ConfigWarnings)
                 {
-                    <li>@w</li>
+                    <li class="d-flex align-items-center justify-content-between gap-3 py-1">
+                        <span>@w.Message</span>
+                        @if (!string.IsNullOrEmpty(w.ActionUrl))
+                        {
+                            <a href="@w.ActionUrl" class="btn btn-sm btn-outline-warning text-nowrap flex-shrink-0">
+                                <i class="fas fa-arrow-right me-1"></i>@w.ActionLabel
+                            </a>
+                        }
+                    </li>
                 }
             </ul>
         </div>
