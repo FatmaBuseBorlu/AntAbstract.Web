@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  build-and-test:
+    name: Build & Test (.NET 8)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore AntAbstract.Web.sln
+
+      - name: Build (no warnings as errors)
+        run: dotnet build AntAbstract.Web.sln --no-restore --configuration Release
+
+      - name: Run tests
+        run: >
+          dotnet test AntAbstract.Web.sln
+          --no-build
+          --configuration Release
+          --verbosity normal
+          --logger "trx;LogFileName=test-results.trx"
+        env:
+          # Testler kullanıcı sırlarına ihtiyaç duymaz; bağlantı dizesi InMemory ile override edilir.
+          ASPNETCORE_ENVIRONMENT: Testing
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/*.trx'
+          retention-days: 7
