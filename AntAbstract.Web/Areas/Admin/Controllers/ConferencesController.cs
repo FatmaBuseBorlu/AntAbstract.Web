@@ -705,7 +705,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     Id = Guid.NewGuid(),
                     ConferenceId = clone.Id,
                     Name = topic.Name,
-                    IsActive = topic.IsActive
+                    NameEn = topic.NameEn,
+                    Description = topic.Description,
+                    DescriptionEn = topic.DescriptionEn,
+                    IsActive = topic.IsActive,
+                    SortOrder = topic.SortOrder
                 });
             }
 
@@ -722,16 +726,47 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     Id = Guid.NewGuid(),
                     ConferenceId = clone.Id,
                     Name = rt.Name,
+                    NameEn = rt.NameEn,
+                    Description = rt.Description,
+                    DescriptionEn = rt.DescriptionEn,
                     Price = rt.Price,
+                    Currency = rt.Currency,
                     IsActive = rt.IsActive,
                     Deadline = rt.Deadline,
                     RoleName = rt.RoleName
                 });
             }
 
+            // Sayfa bloklarını kopyala
+            var pageBlocks = await _context.ConferencePageBlocks
+                .AsNoTracking()
+                .Where(b => b.ConferenceId == id)
+                .ToListAsync();
+
+            foreach (var block in pageBlocks)
+            {
+                _context.ConferencePageBlocks.Add(new ConferencePageBlock
+                {
+                    TenantId = clone.TenantId,
+                    ConferenceId = clone.Id,
+                    Page = block.Page,
+                    Culture = block.Culture,
+                    BlockType = block.BlockType,
+                    Title = block.Title,
+                    Subtitle = block.Subtitle,
+                    ContentJson = block.ContentJson,
+                    Order = block.Order,
+                    IsActive = block.IsActive
+                });
+            }
+
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"\"{source.Title}\" kongresi başarıyla kopyalandı. Yeni kongre: \"{clone.Title}\"";
+            var topicCount = topics.Count;
+            var regTypeCount = regTypes.Count;
+            var pageBlockCount = pageBlocks.Count;
+            TempData["SuccessMessage"] = $"\"{source.Title}\" kongresi başarıyla kopyalandı → \"{clone.Title}\" " +
+                $"({topicCount} konu, {regTypeCount} kayıt türü, {pageBlockCount} sayfa bloğu kopyalandı).";
 
             return Redirect($"/{slug}/Admin/Conferences");
         }
