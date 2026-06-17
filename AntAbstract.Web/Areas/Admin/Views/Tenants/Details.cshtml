@@ -1,9 +1,11 @@
 ﻿@model AntAbstract.Web.Models.ViewModels.Admin.Tenants.TenantDetailViewModel
 
 @{
-    ViewData["Title"] = string.IsNullOrWhiteSpace(Model?.Name)
+    var tenant = Model!;
+
+    ViewData["Title"] = string.IsNullOrWhiteSpace(tenant.Name)
         ? "Kurum Detayı"
-        : $"{Model.Name} - Kurum Detayı";
+        : $"{tenant.Name} - Kurum Detayı";
 
     Layout = "_LayoutDashboard";
 }
@@ -52,7 +54,7 @@
                     </li>
 
                     <li class="breadcrumb-item active" aria-current="page">
-                        @Model.Name
+                        @(tenant.Name ?? "")
                     </li>
                 </ol>
             </nav>
@@ -68,7 +70,7 @@
                     </div>
 
                     <h1 class="page-title mb-1">
-                        @Model.Name
+                        @(tenant.Name ?? "")
                     </h1>
 
                     <p class="page-subtitle mb-0">
@@ -90,7 +92,7 @@
             <a asp-area="Admin"
                asp-controller="Tenants"
                asp-action="Edit"
-               asp-route-id="@Model.Id"
+               asp-route-id="@Model?.Id"
                class="btn btn-warning rounded-pill px-4 py-2 fw-bold text-white">
                 <i class="fas fa-pen-to-square me-2"></i>
                 Düzenle
@@ -130,7 +132,7 @@
                     </div>
 
                     <div class="summary-value">
-                        @Model.AdminCount
+                        @tenant.AdminCount
                     </div>
                 </div>
             </div>
@@ -148,7 +150,7 @@
                     </div>
 
                     <div class="summary-value">
-                        @Model.ConferenceCount
+                        @tenant.ConferenceCount
                     </div>
                 </div>
             </div>
@@ -166,7 +168,7 @@
                     </div>
 
                     <div class="summary-value">
-                        @Model.UserCount
+                        @tenant.UserCount
                     </div>
                 </div>
             </div>
@@ -206,7 +208,7 @@
                             </div>
 
                             <div class="info-value">
-                                @Model.Name
+                                @tenant.Name
                             </div>
                         </div>
                     </div>
@@ -222,12 +224,12 @@
                             </div>
 
                             <div class="info-value">
-                                @if (!string.IsNullOrWhiteSpace(Model.Slug))
+                                @if (!string.IsNullOrWhiteSpace(tenant.Slug))
                                 {
-                                    <a href="@Model.PublicSiteUrl"
+                                    <a href="@tenant.PublicSiteUrl"
                                        target="_blank"
                                        class="slug-badge text-decoration-none">
-                                        @Model.SlugPath
+                                        @tenant.SlugPath
                                     </a>
                                 }
                                 else
@@ -251,7 +253,7 @@
                             </div>
 
                             <div class="info-value">
-                                @(Model.ScientificFieldName ?? "Tanımlanmamış")
+                                @(tenant.ScientificFieldName ?? "Tanımlanmamış")
                             </div>
                         </div>
                     </div>
@@ -267,7 +269,7 @@
                             </div>
 
                             <div class="info-value">
-                                @(Model.CongressTypeName ?? "Tanımlanmamış")
+                                @(tenant.CongressTypeName ?? "Tanımlanmamış")
                             </div>
                         </div>
                     </div>
@@ -283,7 +285,7 @@
                             </div>
 
                             <div class="info-value system-id">
-                                @Model.Id
+                                @tenant.Id
                             </div>
                         </div>
                     </div>
@@ -314,8 +316,8 @@
                     <a asp-area="Admin"
                        asp-controller="Tenants"
                        asp-action="AssignManager"
-                       asp-route-id="@Model.Id"
-                       asp-route-returnUrl="@Model.AssignManagerReturnUrl"
+                       asp-route-id="@tenant.Id"
+                       asp-route-returnUrl="@tenant.AssignManagerReturnUrl"
                        class="quick-action-card text-decoration-none">
                         <div class="quick-action-icon soft-success">
                             <i class="fas fa-user-shield"></i>
@@ -337,8 +339,8 @@
                     <a asp-area="Admin"
                        asp-controller="Tenants"
                        asp-action="AssignUser"
-                       asp-route-id="@Model.Id"
-                       asp-route-returnUrl="@Model.AssignManagerReturnUrl"
+                       asp-route-id="@tenant.Id"
+                       asp-route-returnUrl="@tenant.AssignManagerReturnUrl"
                        class="quick-action-card text-decoration-none">
                         <div class="quick-action-icon soft-user">
                             <i class="fas fa-user-plus"></i>
@@ -360,7 +362,7 @@
                     <a asp-area="Admin"
                        asp-controller="Tenants"
                        asp-action="Edit"
-                       asp-route-id="@Model.Id"
+                       asp-route-id="@tenant.Id"
                        class="quick-action-card text-decoration-none">
                         <div class="quick-action-icon soft-warning">
                             <i class="fas fa-pen-to-square"></i>
@@ -379,9 +381,9 @@
                         <i class="fas fa-arrow-right quick-action-arrow"></i>
                     </a>
 
-                    @if (!string.IsNullOrWhiteSpace(Model.Slug))
+                    @if (!string.IsNullOrWhiteSpace(tenant.Slug))
                     {
-                        <a href="@Model.PublicSiteUrl"
+                        <a href="@tenant.PublicSiteUrl"
                            target="_blank"
                            class="quick-action-card text-decoration-none">
                             <div class="quick-action-icon soft-blue">
@@ -402,9 +404,9 @@
                         </a>
                     }
 
-                    @if (!string.IsNullOrWhiteSpace(Model.ConferenceFlowUrl))
+                    @if (!string.IsNullOrWhiteSpace(tenant.ConferenceFlowUrl))
                     {
-                        <a href="@Model.ConferenceFlowUrl"
+                        <a href="@tenant.ConferenceFlowUrl"
                            class="quick-action-card text-decoration-none">
                             <div class="quick-action-icon soft-primary">
                                 <i class="fas fa-stream"></i>
@@ -469,10 +471,10 @@
                 </div>
 
                 <div class="modern-card-body">
-                    @if (Model.Admins != null && Model.Admins.Any())
+                    @if (tenant.Admins != null && tenant.Admins.Any())
                     {
                         <div class="simple-list">
-                            @foreach (var admin in Model.Admins)
+                            @foreach (var admin in tenant.Admins)
                             {
                                 <div class="simple-list-item">
                                     <div class="list-avatar bg-success bg-opacity-10 text-success">
@@ -512,8 +514,8 @@
                             <a asp-area="Admin"
                                asp-controller="Tenants"
                                asp-action="AssignManager"
-                               asp-route-id="@Model.Id"
-                               asp-route-returnUrl="@Model.AssignManagerReturnUrl"
+                               asp-route-id="@tenant.Id"
+                               asp-route-returnUrl="@tenant.AssignManagerReturnUrl"
                                class="btn btn-sm btn-success rounded-pill px-3 fw-bold">
                                 <i class="fas fa-user-plus me-1"></i>
                                 Admin Ata
@@ -540,13 +542,17 @@
                             Bu kuruma bağlı kongreler.
                         </p>
                     </div>
+
+                    <a href="/@tenant.Slug/Admin/Conferences/Create" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus me-1"></i> Kongre Ekle
+                    </a>
                 </div>
 
                 <div class="modern-card-body">
-                    @if (Model.Conferences != null && Model.Conferences.Any())
+                    @if (tenant.Conferences != null && tenant.Conferences.Any())
                     {
                         <div class="simple-list">
-                            @foreach (var conference in Model.Conferences)
+                            @foreach (var conference in tenant.Conferences)
                             {
                                 <div class="simple-list-item">
                                     <div class="list-avatar bg-primary bg-opacity-10 text-primary">
@@ -588,6 +594,10 @@
                             <p>
                                 Bu kuruma bağlı kongre bulunmuyor.
                             </p>
+
+                            <a href="/@tenant.Slug/Admin/Conferences/Create" class="btn btn-sm btn-primary mt-2">
+                                <i class="fas fa-plus me-1"></i> İlk Kongreyi Ekle
+                            </a>
                         </div>
                     }
                 </div>
@@ -617,8 +627,8 @@
             <a asp-area="Admin"
                asp-controller="Tenants"
                asp-action="AssignUser"
-               asp-route-id="@Model.Id"
-               asp-route-returnUrl="@Model.AssignManagerReturnUrl"
+               asp-route-id="@tenant.Id"
+               asp-route-returnUrl="@tenant.AssignManagerReturnUrl"
                class="btn btn-primary rounded-pill px-4 fw-bold add-user-btn">
                 <i class="fas fa-user-plus me-2"></i>
                 Kullanıcı / Hakem Bağla
@@ -626,7 +636,7 @@
         </div>
 
         <div class="modern-card-body">
-            @if (Model.Users != null && Model.Users.Any())
+            @if (tenant.Users != null && tenant.Users.Any())
             {
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0 users-table">
@@ -647,7 +657,7 @@
                         </thead>
 
                         <tbody>
-                            @foreach (var user in Model.Users)
+                            @foreach (var user in tenant.Users)
                             {
                                 <tr>
                                     <td class="ps-4">
@@ -715,8 +725,8 @@
                     <a asp-area="Admin"
                        asp-controller="Tenants"
                        asp-action="AssignUser"
-                       asp-route-id="@Model.Id"
-                       asp-route-returnUrl="@Model.AssignManagerReturnUrl"
+                       asp-route-id="@tenant.Id"
+                       asp-route-returnUrl="@tenant.AssignManagerReturnUrl"
                        class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">
                         <i class="fas fa-user-plus me-1"></i>
                         Kullanıcı / Hakem Bağla
