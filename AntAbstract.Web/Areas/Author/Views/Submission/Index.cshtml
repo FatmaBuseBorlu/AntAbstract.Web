@@ -512,6 +512,22 @@
         </div>
     }
 
+    @if (ViewBag.ShowRegistrationWarning == true)
+    {
+        <div class="alert d-flex align-items-center gap-3 mb-4 shadow-sm"
+             style="border-radius:16px;border-left:5px solid #f59e0b;background:#fffbeb;color:#92400e;">
+            <i class="fas fa-exclamation-triangle fa-lg" style="color:#f59e0b;flex-shrink:0;"></i>
+            <div class="flex-grow-1">
+                <strong>Kongre kaydınızı tamamlamayı unutmayın!</strong>
+                Bildiriniz kabul edildi. Katılımcı sertifikası ve tam metin yayını için
+                kongre kaydı &amp; ödeme tamamlanmış olmalıdır.
+            </div>
+            <a href="@paymentUrl" class="btn btn-warning btn-sm fw-bold text-dark" style="white-space:nowrap;">
+                <i class="fas fa-credit-card me-1"></i>Kayıt Ol
+            </a>
+        </div>
+    }
+
     <div class="author-submissions-header">
         <div>
             <h3 class="author-submissions-title">

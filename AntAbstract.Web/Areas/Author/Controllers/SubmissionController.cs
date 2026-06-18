@@ -483,6 +483,23 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             ViewBag.CanDownloadAuthorCertificate = hasCompletedAttendance;
 
+            // Kabul edilen bildirim var ama ücretli kayıt yok → uyarı banner
+            var hasAcceptedSubmission = await _context.Submissions
+                .AsNoTracking()
+                .AnyAsync(s =>
+                    s.ConferenceId == conference.Id &&
+                    s.SubmissionAuthors.Any(a => a.AppUserId == user.Id) &&
+                    s.Status == SubmissionStatus.Accepted);
+
+            var hasPaidRegistration = await _context.Registrations
+                .AsNoTracking()
+                .AnyAsync(r =>
+                    r.ConferenceId == conference.Id &&
+                    r.AppUserId == user.Id &&
+                    r.IsPaid);
+
+            ViewBag.ShowRegistrationWarning = hasAcceptedSubmission && !hasPaidRegistration;
+
             var submissionDtos = await _submissionService.GetMySubmissionsAsync(user.Id);
 
             submissionDtos = submissionDtos

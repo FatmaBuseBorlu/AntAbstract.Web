@@ -955,6 +955,45 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return v;
         }
 
+        [HttpGet("/{slug}/Admin/Reports/UnregisteredAuthors")]
+        public async Task<IActionResult> UnregisteredAuthors(string slug, Guid? conferenceId = null)
+        {
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = T("Error_SelectConferenceFirst", "Lütfen yetkili olduğunuz geçerli bir kongre seçiniz.");
+                return RedirectToAction(nameof(SelectConference), new { returnUrl = $"/{slug}/Admin/Reports/UnregisteredAuthors" });
+            }
+
+            SetSelectedConferenceSession(conference);
+
+            var confId = conference.Id;
+
+            // Kabul edilen bildiriler: hiçbir yazarın bu kongreye ücretli kaydı yok
+            var paidUserIds = await _context.Registrations
+                .AsNoTracking()
+                .Where(r => r.ConferenceId == confId && r.IsPaid)
+                .Select(r => r.AppUserId)
+                .ToListAsync();
+
+            var unregistered = await _context.Submissions
+                .AsNoTracking()
+                .Include(s => s.SubmissionAuthors)
+                .Where(s => s.ConferenceId == confId && s.Status == SubmissionStatus.Accepted)
+                .Where(s => !s.SubmissionAuthors
+                    .Where(a => a.AppUserId != null)
+                    .Any(a => paidUserIds.Contains(a.AppUserId!)))
+                .OrderBy(s => s.Title)
+                .ToListAsync();
+
+            ViewBag.Conference = conference;
+            ViewBag.Slug = slug;
+            ViewBag.PaidUserIds = paidUserIds;
+
+            return View(unregistered);
+        }
+
         [HttpGet("/Reports/Index")]
         public IActionResult LegacyRoot()
         {
