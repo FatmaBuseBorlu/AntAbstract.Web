@@ -548,6 +548,9 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 return NotFound();
             }
 
+            ViewBag.IsFullTextOpen = submissionEntity.Conference?.IsFullTextOpen ?? false;
+            ViewBag.FullTextDeadline = submissionEntity.Conference?.FullTextSubmissionDeadline;
+
             return View(submissionDto);
         }
 
@@ -1412,6 +1415,145 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 TempData["ErrorMessage"] = ex.Message;
 
                 return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/revision"));
+            }
+        }
+
+        [HttpGet("/Submission/UploadFullText/{id:guid}")]
+        [HttpGet("/{slug}/Submission/UploadFullText/{id:guid}")]
+        [HttpGet("/{slug}/my-submissions/{id:guid}/full-text")]
+        public async Task<IActionResult> UploadFullText(Guid id, string? slug = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var submissionEntity = await GetAuthorizedSubmissionAsync(id, user, asNoTracking: false);
+            if (submissionEntity == null) return Forbid();
+
+            var canonicalSlug = GetCanonicalSlug(submissionEntity.Conference!, slug);
+            if (!SlugMatches(submissionEntity.Conference, slug))
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/full-text"));
+
+            SetSelectedConferenceSession(submissionEntity.Conference!, canonicalSlug);
+
+            if (submissionEntity.Status != SubmissionStatus.Accepted)
+            {
+                TempData["ErrorMessage"] = T("FullTextNotAccepted", "Tam metin yalnızca kabul edilen bildiriler için yüklenebilir.");
+                return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
+            }
+
+            var conference = submissionEntity.Conference!;
+            if (!conference.IsFullTextOpen)
+            {
+                TempData["ErrorMessage"] = T("FullTextNotOpen", "Tam metin yükleme henüz açılmamıştır.");
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}"));
+            }
+
+            if (conference.FullTextSubmissionDeadline.HasValue && DateTime.UtcNow > conference.FullTextSubmissionDeadline.Value)
+            {
+                TempData["ErrorMessage"] = T("FullTextDeadlinePassed", $"Tam metin yükleme süresi {conference.FullTextSubmissionDeadline.Value:dd.MM.yyyy} tarihinde sona ermiştir.");
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}"));
+            }
+
+            var submissionDto = await _submissionService.GetSubmissionByIdAsync(id);
+            if (submissionDto == null) return NotFound();
+
+            ViewBag.Conference = conference;
+            return View(submissionDto);
+        }
+
+        [HttpPost("/Submission/UploadFullText/{id:guid}")]
+        [HttpPost("/{slug}/Submission/UploadFullText/{id:guid}")]
+        [HttpPost("/{slug}/my-submissions/{id:guid}/full-text")]
+        [ValidateAntiForgeryToken]
+        [RequestSizeLimit(50 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 50 * 1024 * 1024)]
+        [EnableRateLimiting("upload")]
+        public async Task<IActionResult> UploadFullText(Guid id, IFormFile? fullTextFile, string? slug = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var submission = await GetAuthorizedSubmissionAsync(id, user, asNoTracking: false);
+            if (submission == null) return Forbid();
+
+            var canonicalSlug = GetCanonicalSlug(submission.Conference!, slug);
+            if (!SlugMatches(submission.Conference, slug))
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/full-text"));
+
+            SetSelectedConferenceSession(submission.Conference!, canonicalSlug);
+
+            if (submission.Status != SubmissionStatus.Accepted)
+            {
+                TempData["ErrorMessage"] = T("FullTextNotAccepted", "Tam metin yalnızca kabul edilen bildiriler için yüklenebilir.");
+                return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
+            }
+
+            var conference = submission.Conference!;
+            if (!conference.IsFullTextOpen)
+            {
+                TempData["ErrorMessage"] = T("FullTextNotOpen", "Tam metin yükleme henüz açılmamıştır.");
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}"));
+            }
+
+            if (conference.FullTextSubmissionDeadline.HasValue && DateTime.UtcNow > conference.FullTextSubmissionDeadline.Value)
+            {
+                TempData["ErrorMessage"] = T("FullTextDeadlinePassed", "Tam metin yükleme süresi dolmuştur.");
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}"));
+            }
+
+            if (fullTextFile == null || fullTextFile.Length == 0)
+            {
+                TempData["ErrorMessage"] = T("FullTextFileRequired", "Tam metin dosyası zorunludur.");
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/full-text"));
+            }
+
+            try
+            {
+                var fileInfo = await UploadFileAsync(fullTextFile);
+
+                var newVersion = submission.Files != null && submission.Files.Any(f => f.Type == SubmissionFileType.FullText)
+                    ? submission.Files.Where(f => f.Type == SubmissionFileType.FullText).Max(f => f.Version) + 1
+                    : 1;
+
+                submission.Files ??= new List<SubmissionFile>();
+                submission.Files.Add(new SubmissionFile
+                {
+                    SubmissionId = submission.Id,
+                    FileName = fileInfo.OriginalFileName,
+                    StoredFileName = fileInfo.StoredFileName,
+                    FilePath = fileInfo.FilePathDb,
+                    Type = SubmissionFileType.FullText,
+                    UploadedAt = DateTime.UtcNow,
+                    Version = newVersion
+                });
+
+                submission.UpdatedDate = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                try
+                {
+                    var adminUsers = await _context.Users.AsNoTracking()
+                        .Where(u => u.TenantId.HasValue && _context.Conferences.Any(c => c.Id == submission.ConferenceId && c.TenantId == u.TenantId.Value))
+                        .Select(u => u.Id).ToListAsync();
+
+                    foreach (var adminId in adminUsers)
+                    {
+                        await _notificationService.CreateAsync(
+                            userId: adminId,
+                            title: "Tam Metin Yüklendi",
+                            message: $"\"{submission.Title}\" bildirisi için tam metin yüklendi.",
+                            icon: "📄", color: "success", link: null);
+                    }
+                }
+                catch (Exception ex) { _logger.LogWarning(ex, "Tam metin yükleme bildirimi gönderilemedi."); }
+
+                TempData["SuccessMessage"] = T("FullTextUploadSuccess", "Tam metin dosyanız başarıyla yüklendi.");
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}"));
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}/full-text"));
             }
         }
 

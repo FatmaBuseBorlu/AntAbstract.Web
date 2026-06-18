@@ -76,5 +76,11 @@ namespace AntAbstract.Domain.Entities
         public string? CertificateSecondSignerName { get; set; }
 
         public string? CertificateSecondSignerTitle { get; set; }
+
+        /// <summary>Hakem teklif (bidding) fazı açık mı?</summary>
+        public bool IsBiddingOpen { get; set; } = false;
+
+        /// <summary>Tam metin yükleme açık mı? (Admin elle kontrol eder)</summary>
+        public bool IsFullTextOpen { get; set; } = false;
     }
 }

@@ -706,6 +706,15 @@
                         </button>
                     </form>
 
+                    <form method="post" action="/@Model.Slug/Admin/ConferenceFlow/ToggleFullText" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
+                        <button type="submit" class="flow-chip flow-chip-btn @(Model.IsFullTextOpen ? "flow-chip-success" : "flow-chip-muted")">
+                            <i class="fas @(Model.IsFullTextOpen ? "fa-file-word" : "fa-file")"></i>
+                            Tam Metin @(Model.IsFullTextOpen ? "Açık" : "Kapalı")
+                        </button>
+                    </form>
+
                     <span class="flow-chip">
                         <i class="fas @(isSuperAdmin ? "fa-user-gear" : "fa-user-shield")"></i>
                         @(isSuperAdmin ? "SuperAdmin" : "Kurum Admini")
