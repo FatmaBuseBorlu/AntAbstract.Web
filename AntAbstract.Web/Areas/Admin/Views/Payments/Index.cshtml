@@ -195,6 +195,10 @@
                                     else
                                     {
                                         <span class="text-success small">Tamamlandı</span>
+                                        <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Payments/DownloadInvoice/{reg.Id}" : $"/{slug}/Admin/Payments/DownloadInvoice/{reg.Id}")" target="_blank"
+                                           class="btn btn-sm btn-outline-success ms-1" title="Fatura İndir">
+                                            <i class="fas fa-file-invoice"></i>
+                                        </a>
                                         @if (reg.PaymentTransactionId != null)
                                         {
                                             var histPayment = ViewBag.PaymentMap as System.Collections.Generic.Dictionary<string, System.Guid?>;
