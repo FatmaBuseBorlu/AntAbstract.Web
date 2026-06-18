@@ -2,6 +2,7 @@ using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Email;
+using AntAbstract.Infrastructure.Services.Invoice;
 using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -25,6 +26,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly INotificationService _notificationService;
         private readonly ILogger<PaymentsController> _logger;
+        private readonly IInvoicePdfService _invoicePdfService;
 
         public PaymentsController(
             AppDbContext context,
@@ -33,7 +35,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             IAuditService audit,
             UserManager<AppUser> userManager,
             INotificationService notificationService,
-            ILogger<PaymentsController> logger)
+            ILogger<PaymentsController> logger,
+            IInvoicePdfService invoicePdfService)
         {
             _context = context;
             _emailService = emailService;
@@ -42,6 +45,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _userManager = userManager;
             _notificationService = notificationService;
             _logger = logger;
+            _invoicePdfService = invoicePdfService;
         }
 
         // GET /{slug}/Admin/Payments  —  tüm ödemeler + makbuz bekleyenler
@@ -594,6 +598,30 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
                 return LocalRedirect(returnUrl);
             return RedirectToAction(nameof(Index));
+        }
+
+        // Admin: Fatura PDF indirme
+        [HttpGet("/{slug}/Admin/Payments/DownloadInvoice/{registrationId:guid}")]
+        [HttpGet("/Admin/Payments/DownloadInvoice/{registrationId:guid}")]
+        public async Task<IActionResult> DownloadInvoice(string? slug, Guid registrationId)
+        {
+            var registration = await _context.Registrations
+                .Include(r => r.Conference)
+                    .ThenInclude(c => c.Tenant)
+                .Include(r => r.RegistrationType)
+                .Include(r => r.AppUser)
+                .FirstOrDefaultAsync(r => r.Id == registrationId);
+
+            if (registration == null)
+                return NotFound();
+
+            if (!registration.IsPaid)
+                return BadRequest("Ödeme tamamlanmamış kayıtlar için fatura oluşturulamaz.");
+
+            var pdfBytes = _invoicePdfService.GenerateRegistrationInvoice(registration);
+            var fileName = $"Fatura-{registration.Id.ToString("N").Substring(0, 8).ToUpper()}.pdf";
+
+            return File(pdfBytes, "application/pdf", fileName);
         }
     }
 }

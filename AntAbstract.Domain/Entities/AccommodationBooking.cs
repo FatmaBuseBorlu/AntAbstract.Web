@@ -8,16 +8,16 @@ namespace AntAbstract.Domain.Entities
     public class AccommodationBooking : BaseEntity
     {
 
-        public string AppUserId { get; set; }
-        public AppUser AppUser { get; set; }
+        public string AppUserId { get; set; } = string.Empty;
+        public AppUser AppUser { get; set; } = null!;
 
 
         public Guid ConferenceId { get; set; }
-        public Conference Conference { get; set; }
+        public Conference Conference { get; set; } = null!;
 
 
         public Guid RoomTypeId { get; set; }
-        public RoomType RoomType { get; set; }
+        public RoomType RoomType { get; set; } = null!;
 
 
         public Guid? TransferOptionId { get; set; }

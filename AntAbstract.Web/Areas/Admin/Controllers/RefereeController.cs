@@ -1,6 +1,7 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
+using AntAbstract.Infrastructure.Services.Email;
 using AntAbstract.Web.Models.ViewModels.Admin.Referee;
 using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -27,6 +28,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly IAdminTenantAccessService _tenantAccess;
         private readonly ISelectedConferenceService _selectedConferenceService;
         private readonly IStringLocalizer<RefereeController> _localizer;
+        private readonly IEmailService _emailService;
 
         private static readonly string[] ReviewerRoleNames =
         {
@@ -44,7 +46,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             RoleManager<IdentityRole> roleManager,
             IAdminTenantAccessService tenantAccess,
             ISelectedConferenceService selectedConferenceService,
-            IStringLocalizer<RefereeController> localizer)
+            IStringLocalizer<RefereeController> localizer,
+            IEmailService emailService)
         {
             _context = context;
             _tenantContext = tenantContext;
@@ -53,6 +56,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _tenantAccess = tenantAccess;
             _selectedConferenceService = selectedConferenceService;
             _localizer = localizer;
+            _emailService = emailService;
         }
 
         private string T(string key, string fallback)
@@ -780,6 +784,235 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "Hakem rolü başarıyla kaldırıldı. Kullanıcının diğer rolleri korundu.");
 
             return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
+        }
+
+        // ── Hakem Davet Akışı ────────────────────────────────────────────────
+
+        [HttpGet("/Admin/Referee/InviteByEmail")]
+        [HttpGet("/{slug}/Admin/Referee/InviteByEmail")]
+        public async Task<IActionResult> InviteByEmail(string? slug = null, Guid? conferenceId = null)
+        {
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
+            }
+
+            ViewBag.Conference = conference;
+            ViewBag.Slug = slug ?? conference.Tenant?.Slug ?? "";
+            ViewBag.ConferenceId = conference.Id;
+            return View();
+        }
+
+        [HttpPost("/Admin/Referee/InviteByEmail")]
+        [HttpPost("/{slug}/Admin/Referee/InviteByEmail")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> InviteByEmail(
+            string? slug,
+            Guid? conferenceId,
+            string email,
+            string? firstName,
+            string? lastName,
+            string? institution)
+        {
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
+            }
+
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                TempData["ErrorMessage"] = "E-posta adresi gereklidir.";
+                ViewBag.Conference = conference;
+                ViewBag.Slug = slug ?? conference.Tenant?.Slug ?? "";
+                ViewBag.ConferenceId = conference.Id;
+                return View();
+            }
+
+            email = email.Trim().ToLowerInvariant();
+
+            // Aynı e-postaya aynı kongreye bekleyen davet var mı?
+            var existing = await _context.ReviewerInvitations
+                .FirstOrDefaultAsync(i =>
+                    i.ConferenceId == conference.Id &&
+                    i.Email == email &&
+                    i.Status == InvitationStatus.Pending);
+
+            if (existing != null)
+            {
+                TempData["ErrorMessage"] = $"Bu e-posta adresine ({email}) bu kongre için zaten bekleyen bir davet gönderilmiş.";
+                ViewBag.Conference = conference;
+                ViewBag.Slug = slug ?? conference.Tenant?.Slug ?? "";
+                ViewBag.ConferenceId = conference.Id;
+                return View();
+            }
+
+            // Sistemde kayıtlı kullanıcı var mı?
+            var existingUser = await _userManager.FindByEmailAsync(email);
+
+            var token = Guid.NewGuid().ToString("N");
+            var effectiveSlug = slug ?? conference.Tenant?.Slug ?? "";
+
+            var invitation = new ReviewerInvitation
+            {
+                ConferenceId = conference.Id,
+                Email = email,
+                FirstName = firstName?.Trim(),
+                LastName = lastName?.Trim(),
+                Institution = institution?.Trim(),
+                InvitedUserId = existingUser?.Id,
+                Token = token,
+                Status = InvitationStatus.Pending,
+                SentAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddDays(7)
+            };
+
+            _context.ReviewerInvitations.Add(invitation);
+            await _context.SaveChangesAsync();
+
+            // Davet e-postası gönder
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var acceptUrl = $"{baseUrl}/{effectiveSlug}/Referee/AcceptInvitation?token={token}";
+            var declineUrl = $"{baseUrl}/{effectiveSlug}/Referee/DeclineInvitation?token={token}";
+            var fullName = string.Join(" ", new[] { firstName, lastName }.Where(x => !string.IsNullOrWhiteSpace(x)));
+            if (string.IsNullOrWhiteSpace(fullName)) fullName = email;
+
+            var subject = $"Hakem Daveti: {conference.Title}";
+            var body = $@"
+<p>Sayın {fullName},</p>
+<p><strong>{conference.Title}</strong> kongresinde hakem olarak görev yapmanız için davet edildiniz.</p>
+<p>Daveti kabul etmek veya reddetmek için aşağıdaki bağlantıları kullanabilirsiniz:</p>
+<p>
+  <a href=""{acceptUrl}"" style=""display:inline-block;padding:10px 20px;background:#198754;color:#fff;text-decoration:none;border-radius:5px;"">Daveti Kabul Et</a>
+  &nbsp;
+  <a href=""{declineUrl}"" style=""display:inline-block;padding:10px 20px;background:#dc3545;color:#fff;text-decoration:none;border-radius:5px;"">Daveti Reddet</a>
+</p>
+<p><small>Bu davet {invitation.ExpiresAt:dd.MM.yyyy} tarihine kadar geçerlidir.</small></p>";
+
+            await _emailService.SendAsync(email, subject, body);
+
+            TempData["SuccessMessage"] = $"Davet e-postası {email} adresine gönderildi.";
+            return Redirect(BuildRefereeIndexUrl(slug, conference.Id));
+        }
+
+        [HttpGet("/Admin/Referee/Invitations")]
+        [HttpGet("/{slug}/Admin/Referee/Invitations")]
+        public async Task<IActionResult> Invitations(string? slug = null, Guid? conferenceId = null)
+        {
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                return Redirect(BuildRefereeIndexUrl(slug, conferenceId));
+            }
+
+            // Süresi geçmiş davetleri güncelle
+            var expiredInvitations = await _context.ReviewerInvitations
+                .Where(i =>
+                    i.ConferenceId == conference.Id &&
+                    i.Status == InvitationStatus.Pending &&
+                    i.ExpiresAt < DateTime.UtcNow)
+                .ToListAsync();
+
+            foreach (var inv in expiredInvitations)
+                inv.Status = InvitationStatus.Expired;
+
+            if (expiredInvitations.Any())
+                await _context.SaveChangesAsync();
+
+            var invitations = await _context.ReviewerInvitations
+                .Where(i => i.ConferenceId == conference.Id)
+                .OrderByDescending(i => i.SentAt)
+                .ToListAsync();
+
+            ViewBag.Conference = conference;
+            ViewBag.Slug = slug ?? conference.Tenant?.Slug ?? "";
+            ViewBag.ConferenceId = conference.Id;
+            return View(invitations);
+        }
+
+        // Token tabanlı kabul/red — [AllowAnonymous] ile auth gerektirmez
+        [AllowAnonymous]
+        [HttpGet("/{slug}/Referee/AcceptInvitation")]
+        public async Task<IActionResult> AcceptInvitation(string slug, string token)
+        {
+            var invitation = await _context.ReviewerInvitations
+                .Include(i => i.Conference)
+                .FirstOrDefaultAsync(i => i.Token == token);
+
+            if (invitation == null)
+                return NotFound("Davet bulunamadı.");
+
+            if (invitation.Status != InvitationStatus.Pending)
+                return Content($"Bu davet zaten {invitation.Status} durumunda.");
+
+            if (invitation.ExpiresAt < DateTime.UtcNow)
+            {
+                invitation.Status = InvitationStatus.Expired;
+                await _context.SaveChangesAsync();
+                return Content("Bu davetin süresi dolmuş.");
+            }
+
+            // Kullanıcı zaten sistemde varsa rol ekle
+            var user = await _userManager.FindByEmailAsync(invitation.Email);
+
+            if (user != null)
+            {
+                await EnsurePrimaryReviewerRoleExistsAsync();
+
+                if (!await _userManager.IsInRoleAsync(user, PrimaryReviewerRoleName))
+                    await _userManager.AddToRoleAsync(user, PrimaryReviewerRoleName);
+
+                invitation.CreatedReviewerUserId = user.Id;
+            }
+
+            invitation.Status = InvitationStatus.Accepted;
+            invitation.RespondedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            ViewBag.InvitationEmail = invitation.Email;
+            ViewBag.ConferenceTitle = invitation.Conference?.Title ?? "";
+            ViewBag.UserExists = user != null;
+            ViewBag.Slug = slug;
+            return View("InvitationAccepted");
+        }
+
+        [AllowAnonymous]
+        [HttpGet("/{slug}/Referee/DeclineInvitation")]
+        public IActionResult DeclineInvitation(string slug, string token)
+        {
+            ViewBag.Token = token;
+            ViewBag.Slug = slug;
+            return View("InvitationDecline");
+        }
+
+        [AllowAnonymous]
+        [HttpPost("/{slug}/Referee/DeclineInvitation")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeclineInvitationPost(string slug, string token, string? reason)
+        {
+            var invitation = await _context.ReviewerInvitations
+                .FirstOrDefaultAsync(i => i.Token == token);
+
+            if (invitation == null)
+                return NotFound("Davet bulunamadı.");
+
+            if (invitation.Status != InvitationStatus.Pending)
+                return Content($"Bu davet zaten {invitation.Status} durumunda.");
+
+            invitation.Status = InvitationStatus.Declined;
+            invitation.RespondedAt = DateTime.UtcNow;
+            invitation.DeclineReason = reason?.Trim();
+            await _context.SaveChangesAsync();
+
+            ViewBag.Slug = slug;
+            return View("InvitationDeclined");
         }
     }
 }

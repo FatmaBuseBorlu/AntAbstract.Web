@@ -25,7 +25,7 @@
         && Model.Books.Any();
 
     var book = hasBook
-        ? Model!.Books.FirstOrDefault()
+        ? Model!.Books!.FirstOrDefault()
         : null;
 
     var conferenceTitle = Model?.ConferenceTitle ?? "";

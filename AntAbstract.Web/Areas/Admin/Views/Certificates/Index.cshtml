@@ -1,130 +1,453 @@
-﻿@using AntAbstract.Domain.Entities
+@using AntAbstract.Domain.Entities
 @model List<Certificate>
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
-    var slug = ViewContext.RouteData.Values["slug"]?.ToString();
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString() ?? "";
 
-    var selectedType = Context.Request.Query["type"].ToString();
-    var onlyMissingFile = Context.Request.Query["onlyMissingFile"] == "true";
+    var selectedType     = Context.Request.Query["type"].ToString();
+    var onlyMissingFile  = Context.Request.Query["onlyMissingFile"] == "true";
     var onlyEmailNotSent = Context.Request.Query["onlyEmailNotSent"] == "true";
-}
 
-@{
     var qConferenceId = Context.Request.Query["conferenceId"].ToString();
     Guid.TryParse(qConferenceId, out var bulkConferenceId);
+
+    var certs = Model ?? new List<Certificate>();
+    int totalCount    = certs.Count;
+    int authorCount   = certs.Count(c => c.Type == CertificateType.Author);
+    int reviewerCount = certs.Count(c => c.Type == CertificateType.Reviewer);
+    int missingFile   = certs.Count(c => string.IsNullOrWhiteSpace(c.FilePath));
+    int emailNotSent  = certs.Count(c => c.EmailSentAt == null);
+
+    string TypeLabel(CertificateType t) => t == CertificateType.Author ? "Yazar" : "Hakem";
+    string TypeIconClass(CertificateType t) => t == CertificateType.Author ? "fa-user-graduate" : "fa-gavel";
+    string TypeBadgeClass(CertificateType t) => t == CertificateType.Author ? "cert-badge-author" : "cert-badge-reviewer";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="mb-0">@ViewData["Title"]</h3>
+<div class="cert-admin-page">
 
-    @if (bulkConferenceId != Guid.Empty)
+    @if (TempData["SuccessMessage"] != null)
     {
-        <form asp-action="TriggerBulk" method="post" class="d-inline"
-              onsubmit="return confirm('Tüm katılımcılar için sertifika oluşturulsun mu?');">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="conferenceId" value="@bulkConferenceId" />
-            <button type="submit" class="btn btn-success btn-sm">
-                <i class="fas fa-certificate me-1"></i> Toplu Sertifika Oluştur
-            </button>
-        </form>
+        <div class="alert cert-alert cert-alert-success mb-4">
+            <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+        </div>
     }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert cert-alert cert-alert-error mb-4">
+            <i class="fas fa-times-circle"></i> @TempData["ErrorMessage"]
+        </div>
+    }
+
+    @* Hero *@
+    <div class="cert-hero-card mb-4">
+        <div class="cert-hero-left">
+            <div class="cert-hero-icon">
+                <i class="fas fa-certificate"></i>
+            </div>
+            <div>
+                <h1 class="cert-hero-title">Sertifikalar</h1>
+                <p class="cert-hero-sub">Kongre katılım ve hakemlik sertifikalarını yönetin</p>
+            </div>
+        </div>
+        @if (bulkConferenceId != Guid.Empty)
+        {
+            <form asp-action="TriggerBulk" method="post"
+                  onsubmit="return confirm('Tüm katılımcılar için sertifika oluşturulsun mu?');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="conferenceId" value="@bulkConferenceId" />
+                <button type="submit" class="btn cert-bulk-btn">
+                    <i class="fas fa-layer-group"></i>
+                    Toplu Sertifika Oluştur
+                </button>
+            </form>
+        }
+    </div>
+
+    @* Stat row *@
+    <div class="cert-stat-row mb-4">
+        <a href="?conferenceId=@qConferenceId" class="cert-stat-card @(string.IsNullOrEmpty(selectedType) && !onlyMissingFile && !onlyEmailNotSent ? "csc-active" : "")">
+            <div class="csc-icon csc-blue"><i class="fas fa-certificate"></i></div>
+            <div class="csc-body">
+                <div class="csc-value">@totalCount</div>
+                <div class="csc-label">Toplam</div>
+            </div>
+        </a>
+        <a href="?conferenceId=@qConferenceId&type=Author" class="cert-stat-card @(selectedType == "Author" ? "csc-active" : "")">
+            <div class="csc-icon csc-purple"><i class="fas fa-user-graduate"></i></div>
+            <div class="csc-body">
+                <div class="csc-value">@authorCount</div>
+                <div class="csc-label">Yazar</div>
+            </div>
+        </a>
+        <a href="?conferenceId=@qConferenceId&type=Reviewer" class="cert-stat-card @(selectedType == "Reviewer" ? "csc-active" : "")">
+            <div class="csc-icon csc-cyan"><i class="fas fa-gavel"></i></div>
+            <div class="csc-body">
+                <div class="csc-value">@reviewerCount</div>
+                <div class="csc-label">Hakem</div>
+            </div>
+        </a>
+        <a href="?conferenceId=@qConferenceId&onlyMissingFile=true" class="cert-stat-card @(onlyMissingFile ? "csc-active" : "")">
+            <div class="csc-icon csc-orange"><i class="fas fa-file-circle-exclamation"></i></div>
+            <div class="csc-body">
+                <div class="csc-value">@missingFile</div>
+                <div class="csc-label">Dosya Yok</div>
+            </div>
+        </a>
+        <a href="?conferenceId=@qConferenceId&onlyEmailNotSent=true" class="cert-stat-card @(onlyEmailNotSent ? "csc-active" : "")">
+            <div class="csc-icon csc-yellow"><i class="fas fa-envelope-open"></i></div>
+            <div class="csc-body">
+                <div class="csc-value">@emailNotSent</div>
+                <div class="csc-label">E-posta Bekliyor</div>
+            </div>
+        </a>
+    </div>
+
+    @* Filter bar *@
+    <div class="cert-filter-card mb-4">
+        <form method="get" class="cert-filter-form">
+            @if (!string.IsNullOrEmpty(qConferenceId))
+            {
+                <input type="hidden" name="conferenceId" value="@qConferenceId" />
+            }
+            <div class="cert-filter-group">
+                <label class="cert-filter-label">E-posta</label>
+                <div class="cert-search-wrap">
+                    <i class="fas fa-search cert-search-icon"></i>
+                    <input type="text" name="userEmail" value="@Context.Request.Query["userEmail"]"
+                           class="cert-filter-input cert-search-input" placeholder="kullanici@ornek.com" />
+                </div>
+            </div>
+            <div class="cert-filter-group">
+                <label class="cert-filter-label">Tür</label>
+                <select name="type" class="cert-filter-input cert-filter-select">
+                    <option value="">Tümü</option>
+                    @if (selectedType == "Author")
+                    {
+                        <option value="Author" selected>Yazar</option>
+                        <option value="Reviewer">Hakem</option>
+                    }
+                    else if (selectedType == "Reviewer")
+                    {
+                        <option value="Author">Yazar</option>
+                        <option value="Reviewer" selected>Hakem</option>
+                    }
+                    else
+                    {
+                        <option value="Author">Yazar</option>
+                        <option value="Reviewer">Hakem</option>
+                    }
+                </select>
+            </div>
+            <div class="cert-filter-group cert-filter-check-group">
+                <label class="cert-check-label">
+                    <input type="checkbox" name="onlyMissingFile" value="true" @(onlyMissingFile ? "checked" : "") class="cert-checkbox" />
+                    <span>Dosyası eksik</span>
+                </label>
+                <label class="cert-check-label">
+                    <input type="checkbox" name="onlyEmailNotSent" value="true" @(onlyEmailNotSent ? "checked" : "") class="cert-checkbox" />
+                    <span>E-posta gönderilmemiş</span>
+                </label>
+            </div>
+            <div class="cert-filter-actions">
+                <button type="submit" class="btn cert-filter-btn">
+                    <i class="fas fa-filter"></i> Filtrele
+                </button>
+                <a href="?conferenceId=@qConferenceId" class="btn cert-reset-btn">
+                    <i class="fas fa-rotate-left"></i> Sıfırla
+                </a>
+            </div>
+        </form>
+    </div>
+
+    @* Table *@
+    @if (!certs.Any())
+    {
+        <div class="cert-empty">
+            <div class="cert-empty-icon"><i class="fas fa-certificate"></i></div>
+            <h4>Sertifika bulunamadı</h4>
+            <p>Seçili kriterlere uyan sertifika kaydı yok.</p>
+        </div>
+    }
+    else
+    {
+        <div class="cert-table-card">
+            <div class="cert-table-header">
+                <span class="cert-table-count">@totalCount kayıt</span>
+            </div>
+            <div class="table-responsive">
+                <table class="cert-table">
+                    <thead>
+                        <tr>
+                            <th>Tür</th>
+                            <th>Kullanıcı</th>
+                            <th>Kongre</th>
+                            <th class="text-center">Dosya</th>
+                            <th class="text-center">E-posta</th>
+                            <th class="text-end">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in certs)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="cert-type-badge @TypeBadgeClass(c.Type)">
+                                        <i class="fas @TypeIconClass(c.Type)"></i>
+                                        @TypeLabel(c.Type)
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="cert-user-email">@(c.User?.Email ?? c.UserId)</span>
+                                </td>
+                                <td>
+                                    <span class="cert-conf-name">@(c.Conference?.Title ?? c.ConferenceId.ToString())</span>
+                                </td>
+                                <td class="text-center">
+                                    @if (string.IsNullOrWhiteSpace(c.FilePath))
+                                    {
+                                        <span class="cert-status-chip csc-chip-missing">
+                                            <i class="fas fa-xmark"></i> Eksik
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="cert-status-chip csc-chip-ok">
+                                            <i class="fas fa-check"></i> Var
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (c.EmailSentAt == null)
+                                    {
+                                        <span class="cert-status-chip csc-chip-pending">
+                                            <i class="fas fa-clock"></i> Bekliyor
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="cert-status-chip csc-chip-ok" title="@c.EmailSentAt.Value.ToString("dd.MM.yyyy HH:mm")">
+                                            <i class="fas fa-check"></i> Gönderildi
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <div class="cert-actions">
+                                        <a asp-action="Download" asp-route-id="@c.Id"
+                                           class="cert-action-btn cert-action-dl" title="İndir">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        <form asp-action="Regenerate" asp-route-id="@c.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="cert-action-btn cert-action-regen" title="Yeniden Oluştur">
+                                                <i class="fas fa-rotate"></i>
+                                            </button>
+                                        </form>
+                                        <form asp-action="ResendEmail" asp-route-id="@c.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="cert-action-btn cert-action-email" title="E-posta Gönder">
+                                                <i class="fas fa-envelope"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
 </div>
 
-<form method="get" class="row g-2 mb-3">
-    <div class="col-md-3">
-        <input name="userEmail"
-               class="form-control"
-               placeholder="@Localizer["UserEmailPlaceholder"]"
-               value="@Context.Request.Query["userEmail"]" />
-    </div>
+<style>
+    .cert-admin-page {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        padding: 1.5rem 0 2rem;
+    }
 
-    <div class="col-md-2">
-        <select name="type" class="form-select">
-            <option value="">@Localizer["TypeAllOption"]</option>
-            <option value="Author" selected="@(selectedType == "Author")">@Localizer["TypeAuthor"]</option>
-            <option value="Reviewer" selected="@(selectedType == "Reviewer")">@Localizer["TypeReviewer"]</option>
-        </select>
-    </div>
+    .cert-alert {
+        display: flex; align-items: center; gap: 0.75rem;
+        border-radius: 16px; border: 1px solid transparent;
+        font-weight: 800; padding: 0.85rem 1.2rem;
+    }
+    .cert-alert-success { background: rgba(34,197,94,0.10); border-color: rgba(34,197,94,0.20); color: #15803d; }
+    .cert-alert-error   { background: rgba(239,68,68,0.10);  border-color: rgba(239,68,68,0.20);  color: #dc2626; }
 
-    <div class="col-md-2 form-check mt-2">
-        <input class="form-check-input"
-               type="checkbox"
-               name="onlyMissingFile"
-               value="true"
-               @(onlyMissingFile ? "checked" : null) />
-        <label class="form-check-label">@Localizer["OnlyMissingFile"]</label>
-    </div>
+    /* Hero */
+    .cert-hero-card {
+        background: radial-gradient(circle at top right, rgba(0,174,239,0.14), transparent 40%),
+                    linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e2eaf4; border-radius: 28px;
+        padding: 1.4rem 1.75rem;
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 1rem; flex-wrap: wrap;
+        box-shadow: 0 16px 40px rgba(15,23,42,0.06);
+    }
+    .cert-hero-left { display: flex; align-items: center; gap: 1.1rem; }
+    .cert-hero-icon {
+        width: 58px; height: 58px; min-width: 58px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: #fff; display: flex; align-items: center; justify-content: center;
+        font-size: 1.45rem; box-shadow: 0 12px 28px rgba(245,158,11,0.28);
+    }
+    .cert-hero-title { font-size: 1.75rem; font-weight: 900; color: #0f172a; margin: 0; line-height: 1.2; }
+    .cert-hero-sub   { font-size: 0.86rem; color: #64748b; font-weight: 650; margin: 0.15rem 0 0; }
 
-    <div class="col-md-2 form-check mt-2">
-        <input class="form-check-input"
-               type="checkbox"
-               name="onlyEmailNotSent"
-               value="true"
-               @(onlyEmailNotSent ? "checked" : null) />
-        <label class="form-check-label">@Localizer["OnlyEmailNotSent"]</label>
-    </div>
+    .cert-bulk-btn {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        height: 40px; border-radius: 999px; padding: 0 1.25rem;
+        background: linear-gradient(135deg, #16a34a, #22c55e);
+        color: #fff; font-size: 0.84rem; font-weight: 800; border: none;
+        box-shadow: 0 8px 20px rgba(34,197,94,0.22); white-space: nowrap;
+        transition: all 0.18s;
+    }
+    .cert-bulk-btn:hover { transform: translateY(-1px); color: #fff; }
 
-    <div class="col-md-3">
-        <button class="btn btn-primary">@Localizer["FilterButton"]</button>
-    </div>
-</form>
+    /* Stat row */
+    .cert-stat-row {
+        display: flex; gap: 0.85rem; flex-wrap: wrap;
+    }
+    .cert-stat-card {
+        flex: 1; min-width: 110px;
+        background: #fff; border: 1.5px solid #e8eef6;
+        border-radius: 20px; padding: 0.9rem 1rem;
+        display: flex; align-items: center; gap: 0.75rem;
+        box-shadow: 0 4px 14px rgba(15,23,42,0.04);
+        text-decoration: none; transition: all 0.18s;
+    }
+    .cert-stat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15,23,42,0.09); }
+    .csc-active { border-color: #0d6efd; box-shadow: 0 0 0 3px rgba(13,110,253,0.12); }
 
-<table class="table table-striped align-middle">
-    <thead>
-        <tr>
-            <th>@Localizer["TableHeaderType"]</th>
-            <th>@Localizer["TableHeaderUser"]</th>
-            <th>@Localizer["TableHeaderConference"]</th>
-            <th>@Localizer["TableHeaderFile"]</th>
-            <th>@Localizer["TableHeaderEmail"]</th>
-            <th style="width:280px;"></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var c in Model)
-        {
-            <tr>
-                <td>
-                    @(c.Type == CertificateType.Author
-                                    ? Localizer["TypeAuthor"]
-                                    : Localizer["TypeReviewer"])
-                                                            </td>
+    .csc-icon {
+        width: 40px; height: 40px; min-width: 40px;
+        border-radius: 12px; display: flex; align-items: center; justify-content: center;
+        font-size: 1rem;
+    }
+    .csc-blue   { background: rgba(13,110,253,0.12); color: #0d6efd; }
+    .csc-purple { background: rgba(168,85,247,0.12); color: #7c3aed; }
+    .csc-cyan   { background: rgba(6,182,212,0.12);  color: #0891b2; }
+    .csc-orange { background: rgba(249,115,22,0.12); color: #ea580c; }
+    .csc-yellow { background: rgba(245,158,11,0.12); color: #b45309; }
 
-                <td>@(c.User?.Email ?? c.UserId)</td>
-                <td>@(c.Conference?.Title ?? c.ConferenceId.ToString())</td>
+    .csc-body .csc-value { font-size: 1.25rem; font-weight: 900; color: #0f172a; line-height: 1.1; }
+    .csc-body .csc-label { font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
 
-                <td>
-                    @(string.IsNullOrWhiteSpace(c.FilePath)
-                                    ? Localizer["FileMissing"]
-                                    : Localizer["FileExists"])
-                                                          </td>
+    /* Filter */
+    .cert-filter-card {
+        background: #fff; border: 1px solid #e8eef6;
+        border-radius: 20px; padding: 1.1rem 1.4rem;
+        box-shadow: 0 4px 14px rgba(15,23,42,0.04);
+    }
+    .cert-filter-form { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; }
+    .cert-filter-group { display: flex; flex-direction: column; gap: 0.3rem; }
+    .cert-filter-label { font-size: 0.74rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; }
+    .cert-filter-input {
+        height: 38px; border: 1.5px solid #e2e8f0; border-radius: 12px;
+        padding: 0 0.75rem; font-size: 0.83rem; font-weight: 650;
+        color: #334155; background: #f8fafc; outline: none;
+        transition: border-color 0.18s;
+    }
+    .cert-filter-input:focus { border-color: #0d6efd; background: #fff; }
+    .cert-search-wrap { position: relative; display: flex; align-items: center; }
+    .cert-search-icon { position: absolute; left: 0.75rem; color: #94a3b8; font-size: 0.78rem; pointer-events: none; }
+    .cert-search-input { padding-left: 2rem; min-width: 220px; }
+    .cert-filter-select { min-width: 130px; }
+    .cert-filter-check-group { flex-direction: column; gap: 0.4rem; justify-content: flex-end; padding-bottom: 0.15rem; }
+    .cert-check-label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; font-weight: 700; color: #334155; cursor: pointer; }
+    .cert-checkbox { width: 15px; height: 15px; accent-color: #0d6efd; cursor: pointer; }
+    .cert-filter-actions { display: flex; gap: 0.5rem; align-items: flex-end; }
+    .cert-filter-btn {
+        height: 38px; border-radius: 999px; padding: 0 1.1rem;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #fff; font-size: 0.82rem; font-weight: 800; border: none;
+        display: inline-flex; align-items: center; gap: 0.4rem;
+    }
+    .cert-reset-btn {
+        height: 38px; border-radius: 999px; padding: 0 1rem;
+        background: #f1f5f9; color: #475569; border: 1.5px solid #e2e8f0;
+        font-size: 0.82rem; font-weight: 800; text-decoration: none;
+        display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.18s;
+    }
+    .cert-reset-btn:hover { border-color: #94a3b8; color: #334155; }
 
-                <td>
-                    @(c.EmailSentAt == null
-                                    ? Localizer["EmailNotSent"]
-                                    : c.EmailSentAt.Value.ToString("dd.MM.yyyy HH:mm"))
-            </td>
+    /* Table */
+    .cert-table-card {
+        background: #fff; border: 1px solid #e8eef6;
+        border-radius: 24px; overflow: hidden;
+        box-shadow: 0 8px 24px rgba(15,23,42,0.05);
+    }
+    .cert-table-header {
+        padding: 0.9rem 1.4rem; border-bottom: 1px solid #f1f5f9;
+        display: flex; align-items: center;
+    }
+    .cert-table-count { font-size: 0.78rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
 
-                <td class="text-end">
-                    <a class="btn btn-sm btn-outline-secondary"
-                       asp-action="Download"
-                       asp-route-id="@c.Id">
-                        @Localizer["DownloadButton"]
-                    </a>
+    .cert-table { width: 100%; border-collapse: collapse; }
+    .cert-table thead tr { background: #f8fafc; }
+    .cert-table th {
+        padding: 0.7rem 1rem; font-size: 0.72rem; font-weight: 900;
+        color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .cert-table td { padding: 0.75rem 1rem; border-bottom: 1px solid #f8fafc; vertical-align: middle; }
+    .cert-table tbody tr:last-child td { border-bottom: none; }
+    .cert-table tbody tr:hover td { background: #fafcff; }
 
-                    <form asp-action="Regenerate" asp-route-id="@c.Id" method="post" class="d-inline">
-                        @Html.AntiForgeryToken()
-                        <button class="btn btn-sm btn-warning">@Localizer["RegenerateButton"]</button>
-                    </form>
+    .cert-type-badge {
+        display: inline-flex; align-items: center; gap: 0.35rem;
+        height: 26px; border-radius: 999px; padding: 0 0.65rem;
+        font-size: 0.74rem; font-weight: 800;
+    }
+    .cert-badge-author   { background: rgba(168,85,247,0.12); color: #7c3aed; }
+    .cert-badge-reviewer { background: rgba(6,182,212,0.12);  color: #0891b2; }
 
-                    <form asp-action="ResendEmail" asp-route-id="@c.Id" method="post" class="d-inline">
-                        @Html.AntiForgeryToken()
-                        <button class="btn btn-sm btn-success">@Localizer["ResendEmailButton"]</button>
-                    </form>
-                </td>
-            </tr>
-                }
-    </tbody>
-</table>
+    .cert-user-email { font-size: 0.82rem; font-weight: 650; color: #334155; }
+    .cert-conf-name  { font-size: 0.82rem; font-weight: 700; color: #0f172a; }
+
+    .cert-status-chip {
+        display: inline-flex; align-items: center; gap: 0.3rem;
+        height: 24px; border-radius: 999px; padding: 0 0.55rem;
+        font-size: 0.72rem; font-weight: 800;
+    }
+    .csc-chip-ok      { background: rgba(34,197,94,0.12);  color: #15803d; }
+    .csc-chip-missing { background: rgba(239,68,68,0.10);  color: #dc2626; }
+    .csc-chip-pending { background: rgba(245,158,11,0.12); color: #b45309; }
+
+    .cert-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
+    .cert-action-btn {
+        width: 34px; height: 34px; border-radius: 10px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 0.8rem; cursor: pointer; transition: all 0.18s;
+        border: 1.5px solid #e2e8f0; background: #f8fafc; color: #475569;
+    }
+    .cert-action-btn:hover       { border-color: #94a3b8; color: #334155; }
+    .cert-action-dl:hover        { border-color: #0d6efd; color: #0d6efd; background: rgba(13,110,253,0.06); }
+    .cert-action-regen:hover     { border-color: #f59e0b; color: #b45309; background: rgba(245,158,11,0.06); }
+    .cert-action-email:hover     { border-color: #16a34a; color: #15803d; background: rgba(34,197,94,0.06); }
+
+    /* Empty */
+    .cert-empty {
+        text-align: center; padding: 4rem 1.5rem;
+        background: #fff; border: 1px solid #e8eef6; border-radius: 24px;
+    }
+    .cert-empty-icon {
+        width: 76px; height: 76px; border-radius: 24px;
+        background: rgba(245,158,11,0.10); color: #d97706;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.9rem; margin: 0 auto 1rem;
+    }
+    .cert-empty h4 { font-size: 1.2rem; font-weight: 900; color: #0f172a; margin-bottom: 0.4rem; }
+    .cert-empty p  { color: #64748b; font-weight: 650; margin: 0; font-size: 0.88rem; }
+
+    @@media (max-width: 768px) {
+        .cert-hero-card { flex-direction: column; align-items: flex-start; }
+        .cert-bulk-btn  { width: 100%; justify-content: center; }
+        .cert-stat-row  { gap: 0.5rem; }
+        .cert-stat-card { min-width: calc(50% - 0.25rem); }
+        .cert-filter-form { flex-direction: column; }
+    }
+</style>

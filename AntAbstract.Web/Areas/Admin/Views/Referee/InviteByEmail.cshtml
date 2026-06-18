@@ -1,0 +1,83 @@
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "E-posta ile Hakem Davet Et";
+    var conference = ViewBag.Conference as AntAbstract.Domain.Entities.Conference;
+    var slug = (string?)ViewBag.Slug ?? "";
+    var conferenceId = (Guid?)ViewBag.ConferenceId;
+    var returnUrl = conferenceId.HasValue
+        ? $"/{slug}/Admin/Referee?conferenceId={conferenceId}"
+        : $"/{slug}/Admin/Referee";
+}
+
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="fas fa-envelope-open-text text-primary me-2"></i>E-posta ile Hakem Davet Et</h4>
+            @if (conference != null)
+            {
+                <small class="text-muted">@conference.Title</small>
+            }
+        </div>
+        <a href="@returnUrl" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i>Geri Dön
+        </a>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <h6 class="mb-0"><i class="fas fa-paper-plane me-2"></i>Davet Bilgileri</h6>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="conferenceId" value="@conferenceId" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">E-posta Adresi <span class="text-danger">*</span></label>
+                            <input type="email" name="email" class="form-control" placeholder="hakem@example.com" required autofocus />
+                            <div class="form-text">Daveti bu adrese göndereceğiz.</div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Ad</label>
+                                <input type="text" name="firstName" class="form-control" placeholder="Ad" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Soyad</label>
+                                <input type="text" name="lastName" class="form-control" placeholder="Soyad" />
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Kurum</label>
+                            <input type="text" name="institution" class="form-control" placeholder="Üniversite / Kurum adı" />
+                        </div>
+
+                        <div class="alert alert-info py-2 mb-4">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Davet bağlantısı <strong>7 gün</strong> boyunca geçerlidir.
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-2"></i>Daveti Gönder
+                            </button>
+                            <a href="@returnUrl" class="btn btn-outline-secondary">İptal</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

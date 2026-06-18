@@ -28,7 +28,7 @@
                                     <input asp-for="@login.ProviderKey" name="ProviderKey" type="hidden" />
                                     <button type="submit"
                                             class="btn btn-primary"
-                                            title="@Localizer["RemoveLoginTitle", login.ProviderDisplayName]">
+                                            title="@Localizer["RemoveLoginTitle", login.ProviderDisplayName ?? login.LoginProvider]">
                                         @Localizer["RemoveButton"]
                                     </button>
                                 </div>
@@ -60,7 +60,7 @@
                             class="btn btn-primary"
                             name="provider"
                             value="@provider.Name"
-                            title="@Localizer["LoginUsingProviderTitle", provider.DisplayName]">
+                            title="@Localizer["LoginUsingProviderTitle", provider.DisplayName ?? provider.Name]">
                         @provider.DisplayName
                     </button>
                 }

@@ -49,7 +49,7 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             var query = _context.Certificates
                 .AsNoTracking()
                 .Include(x => x.Conference)
-                    .ThenInclude(x => x.Tenant)
+                    .ThenInclude(x => x!.Tenant)
                 .Where(x => x.UserId == userId);
 
             if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
@@ -213,7 +213,7 @@ namespace AntAbstract.Infrastructure.Services.Certficates
 
             var certificate = await _context.Certificates
                 .Include(x => x.Conference)
-                    .ThenInclude(x => x.Tenant)
+                    .ThenInclude(x => x!.Tenant)
                 .FirstOrDefaultAsync(x => x.Id == certificateId);
 
             if (certificate == null)
@@ -234,7 +234,7 @@ namespace AntAbstract.Infrastructure.Services.Certficates
 
                 certificate = await _context.Certificates
                     .Include(x => x.Conference)
-                        .ThenInclude(x => x.Tenant)
+                        .ThenInclude(x => x!.Tenant)
                     .FirstOrDefaultAsync(x => x.Id == certificateId);
 
                 if (certificate == null ||

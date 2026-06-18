@@ -420,6 +420,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 IsSubmissionOpen = conference.IsSubmissionOpen,
                 IsRegistrationOpen = conference.IsRegistrationOpen,
                 IsBiddingOpen = conference.IsBiddingOpen,
+                IsFullTextOpen = conference.IsFullTextOpen,
                 ConferenceStartDate = conference.StartDate,
                 ConferenceEndDate = conference.EndDate,
                 AbstractSubmissionDeadline = conference.AbstractSubmissionDeadline
@@ -969,6 +970,29 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             TempData["SuccessMessage"] = conference.IsBiddingOpen
                 ? "Teklif fazı açıldı. Hakemler bildiri tercihlerini belirtebilir."
                 : "Teklif fazı kapatıldı.";
+
+            return Redirect($"/{slug}/Admin/ConferenceFlow");
+        }
+
+        [HttpPost("/Admin/ConferenceFlow/ToggleFullText")]
+        [HttpPost("/{slug}/Admin/ConferenceFlow/ToggleFullText")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleFullText(string slug, Guid conferenceId)
+        {
+            var conference = await _context.Conferences.FirstOrDefaultAsync(c => c.Id == conferenceId);
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                return Redirect($"/{slug}/Admin/ConferenceFlow");
+            }
+
+            conference.IsFullTextOpen = !conference.IsFullTextOpen;
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = conference.IsFullTextOpen
+                ? "Tam metin yükleme açıldı. Yazarlar tam metin yükleyebilir."
+                : "Tam metin yükleme kapatıldı.";
 
             return Redirect($"/{slug}/Admin/ConferenceFlow");
         }

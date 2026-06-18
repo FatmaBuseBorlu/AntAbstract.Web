@@ -57,6 +57,11 @@
         $"/Submission/Rebuttal/{Model.Id}"
     );
 
+    var uploadFullTextUrl = BuildConferenceUrl(
+        $"/my-submissions/{Model.Id}/full-text",
+        $"/Submission/UploadFullText/{Model.Id}"
+    );
+
     var rejectionLetterUrl = BuildConferenceUrl(
         $"/my-submissions/{Model.Id}/rejection-letter",
         $"/Submission/DownloadRejectionLetter/{Model.Id}"
@@ -1055,6 +1060,21 @@
                             <i class="fas fa-certificate"></i>
                             @L("CertificateButton", "Sertifikalarım", "My Certificates")
                         </a>
+
+                        @if (ViewBag.IsFullTextOpen == true)
+                        {
+                            <a href="@uploadFullTextUrl" class="btn btn-success quick-action-btn">
+                                <i class="fas fa-file-word"></i>
+                                Tam Metin Yükle
+                            </a>
+                        }
+                        else
+                        {
+                            <button class="btn btn-outline-secondary quick-action-btn" disabled title="Tam metin yükleme henüz açılmadı">
+                                <i class="fas fa-file-word"></i>
+                                Tam Metin (Kapalı)
+                            </button>
+                        }
                     }
                     else
                     {

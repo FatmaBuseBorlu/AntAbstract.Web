@@ -11,7 +11,7 @@ namespace AntAbstract.Domain.Entities
 {
     public class TransferOption : BaseEntity
     {
-        public string Name { get; set; } 
+        public string Name { get; set; } = string.Empty;
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
@@ -19,6 +19,6 @@ namespace AntAbstract.Domain.Entities
         public string Currency { get; set; } = "TL";
 
         public Guid ConferenceId { get; set; }
-        public Conference Conference { get; set; }
+        public Conference Conference { get; set; } = null!;
     }
 }

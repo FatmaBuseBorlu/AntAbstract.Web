@@ -45,5 +45,11 @@ namespace AntAbstract.Application.DTOs.Review
         public string? CertificateSecondSignerName { get; set; }
 
         public string? CertificateSecondSignerTitle { get; set; }
+
+        public string? ConferenceSlug { get; set; }
+
+        public string? Topic { get; set; }
+
+        public DateTime? ReviewDeadline { get; set; }
     }
 }

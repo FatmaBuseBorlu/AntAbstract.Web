@@ -28,6 +28,14 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.ConferenceFlow
         public List<RegistrationTypeFilterItem> RegistrationTypes { get; set; } = new List<RegistrationTypeFilterItem>();
 
         public List<RegistrationPaymentRowItem> Items { get; set; } = new List<RegistrationPaymentRowItem>();
+
+        // Pagination
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 30;
+        public int FilteredCount { get; set; }
+        public int TotalPages => (int)Math.Ceiling((double)FilteredCount / PageSize);
+        public bool HasPrev => Page > 1;
+        public bool HasNext => Page < TotalPages;
     }
 
     public class RegistrationTypeFilterItem

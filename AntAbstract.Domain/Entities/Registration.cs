@@ -10,22 +10,22 @@ namespace AntAbstract.Domain.Entities
         public Guid Id { get; set; } = Guid.NewGuid();
 
         [Required]
-        public string AppUserId { get; set; }
+        public string AppUserId { get; set; } = string.Empty;
 
         [ForeignKey("AppUserId")]
-        public virtual AppUser AppUser { get; set; }
+        public virtual AppUser AppUser { get; set; } = null!;
 
         [Required]
         public Guid ConferenceId { get; set; }
 
         [ForeignKey("ConferenceId")]
-        public virtual Conference Conference { get; set; }
+        public virtual Conference Conference { get; set; } = null!;
 
         [Required]
         public Guid RegistrationTypeId { get; set; }
 
         [ForeignKey("RegistrationTypeId")]
-        public virtual RegistrationType RegistrationType { get; set; }
+        public virtual RegistrationType RegistrationType { get; set; } = null!;
 
         [Required]
         [Display(Name = "Kayıt Tarihi")]

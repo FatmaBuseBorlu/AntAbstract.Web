@@ -8,20 +8,20 @@ namespace AntAbstract.Domain.Entities
     public class Hotel : BaseEntity
     {
         [Required]
-        public string Name { get; set; } 
+        public string Name { get; set; } = string.Empty;
 
         public string? Description { get; set; }
 
         public string? Address { get; set; }
 
-        public string? PhotoPath { get; set; } 
+        public string? PhotoPath { get; set; }
 
 
         public Guid ConferenceId { get; set; }
         [ForeignKey("ConferenceId")]
-        public Conference Conference { get; set; }
+        public Conference Conference { get; set; } = null!;
 
 
-        public ICollection<RoomType> RoomTypes { get; set; }
+        public ICollection<RoomType> RoomTypes { get; set; } = new List<RoomType>();
     }
 }

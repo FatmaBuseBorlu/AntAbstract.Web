@@ -18,6 +18,30 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Assignment
 
         public int DecidedSubmissionCount { get; set; }
 
+        public int AcceptedCount { get; set; }
+
+        public int RejectedCount { get; set; }
+
+        public int RegistrationCount { get; set; }
+
+        public int PaidRegistrationCount { get; set; }
+
+        public int ReviewerCount { get; set; }
+
+        public bool IsSubmissionOpen { get; set; }
+
+        public bool IsRegistrationOpen { get; set; }
+
+        public bool IsBiddingOpen { get; set; }
+
+        public bool IsFullTextOpen { get; set; }
+
+        public DateTime ConferenceStartDate { get; set; }
+
+        public DateTime ConferenceEndDate { get; set; }
+
+        public DateTime? AbstractSubmissionDeadline { get; set; }
+
         public int WaitingAssignmentCount
         {
             get

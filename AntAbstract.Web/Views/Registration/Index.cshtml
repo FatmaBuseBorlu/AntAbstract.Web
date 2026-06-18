@@ -315,6 +315,48 @@
         font-weight: 600;
     }
 
+    .ticket-price {
+        font-size: 1.75rem;
+        font-weight: 950;
+        color: #0f172a;
+        letter-spacing: -0.03em;
+        margin-bottom: 4px;
+    }
+
+    .ticket-price .currency {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #64748b;
+        margin-right: 4px;
+    }
+
+    .ticket-price-free {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #16a34a;
+    }
+
+    .early-bird-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 3px 10px;
+        border-radius: 999px;
+        margin-bottom: 12px;
+    }
+
+    .price-row {
+        margin-bottom: 16px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
     .payment-later-box {
         background: #f0f9ff;
         border: 1px solid #bae6fd;
@@ -572,6 +614,67 @@
         }
         else
         {
+            @* Fiyat özet tablosu — birden fazla kayıt türü varsa göster *@
+            @if (Model.Count > 1)
+            {
+                <div class="card border-0 shadow-sm mb-4" style="border-radius:16px;overflow:hidden;">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead style="background:#f8fafc;">
+                                <tr>
+                                    <th class="ps-4 py-3">@T("Kayıt Türü", "Registration Type")</th>
+                                    <th class="py-3">@T("Fiyat", "Price")</th>
+                                    <th class="py-3">@T("Son Tarih", "Deadline")</th>
+                                    <th class="py-3">@T("Durum", "Status")</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var t in Model)
+                                {
+                                    var rowName = isEnglish && !string.IsNullOrWhiteSpace(t.NameEn) ? t.NameEn : t.Name;
+                                    var expired = t.Deadline.HasValue && t.Deadline.Value.Date < DateTime.UtcNow.Date;
+                                    var earlyRow = !expired && t.Deadline.HasValue;
+                                    <tr class="@(expired ? "opacity-50" : "")">
+                                        <td class="ps-4 fw-semibold">
+                                            @rowName
+                                            @if (earlyRow)
+                                            {
+                                                <span class="badge ms-2" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:.7rem;">
+                                                    @T("Erken Kayıt", "Early Bird")
+                                                </span>
+                                            }
+                                        </td>
+                                        <td class="fw-bold">
+                                            @if (t.Price <= 0)
+                                            {
+                                                <span class="text-success">@T("Ücretsiz", "Free")</span>
+                                            }
+                                            else
+                                            {
+                                                @($"{t.Currency} {t.Price:N0}")
+                                            }
+                                        </td>
+                                        <td class="text-muted">
+                                            @(t.Deadline.HasValue ? t.Deadline.Value.ToString("dd.MM.yyyy") : "—")
+                                        </td>
+                                        <td>
+                                            @if (expired)
+                                            {
+                                                <span class="badge bg-danger">@T("Sona Erdi", "Expired")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">@T("Açık", "Open")</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+
             <div class="row g-4">
                 @foreach (var ticket in Model)
                 {
@@ -627,11 +730,31 @@
                     var isDeadlineExpired = ticket.Deadline.HasValue &&
                                             ticket.Deadline.Value.Date < DateTime.UtcNow.Date;
 
+                    var isEarlyBird = !isDeadlineExpired && ticket.Deadline.HasValue;
+                    var daysUntilDeadline = ticket.Deadline.HasValue
+                        ? (int)(ticket.Deadline.Value.Date - DateTime.UtcNow.Date).TotalDays
+                        : int.MaxValue;
+                    var urgentDeadline = isEarlyBird && daysUntilDeadline <= 7;
                     <div class="col-md-6 col-lg-4">
-                        <div class="ticket-card">
+                        <div class="ticket-card @(isDeadlineExpired ? "opacity-60" : "")">
                             <div class="ticket-icon">
                                 <i class="fas fa-file-signature"></i>
                             </div>
+
+                            @if (isEarlyBird)
+                            {
+                                <div class="early-bird-badge">
+                                    <i class="fas fa-bolt"></i>
+                                    @if (urgentDeadline)
+                                    {
+                                        @($"Son {daysUntilDeadline} gün!")
+                                    }
+                                    else
+                                    {
+                                        @T("Erken Kayıt", "Early Bird")
+                                    }
+                                </div>
+                            }
 
                             <h4 class="ticket-name">
                                 @ticketName
@@ -640,6 +763,25 @@
                             <p class="ticket-description">
                                 @ticketDescription
                             </p>
+
+                            <div class="price-row">
+                                @if (ticket.Price <= 0)
+                                {
+                                    <div class="ticket-price-free">
+                                        <i class="fas fa-check-circle me-1"></i>@T("Ücretsiz", "Free")
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="ticket-price">
+                                        <span class="currency">@ticket.Currency</span>@ticket.Price.ToString("N0")
+                                    </div>
+                                    @if (isEarlyBird)
+                                    {
+                                        <small class="text-muted">@T("Erken kayıt fiyatı", "Early bird price")</small>
+                                    }
+                                }
+                            </div>
 
                             <div class="payment-later-box">
                                 <div class="payment-later-label">

@@ -7,5 +7,6 @@ public enum UploadFileProfile
     PaymentReceipt,
     ProceedingBookPdf,
     RegistrationProfileImage,
-    ProfileImage
+    ProfileImage,
+    ConferenceImage
 }

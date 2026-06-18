@@ -15,14 +15,14 @@ namespace AntAbstract.Domain.Entities
         public Guid SubmissionId { get; set; }
 
         [ForeignKey(nameof(SubmissionId))]
-        public Submission Submission { get; set; }
+        public Submission Submission { get; set; } = null!;
 
-        public string ReviewerId { get; set; }
+        public string ReviewerId { get; set; } = string.Empty;
 
         [ForeignKey(nameof(ReviewerId))]
-        public AppUser Reviewer { get; set; }
+        public AppUser Reviewer { get; set; } = null!;
 
-        public Review Review { get; set; }
+        public Review? Review { get; set; }
 
         // ── Ret bilgisi ──────────────────────────────────────────────────────────
         /// <summary>Hakem görevi reddettiyse true; kayıt silinmez, saklanır.</summary>

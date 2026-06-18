@@ -1,0 +1,36 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "PayTR Güvenli Ödeme";
+    var token = (string?)ViewBag.PayTRToken ?? "";
+    var paymentId = (Guid?)ViewBag.PaymentId;
+}
+
+<section class="py-5">
+    <div class="container" style="max-width:680px;">
+        <div class="text-center mb-4">
+            <h4 class="fw-bold"><i class="fas fa-credit-card text-primary me-2"></i>Güvenli Ödeme</h4>
+            <p class="text-muted">PayTR güvenli ödeme altyapısı üzerinden ödemenizi tamamlayın.</p>
+        </div>
+
+        <div class="card border-0 shadow-sm p-0" style="border-radius:16px;overflow:hidden;">
+            <iframe src="https://www.paytr.com/odeme/guvenli/@token"
+                    id="paytriframe"
+                    frameborder="0"
+                    scrolling="no"
+                    style="width:100%;min-height:420px;display:block;">
+            </iframe>
+        </div>
+
+        <div class="text-center mt-3">
+            <small class="text-muted">
+                <i class="fas fa-shield-alt text-success me-1"></i>
+                Kart bilgileriniz PayTR'nin PCI-DSS sertifikalı altyapısında işlenir. AntAbstract sunucularında saklanmaz.
+            </small>
+        </div>
+    </div>
+</section>
+
+<script src="https://www.paytr.com/js/iframeResizer.min.js"></script>
+<script>
+    iFrameResize({}, '#paytriframe');
+</script>

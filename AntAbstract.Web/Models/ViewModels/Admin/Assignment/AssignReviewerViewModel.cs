@@ -5,8 +5,8 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Assignment
 {
     public class AssignReviewerViewModel
     {
-        public Submission Submission { get; set; }
-        public List<AppUser> RecommendedReviewers { get; set; }
-        public List<AppUser> AllOtherReviewers { get; set; }
+        public Submission Submission { get; set; } = null!;
+        public List<AppUser> RecommendedReviewers { get; set; } = new();
+        public List<AppUser> AllOtherReviewers { get; set; } = new();
     }
 }

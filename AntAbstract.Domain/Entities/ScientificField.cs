@@ -13,6 +13,6 @@ namespace AntAbstract.Domain.Entities
 
         [Required]
         [StringLength(100)]
-        public string Name { get; set; } 
+        public string Name { get; set; } = string.Empty;
     }
 }

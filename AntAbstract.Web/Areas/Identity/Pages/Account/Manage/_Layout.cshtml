@@ -3,7 +3,7 @@
 @{
     if (ViewData.TryGetValue("ParentLayout", out var parentLayout))
     {
-        Layout = (string)parentLayout;
+        Layout = parentLayout as string;
     }
     else
     {

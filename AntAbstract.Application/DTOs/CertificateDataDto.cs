@@ -8,17 +8,17 @@ namespace AntAbstract.Application.DTOs
 {
     public class CertificateDataDto
     {
-        public string SubmissionUniqueId { get; set; }
-        public string SubmissionTitle { get; set; }
-        public List<string> Authors { get; set; }
-        public string CongressName { get; set; }
-        public string CongressIdentifier { get; set; }
+        public string SubmissionUniqueId { get; set; } = string.Empty;
+        public string SubmissionTitle { get; set; } = string.Empty;
+        public List<string> Authors { get; set; } = new();
+        public string CongressName { get; set; } = string.Empty;
+        public string CongressIdentifier { get; set; } = string.Empty;
         public DateTime AcceptanceDate { get; set; }
-        public string CongressLocation { get; set; }
-        public string SignatoryName { get; set; }
-        public string SignatoryTitle { get; set; }
-        public string CongressLogoPath { get; set; }
-        public string LaurelWreathImagePath { get; set; }
-        public string SignatureImagePath { get; set; }
+        public string CongressLocation { get; set; } = string.Empty;
+        public string SignatoryName { get; set; } = string.Empty;
+        public string SignatoryTitle { get; set; } = string.Empty;
+        public string CongressLogoPath { get; set; } = string.Empty;
+        public string LaurelWreathImagePath { get; set; } = string.Empty;
+        public string SignatureImagePath { get; set; } = string.Empty;
     }
 }

@@ -5,9 +5,9 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Reports
     public class ReportsIndexViewModel
     {
         public Guid ConferenceId { get; set; }
-        public string ConferenceTitle { get; set; }
-        public string ConferenceName { get; set; } 
-        public string Slug { get; set; }
+        public string ConferenceTitle { get; set; } = string.Empty;
+        public string ConferenceName { get; set; } = string.Empty;
+        public string Slug { get; set; } = string.Empty;
 
         public int TotalSubmissions { get; set; }
         public int AssignedSubmissions { get; set; }

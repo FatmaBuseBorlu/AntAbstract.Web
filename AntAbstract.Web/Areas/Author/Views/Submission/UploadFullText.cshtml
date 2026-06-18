@@ -1,0 +1,466 @@
+@using AntAbstract.Application.DTOs.Submission
+@using AntAbstract.Domain.Entities
+@using Microsoft.AspNetCore.Http
+@using System
+@using System.Globalization
+@using System.Linq
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@model SubmissionDto
+
+@{
+    ViewData["Title"] = "Tam Metin Yükle";
+    Layout = "_LayoutDashboard";
+
+    var slug = ViewContext.RouteData.Values["slug"]?.ToString()
+        ?? Context.Session.GetString("SelectedConferenceSlug")
+        ?? "";
+
+    var conference = ViewBag.Conference as Conference;
+
+    string BuildUrl(string cleanPath, string fallbackPath)
+        => string.IsNullOrWhiteSpace(slug) ? fallbackPath : $"/{slug}{cleanPath}";
+
+    var detailsUrl = BuildUrl($"/my-submissions/{Model.Id}", $"/Submission/Details/{Model.Id}");
+    var listUrl    = BuildUrl("/my-submissions", "/Submission/Index");
+    var postUrl    = BuildUrl($"/my-submissions/{Model.Id}/full-text", $"/Submission/UploadFullText/{Model.Id}");
+
+    var lastFullText = Model.Files?
+        .Where(f => f.Type == "FullText")
+        .OrderByDescending(f => f.UploadedAt)
+        .FirstOrDefault();
+
+    var hasTemplate = conference != null && !string.IsNullOrWhiteSpace(conference.FullTextTemplatePath);
+    var deadline    = conference?.FullTextSubmissionDeadline;
+}
+
+<style>
+    .fulltext-page {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 1.25rem 1.5rem 4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .fulltext-hero-card {
+        background: radial-gradient(circle at top right, rgba(16,185,129,.16), transparent 34%), linear-gradient(135deg, #ffffff, #f0fdf9);
+        border: 1px solid #bbf7d0;
+        border-radius: 26px;
+        padding: 1.35rem 1.45rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        box-shadow: 0 16px 38px rgba(15,23,42,.055);
+        margin-bottom: 1.5rem;
+    }
+
+    .fulltext-hero-left {
+        display: flex;
+        align-items: center;
+        gap: .95rem;
+        min-width: 300px;
+        flex: 1;
+    }
+
+    .fulltext-hero-icon {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.55rem;
+        box-shadow: 0 16px 32px rgba(16,185,129,.24);
+    }
+
+    .fulltext-kicker {
+        color: #64748b;
+        font-size: .76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        margin-bottom: .35rem;
+    }
+
+    .fulltext-title {
+        margin: 0 0 .3rem;
+        color: #0f172a;
+        font-size: 1.75rem;
+        font-weight: 950;
+        letter-spacing: -.045em;
+        line-height: 1.15;
+    }
+
+    .fulltext-description {
+        margin: 0;
+        color: #64748b;
+        font-size: .94rem;
+        font-weight: 650;
+        line-height: 1.55;
+        max-width: 760px;
+    }
+
+    .fulltext-hero-actions {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        flex-wrap: wrap;
+    }
+
+    .fulltext-hero-btn {
+        min-height: 42px;
+        border-radius: 999px;
+        padding: 0 1rem;
+        font-size: .84rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .45rem;
+        text-decoration: none;
+        transition: all .2s ease;
+    }
+
+    .fulltext-hero-btn-light {
+        background: #fff;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+    }
+
+    .fulltext-hero-btn-light:hover {
+        color: #10b981;
+        border-color: rgba(16,185,129,.3);
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .fulltext-hero-btn-primary {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #fff;
+        border: none;
+        box-shadow: 0 10px 22px rgba(16,185,129,.22);
+    }
+
+    .fulltext-hero-btn-primary:hover {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(16,185,129,.3);
+        text-decoration: none;
+    }
+
+    .fulltext-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(15,23,42,.055);
+        overflow: hidden;
+        height: 100%;
+    }
+
+    .fulltext-card-header {
+        padding: 1.25rem 1.45rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #fff, #f0fdf9);
+    }
+
+    .fulltext-card-title {
+        color: #0f172a;
+        font-weight: 950;
+        margin-bottom: .25rem;
+    }
+
+    .fulltext-card-subtitle {
+        color: #64748b;
+        font-size: .84rem;
+        font-weight: 650;
+        margin-bottom: 0;
+    }
+
+    .fulltext-card-body { padding: 1.5rem; }
+
+    .info-box {
+        display: flex;
+        align-items: flex-start;
+        gap: .8rem;
+        background: rgba(16,185,129,.08);
+        border: 1px solid rgba(16,185,129,.2);
+        border-radius: 18px;
+        padding: 1rem;
+        color: #065f46;
+        font-size: .88rem;
+        font-weight: 750;
+        line-height: 1.6;
+    }
+
+    .info-box i { margin-top: .2rem; color: #10b981; }
+
+    .deadline-box {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        background: rgba(245,158,11,.08);
+        border: 1px solid rgba(245,158,11,.2);
+        border-radius: 14px;
+        padding: .75rem 1rem;
+        margin-top: 1rem;
+        font-size: .84rem;
+        font-weight: 800;
+        color: #92400e;
+    }
+
+    .file-info-box {
+        border-radius: 18px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: .85rem;
+        margin-top: 1rem;
+    }
+
+    .file-info-icon {
+        width: 48px; height: 48px; min-width: 48px;
+        border-radius: 16px;
+        background: rgba(16,185,129,.1);
+        color: #10b981;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    .file-info-title { color: #0f172a; font-weight: 900; margin-bottom: .15rem; }
+    .file-info-meta  { color: #64748b; font-size: .78rem; font-weight: 700; }
+
+    .upload-zone {
+        border: 2px dashed #10b981;
+        border-radius: 24px;
+        background: linear-gradient(135deg, #f0fdf9, #fff);
+        transition: all .25s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        padding: 2.2rem;
+        text-align: center;
+    }
+
+    .upload-zone:hover {
+        border-color: #059669;
+        background: linear-gradient(135deg, #dcfce7, #fff);
+        transform: translateY(-2px);
+    }
+
+    .upload-icon {
+        width: 82px; height: 82px;
+        border-radius: 28px;
+        background: #fff;
+        color: #10b981;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 16px 38px rgba(16,185,129,.16);
+        margin-bottom: 1rem;
+    }
+
+    .submit-fulltext-btn {
+        min-height: 54px;
+        border: none;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #fff;
+        font-weight: 950;
+        box-shadow: 0 16px 34px rgba(16,185,129,.24);
+        transition: all .2s ease;
+    }
+
+    .submit-fulltext-btn:hover {
+        color: #fff;
+        transform: translateY(-2px);
+        box-shadow: 0 20px 44px rgba(16,185,129,.32);
+    }
+
+    @@media (max-width: 768px) {
+        .fulltext-page { padding: 1rem 1rem 3rem; }
+        .fulltext-hero-left { flex-direction: column; align-items: flex-start; min-width: 100%; }
+        .fulltext-title { font-size: 1.45rem; }
+        .fulltext-hero-actions { width: 100%; }
+        .fulltext-hero-btn { width: 100%; }
+    }
+</style>
+
+<div class="fulltext-page">
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4">
+            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm rounded-4 mb-4">
+            <i class="fas fa-triangle-exclamation me-2"></i>@TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="fulltext-hero-card">
+        <div class="fulltext-hero-left">
+            <div class="fulltext-hero-icon">
+                <i class="fas fa-file-word"></i>
+            </div>
+            <div>
+                <div class="fulltext-kicker">Bildiri İşlemleri</div>
+                <h2 class="fulltext-title">Tam Metin Yükle</h2>
+                <p class="fulltext-description">
+                    Kabul edilen bildiriniz için tam metin dosyanızı bu ekrandan yükleyebilirsiniz.
+                    Kongre yazım kurallarına uygun formatı kullandığınızdan emin olun.
+                </p>
+            </div>
+        </div>
+        <div class="fulltext-hero-actions">
+            <a href="@detailsUrl" class="fulltext-hero-btn fulltext-hero-btn-light">
+                <i class="fas fa-arrow-left"></i> Detaya Dön
+            </a>
+            <a href="@listUrl" class="fulltext-hero-btn fulltext-hero-btn-primary">
+                <i class="fas fa-list"></i> Listeye Dön
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="fulltext-card">
+                <div class="fulltext-card-header">
+                    <h5 class="fulltext-card-title">
+                        <i class="fas fa-circle-info text-success me-2"></i>Tam Metin Bilgisi
+                    </h5>
+                    <p class="fulltext-card-subtitle">Bildiri ve son yükleme bilgileri</p>
+                </div>
+                <div class="fulltext-card-body">
+
+                    <div class="info-box">
+                        <i class="fas fa-check-circle"></i>
+                        <div>
+                            Bildiriniz <strong>kabul edilmiştir</strong>. Tam metin dosyanızı kongre yazım
+                            kurallarına uygun şekilde hazırlayarak yükleyiniz.
+                        </div>
+                    </div>
+
+                    @if (deadline.HasValue)
+                    {
+                        <div class="deadline-box">
+                            <i class="fas fa-clock"></i>
+                            <span>Son yükleme tarihi: <strong>@deadline.Value.ToString("dd.MM.yyyy")</strong></span>
+                        </div>
+                    }
+
+                    @if (hasTemplate)
+                    {
+                        <a href="@conference!.FullTextTemplatePath" target="_blank"
+                           class="btn btn-outline-success rounded-pill w-100 mt-3 fw-bold">
+                            <i class="fas fa-download me-2"></i>Şablon Dosyasını İndir
+                        </a>
+                    }
+
+                    <h6 class="fw-bold small mt-4 mb-2 text-muted text-uppercase">Mevcut Tam Metin</h6>
+
+                    @if (lastFullText != null)
+                    {
+                        <div class="file-info-box">
+                            <div class="file-info-icon"><i class="fas fa-file-alt"></i></div>
+                            <div class="min-w-0">
+                                <div class="file-info-title text-truncate" title="@lastFullText.FileName">
+                                    @lastFullText.FileName
+                                </div>
+                                <div class="file-info-meta">
+                                    v@lastFullText.Version &mdash; @lastFullText.UploadedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-muted small mt-2 mb-0">
+                            <i class="fas fa-info-circle me-1"></i>Yeni dosya yüklerseniz mevcut dosyanın üzerine yazılır.
+                        </p>
+                    }
+                    else
+                    {
+                        <div class="alert alert-light border text-muted small mb-0">
+                            <i class="fas fa-file-circle-question me-2"></i>Henüz tam metin yüklenmemiş.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="fulltext-card">
+                <div class="fulltext-card-header">
+                    <h5 class="fulltext-card-title">
+                        <i class="fas fa-upload text-success me-2"></i>Tam Metin Dosyası Yükle
+                    </h5>
+                    <p class="fulltext-card-subtitle">PDF, DOC veya DOCX formatında, maksimum 50 MB</p>
+                </div>
+                <div class="fulltext-card-body">
+                    <form action="@postUrl" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+
+                        <div class="upload-zone">
+                            <div id="upload-placeholder">
+                                <div class="upload-icon">
+                                    <i class="fas fa-cloud-upload-alt fa-2x"></i>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1">Tam metin dosyanızı seçin</h6>
+                                <p class="text-muted small mb-0">
+                                    PDF, DOC veya DOCX &bull; Maks. 50 MB
+                                </p>
+                            </div>
+                            <div id="file-preview" class="d-none align-items-center justify-content-center flex-column">
+                                <i class="fas fa-file-word fa-3x text-success mb-3"></i>
+                                <h6 class="fw-bold text-dark mb-1" id="fileNameText">dosya.pdf</h6>
+                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">
+                                    Yüklemeye hazır
+                                </span>
+                            </div>
+                            <input type="file"
+                                   name="fullTextFile"
+                                   class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
+                                   accept=".doc,.docx,.pdf"
+                                   required
+                                   onchange="fileSelected(this)"
+                                   style="cursor:pointer;" />
+                        </div>
+
+                        <p class="text-muted small mt-2 mb-0">
+                            <i class="fas fa-circle-info me-1"></i>
+                            Kongre yazım kurallarına uygun şablon kullandığınızdan emin olun.
+                        </p>
+
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn submit-fulltext-btn">
+                                <i class="fas fa-cloud-upload-alt me-2"></i>Tam Metni Yükle
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function fileSelected(input) {
+        if (input.files && input.files[0]) {
+            document.getElementById('fileNameText').innerText = input.files[0].name;
+            document.getElementById('upload-placeholder').classList.add('d-none');
+            document.getElementById('file-preview').classList.remove('d-none');
+            document.getElementById('file-preview').classList.add('d-flex');
+        }
+    }
+</script>
+}

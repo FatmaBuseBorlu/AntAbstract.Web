@@ -664,7 +664,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     TotalAssigned  = g.Count(),
                     TotalCompleted = g.Count(ra => ra.Review != null),
                     AverageScore   = g.Where(ra => ra.Review != null && ra.Review.Score > 0)
-                                      .Select(ra => (double?)ra.Review.Score)
+                                      .Select(ra => (double?)ra.Review!.Score)
                                       .Average()
                 })
                 .ToListAsync();

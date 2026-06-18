@@ -611,6 +611,22 @@
                                 </script>
                             }
 
+                            @if (!string.IsNullOrWhiteSpace(Model?.Conference?.Tenant?.Slug) && Model != null)
+                            {
+                                <a href="/@(Model.Conference.Tenant!.Slug)/Payment/DownloadInvoice/@Model.Id"
+                                   class="btn btn-outline-success w-100 mb-2"
+                                   target="_blank">
+                                    <i class="fas fa-file-invoice me-2"></i>
+                                    Fatura İndir (PDF)
+                                </a>
+                                <a href="/@(Model.Conference.Tenant!.Slug)/Payment/DownloadVisaLetter/@Model.Id"
+                                   class="btn btn-outline-primary w-100 mb-2"
+                                   target="_blank">
+                                    <i class="fas fa-passport me-2"></i>
+                                    Vize Destek Mektubu (PDF)
+                                </a>
+                            }
+
                             <a href="@myConferencesUrl" class="btn btn-outline-secondary w-100 back-button">
                                 <i class="fas fa-arrow-left me-2"></i>
                                 @L("BackToMyConferencesButton", "Kongrelerime Dön", "Back to My Congresses")
@@ -629,7 +645,7 @@
 
                                 @Html.AntiForgeryToken()
 
-                                <input type="hidden" name="registrationId" value="@Model.Id" />
+                                <input type="hidden" name="registrationId" value="@Model?.Id" />
 
                                 <button type="submit" class="btn pay-button w-100">
                                     <i class="fas fa-lock me-2"></i>

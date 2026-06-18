@@ -28,7 +28,10 @@ public sealed class UploadFileValidator : IUploadFileValidator
                 new[] { ".jpg", ".jpeg", ".png", ".webp" }),
             [UploadFileProfile.ProfileImage] = new(
                 2 * 1024 * 1024,
-                new[] { ".jpg", ".jpeg", ".png" })
+                new[] { ".jpg", ".jpeg", ".png" }),
+            [UploadFileProfile.ConferenceImage] = new(
+                5 * 1024 * 1024,
+                new[] { ".jpg", ".jpeg", ".png", ".webp" })
         };
 
     private static readonly IReadOnlyDictionary<string, HashSet<string>> ContentTypes =

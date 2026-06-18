@@ -56,8 +56,6 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             var navy   = "#1a2d5a";
             var gold   = "#b8972a";
             var cream  = "#fdf8ee";
-            var lightGray = "#e8e8e8";
-
             return Document.Create(container =>
             {
                 container.Page(page =>

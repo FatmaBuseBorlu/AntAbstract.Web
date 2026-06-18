@@ -10,24 +10,24 @@ namespace AntAbstract.Domain.Entities
         public Guid Id { get; set; } = Guid.NewGuid();
 
         [Required]
-        public string Subject { get; set; } 
+        public string Subject { get; set; } = string.Empty;
 
         [Required]
-        public string Content { get; set; } 
+        public string Content { get; set; } = string.Empty;
 
         public DateTime SentDate { get; set; } = DateTime.UtcNow;
 
-        public bool IsRead { get; set; } = false; 
+        public bool IsRead { get; set; } = false;
 
         [Required]
-        public string SenderId { get; set; }
+        public string SenderId { get; set; } = string.Empty;
         [ForeignKey("SenderId")]
-        public AppUser Sender { get; set; }
+        public AppUser Sender { get; set; } = null!;
 
         [Required]
-        public string ReceiverId { get; set; }
+        public string ReceiverId { get; set; } = string.Empty;
         [ForeignKey("ReceiverId")]
-        public AppUser Receiver { get; set; }
+        public AppUser Receiver { get; set; } = null!;
         public bool IsDeleted { get; set; } = false;
     }
 }

@@ -1,134 +1,738 @@
-﻿@model IEnumerable<AntAbstract.Domain.Entities.Conference>
+@using AntAbstract.Web.Models.ViewModels.Admin.Conferences
+@model ConferencesIndexViewModel
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
-    var slug = Context.GetRouteValue("slug")?.ToString() ?? "";
-    bool isSuperAdmin = ViewBag.IsSuperAdmin ?? false;
+    var slug = Model.Slug;
+    var createUrl = Url.Action("Create", "Conferences", new { area = "Admin", slug });
+    var baseListUrl = Url.Action("Index", "Conferences", new { area = "Admin", slug, search = Model.Search });
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h3 class="fw-bold text-dark mb-0">@Localizer["PageTitle"]</h3>
-        <p class="text-muted small">@Localizer["PageLead"]</p>
+<div class="conf-list-page">
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert conf-alert conf-alert-success mb-4">
+            <i class="fas fa-check-circle"></i>
+            @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert conf-alert conf-alert-error mb-4">
+            <i class="fas fa-times-circle"></i>
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    @* Hero header *@
+    <div class="conf-hero-card mb-4">
+        <div class="conf-hero-left">
+            <div class="conf-hero-icon">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div>
+                <h1 class="conf-hero-title">Kongreler</h1>
+                <p class="conf-hero-sub">@Model.TotalCount kongre kayıtlı</p>
+            </div>
+        </div>
+        <a href="@createUrl" class="btn conf-add-btn">
+            <i class="fas fa-plus"></i>
+            Yeni Kongre Ekle
+        </a>
     </div>
 
-    <a asp-action="Create" asp-route-slug="@slug" class="btn btn-primary rounded-pill fw-bold px-4 shadow-sm">
-        <i class="fas fa-plus me-2"></i> @Localizer["AddConferenceButton"]
-    </a>
-</div>
+    @* Stat + filter chips *@
+    <div class="conf-filter-bar mb-4">
+        <a href="@Url.Action("Index", "Conferences", new { area = "Admin", slug, search = Model.Search })"
+           class="conf-filter-chip @(string.IsNullOrEmpty(Model.StatusFilter) ? "chip-active" : "")">
+            Tümü
+            <span class="chip-count">@Model.TotalCount</span>
+        </a>
+        <a href="@Url.Action("Index", "Conferences", new { area = "Admin", slug, search = Model.Search, statusFilter = "ongoing" })"
+           class="conf-filter-chip @(Model.StatusFilter == "ongoing" ? "chip-active chip-ongoing" : "")">
+            <span class="chip-dot dot-green"></span>
+            Devam Ediyor
+            <span class="chip-count">@Model.OngoingCount</span>
+        </a>
+        <a href="@Url.Action("Index", "Conferences", new { area = "Admin", slug, search = Model.Search, statusFilter = "upcoming" })"
+           class="conf-filter-chip @(Model.StatusFilter == "upcoming" ? "chip-active chip-upcoming" : "")">
+            <span class="chip-dot dot-blue"></span>
+            Yaklaşan
+            <span class="chip-count">@Model.UpcomingCount</span>
+        </a>
+        <a href="@Url.Action("Index", "Conferences", new { area = "Admin", slug, search = Model.Search, statusFilter = "past" })"
+           class="conf-filter-chip @(Model.StatusFilter == "past" ? "chip-active chip-past" : "")">
+            <span class="chip-dot dot-gray"></span>
+            Tamamlandı
+            <span class="chip-count">@Model.PastCount</span>
+        </a>
 
-<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-    <div class="card-body p-0">
-        @if (!Model.Any())
-        {
-            <div class="text-center p-5 text-muted">
-                <div class="mb-3">
-                    <i class="fas fa-calendar-times fa-4x opacity-25 text-primary"></i>
-                </div>
-                <h5 class="fw-bold text-dark">@Localizer["EmptyTitle"]</h5>
-                <p class="small">@Localizer["EmptyLead"]</p>
+        <form method="get" class="conf-search-form ms-auto">
+            <input type="hidden" name="slug" value="@slug" />
+            @if (!string.IsNullOrEmpty(Model.StatusFilter))
+            {
+                <input type="hidden" name="statusFilter" value="@Model.StatusFilter" />
+            }
+            <div class="conf-search-wrap">
+                <i class="fas fa-search conf-search-icon"></i>
+                <input type="text" name="search" value="@Model.Search"
+                       class="conf-search-input" placeholder="Kongre ara..." />
+                @if (!string.IsNullOrEmpty(Model.Search))
+                {
+                    <a href="@Url.Action("Index", "Conferences", new { area = "Admin", slug, statusFilter = Model.StatusFilter })"
+                       class="conf-search-clear"><i class="fas fa-times"></i></a>
+                }
             </div>
-        }
-        else
-        {
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light text-muted small">
-                        <tr>
-                            <th class="ps-4">@Localizer["TableHeaderConferenceName"]</th>
-                            <th>@Localizer["TableHeaderDates"]</th>
-                            <th>@Localizer["TableHeaderLocation"]</th>
-                            @if (isSuperAdmin)
-                            {
-                                <th>@Localizer["TableHeaderInstitution"]</th>
-                            }
-                            <th class="text-end pe-4">@Localizer["TableHeaderActions"]</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model)
+        </form>
+    </div>
+
+    @if (!Model.Items.Any())
+    {
+        <div class="conf-empty-state">
+            <div class="empty-icon">
+                <i class="fas fa-calendar-times"></i>
+            </div>
+            <h4>Kongre bulunamadı</h4>
+            <p>
+                @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.StatusFilter))
+                {
+                    <text>Arama kriterlerinize uyan kongre yok.</text>
+                }
+                else
+                {
+                    <text>Henüz kongre eklenmemiş.</text>
+                }
+            </p>
+            <a href="@createUrl" class="btn conf-add-btn mt-2">
+                <i class="fas fa-plus"></i> Yeni Kongre Ekle
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="conf-card-grid">
+            @foreach (var item in Model.Items)
+            {
+                var (dotClass, chipClass, statusLabel) = item.Status switch
+                {
+                    "ongoing"  => ("dot-green",  "status-chip-ongoing",  "Devam Ediyor"),
+                    "upcoming" => ("dot-blue",   "status-chip-upcoming", "Yaklaşan"),
+                    _          => ("dot-gray",   "status-chip-past",     "Tamamlandı")
+                };
+
+                <div class="conf-card">
+                    @* Banner *@
+                    <div class="conf-card-banner"
+                         style="@(string.IsNullOrEmpty(item.BannerPath) ? "" : $"background-image:url('{item.BannerPath}')")">
+                        @if (!string.IsNullOrEmpty(item.LogoPath))
                         {
-                            <tr>
-                                <td class="ps-4">
-                                    <span class="fw-bold text-dark fs-6 d-block">@item.Title</span>
-                                    <span class="text-muted small">@Localizer["UrlLabel"] /@item.Slug</span>
-                                </td>
-
-                                <td>
-                                    <div class="small">
-                                        <span class="text-success fw-bold">
-                                            <i class="fas fa-play-circle me-1"></i> @item.StartDate.ToString("dd MMM yyyy HH:mm")
-                                        </span>
-                                        <br />
-                                        <span class="text-danger fw-bold">
-                                            <i class="fas fa-stop-circle me-1"></i> @item.EndDate.ToString("dd MMM yyyy HH:mm")
-                                        </span>
-                                    </div>
-                                </td>
-
-                                <td class="text-muted small">
-                                    <i class="fas fa-map-marker-alt text-primary me-1"></i>
-                                    @(string.IsNullOrEmpty(item.Venue) ? Localizer["NotSpecified"] : item.Venue)
-                                </td>
-
-                                @if (isSuperAdmin)
-                                {
-                                    <td>
-                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill px-3 py-2">
-                                            <i class="fas fa-building me-1"></i> @item.Tenant?.Name
-                                        </span>
-                                    </td>
-                                }
-
-                                <td class="text-end pe-4">
-                                    <a href="/@item.Slug"
-                                       target="_blank"
-                                       class="btn btn-sm btn-outline-info me-1"
-                                       title="@Localizer["ViewShowcaseTitle"]">
-                                        <i class="fas fa-external-link-alt"></i>
-                                    </a>
-
-                                    <a asp-action="Edit"
-                                       asp-route-id="@item.Id"
-                                       asp-route-slug="@slug"
-                                       class="btn btn-sm btn-light text-primary me-1"
-                                       title="@Localizer["EditTitle"]">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-
-                                    <form asp-action="Clone"
-                                          asp-route-id="@item.Id"
-                                          asp-route-slug="@slug"
-                                          method="post"
-                                          class="d-inline"
-                                          onsubmit="return confirm('Bu kongre kopyalansın mı? Konular, kayıt türleri ve sayfa blokları da kopyalanır.');">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit"
-                                                class="btn btn-sm btn-light text-success me-1"
-                                                title="Klonla">
-                                            <i class="fas fa-copy"></i>
-                                        </button>
-                                    </form>
-
-                                    <form asp-action="Delete"
-                                          asp-route-id="@item.Id"
-                                          asp-route-slug="@slug"
-                                          method="post"
-                                          class="d-inline"
-                                          onsubmit="return confirm('@Localizer["DeleteConfirmMessage"]');">
-                                        <button type="submit"
-                                                class="btn btn-sm btn-light text-danger"
-                                                title="@Localizer["DeleteTitle"]">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
+                            <img src="@item.LogoPath" alt="@item.Title" class="conf-card-logo" />
                         }
-                    </tbody>
-                </table>
-            </div>
+                        else
+                        {
+                            <div class="conf-card-logo conf-card-logo-placeholder">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                        }
+                        <span class="conf-status-chip @chipClass">
+                            <span class="chip-dot @dotClass"></span>
+                            @statusLabel
+                        </span>
+                    </div>
+
+                    @* Body *@
+                    <div class="conf-card-body">
+                        <div class="conf-card-title-row">
+                            <h3 class="conf-card-title">@item.Title</h3>
+                            <span class="conf-card-slug">/@item.Slug</span>
+                        </div>
+
+                        <div class="conf-card-meta">
+                            <div class="conf-meta-row">
+                                <i class="fas fa-calendar-day meta-icon meta-blue"></i>
+                                <span>@item.StartDate.ToString("dd MMM yyyy") — @item.EndDate.ToString("dd MMM yyyy")</span>
+                            </div>
+                            @{
+                                var location = string.Join(", ", new[] { item.Venue, item.City, item.Country }.Where(s => !string.IsNullOrWhiteSpace(s)));
+                            }
+                            @if (!string.IsNullOrEmpty(location))
+                            {
+                                <div class="conf-meta-row">
+                                    <i class="fas fa-map-marker-alt meta-icon meta-red"></i>
+                                    <span>@location</span>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="conf-badge-row">
+                            @if (item.IsSubmissionOpen)
+                            {
+                                <span class="conf-badge badge-open-green">
+                                    <i class="fas fa-file-alt"></i> Bildiri Açık
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="conf-badge badge-closed">
+                                    <i class="fas fa-file-alt"></i> Bildiri Kapalı
+                                </span>
+                            }
+                            @if (item.IsRegistrationOpen)
+                            {
+                                <span class="conf-badge badge-open-blue">
+                                    <i class="fas fa-user-plus"></i> Kayıt Açık
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="conf-badge badge-closed">
+                                    <i class="fas fa-user-plus"></i> Kayıt Kapalı
+                                </span>
+                            }
+                        </div>
+                    </div>
+
+                    @* Actions *@
+                    <div class="conf-card-actions">
+                        <div class="conf-action-left">
+                            <a href="/@item.Slug" target="_blank" class="conf-icon-btn" title="Sayfayı Görüntüle">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                            <a asp-action="Edit" asp-route-id="@item.Id" asp-route-slug="@slug"
+                               class="conf-icon-btn conf-icon-btn-blue" title="Düzenle">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form asp-action="Clone" asp-route-id="@item.Id" asp-route-slug="@slug"
+                                  method="post" class="d-inline"
+                                  onsubmit="return confirm('Bu kongre kopyalansın mı?');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="conf-icon-btn conf-icon-btn-green" title="Klonla">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </form>
+                            <form asp-action="Delete" asp-route-id="@item.Id" asp-route-slug="@slug"
+                                  method="post" class="d-inline"
+                                  onsubmit="return confirm('@Localizer["DeleteConfirmMessage"]');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="conf-icon-btn conf-icon-btn-red" title="Sil">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                        <a href="/@slug/Admin/ConferenceFlow" class="conf-manage-btn">
+                            Yönet <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            var pageBase = Url.Action("Index", "Conferences", new { area = "Admin", slug, search = Model.Search, statusFilter = Model.StatusFilter });
+            <nav class="conf-pagination">
+                @if (Model.HasPrev)
+                {
+                    <a href="@(pageBase)&page=@(Model.Page - 1)" class="page-btn page-btn-nav">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                }
+                else
+                {
+                    <span class="page-btn page-btn-nav page-btn-disabled"><i class="fas fa-chevron-left"></i></span>
+                }
+                @for (int p = Math.Max(1, Model.Page - 2); p <= Math.Min(Model.TotalPages, Model.Page + 2); p++)
+                {
+                    if (p == Model.Page)
+                    {
+                        <span class="page-btn page-btn-active">@p</span>
+                    }
+                    else
+                    {
+                        <a href="@(pageBase)&page=@p" class="page-btn">@p</a>
+                    }
+                }
+                @if (Model.HasNext)
+                {
+                    <a href="@(pageBase)&page=@(Model.Page + 1)" class="page-btn page-btn-nav">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                }
+                else
+                {
+                    <span class="page-btn page-btn-nav page-btn-disabled"><i class="fas fa-chevron-right"></i></span>
+                }
+                <span class="page-info">@Model.Page / @Model.TotalPages sayfa &mdash; @Model.FilteredCount kongre</span>
+            </nav>
         }
-    </div>
+    }
+
 </div>
+
+<style>
+    .conf-list-page {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        padding: 1.5rem 0 2rem;
+    }
+
+    .conf-alert {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-radius: 16px;
+        border: 1px solid transparent;
+        font-weight: 800;
+        padding: 0.85rem 1.2rem;
+    }
+
+    .conf-alert-success { background: rgba(34,197,94,0.10); border-color: rgba(34,197,94,0.20); color: #15803d; }
+    .conf-alert-error   { background: rgba(239,68,68,0.10);  border-color: rgba(239,68,68,0.20);  color: #dc2626; }
+
+    /* Hero */
+    .conf-hero-card {
+        background: radial-gradient(circle at top right, rgba(0,174,239,0.14), transparent 40%),
+                    linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e2eaf4;
+        border-radius: 28px;
+        padding: 1.4rem 1.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        box-shadow: 0 16px 40px rgba(15,23,42,0.06);
+    }
+
+    .conf-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1.1rem;
+    }
+
+    .conf-hero-icon {
+        width: 58px;
+        height: 58px;
+        min-width: 58px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.45rem;
+        box-shadow: 0 12px 28px rgba(13,110,253,0.22);
+    }
+
+    .conf-hero-title {
+        font-size: 1.75rem;
+        font-weight: 900;
+        color: #0f172a;
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    .conf-hero-sub {
+        font-size: 0.86rem;
+        color: #64748b;
+        font-weight: 650;
+        margin: 0.15rem 0 0;
+    }
+
+    .conf-add-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        height: 40px;
+        border-radius: 999px;
+        padding: 0 1.25rem;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #fff;
+        font-size: 0.84rem;
+        font-weight: 800;
+        border: none;
+        text-decoration: none;
+        box-shadow: 0 8px 20px rgba(13,110,253,0.22);
+        transition: all 0.18s ease;
+        white-space: nowrap;
+    }
+
+    .conf-add-btn:hover {
+        transform: translateY(-1px);
+        color: #fff;
+        box-shadow: 0 12px 26px rgba(13,110,253,0.30);
+    }
+
+    /* Filter bar */
+    .conf-filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .conf-filter-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        height: 36px;
+        border-radius: 999px;
+        padding: 0 0.9rem;
+        font-size: 0.8rem;
+        font-weight: 750;
+        color: #475569;
+        background: #f1f5f9;
+        border: 1.5px solid #e2e8f0;
+        text-decoration: none;
+        transition: all 0.18s ease;
+        white-space: nowrap;
+    }
+
+    .conf-filter-chip:hover {
+        border-color: #0d6efd;
+        color: #0d6efd;
+    }
+
+    .chip-active {
+        background: #fff;
+        border-color: #0d6efd;
+        color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(13,110,253,0.1);
+    }
+
+    .chip-ongoing.chip-active  { border-color: #16a34a; color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.1); }
+    .chip-upcoming.chip-active { border-color: #0d6efd; color: #0d6efd; }
+    .chip-past.chip-active     { border-color: #94a3b8; color: #475569; box-shadow: 0 0 0 3px rgba(148,163,184,0.1); }
+
+    .chip-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        min-width: 8px;
+    }
+
+    .dot-green { background: #22c55e; }
+    .dot-blue  { background: #0d6efd; }
+    .dot-gray  { background: #94a3b8; }
+
+    .chip-count {
+        font-size: 0.74rem;
+        font-weight: 900;
+        background: rgba(0,0,0,0.07);
+        border-radius: 999px;
+        padding: 0 0.42rem;
+        min-width: 20px;
+        text-align: center;
+    }
+
+    /* Search */
+    .conf-search-form { display: flex; }
+
+    .conf-search-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .conf-search-icon {
+        position: absolute;
+        left: 0.85rem;
+        color: #94a3b8;
+        font-size: 0.8rem;
+        pointer-events: none;
+    }
+
+    .conf-search-input {
+        height: 36px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 999px;
+        padding: 0 2.2rem 0 2.1rem;
+        font-size: 0.82rem;
+        font-weight: 650;
+        color: #334155;
+        background: #f8fafc;
+        outline: none;
+        width: 210px;
+        transition: all 0.18s;
+    }
+
+    .conf-search-input:focus {
+        border-color: #0d6efd;
+        background: #fff;
+        width: 250px;
+    }
+
+    .conf-search-clear {
+        position: absolute;
+        right: 0.7rem;
+        color: #94a3b8;
+        font-size: 0.75rem;
+        text-decoration: none;
+    }
+
+    .conf-search-clear:hover { color: #dc2626; }
+
+    /* Card grid */
+    .conf-card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.1rem;
+    }
+
+    .conf-card {
+        background: #fff;
+        border: 1px solid #e8eef6;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 6px 20px rgba(15,23,42,0.05);
+        display: flex;
+        flex-direction: column;
+        transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .conf-card:hover {
+        box-shadow: 0 16px 40px rgba(15,23,42,0.10);
+        transform: translateY(-2px);
+    }
+
+    /* Banner */
+    .conf-card-banner {
+        height: 110px;
+        background: linear-gradient(135deg, #e8f0fe, #f0f4ff);
+        background-size: cover;
+        background-position: center;
+        position: relative;
+    }
+
+    .conf-card-logo {
+        position: absolute;
+        bottom: -18px;
+        left: 1.1rem;
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        border: 3px solid #fff;
+        box-shadow: 0 4px 14px rgba(15,23,42,0.12);
+        object-fit: contain;
+        background: #fff;
+    }
+
+    .conf-card-logo-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #0d6efd;
+        font-size: 1.1rem;
+    }
+
+    .conf-status-chip {
+        position: absolute;
+        top: 0.65rem;
+        right: 0.75rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        height: 26px;
+        border-radius: 999px;
+        padding: 0 0.65rem;
+        font-size: 0.72rem;
+        font-weight: 800;
+    }
+
+    .status-chip-ongoing  { background: rgba(34,197,94,0.15);  color: #15803d; }
+    .status-chip-upcoming { background: rgba(13,110,253,0.12); color: #1d4ed8; }
+    .status-chip-past     { background: rgba(148,163,184,0.2); color: #475569; }
+
+    /* Card body */
+    .conf-card-body {
+        padding: 1.5rem 1.1rem 0.85rem;
+        flex: 1;
+    }
+
+    .conf-card-title-row { margin-bottom: 0.6rem; }
+
+    .conf-card-title {
+        font-size: 0.96rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 0.15rem;
+        line-height: 1.35;
+    }
+
+    .conf-card-slug {
+        font-size: 0.74rem;
+        color: #94a3b8;
+        font-weight: 650;
+    }
+
+    .conf-card-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .conf-meta-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+        color: #475569;
+        font-weight: 650;
+    }
+
+    .meta-icon { font-size: 0.78rem; width: 14px; text-align: center; }
+    .meta-blue { color: #0d6efd; }
+    .meta-red  { color: #ef4444; }
+
+    .conf-badge-row {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+    }
+
+    .conf-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        height: 24px;
+        border-radius: 999px;
+        padding: 0 0.6rem;
+        font-size: 0.71rem;
+        font-weight: 800;
+    }
+
+    .badge-open-green { background: rgba(34,197,94,0.12); color: #15803d; }
+    .badge-open-blue  { background: rgba(13,110,253,0.10); color: #1d4ed8; }
+    .badge-closed     { background: rgba(148,163,184,0.15); color: #64748b; }
+
+    /* Actions */
+    .conf-card-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 1.1rem;
+        border-top: 1px solid #f1f5f9;
+        gap: 0.5rem;
+    }
+
+    .conf-action-left {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .conf-icon-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        border: 1.5px solid #e2e8f0;
+        background: #f8fafc;
+        color: #475569;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.18s;
+    }
+
+    .conf-icon-btn:hover        { border-color: #94a3b8; color: #334155; background: #f1f5f9; }
+    .conf-icon-btn-blue:hover   { border-color: #0d6efd; color: #0d6efd; background: rgba(13,110,253,0.06); }
+    .conf-icon-btn-green:hover  { border-color: #16a34a; color: #16a34a; background: rgba(22,163,74,0.06); }
+    .conf-icon-btn-red:hover    { border-color: #dc2626; color: #dc2626; background: rgba(239,68,68,0.06); }
+
+    .conf-manage-btn {
+        display: inline-flex;
+        align-items: center;
+        height: 34px;
+        border-radius: 999px;
+        padding: 0 0.9rem;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #fff;
+        font-size: 0.8rem;
+        font-weight: 800;
+        text-decoration: none;
+        box-shadow: 0 6px 16px rgba(13,110,253,0.20);
+        transition: all 0.18s;
+    }
+
+    .conf-manage-btn:hover {
+        transform: translateY(-1px);
+        color: #fff;
+        box-shadow: 0 10px 22px rgba(13,110,253,0.28);
+    }
+
+    /* Empty state */
+    .conf-empty-state {
+        text-align: center;
+        padding: 5rem 1.5rem;
+        background: #fff;
+        border: 1px solid #e8eef6;
+        border-radius: 24px;
+    }
+
+    .conf-empty-state .empty-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 26px;
+        background: rgba(13,110,253,0.10);
+        color: #0d6efd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin: 0 auto 1rem;
+    }
+
+    .conf-empty-state h4 {
+        font-size: 1.25rem;
+        font-weight: 900;
+        color: #0f172a;
+        margin-bottom: 0.4rem;
+    }
+
+    .conf-empty-state p { color: #64748b; font-weight: 650; margin: 0; }
+
+    /* Pagination */
+    .conf-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        padding: 1.5rem 0 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .page-btn {
+        min-width: 36px;
+        min-height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        border: 1.5px solid #e2e8f0;
+        background: #fff;
+        color: #334155;
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.18s;
+        padding: 0 0.5rem;
+    }
+
+    .page-btn:hover        { border-color: #0d6efd; color: #0d6efd; }
+    .page-btn-active       { background: #0d6efd; border-color: #0d6efd; color: #fff; cursor: default; }
+    .page-btn-disabled     { opacity: 0.38; cursor: default; }
+    .page-info             { font-size: 0.78rem; color: #64748b; font-weight: 650; margin-left: 0.5rem; }
+
+    @@media (max-width: 768px) {
+        .conf-hero-card { flex-direction: column; align-items: flex-start; }
+        .conf-add-btn   { width: 100%; justify-content: center; }
+        .conf-filter-bar { gap: 0.4rem; }
+        .conf-search-form { width: 100%; }
+        .conf-search-wrap, .conf-search-input { width: 100%; }
+    }
+</style>

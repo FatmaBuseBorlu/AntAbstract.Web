@@ -546,7 +546,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpGet("/{slug}/Admin/Assignment")]
         public async Task<IActionResult> Index(
             string slug,
-            Guid? conferenceId)
+            Guid? conferenceId,
+            string? search = null,
+            string? status = null,
+            string? assigned = null,
+            int page = 1)
         {
             var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
 
@@ -561,20 +565,130 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             SetSelectedConferenceSession(conference);
 
-            var submissions = await _context.Submissions
+            // Conference-wide stats
+            var allIds = await _context.Submissions
                 .AsNoTracking()
                 .Where(s => s.ConferenceId == conference.Id)
-                .Include(s => s.Author)
-                .Include(s => s.ReviewAssignments)
-                    .ThenInclude(ra => ra.Reviewer)
-                .OrderByDescending(s => s.CreatedDate)
+                .Select(s => s.Id)
                 .ToListAsync();
+
+            var totalCount = allIds.Count;
+
+            var assignedIds = await _context.ReviewAssignments
+                .AsNoTracking()
+                .Where(ra => allIds.Contains(ra.SubmissionId))
+                .Select(ra => ra.SubmissionId)
+                .Distinct()
+                .ToListAsync();
+
+            var assignedCount = assignedIds.Count;
+
+            var underReviewCount = await _context.Submissions
+                .AsNoTracking()
+                .CountAsync(s =>
+                    s.ConferenceId == conference.Id &&
+                    s.Status == SubmissionStatus.UnderReview);
+
+            // Filtered query
+            var query = _context.Submissions
+                .AsNoTracking()
+                .Include(s => s.Author)
+                .Where(s => s.ConferenceId == conference.Id)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var t = search.Trim();
+                query = query.Where(s =>
+                    (s.Title != null && s.Title.Contains(t)) ||
+                    (s.Author != null && (
+                        (s.Author.FirstName != null && s.Author.FirstName.Contains(t)) ||
+                        (s.Author.LastName != null && s.Author.LastName.Contains(t)) ||
+                        (s.Author.Email != null && s.Author.Email.Contains(t))
+                    ))
+                );
+            }
+
+            if (!string.IsNullOrWhiteSpace(status) &&
+                Enum.TryParse<SubmissionStatus>(status, out var parsedStatus))
+            {
+                query = query.Where(s => s.Status == parsedStatus);
+            }
+
+            var assignedSet = assignedIds.ToHashSet();
+
+            if (assigned == "unassigned")
+            {
+                query = query.Where(s => !assignedIds.Contains(s.Id));
+            }
+            else if (assigned == "assigned")
+            {
+                query = query.Where(s => assignedIds.Contains(s.Id));
+            }
+
+            const int pageSize = 30;
+            if (page < 1) page = 1;
+
+            var orderedQuery = query.OrderByDescending(s => s.CreatedDate);
+            var filteredCount = await orderedQuery.CountAsync();
+
+            var pageIds = await orderedQuery
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(s => s.Id)
+                .ToListAsync();
+
+            var reviewerCountsMap = await _context.ReviewAssignments
+                .AsNoTracking()
+                .Where(ra => pageIds.Contains(ra.SubmissionId))
+                .GroupBy(ra => ra.SubmissionId)
+                .Select(g => new { g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Key, x => x.Count);
+
+            var items = await orderedQuery
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(s => new AssignmentRowModel
+                {
+                    Id = s.Id,
+                    Title = s.Title ?? "",
+                    AuthorName = s.Author == null
+                        ? ""
+                        : ((s.Author.FirstName ?? "") + " " + (s.Author.LastName ?? "")).Trim(),
+                    Status = s.Status.ToString(),
+                    Topic = s.Topic ?? "",
+                    CreatedAt = s.CreatedDate
+                })
+                .ToListAsync();
+
+            foreach (var item in items)
+            {
+                if (reviewerCountsMap.TryGetValue(item.Id, out var c))
+                    item.ReviewerCount = c;
+            }
+
+            var vm = new AssignmentIndexViewModel
+            {
+                Slug = slug,
+                ConferenceId = conference.Id,
+                ConferenceTitle = conference.Title ?? "",
+                Search = search,
+                Status = status,
+                AssignedFilter = assigned,
+                TotalCount = totalCount,
+                AssignedCount = assignedCount,
+                UnderReviewCount = underReviewCount,
+                Items = items,
+                Page = page,
+                PageSize = pageSize,
+                FilteredCount = filteredCount
+            };
 
             ViewBag.ConferenceId = conference.Id;
             ViewBag.ConferenceTitle = conference.Title;
             ViewBag.Slug = slug;
 
-            return View(submissions);
+            return View(vm);
         }
 
         [HttpGet("/{slug}/Admin/Assignment/Assign/{id:guid}")]

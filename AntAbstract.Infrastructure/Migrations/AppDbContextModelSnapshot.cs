@@ -367,6 +367,18 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Property<string>("AbstractTemplatePath")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("BankAccountName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BankBranch")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BankIban")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BankName")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("BannerPath")
                         .HasColumnType("nvarchar(max)");
 
@@ -400,13 +412,25 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Property<string>("FullTextTemplatePath")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsBankTransferEnabled")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsBiddingOpen")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsFullTextOpen")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPayTREnabled")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsProceedingBookPublished")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsRegistrationOpen")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsStripeEnabled")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsSubmissionOpen")
@@ -1290,6 +1314,62 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.HasIndex("ReviewId");
 
                     b.ToTable("ReviewCriterionScores");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewerInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ConferenceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedReviewerUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DeclineReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FirstName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Institution")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("InvitedUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("LastName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RespondedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConferenceId");
+
+                    b.HasIndex("InvitedUserId");
+
+                    b.ToTable("ReviewerInvitations");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.RoomType", b =>
@@ -2287,6 +2367,23 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.Navigation("Criterion");
 
                     b.Navigation("Review");
+                });
+
+            modelBuilder.Entity("AntAbstract.Domain.Entities.ReviewerInvitation", b =>
+                {
+                    b.HasOne("AntAbstract.Domain.Entities.Conference", "Conference")
+                        .WithMany()
+                        .HasForeignKey("ConferenceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AntAbstract.Domain.Entities.AppUser", "InvitedUser")
+                        .WithMany()
+                        .HasForeignKey("InvitedUserId");
+
+                    b.Navigation("Conference");
+
+                    b.Navigation("InvitedUser");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.RoomType", b =>

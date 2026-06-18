@@ -72,6 +72,10 @@
                             @Localizer["TableHeaderCurrency"]
                         </th>
 
+                        <th style="width:160px;">
+                            Son Tarih
+                        </th>
+
                         <th style="width:120px;">
                             @Localizer["TableHeaderUsage"]
                         </th>
@@ -130,6 +134,33 @@
 
                                 <td>
                                     @item.Currency
+                                </td>
+
+                                <td>
+                                    @if (item.Deadline.HasValue)
+                                    {
+                                        var isExpired = item.Deadline.Value.Date < DateTime.UtcNow.Date;
+                                        var daysLeft = (int)(item.Deadline.Value.Date - DateTime.UtcNow.Date).TotalDays;
+                                        if (isExpired)
+                                        {
+                                            <span class="badge bg-danger">Sona Erdi</span>
+                                            <div class="text-muted small">@item.Deadline.Value.ToString("dd.MM.yyyy")</div>
+                                        }
+                                        else if (daysLeft <= 7)
+                                        {
+                                            <span class="badge bg-warning text-dark">@daysLeft gün kaldı</span>
+                                            <div class="text-muted small">@item.Deadline.Value.ToString("dd.MM.yyyy")</div>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-info text-dark">Erken Kayıt</span>
+                                            <div class="text-muted small">@item.Deadline.Value.ToString("dd.MM.yyyy")</div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
                                 </td>
 
                                 <td>

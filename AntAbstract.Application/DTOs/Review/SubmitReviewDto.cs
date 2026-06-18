@@ -6,8 +6,8 @@ namespace AntAbstract.Application.DTOs.Review
     public class SubmitReviewDto
     {
         public int ReviewAssignmentId { get; set; }
-        public string CommentsToAuthor { get; set; }
-        public string Recommendation { get; set; }
+        public string CommentsToAuthor { get; set; } = string.Empty;
+        public string Recommendation { get; set; } = string.Empty;
         public int Score { get; set; }
         public int ScoreOriginality { get; set; }
         public int ScoreMethodology { get; set; }
