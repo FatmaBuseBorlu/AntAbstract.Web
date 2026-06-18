@@ -986,8 +986,12 @@
         transition: opacity 0.65s cubic-bezier(.22,1,.36,1), transform 0.65s cubic-bezier(.22,1,.36,1);
     }
     [data-animate].animated {
-        opacity: 1;
-        transform: translateY(0);
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+    }
+    /* Hero içindeki elementler JS yüklenene kadar görünür kalsın */
+    .hero-content [data-animate]:not(.animated) {
+        opacity: 0;
     }
     [data-animate="fade-left"]  { transform: translateX(-40px); }
     [data-animate="fade-right"] { transform: translateX(40px); }
@@ -1938,25 +1942,25 @@
 <script>
 /* ── Animasyon motoru ──────────────────────────────────────────────── */
 (function () {
+    function initAnimations() {
     // Scroll-triggered reveal
     var animated = document.querySelectorAll('[data-animate]');
     var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (e) {
             if (e.isIntersecting) {
-                e.target.classList.add('animated');
+                var delay = parseInt(e.target.dataset.delay || '0', 10);
+                setTimeout(function() { e.target.classList.add('animated'); }, delay);
                 io.unobserve(e.target);
             }
         });
-    }, { threshold: 0.12 });
+    }, { threshold: 0.08 });
 
     animated.forEach(function (el) { io.observe(el); });
 
     // Hero elementlerini hemen göster (viewport içinde başlıyorlar)
-    setTimeout(function () {
-        document.querySelectorAll('.hero-content [data-animate]').forEach(function (el) {
-            el.classList.add('animated');
-        });
-    }, 80);
+    document.querySelectorAll('.hero-content [data-animate]').forEach(function (el) {
+        el.classList.add('animated');
+    });
 
     // Sayaç animasyonu
     function animateCounter(el, target, duration) {
@@ -2003,6 +2007,13 @@
             ].join(';');
             container.appendChild(p);
         }
+    }
+    } // end initAnimations
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAnimations);
+    } else {
+        initAnimations();
     }
 })();
 
