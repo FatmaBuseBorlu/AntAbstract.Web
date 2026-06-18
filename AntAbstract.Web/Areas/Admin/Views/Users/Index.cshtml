@@ -920,6 +920,16 @@
             </span>
         </div>
 
+        @{
+            int pgTotalPages = (int)(ViewBag.TotalPages ?? 1);
+            int pgCurrentPage = (int)(ViewBag.Page ?? 1);
+            int pgPageSize = (int)(ViewBag.PageSize ?? 50);
+            int pgFilteredCount = (int)(ViewBag.FilteredCount ?? 0);
+            string pgSearchVal = (string?)(ViewBag.Search) ?? "";
+            string pgRoleVal = (string?)(ViewBag.SelectedRole) ?? "";
+            string pgBaseUrl = $"/Admin/Users?search={pgSearchVal}&role={pgRoleVal}";
+        }
+
         @if (!users.Any())
         {
             <div class="users-empty-state">
@@ -1167,6 +1177,29 @@
                     </tbody>
                 </table>
             </div>
+
+            @if (pgTotalPages > 1)
+            {
+                <nav aria-label="Kullanıcı sayfalaması" class="mt-3">
+                    <ul class="pagination pagination-sm justify-content-center">
+                        <li class="page-item @(pgCurrentPage > 1 ? "" : "disabled")">
+                            <a class="page-link" href="@pgBaseUrl&page=@(pgCurrentPage - 1)">‹</a>
+                        </li>
+                        @for (var p = Math.Max(1, pgCurrentPage - 2); p <= Math.Min(pgTotalPages, pgCurrentPage + 2); p++)
+                        {
+                            <li class="page-item @(p == pgCurrentPage ? "active" : "")">
+                                <a class="page-link" href="@pgBaseUrl&page=@p">@p</a>
+                            </li>
+                        }
+                        <li class="page-item @(pgCurrentPage < pgTotalPages ? "" : "disabled")">
+                            <a class="page-link" href="@pgBaseUrl&page=@(pgCurrentPage + 1)">›</a>
+                        </li>
+                    </ul>
+                    <p class="text-center text-muted small">
+                        @pgFilteredCount kullanıcıdan @((pgCurrentPage - 1) * pgPageSize + 1)–@Math.Min(pgCurrentPage * pgPageSize, pgFilteredCount) gösteriliyor
+                    </p>
+                </nav>
+            }
         }
     </div>
 </div>

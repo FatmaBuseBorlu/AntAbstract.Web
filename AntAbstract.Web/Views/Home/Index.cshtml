@@ -58,6 +58,8 @@
     }
 
     var activeCongresses = Model.ActiveCongresses ?? new List<CongressCardDto>();
+    var pastCongresses = Model.PastCongresses ?? new List<CongressCardDto>();
+    var proceedingBooks = Model.ProceedingBooks ?? new List<ProceedingBookCardDto>();
     var lastSubmissions = Model.LastSubmissions ?? new List<SubmissionCardDto>();
 }
 
@@ -1284,7 +1286,26 @@
                 </p>
             </div>
 
-            <div class="row g-4 justify-content-center">
+            @if (activeCongresses.Any())
+            {
+                <div class="d-flex flex-column flex-md-row align-items-md-center gap-3 mb-4">
+                    <div class="input-group" style="max-width:360px;">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" id="congress-search" class="form-control border-start-0 ps-0"
+                               placeholder="Kongre ara..." autocomplete="off" />
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-sm btn-outline-secondary congress-filter active" data-filter="all">Tümü</button>
+                        <button class="btn btn-sm btn-outline-success congress-filter" data-filter="submission">Bildiri Açık</button>
+                        <button class="btn btn-sm btn-outline-primary congress-filter" data-filter="registration">Kayıt Açık</button>
+                    </div>
+                    <small class="text-muted ms-auto"><span id="congress-count">@activeCongresses.Count</span> kongre</small>
+                </div>
+            }
+
+            <div class="row g-4 justify-content-center" id="congress-grid">
                 @if (activeCongresses.Any())
                 {
                     @foreach (var item in activeCongresses)
@@ -1302,7 +1323,10 @@
 
                         var descriptionText = CleanHtmlText(rawDescriptionText, 130);
 
-                        <div class="col-md-6 col-lg-4">
+                        <div class="col-md-6 col-lg-4 congress-item"
+                             data-title="@item.Title.ToLower()"
+                             data-submission="@(item.IsSubmissionOpen ? "true" : "false")"
+                             data-registration="@(item.IsRegistrationOpen ? "true" : "false")">
                             <article class="modern-congress-card">
                                 <div class="modern-congress-image">
                                     @if (!string.IsNullOrWhiteSpace(item.ImageUrl) &&
@@ -1346,6 +1370,27 @@
                                     <p class="modern-congress-description">
                                         @descriptionText
                                     </p>
+
+                                    <div class="d-flex gap-1 flex-wrap mb-3">
+                                        @if (item.IsSubmissionOpen)
+                                        {
+                                            <span class="badge" style="background:rgba(34,197,94,.12);color:#15803d;font-size:.72rem;font-weight:800;border:1px solid rgba(34,197,94,.2);padding:5px 9px;border-radius:999px;">
+                                                <i class="fas fa-file-alt me-1"></i>Bildiri Açık
+                                            </span>
+                                        }
+                                        @if (item.IsRegistrationOpen)
+                                        {
+                                            <span class="badge" style="background:rgba(0,174,239,.10);color:#0284c7;font-size:.72rem;font-weight:800;border:1px solid rgba(0,174,239,.2);padding:5px 9px;border-radius:999px;">
+                                                <i class="fas fa-user-plus me-1"></i>Kayıt Açık
+                                            </span>
+                                        }
+                                        @if (item.AbstractSubmissionDeadline.HasValue && item.AbstractSubmissionDeadline > DateTime.Now)
+                                        {
+                                            <span class="badge" style="background:rgba(245,158,11,.10);color:#b45309;font-size:.72rem;font-weight:800;border:1px solid rgba(245,158,11,.2);padding:5px 9px;border-radius:999px;">
+                                                <i class="fas fa-clock me-1"></i>Son: @item.AbstractSubmissionDeadline.Value.ToString("dd MMM")
+                                            </span>
+                                        }
+                                    </div>
 
                                     <div class="modern-congress-footer">
                                         <span class="modern-year-pill">
@@ -1527,6 +1572,92 @@
         </div>
     </section>
 
+    @if (proceedingBooks.Any())
+    {
+    <section class="py-5" style="background:#f8fafc;">
+        <div class="container py-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-5">
+                <div>
+                    <div class="section-kicker mb-3">@L("ProceedingBooksKicker", "Yayınlar")</div>
+                    <h2 class="section-heading-modern mb-2">@L("ProceedingBooksTitle", "Bildiri Kitapları")</h2>
+                    <p class="section-lead-modern">@L("ProceedingBooksLead", "Geçmiş kongrelerin yayınlanmış bildiri kitaplarına erişin.")</p>
+                </div>
+                <a href="/Proceedings/Index" class="btn btn-outline-primary rounded-pill px-4">
+                    <i class="fas fa-books me-2"></i>@L("AllProceedingBooks", "Tüm Bildiri Kitapları")
+                </a>
+            </div>
+
+            <div class="row g-4">
+                @foreach (var book in proceedingBooks.Take(4))
+                {
+                    var bookUrl = $"/{book.Slug}/Dashboard/ProceedingBook";
+                    <div class="col-sm-6 col-lg-3">
+                        <a href="@bookUrl" class="text-decoration-none">
+                            <div class="card border-0 rounded-4 shadow-sm h-100" style="transition:transform .2s;background:#fff;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+                                <div class="card-body p-4">
+                                    <div class="d-flex align-items-center justify-content-center mb-3" style="width:52px;height:52px;background:linear-gradient(135deg,#6f42c1,#d63384);border-radius:16px;">
+                                        <i class="fas fa-book-open text-white fs-5"></i>
+                                    </div>
+                                    <h6 class="fw-900 text-dark mb-1 lh-sm" style="font-size:.9rem;">@book.ConferenceTitle</h6>
+                                    <p class="text-muted mb-2" style="font-size:.78rem;">
+                                        <i class="fas fa-map-marker-alt me-1"></i>@book.Location
+                                    </p>
+                                    <p class="text-muted mb-3" style="font-size:.78rem;">
+                                        <i class="fas fa-calendar me-1"></i>@book.StartDate.ToString("yyyy")
+                                    </p>
+                                    @if (book.PublishedDate.HasValue)
+                                    {
+                                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill" style="font-size:.72rem;">
+                                            <i class="fas fa-check-circle me-1"></i>@book.PublishedDate.Value.ToString("MMM yyyy")
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+    }
+
+    @if (pastCongresses.Any())
+    {
+    <section class="py-5" style="background:#fff;">
+        <div class="container py-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-5">
+                <div>
+                    <div class="section-kicker mb-3">@L("PastCongressesKicker", "Arşiv")</div>
+                    <h2 class="section-heading-modern mb-2">@L("PastCongressesTitle", "Geçmiş Kongreler")</h2>
+                    <p class="section-lead-modern">@L("PastCongressesLead", "Tamamlanmış kongrelerimizi inceleyin.")</p>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                @foreach (var conf in pastCongresses.Take(6))
+                {
+                    var confUrl = $"/{conf.Slug}";
+                    <div class="col-sm-6 col-lg-4">
+                        <a href="@confUrl" class="text-decoration-none">
+                            <div class="d-flex align-items-center gap-3 p-3 rounded-4 border bg-light" style="transition:all .2s;" onmouseover="this.style.borderColor='#0d6efd';this.style.background='#f0f4ff'" onmouseout="this.style.borderColor='';this.style.background=''">
+                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px;height:44px;background:rgba(100,116,139,.12);border-radius:14px;">
+                                    <i class="fas fa-calendar-check text-secondary"></i>
+                                </div>
+                                <div class="min-width-0">
+                                    <div class="fw-bold text-dark" style="font-size:.88rem;line-height:1.3;">@conf.Title</div>
+                                    <div class="text-muted" style="font-size:.75rem;">@conf.StartDate.ToString("dd.MM.yyyy") — @conf.EndDate.ToString("dd.MM.yyyy")</div>
+                                    <div class="text-muted" style="font-size:.75rem;"><i class="fas fa-map-marker-alt me-1"></i>@conf.Location</div>
+                                </div>
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary ms-auto flex-shrink-0" style="font-size:.7rem;">Tamamlandı</span>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+    }
+
     <section class="latest-submissions-section py-5">
         <div class="container py-5">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-5">
@@ -1680,3 +1811,51 @@
     </section>
 
 </div>
+
+@section Scripts {
+<script>
+(function () {
+    var searchInput = document.getElementById('congress-search');
+    var filterBtns = document.querySelectorAll('.congress-filter');
+    var items = document.querySelectorAll('.congress-item');
+    var countEl = document.getElementById('congress-count');
+    var activeFilter = 'all';
+
+    function applyFilters() {
+        var query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        var visible = 0;
+
+        items.forEach(function (el) {
+            var title = el.dataset.title || '';
+            var submission = el.dataset.submission === 'true';
+            var registration = el.dataset.registration === 'true';
+
+            var matchesSearch = !query || title.includes(query);
+            var matchesFilter =
+                activeFilter === 'all' ||
+                (activeFilter === 'submission' && submission) ||
+                (activeFilter === 'registration' && registration);
+
+            var show = matchesSearch && matchesFilter;
+            el.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+
+        if (countEl) countEl.textContent = visible;
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', applyFilters);
+    }
+
+    filterBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            filterBtns.forEach(function (b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            activeFilter = btn.dataset.filter;
+            applyFilters();
+        });
+    });
+})();
+</script>
+}

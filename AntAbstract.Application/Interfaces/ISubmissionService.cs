@@ -10,7 +10,7 @@ namespace AntAbstract.Application.Interfaces
     {
         Task<SubmissionDto> CreateSubmissionAsync(CreateSubmissionDto input, string userId);
 
-        Task<SubmissionDto> GetSubmissionByIdAsync(Guid id);
+        Task<SubmissionDto?> GetSubmissionByIdAsync(Guid id);
 
         Task<List<SubmissionDto>> GetMySubmissionsAsync(string userId);
 

@@ -77,9 +77,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         [HttpGet("/Admin/Users")]
         [HttpGet("/{slug}/Admin/Users")]
-        public async Task<IActionResult> Index(string? search, string? role)
+        public async Task<IActionResult> Index(string? search, string? role, int page = 1)
         {
             await EnsureBaseRolesAsync();
+
+            // Tüm kullanıcı-rol ilişkilerini tek sorguda çek (N+1 yok)
+            var userRoleMap = await _context.UserRoles
+                .AsNoTracking()
+                .Join(_context.Roles.AsNoTracking(),
+                    ur => ur.RoleId,
+                    r => r.Id,
+                    (ur, r) => new { ur.UserId, RoleName = r.Name })
+                .Where(x => x.RoleName != null)
+                .GroupBy(x => x.UserId)
+                .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.RoleName!).ToList());
 
             var users = await _userManager.Users
                 .AsNoTracking()
@@ -88,22 +99,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .ThenBy(u => u.Email)
                 .ToListAsync();
 
-            var allUsersModel = new List<UserListItemViewModel>();
-
-            foreach (var user in users)
+            var allUsersModel = users.Select(user =>
             {
-                var roles = await _userManager.GetRolesAsync(user);
-
+                var userRoles = userRoleMap.TryGetValue(user.Id, out var r) ? r : new List<string>();
                 var fullName = $"{user.FirstName} {user.LastName}".Trim();
-
-                allUsersModel.Add(new UserListItemViewModel
+                return new UserListItemViewModel
                 {
                     UserId = user.Id,
                     Email = user.Email,
-                    Name = string.IsNullOrWhiteSpace(fullName)
-                        ? user.Email ?? "-"
-                        : fullName,
-                    Roles = roles
+                    Name = string.IsNullOrWhiteSpace(fullName) ? user.Email ?? "-" : fullName,
+                    Roles = userRoles
                         .Where(IsAllowedRole)
                         .OrderBy(roleName => roleName)
                         .ToList(),
@@ -111,8 +116,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                                   user.LockoutEnd.HasValue &&
                                   user.LockoutEnd.Value > DateTimeOffset.UtcNow,
                     EmailConfirmed = user.EmailConfirmed
-                });
-            }
+                };
+            }).ToList();
 
             var filteredModel = allUsersModel.AsEnumerable();
 
@@ -140,7 +145,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ViewBag.SelectedRole = role;
             ViewBag.AllowedRoles = AllowedRoles;
 
-            ViewBag.TotalUserCount = allUsersModel.Count;
+            ViewBag.TotalUserCount = allUsersModel.Count; // istatistik için filtre öncesi toplam
 
             ViewBag.SuperAdminCount = allUsersModel.Count(user =>
                 user.Roles != null &&
@@ -162,7 +167,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 user.Roles != null &&
                 user.Roles.Contains("Referee", StringComparer.OrdinalIgnoreCase));
 
-            return View(filteredModel.ToList());
+            const int pageSize = 50;
+            if (page < 1) page = 1;
+            var filtered = filteredModel.ToList();
+            ViewBag.FilteredCount = filtered.Count;
+            ViewBag.Page = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalPages = (int)Math.Ceiling((double)filtered.Count / pageSize);
+
+            return View(filtered.Skip((page - 1) * pageSize).Take(pageSize).ToList());
         }
 
         [HttpGet("/Admin/Users/ManageRoles")]

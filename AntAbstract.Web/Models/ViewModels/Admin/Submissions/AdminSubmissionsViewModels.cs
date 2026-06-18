@@ -11,6 +11,14 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Submissions
         public string? Search { get; set; }
         public string? Status { get; set; }
         public List<AdminSubmissionRowModel> Items { get; set; } = new();
+
+        // Pagination
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 50;
+        public int TotalCount { get; set; }
+        public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
+        public bool HasPrev => Page > 1;
+        public bool HasNext => Page < TotalPages;
     }
 
     public class AdminSubmissionRowModel

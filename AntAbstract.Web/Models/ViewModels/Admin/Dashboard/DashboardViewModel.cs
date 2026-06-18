@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using AntAbstract.Domain.Entities;
 
 namespace AntAbstract.Web.Models.ViewModels.Admin.Dashboard
@@ -14,10 +14,10 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Dashboard
         public int AcceptedSubmissions { get; set; }
         public int AwaitingDecision { get; set; }
         public int RejectedSubmissions { get; set; }
-        public List<Submission> RecentSubmissions { get; set; }
-        public string ConferenceName { get; set; }
-        public List<Conference> ActiveConferences { get; set; }
-        public List<Guid> RegisteredConferenceIds { get; set; }
+        public List<Submission> RecentSubmissions { get; set; } = new();
+        public string ConferenceName { get; set; } = string.Empty;
+        public List<Conference> ActiveConferences { get; set; } = new();
+        public List<Guid> RegisteredConferenceIds { get; set; } = new();
 
         public List<Conference> MyConferences { get; set; } = new List<Conference>();
 
@@ -25,14 +25,14 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Dashboard
         public int TotalRegistrations { get; set; }
         public int PendingPayments { get; set; }
         public int ReceiptWaiting { get; set; }
-        public int PendingAssignments { get; set; }   // Henüz hakeme atanmamış bildiri
+        public int PendingAssignments { get; set; }
         public int TotalReferees { get; set; }
         public decimal TotalRevenue { get; set; }
         public string RevenueCurrency { get; set; } = "TRY";
         public Conference? SelectedConference { get; set; }
 
         /// <summary>Kongre yöneticisine gösterilecek eksik yapılandırma uyarıları.</summary>
-        public List<string> ConfigWarnings { get; set; } = new();
+        public List<ConfigWarning> ConfigWarnings { get; set; } = new();
 
         public DashboardViewModel()
         {
@@ -40,4 +40,6 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Dashboard
             ChartData = new List<int>();
         }
     }
+
+    public record ConfigWarning(string Message, string? ActionUrl = null, string? ActionLabel = null);
 }

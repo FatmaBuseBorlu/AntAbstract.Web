@@ -708,23 +708,61 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         [HttpGet("/Admin/Reports/ParticipantsExport")]
         [HttpGet("/{slug}/Admin/Reports/ParticipantsExport")]
-        public async Task<IActionResult> ParticipantsExport(string slug, Guid? conferenceId = null)
+        public async Task<IActionResult> ParticipantsExport(
+            string slug,
+            Guid? conferenceId = null,
+            DateTime? dateFrom = null,
+            DateTime? dateTo = null,
+            string format = "csv")
         {
             var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
             if (conference == null)
                 return NotFound();
 
-            var rows = await _context.Registrations
+            var query = _context.Registrations
                 .AsNoTracking()
                 .Include(r => r.AppUser)
                 .Include(r => r.RegistrationType)
-                .Where(r => r.ConferenceId == conference.Id)
-                .OrderBy(r => r.AppUser!.LastName)
-                .ToListAsync();
+                .Where(r => r.ConferenceId == conference.Id);
+
+            if (dateFrom.HasValue)
+                query = query.Where(r => r.RegistrationDate >= dateFrom.Value.Date);
+            if (dateTo.HasValue)
+                query = query.Where(r => r.RegistrationDate < dateTo.Value.Date.AddDays(1));
+
+            var rows = await query.OrderBy(r => r.AppUser!.LastName).ToListAsync();
+
+            if (format == "xlsx")
+            {
+                using var wb = new XLWorkbook();
+                var ws = wb.Worksheets.Add("Katılımcılar");
+                var headers = new[] { "Ad", "Soyad", "E-posta", "Kurum", "Kayıt Tipi", "Ödeme Durumu", "Kayıt Tarihi" };
+                for (var i = 0; i < headers.Length; i++)
+                {
+                    ws.Cell(1, i + 1).Value = headers[i];
+                    ws.Cell(1, i + 1).Style.Font.Bold = true;
+                }
+                for (var i = 0; i < rows.Count; i++)
+                {
+                    var r = rows[i]; var u = r.AppUser; var row = i + 2;
+                    ws.Cell(row, 1).Value = u?.FirstName ?? "";
+                    ws.Cell(row, 2).Value = u?.LastName ?? "";
+                    ws.Cell(row, 3).Value = u?.Email ?? "";
+                    ws.Cell(row, 4).Value = u?.University ?? "";
+                    ws.Cell(row, 5).Value = r.RegistrationType?.Name ?? "";
+                    ws.Cell(row, 6).Value = r.IsPaid ? "Ödendi" : (r.ReceiptFilePath != null ? "Makbuz Bekleniyor" : "Ödenmedi");
+                    ws.Cell(row, 7).Value = r.RegistrationDate.ToString("dd.MM.yyyy");
+                }
+                ws.Columns().AdjustToContents();
+                using var ms = new System.IO.MemoryStream();
+                wb.SaveAs(ms);
+                return File(ms.ToArray(),
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    $"katilimcilar-{conference.Slug}-{DateTime.UtcNow:yyyyMMdd}.xlsx");
+            }
 
             var sb = new System.Text.StringBuilder();
             sb.AppendLine("Ad,Soyad,E-posta,Kurum,Kayıt Tipi,Ödeme Durumu,Kayıt Tarihi");
-
             foreach (var r in rows)
             {
                 var u = r.AppUser;
@@ -737,7 +775,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     CsvEsc(r.IsPaid ? "Ödendi" : (r.ReceiptFilePath != null ? "Makbuz Bekleniyor" : "Ödenmedi")),
                     CsvEsc(r.RegistrationDate.ToString("dd.MM.yyyy"))));
             }
-
             var bytes = System.Text.Encoding.UTF8.GetPreamble()
                 .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
             return File(bytes, "text/csv; charset=utf-8",
@@ -748,30 +785,72 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         [HttpGet("/Admin/Reports/RevenueExport")]
         [HttpGet("/{slug}/Admin/Reports/RevenueExport")]
-        public async Task<IActionResult> RevenueExport(string slug, Guid? conferenceId = null)
+        public async Task<IActionResult> RevenueExport(
+            string slug,
+            Guid? conferenceId = null,
+            DateTime? dateFrom = null,
+            DateTime? dateTo = null,
+            string format = "csv")
         {
             var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
             if (conference == null)
                 return NotFound();
 
-            var rows = await _context.Registrations
+            var query = _context.Registrations
                 .AsNoTracking()
                 .Include(r => r.AppUser)
                 .Include(r => r.RegistrationType)
-                .Where(r => r.ConferenceId == conference.Id && r.IsPaid)
-                .OrderByDescending(r => r.RegistrationDate)
-                .ToListAsync();
+                .Where(r => r.ConferenceId == conference.Id && r.IsPaid);
 
+            if (dateFrom.HasValue)
+                query = query.Where(r => r.RegistrationDate >= dateFrom.Value.Date);
+            if (dateTo.HasValue)
+                query = query.Where(r => r.RegistrationDate < dateTo.Value.Date.AddDays(1));
+
+            var rows = await query.OrderByDescending(r => r.RegistrationDate).ToListAsync();
             var totalRevenue = rows.Sum(r => r.Amount);
             var currency = rows.FirstOrDefault()?.RegistrationType?.Currency ?? "TRY";
+
+            if (format == "xlsx")
+            {
+                using var wb = new XLWorkbook();
+                var ws = wb.Worksheets.Add("Gelir Raporu");
+                ws.Cell(1, 1).Value = $"Kongre: {conference.Title}";
+                ws.Cell(1, 1).Style.Font.Bold = true;
+                ws.Cell(2, 1).Value = $"Toplam Gelir: {totalRevenue:N2} {currency}";
+                ws.Cell(3, 1).Value = $"Ödenen Kayıt Sayısı: {rows.Count}";
+                var headers = new[] { "Ad", "Soyad", "E-posta", "Kayıt Tipi", "Tutar", "Para Birimi", "Tarih" };
+                for (var i = 0; i < headers.Length; i++)
+                {
+                    ws.Cell(5, i + 1).Value = headers[i];
+                    ws.Cell(5, i + 1).Style.Font.Bold = true;
+                }
+                for (var i = 0; i < rows.Count; i++)
+                {
+                    var r = rows[i]; var u = r.AppUser; var row = i + 6;
+                    ws.Cell(row, 1).Value = u?.FirstName ?? "";
+                    ws.Cell(row, 2).Value = u?.LastName ?? "";
+                    ws.Cell(row, 3).Value = u?.Email ?? "";
+                    ws.Cell(row, 4).Value = r.RegistrationType?.Name ?? "";
+                    ws.Cell(row, 5).Value = r.Amount;
+                    ws.Cell(row, 5).Style.NumberFormat.Format = "#,##0.00";
+                    ws.Cell(row, 6).Value = r.RegistrationType?.Currency ?? "TRY";
+                    ws.Cell(row, 7).Value = r.RegistrationDate.ToString("dd.MM.yyyy");
+                }
+                ws.Columns().AdjustToContents();
+                using var ms = new System.IO.MemoryStream();
+                wb.SaveAs(ms);
+                return File(ms.ToArray(),
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    $"gelir-raporu-{conference.Slug ?? "conf"}-{DateTime.UtcNow:yyyyMMdd}.xlsx");
+            }
 
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"Kongre: {conference.Title}");
             sb.AppendLine($"Toplam Gelir: {totalRevenue:N2} {currency}");
-            sb.AppendLine($"Ödenen Kayıt Sayısı: {rows.Count.ToString()}");
+            sb.AppendLine($"Ödenen Kayıt Sayısı: {rows.Count}");
             sb.AppendLine("");
             sb.AppendLine("Ad,Soyad,E-posta,Kayıt Tipi,Tutar,Para Birimi,Tarih");
-
             foreach (var r in rows)
             {
                 var u = r.AppUser;
@@ -784,7 +863,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     CsvEsc(r.RegistrationType?.Currency ?? "TRY"),
                     CsvEsc(r.RegistrationDate.ToString("dd.MM.yyyy"))));
             }
-
             var bytes = System.Text.Encoding.UTF8.GetPreamble()
                 .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
             return File(bytes, "text/csv; charset=utf-8",
@@ -795,23 +873,60 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         [HttpGet("/Admin/Reports/SubmissionsExport")]
         [HttpGet("/{slug}/Admin/Reports/SubmissionsExport")]
-        public async Task<IActionResult> SubmissionsExport(string slug, Guid? conferenceId = null)
+        public async Task<IActionResult> SubmissionsExport(
+            string slug,
+            Guid? conferenceId = null,
+            DateTime? dateFrom = null,
+            DateTime? dateTo = null,
+            string format = "csv")
         {
             var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
             if (conference == null)
                 return NotFound();
 
-            var rows = await _context.Submissions
+            var query = _context.Submissions
                 .AsNoTracking()
                 .Include(s => s.Author)
                 .Include(s => s.ConferenceTopic)
-                .Where(s => s.ConferenceId == conference.Id)
-                .OrderByDescending(s => s.CreatedDate)
-                .ToListAsync();
+                .Where(s => s.ConferenceId == conference.Id);
+
+            if (dateFrom.HasValue)
+                query = query.Where(s => s.CreatedDate >= dateFrom.Value.Date);
+            if (dateTo.HasValue)
+                query = query.Where(s => s.CreatedDate < dateTo.Value.Date.AddDays(1));
+
+            var rows = await query.OrderByDescending(s => s.CreatedDate).ToListAsync();
+
+            if (format == "xlsx")
+            {
+                using var wb = new XLWorkbook();
+                var ws = wb.Worksheets.Add("Bildiriler");
+                var headers = new[] { "Başlık", "Yazar", "Konu", "Sunum Türü", "Durum", "Gönderim Tarihi" };
+                for (var i = 0; i < headers.Length; i++)
+                {
+                    ws.Cell(1, i + 1).Value = headers[i];
+                    ws.Cell(1, i + 1).Style.Font.Bold = true;
+                }
+                for (var i = 0; i < rows.Count; i++)
+                {
+                    var s = rows[i]; var row = i + 2;
+                    ws.Cell(row, 1).Value = s.Title ?? "";
+                    ws.Cell(row, 2).Value = s.Author != null ? $"{s.Author.FirstName} {s.Author.LastName}".Trim() : "";
+                    ws.Cell(row, 3).Value = s.ConferenceTopic?.Name ?? s.Topic ?? "";
+                    ws.Cell(row, 4).Value = s.PresentationType ?? "";
+                    ws.Cell(row, 5).Value = s.Status.ToString();
+                    ws.Cell(row, 6).Value = s.CreatedDate.ToString("dd.MM.yyyy");
+                }
+                ws.Columns().AdjustToContents();
+                using var ms = new System.IO.MemoryStream();
+                wb.SaveAs(ms);
+                return File(ms.ToArray(),
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    $"bildiriler-{conference.Slug}-{DateTime.UtcNow:yyyyMMdd}.xlsx");
+            }
 
             var sb = new System.Text.StringBuilder();
             sb.AppendLine("Başlık,Yazar,Konu,Sunum Türü,Durum,Gönderim Tarihi");
-
             foreach (var s in rows)
             {
                 sb.AppendLine(string.Join(",",
@@ -822,7 +937,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     CsvEsc(s.Status.ToString()),
                     CsvEsc(s.CreatedDate.ToString("dd.MM.yyyy"))));
             }
-
             var bytes = System.Text.Encoding.UTF8.GetPreamble()
                 .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
             return File(bytes, "text/csv; charset=utf-8",

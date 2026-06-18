@@ -17,161 +17,169 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
     public class SystemReportsController : Controller
     {
         private readonly AppDbContext _context;
-        private readonly UserManager<AppUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
 
-        private static readonly string[] ReviewerRoleNames =
-        {
-            "Referee",
-            "Hakem",
-            "Reviewer"
-        };
-
-        public SystemReportsController(
-            AppDbContext context,
-            UserManager<AppUser> userManager,
-            RoleManager<IdentityRole> roleManager)
+        public SystemReportsController(AppDbContext context)
         {
             _context = context;
-            _userManager = userManager;
-            _roleManager = roleManager;
         }
 
         [HttpGet("/Admin/SystemReports")]
         public async Task<IActionResult> Index()
         {
-            var today = DateTime.Today;
+            var today = DateTime.UtcNow.Date;
 
-            var tenants = await _context.Tenants
+            // ── Scalar count'lar — DB aggregate, RAM'e çekme ────────────────
+            var totalInstitutions  = await _context.Tenants.CountAsync();
+            var totalConferences   = await _context.Conferences.CountAsync();
+            var activeConferences  = await _context.Conferences
+                .CountAsync(c => c.StartDate.Date <= today && c.EndDate.Date >= today);
+            var totalUsers         = await _context.Users.CountAsync();
+            var totalSubmissions   = await _context.Submissions.CountAsync();
+            var assignedSubmissions = await _context.Submissions
+                .CountAsync(s => s.ReviewAssignments.Any());
+
+            var decisionCompletedStatuses = new[]
+            {
+                SubmissionStatus.Accepted, SubmissionStatus.Rejected,
+                SubmissionStatus.RevisionRequired
+            };
+            var decisionCompletedSubmissions = await _context.Submissions
+                .CountAsync(s => decisionCompletedStatuses.Contains(s.Status));
+            var decisionPendingSubmissions = await _context.Submissions
+                .CountAsync(s => s.ReviewAssignments.Any() &&
+                                 !decisionCompletedStatuses.Contains(s.Status));
+
+            var totalRegistrations = await _context.Registrations.CountAsync();
+            var paidRegistrations  = await _context.Registrations.CountAsync(r => r.IsPaid);
+
+            var completedRevenue = await _context.Payments
+                .Where(p => p.Status == PaymentStatus.Completed)
+                .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+            var paidRegRevenue = completedRevenue > 0 ? completedRevenue
+                : await _context.Registrations
+                    .Where(r => r.IsPaid)
+                    .SumAsync(r => (decimal?)r.Amount) ?? 0m;
+
+            // ── Rol sayıları (UserRoles × Roles join — N+1 yok) ──────────────
+            var roleCounts = await _context.UserRoles
+                .Join(_context.Roles, ur => ur.RoleId, r => r.Id,
+                    (ur, r) => new { r.Name, ur.UserId })
+                .Where(x => x.Name != null)
+                .GroupBy(x => x.Name!)
+                .Select(g => new { Role = g.Key, Count = g.Select(x => x.UserId).Distinct().Count() })
+                .ToDictionaryAsync(g => g.Role, g => g.Count);
+
+            // ── Tenant raporu — top 8 (GROUP BY DB'de) ───────────────────────
+            var confByTenant = await _context.Conferences
+                .GroupBy(c => c.TenantId)
+                .Select(g => new { TenantId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(g => g.TenantId, g => g.Count);
+
+            var usersByTenant = await _context.Users
+                .Where(u => u.TenantId.HasValue)
+                .GroupBy(u => u.TenantId!.Value)
+                .Select(g => new { TenantId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(g => g.TenantId, g => g.Count);
+
+            var tenantReports = await _context.Tenants
                 .AsNoTracking()
-                .OrderBy(x => x.Name)
-                .ToListAsync();
-
-            var conferences = await _context.Conferences
-                .AsNoTracking()
-                .Include(x => x.Tenant)
-                .OrderByDescending(x => x.StartDate)
-                .ToListAsync();
-
-            var users = await _context.Users
-                .AsNoTracking()
-                .OrderBy(x => x.Email)
-                .ToListAsync();
-
-            var submissions = await _context.Submissions
-                .AsNoTracking()
-                .Include(x => x.Conference)
-                    .ThenInclude(x => x.Tenant)
-                .Include(x => x.ReviewAssignments)
-                .ToListAsync();
-
-            var registrations = await _context.Registrations
-                .AsNoTracking()
-                .Include(x => x.RegistrationType)
-                .Include(x => x.Conference)
-                    .ThenInclude(x => x.Tenant)
-                .ToListAsync();
-
-            var completedPayments = await _context.Payments
-                .AsNoTracking()
-                .Where(x => x.Status == PaymentStatus.Completed)
-                .ToListAsync();
-
-            var admins = await GetUsersInRoleSafeAsync("Admin");
-            var authors = await GetUsersInRoleSafeAsync("Author");
-            var reviewers = await GetReviewerUsersAsync();
-
-            var activeConferences = conferences.Count(conference =>
-                conference.StartDate.Date <= today &&
-                conference.EndDate.Date >= today);
-
-            var assignedSubmissions = submissions.Count(submission =>
-                submission.ReviewAssignments != null &&
-                submission.ReviewAssignments.Any());
-
-            var decisionCompletedSubmissions = submissions.Count(submission =>
-                IsDecisionCompletedStatus(submission.Status));
-
-            var decisionPendingSubmissions = submissions.Count(submission =>
-                submission.ReviewAssignments != null &&
-                submission.ReviewAssignments.Any() &&
-                !IsDecisionCompletedStatus(submission.Status));
-
-            var tenantReports = tenants
-                .Select(tenant => new TenantConferenceReportItem
+                .Select(t => new TenantConferenceReportItem
                 {
-                    TenantId = tenant.Id,
-                    TenantName = tenant.Name ?? "",
-                    Slug = tenant.Slug ?? "",
-                    ConferenceCount = conferences.Count(c => c.TenantId == tenant.Id),
-                    UserCount = users.Count(u => u.TenantId.HasValue && u.TenantId.Value == tenant.Id)
+                    TenantId = t.Id,
+                    TenantName = t.Name ?? "",
+                    Slug = t.Slug ?? "",
+                    ConferenceCount = _context.Conferences.Count(c => c.TenantId == t.Id),
+                    UserCount = _context.Users.Count(u => u.TenantId == t.Id)
                 })
                 .OrderByDescending(x => x.ConferenceCount)
                 .ThenByDescending(x => x.UserCount)
                 .Take(8)
-                .ToList();
+                .ToListAsync();
 
-            var conferenceSubmissionReports = conferences
-                .Select(conference => new ConferenceSubmissionReportItem
-                {
-                    ConferenceId = conference.Id,
-                    ConferenceTitle = conference.Title ?? "",
-                    TenantName = conference.Tenant?.Name ?? "",
-                    Slug = conference.Tenant?.Slug ?? "",
-                    SubmissionCount = submissions.Count(s => s.ConferenceId == conference.Id)
-                })
-                .OrderByDescending(x => x.SubmissionCount)
-                .ThenBy(x => x.ConferenceTitle)
+            // ── Kongre-başvuru raporu — top 8 ────────────────────────────────
+            var subCountByConf = await _context.Submissions
+                .GroupBy(s => s.ConferenceId)
+                .Select(g => new { ConferenceId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(g => g.ConferenceId, g => g.Count);
+
+            var conferenceSubmissionReports = await _context.Conferences
+                .AsNoTracking()
+                .Include(c => c.Tenant)
+                .OrderByDescending(c => _context.Submissions.Count(s => s.ConferenceId == c.Id))
+                .ThenBy(c => c.Title)
                 .Take(8)
-                .ToList();
-
-            var recentConferences = conferences
-                .Take(6)
-                .Select(conference => new RecentConferenceReportItem
+                .Select(c => new ConferenceSubmissionReportItem
                 {
-                    Id = conference.Id,
-                    Title = conference.Title ?? "",
-                    TenantName = conference.Tenant?.Name ?? "",
-                    Slug = conference.Tenant?.Slug ?? "",
-                    StartDate = conference.StartDate,
-                    EndDate = conference.EndDate
+                    ConferenceId = c.Id,
+                    ConferenceTitle = c.Title ?? "",
+                    TenantName = c.Tenant != null ? c.Tenant.Name : "",
+                    Slug = c.Tenant != null ? c.Tenant.Slug : null,
+                    SubmissionCount = _context.Submissions.Count(s => s.ConferenceId == c.Id)
                 })
-                .ToList();
+                .ToListAsync();
 
-            var recentUsers = BuildRecentUsers(users, tenants);
+            // ── Son 6 kongre ──────────────────────────────────────────────────
+            var recentConferences = await _context.Conferences
+                .AsNoTracking()
+                .Include(c => c.Tenant)
+                .OrderByDescending(c => c.StartDate)
+                .Take(6)
+                .Select(c => new RecentConferenceReportItem
+                {
+                    Id = c.Id,
+                    Title = c.Title ?? "",
+                    TenantName = c.Tenant != null ? c.Tenant.Name : "",
+                    Slug = c.Tenant != null ? c.Tenant.Slug : null,
+                    StartDate = c.StartDate,
+                    EndDate = c.EndDate
+                })
+                .ToListAsync();
 
-            var paidRegistrationRevenue = registrations
-                .Where(x => x.IsPaid)
-                .Sum(x => x.Amount);
-
-            var completedPaymentRevenue = completedPayments
-                .Sum(x => x.Amount);
-
-            var totalRevenue = completedPaymentRevenue > 0
-                ? completedPaymentRevenue
-                : paidRegistrationRevenue;
+            // ── Son 6 kullanıcı ───────────────────────────────────────────────
+            var recentUsers = await _context.Users
+                .AsNoTracking()
+                .OrderByDescending(u => u.Id) // Id sıralaması yeterli proxy
+                .Take(6)
+                .Select(u => new RecentUserReportItem
+                {
+                    Id = u.Id,
+                    FullName = (u.FirstName + " " + u.LastName).Trim() != ""
+                        ? (u.FirstName + " " + u.LastName).Trim()
+                        : u.UserName ?? u.Email ?? "Kullanıcı",
+                    Email = u.Email ?? "",
+                    TenantName = u.TenantId.HasValue
+                        ? (_context.Tenants
+                            .Where(t => t.Id == u.TenantId.Value)
+                            .Select(t => t.Name)
+                            .FirstOrDefault() ?? "Kurum yok")
+                        : "Kurum yok",
+                    CreatedDate = null
+                })
+                .ToListAsync();
 
             var model = new SystemReportsIndexViewModel
             {
-                TotalInstitutions = tenants.Count,
-                TotalConferences = conferences.Count,
+                TotalInstitutions = totalInstitutions,
+                TotalConferences = totalConferences,
                 ActiveConferences = activeConferences,
 
-                TotalUsers = users.Count,
-                TotalAdmins = admins.Count,
-                TotalAuthors = authors.Count,
-                TotalReviewers = reviewers.Count,
+                TotalUsers = totalUsers,
+                TotalAdmins = roleCounts.GetValueOrDefault("Admin"),
+                TotalAuthors = roleCounts.GetValueOrDefault("Author"),
+                TotalReviewers = roleCounts.GetValueOrDefault("Referee") +
+                                 roleCounts.GetValueOrDefault("Hakem") +
+                                 roleCounts.GetValueOrDefault("Reviewer"),
 
-                TotalSubmissions = submissions.Count,
+                TotalSubmissions = totalSubmissions,
                 AssignedSubmissions = assignedSubmissions,
                 DecisionPendingSubmissions = decisionPendingSubmissions,
                 DecisionCompletedSubmissions = decisionCompletedSubmissions,
 
-                TotalRegistrations = registrations.Count,
-                PaidRegistrations = registrations.Count(x => x.IsPaid),
-                PendingPayments = registrations.Count(x => !x.IsPaid),
+                TotalRegistrations = totalRegistrations,
+                PaidRegistrations = paidRegistrations,
+                PendingPayments = totalRegistrations - paidRegistrations,
 
-                TotalRevenue = totalRevenue,
+                TotalRevenue = paidRegRevenue,
 
                 RecentUsers = recentUsers,
                 RecentConferences = recentConferences,
@@ -188,113 +196,5 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private async Task<List<AppUser>> GetUsersInRoleSafeAsync(string roleName)
-        {
-            if (string.IsNullOrWhiteSpace(roleName))
-            {
-                return new List<AppUser>();
-            }
-
-            var roleExists = await _roleManager.RoleExistsAsync(roleName);
-
-            if (!roleExists)
-            {
-                return new List<AppUser>();
-            }
-
-            var users = await _userManager.GetUsersInRoleAsync(roleName);
-
-            return users.ToList();
-        }
-
-        private async Task<List<AppUser>> GetReviewerUsersAsync()
-        {
-            var reviewerUsers = new Dictionary<string, AppUser>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var roleName in ReviewerRoleNames)
-            {
-                var usersInRole = await GetUsersInRoleSafeAsync(roleName);
-
-                foreach (var user in usersInRole)
-                {
-                    if (user == null || string.IsNullOrWhiteSpace(user.Id))
-                    {
-                        continue;
-                    }
-
-                    reviewerUsers[user.Id] = user;
-                }
-            }
-
-            return reviewerUsers.Values.ToList();
-        }
-
-        private static bool IsDecisionCompletedStatus(SubmissionStatus status)
-        {
-            var statusName = status.ToString();
-
-            return statusName.Contains("Accepted", StringComparison.OrdinalIgnoreCase) ||
-                   statusName.Contains("Rejected", StringComparison.OrdinalIgnoreCase) ||
-                   statusName.Contains("Revision", StringComparison.OrdinalIgnoreCase) ||
-                   statusName.Contains("Published", StringComparison.OrdinalIgnoreCase) ||
-                   statusName.Contains("Completed", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static List<RecentUserReportItem> BuildRecentUsers(
-            List<AppUser> users,
-            List<Tenant> tenants)
-        {
-            var createdDateProperty = typeof(AppUser).GetProperty("CreatedDate");
-
-            var orderedUsers = users
-                .OrderByDescending(user => GetUserCreatedDate(user, createdDateProperty) ?? DateTime.MinValue)
-                .ThenBy(user => user.Email)
-                .Take(6)
-                .ToList();
-
-            return orderedUsers
-                .Select(user =>
-                {
-                    var tenant = user.TenantId.HasValue
-                        ? tenants.FirstOrDefault(x => x.Id == user.TenantId.Value)
-                        : null;
-
-                    var fullName = $"{user.FirstName} {user.LastName}".Trim();
-
-                    if (string.IsNullOrWhiteSpace(fullName))
-                    {
-                        fullName = user.UserName ?? user.Email ?? "Kullanıcı";
-                    }
-
-                    return new RecentUserReportItem
-                    {
-                        Id = user.Id,
-                        FullName = fullName,
-                        Email = user.Email ?? "",
-                        TenantName = tenant?.Name ?? "Kurum yok",
-                        CreatedDate = GetUserCreatedDate(user, createdDateProperty)
-                    };
-                })
-                .ToList();
-        }
-
-        private static DateTime? GetUserCreatedDate(
-            AppUser user,
-            System.Reflection.PropertyInfo? createdDateProperty)
-        {
-            if (createdDateProperty == null)
-            {
-                return null;
-            }
-
-            var value = createdDateProperty.GetValue(user);
-
-            if (value is DateTime dateTime)
-            {
-                return dateTime;
-            }
-
-            return null;
-        }
     }
 }

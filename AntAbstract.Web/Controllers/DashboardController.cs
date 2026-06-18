@@ -415,9 +415,9 @@ namespace AntAbstract.Web.Controllers
                     ? ""
                     : "?" + queryString);
 
-            var dict = parsedQuery.ToDictionary(
+            Dictionary<string, string?> dict = parsedQuery.ToDictionary(
                 x => x.Key,
-                x => x.Value.ToString());
+                x => (string?)x.Value.ToString());
 
             dict["conferenceId"] = conferenceId.ToString();
 
@@ -825,31 +825,51 @@ namespace AntAbstract.Web.Controllers
                     .CountAsync();
 
                 // ── Eksik Yapılandırma Uyarıları ────────────────────────────────
-                var warnings = new List<string>();
+                var warnings = new List<ConfigWarning>();
+                var currentSlug = GetSlug();
+                var pfx = string.IsNullOrWhiteSpace(currentSlug) ? "" : $"/{currentSlug}";
 
                 var hasRegTypes = await _context.RegistrationTypes.AsNoTracking()
                     .AnyAsync(rt => rt.ConferenceId == confId);
                 if (!hasRegTypes)
-                    warnings.Add("Kayıt tipi tanımlanmamış — katılımcılar kayıt yaptıramaz.");
+                    warnings.Add(new ConfigWarning(
+                        "Kayıt tipi tanımlanmamış — katılımcılar kayıt yaptıramaz.",
+                        $"{pfx}/Admin/RegistrationTypes/Create",
+                        "Kayıt Tipi Ekle"));
 
                 var hasTopics = await _context.ConferenceTopics.AsNoTracking()
                     .AnyAsync(t => t.ConferenceId == confId && t.IsActive);
                 if (!hasTopics)
-                    warnings.Add("Aktif konu alanı yok — bildiri gönderimleri konusuz kalır.");
+                    warnings.Add(new ConfigWarning(
+                        "Aktif konu alanı yok — bildiri gönderimleri konusuz kalır.",
+                        $"{pfx}/Admin/ConferenceTopics/Create",
+                        "Konu Ekle"));
 
                 if (selectedConference != null)
                 {
                     if (!selectedConference.IsSubmissionOpen)
-                        warnings.Add("Bildiri gönderimi kapalı.");
+                        warnings.Add(new ConfigWarning(
+                            "Bildiri gönderimi kapalı.",
+                            $"{pfx}/Admin/Conferences/Edit/{selectedConference.Id}",
+                            "Kongreyi Düzenle"));
 
                     if (selectedConference.AbstractSubmissionDeadline.HasValue &&
                         selectedConference.AbstractSubmissionDeadline < DateTime.UtcNow)
-                        warnings.Add($"Özet gönderim son tarihi geçti ({selectedConference.AbstractSubmissionDeadline:dd.MM.yyyy}).");
+                        warnings.Add(new ConfigWarning(
+                            $"Özet gönderim son tarihi geçti ({selectedConference.AbstractSubmissionDeadline:dd.MM.yyyy}).",
+                            $"{pfx}/Admin/Conferences/Edit/{selectedConference.Id}",
+                            "Tarihi Güncelle"));
                 }
 
                 var stripeKey = _configuration["Stripe:SecretKey"];
                 if (string.IsNullOrWhiteSpace(stripeKey) || stripeKey.StartsWith("SET_VIA"))
-                    warnings.Add("Stripe ödeme entegrasyonu yapılandırılmamış — ödemeler çalışmaz.");
+                {
+                    var callerIsSuperAdmin = User.IsInRole("SuperAdmin");
+                    warnings.Add(new ConfigWarning(
+                        "Stripe ödeme entegrasyonu yapılandırılmamış — ödemeler çalışmaz.",
+                        callerIsSuperAdmin ? "/Admin/SystemParameters" : null,
+                        callerIsSuperAdmin ? "Sistem Parametreleri" : null));
+                }
 
                 viewModel.ConfigWarnings = warnings;
             }

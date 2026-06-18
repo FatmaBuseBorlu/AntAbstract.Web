@@ -133,11 +133,14 @@ namespace AntAbstract.Application.Services
                 CertificateFirstSignerName = assignment.Submission?.Conference?.CertificateFirstSignerName,
                 CertificateFirstSignerTitle = assignment.Submission?.Conference?.CertificateFirstSignerTitle,
                 CertificateSecondSignerName = assignment.Submission?.Conference?.CertificateSecondSignerName,
-                CertificateSecondSignerTitle = assignment.Submission?.Conference?.CertificateSecondSignerTitle
+                CertificateSecondSignerTitle = assignment.Submission?.Conference?.CertificateSecondSignerTitle,
+                ConferenceSlug = assignment.Submission?.Conference?.Slug,
+                Topic = assignment.Submission?.Topic,
+                ReviewDeadline = assignment.Submission?.Conference?.AbstractSubmissionDeadline
             }).ToList();
         }
 
-        public async Task<ReviewAssignmentDto> GetAssignmentByIdAsync(
+        public async Task<ReviewAssignmentDto?> GetAssignmentByIdAsync(
             int id,
             string reviewerId)
         {

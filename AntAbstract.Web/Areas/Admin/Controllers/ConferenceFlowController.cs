@@ -370,6 +370,39 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     s.ConferenceId == conference.Id &&
                     s.DecisionDate != null);
 
+            var acceptedCount = await _context.Submissions
+                .AsNoTracking()
+                .CountAsync(s =>
+                    s.ConferenceId == conference.Id &&
+                    s.Status == SubmissionStatus.Accepted);
+
+            var rejectedCount = await _context.Submissions
+                .AsNoTracking()
+                .CountAsync(s =>
+                    s.ConferenceId == conference.Id &&
+                    s.Status == SubmissionStatus.Rejected);
+
+            var registrationCount = await _context.Registrations
+                .AsNoTracking()
+                .CountAsync(r => r.ConferenceId == conference.Id);
+
+            var paidRegistrationCount = await _context.Registrations
+                .AsNoTracking()
+                .CountAsync(r =>
+                    r.ConferenceId == conference.Id &&
+                    r.IsPaid);
+
+            var reviewerCount = await _context.ReviewAssignments
+                .AsNoTracking()
+                .Where(ra =>
+                    _context.Submissions
+                        .Where(s => s.ConferenceId == conference.Id)
+                        .Select(s => s.Id)
+                        .Contains(ra.SubmissionId))
+                .Select(ra => ra.ReviewerId)
+                .Distinct()
+                .CountAsync();
+
             var vm = new ConferenceFlowIndexViewModel
             {
                 ConferenceId = conference.Id,
@@ -378,7 +411,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 Slug = slug,
                 SubmissionCount = submissionCount,
                 AssignedSubmissionCount = assignedSubmissionCount,
-                DecidedSubmissionCount = decidedSubmissionCount
+                DecidedSubmissionCount = decidedSubmissionCount,
+                AcceptedCount = acceptedCount,
+                RejectedCount = rejectedCount,
+                RegistrationCount = registrationCount,
+                PaidRegistrationCount = paidRegistrationCount,
+                ReviewerCount = reviewerCount,
+                IsSubmissionOpen = conference.IsSubmissionOpen,
+                IsRegistrationOpen = conference.IsRegistrationOpen,
+                IsBiddingOpen = conference.IsBiddingOpen,
+                ConferenceStartDate = conference.StartDate,
+                ConferenceEndDate = conference.EndDate,
+                AbstractSubmissionDeadline = conference.AbstractSubmissionDeadline
             };
 
             return View("~/Areas/Admin/Views/ConferenceFlow/Index.cshtml", vm);
@@ -398,7 +442,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             Guid? conferenceId,
             string? search = null,
             string? paymentStatus = null,
-            Guid? registrationTypeId = null)
+            Guid? registrationTypeId = null,
+            int page = 1)
         {
             var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
 
@@ -484,8 +529,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 filteredQuery = filteredQuery.Where(x => x.RegistrationTypeId == registrationTypeId.Value);
             }
 
-            var registrations = await filteredQuery
-                .OrderByDescending(x => x.RegistrationDate)
+            const int pageSize = 30;
+            if (page < 1) page = 1;
+
+            var orderedQuery = filteredQuery.OrderByDescending(x => x.RegistrationDate);
+            var filteredCount = await orderedQuery.CountAsync();
+
+            var registrations = await orderedQuery
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
             var items = registrations
@@ -536,7 +588,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 RegistrationTypeId = registrationTypeId,
 
                 RegistrationTypes = registrationTypes,
-                Items = items
+                Items = items,
+                Page = page,
+                PageSize = pageSize,
+                FilteredCount = filteredCount
             };
 
             ViewBag.ConferenceId = conference.Id;
@@ -651,6 +706,143 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return Redirect($"/{conference.Tenant.Slug}/Admin/ConferenceFlow/RegistrationsAndPayments?conferenceId={conference.Id}");
         }
 
+        [HttpPost("/Admin/ConferenceFlow/RegistrationsAndPayments/RevokePayment")]
+        [HttpPost("/{slug}/Admin/ConferenceFlow/RegistrationsAndPayments/RevokePayment")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RevokeRegistrationPayment(
+            string? slug,
+            Guid registrationId,
+            Guid conferenceId,
+            string? returnUrl = null)
+        {
+            if (registrationId == Guid.Empty || conferenceId == Guid.Empty)
+            {
+                TempData["ErrorMessage"] = "Geçersiz kayıt veya kongre bilgisi.";
+                return RedirectToAction(nameof(SelectConference));
+            }
+
+            var conferenceQuery = await GetAccessibleConferenceQueryAsync();
+            var conference = await conferenceQuery.FirstOrDefaultAsync(x => x.Id == conferenceId);
+
+            if (conference == null || conference.Tenant == null || string.IsNullOrWhiteSpace(conference.Tenant.Slug))
+            {
+                TempData["ErrorMessage"] = "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.";
+                return RedirectToAction(nameof(SelectConference));
+            }
+
+            SetConferenceSession(conference);
+
+            var registration = await _context.Registrations
+                .FirstOrDefaultAsync(x => x.Id == registrationId && x.ConferenceId == conference.Id);
+
+            if (registration == null)
+            {
+                TempData["ErrorMessage"] = "Kayıt bulunamadı.";
+                return Redirect($"/{conference.Tenant.Slug}/Admin/ConferenceFlow/RegistrationsAndPayments?conferenceId={conference.Id}");
+            }
+
+            if (!registration.IsPaid)
+            {
+                TempData["InfoMessage"] = "Bu kayıt zaten ödenmemiş durumda.";
+                return Redirect($"/{conference.Tenant.Slug}/Admin/ConferenceFlow/RegistrationsAndPayments?conferenceId={conference.Id}");
+            }
+
+            registration.IsPaid = false;
+            registration.PaymentDate = null;
+
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Ödeme onayı başarıyla geri alındı.";
+
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return LocalRedirect(returnUrl);
+            }
+
+            return Redirect($"/{conference.Tenant.Slug}/Admin/ConferenceFlow/RegistrationsAndPayments?conferenceId={conference.Id}");
+        }
+
+        [HttpGet("/{slug}/Admin/ConferenceFlow/RegistrationsAndPayments/Export")]
+        public async Task<IActionResult> ExportRegistrations(
+            string slug,
+            Guid? conferenceId,
+            string? search = null,
+            string? paymentStatus = null,
+            Guid? registrationTypeId = null)
+        {
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
+
+            if (conference == null) return Forbid();
+
+            var query = _context.Registrations
+                .AsNoTracking()
+                .Include(x => x.AppUser)
+                .Include(x => x.RegistrationType)
+                .Where(x => x.ConferenceId == conference.Id);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var t = search.Trim();
+                query = query.Where(x =>
+                    (x.AppUser != null && (
+                        (x.AppUser.FirstName != null && x.AppUser.FirstName.Contains(t)) ||
+                        (x.AppUser.LastName != null && x.AppUser.LastName.Contains(t)) ||
+                        (x.AppUser.Email != null && x.AppUser.Email.Contains(t))
+                    )) ||
+                    (x.RegistrationType != null && x.RegistrationType.Name.Contains(t)) ||
+                    (x.PaymentTransactionId != null && x.PaymentTransactionId.Contains(t))
+                );
+            }
+
+            if (!string.IsNullOrWhiteSpace(paymentStatus))
+            {
+                if (paymentStatus == "paid") query = query.Where(x => x.IsPaid);
+                else if (paymentStatus == "pending") query = query.Where(x => !x.IsPaid);
+            }
+
+            if (registrationTypeId.HasValue && registrationTypeId.Value != Guid.Empty)
+            {
+                query = query.Where(x => x.RegistrationTypeId == registrationTypeId.Value);
+            }
+
+            var rows = await query
+                .OrderByDescending(x => x.RegistrationDate)
+                .Select(x => new
+                {
+                    FullName = (x.AppUser != null
+                        ? ((x.AppUser.FirstName ?? "") + " " + (x.AppUser.LastName ?? "")).Trim()
+                        : ""),
+                    Email = x.AppUser != null ? x.AppUser.Email ?? "" : "",
+                    RegistrationType = x.RegistrationType != null ? x.RegistrationType.Name : "",
+                    x.Amount,
+                    Currency = x.RegistrationType != null ? x.RegistrationType.Currency : "TRY",
+                    x.IsPaid,
+                    x.RegistrationDate,
+                    x.PaymentDate,
+                    x.PaymentTransactionId,
+                    x.BillingName,
+                    x.TaxNumber
+                })
+                .ToListAsync();
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("Ad Soyad,E-posta,Kayıt Türü,Tutar,Para Birimi,Ödeme Durumu,Kayıt Tarihi,Ödeme Tarihi,İşlem ID,Fatura Adı,Vergi No");
+
+            foreach (var r in rows)
+            {
+                string Esc(string? v) => $"\"{(v ?? "").Replace("\"", "\"\"")}\"";
+                sb.AppendLine($"{Esc(r.FullName)},{Esc(r.Email)},{Esc(r.RegistrationType)},{r.Amount:F2},{r.Currency},{(r.IsPaid ? "Ödendi" : "Bekliyor")},{r.RegistrationDate:yyyy-MM-dd HH:mm},{r.PaymentDate?.ToString("yyyy-MM-dd HH:mm") ?? ""},{Esc(r.PaymentTransactionId)},{Esc(r.BillingName)},{Esc(r.TaxNumber)}");
+            }
+
+            var bytes = System.Text.Encoding.UTF8.GetPreamble()
+                .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString()))
+                .ToArray();
+
+            var fileName = $"kayitlar_{conference.Title?.Replace(" ", "_") ?? "export"}_{System.DateTime.Now:yyyyMMdd}.csv";
+
+            return File(bytes, "text/csv; charset=utf-8", fileName);
+        }
+
         [HttpGet("/Admin/ConferenceFlow/ProgramSessions")]
         public async Task<IActionResult> ProgramSessionsRoot(Guid? conferenceId)
         {
@@ -755,6 +947,30 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ViewBag.Slug = slug;
 
             return View("~/Areas/Admin/Views/ConferenceFlow/ProgramSessionsPrint.cshtml", sessions);
+        }
+
+        [HttpPost("/Admin/ConferenceFlow/ToggleBidding")]
+        [HttpPost("/{slug}/Admin/ConferenceFlow/ToggleBidding")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleBidding(string slug, Guid conferenceId)
+        {
+            var conference = await _context.Conferences
+                .FirstOrDefaultAsync(c => c.Id == conferenceId);
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                return Redirect($"/{slug}/Admin/ConferenceFlow");
+            }
+
+            conference.IsBiddingOpen = !conference.IsBiddingOpen;
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = conference.IsBiddingOpen
+                ? "Teklif fazı açıldı. Hakemler bildiri tercihlerini belirtebilir."
+                : "Teklif fazı kapatıldı.";
+
+            return Redirect($"/{slug}/Admin/ConferenceFlow");
         }
 
         [HttpGet("/ConferenceFlow/Index")]

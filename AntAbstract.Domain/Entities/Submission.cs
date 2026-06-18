@@ -73,6 +73,10 @@ namespace AntAbstract.Domain.Entities
 
         public bool IsFeedbackGiven { get; set; }
 
+        public string? RebuttalText { get; set; }
+
+        public DateTime? RebuttalDate { get; set; }
+
         public Guid ConferenceId { get; set; }
 
         public virtual Conference Conference { get; set; } = null!;

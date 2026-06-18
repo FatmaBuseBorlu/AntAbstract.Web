@@ -692,7 +692,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
             align-items: center;
             gap: 0.65rem;
             cursor: pointer;
-            padding: 0.35rem 0.45rem 0.35rem 1rem;
+            padding: 0.35rem 0.75rem 0.35rem 1rem;
             border-radius: 999px;
             background-color: #ffffff;
             border: 1px solid #dbe3ef;
@@ -700,6 +700,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
             box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
             position: relative;
             color: var(--text-dark);
+            overflow: visible;
         }
 
         .user-menu-btn:hover,
@@ -726,6 +727,8 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
             width: 38px;
             height: 38px;
             min-width: 38px;
+            overflow: visible;
+            margin-right: 4px;
         }
 
         .user-avatar-wrapper::after {
@@ -736,8 +739,8 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
             background-color: #22c55e;
             border: 2px solid #ffffff;
             position: absolute;
-            right: 0;
-            bottom: 1px;
+            right: -2px;
+            bottom: -2px;
         }
 
         .user-avatar {
@@ -963,6 +966,154 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
             font-weight: 800;
         }
 
+        .details-page-header {
+            border: 1px solid rgba(0, 174, 239, 0.18);
+            border-radius: 28px;
+            padding: 1.45rem 1.6rem;
+            background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.16), transparent 34%), linear-gradient(135deg, #ffffff, #f8fbff);
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        }
+
+        .details-page-header h4,
+        .details-page-header h3 {
+            color: var(--text-dark);
+            letter-spacing: -0.03em;
+        }
+
+        .modern-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+            overflow: hidden;
+        }
+
+        .modern-card-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1.55rem 1.65rem 1.15rem;
+        }
+
+        .modern-card-icon {
+            width: 56px;
+            height: 56px;
+            min-width: 56px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+        }
+
+        .modern-card-icon.soft-primary {
+            background: rgba(0, 174, 239, 0.12);
+            color: #0284c7;
+        }
+
+        .modern-card-icon.soft-info {
+            background: rgba(13, 110, 253, 0.10);
+            color: #0d6efd;
+        }
+
+        .modern-card-icon.soft-success {
+            background: rgba(25, 135, 84, 0.12);
+            color: #198754;
+        }
+
+        .modern-card-icon.soft-warning {
+            background: rgba(245, 158, 11, 0.12);
+            color: #f59e0b;
+        }
+
+        .modern-card-icon.soft-danger {
+            background: rgba(239, 68, 68, 0.10);
+            color: var(--danger);
+        }
+
+        .modern-card-title {
+            color: var(--text-dark);
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            font-size: 1.08rem;
+        }
+
+        .modern-card-text {
+            color: var(--text-muted);
+            line-height: 1.55;
+            font-size: 0.88rem;
+            font-weight: 700;
+        }
+
+        .modern-card-body {
+            padding: 0 1.65rem 1.65rem;
+        }
+
+        .conference-form-page .form-label {
+            color: #475569 !important;
+            font-size: 0.75rem;
+            font-weight: 900 !important;
+            letter-spacing: 0.28px;
+            text-transform: uppercase;
+            margin-bottom: 0.45rem;
+        }
+
+        .conference-form-page .form-control,
+        .conference-form-page .form-select {
+            min-height: 46px;
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+            color: #334155;
+            font-weight: 700;
+            box-shadow: none;
+        }
+
+        .conference-form-page .form-control-lg {
+            min-height: 54px;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 800;
+        }
+
+        .conference-form-page textarea.form-control {
+            min-height: 132px;
+            line-height: 1.65;
+        }
+
+        .conference-form-page .form-control:focus,
+        .conference-form-page .form-select:focus {
+            border-color: rgba(0, 174, 239, 0.55);
+            box-shadow: 0 0 0 0.2rem rgba(0, 174, 239, 0.10);
+        }
+
+        .conference-form-page .form-check-input {
+            cursor: pointer;
+            border-color: #cbd5e1;
+        }
+
+        .conference-form-page .form-switch .form-check-input {
+            width: 2.8em;
+            height: 1.45em;
+            margin-right: 0.65rem;
+        }
+
+        .conference-form-page .form-check-input:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .conference-form-actions {
+            position: sticky;
+            top: calc(var(--header-height) + 1rem);
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.94);
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.07);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
         .sidebar-overlay {
             display: none;
             position: fixed;
@@ -1050,6 +1201,23 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                 flex-direction: column;
             }
 
+            .details-page-header,
+            .modern-card-header,
+            .modern-card-body {
+                padding: 1.15rem;
+            }
+
+            .modern-card-icon {
+                width: 48px;
+                height: 48px;
+                min-width: 48px;
+                border-radius: 16px;
+            }
+
+            .conference-form-actions {
+                position: static;
+            }
+
             .account-dropdown-menu {
                 width: 295px;
             }
@@ -1125,6 +1293,22 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                     @L("Management_CongressFlow", "Kongre Akışı")
                 </a>
 
+                <div class="menu-label text-warning">
+                    @L("Section_CongressTools", "Kongre Araçları")
+                </div>
+
+                <a href="/Admin/EmailTemplates"
+                   class="nav-link @(currentController == "EmailTemplates" ? "active" : "")">
+                    <i class="fas fa-envelope-open-text text-primary"></i>
+                    E-posta Şablonları
+                </a>
+
+                <a href="/Admin/Broadcast"
+                   class="nav-link @(currentController == "Broadcast" ? "active" : "")">
+                    <i class="fas fa-paper-plane text-primary"></i>
+                    Toplu E-posta
+                </a>
+
                 <div class="menu-label text-secondary">
                     @L("Section_System", "Sistem")
                 </div>
@@ -1139,6 +1323,18 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                    class="nav-link @(currentController == "SystemReports" ? "active" : "")">
                     <i class="fas fa-chart-line text-warning"></i>
                     @L("Global_SystemReports", "Sistem Raporları")
+                </a>
+
+                <a href="/Admin/AuditLogs"
+                   class="nav-link @(currentController == "AuditLogs" ? "active" : "")">
+                    <i class="fas fa-history text-secondary"></i>
+                    Denetim Günlüğü
+                </a>
+
+                <a href="/Admin/Health"
+                   class="nav-link @(currentController == "Health" ? "active" : "")">
+                    <i class="fas fa-heartbeat text-danger"></i>
+                    Sistem Sağlığı
                 </a>
             }
 
@@ -1401,6 +1597,15 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                    class="nav-link @(currentController == "AuditLogs" ? "active" : "")">
                     <i class="fas fa-history text-secondary"></i>
                     Denetim Günlüğü
+                </a>
+
+                var healthUrl = string.IsNullOrWhiteSpace(slug)
+                    ? "/Admin/Health"
+                    : $"/{slug}/Admin/Health";
+                <a href="@healthUrl"
+                   class="nav-link @(currentController == "Health" ? "active" : "")">
+                    <i class="fas fa-heartbeat text-danger"></i>
+                    Sistem Sağlığı
                 </a>
             }
         </div>

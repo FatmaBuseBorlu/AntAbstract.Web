@@ -20,7 +20,6 @@ using System.Globalization;
 using System.IO.Compression;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.Localization;
 using AntAbstract.Infrastructure.Services.ProceedingBooks;
 using AntAbstract.Web.Files;
 using AntAbstract.Web.Security;
@@ -308,11 +307,12 @@ using (var scope = app.Services.CreateScope())
         //   dotnet ef database update --project AntAbstract.Infrastructure \
         //     --startup-project AntAbstract.Web
         // Development ortamında kolaylık için migration uygulanır.
+        // Testing ortamında (InMemory) relational migration API'si yoktur, atlanır.
         if (app.Environment.IsDevelopment())
         {
             await context.Database.MigrateAsync();
         }
-        else
+        else if (!app.Environment.IsEnvironment("Testing"))
         {
             // Production'da veritabanının güncel olduğunu doğrula; değilse başlatmayı durdur
             var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
@@ -334,6 +334,11 @@ using (var scope = app.Services.CreateScope())
         );
 
         await AntAbstract.Infrastructure.Data.DbSeeder.SeedRolesAndUsers(services);
+
+        if (app.Environment.IsDevelopment())
+        {
+            await AntAbstract.Infrastructure.Data.TestDataSeeder.SeedAsync(userManager, context);
+        }
     }
     catch (Exception ex)
     {
@@ -385,8 +390,8 @@ app.Use(async (ctx, next) =>
     h["Content-Security-Policy"] =
         "default-src 'self'; " +
         "script-src 'self' 'unsafe-inline' https://js.stripe.com https://cdn.jsdelivr.net; " +
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
-        "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; " +
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; " +
+        "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com data:; " +
         "img-src 'self' data: https:; " +
         "connect-src 'self' https://api.stripe.com; " +
         "frame-src https://js.stripe.com https://hooks.stripe.com; " +
@@ -585,3 +590,4 @@ app.MapControllers();
 #endregion
 
 app.Run();
+public partial class Program { }

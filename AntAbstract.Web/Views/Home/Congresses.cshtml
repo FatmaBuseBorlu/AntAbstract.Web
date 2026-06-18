@@ -409,7 +409,7 @@
                         var accentClass = GetAccentClass(title, slug, i);
 
                         var siteUrl = !string.IsNullOrWhiteSpace(slug)
-                        ? $"/{slug}"
+                        ? (conferenceId.HasValue ? $"/{slug}?conferenceId={conferenceId.Value}" : $"/{slug}")
                         : "#";
 
                         var registrationUrl = !string.IsNullOrWhiteSpace(slug)
