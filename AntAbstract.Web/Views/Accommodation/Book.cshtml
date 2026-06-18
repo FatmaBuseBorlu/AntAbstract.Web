@@ -1,0 +1,118 @@
+@model AntAbstract.Domain.Entities.RoomType
+
+@{
+    ViewData["Title"] = "Oda Rezervasyonu";
+    Layout = "_LayoutDashboard";
+
+    var slug = ViewBag.Slug as string ?? "";
+    var conferenceId = (Guid)ViewBag.ConferenceId;
+    var conferenceTitle = ViewBag.ConferenceTitle as string ?? "";
+    var transfers = ViewBag.Transfers as List<AntAbstract.Domain.Entities.TransferOption> ?? new();
+    var confStart = (DateTime)ViewBag.ConferenceStart;
+    var confEnd = (DateTime)ViewBag.ConferenceEnd;
+}
+
+<div class="container-fluid px-4 py-4" style="max-width:760px;">
+
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="/@slug/Accommodation?conferenceId=@conferenceId">Konaklama</a></li>
+            <li class="breadcrumb-item active">Rezervasyon</li>
+        </ol>
+    </nav>
+
+    <div class="card border-0 shadow-lg mb-4" style="border-radius:20px;overflow:hidden;">
+        <div class="card-header p-4 text-white" style="background:linear-gradient(135deg,#0d6efd,#00aeef);">
+            <h5 class="fw-bold mb-1"><i class="fas fa-bed me-2"></i>@Model.Hotel.Name — @Model.Name</h5>
+            <p class="mb-0 small opacity-75">@conferenceTitle</p>
+        </div>
+
+        <div class="card-body p-4">
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger mb-4">@TempData["ErrorMessage"]</div>
+            }
+
+            <div class="row g-3 mb-4">
+                <div class="col-4">
+                    <div class="text-center p-3 rounded-3 bg-light">
+                        <div class="fs-5 fw-bold text-primary">@Model.Price @Model.Currency</div>
+                        <div class="small text-muted">/ gece</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="text-center p-3 rounded-3 bg-light">
+                        <div class="fs-5 fw-bold text-dark">@Model.Capacity kişi</div>
+                        <div class="small text-muted">kapasite</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="text-center p-3 rounded-3 bg-light">
+                        <div class="fs-5 fw-bold text-success">@Model.TotalQuota</div>
+                        <div class="small text-muted">kontenjan</div>
+                    </div>
+                </div>
+            </div>
+
+            <form asp-action="BookPost" asp-route-slug="@slug" asp-route-roomTypeId="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="conferenceId" value="@conferenceId" />
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Giriş Tarihi</label>
+                        <input type="date" name="checkInDate" class="form-control"
+                               min="@confStart.ToString("yyyy-MM-dd")"
+                               max="@confEnd.ToString("yyyy-MM-dd")"
+                               value="@confStart.ToString("yyyy-MM-dd")" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Çıkış Tarihi</label>
+                        <input type="date" name="checkOutDate" class="form-control"
+                               min="@confStart.AddDays(1).ToString("yyyy-MM-dd")"
+                               max="@confEnd.AddDays(3).ToString("yyyy-MM-dd")"
+                               value="@confEnd.ToString("yyyy-MM-dd")" required />
+                    </div>
+                </div>
+
+                @if (Model.Capacity > 1)
+                {
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Oda Arkadaşı Adı <span class="text-muted fw-normal">(opsiyonel)</span></label>
+                        <input type="text" name="roommateName" class="form-control"
+                               placeholder="Ad Soyad" maxlength="200" />
+                    </div>
+                }
+
+                @if (transfers.Any())
+                {
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Transfer Seçeneği <span class="text-muted fw-normal">(opsiyonel)</span></label>
+                        <select name="transferOptionId" class="form-select">
+                            <option value="">Transfer istemiyorum</option>
+                            @foreach (var t in transfers)
+                            {
+                                <option value="@t.Id">@t.Name — @t.Price @t.Currency</option>
+                            }
+                        </select>
+                    </div>
+                }
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg fw-bold">
+                        <i class="fas fa-calendar-check me-2"></i>Rezervasyonu Tamamla
+                    </button>
+                    <a href="/@slug/Accommodation?conferenceId=@conferenceId" class="btn btn-outline-secondary">
+                        Vazgeç
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <p class="text-muted small text-center">
+        <i class="fas fa-info-circle me-1"></i>
+        Rezervasyon ücret ödemesi tamamlandıktan sonra onaylanır. Toplam tutar giriş-çıkış tarihleri seçildikten sonra hesaplanır.
+    </p>
+</div>

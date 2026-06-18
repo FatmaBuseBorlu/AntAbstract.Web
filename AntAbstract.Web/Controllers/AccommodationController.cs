@@ -124,6 +124,161 @@ namespace AntAbstract.Web.Controllers
             return View(hotels);
         }
 
+        [HttpGet("/{slug}/Accommodation/Book/{roomTypeId:guid}")]
+        [HttpGet("/Accommodation/Book/{roomTypeId:guid}")]
+        public async Task<IActionResult> Book(string? slug, Guid roomTypeId, Guid? conferenceId = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var roomType = await _context.RoomTypes
+                .AsNoTracking()
+                .Include(r => r.Hotel)
+                    .ThenInclude(h => h.Conference)
+                        .ThenInclude(c => c.Tenant)
+                .FirstOrDefaultAsync(r => r.Id == roomTypeId);
+
+            if (roomType == null) return NotFound();
+
+            var conference = roomType.Hotel.Conference;
+            var resolvedSlug = conference.Tenant?.Slug ?? slug ?? "";
+
+            var bookedCount = await _context.AccommodationBookings
+                .CountAsync(b => b.RoomTypeId == roomTypeId);
+            if (bookedCount >= roomType.TotalQuota)
+            {
+                TempData["ErrorMessage"] = "Bu oda tipi için kontenjan dolmuştur.";
+                return Redirect($"/{resolvedSlug}/Accommodation?conferenceId={conference.Id}");
+            }
+
+            var existing = await _context.AccommodationBookings
+                .AsNoTracking()
+                .FirstOrDefaultAsync(b => b.ConferenceId == conference.Id && b.AppUserId == user.Id);
+            if (existing != null)
+            {
+                TempData["InfoMessage"] = "Bu kongre için zaten bir konaklama rezervasyonunuz bulunmaktadır.";
+                return Redirect($"/{resolvedSlug}/Accommodation/MyBooking?conferenceId={conference.Id}");
+            }
+
+            var transfers = await _context.TransferOptions
+                .AsNoTracking()
+                .Where(t => t.ConferenceId == conference.Id)
+                .OrderBy(t => t.Name)
+                .ToListAsync();
+
+            ViewBag.Slug = resolvedSlug;
+            ViewBag.ConferenceId = conference.Id;
+            ViewBag.ConferenceTitle = conference.Title;
+            ViewBag.Transfers = transfers;
+            ViewBag.ConferenceStart = conference.StartDate;
+            ViewBag.ConferenceEnd = conference.EndDate;
+
+            return View(roomType);
+        }
+
+        [HttpPost("/{slug}/Accommodation/Book/{roomTypeId:guid}")]
+        [HttpPost("/Accommodation/Book/{roomTypeId:guid}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BookPost(string? slug, Guid roomTypeId,
+            DateTime checkInDate, DateTime checkOutDate,
+            string? roommateName, Guid? transferOptionId, Guid conferenceId)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var roomType = await _context.RoomTypes
+                .Include(r => r.Hotel)
+                    .ThenInclude(h => h.Conference)
+                        .ThenInclude(c => c.Tenant)
+                .FirstOrDefaultAsync(r => r.Id == roomTypeId);
+
+            if (roomType == null) return NotFound();
+
+            var conference = roomType.Hotel.Conference;
+            var resolvedSlug = conference.Tenant?.Slug ?? slug ?? "";
+
+            var bookedCount = await _context.AccommodationBookings
+                .CountAsync(b => b.RoomTypeId == roomTypeId);
+            if (bookedCount >= roomType.TotalQuota)
+            {
+                TempData["ErrorMessage"] = "Bu oda tipi için kontenjan dolmuştur.";
+                return Redirect($"/{resolvedSlug}/Accommodation?conferenceId={conference.Id}");
+            }
+
+            if (checkInDate >= checkOutDate || checkInDate < DateTime.Today)
+            {
+                TempData["ErrorMessage"] = "Geçersiz tarih aralığı.";
+                return Redirect($"/{resolvedSlug}/Accommodation/Book/{roomTypeId}?conferenceId={conference.Id}");
+            }
+
+            var nights = (checkOutDate.Date - checkInDate.Date).Days;
+            var roomTotal = roomType.Price * nights;
+
+            TransferOption? transfer = null;
+            decimal transferTotal = 0;
+            if (transferOptionId.HasValue && transferOptionId.Value != Guid.Empty)
+            {
+                transfer = await _context.TransferOptions.FindAsync(transferOptionId.Value);
+                transferTotal = transfer?.Price ?? 0;
+            }
+
+            var booking = new AccommodationBooking
+            {
+                Id = Guid.NewGuid(),
+                AppUserId = user.Id,
+                ConferenceId = conference.Id,
+                RoomTypeId = roomTypeId,
+                TransferOptionId = transfer?.Id,
+                CheckInDate = checkInDate,
+                CheckOutDate = checkOutDate,
+                RoommateName = roommateName?.Trim(),
+                TotalAmount = roomTotal + transferTotal,
+                IsPaid = false,
+                CreatedDate = DateTime.UtcNow
+            };
+
+            _context.AccommodationBookings.Add(booking);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Rezervasyonunuz alındı. Ödeme tamamlandıktan sonra onaylanacaktır.";
+            return Redirect($"/{resolvedSlug}/Accommodation/MyBooking?conferenceId={conference.Id}");
+        }
+
+        [HttpGet("/{slug}/Accommodation/MyBooking")]
+        [HttpGet("/Accommodation/MyBooking")]
+        public async Task<IActionResult> MyBooking(string? slug, Guid? conferenceId = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var selectedId = conferenceId ?? _selectedConferenceService.GetSelectedConferenceId();
+            if (!selectedId.HasValue)
+            {
+                TempData["ErrorMessage"] = "Kongre seçilmedi.";
+                return Redirect("/Dashboard/MyConferences");
+            }
+
+            var booking = await _context.AccommodationBookings
+                .AsNoTracking()
+                .Include(b => b.RoomType)
+                    .ThenInclude(r => r.Hotel)
+                .Include(b => b.TransferOption)
+                .Include(b => b.Conference)
+                    .ThenInclude(c => c.Tenant)
+                .FirstOrDefaultAsync(b => b.ConferenceId == selectedId.Value && b.AppUserId == user.Id);
+
+            if (booking == null)
+            {
+                TempData["InfoMessage"] = "Bu kongre için konaklama rezervasyonunuz bulunmamaktadır.";
+                return Redirect($"/{slug}/Accommodation?conferenceId={selectedId}");
+            }
+
+            ViewBag.Slug = booking.Conference.Tenant?.Slug ?? slug ?? "";
+            ViewBag.ConferenceTitle = booking.Conference.Title;
+
+            return View(booking);
+        }
+
         [Authorize(Roles = "SuperAdmin")]
         [HttpGet("/Admin/Accommodation/SeedData")]
         public async Task<IActionResult> SeedData(Guid? conferenceId = null)

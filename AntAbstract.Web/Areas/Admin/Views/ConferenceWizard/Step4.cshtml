@@ -1,0 +1,79 @@
+@model List<AntAbstract.Domain.Entities.ConferenceTopic>
+@{
+    ViewData["Title"] = "Yeni Kongre — Bildiri Konuları";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    var slug = ViewBag.Slug as string ?? "";
+    var confId = (Guid)ViewBag.ConferenceId;
+    var confTitle = ViewBag.ConferenceTitle as string ?? "";
+}
+
+<div class="container-fluid px-4 py-4" style="max-width:780px;">
+
+    <div class="mb-4">
+        <h4 class="fw-bold mb-1"><i class="fas fa-magic me-2 text-primary"></i>Yeni Kongre Sihirbazı</h4>
+        <p class="text-muted small mb-3">@confTitle</p>
+        @await Html.PartialAsync("_WizardProgress", 4)
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3" style="border-radius:20px;">
+        <div class="card-header bg-primary text-white p-4" style="border-radius:20px 20px 0 0;">
+            <h5 class="fw-bold mb-0"><i class="fas fa-tags me-2"></i>Bildiri Konuları</h5>
+        </div>
+        <div class="card-body p-4">
+
+            @if (Model.Any())
+            {
+                <div class="mb-4 d-flex flex-wrap gap-2">
+                    @foreach (var t in Model)
+                    {
+                        <div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-3 bg-light border">
+                            <span class="fw-semibold small">@t.Name</span>
+                            @if (!string.IsNullOrWhiteSpace(t.NameEn))
+                            {
+                                <span class="text-muted small">/ @t.NameEn</span>
+                            }
+                            <form asp-action="Step4DeleteTopic" asp-route-slug="@slug"
+                                  asp-route-id="@confId" asp-route-topicId="@t.Id" method="post" class="mb-0">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm p-0 text-danger ms-1" title="Sil">
+                                    <i class="fas fa-times-circle"></i>
+                                </button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-muted small mb-3">Henüz konu eklenmedi. Atlamak için İleri butonuna tıklayın.</p>
+            }
+
+            <form asp-action="Step4AddTopic" asp-route-slug="@slug" asp-route-id="@confId" method="post">
+                @Html.AntiForgeryToken()
+                <div class="row g-2">
+                    <div class="col-md-5">
+                        <input type="text" name="name" class="form-control" placeholder="Konu adı (TR)" required maxlength="300" />
+                    </div>
+                    <div class="col-md-5">
+                        <input type="text" name="nameEn" class="form-control" placeholder="Topic name (EN — opsiyonel)" maxlength="300" />
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-success w-100"><i class="fas fa-plus"></i></button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 justify-content-between">
+        <a href="/@slug/Admin/ConferenceWizard/Step3/@confId" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Geri
+        </a>
+        <form asp-action="Step4Next" asp-route-slug="@slug" asp-route-id="@confId" method="post">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-primary px-4 fw-bold">
+                @(Model.Any() ? "Kaydet & İleri" : "Atla & İleri") <i class="fas fa-arrow-right ms-1"></i>
+            </button>
+        </form>
+    </div>
+</div>

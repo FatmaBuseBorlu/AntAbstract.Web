@@ -613,6 +613,7 @@
             .py-5 { padding-top: 2.5rem !important; padding-bottom: 2.5rem !important; }
         }
     </style>
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 
 <body class="@(ViewData["BodyClass"]?.ToString() ?? "")">
@@ -872,6 +873,20 @@
                                     @Localizer["Menu_Proceedings"]
                                 </a>
                             </li>
+
+                            @if (!string.IsNullOrWhiteSpace(slug))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/@slug/Speakers">
+                                        <i class="fas fa-chalkboard-teacher me-1"></i>Konuşmacılar
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/@slug/Sponsors">
+                                        <i class="fas fa-handshake me-1"></i>Sponsorlar
+                                    </a>
+                                </li>
+                            }
 
                             <li class="nav-item">
                                 <a class="nav-link" href="/contact">

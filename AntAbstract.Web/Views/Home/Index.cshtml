@@ -979,105 +979,6 @@
             margin-bottom: 16px;
         }
 
-    /* ── Animasyonlar ─────────────────────────────────────────────────── */
-    [data-animate] {
-        opacity: 0;
-        transform: translateY(32px);
-        transition: opacity 0.65s cubic-bezier(.22,1,.36,1), transform 0.65s cubic-bezier(.22,1,.36,1);
-    }
-    [data-animate].animated {
-        opacity: 1;
-        transform: translateY(0);
-    }
-    [data-animate="fade-left"]  { transform: translateX(-40px); }
-    [data-animate="fade-right"] { transform: translateX(40px); }
-    [data-animate="fade-left"].animated,
-    [data-animate="fade-right"].animated { transform: translateX(0); }
-    [data-animate="scale"] { transform: scale(0.88); }
-    [data-animate="scale"].animated { transform: scale(1); }
-
-    /* Delay yardımcıları */
-    [data-delay="100"] { transition-delay: 0.10s; }
-    [data-delay="200"] { transition-delay: 0.20s; }
-    [data-delay="300"] { transition-delay: 0.30s; }
-    [data-delay="400"] { transition-delay: 0.40s; }
-    [data-delay="500"] { transition-delay: 0.50s; }
-    [data-delay="600"] { transition-delay: 0.60s; }
-    [data-delay="700"] { transition-delay: 0.70s; }
-
-    /* Hero partikülleri */
-    .hero-particles {
-        position: absolute;
-        inset: 0;
-        overflow: hidden;
-        pointer-events: none;
-        z-index: 0;
-    }
-    .hero-particles span {
-        position: absolute;
-        border-radius: 50%;
-        animation: floatParticle linear infinite;
-        opacity: 0;
-    }
-
-    @@keyframes floatParticle {
-        0%   { transform: translateY(0) rotate(0deg);   opacity: 0; }
-        10%  { opacity: 1; }
-        90%  { opacity: 0.7; }
-        100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
-    }
-
-    /* Sayaç animasyonu */
-    .stat-number.counting { transition: none; }
-
-    /* Satır kayan çizgi animasyonu */
-    @@keyframes slideInLine {
-        from { width: 0; }
-        to   { width: 100%; }
-    }
-    .animate-line::after {
-        content: '';
-        display: block;
-        height: 3px;
-        background: linear-gradient(90deg, #00aeef, #0284c7);
-        border-radius: 999px;
-        animation: slideInLine 0.7s ease forwards;
-        margin-top: 6px;
-    }
-
-    /* Hero badge pulse */
-    @@keyframes badgePulse {
-        0%, 100% { box-shadow: 0 10px 30px rgba(15,23,42,0.06); }
-        50%       { box-shadow: 0 10px 30px rgba(0,174,239,0.25); }
-    }
-    .hero-badge { animation: badgePulse 3s ease infinite; }
-
-    /* Dashboard float */
-    @@keyframes dashFloat {
-        0%, 100% { transform: perspective(1100px) rotateY(-7deg) rotateX(4deg) translateY(0); }
-        50%       { transform: perspective(1100px) rotateY(-7deg) rotateX(4deg) translateY(-10px); }
-    }
-    .dashboard-shell { animation: dashFloat 5s ease-in-out infinite; }
-    .dashboard-shell:hover { animation: none; }
-
-    /* Floating note bob */
-    @@keyframes noteBob {
-        0%, 100% { transform: translateY(0); }
-        50%       { transform: translateY(-6px); }
-    }
-    .floating-note { animation: noteBob 4s ease-in-out infinite; }
-
-    /* Shimmer on mock-progress */
-    @@keyframes shimmer {
-        0%   { background-position: -200% 0; }
-        100% { background-position:  200% 0; }
-    }
-    .mock-progress span {
-        background: linear-gradient(90deg, #00aeef, #22c55e, #00aeef);
-        background-size: 200% 100%;
-        animation: shimmer 2.5s linear infinite;
-    }
-
     /* Kongre kartı reveal */
     .congress-item { transition: opacity 0.35s, transform 0.35s; }
 
@@ -1934,29 +1835,109 @@
 
 </div>
 
+@section Styles {
+<style>
+    /* ── Animasyonlar ─────────────────────────────────────────────────── */
+    [data-animate] {
+        opacity: 0;
+        transform: translateY(32px);
+        transition: opacity 0.65s cubic-bezier(.22,1,.36,1), transform 0.65s cubic-bezier(.22,1,.36,1);
+    }
+    [data-animate].animated {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+    }
+    [data-animate="fade-left"]  { transform: translateX(-40px); }
+    [data-animate="fade-right"] { transform: translateX(40px); }
+    [data-animate="fade-left"].animated,
+    [data-animate="fade-right"].animated { transform: translateX(0) !important; }
+    [data-animate="scale"] { transform: scale(0.88); }
+    [data-animate="scale"].animated { transform: scale(1) !important; }
+
+    /* Delay yardımcıları */
+    [data-delay="100"] { transition-delay: 0.10s; }
+    [data-delay="200"] { transition-delay: 0.20s; }
+    [data-delay="300"] { transition-delay: 0.30s; }
+    [data-delay="400"] { transition-delay: 0.40s; }
+    [data-delay="500"] { transition-delay: 0.50s; }
+    [data-delay="600"] { transition-delay: 0.60s; }
+    [data-delay="700"] { transition-delay: 0.70s; }
+
+    /* Hero partikülleri */
+    .hero-particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+    .hero-particles span { position: absolute; border-radius: 50%; animation: floatParticle linear infinite; opacity: 0; }
+
+    @@keyframes floatParticle {
+        0%   { transform: translateY(0) rotate(0deg);   opacity: 0; }
+        10%  { opacity: 1; }
+        90%  { opacity: 0.7; }
+        100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
+    }
+
+    @@keyframes slideInLine {
+        from { width: 0; }
+        to   { width: 100%; }
+    }
+    .animate-line::after {
+        content: ''; display: block; height: 3px;
+        background: linear-gradient(90deg, #00aeef, #0284c7);
+        border-radius: 999px; animation: slideInLine 0.7s ease forwards; margin-top: 6px;
+    }
+
+    @@keyframes badgePulse {
+        0%, 100% { box-shadow: 0 10px 30px rgba(15,23,42,0.06); }
+        50%       { box-shadow: 0 10px 30px rgba(0,174,239,0.25); }
+    }
+    .hero-badge { animation: badgePulse 3s ease infinite; }
+
+    @@keyframes dashFloat {
+        0%, 100% { transform: perspective(1100px) rotateY(-7deg) rotateX(4deg) translateY(0); }
+        50%       { transform: perspective(1100px) rotateY(-7deg) rotateX(4deg) translateY(-10px); }
+    }
+    .dashboard-shell { animation: dashFloat 5s ease-in-out infinite; }
+    .dashboard-shell:hover { animation: none; }
+
+    @@keyframes noteBob {
+        0%, 100% { transform: translateY(0); }
+        50%       { transform: translateY(-6px); }
+    }
+    .floating-note { animation: noteBob 4s ease-in-out infinite; }
+
+    @@keyframes shimmer {
+        0%   { background-position: -200% 0; }
+        100% { background-position:  200% 0; }
+    }
+    .mock-progress span {
+        background: linear-gradient(90deg, #00aeef, #22c55e, #00aeef);
+        background-size: 200% 100%;
+        animation: shimmer 2.5s linear infinite;
+    }
+</style>
+}
+
 @section Scripts {
 <script>
 /* ── Animasyon motoru ──────────────────────────────────────────────── */
 (function () {
+    function initAnimations() {
     // Scroll-triggered reveal
     var animated = document.querySelectorAll('[data-animate]');
     var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (e) {
             if (e.isIntersecting) {
-                e.target.classList.add('animated');
+                var delay = parseInt(e.target.dataset.delay || '0', 10);
+                setTimeout(function() { e.target.classList.add('animated'); }, delay);
                 io.unobserve(e.target);
             }
         });
-    }, { threshold: 0.12 });
+    }, { threshold: 0.08 });
 
     animated.forEach(function (el) { io.observe(el); });
 
     // Hero elementlerini hemen göster (viewport içinde başlıyorlar)
-    setTimeout(function () {
-        document.querySelectorAll('.hero-content [data-animate]').forEach(function (el) {
-            el.classList.add('animated');
-        });
-    }, 80);
+    document.querySelectorAll('.hero-content [data-animate]').forEach(function (el) {
+        el.classList.add('animated');
+    });
 
     // Sayaç animasyonu
     function animateCounter(el, target, duration) {
@@ -2003,6 +1984,13 @@
             ].join(';');
             container.appendChild(p);
         }
+    }
+    } // end initAnimations
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAnimations);
+    } else {
+        initAnimations();
     }
 })();
 

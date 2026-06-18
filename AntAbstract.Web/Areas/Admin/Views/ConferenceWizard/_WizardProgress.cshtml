@@ -1,0 +1,107 @@
+@model int
+@{
+    var current = Model;
+    var steps = new[] {
+        "Temel Bilgiler",
+        "Tarihler",
+        "Kayıt Tipleri",
+        "Konular",
+        "Ödeme",
+        "Yayınla"
+    };
+}
+
+<div class="wizard-progress mb-4">
+    <div class="d-flex align-items-center justify-content-between position-relative">
+        <div class="wizard-line"></div>
+        @for (int i = 0; i < steps.Length; i++)
+        {
+            var stepNum = i + 1;
+            var isDone = stepNum < current;
+            var isActive = stepNum == current;
+            var stateClass = isDone ? "done" : (isActive ? "active" : "");
+            <div class="wizard-step @stateClass">
+                <div class="wizard-dot">
+                    @if (isDone)
+                    {
+                        <i class="fas fa-check"></i>
+                    }
+                    else
+                    {
+                        <span>@stepNum</span>
+                    }
+                </div>
+                <div class="wizard-label">@steps[i]</div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .wizard-progress { padding: 0 8px; }
+    .wizard-progress > div { gap: 0; }
+
+    .wizard-line {
+        position: absolute;
+        top: 20px;
+        left: 5%;
+        right: 5%;
+        height: 2px;
+        background: #e2e8f0;
+        z-index: 0;
+    }
+
+    .wizard-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        z-index: 1;
+        flex: 1;
+    }
+
+    .wizard-dot {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #f1f5f9;
+        border: 2px solid #cbd5e1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: #94a3b8;
+        transition: all 0.3s;
+    }
+
+    .wizard-step.active .wizard-dot {
+        background: #0d6efd;
+        border-color: #0d6efd;
+        color: #fff;
+        box-shadow: 0 0 0 4px rgba(13,110,253,0.15);
+    }
+
+    .wizard-step.done .wizard-dot {
+        background: #16a34a;
+        border-color: #16a34a;
+        color: #fff;
+    }
+
+    .wizard-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #94a3b8;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .wizard-step.active .wizard-label { color: #0d6efd; }
+    .wizard-step.done .wizard-label   { color: #16a34a; }
+
+    @@media (max-width: 575px) {
+        .wizard-label { display: none; }
+        .wizard-dot { width: 32px; height: 32px; font-size: 0.8rem; }
+        .wizard-line { top: 16px; }
+    }
+</style>

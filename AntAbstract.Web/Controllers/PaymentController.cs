@@ -460,6 +460,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             var payments = await _context.Payments
+                .AsNoTracking()
                 .Include(p => p.Conference)
                 .Where(p =>
                     p.AppUserId == user.Id &&

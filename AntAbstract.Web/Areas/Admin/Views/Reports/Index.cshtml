@@ -38,6 +38,10 @@
         ? $"/Admin/Reports/UnregisteredAuthors?conferenceId={Model.ConferenceId}"
         : $"/{slug}/Admin/Reports/UnregisteredAuthors?conferenceId={Model.ConferenceId}";
 
+    var surveyResultsUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/SurveyResults?conferenceId={Model.ConferenceId}"
+        : $"/{slug}/Admin/SurveyResults?conferenceId={Model.ConferenceId}";
+
     int decidedCount = Model.AcceptedCount + Model.RejectedCount + Model.RevisionRequiredCount;
     int totalForBar = Model.TotalSubmissions > 0 ? Model.TotalSubmissions : 1;
     int acceptedPct = (int)Math.Round(Model.AcceptedCount * 100.0 / totalForBar);
@@ -91,6 +95,10 @@
             <a href="@unregisteredAuthorsUrl" class="btn btn-warning text-dark">
                 <i class="fas fa-user-times"></i>
                 Kayıtsız Yazarlar
+            </a>
+            <a href="@surveyResultsUrl" class="btn btn-info text-white">
+                <i class="fas fa-poll-h"></i>
+                Anket Sonuçları
             </a>
         </div>
     </div>
