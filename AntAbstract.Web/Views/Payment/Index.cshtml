@@ -313,21 +313,22 @@
     }
 
     @@media (max-width: 768px) {
-        .payment-page {
-            padding: 40px 0;
-        }
+        .payment-page { padding: 40px 0; }
+        .payment-card-body { padding: 1.15rem; }
+        .back-actions { flex-direction: column; }
+        .back-action-btn { width: 100%; }
+    }
 
-        .payment-card-body {
-            padding: 1.15rem;
-        }
-
-        .back-actions {
-            flex-direction: column;
-        }
-
-        .back-action-btn {
-            width: 100%;
-        }
+    @@media (max-width: 575px) {
+        .payment-page { padding: 20px 0; }
+        .payment-method-card { padding: 1rem; }
+        .payment-method-card .d-flex { flex-wrap: wrap; gap: .5rem; }
+        .bank-details-box { font-size: .82rem; }
+        .bank-details-box .d-flex { flex-direction: column; gap: .25rem; }
+        /* Fatura alanları tek sütun */
+        .row.g-3 > [class*="col-md"] { flex: 0 0 100%; max-width: 100%; }
+        /* Submit butonu tam genişlik */
+        button[type="submit"] { width: 100%; }
     }
 </style>
 

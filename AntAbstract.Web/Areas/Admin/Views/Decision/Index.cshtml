@@ -1314,14 +1314,17 @@
     }
 
     @@media (max-width: 768px) {
-        .decision-hero-left {
-            flex-direction: column;
-        }
+        .decision-hero-left { flex-direction: column; }
+        .decision-actions { justify-content: flex-end; flex-wrap: wrap; }
+    }
 
-        .decision-actions {
-            justify-content: flex-end;
-            flex-wrap: wrap;
-        }
+    @@media (max-width: 575px) {
+        .decision-tab-bar { flex-wrap: wrap; gap: .4rem; }
+        .decision-tab { font-size: .78rem; padding: .4rem .75rem; }
+        .decision-table { min-width: 600px; }
+        .decision-table-wrap { overflow-x: auto; }
+        .decision-hero-left { gap: .5rem; }
+        .decision-actions .btn { font-size: .8rem; padding: .35rem .65rem; }
     }
 </style>
 
