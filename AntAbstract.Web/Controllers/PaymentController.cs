@@ -37,6 +37,7 @@ namespace AntAbstract.Web.Controllers
         private readonly ILogger<PaymentController> _logger;
         private readonly IUploadFileValidator _uploadFileValidator;
         private readonly IInvoicePdfService _invoicePdfService;
+        private readonly IVisaLetterPdfService _visaLetterPdfService;
 
         public PaymentController(
             AppDbContext context,
@@ -48,7 +49,8 @@ namespace AntAbstract.Web.Controllers
             IConfiguration configuration,
             ILogger<PaymentController> logger,
             IUploadFileValidator uploadFileValidator,
-            IInvoicePdfService invoicePdfService)
+            IInvoicePdfService invoicePdfService,
+            IVisaLetterPdfService visaLetterPdfService)
         {
             _context = context;
             _userManager = userManager;
@@ -60,6 +62,7 @@ namespace AntAbstract.Web.Controllers
             _logger = logger;
             _uploadFileValidator = uploadFileValidator;
             _invoicePdfService = invoicePdfService;
+            _visaLetterPdfService = visaLetterPdfService;
         }
 
         #region Helper Methods
@@ -1182,6 +1185,37 @@ namespace AntAbstract.Web.Controllers
         }
 
         // ── Fatura PDF İndirme ────────────────────────────────────────────────
+
+        [HttpGet("/{slug}/Payment/DownloadVisaLetter/{registrationId:guid}")]
+        [Authorize]
+        public async Task<IActionResult> DownloadVisaLetter(string slug, Guid registrationId)
+        {
+            var userId = _userManager.GetUserId(User);
+
+            var registration = await _context.Registrations
+                .Include(r => r.Conference)
+                    .ThenInclude(c => c.Tenant)
+                .Include(r => r.RegistrationType)
+                .Include(r => r.AppUser)
+                .FirstOrDefaultAsync(r =>
+                    r.Id == registrationId &&
+                    r.AppUserId == userId &&
+                    r.Conference.Tenant != null &&
+                    r.Conference.Tenant.Slug == slug);
+
+            if (registration == null)
+                return NotFound();
+
+            if (!registration.IsPaid)
+                return BadRequest("Ödeme tamamlanmamış kayıtlar için vize mektubu oluşturulamaz.");
+
+            var pdfBytes = _visaLetterPdfService.GenerateVisaLetter(registration);
+            var safeConf = (registration.Conference?.Title ?? "Kongre")
+                .Replace(" ", "_").Replace("/", "-");
+            var fileName = $"VizeMektubu-{safeConf}.pdf";
+
+            return File(pdfBytes, "application/pdf", fileName);
+        }
 
         [HttpGet("/{slug}/Payment/DownloadInvoice/{registrationId:guid}")]
         [Authorize]

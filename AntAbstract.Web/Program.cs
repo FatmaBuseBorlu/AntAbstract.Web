@@ -162,6 +162,7 @@ builder.Services.AddInfrastructureServices(builder.Configuration, builder.Enviro
 builder.Services.AddScoped<PdfCertificateService>();
 builder.Services.AddScoped<IProceedingBookPdfService, ProceedingBookPdfService>();
 builder.Services.AddScoped<IInvoicePdfService, InvoicePdfService>();
+builder.Services.AddScoped<IVisaLetterPdfService, VisaLetterPdfService>();
 
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();
