@@ -1515,6 +1515,12 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                         @L("Management_Session", "Program / Oturumlar")
                     </a>
 
+                    <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Speakers?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/Speakers?conferenceId={selectedConferenceId}")"
+                       class="nav-link @(currentController == "Speakers" ? "active" : "")">
+                        <i class="fas fa-user-tie text-info"></i>
+                        Davetli Konuşmacılar
+                    </a>
+
                     <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/ReviewCriteria?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/ReviewCriteria?conferenceId={selectedConferenceId}")"
                        class="nav-link @(currentController == "ReviewCriteria" ? "active" : "")">
                         <i class="fas fa-star-half-alt text-warning"></i>

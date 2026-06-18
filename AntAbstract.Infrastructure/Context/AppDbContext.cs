@@ -62,6 +62,7 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<ReviewCriterion> ReviewCriteria { get; set; }
         public DbSet<ReviewCriterionScore> ReviewCriterionScores { get; set; }
         public DbSet<ReviewerInvitation> ReviewerInvitations { get; set; }
+        public DbSet<InvitedSpeaker> InvitedSpeakers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -299,6 +300,10 @@ namespace AntAbstract.Infrastructure.Context
                 (CurrentTenantId.HasValue && entity.Conference.TenantId == CurrentTenantId));
 
             builder.Entity<Session>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference.TenantId == CurrentTenantId));
+
+            builder.Entity<InvitedSpeaker>().HasQueryFilter(entity =>
                 _tenantContext.IsGlobalContext ||
                 (CurrentTenantId.HasValue && entity.Conference.TenantId == CurrentTenantId));
 

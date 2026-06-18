@@ -164,6 +164,7 @@ builder.Services.AddScoped<PdfCertificateService>();
 builder.Services.AddScoped<IProceedingBookPdfService, ProceedingBookPdfService>();
 builder.Services.AddScoped<IInvoicePdfService, InvoicePdfService>();
 builder.Services.AddScoped<IVisaLetterPdfService, VisaLetterPdfService>();
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<IPayTRService, PayTRService>();
 
 builder.Services.AddScoped<TenantContext>();

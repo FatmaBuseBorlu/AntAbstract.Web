@@ -1,0 +1,78 @@
+@using AntAbstract.Domain.Entities
+@model InvitedSpeaker
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Konuşmacı Düzenle";
+    var slug   = (string?)ViewBag.Slug ?? "";
+    var confId = (Guid)ViewBag.ConferenceId;
+}
+
+<div class="container-fluid py-4" style="max-width:760px;">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <a href="/@slug/Admin/Speakers?conferenceId=@confId" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <h4 class="fw-bold mb-0"><i class="fas fa-user-edit text-primary me-2"></i>Konuşmacı Düzenle</h4>
+    </div>
+
+    <div class="card border-0 shadow-sm p-4">
+        <form method="post" action="/@slug/Admin/Speakers/Edit/@Model.Id">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ConferenceId" value="@confId" />
+
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label class="form-label fw-semibold">Ad Soyad <span class="text-danger">*</span></label>
+                    <input type="text" name="FullName" value="@Model.FullName" class="form-control" required maxlength="150" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Unvan</label>
+                    <input type="text" name="Title" value="@Model.Title" class="form-control" maxlength="200" />
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label fw-semibold">Kurum / Üniversite</label>
+                    <input type="text" name="Institution" value="@Model.Institution" class="form-control" maxlength="300" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Ülke</label>
+                    <input type="text" name="Country" value="@Model.Country" class="form-control" maxlength="100" />
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Konuşma Başlığı</label>
+                    <input type="text" name="TalkTitle" value="@Model.TalkTitle" class="form-control" maxlength="300" />
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Kısa Biyografi</label>
+                    <textarea name="Bio" class="form-control" rows="5" maxlength="3000">@Model.Bio</textarea>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label fw-semibold">Fotoğraf URL</label>
+                    <input type="url" name="PhotoUrl" value="@Model.PhotoUrl" class="form-control" maxlength="500" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Web Sitesi</label>
+                    <input type="url" name="WebsiteUrl" value="@Model.WebsiteUrl" class="form-control" maxlength="200" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Sıralama</label>
+                    <input type="number" name="SortOrder" value="@Model.SortOrder" class="form-control" min="0" />
+                </div>
+                <div class="col-md-3 d-flex align-items-end pb-1">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="IsActive" value="true"
+                               id="chkActive" @(Model.IsActive ? "checked" : "") />
+                        <input type="hidden" name="IsActive" value="false" />
+                        <label class="form-check-label fw-semibold" for="chkActive">Aktif</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>Güncelle
+                </button>
+                <a href="/@slug/Admin/Speakers?conferenceId=@confId" class="btn btn-outline-secondary">İptal</a>
+            </div>
+        </form>
+    </div>
+</div>
