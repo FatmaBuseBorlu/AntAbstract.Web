@@ -21,10 +21,10 @@ namespace AntAbstract.Infrastructure.Services.Payment
 
         public PayTRService(IConfiguration config, IHttpClientFactory httpClientFactory)
         {
-            _merchantId   = config["PayTR:MerchantId"];
-            _merchantKey  = config["PayTR:MerchantKey"];
+            _merchantId = config["PayTR:MerchantId"];
+            _merchantKey = config["PayTR:MerchantKey"];
             _merchantSalt = config["PayTR:MerchantSalt"];
-            _testMode     = string.Equals(config["PayTR:TestMode"], "true", StringComparison.OrdinalIgnoreCase);
+            _testMode = string.Equals(config["PayTR:TestMode"], "true", StringComparison.OrdinalIgnoreCase);
             _httpClientFactory = httpClientFactory;
         }
 
@@ -48,26 +48,26 @@ namespace AntAbstract.Infrastructure.Services.Payment
 
                 var formData = new Dictionary<string, string>
                 {
-                    ["merchant_id"]      = _merchantId!,
-                    ["user_ip"]          = req.UserIp,
-                    ["merchant_oid"]     = req.MerchantOid,
-                    ["email"]            = req.Email,
-                    ["payment_amount"]   = req.AmountKurus.ToString(),
-                    ["paytr_token"]      = paytrToken,
-                    ["user_basket"]      = req.BasketJson,
-                    ["debug_on"]         = "1",
-                    ["no_installment"]   = "0",
-                    ["max_installment"]  = "0",
-                    ["user_name"]        = req.UserName,
-                    ["user_address"]     = req.UserAddress,
-                    ["user_phone"]       = req.UserPhone,
-                    ["merchant_ok_url"]  = req.OkUrl,
-                    ["merchant_fail_url"]= req.FailUrl,
-                    ["timeout_limit"]    = "30",
-                    ["currency"]         = req.Currency,
-                    ["test_mode"]        = _testMode ? "1" : "0",
-                    ["lang"]             = "tr",
-                    ["client_lang"]      = "tr",
+                    ["merchant_id"] = _merchantId!,
+                    ["user_ip"] = req.UserIp,
+                    ["merchant_oid"] = req.MerchantOid,
+                    ["email"] = req.Email,
+                    ["payment_amount"] = req.AmountKurus.ToString(),
+                    ["paytr_token"] = paytrToken,
+                    ["user_basket"] = req.BasketJson,
+                    ["debug_on"] = "1",
+                    ["no_installment"] = "0",
+                    ["max_installment"] = "0",
+                    ["user_name"] = req.UserName,
+                    ["user_address"] = req.UserAddress,
+                    ["user_phone"] = req.UserPhone,
+                    ["merchant_ok_url"] = req.OkUrl,
+                    ["merchant_fail_url"] = req.FailUrl,
+                    ["timeout_limit"] = "30",
+                    ["currency"] = req.Currency,
+                    ["test_mode"] = _testMode ? "1" : "0",
+                    ["lang"] = "tr",
+                    ["client_lang"] = "tr",
                 };
 
                 var client = _httpClientFactory.CreateClient();

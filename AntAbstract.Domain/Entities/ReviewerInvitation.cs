@@ -4,10 +4,10 @@ namespace AntAbstract.Domain.Entities
 {
     public enum InvitationStatus
     {
-        Pending  = 0,
+        Pending = 0,
         Accepted = 1,
         Declined = 2,
-        Expired  = 3
+        Expired = 3
     }
 
     public class ReviewerInvitation

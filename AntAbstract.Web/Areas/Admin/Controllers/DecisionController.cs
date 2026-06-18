@@ -296,10 +296,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var newStatus = decision switch
             {
-                "Accept"   => SubmissionStatus.Accepted,
-                "Reject"   => SubmissionStatus.Rejected,
+                "Accept" => SubmissionStatus.Accepted,
+                "Reject" => SubmissionStatus.Rejected,
                 "Revision" => SubmissionStatus.RevisionRequired,
-                _          => SubmissionStatus.Pending
+                _ => SubmissionStatus.Pending
             };
 
             var now = DateTime.UtcNow;
@@ -321,10 +321,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var decisionLabel = decision switch
             {
-                "Accept"   => "kabul edildi",
-                "Reject"   => "reddedildi",
+                "Accept" => "kabul edildi",
+                "Reject" => "reddedildi",
                 "Revision" => "revizyon istendi",
-                _          => "güncellendi"
+                _ => "güncellendi"
             };
 
             TempData["SuccessMessage"] = $"{submissions.Count} bildiri {decisionLabel}.";
@@ -392,10 +392,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 // Önce DB şablonunu dene; bulamazsa sabit HTML ile gönder
                 var templateKey = decision switch
                 {
-                    "Accept"   => "decision.accept",
-                    "Reject"   => "decision.reject",
+                    "Accept" => "decision.accept",
+                    "Reject" => "decision.reject",
                     "Revision" => "decision.revision",
-                    _          => ""
+                    _ => ""
                 };
 
                 if (!string.IsNullOrEmpty(templateKey))
@@ -771,10 +771,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 {
                     var (notifIcon, notifColor, notifTitle) = decision switch
                     {
-                        "Accept"   => ("✅", "success", "Bildiriniz Kabul Edildi"),
-                        "Reject"   => ("❌", "danger",  "Bildiri Değerlendirme Sonucu"),
+                        "Accept" => ("✅", "success", "Bildiriniz Kabul Edildi"),
+                        "Reject" => ("❌", "danger", "Bildiri Değerlendirme Sonucu"),
                         "Revision" => ("🔄", "warning", "Bildiriniz Revizyon Gerektiriyor"),
-                        _          => ("📋", "info",    "Bildiri Güncellendi")
+                        _ => ("📋", "info", "Bildiri Güncellendi")
                     };
 
                     await _notificationService.CreateAsync(

@@ -64,19 +64,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .OrderBy(c => c)
                 .ToListAsync();
 
-            ViewBag.Categories   = categories;
-            ViewBag.Conferences  = conferences;
-            ViewBag.Category     = category;
-            ViewBag.Search       = search;
-            ViewBag.UserId       = userId;
-            ViewBag.Action       = action;
-            ViewBag.DateFrom     = dateFrom?.ToString("yyyy-MM-dd");
-            ViewBag.DateTo       = dateTo?.ToString("yyyy-MM-dd");
+            ViewBag.Categories = categories;
+            ViewBag.Conferences = conferences;
+            ViewBag.Category = category;
+            ViewBag.Search = search;
+            ViewBag.UserId = userId;
+            ViewBag.Action = action;
+            ViewBag.DateFrom = dateFrom?.ToString("yyyy-MM-dd");
+            ViewBag.DateTo = dateTo?.ToString("yyyy-MM-dd");
             ViewBag.ConferenceId = conferenceId;
-            ViewBag.Slug         = slug;
-            ViewBag.Page         = page;
-            ViewBag.TotalPages   = (int)Math.Ceiling(total / (double)PageSize);
-            ViewBag.Total        = total;
+            ViewBag.Slug = slug;
+            ViewBag.Page = page;
+            ViewBag.TotalPages = (int)Math.Ceiling(total / (double)PageSize);
+            ViewBag.Total = total;
 
             return View(logs);
         }

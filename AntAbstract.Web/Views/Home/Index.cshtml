@@ -979,6 +979,108 @@
             margin-bottom: 16px;
         }
 
+    /* ── Animasyonlar ─────────────────────────────────────────────────── */
+    [data-animate] {
+        opacity: 0;
+        transform: translateY(32px);
+        transition: opacity 0.65s cubic-bezier(.22,1,.36,1), transform 0.65s cubic-bezier(.22,1,.36,1);
+    }
+    [data-animate].animated {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    [data-animate="fade-left"]  { transform: translateX(-40px); }
+    [data-animate="fade-right"] { transform: translateX(40px); }
+    [data-animate="fade-left"].animated,
+    [data-animate="fade-right"].animated { transform: translateX(0); }
+    [data-animate="scale"] { transform: scale(0.88); }
+    [data-animate="scale"].animated { transform: scale(1); }
+
+    /* Delay yardımcıları */
+    [data-delay="100"] { transition-delay: 0.10s; }
+    [data-delay="200"] { transition-delay: 0.20s; }
+    [data-delay="300"] { transition-delay: 0.30s; }
+    [data-delay="400"] { transition-delay: 0.40s; }
+    [data-delay="500"] { transition-delay: 0.50s; }
+    [data-delay="600"] { transition-delay: 0.60s; }
+    [data-delay="700"] { transition-delay: 0.70s; }
+
+    /* Hero partikülleri */
+    .hero-particles {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+        z-index: 0;
+    }
+    .hero-particles span {
+        position: absolute;
+        border-radius: 50%;
+        animation: floatParticle linear infinite;
+        opacity: 0;
+    }
+
+    @@keyframes floatParticle {
+        0%   { transform: translateY(0) rotate(0deg);   opacity: 0; }
+        10%  { opacity: 1; }
+        90%  { opacity: 0.7; }
+        100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
+    }
+
+    /* Sayaç animasyonu */
+    .stat-number.counting { transition: none; }
+
+    /* Satır kayan çizgi animasyonu */
+    @@keyframes slideInLine {
+        from { width: 0; }
+        to   { width: 100%; }
+    }
+    .animate-line::after {
+        content: '';
+        display: block;
+        height: 3px;
+        background: linear-gradient(90deg, #00aeef, #0284c7);
+        border-radius: 999px;
+        animation: slideInLine 0.7s ease forwards;
+        margin-top: 6px;
+    }
+
+    /* Hero badge pulse */
+    @@keyframes badgePulse {
+        0%, 100% { box-shadow: 0 10px 30px rgba(15,23,42,0.06); }
+        50%       { box-shadow: 0 10px 30px rgba(0,174,239,0.25); }
+    }
+    .hero-badge { animation: badgePulse 3s ease infinite; }
+
+    /* Dashboard float */
+    @@keyframes dashFloat {
+        0%, 100% { transform: perspective(1100px) rotateY(-7deg) rotateX(4deg) translateY(0); }
+        50%       { transform: perspective(1100px) rotateY(-7deg) rotateX(4deg) translateY(-10px); }
+    }
+    .dashboard-shell { animation: dashFloat 5s ease-in-out infinite; }
+    .dashboard-shell:hover { animation: none; }
+
+    /* Floating note bob */
+    @@keyframes noteBob {
+        0%, 100% { transform: translateY(0); }
+        50%       { transform: translateY(-6px); }
+    }
+    .floating-note { animation: noteBob 4s ease-in-out infinite; }
+
+    /* Shimmer on mock-progress */
+    @@keyframes shimmer {
+        0%   { background-position: -200% 0; }
+        100% { background-position:  200% 0; }
+    }
+    .mock-progress span {
+        background: linear-gradient(90deg, #00aeef, #22c55e, #00aeef);
+        background-size: 200% 100%;
+        animation: shimmer 2.5s linear infinite;
+    }
+
+    /* Kongre kartı reveal */
+    .congress-item { transition: opacity 0.35s, transform 0.35s; }
+
     @@media (max-width: 991.98px) {
         .hero-modern {
             padding-top: 130px;
@@ -1021,6 +1123,23 @@
         .modern-detail-btn {
             width: 100%;
         }
+
+        .hero-modern { padding: 100px 0 50px; }
+        .hero-title { font-size: clamp(1.8rem, 8vw, 2.8rem); letter-spacing: -1px; }
+        .hero-description { font-size: 1rem; }
+        .hero-trust-row { flex-direction: column; gap: 8px; }
+        .dashboard-shell { border-radius: 18px; padding: 10px; }
+        .mock-stat-row { grid-template-columns: 1fr 1fr; }
+
+        .role-card { padding: 20px; }
+        .cta-box { padding: 24px; border-radius: 22px; }
+        .stat-box { padding: 16px 12px; }
+        .stat-number { font-size: 2rem; }
+
+        /* Kongre filter bar */
+        .congress-filter-bar { flex-wrap: wrap; gap: .4rem; }
+        .congress-filter { font-size: .75rem; padding: .3rem .65rem; }
+        #congress-search { width: 100% !important; }
     }
 </style>
 
@@ -1037,27 +1156,30 @@
     }
 
     <section class="hero-modern">
+        <!-- Yüzen partiküller -->
+        <div class="hero-particles" id="heroParticles"></div>
+
         <div class="container hero-content">
             <div class="row align-items-center g-5">
                 <div class="col-lg-6">
-                    <div class="hero-badge">
+                    <div class="hero-badge" data-animate data-delay="100">
                         <span>@L("NewBadge", "Yeni")</span>
                         <i class="fas fa-sparkles"></i>
                         @L("HeroMiniBadgeText", "Bilimsel etkinlikler için dijital yönetim platformu")
                     </div>
 
-                    <h1 class="hero-title">
+                    <h1 class="hero-title" data-animate data-delay="200">
                         @L("HeroTitleMain", "Bilimsel Etkinliklerinizi")
                         <span class="gradient-text d-block">
                             @L("HeroTitleHighlight", "Tek Platformdan Yönetin")
                         </span>
                     </h1>
 
-                    <p class="hero-description">
+                    <p class="hero-description" data-animate data-delay="300">
                         @L("HeroModernDescription", "Bildiri toplama, hakem değerlendirme, kayıt, ödeme, program oluşturma ve sertifika süreçlerini AntAbstract ile kolayca yönetin.")
                     </p>
 
-                    <div class="hero-actions">
+                    <div class="hero-actions" data-animate data-delay="400">
                         <a href="#congress-list" class="primary-pill-btn">
                             <i class="fas fa-calendar-check"></i>
                             @L("DiscoverCongressesButton", "Kongreleri Keşfet")
@@ -1069,7 +1191,7 @@
                         </a>
                     </div>
 
-                    <div class="hero-trust-row">
+                    <div class="hero-trust-row" data-animate data-delay="500">
                         <div class="hero-trust-item">
                             <i class="fas fa-check-circle"></i>
                             @L("TrustItem1", "Çok dilli kullanım")
@@ -1087,7 +1209,7 @@
                     </div>
                 </div>
 
-                <div class="col-lg-6">
+                <div class="col-lg-6" data-animate="fade-right" data-delay="300">
                     <div class="dashboard-shell">
                         <div class="dashboard-window">
                             <div class="dashboard-topbar">
@@ -1213,7 +1335,7 @@
 
     <section class="py-5 bg-white">
         <div class="container py-5">
-            <div class="text-center mb-5">
+            <div class="text-center mb-5" data-animate>
                 <div class="section-kicker mb-3">
                     <i class="fas fa-users"></i>
                     @L("ForWhoLabel", "Kimler İçin?")
@@ -1229,7 +1351,7 @@
             </div>
 
             <div class="row g-4">
-                <div class="col-md-4">
+                <div class="col-md-4" data-animate data-delay="100">
                     <div class="role-card">
                         <div class="role-icon">
                             <i class="fas fa-user-graduate"></i>
@@ -1241,7 +1363,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-4" data-animate data-delay="250">
                     <div class="role-card">
                         <div class="role-icon">
                             <i class="fas fa-gavel"></i>
@@ -1253,7 +1375,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-4" data-animate data-delay="400">
                     <div class="role-card">
                         <div class="role-icon">
                             <i class="fas fa-sitemap"></i>
@@ -1758,26 +1880,26 @@
     <section class="stats-modern py-5">
         <div class="container py-4">
             <div class="row text-center">
-                <div class="col-md-4">
+                <div class="col-md-4" data-animate="scale" data-delay="100">
                     <div class="stat-box">
                         <i class="fas fa-users mb-3 display-5 text-white-50"></i>
-                        <div class="stat-number">@Model.TotalUsers.ToString("N0")</div>
+                        <div class="stat-number" data-count="@Model.TotalUsers">@Model.TotalUsers.ToString("N0")</div>
                         <div class="stat-label">@L("ActiveUsersStat", "Kayıtlı Kullanıcı")</div>
                     </div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-4" data-animate="scale" data-delay="250">
                     <div class="stat-box">
                         <i class="fas fa-globe-americas mb-3 display-5 text-white-50"></i>
-                        <div class="stat-number">@Model.ActiveCongressesCount</div>
+                        <div class="stat-number" data-count="@Model.ActiveCongressesCount">@Model.ActiveCongressesCount</div>
                         <div class="stat-label">@L("ActiveCongressesStat", "Aktif Kongre")</div>
                     </div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-4" data-animate="scale" data-delay="400">
                     <div class="stat-box">
                         <i class="fas fa-file-alt mb-3 display-5 text-white-50"></i>
-                        <div class="stat-number">500+</div>
+                        <div class="stat-number" data-count="500">500+</div>
                         <div class="stat-label">@L("CompletedOrganizationsStat", "Tamamlanan Süreç")</div>
                     </div>
                 </div>
@@ -1787,7 +1909,7 @@
 
     <section class="cta-section py-5">
         <div class="container py-5">
-            <div class="cta-box">
+            <div class="cta-box" data-animate="scale">
                 <div class="row align-items-center g-4">
                     <div class="col-lg-8">
                         <h2 class="fw-bold display-6 mb-3">
@@ -1814,6 +1936,77 @@
 
 @section Scripts {
 <script>
+/* ── Animasyon motoru ──────────────────────────────────────────────── */
+(function () {
+    // Scroll-triggered reveal
+    var animated = document.querySelectorAll('[data-animate]');
+    var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+            if (e.isIntersecting) {
+                e.target.classList.add('animated');
+                io.unobserve(e.target);
+            }
+        });
+    }, { threshold: 0.12 });
+
+    animated.forEach(function (el) { io.observe(el); });
+
+    // Hero elementlerini hemen göster (viewport içinde başlıyorlar)
+    setTimeout(function () {
+        document.querySelectorAll('.hero-content [data-animate]').forEach(function (el) {
+            el.classList.add('animated');
+        });
+    }, 80);
+
+    // Sayaç animasyonu
+    function animateCounter(el, target, duration) {
+        var start = 0;
+        var step = target / (duration / 16);
+        var suffix = el.textContent.includes('+') ? '+' : '';
+        var timer = setInterval(function () {
+            start += step;
+            if (start >= target) { start = target; clearInterval(timer); }
+            el.textContent = Math.round(start).toLocaleString('tr-TR') + suffix;
+        }, 16);
+    }
+
+    var counterObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+            if (e.isIntersecting) {
+                var el = e.target;
+                var target = parseInt(el.dataset.count, 10);
+                if (!isNaN(target) && target > 0) animateCounter(el, target, 1400);
+                counterObserver.unobserve(el);
+            }
+        });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll('.stat-number[data-count]').forEach(function (el) {
+        counterObserver.observe(el);
+    });
+
+    // Yüzen partiküller
+    var container = document.getElementById('heroParticles');
+    if (container) {
+        var colors = ['#00aeef', '#0284c7', '#22c55e', '#a78bfa', '#f59e0b'];
+        for (var i = 0; i < 22; i++) {
+            var p = document.createElement('span');
+            var size = Math.random() * 7 + 3;
+            p.style.cssText = [
+                'width:'  + size + 'px',
+                'height:' + size + 'px',
+                'left:'   + (Math.random() * 100) + '%',
+                'bottom:' + (-(Math.random() * 20)) + '%',
+                'background:' + colors[Math.floor(Math.random() * colors.length)],
+                'animation-duration:' + (Math.random() * 14 + 8) + 's',
+                'animation-delay:' + (Math.random() * 8) + 's'
+            ].join(';');
+            container.appendChild(p);
+        }
+    }
+})();
+
+/* ── Kongre filtresi ──────────────────────────────────────────────── */
 (function () {
     var searchInput = document.getElementById('congress-search');
     var filterBtns = document.querySelectorAll('.congress-filter');

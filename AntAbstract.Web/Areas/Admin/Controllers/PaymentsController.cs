@@ -122,11 +122,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             // Özet istatistik
             var allForConf = await _context.Registrations.AsNoTracking()
                 .Where(r => r.ConferenceId == conference.Id).ToListAsync();
-            ViewBag.TotalCount     = allForConf.Count;
-            ViewBag.PaidCount      = allForConf.Count(r => r.IsPaid);
-            ViewBag.ReceiptCount   = allForConf.Count(r => !r.IsPaid && r.ReceiptFilePath != null);
-            ViewBag.PendingCount   = allForConf.Count(r => !r.IsPaid && r.ReceiptFilePath == null);
-            ViewBag.TotalRevenue   = allForConf.Where(r => r.IsPaid).Sum(r => r.Amount);
+            ViewBag.TotalCount = allForConf.Count;
+            ViewBag.PaidCount = allForConf.Count(r => r.IsPaid);
+            ViewBag.ReceiptCount = allForConf.Count(r => !r.IsPaid && r.ReceiptFilePath != null);
+            ViewBag.PendingCount = allForConf.Count(r => !r.IsPaid && r.ReceiptFilePath == null);
+            ViewBag.TotalRevenue = allForConf.Where(r => r.IsPaid).Sum(r => r.Amount);
 
             // userId → PaymentId haritası (History butonları için)
             var userIds = registrations.Where(r => r.IsPaid && r.AppUserId != null)

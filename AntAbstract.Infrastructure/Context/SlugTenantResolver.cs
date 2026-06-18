@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace AntAbstract.Infrastructure.Services
 {
-  
+
     public interface ITenantResolver
     {
         Task<Tenant?> ResolveAsync(HttpContext context);

@@ -47,13 +47,13 @@ namespace AntAbstract.Infrastructure.Data
             // ──────────────────────────────────────────────────────────────
             // 2. Kullanıcılar
             // ──────────────────────────────────────────────────────────────
-            var admin    = await EnsureUser(userManager, "admin@test.edu.tr",    "Ahmet",   "Yıldız",    "Dr. Öğr. Üyesi", "Bilgisayar Müh.", "Test Üniversitesi", tenant.Id, "Admin");
-            var author1  = await EnsureUser(userManager, "yazar1@test.edu.tr",   "Fatma",   "Demir",     "Araş. Gör.",     "Elektrik Müh.",   "Test Üniversitesi", tenant.Id, "Author");
-            var author2  = await EnsureUser(userManager, "yazar2@test.edu.tr",   "Mehmet",  "Kaya",      "Dr.",            "Makine Müh.",     "Ankara Üniversitesi", null,    "Author");
-            var author3  = await EnsureUser(userManager, "yazar3@test.edu.tr",   "Zeynep",  "Arslan",    "Prof. Dr.",      "Kimya Müh.",      "İTÜ",               null,     "Author");
-            var reviewer1= await EnsureUser(userManager, "hakem1@test.edu.tr",   "Ali",     "Çelik",     "Doç. Dr.",       "Bilgisayar Müh.", "Test Üniversitesi", tenant.Id, "Referee");
-            var reviewer2= await EnsureUser(userManager, "hakem2@test.edu.tr",   "Ayşe",    "Şahin",     "Prof. Dr.",      "Yazılım Müh.",    "ODTÜ",              null,     "Referee");
-            var listener = await EnsureUser(userManager, "dinleyici@test.edu.tr","Emre",    "Yılmaz",    null,             null,              null,                null,     "Listener");
+            var admin = await EnsureUser(userManager, "admin@test.edu.tr", "Ahmet", "Yıldız", "Dr. Öğr. Üyesi", "Bilgisayar Müh.", "Test Üniversitesi", tenant.Id, "Admin");
+            var author1 = await EnsureUser(userManager, "yazar1@test.edu.tr", "Fatma", "Demir", "Araş. Gör.", "Elektrik Müh.", "Test Üniversitesi", tenant.Id, "Author");
+            var author2 = await EnsureUser(userManager, "yazar2@test.edu.tr", "Mehmet", "Kaya", "Dr.", "Makine Müh.", "Ankara Üniversitesi", null, "Author");
+            var author3 = await EnsureUser(userManager, "yazar3@test.edu.tr", "Zeynep", "Arslan", "Prof. Dr.", "Kimya Müh.", "İTÜ", null, "Author");
+            var reviewer1 = await EnsureUser(userManager, "hakem1@test.edu.tr", "Ali", "Çelik", "Doç. Dr.", "Bilgisayar Müh.", "Test Üniversitesi", tenant.Id, "Referee");
+            var reviewer2 = await EnsureUser(userManager, "hakem2@test.edu.tr", "Ayşe", "Şahin", "Prof. Dr.", "Yazılım Müh.", "ODTÜ", null, "Referee");
+            var listener = await EnsureUser(userManager, "dinleyici@test.edu.tr", "Emre", "Yılmaz", null, null, null, null, "Listener");
 
             // ──────────────────────────────────────────────────────────────
             // 3. Kongreler
@@ -66,7 +66,7 @@ namespace AntAbstract.Infrastructure.Data
                 conf.Title = "Ulusal Bilişim Teknolojileri Sempozyumu 2023";
                 conf.Description = "Yazılım, donanım ve siber güvenlik alanındaki güncel araştırmaların sunulduğu ulusal sempozyum.";
                 conf.StartDate = now.AddMonths(-8);
-                conf.EndDate   = now.AddMonths(-8).AddDays(2);
+                conf.EndDate = now.AddMonths(-8).AddDays(2);
                 conf.City = "Ankara"; conf.Country = "Türkiye"; conf.Venue = "Hacettepe Kültür Merkezi";
                 conf.IsSubmissionOpen = false; conf.IsRegistrationOpen = false;
                 conf.IsProceedingBookPublished = true;
@@ -85,7 +85,7 @@ namespace AntAbstract.Infrastructure.Data
                 conf.Title = "Yapay Zekâ ve Makine Öğrenmesi Kongresi 2024";
                 conf.Description = "Yapay zekâ, derin öğrenme ve doğal dil işleme konularındaki öncü araştırmaların buluşma noktası.";
                 conf.StartDate = now.AddMonths(-3);
-                conf.EndDate   = now.AddMonths(-3).AddDays(3);
+                conf.EndDate = now.AddMonths(-3).AddDays(3);
                 conf.City = "İstanbul"; conf.Country = "Türkiye"; conf.Venue = "İTÜ Süleyman Demirel Kültür Merkezi";
                 conf.IsSubmissionOpen = false; conf.IsRegistrationOpen = false;
                 conf.IsProceedingBookPublished = true;
@@ -102,7 +102,7 @@ namespace AntAbstract.Infrastructure.Data
                 conf.Title = "Uluslararası Mühendislik ve Fen Bilimleri Kongresi 2025";
                 conf.Description = "Mühendislik ve fen bilimlerinin farklı disiplinlerini bir araya getiren uluslararası platform.";
                 conf.StartDate = now.AddDays(-1);
-                conf.EndDate   = now.AddDays(2);
+                conf.EndDate = now.AddDays(2);
                 conf.City = "İzmir"; conf.Country = "Türkiye"; conf.Venue = "Dokuz Eylül Üniversitesi Kongre Merkezi";
                 conf.IsSubmissionOpen = false; conf.IsRegistrationOpen = true;
                 conf.IsProceedingBookPublished = false;
@@ -117,7 +117,7 @@ namespace AntAbstract.Infrastructure.Data
                 conf.Title = "Sağlık Bilimleri ve Tıp Teknolojileri Sempozyumu 2025";
                 conf.Description = "Klinik araştırmalar, tıbbi cihazlar ve dijital sağlık alanındaki yeniliklerin paylaşıldığı sempozyum.";
                 conf.StartDate = now.AddMonths(3);
-                conf.EndDate   = now.AddMonths(3).AddDays(2);
+                conf.EndDate = now.AddMonths(3).AddDays(2);
                 conf.City = "Bursa"; conf.Country = "Türkiye"; conf.Venue = "Uludağ Üniversitesi Kültür Merkezi";
                 conf.IsSubmissionOpen = true; conf.IsRegistrationOpen = true;
                 conf.AbstractSubmissionDeadline = now.AddMonths(2);
@@ -303,16 +303,16 @@ namespace AntAbstract.Infrastructure.Data
 
             user = new AppUser
             {
-                UserName       = email,
-                Email          = email,
+                UserName = email,
+                Email = email,
                 EmailConfirmed = true,
-                FirstName      = first,
-                LastName       = last,
-                Title          = title,
-                Department     = department,
-                University     = university,
-                Institution    = university,
-                TenantId       = tenantId
+                FirstName = first,
+                LastName = last,
+                Title = title,
+                Department = department,
+                University = university,
+                Institution = university,
+                TenantId = tenantId
             };
 
             var result = await um.CreateAsync(user, Password);
@@ -352,12 +352,12 @@ namespace AntAbstract.Infrastructure.Data
             rt = new RegistrationType
             {
                 ConferenceId = confId,
-                Name         = name,
-                Description  = $"{name} kayıt türü",
-                Price        = price,
-                Currency     = "TRY",
-                RoleName     = roleName,
-                IsActive     = true
+                Name = name,
+                Description = $"{name} kayıt türü",
+                Price = price,
+                Currency = "TRY",
+                RoleName = roleName,
+                IsActive = true
             };
             db.RegistrationTypes.Add(rt);
             await db.SaveChangesAsync();
@@ -396,22 +396,22 @@ namespace AntAbstract.Infrastructure.Data
 
             var submission = new Submission
             {
-                Id                  = Guid.NewGuid(),
-                TenantId            = tenantId,
-                ConferenceId        = confId,
-                AuthorId            = authorId,
-                SubmissionIdCode    = idCode,
-                Title               = title,
-                Abstract            = abstractText,
-                Keywords            = keywords,
-                Status              = status,
-                PresentationType    = presentationType,
-                ConferenceTopicId   = topicId,
-                CreatedDate         = DateTime.UtcNow.AddDays(-Random.Shared.Next(20, 90)),
-                UpdatedDate         = DateTime.UtcNow.AddDays(-Random.Shared.Next(1, 15)),
-                IsFeedbackGiven     = status == SubmissionStatus.Accepted || status == SubmissionStatus.Rejected,
-                RebuttalText        = rebuttalText,
-                RebuttalDate        = rebuttalDate
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                ConferenceId = confId,
+                AuthorId = authorId,
+                SubmissionIdCode = idCode,
+                Title = title,
+                Abstract = abstractText,
+                Keywords = keywords,
+                Status = status,
+                PresentationType = presentationType,
+                ConferenceTopicId = topicId,
+                CreatedDate = DateTime.UtcNow.AddDays(-Random.Shared.Next(20, 90)),
+                UpdatedDate = DateTime.UtcNow.AddDays(-Random.Shared.Next(1, 15)),
+                IsFeedbackGiven = status == SubmissionStatus.Accepted || status == SubmissionStatus.Rejected,
+                RebuttalText = rebuttalText,
+                RebuttalDate = rebuttalDate
             };
 
             if (status == SubmissionStatus.Accepted || status == SubmissionStatus.Rejected)
@@ -434,13 +434,13 @@ namespace AntAbstract.Infrastructure.Data
                 {
                     db.SubmissionAuthors.Add(new SubmissionAuthor
                     {
-                        SubmissionId        = submission.Id,
-                        FirstName           = f,
-                        LastName            = l,
-                        Institution         = inst,
-                        Email               = email,
+                        SubmissionId = submission.Id,
+                        FirstName = f,
+                        LastName = l,
+                        Institution = inst,
+                        Email = email,
                         IsCorrespondingAuthor = isCorr,
-                        Order               = 1
+                        Order = 1
                     });
                 }
                 await db.SaveChangesAsync();
@@ -453,10 +453,10 @@ namespace AntAbstract.Infrastructure.Data
             {
                 var assignment = new ReviewAssignment
                 {
-                    SubmissionId    = submission.Id,
-                    ReviewerId      = reviewerId,
-                    AssignedDate    = submission.CreatedDate.AddDays(5),
-                    EvaluationDate  = status == SubmissionStatus.UnderReview ? null : submission.DecisionDate
+                    SubmissionId = submission.Id,
+                    ReviewerId = reviewerId,
+                    AssignedDate = submission.CreatedDate.AddDays(5),
+                    EvaluationDate = status == SubmissionStatus.UnderReview ? null : submission.DecisionDate
                 };
                 db.ReviewAssignments.Add(assignment);
                 await db.SaveChangesAsync();
@@ -465,14 +465,14 @@ namespace AntAbstract.Infrastructure.Data
                 {
                     db.Reviews.Add(new Review
                     {
-                        ReviewAssignmentId  = assignment.Id,
-                        ReviewerName        = "Hakem",
-                        CommentsToAuthor    = reviewComment,
-                        Recommendation      = status == SubmissionStatus.Accepted ? "accept" : "reject",
-                        Score               = score,
-                        ScoreOriginality    = score > 70 ? 4 : 2,
-                        ScoreMethodology    = score > 70 ? 4 : 2,
-                        ScorePresentation   = score > 70 ? 4 : 3
+                        ReviewAssignmentId = assignment.Id,
+                        ReviewerName = "Hakem",
+                        CommentsToAuthor = reviewComment,
+                        Recommendation = status == SubmissionStatus.Accepted ? "accept" : "reject",
+                        Score = score,
+                        ScoreOriginality = score > 70 ? 4 : 2,
+                        ScoreMethodology = score > 70 ? 4 : 2,
+                        ScorePresentation = score > 70 ? 4 : 3
                     });
                     await db.SaveChangesAsync();
                 }
@@ -491,17 +491,17 @@ namespace AntAbstract.Infrastructure.Data
 
             db.Submissions.Add(new Submission
             {
-                Id               = Guid.NewGuid(),
-                TenantId         = tenantId,
-                ConferenceId     = confId,
-                AuthorId         = authorId,
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                ConferenceId = confId,
+                AuthorId = authorId,
                 SubmissionIdCode = idCode,
-                Title            = title,
-                Abstract         = "",
-                Keywords         = "",
-                Status           = SubmissionStatus.New,
-                CreatedDate      = DateTime.UtcNow.AddDays(-12),
-                UpdatedDate      = DateTime.UtcNow.AddDays(-12)
+                Title = title,
+                Abstract = "",
+                Keywords = "",
+                Status = SubmissionStatus.New,
+                CreatedDate = DateTime.UtcNow.AddDays(-12),
+                UpdatedDate = DateTime.UtcNow.AddDays(-12)
             });
             await db.SaveChangesAsync();
         }
@@ -518,14 +518,14 @@ namespace AntAbstract.Infrastructure.Data
 
             db.Registrations.Add(new Registration
             {
-                ConferenceId         = confId,
-                AppUserId            = userId,
-                RegistrationTypeId   = regTypeId,
-                RegistrationDate     = date,
-                IsPaid               = paid,
-                PaymentDate          = paid ? date.AddDays(1) : null,
-                Amount               = amount,
-                BillingName          = "Test Katılımcı"
+                ConferenceId = confId,
+                AppUserId = userId,
+                RegistrationTypeId = regTypeId,
+                RegistrationDate = date,
+                IsPaid = paid,
+                PaymentDate = paid ? date.AddDays(1) : null,
+                Amount = amount,
+                BillingName = "Test Katılımcı"
             });
             await db.SaveChangesAsync();
         }
@@ -581,10 +581,10 @@ namespace AntAbstract.Infrastructure.Data
                     {
                         db.SystemParameters.Add(new SystemParameter
                         {
-                            Group    = group,
-                            Name     = names[i],
-                            NameEn   = names[i],
-                            Order    = i + 1,
+                            Group = group,
+                            Name = names[i],
+                            NameEn = names[i],
+                            Order = i + 1,
                             IsActive = true
                         });
                         added = true;

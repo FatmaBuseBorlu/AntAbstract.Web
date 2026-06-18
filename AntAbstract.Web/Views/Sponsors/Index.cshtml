@@ -1,0 +1,138 @@
+@using AntAbstract.Domain.Entities
+@model List<Sponsor>
+@{
+    Layout = "_LayoutDashboard";
+    ViewData["Title"] = "Sponsorlar";
+    var slug = (string?)ViewBag.Slug ?? "";
+
+    string TierLabel(SponsorTier t) => t switch {
+        SponsorTier.Platinum => "Platin Sponsor",
+        SponsorTier.Gold     => "Altın Sponsor",
+        SponsorTier.Silver   => "Gümüş Sponsor",
+        SponsorTier.Bronze   => "Bronz Sponsor",
+        SponsorTier.Partner  => "Partner",
+        SponsorTier.Media    => "Medya Sponsoru",
+        _                    => t.ToString()
+    };
+
+    // logo boyutu tier'a göre
+    int LogoHeight(SponsorTier t) => t switch {
+        SponsorTier.Platinum => 80,
+        SponsorTier.Gold     => 64,
+        SponsorTier.Silver   => 52,
+        _                    => 44
+    };
+
+    string TierColor(SponsorTier t) => t switch {
+        SponsorTier.Platinum => "#0ea5e9",
+        SponsorTier.Gold     => "#f59e0b",
+        SponsorTier.Silver   => "#94a3b8",
+        SponsorTier.Bronze   => "#b45309",
+        SponsorTier.Partner  => "#6366f1",
+        SponsorTier.Media    => "#374151",
+        _                    => "#64748b"
+    };
+
+    var groups = Model.GroupBy(s => s.Tier).OrderBy(g => g.Key).ToList();
+}
+
+<style>
+.sponsors-page { padding: 2rem 1.5rem 4rem; font-family: 'Plus Jakarta Sans', sans-serif; }
+.sponsors-hero { text-align: center; margin-bottom: 3rem; }
+.sponsors-hero h1 { font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: .4rem; }
+.tier-section { margin-bottom: 3rem; }
+.tier-label {
+    display: inline-flex; align-items: center; gap: .5rem;
+    font-weight: 700; font-size: .95rem; margin-bottom: 1.25rem;
+    padding: .35rem 1rem; border-radius: 999px; color: #fff;
+}
+.sponsor-logo-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.25rem; transition: transform .2s, box-shadow .2s;
+    min-height: 100px;
+}
+.sponsor-logo-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+.sponsor-logo-card img { object-fit: contain; max-width: 100%; }
+.sponsor-name-fallback { font-weight: 700; color: #0f172a; text-align: center; }
+    @@media (max-width: 575px) {
+        .sponsors-page { padding: 1.25rem .75rem 3rem; }
+        .sponsors-hero h1 { font-size: 1.5rem; }
+        .tier-label { font-size: .82rem; }
+        .sponsor-logo-card { padding: .75rem; min-height: 72px; }
+    }
+</style>
+
+<div class="sponsors-page">
+
+    <div class="sponsors-hero">
+        <h1><i class="fas fa-handshake text-primary me-2"></i>Sponsorlar</h1>
+        <p class="text-muted">@ViewBag.ConferenceTitle</p>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5 text-muted">
+            <i class="fas fa-handshake fa-3x mb-3 opacity-50"></i>
+            <p>Sponsor bilgisi henüz yayınlanmadı.</p>
+        </div>
+    }
+    else
+    {
+        @foreach (var group in groups)
+        {
+            var h = LogoHeight(group.Key);
+            var col = group.Key switch {
+                SponsorTier.Platinum => "col-6 col-md-4 col-lg-3",
+                SponsorTier.Gold     => "col-6 col-md-4 col-lg-3",
+                SponsorTier.Silver   => "col-6 col-md-3 col-lg-2",
+                _                    => "col-6 col-md-3 col-lg-2"
+            };
+
+            <div class="tier-section">
+                <div class="tier-label" style="background:@TierColor(group.Key);">
+                    <i class="fas fa-medal"></i>@TierLabel(group.Key)
+                </div>
+                <div class="row g-3">
+                    @foreach (var s in group.OrderBy(x => x.SortOrder).ThenBy(x => x.Name))
+                    {
+                        <div class="@col">
+                            @if (!string.IsNullOrWhiteSpace(s.WebsiteUrl))
+                            {
+                                <a href="@s.WebsiteUrl" target="_blank" rel="noopener" class="text-decoration-none">
+                                    <div class="sponsor-logo-card">
+                                        @if (!string.IsNullOrWhiteSpace(s.LogoUrl))
+                                        {
+                                            <img src="@s.LogoUrl" alt="@s.Name" height="@h"
+                                                 onerror="this.style.display='none';this.nextElementSibling.style.display='block'" />
+                                            <div class="sponsor-name-fallback" style="display:none;">@s.Name</div>
+                                        }
+                                        else
+                                        {
+                                            <div class="sponsor-name-fallback">@s.Name</div>
+                                        }
+                                    </div>
+                                </a>
+                            }
+                            else
+                            {
+                                <div class="sponsor-logo-card">
+                                    @if (!string.IsNullOrWhiteSpace(s.LogoUrl))
+                                    {
+                                        <img src="@s.LogoUrl" alt="@s.Name" height="@h"
+                                             onerror="this.style.display='none';this.nextElementSibling.style.display='block'" />
+                                        <div class="sponsor-name-fallback" style="display:none;">@s.Name</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="sponsor-name-fallback">@s.Name</div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>

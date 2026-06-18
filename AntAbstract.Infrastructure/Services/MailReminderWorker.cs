@@ -138,10 +138,10 @@ namespace AntAbstract.Infrastructure.Services
 
                     var placeholders = new Dictionary<string, string>
                     {
-                        ["{FullName}"]       = $"{user.FirstName} {user.LastName}".Trim(),
+                        ["{FullName}"] = $"{user.FirstName} {user.LastName}".Trim(),
                         ["{ConferenceName}"] = conf.Title,
-                        ["{Deadline}"]       = deadline.ToString("dd.MM.yyyy HH:mm"),
-                        ["{DaysLeft}"]       = daysLeft.ToString(),
+                        ["{Deadline}"] = deadline.ToString("dd.MM.yyyy HH:mm"),
+                        ["{DaysLeft}"] = daysLeft.ToString(),
                     };
 
                     try
@@ -196,10 +196,10 @@ namespace AntAbstract.Infrastructure.Services
 
                 var placeholders = new Dictionary<string, string>
                 {
-                    ["{FullName}"]       = $"{user.FirstName} {user.LastName}".Trim(),
+                    ["{FullName}"] = $"{user.FirstName} {user.LastName}".Trim(),
                     ["{ConferenceName}"] = payment.Conference?.Title ?? "",
-                    ["{Amount}"]         = $"{payment.Amount:N2} {payment.Currency}",
-                    ["{PaymentDate}"]    = payment.PaymentDate.ToString("dd.MM.yyyy"),
+                    ["{Amount}"] = $"{payment.Amount:N2} {payment.Currency}",
+                    ["{PaymentDate}"] = payment.PaymentDate.ToString("dd.MM.yyyy"),
                 };
 
                 try

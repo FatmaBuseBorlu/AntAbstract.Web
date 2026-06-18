@@ -1,0 +1,96 @@
+@using AntAbstract.Domain.Entities
+@model Sponsor
+@{
+    var slug   = (string?)ViewBag.Slug ?? "";
+    var confId = (Guid)ViewBag.ConferenceId;
+    var isEdit = Model.Id != Guid.Empty;
+    var formAction = isEdit
+        ? $"/{slug}/Admin/Sponsors/Edit/{Model.Id}"
+        : $"/{slug}/Admin/Sponsors/Create";
+}
+
+<div class="container-fluid py-4" style="max-width:680px;">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <a href="/@slug/Admin/Sponsors?conferenceId=@confId" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <h4 class="fw-bold mb-0">
+            <i class="fas fa-handshake text-primary me-2"></i>
+            @(isEdit ? "Sponsor Düzenle" : "Sponsor Ekle")
+        </h4>
+    </div>
+
+    <div class="card border-0 shadow-sm p-4">
+        <form method="post" action="@formAction">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ConferenceId" value="@confId" />
+
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label class="form-label fw-semibold">Sponsor Adı <span class="text-danger">*</span></label>
+                    <input type="text" name="Name" value="@Model.Name" class="form-control" required maxlength="200" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Kategori</label>
+                    <select name="Tier" class="form-select">
+                        @foreach (SponsorTier tier in Enum.GetValues(typeof(SponsorTier)))
+                        {
+                            var label = tier switch {
+                                SponsorTier.Platinum => "Platin",
+                                SponsorTier.Gold     => "Altın",
+                                SponsorTier.Silver   => "Gümüş",
+                                SponsorTier.Bronze   => "Bronz",
+                                SponsorTier.Partner  => "Partner",
+                                SponsorTier.Media    => "Medya",
+                                _                    => tier.ToString()
+                            };
+                            var selected = Model.Tier == tier ? "selected" : "";
+                            @Html.Raw($"<option value=\"{(int)tier}\" {selected}>{label}</option>")
+                        }
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Logo URL</label>
+                    <input type="url" name="LogoUrl" value="@Model.LogoUrl" class="form-control" maxlength="500"
+                           placeholder="https://..." id="logoUrlInput" oninput="previewLogo(this.value)" />
+                    <div class="mt-2" id="logoPreview" style="@(string.IsNullOrWhiteSpace(Model.LogoUrl) ? "display:none" : "")">
+                        <img src="@Model.LogoUrl" id="logoImg" alt="Logo önizleme" height="48"
+                             style="object-fit:contain;max-width:200px;border:1px solid #e2e8f0;border-radius:8px;padding:4px;" />
+                    </div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Web Sitesi</label>
+                    <input type="url" name="WebsiteUrl" value="@Model.WebsiteUrl" class="form-control" maxlength="200" placeholder="https://..." />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Sıralama</label>
+                    <input type="number" name="SortOrder" value="@Model.SortOrder" class="form-control" min="0" />
+                </div>
+                <div class="col-md-4 d-flex align-items-end pb-1">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="IsActive" value="true"
+                               id="chkActive" @(Model.IsActive || !isEdit ? "checked" : "") />
+                        <input type="hidden" name="IsActive" value="false" />
+                        <label class="form-check-label fw-semibold" for="chkActive">Aktif</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>@(isEdit ? "Güncelle" : "Kaydet")
+                </button>
+                <a href="/@slug/Admin/Sponsors?conferenceId=@confId" class="btn btn-outline-secondary">İptal</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function previewLogo(url) {
+    const wrap = document.getElementById('logoPreview');
+    const img  = document.getElementById('logoImg');
+    if (url) { img.src = url; wrap.style.display = ''; }
+    else      { wrap.style.display = 'none'; }
+}
+</script>

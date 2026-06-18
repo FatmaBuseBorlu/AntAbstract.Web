@@ -64,10 +64,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (template == null) return NotFound();
 
             template.Description = model.Description;
-            template.Subject     = model.Subject;
-            template.HtmlBody    = model.HtmlBody;
-            template.IsActive    = model.IsActive;
-            template.UpdatedAt   = DateTime.UtcNow;
+            template.Subject = model.Subject;
+            template.HtmlBody = model.HtmlBody;
+            template.IsActive = model.IsActive;
+            template.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
@@ -83,7 +83,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var template = await _context.EmailTemplates.FindAsync(id);
             if (template == null) return NotFound();
 
-            template.IsActive  = !template.IsActive;
+            template.IsActive = !template.IsActive;
             template.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 

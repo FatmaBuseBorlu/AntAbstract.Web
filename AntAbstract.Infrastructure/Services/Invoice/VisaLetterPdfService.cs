@@ -8,12 +8,12 @@ namespace AntAbstract.Infrastructure.Services.Invoice
 {
     public class VisaLetterPdfService : IVisaLetterPdfService
     {
-        private const string Navy    = "#1a2d5a";
-        private const string Accent  = "#2563eb";
+        private const string Navy = "#1a2d5a";
+        private const string Accent = "#2563eb";
         private const string LightBg = "#f4f6fa";
         private const string TextDark = "#1e1e2e";
-        private const string TextMid  = "#555577";
-        private const string Border   = "#dee2e6";
+        private const string TextMid = "#555577";
+        private const string Border = "#dee2e6";
 
         public byte[] GenerateVisaLetter(Registration registration)
         {
@@ -100,9 +100,9 @@ namespace AntAbstract.Infrastructure.Services.Invoice
                             box.Item().Text("KONGRE BİLGİLERİ").FontSize(9).Bold().FontColor(TextMid);
                             box.Item().Height(6);
 
-                            InfoRow(box, "Kongre Adı",  conf?.Title ?? "—");
-                            InfoRow(box, "Tarih",       dateRange);
-                            InfoRow(box, "Yer",         string.IsNullOrWhiteSpace(confLocation) ? "—" : confLocation);
+                            InfoRow(box, "Kongre Adı", conf?.Title ?? "—");
+                            InfoRow(box, "Tarih", dateRange);
+                            InfoRow(box, "Yer", string.IsNullOrWhiteSpace(confLocation) ? "—" : confLocation);
                         });
 
                         col.Item().Height(12);

@@ -1,0 +1,128 @@
+@using AntAbstract.Domain.Entities
+@model List<Sponsor>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Sponsorlar";
+    var slug   = (string?)ViewBag.Slug ?? "";
+    var confId = (Guid)ViewBag.ConferenceId;
+    string Url(string p) => $"/{slug}{p}";
+
+    string TierLabel(SponsorTier t) => t switch {
+        SponsorTier.Platinum => "Platin",
+        SponsorTier.Gold     => "Altın",
+        SponsorTier.Silver   => "Gümüş",
+        SponsorTier.Bronze   => "Bronz",
+        SponsorTier.Partner  => "Partner",
+        SponsorTier.Media    => "Medya",
+        _                    => t.ToString()
+    };
+    string TierBadge(SponsorTier t) => t switch {
+        SponsorTier.Platinum => "bg-info text-dark",
+        SponsorTier.Gold     => "bg-warning text-dark",
+        SponsorTier.Silver   => "bg-secondary",
+        SponsorTier.Bronze   => "bg-danger",
+        SponsorTier.Partner  => "bg-primary",
+        SponsorTier.Media    => "bg-dark",
+        _                    => "bg-secondary"
+    };
+
+    var groups = Model.GroupBy(s => s.Tier).OrderBy(g => g.Key).ToList();
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h4 class="fw-bold mb-1"><i class="fas fa-handshake text-primary me-2"></i>Sponsorlar</h4>
+            <p class="text-muted mb-0 small">@ViewBag.ConferenceTitle</p>
+        </div>
+        <a href="@Url($"/Admin/Sponsors/Create?conferenceId={confId}")" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Sponsor Ekle
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null) { <div class="alert alert-success shadow-sm mb-4">@TempData["SuccessMessage"]</div> }
+    @if (TempData["ErrorMessage"]   != null) { <div class="alert alert-danger  shadow-sm mb-4">@TempData["ErrorMessage"]</div>   }
+
+    @if (!Model.Any())
+    {
+        <div class="card border-0 shadow-sm text-center py-5">
+            <i class="fas fa-handshake fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Henüz sponsor eklenmemiş</h5>
+            <div class="mt-3">
+                <a href="@Url($"/Admin/Sponsors/Create?conferenceId={confId}")" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>İlk Sponsoru Ekle
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        @foreach (var group in groups)
+        {
+            <div class="d-flex align-items-center gap-2 mb-3 mt-2">
+                <span class="badge @TierBadge(group.Key) fs-6 px-3 py-2">@TierLabel(group.Key)</span>
+                <span class="text-muted small">@group.Count() sponsor</span>
+            </div>
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Logo</th>
+                                <th>Ad</th>
+                                <th>Web Sitesi</th>
+                                <th style="width:70px;">Sıra</th>
+                                <th style="width:80px;">Durum</th>
+                                <th style="width:100px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in group.OrderBy(x => x.SortOrder).ThenBy(x => x.Name))
+                            {
+                                <tr>
+                                    <td style="width:80px;">
+                                        @if (!string.IsNullOrWhiteSpace(s.LogoUrl))
+                                        {
+                                            <img src="@s.LogoUrl" alt="@s.Name" height="36"
+                                                 style="object-fit:contain;max-width:72px;"
+                                                 onerror="this.style.display='none'" />
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">—</span>
+                                        }
+                                    </td>
+                                    <td class="fw-semibold">@s.Name</td>
+                                    <td>
+                                        @if (!string.IsNullOrWhiteSpace(s.WebsiteUrl))
+                                        {
+                                            <a href="@s.WebsiteUrl" target="_blank" rel="noopener" class="text-muted small">@s.WebsiteUrl</a>
+                                        }
+                                    </td>
+                                    <td class="text-center text-muted">@s.SortOrder</td>
+                                    <td>
+                                        @if (s.IsActive) { <span class="badge bg-success">Aktif</span> }
+                                        else             { <span class="badge bg-secondary">Pasif</span> }
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a href="@Url($"/Admin/Sponsors/Edit/{s.Id}?conferenceId={confId}")"
+                                               class="btn btn-sm btn-outline-secondary"><i class="fas fa-edit"></i></a>
+                                            <form method="post" action="@Url($"/Admin/Sponsors/Delete/{s.Id}")"
+                                                  onsubmit="return confirm('Sponsoru silmek istediğinizden emin misiniz?')">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+</div>

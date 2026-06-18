@@ -8,21 +8,21 @@ namespace AntAbstract.Infrastructure.Services.Invoice
 {
     public class InvoicePdfService : IInvoicePdfService
     {
-        private const string Navy     = "#1a2d5a";
-        private const string Accent   = "#2563eb";
-        private const string LightBg  = "#f4f6fa";
+        private const string Navy = "#1a2d5a";
+        private const string Accent = "#2563eb";
+        private const string LightBg = "#f4f6fa";
         private const string TextDark = "#1e1e2e";
-        private const string TextMid  = "#555577";
-        private const string Border   = "#dee2e6";
+        private const string TextMid = "#555577";
+        private const string Border = "#dee2e6";
 
         public byte[] GenerateRegistrationInvoice(Registration reg)
         {
             QuestPDF.Settings.License = LicenseType.Community;
 
             var invoiceNo = BuildInvoiceNumber(reg);
-            var conf      = reg.Conference;
-            var user      = reg.AppUser;
-            var regType   = reg.RegistrationType;
+            var conf = reg.Conference;
+            var user = reg.AppUser;
+            var regType = reg.RegistrationType;
 
             return Document.Create(container =>
             {
@@ -162,7 +162,7 @@ namespace AntAbstract.Infrastructure.Services.Invoice
 
                         // Ödeme durumu
                         var statusColor = reg.IsPaid ? "#198754" : "#dc3545";
-                        var statusText  = reg.IsPaid ? "ÖDEME ALINDI" : "ÖDEME BEKLENİYOR";
+                        var statusText = reg.IsPaid ? "ÖDEME ALINDI" : "ÖDEME BEKLENİYOR";
                         col.Item().AlignRight().Text(statusText)
                             .FontSize(13).Bold().FontColor(statusColor);
 

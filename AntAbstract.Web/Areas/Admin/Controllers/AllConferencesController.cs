@@ -60,12 +60,17 @@ namespace AntAbstract.WebUI.Areas.Admin.Controllers
                 .Take(pageSize)
                 .Select(x => new
                 {
-                    x.Id, x.Title, x.Slug,
+                    x.Id,
+                    x.Title,
+                    x.Slug,
                     x.TenantId,
                     TenantName = x.Tenant != null ? x.Tenant.Name : "-",
                     TenantSlug = x.Tenant != null ? x.Tenant.Slug : null,
-                    x.City, x.Country, x.Venue,
-                    x.StartDate, x.EndDate
+                    x.City,
+                    x.Country,
+                    x.Venue,
+                    x.StartDate,
+                    x.EndDate
                 })
                 .ToListAsync();
 

@@ -93,10 +93,10 @@ namespace AntAbstract.Web.Controllers
             var now = DateTime.UtcNow;
 
             // --- Temel sayılar ---
-            ViewBag.TotalTenants      = await _context.Tenants.AsNoTracking().CountAsync();
-            ViewBag.TotalConferences  = await _context.Conferences.AsNoTracking().CountAsync();
-            ViewBag.TotalUsers        = await _context.Users.AsNoTracking().CountAsync();
-            ViewBag.TotalSubmissions  = await _context.Submissions.AsNoTracking().CountAsync();
+            ViewBag.TotalTenants = await _context.Tenants.AsNoTracking().CountAsync();
+            ViewBag.TotalConferences = await _context.Conferences.AsNoTracking().CountAsync();
+            ViewBag.TotalUsers = await _context.Users.AsNoTracking().CountAsync();
+            ViewBag.TotalSubmissions = await _context.Submissions.AsNoTracking().CountAsync();
             ViewBag.TotalRegistrations = await _context.Registrations.AsNoTracking().CountAsync();
             ViewBag.TotalCertificates = await _context.Certificates.AsNoTracking().CountAsync();
 
@@ -106,14 +106,14 @@ namespace AntAbstract.Web.Controllers
                 .CountAsync(c => c.StartDate <= now && c.EndDate >= now);
 
             // --- Rol bazlı kullanıcı sayıları ---
-            var adminRole    = await _roleManager.FindByNameAsync("Admin");
-            var authorRole   = await _roleManager.FindByNameAsync("Author");
-            var refereeRole  = await _roleManager.FindByNameAsync("Referee");
+            var adminRole = await _roleManager.FindByNameAsync("Admin");
+            var authorRole = await _roleManager.FindByNameAsync("Author");
+            var refereeRole = await _roleManager.FindByNameAsync("Referee");
             var listenerRole = await _roleManager.FindByNameAsync("Listener");
 
-            ViewBag.TotalAdmins    = adminRole    != null ? (await _userManager.GetUsersInRoleAsync("Admin")).Count    : 0;
-            ViewBag.TotalAuthors   = authorRole   != null ? (await _userManager.GetUsersInRoleAsync("Author")).Count   : 0;
-            ViewBag.TotalReferees  = refereeRole  != null ? (await _userManager.GetUsersInRoleAsync("Referee")).Count  : 0;
+            ViewBag.TotalAdmins = adminRole != null ? (await _userManager.GetUsersInRoleAsync("Admin")).Count : 0;
+            ViewBag.TotalAuthors = authorRole != null ? (await _userManager.GetUsersInRoleAsync("Author")).Count : 0;
+            ViewBag.TotalReferees = refereeRole != null ? (await _userManager.GetUsersInRoleAsync("Referee")).Count : 0;
             ViewBag.TotalListeners = listenerRole != null ? (await _userManager.GetUsersInRoleAsync("Listener")).Count : 0;
 
             // --- Bildiri durum dağılımı ---
@@ -123,9 +123,9 @@ namespace AntAbstract.Web.Controllers
                 .Select(g => new { Status = g.Key, Count = g.Count() })
                 .ToListAsync();
 
-            ViewBag.SubmissionAccepted  = submissionStats.FirstOrDefault(x => x.Status == SubmissionStatus.Accepted)?.Count  ?? 0;
-            ViewBag.SubmissionRejected  = submissionStats.FirstOrDefault(x => x.Status == SubmissionStatus.Rejected)?.Count  ?? 0;
-            ViewBag.SubmissionPending   = submissionStats.FirstOrDefault(x => x.Status == SubmissionStatus.Pending)?.Count   ?? 0;
+            ViewBag.SubmissionAccepted = submissionStats.FirstOrDefault(x => x.Status == SubmissionStatus.Accepted)?.Count ?? 0;
+            ViewBag.SubmissionRejected = submissionStats.FirstOrDefault(x => x.Status == SubmissionStatus.Rejected)?.Count ?? 0;
+            ViewBag.SubmissionPending = submissionStats.FirstOrDefault(x => x.Status == SubmissionStatus.Pending)?.Count ?? 0;
             ViewBag.SubmissionUnderReview = submissionStats.FirstOrDefault(x => x.Status == SubmissionStatus.UnderReview)?.Count ?? 0;
 
             // --- Son 5 kongre ---
@@ -807,9 +807,9 @@ namespace AntAbstract.Web.Controllers
                     .Where(r => r.ConferenceId == confId);
 
                 viewModel.TotalRegistrations = await regQuery.CountAsync();
-                viewModel.PendingPayments    = await regQuery.CountAsync(r => !r.IsPaid && r.ReceiptFilePath == null);
-                viewModel.ReceiptWaiting     = await regQuery.CountAsync(r => !r.IsPaid && r.ReceiptFilePath != null);
-                viewModel.TotalRevenue       = await regQuery.Where(r => r.IsPaid).SumAsync(r => r.Amount);
+                viewModel.PendingPayments = await regQuery.CountAsync(r => !r.IsPaid && r.ReceiptFilePath == null);
+                viewModel.ReceiptWaiting = await regQuery.CountAsync(r => !r.IsPaid && r.ReceiptFilePath != null);
+                viewModel.TotalRevenue = await regQuery.Where(r => r.IsPaid).SumAsync(r => r.Amount);
 
                 // Hakeme atanmamış kabul edilmiş / bekleyen bildirileri say
                 viewModel.PendingAssignments = await _context.Submissions.AsNoTracking()

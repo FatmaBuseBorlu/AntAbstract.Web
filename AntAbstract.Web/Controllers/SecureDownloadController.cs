@@ -66,7 +66,7 @@ namespace AntAbstract.Web.Controllers
 
             // Yetki: dosya sahibi, SuperAdmin veya aynı tenant'ın Admin'i
             var isSuperAdmin = User.IsInRole("SuperAdmin");
-            var isOwner      = submission.AuthorId == user.Id;
+            var isOwner = submission.AuthorId == user.Id;
 
             // Admin: DB'deki TenantId ile karşılaştır — slug gerektirmez
             var isTenantAdmin = false;
@@ -122,7 +122,7 @@ namespace AntAbstract.Web.Controllers
                 return NotFound();
 
             // Yetki: kayıt sahibi, SuperAdmin veya aynı tenant'ın Admin'i
-            var isOwner      = registration.AppUserId == user.Id;
+            var isOwner = registration.AppUserId == user.Id;
             var isSuperAdmin = User.IsInRole("SuperAdmin");
 
             var isTenantAdmin = false;
@@ -172,12 +172,12 @@ namespace AntAbstract.Web.Controllers
             var ext = Path.GetExtension(fullPath).ToLowerInvariant();
             var contentType = ext switch
             {
-                ".pdf"  => "application/pdf",
-                ".doc"  => "application/msword",
+                ".pdf" => "application/pdf",
+                ".doc" => "application/msword",
                 ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 ".jpg" or ".jpeg" => "image/jpeg",
-                ".png"  => "image/png",
-                _       => "application/octet-stream"
+                ".png" => "image/png",
+                _ => "application/octet-stream"
             };
 
             return PhysicalFile(fullPath, contentType, downloadName);

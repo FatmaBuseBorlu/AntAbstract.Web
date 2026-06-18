@@ -33,18 +33,18 @@ namespace AntAbstract.Domain.Entities
 
         [Required]
         [Display(Name = "Ödeme Durumu")]
-        public bool IsPaid { get; set; } = false; 
+        public bool IsPaid { get; set; } = false;
 
         [Display(Name = "Ödeme Tarihi")]
         public DateTime? PaymentDate { get; set; }
 
         [Display(Name = "Ödeme İşlem ID")]
-        public string? PaymentTransactionId { get; set; } 
+        public string? PaymentTransactionId { get; set; }
 
         [Required]
         [Column(TypeName = "decimal(18,2)")]
         [Display(Name = "Ödenen Tutar")]
-        public decimal Amount { get; set; } 
+        public decimal Amount { get; set; }
 
 
         [StringLength(250)]

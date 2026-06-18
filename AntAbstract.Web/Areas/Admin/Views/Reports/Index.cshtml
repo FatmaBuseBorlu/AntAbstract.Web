@@ -34,6 +34,10 @@
         ? $"/Admin/Reports/SubmissionsExport?conferenceId={Model.ConferenceId}"
         : $"/{slug}/Admin/Reports/SubmissionsExport?conferenceId={Model.ConferenceId}";
 
+    var unregisteredAuthorsUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Reports/UnregisteredAuthors?conferenceId={Model.ConferenceId}"
+        : $"/{slug}/Admin/Reports/UnregisteredAuthors?conferenceId={Model.ConferenceId}";
+
     int decidedCount = Model.AcceptedCount + Model.RejectedCount + Model.RevisionRequiredCount;
     int totalForBar = Model.TotalSubmissions > 0 ? Model.TotalSubmissions : 1;
     int acceptedPct = (int)Math.Round(Model.AcceptedCount * 100.0 / totalForBar);
@@ -83,6 +87,10 @@
             <a href="@refereeReportUrl" class="btn reports-btn-ref">
                 <i class="fas fa-user-graduate"></i>
                 Hakem Raporu
+            </a>
+            <a href="@unregisteredAuthorsUrl" class="btn btn-warning text-dark">
+                <i class="fas fa-user-times"></i>
+                Kayıtsız Yazarlar
             </a>
         </div>
     </div>

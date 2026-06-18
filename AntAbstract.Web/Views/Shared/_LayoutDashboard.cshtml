@@ -1221,6 +1221,38 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
             .account-dropdown-menu {
                 width: 295px;
             }
+
+            /* Tablo yatay kaydırma */
+            .table-responsive-force { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            table { min-width: 560px; }
+
+            /* Buton grupları alt alta */
+            .btn-group-mobile { flex-direction: column !important; }
+            .btn-group-mobile .btn { border-radius: 8px !important; width: 100%; }
+
+            /* Hero/başlık satırları */
+            .d-flex.justify-content-between { flex-wrap: wrap; gap: .75rem; }
+            .reports-hero-actions { flex-wrap: wrap; gap: .5rem; }
+
+            /* Kart padding küçültme */
+            .card { border-radius: 12px !important; }
+            .p-4 { padding: 1rem !important; }
+
+            /* Stat kartları tek sütun */
+            .row.g-3 > [class*="col-md-3"],
+            .row.g-3 > [class*="col-md-4"] { flex: 0 0 50%; max-width: 50%; }
+
+            /* Form etiketleri tam genişlik */
+            .row.g-3 > .col-md-6,
+            .row.g-3 > .col-md-4,
+            .row.g-3 > .col-md-8 { flex: 0 0 100%; max-width: 100%; }
+        }
+
+        @@media (max-width: 575px) {
+            .row.g-3 > [class*="col-md-3"],
+            .row.g-3 > [class*="col-md-4"] { flex: 0 0 100%; max-width: 100%; }
+            .content-wrapper { padding: .75rem; }
+            h4.fw-bold { font-size: 1.1rem; }
         }
     </style>
 </head>
@@ -1513,6 +1545,18 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                        class="nav-link @(currentController == "Session" ? "active" : "")">
                         <i class="fas fa-microphone-alt text-success"></i>
                         @L("Management_Session", "Program / Oturumlar")
+                    </a>
+
+                    <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Speakers?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/Speakers?conferenceId={selectedConferenceId}")"
+                       class="nav-link @(currentController == "Speakers" ? "active" : "")">
+                        <i class="fas fa-user-tie text-info"></i>
+                        Davetli Konuşmacılar
+                    </a>
+
+                    <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Sponsors?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/Sponsors?conferenceId={selectedConferenceId}")"
+                       class="nav-link @(currentController == "Sponsors" ? "active" : "")">
+                        <i class="fas fa-handshake text-warning"></i>
+                        Sponsorlar
                     </a>
 
                     <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/ReviewCriteria?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/ReviewCriteria?conferenceId={selectedConferenceId}")"

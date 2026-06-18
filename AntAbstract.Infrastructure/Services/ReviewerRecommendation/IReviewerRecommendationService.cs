@@ -7,7 +7,7 @@ namespace AntAbstract.Infrastructure.Services.ReviewerRecommendation
 {
     public interface IReviewerRecommendationService
     {
-    
+
         Task<List<AppUser>> GetRecommendationsAsync(Guid submissionId);
     }
 }

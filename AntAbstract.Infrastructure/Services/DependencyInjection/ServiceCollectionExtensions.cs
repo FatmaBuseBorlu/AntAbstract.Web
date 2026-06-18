@@ -4,7 +4,7 @@ using AntAbstract.Infrastructure.Services.Certficates;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Infrastructure.Services.Email;
 using AntAbstract.Infrastructure.Services.Notifications;
-using AntAbstract.Infrastructure.Services.ReviewerRecommendation; 
+using AntAbstract.Infrastructure.Services.ReviewerRecommendation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

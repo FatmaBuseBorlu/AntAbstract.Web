@@ -43,7 +43,7 @@ namespace AntAbstract.Infrastructure.Services.Email
             }
 
             var subject = ApplyPlaceholders(template.Subject, placeholders);
-            var body    = ApplyPlaceholders(template.HtmlBody, placeholders);
+            var body = ApplyPlaceholders(template.HtmlBody, placeholders);
 
             await SendEmailAsync(toEmail, subject, body, source: templateKey, templateKey: templateKey);
         }

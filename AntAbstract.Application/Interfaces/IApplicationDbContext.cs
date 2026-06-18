@@ -10,7 +10,7 @@ namespace AntAbstract.Application.Interfaces
         DbSet<Submission> Submissions { get; }
         DbSet<SubmissionAuthor> SubmissionAuthors { get; set; }
         DbSet<SubmissionFile> SubmissionFiles { get; set; }
-        DbSet<Conference> Conferences{ get; }
+        DbSet<Conference> Conferences { get; }
         DbSet<Review> Reviews { get; }
         DbSet<ReviewAssignment> ReviewAssignments { get; }
         DbSet<ReviewCriterion> ReviewCriteria { get; }
