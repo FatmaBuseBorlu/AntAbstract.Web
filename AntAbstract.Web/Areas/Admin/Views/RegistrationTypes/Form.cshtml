@@ -244,6 +244,27 @@
                         <span class="text-danger small" asp-validation-for="Currency"></span>
                     </div>
 
+                <div class="row g-3 mb-3">
+                    <div class="col-12">
+                        <div class="form-section-title mt-2">
+                            <i class="fas fa-clock"></i>
+                            <span>@T("Son Başvuru / Erken Kayıt Tarihi", "Application Deadline / Early Bird")</span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            @T("Son Başvuru Tarihi", "Deadline")
+                        </label>
+                        <input type="date" class="form-control" asp-for="Deadline"
+                               value="@(Model.Deadline.HasValue ? Model.Deadline.Value.ToString("yyyy-MM-dd") : "")" />
+                        <div class="form-help-text">
+                            @T(
+                                "Bu tarihten sonra bu kayıt türü pasif olur. Erken kayıt için son tarih belirleyin, sonra normal fiyatlı yeni bir tür oluşturun.",
+                                "After this date this type becomes inactive. Set it for early-bird pricing, then create a new type for regular price."
+                            )
+                        </div>
+                    </div>
                 </div>
 
                 <div class="mb-3">

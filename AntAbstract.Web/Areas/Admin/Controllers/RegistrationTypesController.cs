@@ -260,6 +260,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     DescriptionEn = t.DescriptionEn,
                     Price = t.Price,
                     Currency = t.Currency,
+                    Deadline = t.Deadline,
                     RoleName = string.IsNullOrWhiteSpace(t.RoleName) ? "Author" : t.RoleName
                 })
                 .ToListAsync();
@@ -407,6 +408,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             entity.RoleName = allowedRoles.Contains(model.RoleName, StringComparer.OrdinalIgnoreCase)
                 ? model.RoleName
                 : "Author";
+
+            entity.Deadline = model.Deadline.HasValue
+                ? DateTime.SpecifyKind(model.Deadline.Value, DateTimeKind.Utc)
+                : null;
 
             await _context.SaveChangesAsync();
 
@@ -557,6 +562,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 DescriptionEn = entity.DescriptionEn,
                 Price = entity.Price,
                 Currency = entity.Currency,
+                Deadline = entity.Deadline,
                 RoleName = string.IsNullOrWhiteSpace(entity.RoleName) ? "Author" : entity.RoleName,
                 ReturnUrl = effectiveReturnUrl
             };

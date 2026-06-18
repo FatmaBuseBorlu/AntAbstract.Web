@@ -20,6 +20,8 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.RegistrationTypes
 
         public string Currency { get; set; } = "TRY";
 
+        public DateTime? Deadline { get; set; }
+
         public string RoleName { get; set; } = "Author";
 
         public int UsageCount { get; set; }
@@ -70,6 +72,9 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.RegistrationTypes
         [Required]
         [StringLength(50)]
         public string RoleName { get; set; } = "Author";
+
+        /// <summary>Erken kayıt / son başvuru tarihi. Sonrasında bu tür pasif olur.</summary>
+        public DateTime? Deadline { get; set; }
 
         public string ReturnUrl { get; set; } = "";
     }
