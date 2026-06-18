@@ -1,0 +1,162 @@
+@model List<AntAbstract.Domain.Entities.SurveyAnswer>
+
+@{
+    ViewData["Title"] = "Anket Sonuçları";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+
+    var slug = ViewBag.Slug as string ?? "";
+    var conferenceId = (Guid)ViewBag.ConferenceId;
+    var title = ViewBag.ConferenceTitle as string ?? "";
+
+    var total = Model.Count;
+    var recommendYes = Model.Count(a => a.Answer2 != null && (a.Answer2.Contains("Evet") || a.Answer2.Contains("Yes")));
+    var recommendPct = total > 0 ? (int)Math.Round(recommendYes * 100.0 / total) : 0;
+    var networkYes = Model.Count(a => a.Answer3 != null && (a.Answer3.Contains("Evet") || a.Answer3.Contains("Yüksek") || a.Answer3.Contains("High") || a.Answer3.Contains("Yes")));
+}
+
+<div class="container-fluid px-4 py-4">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="/@slug/Admin/Reports?conferenceId=@conferenceId">Raporlar</a></li>
+            <li class="breadcrumb-item active">Anket Sonuçları</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+        <div>
+            <h4 class="fw-bold mb-1"><i class="fas fa-poll-h me-2 text-primary"></i>Anket Sonuçları</h4>
+            <p class="text-muted mb-0 small">@title</p>
+        </div>
+        <a href="/@slug/Admin/Reports?conferenceId=@conferenceId" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Raporlara Dön
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3 h-100" style="border-radius:16px;">
+                <div class="fs-2 fw-bold text-primary">@total</div>
+                <div class="small text-muted mt-1">Toplam Yanıt</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3 h-100" style="border-radius:16px;">
+                <div class="fs-2 fw-bold text-success">%@recommendPct</div>
+                <div class="small text-muted mt-1">Tavsiye Eder</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3 h-100" style="border-radius:16px;">
+                <div class="fs-2 fw-bold text-info">@networkYes</div>
+                <div class="small text-muted mt-1">Network Katkısı Var</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3 h-100" style="border-radius:16px;">
+                <div class="fs-2 fw-bold text-warning">@(total - recommendYes)</div>
+                <div class="small text-muted mt-1">Tavsiye Etmez</div>
+            </div>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card border-0 shadow-sm p-5 text-center" style="border-radius:16px;">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <h6 class="text-muted">Henüz anket yanıtı yok</h6>
+            <p class="small text-muted mb-0">Katılımcılar bildiri geri bildirimi gönderdikçe burada görünecek.</p>
+        </div>
+    }
+    else
+    {
+        <!-- Accordion list -->
+        <div class="accordion" id="surveyAccordion">
+            @for (int i = 0; i < Model.Count; i++)
+            {
+                var a = Model[i];
+                var userName = $"{a.User?.FirstName} {a.User?.LastName}".Trim();
+                if (string.IsNullOrWhiteSpace(userName)) userName = a.User?.Email ?? "Bilinmeyen";
+                var collapseId = $"collapse{i}";
+                var headingId = $"heading{i}";
+            <div class="card border-0 shadow-sm mb-2" style="border-radius:12px;overflow:hidden;">
+                <div class="card-header bg-white border-0 p-0" id="@headingId">
+                    <button class="btn w-100 text-start d-flex align-items-center gap-3 p-3 collapsed"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#@collapseId"
+                            aria-expanded="false">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0"
+                             style="width:36px;height:36px;font-size:14px;font-weight:700;">
+                            @(i + 1)
+                        </div>
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="fw-semibold text-dark text-truncate">@userName</div>
+                            <div class="small text-muted">@a.SubmittedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")</div>
+                        </div>
+                        @if (a.Submission != null)
+                        {
+                            <span class="badge bg-light text-secondary border me-2 d-none d-md-inline">
+                                <i class="fas fa-file-alt me-1"></i>@a.Submission.Title?.Length > 40 ? a.Submission.Title?[..40] + "…" : a.Submission.Title
+                            </span>
+                        }
+                        <span class="badge @(a.Answer2 != null && (a.Answer2.Contains("Evet") || a.Answer2.Contains("Yes")) ? "bg-success" : "bg-secondary")">
+                            @(a.Answer2 != null && (a.Answer2.Contains("Evet") || a.Answer2.Contains("Yes")) ? "Tavsiye Eder" : "Tavsiye Etmez")
+                        </span>
+                        <i class="fas fa-chevron-down text-muted ms-2"></i>
+                    </button>
+                </div>
+                <div id="@collapseId" class="collapse" data-bs-parent="#surveyAccordion">
+                    <div class="card-body pt-0 pb-3 px-4">
+                        <hr class="mt-0 mb-3">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="p-3 rounded-3 bg-light h-100">
+                                    <div class="small fw-semibold text-muted mb-1">1. Beklentileri karşıladı mı?</div>
+                                    <div class="fw-medium">@(a.Answer1 ?? "—")</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 rounded-3 bg-light h-100">
+                                    <div class="small fw-semibold text-muted mb-1">2. Tavsiye eder misiniz?</div>
+                                    <div class="fw-medium">@(a.Answer2 ?? "—")</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 rounded-3 bg-light h-100">
+                                    <div class="small fw-semibold text-muted mb-1">3. Network katkısı oldu mu?</div>
+                                    <div class="fw-medium">@(a.Answer3 ?? "—")</div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="p-3 rounded-3 bg-light">
+                                    <div class="small fw-semibold text-muted mb-1">4. Ne öğrendiniz?</div>
+                                    <div class="text-dark" style="white-space:pre-wrap;">@(a.Answer4 ?? "—")</div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="p-3 rounded-3 bg-light">
+                                    <div class="small fw-semibold text-muted mb-1">5. Uygulama planınız nedir?</div>
+                                    <div class="text-dark" style="white-space:pre-wrap;">@(a.Answer5 ?? "—")</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            }
+        </div>
+    }
+
+</div>
