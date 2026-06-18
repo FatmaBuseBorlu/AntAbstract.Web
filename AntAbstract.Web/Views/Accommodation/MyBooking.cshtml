@@ -1,0 +1,105 @@
+@model AntAbstract.Domain.Entities.AccommodationBooking
+
+@{
+    ViewData["Title"] = "Rezervasyonum";
+    Layout = "_LayoutDashboard";
+
+    var slug = ViewBag.Slug as string ?? "";
+    var conferenceTitle = ViewBag.ConferenceTitle as string ?? "";
+    var nights = (Model.CheckOutDate.Date - Model.CheckInDate.Date).Days;
+}
+
+<div class="container-fluid px-4 py-4" style="max-width:700px;">
+
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="/@slug/Accommodation?conferenceId=@Model.ConferenceId">Konaklama</a></li>
+            <li class="breadcrumb-item active">Rezervasyonum</li>
+        </ol>
+    </nav>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-lg" style="border-radius:20px;overflow:hidden;">
+        <div class="card-header p-4 text-white d-flex align-items-center gap-3"
+             style="background:linear-gradient(135deg,@(Model.IsPaid ? "#16a34a,#22c55e" : "#f59e0b,#fbbf24"));">
+            <i class="fas fa-@(Model.IsPaid ? "check-circle" : "clock") fa-2x"></i>
+            <div>
+                <h5 class="fw-bold mb-0">@(Model.IsPaid ? "Onaylandı" : "Ödeme Bekleniyor")</h5>
+                <p class="mb-0 small opacity-80">@conferenceTitle</p>
+            </div>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="p-3 rounded-3 bg-light">
+                        <div class="small text-muted fw-semibold mb-1">Otel & Oda</div>
+                        <div class="fw-bold">@Model.RoomType.Hotel.Name</div>
+                        <div class="text-muted">@Model.RoomType.Name — @Model.RoomType.Price @Model.RoomType.Currency / gece</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 bg-light">
+                        <div class="small text-muted fw-semibold mb-1">Giriş Tarihi</div>
+                        <div class="fw-bold">@Model.CheckInDate.ToString("dd MMMM yyyy")</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 bg-light">
+                        <div class="small text-muted fw-semibold mb-1">Çıkış Tarihi</div>
+                        <div class="fw-bold">@Model.CheckOutDate.ToString("dd MMMM yyyy")</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 bg-light">
+                        <div class="small text-muted fw-semibold mb-1">Konaklama Süresi</div>
+                        <div class="fw-bold">@nights gece</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 bg-light">
+                        <div class="small text-muted fw-semibold mb-1">Toplam Tutar</div>
+                        <div class="fw-bold text-primary fs-5">@Model.TotalAmount.ToString("N2") TL</div>
+                    </div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(Model.RoommateName))
+                {
+                    <div class="col-12">
+                        <div class="p-3 rounded-3 bg-light">
+                            <div class="small text-muted fw-semibold mb-1">Oda Arkadaşı</div>
+                            <div class="fw-bold">@Model.RoommateName</div>
+                        </div>
+                    </div>
+                }
+                @if (Model.TransferOption != null)
+                {
+                    <div class="col-12">
+                        <div class="p-3 rounded-3 bg-light">
+                            <div class="small text-muted fw-semibold mb-1">Transfer</div>
+                            <div class="fw-bold">@Model.TransferOption.Name — @Model.TransferOption.Price @Model.TransferOption.Currency</div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @if (!Model.IsPaid)
+            {
+                <div class="alert d-flex align-items-center gap-3 mt-4"
+                     style="border-radius:12px;background:#fffbeb;border-left:4px solid #f59e0b;color:#92400e;">
+                    <i class="fas fa-exclamation-triangle fa-lg"></i>
+                    <div class="small">
+                        Rezervasyonunuz <strong>ödeme bekleniyor</strong> durumundadır.
+                        Ödemeyi tamamlamak için kongre kayıt sayfasını ziyaret edin.
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
