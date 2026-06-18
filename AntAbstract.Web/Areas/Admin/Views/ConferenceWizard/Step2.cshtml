@@ -1,0 +1,69 @@
+@model AntAbstract.Domain.Entities.Conference
+@{
+    ViewData["Title"] = "Yeni Kongre — Tarihler";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    var slug = ViewBag.Slug as string ?? "";
+}
+
+<div class="container-fluid px-4 py-4" style="max-width:780px;">
+
+    <div class="mb-4">
+        <h4 class="fw-bold mb-1"><i class="fas fa-magic me-2 text-primary"></i>Yeni Kongre Sihirbazı</h4>
+        <p class="text-muted small mb-3">@Model.Title</p>
+        @await Html.PartialAsync("_WizardProgress", 2)
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger mb-3">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="card border-0 shadow-sm" style="border-radius:20px;">
+        <div class="card-header bg-primary text-white p-4" style="border-radius:20px 20px 0 0;">
+            <h5 class="fw-bold mb-0"><i class="fas fa-calendar-alt me-2"></i>Tarihler & Deadline'lar</h5>
+        </div>
+        <div class="card-body p-4">
+            <form asp-action="Step2Post" asp-route-slug="@slug" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Kongre Başlangıç Tarihi <span class="text-danger">*</span></label>
+                        <input type="date" name="startDate" class="form-control"
+                               value="@Model.StartDate.ToString("yyyy-MM-dd")" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Kongre Bitiş Tarihi <span class="text-danger">*</span></label>
+                        <input type="date" name="endDate" class="form-control"
+                               value="@Model.EndDate.ToString("yyyy-MM-dd")" required />
+                    </div>
+                </div>
+
+                <hr class="my-4" />
+                <p class="text-muted small fw-semibold mb-3"><i class="fas fa-clock me-1"></i>Deadline'lar (opsiyonel)</p>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Özet Gönderme Deadline</label>
+                        <input type="date" name="abstractDeadline" class="form-control"
+                               value="@Model.AbstractSubmissionDeadline?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Tam Metin Deadline</label>
+                        <input type="date" name="fullTextDeadline" class="form-control"
+                               value="@Model.FullTextSubmissionDeadline?.ToString("yyyy-MM-dd")" />
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 justify-content-between">
+                    <a href="/@slug/Admin/ConferenceWizard/Step1" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Geri
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold">
+                        Kaydet & İleri <i class="fas fa-arrow-right ms-1"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

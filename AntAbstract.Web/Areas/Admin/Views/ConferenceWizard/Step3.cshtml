@@ -1,0 +1,93 @@
+@model List<AntAbstract.Domain.Entities.RegistrationType>
+@{
+    ViewData["Title"] = "Yeni Kongre — Kayıt Tipleri";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    var slug = ViewBag.Slug as string ?? "";
+    var confId = (Guid)ViewBag.ConferenceId;
+    var confTitle = ViewBag.ConferenceTitle as string ?? "";
+}
+
+<div class="container-fluid px-4 py-4" style="max-width:780px;">
+
+    <div class="mb-4">
+        <h4 class="fw-bold mb-1"><i class="fas fa-magic me-2 text-primary"></i>Yeni Kongre Sihirbazı</h4>
+        <p class="text-muted small mb-3">@confTitle</p>
+        @await Html.PartialAsync("_WizardProgress", 3)
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success mb-3">@TempData["SuccessMessage"]</div>
+    }
+
+    <div class="card border-0 shadow-sm mb-3" style="border-radius:20px;">
+        <div class="card-header bg-primary text-white p-4" style="border-radius:20px 20px 0 0;">
+            <h5 class="fw-bold mb-0"><i class="fas fa-ticket-alt me-2"></i>Kayıt Tipleri</h5>
+        </div>
+        <div class="card-body p-4">
+
+            @if (Model.Any())
+            {
+                <div class="mb-4">
+                    @foreach (var rt in Model)
+                    {
+                        <div class="d-flex align-items-center justify-content-between p-3 mb-2 bg-light rounded-3">
+                            <div>
+                                <div class="fw-semibold">@rt.Name</div>
+                                <div class="small text-muted">@rt.Price.ToString("N2") @rt.Currency
+                                    @if (rt.Deadline.HasValue) { <span>· Son: @rt.Deadline.Value.ToString("dd.MM.yyyy")</span> }
+                                </div>
+                            </div>
+                            <form asp-action="Step3DeleteType" asp-route-slug="@slug"
+                                  asp-route-id="@confId" asp-route-typeId="@rt.Id" method="post">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            }
+
+            <form asp-action="Step3AddType" asp-route-slug="@slug" asp-route-id="@confId" method="post">
+                @Html.AntiForgeryToken()
+                <div class="row g-2 mb-2">
+                    <div class="col-md-5">
+                        <input type="text" name="name" class="form-control" placeholder="Kayıt tipi adı (TR)" required maxlength="200" />
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <input type="number" name="price" class="form-control" placeholder="Ücret" min="0" step="0.01" value="0" required />
+                            <select name="currency" class="form-select" style="max-width:80px;">
+                                <option>TRY</option>
+                                <option>USD</option>
+                                <option>EUR</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="date" name="deadline" class="form-control" placeholder="Deadline" />
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-success w-100"><i class="fas fa-plus"></i></button>
+                    </div>
+                </div>
+                <input type="text" name="nameEn" class="form-control form-control-sm mb-2"
+                       placeholder="Kayıt tipi adı (EN — opsiyonel)" maxlength="200" />
+            </form>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 justify-content-between">
+        <a href="/@slug/Admin/ConferenceWizard/Step2/@confId" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Geri
+        </a>
+        <form asp-action="Step3Next" asp-route-slug="@slug" asp-route-id="@confId" method="post">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-primary px-4 fw-bold">
+                @(Model.Any() ? "Kaydet & İleri" : "Atla & İleri") <i class="fas fa-arrow-right ms-1"></i>
+            </button>
+        </form>
+    </div>
+</div>

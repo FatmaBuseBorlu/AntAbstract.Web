@@ -1,0 +1,96 @@
+@model AntAbstract.Domain.Entities.Conference
+@{
+    ViewData["Title"] = "Yeni Kongre — Ödeme Ayarları";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    var slug = ViewBag.Slug as string ?? "";
+}
+
+<div class="container-fluid px-4 py-4" style="max-width:780px;">
+
+    <div class="mb-4">
+        <h4 class="fw-bold mb-1"><i class="fas fa-magic me-2 text-primary"></i>Yeni Kongre Sihirbazı</h4>
+        <p class="text-muted small mb-3">@Model.Title</p>
+        @await Html.PartialAsync("_WizardProgress", 5)
+    </div>
+
+    <div class="card border-0 shadow-sm" style="border-radius:20px;">
+        <div class="card-header bg-primary text-white p-4" style="border-radius:20px 20px 0 0;">
+            <h5 class="fw-bold mb-0"><i class="fas fa-credit-card me-2"></i>Ödeme Ayarları</h5>
+        </div>
+        <div class="card-body p-4">
+            <form asp-action="Step5Post" asp-route-slug="@slug" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold mb-3">Aktif Ödeme Yöntemleri</label>
+                    <div class="d-flex flex-column gap-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="isStripeEnabled"
+                                   id="stripeCheck" value="true" @(Model.IsStripeEnabled ? "checked" : "") />
+                            <label class="form-check-label fw-semibold" for="stripeCheck">
+                                <i class="fab fa-stripe text-primary me-1"></i> Stripe (Kredi Kartı)
+                            </label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="isPayTREnabled"
+                                   id="paytrCheck" value="true" @(Model.IsPayTREnabled ? "checked" : "") />
+                            <label class="form-check-label fw-semibold" for="paytrCheck">
+                                <i class="fas fa-credit-card text-warning me-1"></i> PayTR
+                            </label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="isBankTransferEnabled"
+                                   id="bankCheck" value="true"
+                                   @(Model.IsBankTransferEnabled ? "checked" : "")
+                                   onchange="document.getElementById('bankFields').style.display=this.checked?'block':'none'" />
+                            <label class="form-check-label fw-semibold" for="bankCheck">
+                                <i class="fas fa-university me-1"></i> Banka Transferi (EFT)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="bankFields" style="display:@(Model.IsBankTransferEnabled ? "block" : "none")">
+                    <hr />
+                    <p class="fw-semibold small text-muted mb-3">Banka Bilgileri</p>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Banka Adı</label>
+                            <input type="text" name="bankName" class="form-control"
+                                   value="@Model.BankName" maxlength="200" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Şube</label>
+                            <input type="text" name="bankBranch" class="form-control"
+                                   value="@Model.BankBranch" maxlength="200" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">IBAN</label>
+                        <input type="text" name="bankIban" class="form-control"
+                               value="@Model.BankIban" maxlength="50" placeholder="TR00 0000 0000 0000 0000 0000 00" />
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Hesap Sahibi</label>
+                        <input type="text" name="bankAccountName" class="form-control"
+                               value="@Model.BankAccountName" maxlength="200" />
+                    </div>
+                </div>
+
+                <p class="text-muted small mb-4">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Stripe ve PayTR API anahtarları sistem ayarlarından (appsettings) yönetilir.
+                </p>
+
+                <div class="d-flex gap-2 justify-content-between">
+                    <a href="/@slug/Admin/ConferenceWizard/Step4/@Model.Id" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Geri
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold">
+                        Kaydet & İleri <i class="fas fa-arrow-right ms-1"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -5,7 +5,7 @@
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     var slug = Model.Slug;
-    var createUrl = Url.Action("Create", "Conferences", new { area = "Admin", slug });
+    var createUrl = $"/{slug}/Admin/ConferenceWizard/Step1";
     var baseListUrl = Url.Action("Index", "Conferences", new { area = "Admin", slug, search = Model.Search });
 }
 
