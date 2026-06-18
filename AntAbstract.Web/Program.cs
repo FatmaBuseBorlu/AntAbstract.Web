@@ -5,6 +5,7 @@ using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services;
 using AntAbstract.Infrastructure.Services.Certficates;
 using AntAbstract.Infrastructure.Services.Invoice;
+using AntAbstract.Infrastructure.Services.Payment;
 using AntAbstract.Infrastructure.Services.DependencyInjection;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -163,6 +164,7 @@ builder.Services.AddScoped<PdfCertificateService>();
 builder.Services.AddScoped<IProceedingBookPdfService, ProceedingBookPdfService>();
 builder.Services.AddScoped<IInvoicePdfService, InvoicePdfService>();
 builder.Services.AddScoped<IVisaLetterPdfService, VisaLetterPdfService>();
+builder.Services.AddScoped<IPayTRService, PayTRService>();
 
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();

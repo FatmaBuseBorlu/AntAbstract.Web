@@ -656,6 +656,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             existingConference.MaxRegistrations = conference.MaxRegistrations;
             existingConference.IsRegistrationOpen = conference.IsRegistrationOpen;
 
+            existingConference.IsStripeEnabled       = conference.IsStripeEnabled;
+            existingConference.IsPayTREnabled        = conference.IsPayTREnabled;
+            existingConference.IsBankTransferEnabled = conference.IsBankTransferEnabled;
+            existingConference.BankName              = conference.BankName?.Trim();
+            existingConference.BankIban              = conference.BankIban?.Trim();
+            existingConference.BankAccountName       = conference.BankAccountName?.Trim();
+            existingConference.BankBranch            = conference.BankBranch?.Trim();
+
             if (!string.IsNullOrWhiteSpace(existingConference.Title))
             {
                 existingConference.Slug = await GenerateUniqueConferenceSlugAsync(

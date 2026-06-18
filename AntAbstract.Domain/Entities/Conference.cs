@@ -82,5 +82,19 @@ namespace AntAbstract.Domain.Entities
 
         /// <summary>Tam metin yükleme açık mı? (Admin elle kontrol eder)</summary>
         public bool IsFullTextOpen { get; set; } = false;
+
+        // ── Banka Havalesi Bilgileri ─────────────────────────────────────────
+        public string? BankName { get; set; }
+        public string? BankIban { get; set; }
+        public string? BankAccountName { get; set; }
+        public string? BankBranch { get; set; }
+
+        // ── Ödeme Yöntemi Yapılandırması ────────────────────────────────────
+        /// <summary>Stripe Checkout etkin mi?</summary>
+        public bool IsStripeEnabled { get; set; } = true;
+        /// <summary>PayTR etkin mi?</summary>
+        public bool IsPayTREnabled { get; set; } = false;
+        /// <summary>Banka havalesi etkin mi?</summary>
+        public bool IsBankTransferEnabled { get; set; } = false;
     }
 }

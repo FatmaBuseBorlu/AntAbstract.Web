@@ -2,6 +2,7 @@
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Invoice;
+using AntAbstract.Infrastructure.Services.Payment;
 using AntAbstract.Web.Files;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
@@ -38,6 +39,7 @@ namespace AntAbstract.Web.Controllers
         private readonly IUploadFileValidator _uploadFileValidator;
         private readonly IInvoicePdfService _invoicePdfService;
         private readonly IVisaLetterPdfService _visaLetterPdfService;
+        private readonly IPayTRService _payTR;
 
         public PaymentController(
             AppDbContext context,
@@ -50,7 +52,8 @@ namespace AntAbstract.Web.Controllers
             ILogger<PaymentController> logger,
             IUploadFileValidator uploadFileValidator,
             IInvoicePdfService invoicePdfService,
-            IVisaLetterPdfService visaLetterPdfService)
+            IVisaLetterPdfService visaLetterPdfService,
+            IPayTRService payTR)
         {
             _context = context;
             _userManager = userManager;
@@ -63,6 +66,7 @@ namespace AntAbstract.Web.Controllers
             _uploadFileValidator = uploadFileValidator;
             _invoicePdfService = invoicePdfService;
             _visaLetterPdfService = visaLetterPdfService;
+            _payTR = payTR;
         }
 
         #region Helper Methods
@@ -593,6 +597,15 @@ namespace AntAbstract.Web.Controllers
                 return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
             }
 
+            var conf = registration.Conference;
+            ViewBag.IsStripeEnabled      = (conf?.IsStripeEnabled ?? true) && IsStripeConfigured();
+            ViewBag.IsPayTREnabled       = (conf?.IsPayTREnabled ?? false) && _payTR.IsConfigured;
+            ViewBag.IsBankTransferEnabled = conf?.IsBankTransferEnabled ?? false;
+            ViewBag.BankName             = conf?.BankName;
+            ViewBag.BankIban             = conf?.BankIban;
+            ViewBag.BankAccountName      = conf?.BankAccountName;
+            ViewBag.BankBranch           = conf?.BankBranch;
+
             var paymentModel = new Payment
             {
                 ConferenceId = registration.ConferenceId,
@@ -610,7 +623,7 @@ namespace AntAbstract.Web.Controllers
                 TaxNumber = registration.TaxNumber,
                 TaxOffice = registration.TaxOffice,
 
-                PaymentMethod = "CreditCard"
+                PaymentMethod = "StripeCheckout"
             };
 
             return View(paymentModel);
@@ -674,14 +687,29 @@ namespace AntAbstract.Web.Controllers
                 return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
             }
 
-            if (!IsStripeConfigured())
-            {
-                _logger.LogError("Stripe secret key is not configured.");
+            var selectedMethod = model.PaymentMethod?.Trim() ?? "StripeCheckout";
 
+            // Yalnızca geçerli yöntemlere izin ver
+            if (selectedMethod != "StripeCheckout" &&
+                selectedMethod != "PayTR" &&
+                selectedMethod != "BankTransfer")
+            {
+                selectedMethod = "StripeCheckout";
+            }
+
+            if (selectedMethod == "StripeCheckout" && !IsStripeConfigured())
+            {
                 TempData["ErrorMessage"] = T(
                     "StripeNotConfigured",
                     "Online ödeme sistemi şu anda yapılandırılmamış. Lütfen kongre yönetimiyle iletişime geçin.");
+                return Redirect(BuildUrl(canonicalSlug, $"/payment/checkout/{registration.Id}"));
+            }
 
+            if (selectedMethod == "PayTR" && !_payTR.IsConfigured)
+            {
+                TempData["ErrorMessage"] = T(
+                    "PayTRNotConfigured",
+                    "PayTR ödeme sistemi şu anda yapılandırılmamış. Lütfen kongre yönetimiyle iletişime geçin.");
                 return Redirect(BuildUrl(canonicalSlug, $"/payment/checkout/{registration.Id}"));
             }
 
@@ -709,7 +737,7 @@ namespace AntAbstract.Web.Controllers
                 TaxNumber = model.TaxNumber,
                 TaxOffice = model.TaxOffice,
 
-                PaymentMethod = "StripeCheckout"
+                PaymentMethod = selectedMethod
             };
 
             _context.Payments.Add(payment);
@@ -720,6 +748,58 @@ namespace AntAbstract.Web.Controllers
             registration.TaxOffice = payment.TaxOffice;
 
             await _context.SaveChangesAsync();
+
+            // ── Banka Havalesi ────────────────────────────────────────────────
+            if (selectedMethod == "BankTransfer")
+            {
+                TempData["InfoMessage"] = T(
+                    "BankTransferInstructions",
+                    "Banka havalesi ile ödeme seçtiniz. Lütfen belirtilen hesaba ödemenizi yapın ve ardından makbuzunuzu yükleyin.");
+
+                return Redirect(BuildUrl(canonicalSlug, $"/payment/upload-receipt/{registration.Id}"));
+            }
+
+            // ── PayTR ─────────────────────────────────────────────────────────
+            if (selectedMethod == "PayTR")
+            {
+                var payTRBaseUrl = GetPublicBaseUrl();
+                var okUrl   = $"{payTRBaseUrl}/{canonicalSlug}/payment/paytr-success?paymentId={payment.Id}";
+                var failUrl = $"{payTRBaseUrl}/{canonicalSlug}/payment/paytr-fail?paymentId={payment.Id}";
+
+                var amountKurus = (long)Math.Round(amount * 100);
+                var currencyCode = currency.ToUpperInvariant() == "EUR" ? "EUR"
+                                 : currency.ToUpperInvariant() == "USD" ? "USD"
+                                 : "TL";
+
+                var basketItem = new[] { new[] { registration.Conference?.Title ?? "Kongre Kaydı", amount.ToString("0.00"), "1" } };
+                var basketJson = System.Text.Json.JsonSerializer.Serialize(basketItem);
+
+                var tokenResult = await _payTR.GetIframeTokenAsync(new PayTRPaymentRequest
+                {
+                    MerchantOid  = payment.Id.ToString("N"),
+                    Email        = user.Email ?? "",
+                    AmountKurus  = amountKurus,
+                    Currency     = currencyCode,
+                    UserName     = $"{user.FirstName} {user.LastName}".Trim(),
+                    UserAddress  = payment.BillingAddress ?? "Belirtilmedi",
+                    UserPhone    = "05000000000",
+                    UserIp       = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                    OkUrl        = okUrl,
+                    FailUrl      = failUrl,
+                    BasketJson   = basketJson
+                });
+
+                if (!tokenResult.Success)
+                {
+                    _logger.LogError("PayTR token failed for payment {PaymentId}: {Error}", payment.Id, tokenResult.Error);
+                    TempData["ErrorMessage"] = $"PayTR ödeme başlatılamadı: {tokenResult.Error}";
+                    return Redirect(BuildUrl(canonicalSlug, $"/payment/checkout/{registration.Id}"));
+                }
+
+                TempData["PayTRToken"] = tokenResult.Token;
+                TempData["PayTRPaymentId"] = payment.Id.ToString();
+                return Redirect(BuildUrl(canonicalSlug, $"/payment/paytr-iframe?paymentId={payment.Id}"));
+            }
 
             var baseUrl = GetPublicBaseUrl();
             var successUrl =
@@ -1185,6 +1265,101 @@ namespace AntAbstract.Web.Controllers
         }
 
         // ── Fatura PDF İndirme ────────────────────────────────────────────────
+
+        // ── PayTR Iframe ─────────────────────────────────────────────────────
+
+        [HttpGet("/payment/paytr-iframe")]
+        [HttpGet("/{slug}/payment/paytr-iframe")]
+        [Authorize]
+        public async Task<IActionResult> PayTRIframe(Guid paymentId, string? slug = null)
+        {
+            var token = TempData["PayTRToken"] as string;
+
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                TempData["ErrorMessage"] = "PayTR oturumu geçersiz. Lütfen tekrar deneyin.";
+                return Redirect(BuildUrl(slug ?? GetSlug(), "/my-submissions"));
+            }
+
+            ViewBag.PayTRToken = token;
+            ViewBag.PaymentId  = paymentId;
+            return View("PayTRIframe");
+        }
+
+        // PayTR başarılı dönüş (kullanıcı tarafı — PayTR iframe içinden redirect)
+        [HttpGet("/payment/paytr-success")]
+        [HttpGet("/{slug}/payment/paytr-success")]
+        [Authorize]
+        public async Task<IActionResult> PayTRSuccess(Guid paymentId, string? slug = null)
+        {
+            var canonicalSlug = slug ?? GetSlug();
+            // Ödeme durumu PayTR callback'iyle güncellenir.
+            // Kullanıcıya "işleniyor" mesajı göster, success page'e yönlendir.
+            TempData["InfoMessage"] = "Ödemeniz işleniyor. Onay geldiğinde bildirim alacaksınız.";
+            return Redirect(BuildUrl(canonicalSlug, $"/payment/success?id={paymentId}"));
+        }
+
+        [HttpGet("/payment/paytr-fail")]
+        [HttpGet("/{slug}/payment/paytr-fail")]
+        [Authorize]
+        public IActionResult PayTRFail(Guid paymentId, string? slug = null)
+        {
+            TempData["ErrorMessage"] = "PayTR ödeme işlemi başarısız oldu veya iptal edildi.";
+            return Redirect(BuildUrl(slug ?? GetSlug(), "/my-submissions"));
+        }
+
+        // PayTR sunucu-sunucu callback (POST, [AllowAnonymous])
+        [AllowAnonymous]
+        [HttpPost("/payment/paytr-callback")]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> PayTRCallback()
+        {
+            var form = Request.Form;
+            var merchantOid = form["merchant_oid"].ToString();
+            var status      = form["status"].ToString();
+            var totalAmount = form["total_amount"].ToString();
+            var hash        = form["hash"].ToString();
+
+            if (!_payTR.VerifyCallback(merchantOid, status, totalAmount, hash))
+            {
+                _logger.LogWarning("PayTR callback hash doğrulama başarısız. Oid={Oid}", merchantOid);
+                return Content("PAYTR_INVALID_HASH");
+            }
+
+            if (!Guid.TryParse(merchantOid, out var paymentId))
+                return Content("OK");
+
+            var payment = await _context.Payments
+                .Include(p => p.AppUser)
+                .FirstOrDefaultAsync(p => p.Id == paymentId);
+
+            if (payment == null)
+                return Content("OK");
+
+            if (status == "success" && payment.Status != PaymentStatus.Completed)
+            {
+                payment.Status = PaymentStatus.Completed;
+                payment.TransactionId = form["payment_type"].ToString();
+
+                var registration = await _context.Registrations
+                    .FirstOrDefaultAsync(r => r.Id == payment.RelatedSubmissionId);
+
+                if (registration != null)
+                {
+                    registration.IsPaid      = true;
+                    registration.PaymentDate = DateTime.UtcNow;
+                    registration.Status      = AntAbstract.Domain.Entities.RegistrationStatus.Confirmed;
+                    registration.PaymentTransactionId = merchantOid;
+                }
+            }
+            else if (status == "failed")
+            {
+                payment.Status = PaymentStatus.Failed;
+            }
+
+            await _context.SaveChangesAsync();
+            return Content("OK");
+        }
 
         [HttpGet("/{slug}/Payment/DownloadVisaLetter/{registrationId:guid}")]
         [Authorize]

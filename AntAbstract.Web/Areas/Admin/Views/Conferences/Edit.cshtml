@@ -318,6 +318,70 @@
                     </div>
                 </div>
 
+                @* ── Ödeme Yöntemi Ayarları ──────────────────────────────────── *@
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-header bg-white fw-bold py-3">
+                        <i class="fas fa-credit-card text-primary me-2"></i>Ödeme Yöntemleri
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <div class="form-check form-switch mb-2">
+                                    <input asp-for="IsStripeEnabled" class="form-check-input" type="checkbox" role="switch" />
+                                    <label class="form-check-label fw-medium" asp-for="IsStripeEnabled">
+                                        Stripe (Kredi Kartı — Uluslararası)
+                                        <small class="text-muted d-block">Stripe API anahtarları sunucuda yapılandırılmış olmalıdır.</small>
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input asp-for="IsPayTREnabled" class="form-check-input" type="checkbox" role="switch" />
+                                    <label class="form-check-label fw-medium" asp-for="IsPayTREnabled">
+                                        PayTR (Kredi Kartı — Türkiye)
+                                        <small class="text-muted d-block">PayTR API anahtarları sunucuda yapılandırılmış olmalıdır.</small>
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input asp-for="IsBankTransferEnabled" class="form-check-input" type="checkbox" role="switch" id="bankSwitch" />
+                                    <label class="form-check-label fw-medium" asp-for="IsBankTransferEnabled">
+                                        Banka Havalesi / EFT
+                                        <small class="text-muted d-block">Katılımcılar makbuz yükler, admin onaylar.</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="bank-fields">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Banka Adı</label>
+                                    <input asp-for="BankName" class="form-control" placeholder="Örn: Ziraat Bankası" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Hesap Sahibi</label>
+                                    <input asp-for="BankAccountName" class="form-control" placeholder="Örn: Kongre Organizasyon Derneği" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Şube</label>
+                                    <input asp-for="BankBranch" class="form-control" placeholder="Örn: Kızılay Şubesi" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">IBAN</label>
+                                    <input asp-for="BankIban" class="form-control font-monospace" placeholder="TR00 0000 0000 0000 0000 0000 00" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    (function () {
+                        var sw = document.getElementById('bankSwitch');
+                        var fields = document.getElementById('bank-fields');
+                        function toggle() { fields.style.display = sw.checked ? 'block' : 'none'; }
+                        if (sw) { sw.addEventListener('change', toggle); toggle(); }
+                    })();
+                </script>
+
                 <div class="conference-form-actions d-grid gap-2">
                     <button type="submit" class="btn btn-primary fw-bold py-3">
                         <i class="fas fa-save me-2"></i> @Localizer["SaveButton"]

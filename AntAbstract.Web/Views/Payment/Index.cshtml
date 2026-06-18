@@ -53,6 +53,14 @@
         "/Payment/My"
     );
 
+    var isStripeEnabled       = (bool?)ViewBag.IsStripeEnabled ?? false;
+    var isPayTREnabled        = (bool?)ViewBag.IsPayTREnabled ?? false;
+    var isBankTransferEnabled = (bool?)ViewBag.IsBankTransferEnabled ?? false;
+    var bankName              = (string?)ViewBag.BankName ?? "";
+    var bankIban              = (string?)ViewBag.BankIban ?? "";
+    var bankAccountName       = (string?)ViewBag.BankAccountName ?? "";
+    var bankBranch            = (string?)ViewBag.BankBranch ?? "";
+
     var conferenceTitle = string.IsNullOrWhiteSpace(Model.Conference?.Title)
         ? L("DefaultConferenceTitle", "Kongre", "Congress")
         : Model.Conference.Title;
@@ -491,43 +499,93 @@
                                     </div>
                                 </div>
 
-                                <div class="alert alert-light border rounded-4 p-4">
-                                    <div class="d-flex align-items-start gap-3">
-                                        <div class="text-primary fs-3">
-                                            <i class="fas fa-shield-halved"></i>
+                                @* ── Ödeme Yöntemi Seçimi ─────────────────────────────────── *@
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">
+                                        @L("PaymentMethodLabel", "Ödeme Yöntemi", "Payment Method")
+                                    </label>
+
+                                    @if (isStripeEnabled)
+                                    {
+                                        <div class="form-check payment-method-card mb-2 p-3 border rounded-3" id="method-stripe-card">
+                                            <input class="form-check-input" type="radio" name="PaymentMethod"
+                                                   id="method-stripe" value="StripeCheckout" checked />
+                                            <label class="form-check-label d-flex align-items-center gap-2 ms-2 cursor-pointer w-100" for="method-stripe">
+                                                <i class="fab fa-stripe fa-lg text-primary"></i>
+                                                <div>
+                                                    <div class="fw-semibold">Stripe</div>
+                                                    <small class="text-muted">@L("StripeDesc", "Kredi / banka kartı — güvenli uluslararası ödeme", "Credit / debit card — secure international payment")</small>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    }
+
+                                    @if (isPayTREnabled)
+                                    {
+                                        <div class="form-check payment-method-card mb-2 p-3 border rounded-3" id="method-paytr-card">
+                                            <input class="form-check-input" type="radio" name="PaymentMethod"
+                                                   id="method-paytr" value="PayTR" @(!isStripeEnabled ? "checked" : "") />
+                                            <label class="form-check-label d-flex align-items-center gap-2 ms-2 cursor-pointer w-100" for="method-paytr">
+                                                <i class="fas fa-credit-card fa-lg text-success"></i>
+                                                <div>
+                                                    <div class="fw-semibold">PayTR</div>
+                                                    <small class="text-muted">@L("PayTRDesc", "Kredi / banka kartı — Türkiye'nin güvenli ödeme altyapısı", "Credit / debit card — Turkey's secure payment infrastructure")</small>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    }
+
+                                    @if (isBankTransferEnabled)
+                                    {
+                                        <div class="form-check payment-method-card mb-2 p-3 border rounded-3" id="method-bank-card">
+                                            <input class="form-check-input" type="radio" name="PaymentMethod"
+                                                   id="method-bank" value="BankTransfer"
+                                                   @(!isStripeEnabled && !isPayTREnabled ? "checked" : "") />
+                                            <label class="form-check-label d-flex align-items-center gap-2 ms-2 cursor-pointer w-100" for="method-bank">
+                                                <i class="fas fa-university fa-lg text-warning"></i>
+                                                <div>
+                                                    <div class="fw-semibold">@L("BankTransferLabel", "Banka Havalesi / EFT", "Bank Transfer")</div>
+                                                    <small class="text-muted">@L("BankTransferDesc", "IBAN'a havale yapıp makbuz yükleyin, admin onaylar", "Transfer to IBAN and upload receipt, admin approves")</small>
+                                                </div>
+                                            </label>
                                         </div>
 
-                                        <div>
-                                            <h5 class="fw-bold text-dark mb-2">
-                                                @L("StripeCheckoutTitle", "Stripe güvenli ödeme sayfası", "Stripe secure checkout")
-                                            </h5>
-
-                                            <p class="text-muted fw-semibold mb-0">
-                                                @L(
-                                                    "StripeCheckoutDescription",
-                                                    "Devam ettiğinizde Stripe'ın güvenli ödeme sayfasına yönlendirilirsiniz. Kart bilgileriniz AntAbstract sunucularında girilmez veya saklanmaz.",
-                                                    "When you continue, you will be redirected to Stripe's secure checkout page. Your card details are never entered or stored on AntAbstract servers.")
-                                            </p>
+                                        @* Banka bilgileri — banka havalesi seçilince göster *@
+                                        <div id="bank-details" class="alert alert-warning rounded-3 mt-2" style="display:none;">
+                                            <h6 class="fw-bold mb-2"><i class="fas fa-university me-2"></i>Banka Bilgileri</h6>
+                                            @if (!string.IsNullOrWhiteSpace(bankName))
+                                            { <div><strong>Banka:</strong> @bankName</div> }
+                                            @if (!string.IsNullOrWhiteSpace(bankAccountName))
+                                            { <div><strong>Hesap Adı:</strong> @bankAccountName</div> }
+                                            @if (!string.IsNullOrWhiteSpace(bankBranch))
+                                            { <div><strong>Şube:</strong> @bankBranch</div> }
+                                            @if (!string.IsNullOrWhiteSpace(bankIban))
+                                            { <div class="font-monospace mt-1"><strong>IBAN:</strong> @bankIban</div> }
+                                            <small class="text-muted mt-2 d-block">Ödemeyi yaptıktan sonra bir sonraki adımda makbuzunuzu yükleyin.</small>
                                         </div>
-                                    </div>
+                                    }
+
+                                    @if (!isStripeEnabled && !isPayTREnabled && !isBankTransferEnabled)
+                                    {
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            @L("NoPaymentMethod", "Kongre için ödeme yöntemi henüz tanımlanmamış. Lütfen kongre yönetimiyle iletişime geçin.", "No payment method has been configured for this congress yet.")
+                                        </div>
+                                    }
                                 </div>
 
                                 <div class="mt-4">
-                                    <button type="submit"
-                                            class="btn btn-primary w-100 py-3 pay-submit-btn">
-
-                                        <i class="fas fa-arrow-up-right-from-square me-2"></i>
-                                        @rawAmountText @currency
-                                        @L("ContinueToStripeButton", "Stripe ile Öde", "Pay with Stripe")
-                                    </button>
-
-                                    <p class="text-center secure-note mt-3">
-                                        <i class="fas fa-shield-alt text-success me-1"></i>
-                                        @L(
-                                            "StripeSecurityNote",
-                                            "Ödeme sonucu yalnızca Stripe doğrulamasından sonra kesinleşir.",
-                                            "The payment is completed only after Stripe verification.")
-                                    </p>
+                                    @if (isStripeEnabled || isPayTREnabled || isBankTransferEnabled)
+                                    {
+                                        <button type="submit" class="btn btn-primary w-100 py-3 pay-submit-btn" id="pay-btn">
+                                            <i class="fas fa-lock me-2"></i>
+                                            @rawAmountText @currency — @L("PayNowButton", "Ödemeye Devam Et", "Continue to Payment")
+                                        </button>
+                                        <p class="text-center secure-note mt-3">
+                                            <i class="fas fa-shield-alt text-success me-1"></i>
+                                            @L("SecurityNote", "Ödeme bilgileriniz güvenli şekilde işlenir.", "Your payment information is processed securely.")
+                                        </p>
+                                    }
                                 </div>
                             </form>
                         </div>
@@ -619,3 +677,38 @@
         }
     </div>
 </div>
+
+<script>
+    (function () {
+        var radios = document.querySelectorAll('input[name="PaymentMethod"]');
+        var bankDetails = document.getElementById('bank-details');
+        var payBtn = document.getElementById('pay-btn');
+
+        function updateUI() {
+            var selected = document.querySelector('input[name="PaymentMethod"]:checked');
+            if (!selected) return;
+
+            if (bankDetails) {
+                bankDetails.style.display = selected.value === 'BankTransfer' ? 'block' : 'none';
+            }
+
+            if (payBtn) {
+                var labels = {
+                    'StripeCheckout': 'Stripe ile Öde',
+                    'PayTR': 'PayTR ile Öde',
+                    'BankTransfer': 'Banka Havalesi Seç ve Devam Et'
+                };
+                var icon = selected.value === 'BankTransfer' ? 'fa-university' : 'fa-lock';
+                payBtn.innerHTML = '<i class="fas ' + icon + ' me-2"></i>' + (labels[selected.value] || 'Ödemeye Devam Et');
+            }
+
+            // Seçili kartı vurgula
+            document.querySelectorAll('.payment-method-card').forEach(function (c) { c.classList.remove('border-primary', 'bg-light'); });
+            var card = selected.closest('.payment-method-card');
+            if (card) { card.classList.add('border-primary', 'bg-light'); }
+        }
+
+        radios.forEach(function (r) { r.addEventListener('change', updateUI); });
+        updateUI();
+    })();
+</script>
