@@ -14,10 +14,10 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Dashboard
         public int AcceptedSubmissions { get; set; }
         public int AwaitingDecision { get; set; }
         public int RejectedSubmissions { get; set; }
-        public List<Submission> RecentSubmissions { get; set; }
-        public string ConferenceName { get; set; }
-        public List<Conference> ActiveConferences { get; set; }
-        public List<Guid> RegisteredConferenceIds { get; set; }
+        public List<Submission> RecentSubmissions { get; set; } = new();
+        public string ConferenceName { get; set; } = string.Empty;
+        public List<Conference> ActiveConferences { get; set; } = new();
+        public List<Guid> RegisteredConferenceIds { get; set; } = new();
 
         public List<Conference> MyConferences { get; set; } = new List<Conference>();
 

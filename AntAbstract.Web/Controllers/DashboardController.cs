@@ -415,9 +415,9 @@ namespace AntAbstract.Web.Controllers
                     ? ""
                     : "?" + queryString);
 
-            var dict = parsedQuery.ToDictionary(
+            Dictionary<string, string?> dict = parsedQuery.ToDictionary(
                 x => x.Key,
-                x => x.Value.ToString());
+                x => (string?)x.Value.ToString());
 
             dict["conferenceId"] = conferenceId.ToString();
 

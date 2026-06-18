@@ -20,7 +20,6 @@ using System.Globalization;
 using System.IO.Compression;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.Localization;
 using AntAbstract.Infrastructure.Services.ProceedingBooks;
 using AntAbstract.Web.Files;
 using AntAbstract.Web.Security;
@@ -335,6 +334,11 @@ using (var scope = app.Services.CreateScope())
         );
 
         await AntAbstract.Infrastructure.Data.DbSeeder.SeedRolesAndUsers(services);
+
+        if (app.Environment.IsDevelopment())
+        {
+            await AntAbstract.Infrastructure.Data.TestDataSeeder.SeedAsync(userManager, context);
+        }
     }
     catch (Exception ex)
     {

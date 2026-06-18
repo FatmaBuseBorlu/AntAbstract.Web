@@ -89,7 +89,7 @@ namespace AntAbstract.Application.Services
             return _mapper.Map<SubmissionDto>(submission);
         }
 
-        public async Task<SubmissionDto> GetSubmissionByIdAsync(Guid id)
+        public async Task<SubmissionDto?> GetSubmissionByIdAsync(Guid id)
         {
             var submission = await _context.Submissions
                 .Include(s => s.SubmissionAuthors)
@@ -213,7 +213,7 @@ namespace AntAbstract.Application.Services
                     UploadedAt = DateTime.UtcNow
                 };
 
-                submission.Files.Add(newFile);
+                submission.Files!.Add(newFile);
             }
 
             if (submission.SubmissionAuthors != null)

@@ -82,15 +82,25 @@ namespace AntAbstract.Web.Controllers
             return text.Substring(0, maxLength).Trim() + "...";
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(Guid? conferenceId = null)
         {
             if (_tenantContext.Current != null)
             {
-                var currentConference = await _context.Conferences
+                var conferencesQuery = _context.Conferences
                     .AsNoTracking()
                     .Include(c => c.Tenant)
                     .Include(c => c.Registrations)
-                    .Where(c => c.TenantId == _tenantContext.Current.Id)
+                    .Where(c => c.TenantId == _tenantContext.Current.Id);
+
+                Conference? currentConference = null;
+
+                if (conferenceId.HasValue)
+                {
+                    currentConference = await conferencesQuery
+                        .FirstOrDefaultAsync(c => c.Id == conferenceId.Value);
+                }
+
+                currentConference ??= await conferencesQuery
                     .OrderByDescending(c => c.StartDate)
                     .FirstOrDefaultAsync();
 
@@ -98,7 +108,7 @@ namespace AntAbstract.Web.Controllers
                 {
                     return NotFound(T(
                         "ConferenceNotActive",
-                        "Aktif kongre bulunamadý."));
+                        "Aktif kongre bulunamadï¿½."));
                 }
 
                 var currentUser = await _userManager.GetUserAsync(User);
@@ -170,17 +180,31 @@ namespace AntAbstract.Web.Controllers
                     .ToListAsync();
             }
 
-            var conferences = await _context.Conferences
+            var allConferences = await _context.Conferences
                 .AsNoTracking()
                 .Include(c => c.Tenant)
-                .Where(c => c.EndDate > DateTime.Now)
-                .OrderBy(c => c.StartDate)
+                .OrderByDescending(c => c.StartDate)
                 .ToListAsync();
 
-            var abstractNotFoundText = T("AbstractNotFound", "Özet bulunamadý.");
-            var guestUserText = T("GuestUser", "Misafir kullanýcý");
+            var conferences = allConferences
+                .Where(c => c.EndDate >= DateTime.Now)
+                .OrderBy(c => c.StartDate)
+                .ToList();
+
+            var pastConferences = allConferences
+                .Where(c => c.EndDate < DateTime.Now)
+                .OrderByDescending(c => c.EndDate)
+                .ToList();
+
+            var proceedingBooks = allConferences
+                .Where(c => c.IsProceedingBookPublished)
+                .OrderByDescending(c => c.ProceedingBookPublishedDate ?? c.EndDate)
+                .ToList();
+
+            var abstractNotFoundText = T("AbstractNotFound", "ï¿½zet bulunamadï¿½.");
+            var guestUserText = T("GuestUser", "Misafir kullanï¿½cï¿½");
             var institutionNotSpecifiedText = T("InstitutionNotSpecified", "Kurum belirtilmedi");
-            var reviewDetailsText = T("ReviewForDetails", "Detaylar için inceleyiniz.");
+            var reviewDetailsText = T("ReviewForDetails", "Detaylar iï¿½in inceleyiniz.");
             var onlineText = T("Online", "Online");
 
             var lastSubmissions = await _context.Submissions
@@ -235,6 +259,8 @@ namespace AntAbstract.Web.Controllers
 
                     StartDate = c.StartDate,
 
+                    EndDate = c.EndDate,
+
                     Location = string.IsNullOrWhiteSpace(c.City)
                         ? onlineText
                         : $"{c.City}{(string.IsNullOrWhiteSpace(c.Country) ? "" : " / " + c.Country)}",
@@ -249,7 +275,41 @@ namespace AntAbstract.Web.Controllers
                             ? c.Slug
                             : c.Id.ToString(),
 
-                    IsRegistered = registeredIds.Contains(c.Id)
+                    IsRegistered = registeredIds.Contains(c.Id),
+
+                    IsSubmissionOpen = c.IsSubmissionOpen,
+
+                    IsRegistrationOpen = c.IsRegistrationOpen,
+
+                    AbstractSubmissionDeadline = c.AbstractSubmissionDeadline
+                }).ToList(),
+
+                PastCongresses = pastConferences.Select(c => new CongressCardDto
+                {
+                    Id = c.Id,
+                    Title = c.Title,
+                    Description = Shorten(ToPlainText(string.IsNullOrWhiteSpace(c.Description) ? reviewDetailsText : c.Description), 90),
+                    StartDate = c.StartDate,
+                    EndDate = c.EndDate,
+                    Location = string.IsNullOrWhiteSpace(c.City) ? onlineText : $"{c.City}{(string.IsNullOrWhiteSpace(c.Country) ? "" : " / " + c.Country)}",
+                    ImageUrl = string.IsNullOrWhiteSpace(c.BannerPath) ? "/abstract/upload/img/resimyok3.png" : c.BannerPath,
+                    Slug = c.Tenant != null && !string.IsNullOrWhiteSpace(c.Tenant.Slug) ? c.Tenant.Slug : !string.IsNullOrWhiteSpace(c.Slug) ? c.Slug : c.Id.ToString(),
+                    IsRegistered = registeredIds.Contains(c.Id),
+                    IsSubmissionOpen = false,
+                    IsRegistrationOpen = false,
+                    AbstractSubmissionDeadline = null
+                }).ToList(),
+
+                ProceedingBooks = proceedingBooks.Select(c => new ProceedingBookCardDto
+                {
+                    ConferenceId = c.Id,
+                    ConferenceTitle = c.Title,
+                    Slug = c.Tenant != null && !string.IsNullOrWhiteSpace(c.Tenant.Slug) ? c.Tenant.Slug : !string.IsNullOrWhiteSpace(c.Slug) ? c.Slug : c.Id.ToString(),
+                    PublishedDate = c.ProceedingBookPublishedDate,
+                    FilePath = c.ProceedingBookFilePath,
+                    StartDate = c.StartDate,
+                    EndDate = c.EndDate,
+                    Location = string.IsNullOrWhiteSpace(c.City) ? onlineText : $"{c.City}{(string.IsNullOrWhiteSpace(c.Country) ? "" : " / " + c.Country)}"
                 }).ToList(),
 
                 LastSubmissions = lastSubmissions

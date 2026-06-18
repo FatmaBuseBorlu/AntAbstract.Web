@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -656,6 +657,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             Guid? conferenceId = null,
             string? search = null,
             string? status = null,
+            string? topic = null,
             int page = 1)
         {
             var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
@@ -673,6 +675,27 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             SetSelectedConferenceSession(conference);
 
+            // Conference-wide counts (no filters applied)
+            var allBaseQuery = _context.Submissions
+                .AsNoTracking()
+                .Where(x => x.ConferenceId == conference.Id);
+
+            var allCount = await allBaseQuery.CountAsync();
+            var newCount = await allBaseQuery.CountAsync(x => x.Status == SubmissionStatus.New);
+            var underReviewCount = await allBaseQuery.CountAsync(x => x.Status == SubmissionStatus.UnderReview);
+            var acceptedCount = await allBaseQuery.CountAsync(x => x.Status == SubmissionStatus.Accepted);
+            var rejectedCount = await allBaseQuery.CountAsync(x => x.Status == SubmissionStatus.Rejected);
+
+            // Available topics for filter dropdown
+            var availableTopics = await _context.Submissions
+                .AsNoTracking()
+                .Where(x => x.ConferenceId == conference.Id && x.Topic != null && x.Topic != "")
+                .Select(x => x.Topic)
+                .Distinct()
+                .OrderBy(t => t)
+                .ToListAsync();
+
+            // Filtered query
             var query = _context.Submissions
                 .AsNoTracking()
                 .Include(s => s.Conference)
@@ -700,11 +723,29 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 query = query.Where(x => x.Status == parsedStatus);
             }
 
+            if (!string.IsNullOrWhiteSpace(topic))
+            {
+                query = query.Where(x => x.Topic == topic);
+            }
+
             const int pageSize = 50;
             if (page < 1) page = 1;
 
             var orderedQuery = query.OrderByDescending(x => x.CreatedDate);
             var totalCount = await orderedQuery.CountAsync();
+
+            var submissionIds = await orderedQuery
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(x => x.Id)
+                .ToListAsync();
+
+            var reviewerCountsBySubmission = await _context.ReviewAssignments
+                .AsNoTracking()
+                .Where(ra => submissionIds.Contains(ra.SubmissionId))
+                .GroupBy(ra => ra.SubmissionId)
+                .Select(g => new { SubmissionId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.SubmissionId, x => x.Count);
 
             var items = await orderedQuery
                 .Skip((page - 1) * pageSize)
@@ -718,9 +759,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                         : ((x.Author.FirstName ?? "") + " " + (x.Author.LastName ?? "")).Trim(),
                     ConferenceTitle = x.Conference == null ? "" : (x.Conference.Title ?? ""),
                     CreatedAt = x.CreatedDate,
-                    Status = x.Status.ToString()
+                    Status = x.Status.ToString(),
+                    Topic = x.Topic ?? ""
                 })
                 .ToListAsync();
+
+            foreach (var item in items)
+            {
+                if (reviewerCountsBySubmission.TryGetValue(item.Id, out var count))
+                    item.AssignedReviewerCount = count;
+            }
 
             var model = new AdminSubmissionsIndexModel
             {
@@ -729,13 +777,177 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 ConferenceTitle = conference.Title,
                 Search = search,
                 Status = status,
+                Topic = topic,
                 Items = items,
+                AvailableTopics = availableTopics,
+                AllCount = allCount,
+                NewCount = newCount,
+                UnderReviewCount = underReviewCount,
+                AcceptedCount = acceptedCount,
+                RejectedCount = rejectedCount,
                 Page = page,
                 PageSize = pageSize,
                 TotalCount = totalCount
             };
 
             return View("~/Areas/Admin/Views/Submissions/Index.cshtml", model);
+        }
+
+        [HttpGet("/Admin/Submissions/Incomplete")]
+        [HttpGet("/{slug}/Admin/Submissions/Incomplete")]
+        public async Task<IActionResult> Incomplete(
+            string? slug = null,
+            Guid? conferenceId = null,
+            string? missingFilter = null,
+            int page = 1)
+        {
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
+            if (conference == null) return RedirectToAction("SelectConference");
+
+            var baseQuery = _context.Submissions
+                .AsNoTracking()
+                .Where(s => s.ConferenceId == conference.Id &&
+                            s.TenantId == conference.TenantId &&
+                            s.Status == SubmissionStatus.New)
+                .Include(s => s.Author)
+                .Include(s => s.Files);
+
+            var all = await baseQuery.ToListAsync();
+
+            var rows = all.Select(s => new IncompleteSubmissionRow
+            {
+                Id = s.Id,
+                SubmissionIdCode = s.SubmissionIdCode ?? s.Id.ToString()[..8],
+                Title = s.Title,
+                AuthorName = $"{s.Author?.FirstName} {s.Author?.LastName}".Trim(),
+                AuthorEmail = s.Author?.Email ?? "",
+                CreatedDate = s.CreatedDate,
+                UpdatedDate = s.UpdatedDate,
+                HasAbstract = !string.IsNullOrWhiteSpace(s.Abstract) && s.Abstract.Length >= 30,
+                HasKeywords = !string.IsNullOrWhiteSpace(s.Keywords),
+                HasFile = s.Files != null && s.Files.Any(),
+                HasTopic = !string.IsNullOrWhiteSpace(s.Topic) || s.ConferenceTopicId.HasValue,
+                HasPresentationType = !string.IsNullOrWhiteSpace(s.PresentationType)
+            }).ToList();
+
+            var noAbstractCount = rows.Count(r => !r.HasAbstract);
+            var noFileCount = rows.Count(r => !r.HasFile);
+            var noKeywordsCount = rows.Count(r => !r.HasKeywords);
+            var staleCount = rows.Count(r => r.IsStale);
+
+            if (missingFilter == "abstract") rows = rows.Where(r => !r.HasAbstract).ToList();
+            else if (missingFilter == "file") rows = rows.Where(r => !r.HasFile).ToList();
+            else if (missingFilter == "keywords") rows = rows.Where(r => !r.HasKeywords).ToList();
+            else if (missingFilter == "stale") rows = rows.Where(r => r.IsStale).ToList();
+
+            rows = rows.OrderByDescending(r => r.DaysSinceActivity).ToList();
+
+            int pageSize = 20;
+            int filteredCount = rows.Count;
+            rows = rows.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+            var model = new IncompleteSubmissionsViewModel
+            {
+                Slug = slug ?? "",
+                ConferenceId = conference.Id,
+                ConferenceTitle = conference.Title ?? "",
+                TotalCount = all.Count,
+                NoAbstractCount = noAbstractCount,
+                NoFileCount = noFileCount,
+                NoKeywordsCount = noKeywordsCount,
+                StaleCount = staleCount,
+                Items = rows,
+                MissingFilter = missingFilter,
+                Page = page,
+                PageSize = pageSize,
+                FilteredCount = filteredCount
+            };
+
+            return View("~/Areas/Admin/Views/Submissions/Incomplete.cshtml", model);
+        }
+
+        [HttpGet("/Admin/Submissions/Export")]
+        [HttpGet("/{slug}/Admin/Submissions/Export")]
+        public async Task<IActionResult> Export(
+            string? slug = null,
+            Guid? conferenceId = null,
+            string? search = null,
+            string? status = null,
+            string? topic = null)
+        {
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
+
+            if (conference == null)
+            {
+                return Forbid();
+            }
+
+            var query = _context.Submissions
+                .AsNoTracking()
+                .Include(s => s.Author)
+                .Where(x => x.ConferenceId == conference.Id)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchText = search.Trim();
+                query = query.Where(x =>
+                    (x.Title != null && x.Title.Contains(searchText)) ||
+                    (x.Author != null && (
+                        (x.Author.FirstName != null && x.Author.FirstName.Contains(searchText)) ||
+                        (x.Author.LastName != null && x.Author.LastName.Contains(searchText)) ||
+                        (x.Author.Email != null && x.Author.Email.Contains(searchText))
+                    ))
+                );
+            }
+
+            if (!string.IsNullOrWhiteSpace(status) &&
+                Enum.TryParse<SubmissionStatus>(status, out var parsedStatus))
+            {
+                query = query.Where(x => x.Status == parsedStatus);
+            }
+
+            if (!string.IsNullOrWhiteSpace(topic))
+            {
+                query = query.Where(x => x.Topic == topic);
+            }
+
+            var rows = await query
+                .OrderByDescending(x => x.CreatedDate)
+                .Select(x => new
+                {
+                    x.Id,
+                    x.Title,
+                    AuthorName = x.Author == null ? "" : ((x.Author.FirstName ?? "") + " " + (x.Author.LastName ?? "")).Trim(),
+                    AuthorEmail = x.Author != null ? x.Author.Email ?? "" : "",
+                    Status = x.Status.ToString(),
+                    Topic = x.Topic ?? "",
+                    CreatedDate = x.CreatedDate
+                })
+                .ToListAsync();
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("Id,Başlık,Yazar,E-posta,Durum,Konu,Tarih");
+
+            foreach (var r in rows)
+            {
+                var id = r.Id;
+                var title = $"\"{r.Title?.Replace("\"", "\"\"")}\"";
+                var author = $"\"{r.AuthorName.Replace("\"", "\"\"")}\"";
+                var email = $"\"{r.AuthorEmail.Replace("\"", "\"\"")}\"";
+                var st = r.Status;
+                var tp = $"\"{r.Topic.Replace("\"", "\"\"")}\"";
+                var dt = r.CreatedDate.ToString("yyyy-MM-dd HH:mm");
+                sb.AppendLine($"{id},{title},{author},{email},{st},{tp},{dt}");
+            }
+
+            var bytes = System.Text.Encoding.UTF8.GetPreamble()
+                .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString()))
+                .ToArray();
+
+            var fileName = $"bildirileri_{conference.Title?.Replace(" ", "_") ?? "export"}_{DateTime.Now:yyyyMMdd}.csv";
+
+            return File(bytes, "text/csv; charset=utf-8", fileName);
         }
 
         [HttpGet("/Admin/Submissions/Details/{id:guid}")]

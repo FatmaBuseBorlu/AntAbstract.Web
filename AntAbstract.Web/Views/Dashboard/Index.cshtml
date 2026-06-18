@@ -62,12 +62,17 @@
     var changeConferenceUrl = "/Dashboard/ChangeConference";
 
     // Admin özgü URL'ler
-    var adminDecisionUrl    = BuildUrl("/Admin/Decision", "/Admin/Decision");
-    var adminAssignmentUrl  = BuildUrl("/Admin/Assignment", "/Admin/Assignment");
-    var adminPaymentsUrl    = BuildUrl("/Admin/Payments", "/Admin/Payments");
-    var adminRegistrationsUrl = BuildUrl("/Admin/ConferenceFlow/RegistrationsAndPayments", "/Admin/ConferenceFlow/RegistrationsAndPayments");
-    var adminSubmissionsUrl = BuildUrl("/Admin/Submissions", "/Admin/Submissions");
-    var adminReportsUrl     = BuildUrl("/Admin/Reports", "/Admin/Reports");
+    var adminDecisionUrl        = BuildUrl("/Admin/Decision", "/Admin/Decision");
+    var adminAssignmentUrl      = BuildUrl("/Admin/Assignment", "/Admin/Assignment");
+    var adminPaymentsUrl        = BuildUrl("/Admin/Payments", "/Admin/Payments");
+    var adminRegistrationsUrl   = BuildUrl("/Admin/ConferenceFlow/RegistrationsAndPayments", "/Admin/ConferenceFlow/RegistrationsAndPayments");
+    var adminSubmissionsUrl     = BuildUrl("/Admin/Submissions", "/Admin/Submissions");
+    var adminReportsUrl         = BuildUrl("/Admin/Reports", "/Admin/Reports");
+    var adminConferenceFlowUrl  = BuildUrl("/Admin/ConferenceFlow", "/Admin/ConferenceFlow");
+    var adminRegistrationsListUrl = BuildUrl("/Admin/Registrations", "/Admin/Registrations");
+    var adminWebsiteUrl         = BuildUrl("/Admin/Website", "/Admin/Website");
+    var adminRefereeUrl         = BuildUrl("/Admin/Referee", "/Admin/Referee");
+    var adminIncompleteUrl      = BuildUrl("/Admin/Submissions/Incomplete", "/Admin/Submissions/Incomplete");
 }
 
 <style>
@@ -773,33 +778,13 @@
                 <div class="quick-actions-grid">
                     @if (isAdmin)
                     {
-                        <a href="@adminDecisionUrl" class="quick-action-card">
-                            <div class="quick-action-icon" style="background:linear-gradient(135deg,#1a2d5a,#2d4a8a)">
-                                <i class="fas fa-gavel"></i>
+                        <a href="@adminConferenceFlowUrl" class="quick-action-card">
+                            <div class="quick-action-icon" style="background:linear-gradient(135deg,#0d6efd,#00aeef)">
+                                <i class="fas fa-stream"></i>
                             </div>
                             <div>
-                                <div class="quick-action-title">Bildiri Kararları</div>
-                                <p class="quick-action-text">Bildiri kabul, ret ve revizyon kararlarını yönet.</p>
-                            </div>
-                        </a>
-
-                        <a href="@adminAssignmentUrl" class="quick-action-card">
-                            <div class="quick-action-icon" style="background:linear-gradient(135deg,#0d6efd,#0dcaf0)">
-                                <i class="fas fa-user-check"></i>
-                            </div>
-                            <div>
-                                <div class="quick-action-title">Hakem Atamaları</div>
-                                <p class="quick-action-text">Bildirilere hakem ata ve değerlendirme sürecini yönet.</p>
-                            </div>
-                        </a>
-
-                        <a href="@adminPaymentsUrl" class="quick-action-card">
-                            <div class="quick-action-icon" style="background:linear-gradient(135deg,#198754,#20c997)">
-                                <i class="fas fa-credit-card"></i>
-                            </div>
-                            <div>
-                                <div class="quick-action-title">Ödemeler</div>
-                                <p class="quick-action-text">Ödeme makbuzlarını onayla, kayıtları yönet.</p>
+                                <div class="quick-action-title">Kongre Akışı</div>
+                                <p class="quick-action-text">Kongrenin tüm aşamalarını ve durumunu yönet.</p>
                             </div>
                         </a>
 
@@ -808,8 +793,58 @@
                                 <i class="fas fa-file-alt"></i>
                             </div>
                             <div>
-                                <div class="quick-action-title">Bildiriler</div>
+                                <div class="quick-action-title">Bildiri Yönetimi</div>
                                 <p class="quick-action-text">Tüm bildiri başvurularını görüntüle ve yönet.</p>
+                            </div>
+                        </a>
+
+                        <a href="@adminAssignmentUrl" class="quick-action-card">
+                            <div class="quick-action-icon" style="background:linear-gradient(135deg,#0284c7,#0dcaf0)">
+                                <i class="fas fa-user-check"></i>
+                            </div>
+                            <div>
+                                <div class="quick-action-title">Hakem Atamaları</div>
+                                <p class="quick-action-text">Bildirilere hakem ata, değerlendirme sürecini yönet.</p>
+                            </div>
+                        </a>
+
+                        <a href="@adminDecisionUrl" class="quick-action-card">
+                            <div class="quick-action-icon" style="background:linear-gradient(135deg,#1a2d5a,#2d4a8a)">
+                                <i class="fas fa-gavel"></i>
+                            </div>
+                            <div>
+                                <div class="quick-action-title">Karar Ekranı</div>
+                                <p class="quick-action-text">Bildiri kabul, ret ve revizyon kararlarını ver.</p>
+                            </div>
+                        </a>
+
+                        <a href="@adminRegistrationsListUrl" class="quick-action-card">
+                            <div class="quick-action-icon" style="background:linear-gradient(135deg,#198754,#20c997)">
+                                <i class="fas fa-id-card"></i>
+                            </div>
+                            <div>
+                                <div class="quick-action-title">Kayıtlar ve Ödemeler</div>
+                                <p class="quick-action-text">Katılımcı kayıtlarını ve ödeme makbuzlarını onayla.</p>
+                            </div>
+                        </a>
+
+                        <a href="@adminRefereeUrl" class="quick-action-card">
+                            <div class="quick-action-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24)">
+                                <i class="fas fa-users-cog"></i>
+                            </div>
+                            <div>
+                                <div class="quick-action-title">Hakemler</div>
+                                <p class="quick-action-text">Hakem havuzunu yönet, davet gönder.</p>
+                            </div>
+                        </a>
+
+                        <a href="@adminIncompleteUrl" class="quick-action-card">
+                            <div class="quick-action-icon" style="background:linear-gradient(135deg,#f97316,#fb923c)">
+                                <i class="fas fa-triangle-exclamation"></i>
+                            </div>
+                            <div>
+                                <div class="quick-action-title">Eksik Bildiriler</div>
+                                <p class="quick-action-text">Özet, dosya veya anahtar kelimesi eksik bildiriler.</p>
                             </div>
                         </a>
 
@@ -822,122 +857,93 @@
                                 <p class="quick-action-text">Kongre istatistiklerini ve Excel raporlarını al.</p>
                             </div>
                         </a>
+
+                        <a href="@adminWebsiteUrl" class="quick-action-card">
+                            <div class="quick-action-icon" style="background:linear-gradient(135deg,#10b981,#34d399)">
+                                <i class="fas fa-pen-to-square"></i>
+                            </div>
+                            <div>
+                                <div class="quick-action-title">Website Yönetimi</div>
+                                <p class="quick-action-text">Kongre web sitesi içeriklerini düzenle.</p>
+                            </div>
+                        </a>
+
+                        <a href="@certificatesUrl" class="quick-action-card">
+                            <div class="quick-action-icon" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)">
+                                <i class="fas fa-certificate"></i>
+                            </div>
+                            <div>
+                                <div class="quick-action-title">Sertifikalar</div>
+                                <p class="quick-action-text">Katılım ve sunum sertifikalarını oluştur ve dağıt.</p>
+                            </div>
+                        </a>
                     }
 
-                    @if (isAuthor)
+                    @if (!isAdmin)
                     {
-                        <a href="@submitAbstractUrl" class="quick-action-card">
-                            <div class="quick-action-icon">
-                                <i class="fas fa-paper-plane"></i>
-                            </div>
-
-                            <div>
-                                <div class="quick-action-title">
-                                    @L("SubmitAbstractAction", "Bildiri Gönder")
+                        @if (isAuthor)
+                        {
+                            <a href="@submitAbstractUrl" class="quick-action-card">
+                                <div class="quick-action-icon">
+                                    <i class="fas fa-paper-plane"></i>
                                 </div>
+                                <div>
+                                    <div class="quick-action-title">@L("SubmitAbstractAction", "Bildiri Gönder")</div>
+                                    <p class="quick-action-text">@L("SubmitAbstractActionText", "Yeni bildiriyi değerlendirme sürecine gönder.")</p>
+                                </div>
+                            </a>
 
-                                <p class="quick-action-text">
-                                    @L("SubmitAbstractActionText", "Yeni bildiriyi değerlendirme sürecine gönder.")
-                                </p>
+                            <a href="@mySubmissionsUrl" class="quick-action-card">
+                                <div class="quick-action-icon">
+                                    <i class="fas fa-file-lines"></i>
+                                </div>
+                                <div>
+                                    <div class="quick-action-title">@L("MySubmissionsAction", "Bildirilerim")</div>
+                                    <p class="quick-action-text">@L("MySubmissionsActionText", "Gönderdiğin bildirileri ve durumlarını takip et.")</p>
+                                </div>
+                            </a>
+                        }
+
+                        <a href="@programUrl" class="quick-action-card">
+                            <div class="quick-action-icon"><i class="fas fa-calendar-days"></i></div>
+                            <div>
+                                <div class="quick-action-title">@L("ProgramAction", "Program")</div>
+                                <p class="quick-action-text">@L("ProgramActionText", "Kongre oturumlarını ve sunum saatlerini görüntüle.")</p>
                             </div>
                         </a>
 
-                        <a href="@mySubmissionsUrl" class="quick-action-card">
-                            <div class="quick-action-icon">
-                                <i class="fas fa-file-lines"></i>
-                            </div>
-
+                        <a href="@proceedingBookUrl" class="quick-action-card">
+                            <div class="quick-action-icon"><i class="fas fa-book-open"></i></div>
                             <div>
-                                <div class="quick-action-title">
-                                    @L("MySubmissionsAction", "Bildirilerim")
-                                </div>
+                                <div class="quick-action-title">@L("ProceedingBookAction", "Bildiri Kitabı")</div>
+                                <p class="quick-action-text">@L("ProceedingBookActionText", "Yayınlanan bildiri kitabını görüntüle veya indir.")</p>
+                            </div>
+                        </a>
 
-                                <p class="quick-action-text">
-                                    @L("MySubmissionsActionText", "Gönderdiğin bildirileri ve durumlarını takip et.")
-                                </p>
+                        <a href="@certificatesUrl" class="quick-action-card">
+                            <div class="quick-action-icon"><i class="fas fa-award"></i></div>
+                            <div>
+                                <div class="quick-action-title">@L("CertificatesAction", "Sertifikalarım")</div>
+                                <p class="quick-action-text">@L("CertificatesActionText", "Hak kazandığın belgeleri görüntüle.")</p>
+                            </div>
+                        </a>
+
+                        <a href="@paymentsUrl" class="quick-action-card">
+                            <div class="quick-action-icon"><i class="fas fa-credit-card"></i></div>
+                            <div>
+                                <div class="quick-action-title">@L("PaymentsAction", "Ödemelerim")</div>
+                                <p class="quick-action-text">@L("PaymentsActionText", "Ödeme kayıtlarını takip et.")</p>
+                            </div>
+                        </a>
+
+                        <a href="@accommodationUrl" class="quick-action-card">
+                            <div class="quick-action-icon"><i class="fas fa-hotel"></i></div>
+                            <div>
+                                <div class="quick-action-title">@L("AccommodationAction", "Konaklama")</div>
+                                <p class="quick-action-text">@L("AccommodationActionText", "Kongreye ait otel seçeneklerini incele.")</p>
                             </div>
                         </a>
                     }
-
-                    <a href="@programUrl" class="quick-action-card">
-                        <div class="quick-action-icon">
-                            <i class="fas fa-calendar-days"></i>
-                        </div>
-
-                        <div>
-                            <div class="quick-action-title">
-                                @L("ProgramAction", "Program")
-                            </div>
-
-                            <p class="quick-action-text">
-                                @L("ProgramActionText", "Kongre oturumlarını ve sunum saatlerini görüntüle.")
-                            </p>
-                        </div>
-                    </a>
-
-                    <a href="@proceedingBookUrl" class="quick-action-card">
-                        <div class="quick-action-icon">
-                            <i class="fas fa-book-open"></i>
-                        </div>
-
-                        <div>
-                            <div class="quick-action-title">
-                                @L("ProceedingBookAction", "Bildiri Kitabı")
-                            </div>
-
-                            <p class="quick-action-text">
-                                @L("ProceedingBookActionText", "Yayınlanan bildiri kitabını görüntüle veya indir.")
-                            </p>
-                        </div>
-                    </a>
-
-                    <a href="@certificatesUrl" class="quick-action-card">
-                        <div class="quick-action-icon">
-                            <i class="fas fa-award"></i>
-                        </div>
-
-                        <div>
-                            <div class="quick-action-title">
-                                @L("CertificatesAction", "Sertifikalarım")
-                            </div>
-
-                            <p class="quick-action-text">
-                                @L("CertificatesActionText", "Hak kazandığın belgeleri görüntüle.")
-                            </p>
-                        </div>
-                    </a>
-
-                    <a href="@paymentsUrl" class="quick-action-card">
-                        <div class="quick-action-icon">
-                            <i class="fas fa-credit-card"></i>
-                        </div>
-
-                        <div>
-                            <div class="quick-action-title">
-                                @L("PaymentsAction", "Ödemelerim")
-                            </div>
-
-                            <p class="quick-action-text">
-                                @L("PaymentsActionText", "Ödeme kayıtlarını takip et.")
-                            </p>
-                        </div>
-                    </a>
-
-                    <a href="@accommodationUrl" class="quick-action-card">
-                        <div class="quick-action-icon">
-                            <i class="fas fa-hotel"></i>
-                        </div>
-
-                        <div>
-                            <div class="quick-action-title">
-                                @L("AccommodationAction", "Konaklama")
-                            </div>
-
-                            <p class="quick-action-text">
-                                @L("AccommodationActionText", "Kongreye ait otel seçeneklerini incele.")
-                            </p>
-                        </div>
-                    </a>
                 </div>
             </div>
         </div>

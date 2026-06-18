@@ -1669,6 +1669,41 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
         // ─────────────────────────────────────────────────────────────────────────
 
+        [HttpPost("/Submission/Rebuttal/{id:guid}")]
+        [HttpPost("/{slug}/Submission/Rebuttal/{id:guid}")]
+        [HttpPost("/{slug}/my-submissions/{id:guid}/rebuttal")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SubmitRebuttal(Guid id, string rebuttalText, string? slug = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var submission = await GetAuthorizedSubmissionAsync(id, user, asNoTracking: false);
+            if (submission == null) return Forbid();
+
+            if (submission.Status != SubmissionStatus.RevisionRequired)
+            {
+                TempData["ErrorMessage"] = "Bu bildiri için rebuttal gönderilemez.";
+                var canonical = GetCanonicalSlug(submission.Conference!, slug);
+                return Redirect(BuildUrl(canonical, $"/my-submissions/{id}"));
+            }
+
+            if (string.IsNullOrWhiteSpace(rebuttalText) || rebuttalText.Trim().Length < 10)
+            {
+                TempData["ErrorMessage"] = "Yanıt metni en az 10 karakter olmalıdır.";
+                var canonical = GetCanonicalSlug(submission.Conference!, slug);
+                return Redirect(BuildUrl(canonical, $"/my-submissions/{id}"));
+            }
+
+            submission.RebuttalText = rebuttalText.Trim();
+            submission.RebuttalDate = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Yanıtınız başarıyla gönderildi. Editör incelemenizin ardından nihai kararı bildirecektir.";
+            var canonicalSlug = GetCanonicalSlug(submission.Conference!, slug);
+            return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}"));
+        }
+
         private async Task<(string FilePathDb, string StoredFileName, string OriginalFileName)> UploadFileAsync(IFormFile file)
         {
             var validation = await _uploadFileValidator.ValidateAsync(

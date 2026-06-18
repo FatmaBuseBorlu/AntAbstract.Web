@@ -72,11 +72,12 @@
         return conference.Tenant?.Slug ?? conference.Slug ?? "";
     }
 
-    string GetWebsiteUrl(string tenantSlug)
+    string GetWebsiteUrl(string tenantSlug, Guid conferenceId = default)
     {
-        return string.IsNullOrWhiteSpace(tenantSlug)
-            ? "/"
-            : $"/{tenantSlug}";
+        if (string.IsNullOrWhiteSpace(tenantSlug)) return "/";
+        return conferenceId == default
+            ? $"/{tenantSlug}"
+            : $"/{tenantSlug}?conferenceId={conferenceId}";
     }
 
     string GetDashboardUrl(string tenantSlug)
@@ -978,7 +979,7 @@
                         var hasLogo = !string.IsNullOrWhiteSpace(kongre.LogoPath);
                         var firstLetter = GetFirstLetter(kongre);
                         var cityText = GetCityText(kongre);
-                        var websiteUrl = GetWebsiteUrl(tenantSlug);
+                        var websiteUrl = GetWebsiteUrl(tenantSlug, kongre.Id);
                         var dashboardUrl = GetDashboardUrl(tenantSlug);
                         var conferenceFlowUrl = GetConferenceFlowUrl(kongre);
                         var adminSubmissionsUrl = GetAdminSubmissionsUrl(kongre);
@@ -1200,7 +1201,7 @@
                         var hasLogo = !string.IsNullOrWhiteSpace(kongre.LogoPath);
                         var firstLetter = GetFirstLetter(kongre);
                         var cityText = GetCityText(kongre);
-                        var websiteUrl = GetWebsiteUrl(tenantSlug);
+                        var websiteUrl = GetWebsiteUrl(tenantSlug, kongre.Id);
                         var submissionCreateUrl = GetSubmissionCreateUrl(tenantSlug);
                         var statusText = GetConferenceStatusText(kongre);
 
@@ -1303,7 +1304,7 @@
                         var hasLogo = !string.IsNullOrWhiteSpace(kongre.LogoPath);
                         var firstLetter = GetFirstLetter(kongre);
                         var cityText = GetCityText(kongre);
-                        var websiteUrl = GetWebsiteUrl(tenantSlug);
+                        var websiteUrl = GetWebsiteUrl(tenantSlug, kongre.Id);
                         var registerUrl = GetRegistrationUrl(tenantSlug);
                         var statusText = GetConferenceStatusText(kongre);
 

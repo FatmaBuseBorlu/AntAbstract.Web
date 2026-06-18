@@ -36,6 +36,7 @@ namespace AntAbstract.Infrastructure.Context
 
         public DbSet<ReviewAssignment> ReviewAssignments { get; set; }
         public DbSet<Review> Reviews { get; set; }
+        public DbSet<ReviewBid> ReviewBids { get; set; }
 
         public DbSet<Message> Messages { get; set; }
         public DbSet<Notification> Notifications { get; set; }
@@ -313,12 +314,28 @@ namespace AntAbstract.Infrastructure.Context
                 (CurrentTenantId.HasValue && entity.Conference != null &&
                 entity.Conference.TenantId == CurrentTenantId));
 
+            builder.Entity<PaymentStatusHistory>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Payment != null &&
+                entity.Payment.Conference != null &&
+                entity.Payment.Conference.TenantId == CurrentTenantId));
+
             builder.Entity<Certificate>().HasQueryFilter(entity =>
                 _tenantContext.IsGlobalContext ||
                 (CurrentTenantId.HasValue && entity.Conference != null &&
                 entity.Conference.TenantId == CurrentTenantId));
 
             builder.Entity<ConferenceAttendance>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference != null &&
+                entity.Conference.TenantId == CurrentTenantId));
+
+            builder.Entity<ReviewCriterion>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Conference != null &&
+                entity.Conference.TenantId == CurrentTenantId));
+
+            builder.Entity<SurveyAnswer>().HasQueryFilter(entity =>
                 _tenantContext.IsGlobalContext ||
                 (CurrentTenantId.HasValue && entity.Conference != null &&
                 entity.Conference.TenantId == CurrentTenantId));
@@ -346,6 +363,11 @@ namespace AntAbstract.Infrastructure.Context
             builder.Entity<Review>().HasQueryFilter(entity =>
                 _tenantContext.IsGlobalContext ||
                 (CurrentTenantId.HasValue && entity.ReviewAssignment.Submission.TenantId == CurrentTenantId));
+
+            builder.Entity<ReviewCriterionScore>().HasQueryFilter(entity =>
+                _tenantContext.IsGlobalContext ||
+                (CurrentTenantId.HasValue && entity.Review != null &&
+                entity.Review.ReviewAssignment.Submission.TenantId == CurrentTenantId));
 
             builder.Entity<SubmissionAuthor>().HasQueryFilter(entity =>
                 _tenantContext.IsGlobalContext ||

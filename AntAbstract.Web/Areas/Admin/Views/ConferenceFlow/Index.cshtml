@@ -47,9 +47,15 @@
         ? $"/Admin/ProceedingBook{conferenceQuery}"
         : $"/{slug}/Admin/ProceedingBook{conferenceQuery}";
 
+    var incompleteUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Submissions/Incomplete{conferenceQuery}"
+        : $"/{slug}/Admin/Submissions/Incomplete{conferenceQuery}";
+
     var publicSiteUrl = string.IsNullOrWhiteSpace(slug)
         ? "#"
-        : $"/{slug}";
+        : Model.ConferenceId != Guid.Empty
+            ? $"/{slug}?conferenceId={Model.ConferenceId}"
+            : $"/{slug}";
 
     var currentFlowUrl = string.IsNullOrWhiteSpace(slug)
         ? $"/Admin/ConferenceFlow{conferenceQuery}"
@@ -235,6 +241,41 @@
         background: rgba(0, 174, 239, 0.10);
         border-color: rgba(0, 174, 239, 0.22);
         color: #0d6efd;
+    }
+
+    .flow-chip-success {
+        background: rgba(16, 185, 129, 0.10);
+        border-color: rgba(16, 185, 129, 0.24);
+        color: #059669;
+    }
+
+    .flow-chip-muted {
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+        color: #94a3b8;
+    }
+
+    .flow-chip-warning {
+        background: rgba(245, 158, 11, 0.10);
+        border-color: rgba(245, 158, 11, 0.28);
+        color: #b45309;
+    }
+
+    .flow-chip-btn {
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: inherit;
+    }
+
+    .flow-chip-btn:hover {
+        filter: brightness(0.93);
+    }
+
+    .flow-chip-danger {
+        background: rgba(239, 68, 68, 0.10);
+        border-color: rgba(239, 68, 68, 0.24);
+        color: #dc2626;
     }
 
     .admin-stat-grid {
@@ -634,9 +675,36 @@
                     }
 
                     <span class="flow-chip">
-                        <i class="fas fa-calendar-check"></i>
-                        Seçili Kongre
+                        <i class="fas fa-calendar-alt"></i>
+                        @Model.ConferenceStartDate.ToString("dd MMM yyyy") – @Model.ConferenceEndDate.ToString("dd MMM yyyy")
                     </span>
+
+                    @if (Model.AbstractSubmissionDeadline.HasValue)
+                    {
+                        <span class="flow-chip @(Model.AbstractSubmissionDeadline.Value < DateTime.Now ? "flow-chip-danger" : "flow-chip-warning")">
+                            <i class="fas fa-hourglass-half"></i>
+                            Son Başvuru: @Model.AbstractSubmissionDeadline.Value.ToString("dd MMM yyyy")
+                        </span>
+                    }
+
+                    <span class="flow-chip @(Model.IsSubmissionOpen ? "flow-chip-success" : "flow-chip-muted")">
+                        <i class="fas @(Model.IsSubmissionOpen ? "fa-check-circle" : "fa-lock")"></i>
+                        Bildiri @(Model.IsSubmissionOpen ? "Açık" : "Kapalı")
+                    </span>
+
+                    <span class="flow-chip @(Model.IsRegistrationOpen ? "flow-chip-success" : "flow-chip-muted")">
+                        <i class="fas @(Model.IsRegistrationOpen ? "fa-check-circle" : "fa-lock")"></i>
+                        Kayıt @(Model.IsRegistrationOpen ? "Açık" : "Kapalı")
+                    </span>
+
+                    <form method="post" action="/@Model.Slug/Admin/ConferenceFlow/ToggleBidding" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
+                        <button type="submit" class="flow-chip flow-chip-btn @(Model.IsBiddingOpen ? "flow-chip-success" : "flow-chip-muted")">
+                            <i class="fas @(Model.IsBiddingOpen ? "fa-hand-pointer" : "fa-hand")"></i>
+                            Teklif Fazı @(Model.IsBiddingOpen ? "Açık" : "Kapalı")
+                        </button>
+                    </form>
 
                     <span class="flow-chip">
                         <i class="fas @(isSuperAdmin ? "fa-user-gear" : "fa-user-shield")"></i>
@@ -752,6 +820,76 @@
 
                 <div class="admin-stat-label">
                     Karar Verilen
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-stat-grid" style="margin-top: -0.4rem;">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-green">
+                <i class="fas fa-check-circle"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @Model.AcceptedCount
+                </div>
+
+                <div class="admin-stat-label">
+                    Kabul Edilen
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-red">
+                <i class="fas fa-times-circle"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @Model.RejectedCount
+                </div>
+
+                <div class="admin-stat-label">
+                    Reddedilen
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-cyan">
+                <i class="fas fa-id-badge"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @Model.RegistrationCount
+                    @if (Model.PaidRegistrationCount > 0)
+                    {
+                        <span style="font-size:0.72rem;font-weight:700;color:#10b981;margin-left:4px;">(@Model.PaidRegistrationCount ödedi)</span>
+                    }
+                </div>
+
+                <div class="admin-stat-label">
+                    Toplam Kayıt
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon stat-purple">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+
+            <div>
+                <div class="admin-stat-value">
+                    @Model.ReviewerCount
+                </div>
+
+                <div class="admin-stat-label">
+                    Aktif Hakem
                 </div>
             </div>
         </div>
@@ -1008,6 +1146,26 @@
 
                             <div class="quick-action-desc">
                                 Kabul edilen bildirilerden PDF oluştur veya mevcut kitabı yönet.
+                            </div>
+                        </div>
+
+                        <div class="quick-action-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </a>
+
+                    <a href="@incompleteUrl" class="quick-action-card">
+                        <div class="quick-action-icon" style="background:rgba(245,158,11,0.12);color:#d97706;">
+                            <i class="fas fa-triangle-exclamation"></i>
+                        </div>
+
+                        <div>
+                            <div class="quick-action-title">
+                                Eksik Bildiriler
+                            </div>
+
+                            <div class="quick-action-desc">
+                                Başlatılmış ancak tamamlanmamış bildirileri takip edin.
                             </div>
                         </div>
 
