@@ -14,11 +14,11 @@ namespace AntAbstract.Domain.Entities
         Withdrawn = 2,
 
 
-        Pending = 10,           
-        UnderReview = 11,       
-        Accepted = 12,         
-        Rejected = 13,          
-        RevisionRequired = 14   
+        Pending = 10,
+        UnderReview = 11,
+        Accepted = 12,
+        Rejected = 13,
+        RevisionRequired = 14
     }
 
     public enum SubmissionFileType
@@ -28,6 +28,6 @@ namespace AntAbstract.Domain.Entities
         Presentation = 3,
         Supplementary = 4,
 
-        FullTextDoc = 1 
+        FullTextDoc = 1
     }
 }

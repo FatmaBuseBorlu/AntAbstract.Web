@@ -148,16 +148,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return View(model);
             }
 
-            existing.FullName     = model.FullName.Trim();
-            existing.Title        = model.Title?.Trim();
-            existing.Institution  = model.Institution?.Trim();
-            existing.Country      = model.Country?.Trim();
-            existing.PhotoUrl     = model.PhotoUrl?.Trim();
-            existing.TalkTitle    = model.TalkTitle?.Trim();
-            existing.Bio          = model.Bio?.Trim();
-            existing.WebsiteUrl   = model.WebsiteUrl?.Trim();
-            existing.SortOrder    = model.SortOrder;
-            existing.IsActive     = model.IsActive;
+            existing.FullName = model.FullName.Trim();
+            existing.Title = model.Title?.Trim();
+            existing.Institution = model.Institution?.Trim();
+            existing.Country = model.Country?.Trim();
+            existing.PhotoUrl = model.PhotoUrl?.Trim();
+            existing.TalkTitle = model.TalkTitle?.Trim();
+            existing.Bio = model.Bio?.Trim();
+            existing.WebsiteUrl = model.WebsiteUrl?.Trim();
+            existing.SortOrder = model.SortOrder;
+            existing.IsActive = model.IsActive;
 
             await _context.SaveChangesAsync();
 

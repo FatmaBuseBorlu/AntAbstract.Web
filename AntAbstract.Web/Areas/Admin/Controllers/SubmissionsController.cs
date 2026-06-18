@@ -1093,14 +1093,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     {
                         var (icon, color, statusLabel) = newStatus switch
                         {
-                            SubmissionStatus.Accepted        => ("✅", "success", "Kabul Edildi"),
-                            SubmissionStatus.Rejected        => ("❌", "danger",  "Reddedildi"),
+                            SubmissionStatus.Accepted => ("✅", "success", "Kabul Edildi"),
+                            SubmissionStatus.Rejected => ("❌", "danger", "Reddedildi"),
                             SubmissionStatus.RevisionRequired => ("✏️", "warning", "Revizyon Gerekiyor"),
-                            SubmissionStatus.UnderReview     => ("🔍", "info",    "İncelemede"),
-                            SubmissionStatus.Pending         => ("⏳", "secondary","Beklemede"),
-                            SubmissionStatus.Presented       => ("🎤", "primary", "Sunuldu"),
-                            SubmissionStatus.Withdrawn       => ("↩️", "dark",    "Geri Çekildi"),
-                            _                                => ("📋", "secondary", localizedStatus)
+                            SubmissionStatus.UnderReview => ("🔍", "info", "İncelemede"),
+                            SubmissionStatus.Pending => ("⏳", "secondary", "Beklemede"),
+                            SubmissionStatus.Presented => ("🎤", "primary", "Sunuldu"),
+                            SubmissionStatus.Withdrawn => ("↩️", "dark", "Geri Çekildi"),
+                            _ => ("📋", "secondary", localizedStatus)
                         };
 
                         var conferenceName = submission.Conference?.Title ?? "Kongre";

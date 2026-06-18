@@ -7,11 +7,11 @@ namespace AntAbstract.Domain.Entities
     public enum SponsorTier
     {
         Platinum = 1,
-        Gold     = 2,
-        Silver   = 3,
-        Bronze   = 4,
-        Partner  = 5,
-        Media    = 6
+        Gold = 2,
+        Silver = 3,
+        Bronze = 4,
+        Partner = 5,
+        Media = 6
     }
 
     public class Sponsor

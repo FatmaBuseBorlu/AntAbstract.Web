@@ -22,11 +22,11 @@ namespace AntAbstract.Infrastructure.Services.ReviewerRecommendation
 
         public async Task<List<AppUser>> GetRecommendationsAsync(Guid submissionId)
         {
-           
+
             var submission = await _context.Submissions.FindAsync(submissionId);
             if (submission == null || string.IsNullOrWhiteSpace(submission.Keywords))
             {
-                return new List<AppUser>(); 
+                return new List<AppUser>();
             }
             var submissionKeywords = submission.Keywords.Split(',')
                 .Select(k => k.Trim().ToLower())
@@ -50,7 +50,7 @@ namespace AntAbstract.Infrastructure.Services.ReviewerRecommendation
             {
                 if (string.IsNullOrWhiteSpace(reviewer.ExpertiseAreas))
                 {
-                    continue; 
+                    continue;
                 }
 
                 var reviewerExpertise = reviewer.ExpertiseAreas.Split(',')

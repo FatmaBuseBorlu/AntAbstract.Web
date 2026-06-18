@@ -118,12 +118,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return View(model);
             }
 
-            criterion.Name        = model.Name;
-            criterion.NameEn      = model.NameEn;
+            criterion.Name = model.Name;
+            criterion.NameEn = model.NameEn;
             criterion.Description = model.Description;
-            criterion.Weight      = model.Weight;
-            criterion.SortOrder   = model.SortOrder;
-            criterion.IsActive    = model.IsActive;
+            criterion.Weight = model.Weight;
+            criterion.SortOrder = model.SortOrder;
+            criterion.IsActive = model.IsActive;
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Kriter güncellendi.";

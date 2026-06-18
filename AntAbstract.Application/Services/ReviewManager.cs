@@ -250,10 +250,10 @@ namespace AntAbstract.Application.Services
                 CommentsToAuthor = commentsToAuthor,
                 Recommendation = recommendation,
                 Score = score,
-                ScoreOriginality   = Math.Max(0, Math.Min(100, input.ScoreOriginality)),
-                ScoreMethodology   = Math.Max(0, Math.Min(100, input.ScoreMethodology)),
-                ScorePresentation  = Math.Max(0, Math.Min(100, input.ScorePresentation)),
-                ScoreRelevance     = Math.Max(0, Math.Min(100, input.ScoreRelevance)),
+                ScoreOriginality = Math.Max(0, Math.Min(100, input.ScoreOriginality)),
+                ScoreMethodology = Math.Max(0, Math.Min(100, input.ScoreMethodology)),
+                ScorePresentation = Math.Max(0, Math.Min(100, input.ScorePresentation)),
+                ScoreRelevance = Math.Max(0, Math.Min(100, input.ScoreRelevance)),
                 ReviewerName = reviewerName,
                 ReviewedAt = DateTime.UtcNow
             };
@@ -305,9 +305,9 @@ namespace AntAbstract.Application.Services
             }
 
             // Soft-delete: kaydı silmek yerine ret olarak işaretle
-            assignment.IsDeclined  = true;
+            assignment.IsDeclined = true;
             assignment.DeclineReason = string.IsNullOrWhiteSpace(reason) ? note : reason;
-            assignment.DeclinedAt  = DateTime.UtcNow;
+            assignment.DeclinedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
         }

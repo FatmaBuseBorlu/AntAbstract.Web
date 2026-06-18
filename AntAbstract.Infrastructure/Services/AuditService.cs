@@ -37,18 +37,18 @@ namespace AntAbstract.Infrastructure.Services
         {
             var entry = new AuditLog
             {
-                Category     = category,
-                Action       = action,
-                UserId       = userId,
-                UserName     = userName,
-                EntityType   = entityType,
-                EntityId     = entityId,
-                Description  = description,
+                Category = category,
+                Action = action,
+                UserId = userId,
+                UserName = userName,
+                EntityType = entityType,
+                EntityId = entityId,
+                Description = description,
                 ConferenceId = conferenceId,
-                IpAddress    = ipAddress,
-                OldValues    = oldValues,
-                NewValues    = newValues,
-                CreatedAt    = DateTime.UtcNow
+                IpAddress = ipAddress,
+                OldValues = oldValues,
+                NewValues = newValues,
+                CreatedAt = DateTime.UtcNow
             };
 
             if (!_queue.TryEnqueue(entry))

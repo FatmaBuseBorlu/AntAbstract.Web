@@ -14,7 +14,7 @@ namespace AntAbstract.Web.Models.WebsiteBlocks
         public string? SecondaryButtonText { get; set; }
         public string? SecondaryButtonUrl { get; set; }
 
-        public string? BackgroundImageUrl { get; set; } 
+        public string? BackgroundImageUrl { get; set; }
     }
 }
 

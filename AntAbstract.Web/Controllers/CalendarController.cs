@@ -40,7 +40,7 @@ namespace AntAbstract.Web.Controllers
             // Ana kongre etkinliği
             {
                 var start = conference.StartDate;
-                var end   = conference.EndDate.AddDays(1);
+                var end = conference.EndDate.AddDays(1);
 
                 sb.AppendLine("BEGIN:VEVENT");
                 sb.AppendLine($"UID:{conference.Id}@antabstract");

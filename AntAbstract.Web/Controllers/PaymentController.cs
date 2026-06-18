@@ -294,10 +294,10 @@ namespace AntAbstract.Web.Controllers
             long? amountTotal,
             string? currency)
         {
-                var payment = await _context.Payments
-                .Include(p => p.Conference)
-                    .ThenInclude(c => c!.Tenant)
-                .FirstOrDefaultAsync(p => p.Id == paymentId);
+            var payment = await _context.Payments
+            .Include(p => p.Conference)
+                .ThenInclude(c => c!.Tenant)
+            .FirstOrDefaultAsync(p => p.Id == paymentId);
 
             if (payment == null || payment.Status == PaymentStatus.Refunded)
             {
@@ -598,13 +598,13 @@ namespace AntAbstract.Web.Controllers
             }
 
             var conf = registration.Conference;
-            ViewBag.IsStripeEnabled      = (conf?.IsStripeEnabled ?? true) && IsStripeConfigured();
-            ViewBag.IsPayTREnabled       = (conf?.IsPayTREnabled ?? false) && _payTR.IsConfigured;
+            ViewBag.IsStripeEnabled = (conf?.IsStripeEnabled ?? true) && IsStripeConfigured();
+            ViewBag.IsPayTREnabled = (conf?.IsPayTREnabled ?? false) && _payTR.IsConfigured;
             ViewBag.IsBankTransferEnabled = conf?.IsBankTransferEnabled ?? false;
-            ViewBag.BankName             = conf?.BankName;
-            ViewBag.BankIban             = conf?.BankIban;
-            ViewBag.BankAccountName      = conf?.BankAccountName;
-            ViewBag.BankBranch           = conf?.BankBranch;
+            ViewBag.BankName = conf?.BankName;
+            ViewBag.BankIban = conf?.BankIban;
+            ViewBag.BankAccountName = conf?.BankAccountName;
+            ViewBag.BankBranch = conf?.BankBranch;
 
             var paymentModel = new Payment
             {
@@ -763,7 +763,7 @@ namespace AntAbstract.Web.Controllers
             if (selectedMethod == "PayTR")
             {
                 var payTRBaseUrl = GetPublicBaseUrl();
-                var okUrl   = $"{payTRBaseUrl}/{canonicalSlug}/payment/paytr-success?paymentId={payment.Id}";
+                var okUrl = $"{payTRBaseUrl}/{canonicalSlug}/payment/paytr-success?paymentId={payment.Id}";
                 var failUrl = $"{payTRBaseUrl}/{canonicalSlug}/payment/paytr-fail?paymentId={payment.Id}";
 
                 var amountKurus = (long)Math.Round(amount * 100);
@@ -776,17 +776,17 @@ namespace AntAbstract.Web.Controllers
 
                 var tokenResult = await _payTR.GetIframeTokenAsync(new PayTRPaymentRequest
                 {
-                    MerchantOid  = payment.Id.ToString("N"),
-                    Email        = user.Email ?? "",
-                    AmountKurus  = amountKurus,
-                    Currency     = currencyCode,
-                    UserName     = $"{user.FirstName} {user.LastName}".Trim(),
-                    UserAddress  = payment.BillingAddress ?? "Belirtilmedi",
-                    UserPhone    = "05000000000",
-                    UserIp       = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
-                    OkUrl        = okUrl,
-                    FailUrl      = failUrl,
-                    BasketJson   = basketJson
+                    MerchantOid = payment.Id.ToString("N"),
+                    Email = user.Email ?? "",
+                    AmountKurus = amountKurus,
+                    Currency = currencyCode,
+                    UserName = $"{user.FirstName} {user.LastName}".Trim(),
+                    UserAddress = payment.BillingAddress ?? "Belirtilmedi",
+                    UserPhone = "05000000000",
+                    UserIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                    OkUrl = okUrl,
+                    FailUrl = failUrl,
+                    BasketJson = basketJson
                 });
 
                 if (!tokenResult.Success)
@@ -1282,7 +1282,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             ViewBag.PayTRToken = token;
-            ViewBag.PaymentId  = paymentId;
+            ViewBag.PaymentId = paymentId;
             return View("PayTRIframe");
         }
 
@@ -1316,9 +1316,9 @@ namespace AntAbstract.Web.Controllers
         {
             var form = Request.Form;
             var merchantOid = form["merchant_oid"].ToString();
-            var status      = form["status"].ToString();
+            var status = form["status"].ToString();
             var totalAmount = form["total_amount"].ToString();
-            var hash        = form["hash"].ToString();
+            var hash = form["hash"].ToString();
 
             if (!_payTR.VerifyCallback(merchantOid, status, totalAmount, hash))
             {
@@ -1346,9 +1346,9 @@ namespace AntAbstract.Web.Controllers
 
                 if (registration != null)
                 {
-                    registration.IsPaid      = true;
+                    registration.IsPaid = true;
                     registration.PaymentDate = DateTime.UtcNow;
-                    registration.Status      = AntAbstract.Domain.Entities.RegistrationStatus.Confirmed;
+                    registration.Status = AntAbstract.Domain.Entities.RegistrationStatus.Confirmed;
                     registration.PaymentTransactionId = merchantOid;
                 }
             }

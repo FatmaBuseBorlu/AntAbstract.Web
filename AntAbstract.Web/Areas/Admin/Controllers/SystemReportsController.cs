@@ -29,12 +29,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var today = DateTime.UtcNow.Date;
 
             // ── Scalar count'lar — DB aggregate, RAM'e çekme ────────────────
-            var totalInstitutions  = await _context.Tenants.CountAsync();
-            var totalConferences   = await _context.Conferences.CountAsync();
-            var activeConferences  = await _context.Conferences
+            var totalInstitutions = await _context.Tenants.CountAsync();
+            var totalConferences = await _context.Conferences.CountAsync();
+            var activeConferences = await _context.Conferences
                 .CountAsync(c => c.StartDate.Date <= today && c.EndDate.Date >= today);
-            var totalUsers         = await _context.Users.CountAsync();
-            var totalSubmissions   = await _context.Submissions.CountAsync();
+            var totalUsers = await _context.Users.CountAsync();
+            var totalSubmissions = await _context.Submissions.CountAsync();
             var assignedSubmissions = await _context.Submissions
                 .CountAsync(s => s.ReviewAssignments.Any());
 
@@ -50,7 +50,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                                  !decisionCompletedStatuses.Contains(s.Status));
 
             var totalRegistrations = await _context.Registrations.CountAsync();
-            var paidRegistrations  = await _context.Registrations.CountAsync(r => r.IsPaid);
+            var paidRegistrations = await _context.Registrations.CountAsync(r => r.IsPaid);
 
             var completedRevenue = await _context.Payments
                 .Where(p => p.Status == PaymentStatus.Completed)

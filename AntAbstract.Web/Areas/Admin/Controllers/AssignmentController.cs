@@ -1043,7 +1043,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return Redirect(BuildAssignmentUrl(slug, conference.Id));
             }
 
-            var reviewerId   = assignment.ReviewerId;
+            var reviewerId = assignment.ReviewerId;
             var submissionTitle = assignment.Submission?.Title ?? "";
 
             _context.ReviewAssignments.Remove(assignment);

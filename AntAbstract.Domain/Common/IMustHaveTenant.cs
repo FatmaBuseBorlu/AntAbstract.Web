@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace AntAbstract.Domain.Common 
+namespace AntAbstract.Domain.Common
 {
     public interface IMustHaveTenant
     {

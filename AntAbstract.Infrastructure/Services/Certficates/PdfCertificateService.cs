@@ -27,10 +27,10 @@ namespace AntAbstract.Infrastructure.Services.Certficates
 
             var roleLabel = type switch
             {
-                CertificateType.Author   => "Yazar",
+                CertificateType.Author => "Yazar",
                 CertificateType.Reviewer => "Hakem",
                 CertificateType.Attendee => "Dinleyici",
-                _                        => "Katılımcı"
+                _ => "Katılımcı"
             };
 
             var participationText = type switch
@@ -53,9 +53,9 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             var dateRange = $"{conference.StartDate:dd MMMM yyyy} – {conference.EndDate:dd MMMM yyyy}";
 
             // Renk paleti  ─ koyu lacivert + altın
-            var navy   = "#1a2d5a";
-            var gold   = "#b8972a";
-            var cream  = "#fdf8ee";
+            var navy = "#1a2d5a";
+            var gold = "#b8972a";
+            var cream = "#fdf8ee";
             return Document.Create(container =>
             {
                 container.Page(page =>

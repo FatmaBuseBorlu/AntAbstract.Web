@@ -152,62 +152,94 @@ public sealed class ConferenceCloneTests
         };
         var regType1 = new RegistrationType
         {
-            Id = Guid.NewGuid(), ConferenceId = source.Id, Conference = source,
-            Name = "Öğrenci", NameEn = "Student",
+            Id = Guid.NewGuid(),
+            ConferenceId = source.Id,
+            Conference = source,
+            Name = "Öğrenci",
+            NameEn = "Student",
             Description = "Öğrenci kayıt açıklaması",
             DescriptionEn = "Student registration description",
-            Price = 150m, Currency = "TRY", RoleName = "Author"
+            Price = 150m,
+            Currency = "TRY",
+            RoleName = "Author"
         };
         var regType2 = new RegistrationType
         {
-            Id = Guid.NewGuid(), ConferenceId = source.Id, Conference = source,
-            Name = "Akademisyen", NameEn = "Academic",
+            Id = Guid.NewGuid(),
+            ConferenceId = source.Id,
+            Conference = source,
+            Name = "Akademisyen",
+            NameEn = "Academic",
             Description = "Akademisyen açıklaması",
             DescriptionEn = "Academic description",
-            Price = 300m, Currency = "TRY", RoleName = "Author"
+            Price = 300m,
+            Currency = "TRY",
+            RoleName = "Author"
         };
         var topic1 = new ConferenceTopic
         {
-            Id = Guid.NewGuid(), ConferenceId = source.Id,
-            Name = "Yapay Zeka", NameEn = "Artificial Intelligence",
-            Description = "YZ açıklaması", DescriptionEn = "AI description",
-            SortOrder = 1, IsActive = true
+            Id = Guid.NewGuid(),
+            ConferenceId = source.Id,
+            Name = "Yapay Zeka",
+            NameEn = "Artificial Intelligence",
+            Description = "YZ açıklaması",
+            DescriptionEn = "AI description",
+            SortOrder = 1,
+            IsActive = true
         };
         var topic2 = new ConferenceTopic
         {
-            Id = Guid.NewGuid(), ConferenceId = source.Id,
-            Name = "Veri Bilimi", NameEn = "Data Science",
-            SortOrder = 2, IsActive = true
+            Id = Guid.NewGuid(),
+            ConferenceId = source.Id,
+            Name = "Veri Bilimi",
+            NameEn = "Data Science",
+            SortOrder = 2,
+            IsActive = true
         };
         var block1 = new ConferencePageBlock
         {
-            TenantId = tenant.Id, ConferenceId = source.Id,
-            Page = "Home", Culture = "tr-TR",
+            TenantId = tenant.Id,
+            ConferenceId = source.Id,
+            Page = "Home",
+            Culture = "tr-TR",
             BlockType = ConferencePageBlockType.Hero,
-            Title = "Ana Sayfa Başlık", ContentJson = "{\"bg\":\"blue\"}",
-            Order = 0, IsActive = true
+            Title = "Ana Sayfa Başlık",
+            ContentJson = "{\"bg\":\"blue\"}",
+            Order = 0,
+            IsActive = true
         };
         var block2 = new ConferencePageBlock
         {
-            TenantId = tenant.Id, ConferenceId = source.Id,
-            Page = "Home", Culture = "tr-TR",
+            TenantId = tenant.Id,
+            ConferenceId = source.Id,
+            Page = "Home",
+            Culture = "tr-TR",
             BlockType = ConferencePageBlockType.About,
-            Title = "Hakkında", ContentJson = "{\"text\":\"lorem\"}",
-            Order = 1, IsActive = true
+            Title = "Hakkında",
+            ContentJson = "{\"text\":\"lorem\"}",
+            Order = 1,
+            IsActive = true
         };
         // Seed: one registration + payment on source (must NOT be cloned)
         var registration = new Registration
         {
-            Id = Guid.NewGuid(), AppUserId = "user-1",
-            ConferenceId = source.Id, Conference = source,
-            RegistrationTypeId = regType1.Id, RegistrationType = regType1,
+            Id = Guid.NewGuid(),
+            AppUserId = "user-1",
+            ConferenceId = source.Id,
+            Conference = source,
+            RegistrationTypeId = regType1.Id,
+            RegistrationType = regType1,
             Amount = 150
         };
         var payment = new Payment
         {
-            Id = Guid.NewGuid(), AppUserId = "user-1",
-            ConferenceId = source.Id, Conference = source,
-            Amount = 150, Currency = "TRY", PaymentMethod = "Receipt"
+            Id = Guid.NewGuid(),
+            AppUserId = "user-1",
+            ConferenceId = source.Id,
+            Conference = source,
+            Amount = 150,
+            Currency = "TRY",
+            PaymentMethod = "Receipt"
         };
 
         await using var ctx = new AppDbContext(options, new TenantContext());
@@ -250,10 +282,14 @@ public sealed class ConferenceCloneTests
         foreach (var t in topics)
             ctx.ConferenceTopics.Add(new ConferenceTopic
             {
-                Id = Guid.NewGuid(), ConferenceId = clone.Id,
-                Name = t.Name, NameEn = t.NameEn,
-                Description = t.Description, DescriptionEn = t.DescriptionEn,
-                SortOrder = t.SortOrder, IsActive = t.IsActive
+                Id = Guid.NewGuid(),
+                ConferenceId = clone.Id,
+                Name = t.Name,
+                NameEn = t.NameEn,
+                Description = t.Description,
+                DescriptionEn = t.DescriptionEn,
+                SortOrder = t.SortOrder,
+                IsActive = t.IsActive
             });
 
         // RegTypes
@@ -262,11 +298,16 @@ public sealed class ConferenceCloneTests
         foreach (var rt in regTypes)
             ctx.RegistrationTypes.Add(new RegistrationType
             {
-                Id = Guid.NewGuid(), ConferenceId = clone.Id,
-                Name = rt.Name, NameEn = rt.NameEn,
-                Description = rt.Description, DescriptionEn = rt.DescriptionEn,
-                Price = rt.Price, Currency = rt.Currency,
-                IsActive = rt.IsActive, Deadline = rt.Deadline,
+                Id = Guid.NewGuid(),
+                ConferenceId = clone.Id,
+                Name = rt.Name,
+                NameEn = rt.NameEn,
+                Description = rt.Description,
+                DescriptionEn = rt.DescriptionEn,
+                Price = rt.Price,
+                Currency = rt.Currency,
+                IsActive = rt.IsActive,
+                Deadline = rt.Deadline,
                 RoleName = rt.RoleName
             });
 
@@ -276,11 +317,16 @@ public sealed class ConferenceCloneTests
         foreach (var b in blocks)
             ctx.ConferencePageBlocks.Add(new ConferencePageBlock
             {
-                TenantId = clone.TenantId, ConferenceId = clone.Id,
-                Page = b.Page, Culture = b.Culture,
-                BlockType = b.BlockType, Title = b.Title,
-                Subtitle = b.Subtitle, ContentJson = b.ContentJson,
-                Order = b.Order, IsActive = b.IsActive
+                TenantId = clone.TenantId,
+                ConferenceId = clone.Id,
+                Page = b.Page,
+                Culture = b.Culture,
+                BlockType = b.BlockType,
+                Title = b.Title,
+                Subtitle = b.Subtitle,
+                ContentJson = b.ContentJson,
+                Order = b.Order,
+                IsActive = b.IsActive
             });
 
         await ctx.SaveChangesAsync();

@@ -24,14 +24,14 @@ namespace AntAbstract.Domain.Entities
         public TransferOption? TransferOption { get; set; }
 
 
-        public DateTime CheckInDate { get; set; } 
-        public DateTime CheckOutDate { get; set; } 
+        public DateTime CheckInDate { get; set; }
+        public DateTime CheckOutDate { get; set; }
 
-        public string? RoommateName { get; set; } 
+        public string? RoommateName { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
-        public decimal TotalAmount { get; set; } 
+        public decimal TotalAmount { get; set; }
 
-        public bool IsPaid { get; set; } = false; 
+        public bool IsPaid { get; set; } = false;
     }
 }

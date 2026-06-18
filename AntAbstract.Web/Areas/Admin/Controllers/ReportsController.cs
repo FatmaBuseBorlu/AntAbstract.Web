@@ -503,13 +503,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 })
                 .ToListAsync();
 
-            var totalCount    = submissions.Count;
+            var totalCount = submissions.Count;
             var acceptedCount = submissions.Count(s => s.Status == SubmissionStatus.Accepted);
             var rejectedCount = submissions.Count(s => s.Status == SubmissionStatus.Rejected);
-            var pendingCount  = submissions.Count(s => s.Status != SubmissionStatus.Accepted && s.Status != SubmissionStatus.Rejected);
+            var pendingCount = submissions.Count(s => s.Status != SubmissionStatus.Accepted && s.Status != SubmissionStatus.Rejected);
 
-            const string Navy  = "#1a2d5a";
-            const string Gold  = "#b8972a";
+            const string Navy = "#1a2d5a";
+            const string Gold = "#b8972a";
             const string Cream = "#fdf8ee";
 
             var pdfBytes = Document.Create(container =>
@@ -581,19 +581,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                             var bg = i % 2 == 0 ? "#ffffff" : "#f8fafc";
                             var statusLabel = s.Status switch
                             {
-                                SubmissionStatus.Accepted        => "Kabul",
-                                SubmissionStatus.Rejected        => "Red",
+                                SubmissionStatus.Accepted => "Kabul",
+                                SubmissionStatus.Rejected => "Red",
                                 SubmissionStatus.RevisionRequired => "Revizyon",
-                                SubmissionStatus.Pending         => "Beklemede",
-                                SubmissionStatus.UnderReview     => "İncelemede",
-                                _                                => s.Status.ToString()
+                                SubmissionStatus.Pending => "Beklemede",
+                                SubmissionStatus.UnderReview => "İncelemede",
+                                _ => s.Status.ToString()
                             };
                             var statusColor = s.Status switch
                             {
-                                SubmissionStatus.Accepted         => "#16a34a",
-                                SubmissionStatus.Rejected         => "#dc2626",
+                                SubmissionStatus.Accepted => "#16a34a",
+                                SubmissionStatus.Rejected => "#dc2626",
                                 SubmissionStatus.RevisionRequired => "#d97706",
-                                _                                 => "#6b7280"
+                                _ => "#6b7280"
                             };
 
                             col.Item().Background(bg).BorderBottom(1).BorderColor("#e5e7eb")
@@ -661,9 +661,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .Select(g => new
                 {
                     ReviewerId = g.Key,
-                    TotalAssigned  = g.Count(),
+                    TotalAssigned = g.Count(),
                     TotalCompleted = g.Count(ra => ra.Review != null),
-                    AverageScore   = g.Where(ra => ra.Review != null && ra.Review.Score > 0)
+                    AverageScore = g.Where(ra => ra.Review != null && ra.Review.Score > 0)
                                       .Select(ra => (double?)ra.Review!.Score)
                                       .Average()
                 })
@@ -681,12 +681,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 reviewers.TryGetValue(s.ReviewerId, out var rev);
                 return new
                 {
-                    FullName   = rev != null ? $"{rev.FirstName} {rev.LastName}".Trim() : s.ReviewerId,
-                    Email      = rev?.Email ?? "",
+                    FullName = rev != null ? $"{rev.FirstName} {rev.LastName}".Trim() : s.ReviewerId,
+                    Email = rev?.Email ?? "",
                     University = rev?.University ?? "",
                     s.TotalAssigned,
                     s.TotalCompleted,
-                    Pending    = s.TotalAssigned - s.TotalCompleted,
+                    Pending = s.TotalAssigned - s.TotalCompleted,
                     AverageScore = s.AverageScore.HasValue
                         ? Math.Round(s.AverageScore.Value, 1).ToString("F1")
                         : "-",

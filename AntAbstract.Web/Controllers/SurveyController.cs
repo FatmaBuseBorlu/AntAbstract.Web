@@ -272,15 +272,15 @@ namespace AntAbstract.Web.Controllers
             // Yapılandırılmış anket cevabını da kaydet (raporlanabilir)
             var surveyAnswer = new SurveyAnswer
             {
-                UserId       = user.Id,
+                UserId = user.Id,
                 ConferenceId = submission?.ConferenceId ?? Guid.Empty,
                 SubmissionId = submission?.Id,
-                Answer1      = q1,
-                Answer2      = q2,
-                Answer3      = q3,
-                Answer4      = q4,
-                Answer5      = q5,
-                SubmittedAt  = DateTime.UtcNow
+                Answer1 = q1,
+                Answer2 = q2,
+                Answer3 = q3,
+                Answer4 = q4,
+                Answer5 = q5,
+                SubmittedAt = DateTime.UtcNow
             };
 
             if (surveyAnswer.ConferenceId != Guid.Empty)

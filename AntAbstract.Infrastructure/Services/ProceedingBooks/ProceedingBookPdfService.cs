@@ -15,12 +15,12 @@ namespace AntAbstract.Infrastructure.Services.ProceedingBooks
     public class ProceedingBookPdfService : IProceedingBookPdfService
     {
         // Renk paleti
-        private const string Navy    = "#1a2d5a";
-        private const string Gold    = "#b8972a";
-        private const string Cream   = "#fdf8ee";
+        private const string Navy = "#1a2d5a";
+        private const string Gold = "#b8972a";
+        private const string Cream = "#fdf8ee";
         private const string LightBg = "#f4f6fa";
         private const string TextDark = "#1e1e2e";
-        private const string TextMid  = "#4a4a6a";
+        private const string TextMid = "#4a4a6a";
         private const string TextLight = "#888899";
 
         public byte[] GenerateProceedingBookPdf(

@@ -55,17 +55,17 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(opt =>
 {
     // Şifre politikası: en az 8 karakter, büyük harf, rakam zorunlu;
     // özel karakter isteğe bağlı bırakıldı (kullanıcı deneyimi korunuyor).
-    opt.Password.RequiredLength         = 8;
-    opt.Password.RequireDigit           = true;
-    opt.Password.RequireUppercase       = true;
-    opt.Password.RequireLowercase       = true;
+    opt.Password.RequiredLength = 8;
+    opt.Password.RequireDigit = true;
+    opt.Password.RequireUppercase = true;
+    opt.Password.RequireLowercase = true;
     opt.Password.RequireNonAlphanumeric = false;
-    opt.Password.RequiredUniqueChars    = 4;
+    opt.Password.RequiredUniqueChars = 4;
 
     // Hesap kilitleme: 5 başarısız denemeden sonra 15 dakika kilitle
-    opt.Lockout.DefaultLockoutTimeSpan  = TimeSpan.FromMinutes(15);
+    opt.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
     opt.Lockout.MaxFailedAccessAttempts = 5;
-    opt.Lockout.AllowedForNewUsers      = true;
+    opt.Lockout.AllowedForNewUsers = true;
 
     opt.User.RequireUniqueEmail = true;
 })
@@ -196,8 +196,8 @@ builder.Services.Configure<RouteOptions>(options =>
 // controller seviyesinde yapılır.
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
 {
-    options.MultipartBodyLengthLimit    = 52 * 1024 * 1024; // 52 MB (bildiri kitabı için üst sınır)
-    options.ValueLengthLimit            = int.MaxValue;
+    options.MultipartBodyLengthLimit = 52 * 1024 * 1024; // 52 MB (bildiri kitabı için üst sınır)
+    options.ValueLengthLimit = int.MaxValue;
     options.MultipartHeadersLengthLimit = int.MaxValue;
 });
 
@@ -232,30 +232,30 @@ builder.Services.AddRateLimiter(options =>
     // Login / Register / ForgotPassword: 10 istek / 5 dakika / IP
     options.AddSlidingWindowLimiter("auth", opt =>
     {
-        opt.Window            = TimeSpan.FromMinutes(5);
+        opt.Window = TimeSpan.FromMinutes(5);
         opt.SegmentsPerWindow = 5;
-        opt.PermitLimit       = 10;
-        opt.QueueLimit        = 0;
+        opt.PermitLimit = 10;
+        opt.QueueLimit = 0;
         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
     });
 
     // Dosya/makbuz yükleme: 20 istek / dakika / IP
     options.AddSlidingWindowLimiter("upload", opt =>
     {
-        opt.Window            = TimeSpan.FromMinutes(1);
+        opt.Window = TimeSpan.FromMinutes(1);
         opt.SegmentsPerWindow = 4;
-        opt.PermitLimit       = 20;
-        opt.QueueLimit        = 0;
+        opt.PermitLimit = 20;
+        opt.QueueLimit = 0;
         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
     });
 
     // Stripe webhook: 60 istek / dakika (Stripe yeniden dener)
     options.AddSlidingWindowLimiter("webhook", opt =>
     {
-        opt.Window            = TimeSpan.FromMinutes(1);
+        opt.Window = TimeSpan.FromMinutes(1);
         opt.SegmentsPerWindow = 6;
-        opt.PermitLimit       = 60;
-        opt.QueueLimit        = 0;
+        opt.PermitLimit = 60;
+        opt.QueueLimit = 0;
         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
     });
 });
@@ -421,7 +421,7 @@ app.UseStaticFiles(new StaticFileOptions
     OnPrepareResponse = ctx =>
     {
         var path = ctx.Context.Request.Path.Value ?? "";
-        var ext  = Path.GetExtension(path).ToLowerInvariant();
+        var ext = Path.GetExtension(path).ToLowerInvariant();
 
         // Versiyonlanmış varlıklar (css, js, font, resim) uzun süre cache'lenebilir
         if (ext is ".css" or ".js" or ".woff" or ".woff2" or ".ttf" or ".eot"

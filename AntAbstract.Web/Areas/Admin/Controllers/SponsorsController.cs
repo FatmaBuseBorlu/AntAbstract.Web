@@ -111,12 +111,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (existing == null) return NotFound();
             if (!ModelState.IsValid) { SetViewBag(existing.Conference, slug); return View(model); }
 
-            existing.Name       = model.Name.Trim();
-            existing.LogoUrl    = model.LogoUrl?.Trim();
+            existing.Name = model.Name.Trim();
+            existing.LogoUrl = model.LogoUrl?.Trim();
             existing.WebsiteUrl = model.WebsiteUrl?.Trim();
-            existing.Tier       = model.Tier;
-            existing.SortOrder  = model.SortOrder;
-            existing.IsActive   = model.IsActive;
+            existing.Tier = model.Tier;
+            existing.SortOrder = model.SortOrder;
+            existing.IsActive = model.IsActive;
 
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = $"{existing.Name} güncellendi.";
