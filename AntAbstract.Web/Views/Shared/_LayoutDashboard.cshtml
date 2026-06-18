@@ -1521,6 +1521,12 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                         Davetli Konuşmacılar
                     </a>
 
+                    <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Sponsors?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/Sponsors?conferenceId={selectedConferenceId}")"
+                       class="nav-link @(currentController == "Sponsors" ? "active" : "")">
+                        <i class="fas fa-handshake text-warning"></i>
+                        Sponsorlar
+                    </a>
+
                     <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/ReviewCriteria?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/ReviewCriteria?conferenceId={selectedConferenceId}")"
                        class="nav-link @(currentController == "ReviewCriteria" ? "active" : "")">
                         <i class="fas fa-star-half-alt text-warning"></i>
