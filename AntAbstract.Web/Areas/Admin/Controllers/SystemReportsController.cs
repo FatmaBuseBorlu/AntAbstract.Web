@@ -113,7 +113,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     ConferenceId = c.Id,
                     ConferenceTitle = c.Title ?? "",
                     TenantName = c.Tenant != null ? c.Tenant.Name : "",
-                    Slug = c.Tenant != null ? c.Tenant.Slug : null,
+                    Slug = c.Tenant != null ? c.Tenant.Slug : string.Empty,
                     SubmissionCount = _context.Submissions.Count(s => s.ConferenceId == c.Id)
                 })
                 .ToListAsync();
@@ -129,7 +129,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     Id = c.Id,
                     Title = c.Title ?? "",
                     TenantName = c.Tenant != null ? c.Tenant.Name : "",
-                    Slug = c.Tenant != null ? c.Tenant.Slug : null,
+                    Slug = c.Tenant != null ? c.Tenant.Slug : string.Empty,
                     StartDate = c.StartDate,
                     EndDate = c.EndDate
                 })

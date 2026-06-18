@@ -1,0 +1,408 @@
+@using AntAbstract.Domain.Entities
+@using AntAbstract.Web.Models.ViewModels.Review
+@model List<BiddingSubmissionRow>
+
+@{
+    ViewData["Title"] = "Bildiri Teklifleri";
+    Layout = "_LayoutDashboard";
+
+    var slug = ViewBag.Slug as string ?? "";
+    var conferenceTitle = ViewBag.ConferenceTitle as string ?? "";
+    var myBids = ViewBag.MyBids as Dictionary<Guid, BidPreference> ?? new Dictionary<Guid, BidPreference>();
+
+    string PostUrl = string.IsNullOrWhiteSpace(slug) ? "/Review/Bidding" : $"/{slug}/Review/Bidding";
+    string DeleteBaseUrl = string.IsNullOrWhiteSpace(slug) ? "/Review/Bidding/" : $"/{slug}/Review/Bidding/";
+
+    int wantCount      = myBids.Count(b => b.Value == BidPreference.WantToReview);
+    int conflictCount  = myBids.Count(b => b.Value == BidPreference.ConflictOfInterest);
+    int notFieldCount  = myBids.Count(b => b.Value == BidPreference.NotMyField);
+    int unbiddedCount  = (Model?.Count ?? 0) - myBids.Count;
+}
+
+<div class="bidding-page">
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert bid-alert bid-alert-success mb-4">
+            <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @* Hero *@
+    <div class="bid-hero-card mb-4">
+        <div class="bid-hero-left">
+            <div class="bid-hero-icon"><i class="fas fa-hand-pointer"></i></div>
+            <div>
+                <h1 class="bid-hero-title">Bildiri Teklifleri</h1>
+                <p class="bid-hero-sub">@conferenceTitle</p>
+            </div>
+        </div>
+        <div class="bid-hero-info">
+            <p class="bid-hero-info-text">
+                <i class="fas fa-circle-info"></i>
+                Her bildiri için tercihini belirt. Atama sürecinde tekliflerin dikkate alınır.
+            </p>
+        </div>
+    </div>
+
+    @* Stat row *@
+    <div class="bid-stat-row mb-4">
+        <div class="bid-stat-card">
+            <div class="bsc-icon bsc-blue"><i class="fas fa-file-alt"></i></div>
+            <div class="bsc-body">
+                <div class="bsc-value">@(Model?.Count ?? 0)</div>
+                <div class="bsc-label">Toplam Bildiri</div>
+            </div>
+        </div>
+        <div class="bid-stat-card">
+            <div class="bsc-icon bsc-green"><i class="fas fa-thumbs-up"></i></div>
+            <div class="bsc-body">
+                <div class="bsc-value">@wantCount</div>
+                <div class="bsc-label">İncelemek İstiyorum</div>
+            </div>
+        </div>
+        <div class="bid-stat-card">
+            <div class="bsc-icon bsc-red"><i class="fas fa-ban"></i></div>
+            <div class="bsc-body">
+                <div class="bsc-value">@conflictCount</div>
+                <div class="bsc-label">Çıkar Çatışması</div>
+            </div>
+        </div>
+        <div class="bid-stat-card">
+            <div class="bsc-icon bsc-orange"><i class="fas fa-flask"></i></div>
+            <div class="bsc-body">
+                <div class="bsc-value">@notFieldCount</div>
+                <div class="bsc-label">Alanım Değil</div>
+            </div>
+        </div>
+        <div class="bid-stat-card">
+            <div class="bsc-icon bsc-gray"><i class="fas fa-circle-question"></i></div>
+            <div class="bsc-body">
+                <div class="bsc-value">@unbiddedCount</div>
+                <div class="bsc-label">Belirtilmemiş</div>
+            </div>
+        </div>
+    </div>
+
+    @* Legend *@
+    <div class="bid-legend mb-3">
+        <span class="bid-legend-item">
+            <span class="bid-dot dot-green"></span> İncelemek İstiyorum
+        </span>
+        <span class="bid-legend-item">
+            <span class="bid-dot dot-red"></span> Çıkar Çatışması
+        </span>
+        <span class="bid-legend-item">
+            <span class="bid-dot dot-orange"></span> Alanım Değil
+        </span>
+        <span class="bid-legend-item">
+            <span class="bid-dot dot-gray"></span> Belirtilmemiş
+        </span>
+    </div>
+
+    @* Cards *@
+    @if (Model == null || !Model.Any())
+    {
+        <div class="bid-empty">
+            <div class="bid-empty-icon"><i class="fas fa-file-circle-question"></i></div>
+            <h4>Bildiri bulunamadı</h4>
+            <p>Bu kongre için henüz bildiri bulunmuyor.</p>
+        </div>
+    }
+    else
+    {
+        <div class="bid-card-grid" id="bidGrid">
+            @foreach (var item in Model)
+            {
+                var currentPref = myBids.TryGetValue(item.Id, out var pref) ? pref : (BidPreference?)null;
+                var cardClass = currentPref switch
+                {
+                    BidPreference.WantToReview       => "bid-card-want",
+                    BidPreference.ConflictOfInterest  => "bid-card-conflict",
+                    BidPreference.NotMyField          => "bid-card-notfield",
+                    _                                 => ""
+                };
+                <div class="bid-card @cardClass" data-submission-id="@item.Id">
+                    <div class="bid-card-body">
+                        @if (!string.IsNullOrWhiteSpace(item.Topic))
+                        {
+                            <span class="bid-topic-chip">@item.Topic</span>
+                        }
+                        <h3 class="bid-card-title">@item.Title</h3>
+                        @if (!string.IsNullOrWhiteSpace(item.Abstract))
+                        {
+                            <p class="bid-card-abstract">@(item.Abstract.Length > 200 ? item.Abstract.Substring(0, 200) + "…" : item.Abstract)</p>
+                        }
+                    </div>
+                    <div class="bid-card-actions">
+                        <button type="button"
+                                class="bid-btn bid-btn-want @(currentPref == BidPreference.WantToReview ? "bid-btn-active" : "")"
+                                data-pref="WantToReview"
+                                title="İncelemek istiyorum">
+                            <i class="fas fa-thumbs-up"></i>
+                            <span>İnceleyebilirim</span>
+                        </button>
+                        <button type="button"
+                                class="bid-btn bid-btn-conflict @(currentPref == BidPreference.ConflictOfInterest ? "bid-btn-active" : "")"
+                                data-pref="ConflictOfInterest"
+                                title="Çıkar çatışması var">
+                            <i class="fas fa-ban"></i>
+                            <span>Çıkar Çatışması</span>
+                        </button>
+                        <button type="button"
+                                class="bid-btn bid-btn-notfield @(currentPref == BidPreference.NotMyField ? "bid-btn-active" : "")"
+                                data-pref="NotMyField"
+                                title="Alanım değil">
+                            <i class="fas fa-flask"></i>
+                            <span>Alanım Değil</span>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+</div>
+
+@Html.AntiForgeryToken()
+
+<style>
+    .bidding-page {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        padding: 1.5rem 0 2rem;
+    }
+
+    .bid-alert {
+        display: flex; align-items: center; gap: 0.75rem;
+        border-radius: 16px; border: 1px solid transparent;
+        font-weight: 800; padding: 0.85rem 1.2rem;
+    }
+    .bid-alert-success { background: rgba(34,197,94,0.10); border-color: rgba(34,197,94,0.20); color: #15803d; }
+
+    /* Hero */
+    .bid-hero-card {
+        background: radial-gradient(circle at top right, rgba(168,85,247,0.12), transparent 40%),
+                    linear-gradient(135deg, #ffffff 0%, #fdf8ff 100%);
+        border: 1px solid #e8e0f6; border-radius: 28px;
+        padding: 1.4rem 1.75rem;
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 1.25rem; flex-wrap: wrap;
+        box-shadow: 0 16px 40px rgba(15,23,42,0.06);
+    }
+    .bid-hero-left { display: flex; align-items: center; gap: 1.1rem; }
+    .bid-hero-icon {
+        width: 58px; height: 58px; min-width: 58px; border-radius: 18px;
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        color: #fff; display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem; box-shadow: 0 12px 28px rgba(124,58,237,0.28);
+    }
+    .bid-hero-title { font-size: 1.75rem; font-weight: 900; color: #0f172a; margin: 0; line-height: 1.2; }
+    .bid-hero-sub   { font-size: 0.86rem; color: #64748b; font-weight: 650; margin: 0.15rem 0 0; }
+    .bid-hero-info-text {
+        font-size: 0.82rem; font-weight: 700; color: #475569;
+        background: rgba(168,85,247,0.08); border: 1px solid rgba(168,85,247,0.18);
+        border-radius: 12px; padding: 0.6rem 0.9rem; margin: 0;
+        display: flex; align-items: center; gap: 0.5rem; max-width: 380px;
+    }
+    .bid-hero-info-text i { color: #7c3aed; }
+
+    /* Stats */
+    .bid-stat-row { display: flex; gap: 0.85rem; flex-wrap: wrap; }
+    .bid-stat-card {
+        flex: 1; min-width: 110px; background: #fff;
+        border: 1px solid #e8eef6; border-radius: 18px;
+        padding: 0.85rem 1rem; display: flex; align-items: center; gap: 0.7rem;
+        box-shadow: 0 4px 14px rgba(15,23,42,0.04);
+    }
+    .bsc-icon {
+        width: 38px; height: 38px; min-width: 38px;
+        border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;
+    }
+    .bsc-blue   { background: rgba(13,110,253,0.12); color: #0d6efd; }
+    .bsc-green  { background: rgba(34,197,94,0.12);  color: #16a34a; }
+    .bsc-red    { background: rgba(239,68,68,0.12);  color: #dc2626; }
+    .bsc-orange { background: rgba(249,115,22,0.12); color: #ea580c; }
+    .bsc-gray   { background: rgba(148,163,184,0.15);color: #64748b; }
+
+    .bsc-value { font-size: 1.2rem; font-weight: 900; color: #0f172a; line-height: 1.1; }
+    .bsc-label { font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+
+    /* Legend */
+    .bid-legend { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+    .bid-legend-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; font-weight: 700; color: #475569; }
+    .bid-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .dot-green  { background: #22c55e; }
+    .dot-red    { background: #ef4444; }
+    .dot-orange { background: #f97316; }
+    .dot-gray   { background: #cbd5e1; }
+
+    /* Card grid */
+    .bid-card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 1rem;
+    }
+
+    .bid-card {
+        background: #fff; border: 2px solid #e8eef6;
+        border-radius: 20px; overflow: hidden;
+        display: flex; flex-direction: column;
+        box-shadow: 0 4px 16px rgba(15,23,42,0.04);
+        transition: box-shadow 0.2s, border-color 0.2s;
+    }
+    .bid-card:hover { box-shadow: 0 10px 28px rgba(15,23,42,0.09); }
+    .bid-card-want     { border-color: #22c55e; background: rgba(34,197,94,0.02); }
+    .bid-card-conflict { border-color: #ef4444; background: rgba(239,68,68,0.02); }
+    .bid-card-notfield { border-color: #f97316; background: rgba(249,115,22,0.02); }
+
+    .bid-card-body { padding: 1.1rem 1.1rem 0.75rem; flex: 1; }
+
+    .bid-topic-chip {
+        display: inline-flex; align-items: center;
+        height: 22px; border-radius: 999px; padding: 0 0.55rem;
+        background: rgba(13,110,253,0.10); color: #1d4ed8;
+        font-size: 0.7rem; font-weight: 800; margin-bottom: 0.55rem;
+    }
+
+    .bid-card-title {
+        font-size: 0.9rem; font-weight: 800; color: #0f172a;
+        margin: 0 0 0.5rem; line-height: 1.4;
+    }
+
+    .bid-card-abstract {
+        font-size: 0.78rem; color: #64748b; font-weight: 550;
+        line-height: 1.6; margin: 0;
+    }
+
+    .bid-card-actions {
+        display: flex; gap: 0.4rem;
+        padding: 0.75rem 1.1rem;
+        border-top: 1px solid #f1f5f9;
+        background: #fafcff;
+    }
+
+    .bid-btn {
+        flex: 1; display: inline-flex; align-items: center; justify-content: center;
+        gap: 0.3rem; height: 34px; border-radius: 999px;
+        font-size: 0.74rem; font-weight: 800; border: 1.5px solid #e2e8f0;
+        background: #f8fafc; color: #475569; cursor: pointer;
+        transition: all 0.18s; white-space: nowrap;
+    }
+
+    .bid-btn-want.bid-btn-active    { background: rgba(34,197,94,0.12);  border-color: #22c55e; color: #15803d; }
+    .bid-btn-conflict.bid-btn-active{ background: rgba(239,68,68,0.10);  border-color: #ef4444; color: #dc2626; }
+    .bid-btn-notfield.bid-btn-active{ background: rgba(249,115,22,0.10); border-color: #f97316; color: #ea580c; }
+
+    .bid-btn-want:hover     { border-color: #22c55e; color: #15803d; background: rgba(34,197,94,0.08); }
+    .bid-btn-conflict:hover { border-color: #ef4444; color: #dc2626; background: rgba(239,68,68,0.07); }
+    .bid-btn-notfield:hover { border-color: #f97316; color: #ea580c; background: rgba(249,115,22,0.07); }
+
+    .bid-btn.bid-saving { opacity: 0.6; pointer-events: none; }
+
+    /* Empty */
+    .bid-empty {
+        text-align: center; padding: 4rem 1.5rem;
+        background: #fff; border: 1px solid #e8eef6; border-radius: 24px;
+    }
+    .bid-empty-icon {
+        width: 76px; height: 76px; border-radius: 24px;
+        background: rgba(124,58,237,0.10); color: #7c3aed;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.9rem; margin: 0 auto 1rem;
+    }
+    .bid-empty h4 { font-size: 1.2rem; font-weight: 900; color: #0f172a; margin-bottom: 0.4rem; }
+    .bid-empty p  { color: #64748b; font-weight: 650; margin: 0; }
+
+    @@media (max-width: 768px) {
+        .bid-hero-card { flex-direction: column; align-items: flex-start; }
+        .bid-hero-info-text { max-width: 100%; }
+        .bid-stat-row { gap: 0.5rem; }
+        .bid-stat-card { min-width: calc(50% - 0.25rem); }
+        .bid-card-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+@section Scripts {
+<script>
+(function () {
+    const postUrl   = '@PostUrl';
+    const antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+
+    async function saveBid(submissionId, preference) {
+        const res = await fetch(postUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'RequestVerificationToken': antiForgeryToken
+            },
+            body: new URLSearchParams({ submissionId, preference })
+        });
+        return res.ok;
+    }
+
+    async function removeBid(submissionId) {
+        const url = '@Html.Raw(DeleteBaseUrl)' + submissionId;
+        const res = await fetch(url, {
+            method: 'DELETE',
+            headers: { 'RequestVerificationToken': antiForgeryToken }
+        });
+        return res.ok;
+    }
+
+    function applyCardState(card, preference) {
+        card.classList.remove('bid-card-want', 'bid-card-conflict', 'bid-card-notfield');
+        card.querySelectorAll('.bid-btn').forEach(b => b.classList.remove('bid-btn-active'));
+
+        if (preference === 'WantToReview') {
+            card.classList.add('bid-card-want');
+            card.querySelector('.bid-btn-want')?.classList.add('bid-btn-active');
+        } else if (preference === 'ConflictOfInterest') {
+            card.classList.add('bid-card-conflict');
+            card.querySelector('.bid-btn-conflict')?.classList.add('bid-btn-active');
+        } else if (preference === 'NotMyField') {
+            card.classList.add('bid-card-notfield');
+            card.querySelector('.bid-btn-notfield')?.classList.add('bid-btn-active');
+        }
+    }
+
+    document.getElementById('bidGrid')?.addEventListener('click', async function (e) {
+        const btn = e.target.closest('.bid-btn');
+        if (!btn) return;
+
+        const card = btn.closest('.bid-card');
+        const submissionId = card.dataset.submissionId;
+        const pref = btn.dataset.pref;
+        const isActive = btn.classList.contains('bid-btn-active');
+
+        card.querySelectorAll('.bid-btn').forEach(b => b.classList.add('bid-saving'));
+
+        if (isActive) {
+            const ok = await removeBid(submissionId);
+            if (ok) applyCardState(card, null);
+        } else {
+            const ok = await saveBid(submissionId, pref);
+            if (ok) applyCardState(card, pref);
+        }
+
+        card.querySelectorAll('.bid-btn').forEach(b => b.classList.remove('bid-saving'));
+        updateStats();
+    });
+
+    function updateStats() {
+        const want     = document.querySelectorAll('.bid-card-want').length;
+        const conflict = document.querySelectorAll('.bid-card-conflict').length;
+        const notfield = document.querySelectorAll('.bid-card-notfield').length;
+        const total    = document.querySelectorAll('.bid-card').length;
+        const unbidded = total - want - conflict - notfield;
+
+        const statCards = document.querySelectorAll('.bid-stat-card .bsc-value');
+        if (statCards.length >= 5) {
+            statCards[1].textContent = want;
+            statCards[2].textContent = conflict;
+            statCards[3].textContent = notfield;
+            statCards[4].textContent = unbidded;
+        }
+    }
+})();
+</script>
+}

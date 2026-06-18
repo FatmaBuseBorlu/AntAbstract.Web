@@ -11,17 +11,17 @@ namespace AntAbstract.Domain.Entities
     {
         public int Id { get; set; }
 
-        public string FileName { get; set; } 
-        public string StoredFileName { get; set; } 
-        public string FilePath { get; set; } 
+        public string FileName { get; set; } = string.Empty;
+        public string StoredFileName { get; set; } = string.Empty;
+        public string FilePath { get; set; } = string.Empty;
 
-        public SubmissionFileType Type { get; set; } 
+        public SubmissionFileType Type { get; set; }
         public int Version { get; set; }
         public DateTime UploadedAt { get; set; }
 
         public Guid SubmissionId { get; set; }
 
         [ForeignKey("SubmissionId")]
-        public Submission Submission { get; set; }
+        public Submission Submission { get; set; } = null!;
     }
 }

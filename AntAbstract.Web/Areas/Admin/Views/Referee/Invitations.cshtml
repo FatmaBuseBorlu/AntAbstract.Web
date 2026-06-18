@@ -1,0 +1,115 @@
+@model List<AntAbstract.Domain.Entities.ReviewerInvitation>
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Hakem Davetleri";
+    var conference = ViewBag.Conference as AntAbstract.Domain.Entities.Conference;
+    var slug = (string?)ViewBag.Slug ?? "";
+    var conferenceId = (Guid?)ViewBag.ConferenceId;
+    var returnUrl = conferenceId.HasValue
+        ? $"/{slug}/Admin/Referee?conferenceId={conferenceId}"
+        : $"/{slug}/Admin/Referee";
+    var inviteUrl = conferenceId.HasValue
+        ? $"/{slug}/Admin/Referee/InviteByEmail?conferenceId={conferenceId}"
+        : $"/{slug}/Admin/Referee/InviteByEmail";
+}
+
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="fas fa-envelope-open-text text-primary me-2"></i>Hakem Davetleri</h4>
+            @if (conference != null)
+            {
+                <small class="text-muted">@conference.Title</small>
+            }
+        </div>
+        <div class="d-flex gap-2">
+            <a href="@inviteUrl" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus me-1"></i>Yeni Davet
+            </a>
+            <a href="@returnUrl" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i>Hakemler
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-envelope-open-text fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Henüz davet gönderilmemiş</h5>
+                <p class="text-muted mb-4">E-posta ile hakem davet edebilirsiniz.</p>
+                <a href="@inviteUrl" class="btn btn-primary">
+                    <i class="fas fa-paper-plane me-2"></i>Davet Gönder
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>E-posta</th>
+                                <th>Ad Soyad</th>
+                                <th>Kurum</th>
+                                <th>Durum</th>
+                                <th>Gönderilme</th>
+                                <th>Son Geçerlilik</th>
+                                <th>Yanıt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var inv in Model)
+                            {
+                                var (badgeClass, badgeText) = inv.Status switch
+                                {
+                                    AntAbstract.Domain.Entities.InvitationStatus.Pending  => ("bg-warning text-dark", "Bekliyor"),
+                                    AntAbstract.Domain.Entities.InvitationStatus.Accepted => ("bg-success",          "Kabul Edildi"),
+                                    AntAbstract.Domain.Entities.InvitationStatus.Declined => ("bg-danger",           "Reddedildi"),
+                                    AntAbstract.Domain.Entities.InvitationStatus.Expired  => ("bg-secondary",        "Süresi Doldu"),
+                                    _ => ("bg-secondary", "Bilinmiyor")
+                                };
+                                <tr>
+                                    <td>@inv.Email</td>
+                                    <td>@(string.Join(" ", new[] { inv.FirstName, inv.LastName }.Where(x => !string.IsNullOrWhiteSpace(x))))</td>
+                                    <td>@inv.Institution</td>
+                                    <td><span class="badge @badgeClass">@badgeText</span></td>
+                                    <td>@inv.SentAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td class="@(inv.ExpiresAt < DateTime.UtcNow && inv.Status == AntAbstract.Domain.Entities.InvitationStatus.Pending ? "text-danger" : "")">
+                                        @inv.ExpiresAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                                    </td>
+                                    <td>
+                                        @if (inv.RespondedAt.HasValue)
+                                        {
+                                            @inv.RespondedAt.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                                            if (!string.IsNullOrWhiteSpace(inv.DeclineReason))
+                                            {
+                                                <br /><small class="text-muted">@inv.DeclineReason</small>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>

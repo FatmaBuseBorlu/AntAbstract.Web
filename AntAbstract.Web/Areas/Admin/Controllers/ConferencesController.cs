@@ -2,6 +2,7 @@
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Files;
+using AntAbstract.Web.Models.ViewModels.Admin.Conferences;
 using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
@@ -188,6 +189,35 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
         }
 
+        private async Task<string> UploadConferenceImageAsync(IFormFile file)
+        {
+            var validation = await _uploadFileValidator.ValidateAsync(
+                file,
+                UploadFileProfile.ConferenceImage);
+
+            if (!validation.IsValid)
+            {
+                var errorMessage = validation.Error switch
+                {
+                    UploadValidationError.Empty => T("Error_FileRequired", "Dosya seçilmedi."),
+                    UploadValidationError.TooLarge => T("Error_ImageTooLarge", "Görsel dosya boyutu en fazla 5 MB olabilir."),
+                    UploadValidationError.InvalidExtension => T("Error_InvalidImageExtension", "Sadece JPG, PNG ve WEBP görseller yüklenebilir."),
+                    _ => T("Error_InvalidImageContent", "Dosya içeriği seçilen formatla eşleşmiyor.")
+                };
+
+                throw new InvalidOperationException(errorMessage);
+            }
+
+            var folder = Path.Combine(_env.WebRootPath, "uploads", "conferences");
+            Directory.CreateDirectory(folder);
+
+            var fileName = _uploadFileValidator.CreateStoredFileName(validation.Extension, "conf");
+            await using var stream = new FileStream(Path.Combine(folder, fileName), FileMode.Create);
+            await file.CopyToAsync(stream);
+
+            return $"/uploads/conferences/{fileName}";
+        }
+
         private async Task<string> UploadTemplateFileAsync(IFormFile file)
         {
             var validation = await _uploadFileValidator.ValidateAsync(
@@ -280,7 +310,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         [HttpGet("/{slug}/Admin/Conferences")]
-        public async Task<IActionResult> Index(string slug)
+        public async Task<IActionResult> Index(
+            string slug,
+            string? search = null,
+            string? statusFilter = null,
+            int page = 1)
         {
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
@@ -301,16 +335,70 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     : "/Dashboard/MyConferences");
             }
 
-            var conferences = await _context.Conferences
+            const int pageSize = 12;
+            var tenantId = _tenantContext.Current.Id;
+            var now = DateTime.Now;
+
+            var baseQuery = _context.Conferences
                 .AsNoTracking()
-                .Where(c => c.TenantId == _tenantContext.Current.Id)
+                .Where(c => c.TenantId == tenantId);
+
+            var totalCount = await baseQuery.CountAsync();
+            var upcomingCount = await baseQuery.CountAsync(c => c.StartDate > now);
+            var ongoingCount  = await baseQuery.CountAsync(c => c.StartDate <= now && c.EndDate >= now);
+            var pastCount     = await baseQuery.CountAsync(c => c.EndDate < now);
+
+            if (!string.IsNullOrWhiteSpace(search))
+                baseQuery = baseQuery.Where(c => c.Title != null && c.Title.Contains(search));
+
+            if (statusFilter == "upcoming")
+                baseQuery = baseQuery.Where(c => c.StartDate > now);
+            else if (statusFilter == "ongoing")
+                baseQuery = baseQuery.Where(c => c.StartDate <= now && c.EndDate >= now);
+            else if (statusFilter == "past")
+                baseQuery = baseQuery.Where(c => c.EndDate < now);
+
+            var filteredCount = await baseQuery.CountAsync();
+
+            var items = await baseQuery
                 .OrderByDescending(c => c.StartDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(c => new ConferenceRowModel
+                {
+                    Id = c.Id,
+                    Title = c.Title ?? "",
+                    Slug = c.Slug ?? "",
+                    StartDate = c.StartDate,
+                    EndDate = c.EndDate,
+                    City = c.City,
+                    Venue = c.Venue,
+                    Country = c.Country,
+                    LogoPath = c.LogoPath,
+                    BannerPath = c.BannerPath,
+                    IsSubmissionOpen = c.IsSubmissionOpen,
+                    IsRegistrationOpen = c.IsRegistrationOpen,
+                    MaxRegistrations = c.MaxRegistrations
+                })
                 .ToListAsync();
 
-            ViewBag.IsSuperAdmin = IsSuperAdminUser();
-            ViewBag.IsAdmin = User.IsInRole("Admin");
+            var vm = new ConferencesIndexViewModel
+            {
+                Slug = slug,
+                IsSuperAdmin = IsSuperAdminUser(),
+                Search = search,
+                StatusFilter = statusFilter,
+                TotalCount = totalCount,
+                UpcomingCount = upcomingCount,
+                OngoingCount = ongoingCount,
+                PastCount = pastCount,
+                FilteredCount = filteredCount,
+                Page = page,
+                PageSize = pageSize,
+                Items = items
+            };
 
-            return View(conferences);
+            return View(vm);
         }
 
         [HttpGet("/{slug}/Admin/Conferences/Create")]
@@ -347,7 +435,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         [HttpPost("/{slug}/Admin/Conferences/Create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(string slug, Conference conference)
+        public async Task<IActionResult> Create(
+            string slug,
+            Conference conference,
+            IFormFile? LogoFile,
+            IFormFile? BannerFile)
         {
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
@@ -382,6 +474,21 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             conference.Id = Guid.NewGuid();
             conference.Slug = await GenerateUniqueConferenceSlugAsync(conference.Title);
+
+            try
+            {
+                if (LogoFile != null && LogoFile.Length > 0)
+                    conference.LogoPath = await UploadConferenceImageAsync(LogoFile);
+
+                if (BannerFile != null && BannerFile.Length > 0)
+                    conference.BannerPath = await UploadConferenceImageAsync(BannerFile);
+            }
+            catch (InvalidOperationException ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+                await FillTenantViewBagAsync(conference.TenantId);
+                return View(conference);
+            }
 
             _context.Conferences.Add(conference);
             await _context.SaveChangesAsync();
@@ -447,6 +554,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             string slug,
             Guid id,
             Conference conference,
+            IFormFile? LogoFile,
+            IFormFile? BannerFile,
             IFormFile? WritingRulesFile,
             IFormFile? AbstractTemplateFile,
             IFormFile? FullTextTemplateFile)
@@ -497,26 +606,28 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             try
             {
+                if (LogoFile != null && LogoFile.Length > 0)
+                    existingConference.LogoPath = await UploadConferenceImageAsync(LogoFile);
+
+                if (BannerFile != null && BannerFile.Length > 0)
+                    existingConference.BannerPath = await UploadConferenceImageAsync(BannerFile);
+
                 if (WritingRulesFile != null && WritingRulesFile.Length > 0)
-                {
                     existingConference.WritingRulesPath = await UploadTemplateFileAsync(WritingRulesFile);
-                }
 
                 if (AbstractTemplateFile != null && AbstractTemplateFile.Length > 0)
-                {
                     existingConference.AbstractTemplatePath = await UploadTemplateFileAsync(AbstractTemplateFile);
-                }
 
                 if (FullTextTemplateFile != null && FullTextTemplateFile.Length > 0)
-                {
                     existingConference.FullTextTemplatePath = await UploadTemplateFileAsync(FullTextTemplateFile);
-                }
             }
             catch (InvalidOperationException ex)
             {
                 ModelState.AddModelError("", ex.Message);
 
                 conference.TenantId = existingConference.TenantId;
+                conference.LogoPath = existingConference.LogoPath;
+                conference.BannerPath = existingConference.BannerPath;
                 conference.WritingRulesPath = existingConference.WritingRulesPath;
                 conference.AbstractTemplatePath = existingConference.AbstractTemplatePath;
                 conference.FullTextTemplatePath = existingConference.FullTextTemplatePath;
@@ -529,6 +640,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             existingConference.StartDate = conference.StartDate;
             existingConference.EndDate = conference.EndDate;
             existingConference.Description = conference.Description;
+            existingConference.City = conference.City;
+            existingConference.Country = conference.Country;
             existingConference.Venue = conference.Venue;
             existingConference.TenantId = _tenantContext.Current.Id;
 

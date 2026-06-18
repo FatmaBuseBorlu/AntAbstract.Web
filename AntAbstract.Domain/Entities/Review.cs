@@ -10,11 +10,11 @@ namespace AntAbstract.Domain.Entities
         public int Id { get; set; }
 
         public int ReviewAssignmentId { get; set; }
-        public ReviewAssignment ReviewAssignment { get; set; }
+        public ReviewAssignment ReviewAssignment { get; set; } = null!;
 
-        public string ReviewerName { get; set; }
-        public string CommentsToAuthor { get; set; }
-        public string Recommendation { get; set; }
+        public string ReviewerName { get; set; } = string.Empty;
+        public string CommentsToAuthor { get; set; } = string.Empty;
+        public string Recommendation { get; set; } = string.Empty;
         public int Score { get; set; }
 
         // Alt kriter puanları (0 = girilmemiş)

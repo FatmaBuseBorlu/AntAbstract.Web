@@ -283,9 +283,9 @@ namespace AntAbstract.Web.Controllers
             long? amountTotal,
             string? currency)
         {
-            var payment = await _context.Payments
+                var payment = await _context.Payments
                 .Include(p => p.Conference)
-                    .ThenInclude(c => c.Tenant)
+                    .ThenInclude(c => c!.Tenant)
                 .FirstOrDefaultAsync(p => p.Id == paymentId);
 
             if (payment == null || payment.Status == PaymentStatus.Refunded)
@@ -818,7 +818,7 @@ namespace AntAbstract.Web.Controllers
             {
                 payment = await _context.Payments
                     .Include(p => p.Conference)
-                        .ThenInclude(c => c.Tenant)
+                        .ThenInclude(c => c!.Tenant)
                     .FirstOrDefaultAsync(p =>
                         p.TransactionId == session_id &&
                         p.AppUserId == user.Id);
@@ -846,7 +846,7 @@ namespace AntAbstract.Web.Controllers
 
                             payment = await _context.Payments
                                 .Include(p => p.Conference)
-                                    .ThenInclude(c => c.Tenant)
+                                    .ThenInclude(c => c!.Tenant)
                                 .FirstOrDefaultAsync(p => p.Id == payment.Id);
                         }
                     }
@@ -863,7 +863,7 @@ namespace AntAbstract.Web.Controllers
             {
                 payment = await _context.Payments
                     .Include(p => p.Conference)
-                        .ThenInclude(c => c.Tenant)
+                        .ThenInclude(c => c!.Tenant)
                     .FirstOrDefaultAsync(p =>
                         p.Id == id.Value &&
                         p.AppUserId == user.Id);

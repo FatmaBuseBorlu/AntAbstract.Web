@@ -1,19 +1,19 @@
-﻿@using AntAbstract.Domain.Entities
-@model IEnumerable<Submission>
+@using AntAbstract.Domain.Entities
+@using AntAbstract.Web.Models.ViewModels.Admin.Assignment
+
+@model AssignmentIndexViewModel
 
 @{
     ViewData["Title"] = "Hakem Atama";
     ViewData["HideSelectedConferenceBar"] = true;
     Layout = "_LayoutDashboard";
 
-    var submissions = Model?.ToList() ?? new List<Submission>();
+    var slug = Model.Slug;
+    var conferenceId = Model.ConferenceId;
 
-    var conferenceId = ViewBag.ConferenceId is Guid vbConferenceId
-        ? vbConferenceId
-        : Guid.Empty;
-
-    var conferenceTitle = ViewBag.ConferenceTitle as string ?? "";
-    var slug = ViewBag.Slug as string ?? "";
+    var baseUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Assignment?conferenceId={conferenceId}"
+        : $"/{slug}/Admin/Assignment?conferenceId={conferenceId}";
 
     var flowUrl = string.IsNullOrWhiteSpace(slug)
         ? $"/Admin/ConferenceFlow?conferenceId={conferenceId}"
@@ -21,66 +21,33 @@
 
     var changeConferenceUrl = "/Admin/ConferenceFlow?forceSelect=true";
 
-    string GetAuthorName(Submission submission)
+    string StatusLabel(string? status) => status switch
     {
-        if (submission.Author == null)
-        {
-            return "Yazar bilgisi yok";
-        }
+        nameof(SubmissionStatus.New) => "Yeni",
+        nameof(SubmissionStatus.Pending) => "Beklemede",
+        nameof(SubmissionStatus.UnderReview) => "Hakem Sürecinde",
+        nameof(SubmissionStatus.Accepted) => "Kabul Edildi",
+        nameof(SubmissionStatus.Rejected) => "Reddedildi",
+        nameof(SubmissionStatus.RevisionRequired) => "Revizyon Gerekli",
+        nameof(SubmissionStatus.Presented) => "Sunuldu",
+        _ => string.IsNullOrWhiteSpace(status) ? "Bilinmiyor" : status
+    };
 
-        var fullName = $"{submission.Author.FirstName} {submission.Author.LastName}".Trim();
-
-        if (!string.IsNullOrWhiteSpace(fullName))
-        {
-            return fullName;
-        }
-
-        return submission.Author.Email ?? "Yazar bilgisi yok";
-    }
-
-    string GetAuthorEmail(Submission submission)
+    string StatusClass(string? status) => status switch
     {
-        return submission.Author?.Email ?? "";
-    }
+        nameof(SubmissionStatus.New) => "status-new",
+        nameof(SubmissionStatus.Pending) => "status-pending",
+        nameof(SubmissionStatus.UnderReview) => "status-review",
+        nameof(SubmissionStatus.Accepted) => "status-accepted",
+        nameof(SubmissionStatus.Rejected) => "status-rejected",
+        nameof(SubmissionStatus.RevisionRequired) => "status-revision",
+        nameof(SubmissionStatus.Presented) => "status-presented",
+        _ => "status-default"
+    };
 
-    string GetAuthorInitial(Submission submission)
-    {
-        var name = GetAuthorName(submission);
-
-        return string.IsNullOrWhiteSpace(name)
-            ? "Y"
-            : name.Substring(0, 1).ToUpper();
-    }
-
-    string StatusLabel(SubmissionStatus status)
-    {
-        return status switch
-        {
-            SubmissionStatus.New => "Yeni",
-            SubmissionStatus.Pending => "Beklemede",
-            SubmissionStatus.UnderReview => "Hakem Sürecinde",
-            SubmissionStatus.Accepted => "Kabul Edildi",
-            SubmissionStatus.Rejected => "Reddedildi",
-            SubmissionStatus.RevisionRequired => "Revizyon Gerekli",
-            SubmissionStatus.Presented => "Sunuldu",
-            _ => status.ToString()
-        };
-    }
-
-    string StatusClass(SubmissionStatus status)
-    {
-        return status switch
-        {
-            SubmissionStatus.New => "status-new",
-            SubmissionStatus.Pending => "status-pending",
-            SubmissionStatus.UnderReview => "status-review",
-            SubmissionStatus.Accepted => "status-accepted",
-            SubmissionStatus.Rejected => "status-rejected",
-            SubmissionStatus.RevisionRequired => "status-revision",
-            SubmissionStatus.Presented => "status-presented",
-            _ => "status-default"
-        };
-    }
+    var filterSearch = Model.Search ?? "";
+    var filterStatus = Model.Status ?? "";
+    var filterAssigned = Model.AssignedFilter ?? "";
 }
 
 <div class="container-fluid assignment-page">
@@ -97,22 +64,17 @@
                 </div>
 
                 <h2 class="assignment-page-title">
-                    Özet Atama
+                    Hakem Atama
                 </h2>
 
                 <p class="assignment-page-description">
-                    Bu kongredeki bildirileri listeleyin ve hakem atayın.
+                    <strong>@Model.ConferenceTitle</strong> kongresindeki bildirilere hakem atayın ve değerlendirme sürecini yönetin.
                 </p>
 
                 <div class="selected-conference-pill">
                     <i class="fas fa-calendar-check"></i>
-
                     <span>Seçili Kongre:</span>
-
-                    <strong>
-                        @(string.IsNullOrWhiteSpace(conferenceTitle) ? "Kongre seçilmedi" : conferenceTitle)
-                    </strong>
-
+                    <strong>@(string.IsNullOrWhiteSpace(Model.ConferenceTitle) ? "Kongre seçilmedi" : Model.ConferenceTitle)</strong>
                     @if (!string.IsNullOrWhiteSpace(slug))
                     {
                         <em>/@slug</em>
@@ -122,19 +84,14 @@
         </div>
 
         <div class="assignment-hero-actions">
-
-            <a href="@flowUrl"
-               class="btn assignment-light-btn">
+            <a href="@flowUrl" class="btn assignment-light-btn">
                 <i class="fas fa-arrow-left me-2"></i>
                 Kongre Akışına Dön
             </a>
-
-            <a href="@changeConferenceUrl"
-               class="btn assignment-outline-btn">
+            <a href="@changeConferenceUrl" class="btn assignment-outline-btn">
                 <i class="fas fa-exchange-alt me-2"></i>
                 Kongre Değiştir
             </a>
-
         </div>
     </div>
 
@@ -143,7 +100,6 @@
         <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-4 mb-4">
             <i class="fas fa-check-circle me-2"></i>
             @TempData["SuccessMessage"]
-
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
@@ -153,46 +109,132 @@
         <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-4 mb-4">
             <i class="fas fa-times-circle me-2"></i>
             @TempData["ErrorMessage"]
-
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
 
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <a href="@baseUrl" class="assignment-stat-card @(string.IsNullOrEmpty(filterAssigned) ? "stat-active" : "")">
+                <div class="stat-icon stat-blue">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div>
+                    <div class="stat-number">@Model.TotalCount</div>
+                    <div class="stat-label">Toplam Bildiri</div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <a href="@(baseUrl)&assigned=unassigned" class="assignment-stat-card @(filterAssigned == "unassigned" ? "stat-active" : "")">
+                <div class="stat-icon stat-orange">
+                    <i class="fas fa-user-slash"></i>
+                </div>
+                <div>
+                    <div class="stat-number">@Model.UnassignedCount</div>
+                    <div class="stat-label">Hakem Atanmamış</div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <a href="@(baseUrl)&assigned=assigned" class="assignment-stat-card @(filterAssigned == "assigned" ? "stat-active" : "")">
+                <div class="stat-icon stat-green">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div>
+                    <div class="stat-number">@Model.AssignedCount</div>
+                    <div class="stat-label">Hakem Atanmış</div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="assignment-stat-card">
+                <div class="stat-icon stat-purple">
+                    <i class="fas fa-magnifying-glass"></i>
+                </div>
+                <div>
+                    <div class="stat-number">@Model.UnderReviewCount</div>
+                    <div class="stat-label">İnceleme Sürecinde</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="assignment-filter-card mb-4">
+        <form method="get" action="@baseUrl">
+            <input type="hidden" name="conferenceId" value="@conferenceId" />
+            <input type="hidden" name="assigned" value="@filterAssigned" />
+
+            <div class="row g-3 align-items-end">
+                <div class="col-xl-5 col-lg-5">
+                    <label class="submission-label">Arama</label>
+                    <div class="submission-input-wrap">
+                        <i class="fas fa-search"></i>
+                        <input type="text"
+                               name="search"
+                               value="@filterSearch"
+                               placeholder="Başlık, yazar adı veya e-posta..." />
+                    </div>
+                </div>
+
+                <div class="col-xl-4 col-lg-4">
+                    <label class="submission-label">Bildiri Durumu</label>
+                    <select name="status" class="submission-select">
+                        <option value="">Tüm Durumlar</option>
+                        @foreach (var s in Enum.GetValues(typeof(SubmissionStatus)).Cast<SubmissionStatus>())
+                        {
+                            var val = s.ToString();
+                            if (filterStatus == val)
+                            {
+                                <option value="@val" selected>@StatusLabel(val)</option>
+                            }
+                            else
+                            {
+                                <option value="@val">@StatusLabel(val)</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-xl-2 col-lg-2">
+                    <button type="submit" class="btn assignment-primary-btn w-100">
+                        <i class="fas fa-filter me-2"></i>
+                        Filtrele
+                    </button>
+                </div>
+
+                <div class="col-xl-1 col-lg-1">
+                    <a href="@baseUrl" class="btn assignment-reset-btn w-100" title="Filtreleri Temizle">
+                        <i class="fas fa-rotate-left"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
     <div class="assignment-list-card">
         <div class="assignment-list-header">
             <div>
-                <h5>
-                    Bildiri Listesi
-                </h5>
-
-                <p>
-                    Hakem ataması yapılacak bildirileri buradan görüntüleyebilirsiniz.
-                </p>
+                <h5>Bildiri Listesi</h5>
+                <p>Hakem ataması yapılacak bildirileri buradan görüntüleyebilirsiniz.</p>
             </div>
-
-            <div class="assignment-count-pill">
-                @submissions.Count bildiri
-            </div>
+            <div class="assignment-count-pill">@Model.FilteredCount bildiri</div>
         </div>
 
-        @if (!submissions.Any())
+        @if (!Model.Items.Any())
         {
             <div class="assignment-empty-state">
                 <div class="empty-icon">
                     <i class="fas fa-file-circle-question"></i>
                 </div>
-
-                <h4>
-                    Henüz bildiri bulunamadı
-                </h4>
-
-                <p>
-                    Bu kongreye gönderilen bildiriler olduğunda burada listelenecek ve hakem ataması yapılabilecektir.
-                </p>
-
-                <a href="@flowUrl" class="btn assignment-light-btn">
-                    <i class="fas fa-arrow-left me-2"></i>
-                    Kongre Akışına Dön
+                <h4>Bildiri bulunamadı</h4>
+                <p>Seçili filtrelere uygun bildiri bulunamadı. Filtreleri temizleyerek tekrar deneyebilirsiniz.</p>
+                <a href="@baseUrl" class="btn assignment-light-btn">
+                    <i class="fas fa-rotate-left me-2"></i>
+                    Filtreleri Temizle
                 </a>
             </div>
         }
@@ -202,86 +244,76 @@
                 <table class="assignment-table">
                     <thead>
                         <tr>
-                            <th>Başlık</th>
+                            <th>Bildiri</th>
                             <th>Yazar</th>
-                            <th>Durum</th>
                             <th>Hakemler</th>
+                            <th>Durum</th>
                             <th>Tarih</th>
                             <th class="text-end">İşlem</th>
                         </tr>
                     </thead>
 
                     <tbody>
-                        @foreach (var submission in submissions)
+                        @foreach (var item in Model.Items)
                         {
-                            var reviewerCount = submission.ReviewAssignments?.Count ?? 0;
-
                             var assignUrl = string.IsNullOrWhiteSpace(slug)
-                                ? $"/Admin/Assignment/Assign/{submission.Id}?conferenceId={conferenceId}"
-                                : $"/{slug}/Admin/Assignment/Assign/{submission.Id}?conferenceId={conferenceId}";
+                                ? $"/Admin/Assignment/Assign/{item.Id}?conferenceId={conferenceId}"
+                                : $"/{slug}/Admin/Assignment/Assign/{item.Id}?conferenceId={conferenceId}";
 
                             <tr>
                                 <td>
                                     <div class="submission-title-cell">
-                                        <strong>
-                                            @submission.Title
-                                        </strong>
-
-                                        <span>
-                                            <i class="fas fa-tag"></i>
-                                            @(string.IsNullOrWhiteSpace(submission.Topic) ? "Konu belirtilmedi" : submission.Topic)
-                                        </span>
+                                        <strong>@item.Title</strong>
+                                        @if (!string.IsNullOrWhiteSpace(item.Topic))
+                                        {
+                                            <span><i class="fas fa-tag"></i>@item.Topic</span>
+                                        }
                                     </div>
                                 </td>
 
                                 <td>
                                     <div class="author-cell">
-                                        <div class="author-avatar">
-                                            @GetAuthorInitial(submission)
+                                        <div class="author-avatar-sm">
+                                            @(string.IsNullOrWhiteSpace(item.AuthorName) ? "Y" : item.AuthorName.Substring(0, 1).ToUpper())
                                         </div>
-
-                                        <div>
-                                            <strong>
-                                                @GetAuthorName(submission)
-                                            </strong>
-
-                                            <span>
-                                                @GetAuthorEmail(submission)
-                                            </span>
-                                        </div>
+                                        <span>@(string.IsNullOrWhiteSpace(item.AuthorName) ? "Yazar bilgisi yok" : item.AuthorName)</span>
                                     </div>
                                 </td>
 
                                 <td>
-                                    <span class="assignment-status @StatusClass(submission.Status)">
-                                        @StatusLabel(submission.Status)
-                                    </span>
+                                    @if (item.ReviewerCount > 0)
+                                    {
+                                        <span class="reviewer-badge-assigned">
+                                            <i class="fas fa-user-check"></i>
+                                            @item.ReviewerCount hakem
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="reviewer-badge-none">
+                                            <i class="fas fa-user-slash"></i>
+                                            Atanmadı
+                                        </span>
+                                    }
                                 </td>
 
                                 <td>
-                                    <span class="reviewer-count-pill">
-                                        <i class="fas fa-user-check"></i>
-                                        @reviewerCount hakem
+                                    <span class="assignment-status @StatusClass(item.Status)">
+                                        @StatusLabel(item.Status)
                                     </span>
                                 </td>
 
                                 <td>
                                     <div class="date-cell">
-                                        <strong>
-                                            @submission.CreatedDate.ToString("dd MMM yyyy")
-                                        </strong>
-
-                                        <span>
-                                            @submission.CreatedDate.ToString("HH:mm")
-                                        </span>
+                                        <strong>@item.CreatedAt.ToString("dd MMM yyyy")</strong>
+                                        <span>@item.CreatedAt.ToString("HH:mm")</span>
                                     </div>
                                 </td>
 
                                 <td class="text-end">
-                                    <a href="@assignUrl"
-                                       class="btn assign-reviewer-btn">
+                                    <a href="@assignUrl" class="btn assign-reviewer-btn">
                                         <i class="fas fa-user-plus me-2"></i>
-                                        Hakem Ata
+                                        @(item.ReviewerCount > 0 ? "Düzenle" : "Hakem Ata")
                                     </a>
                                 </td>
                             </tr>
@@ -289,6 +321,30 @@
                     </tbody>
                 </table>
             </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                var pageBase = $"{baseUrl}&search={filterSearch}&status={filterStatus}&assigned={filterAssigned}";
+                <nav aria-label="Sayfalama" class="mt-3 pb-3">
+                    <ul class="pagination pagination-sm justify-content-center">
+                        <li class="page-item @(Model.HasPrev ? "" : "disabled")">
+                            <a class="page-link" href="@pageBase&page=@(Model.Page - 1)">‹</a>
+                        </li>
+                        @for (var p = Math.Max(1, Model.Page - 2); p <= Math.Min(Model.TotalPages, Model.Page + 2); p++)
+                        {
+                            <li class="page-item @(p == Model.Page ? "active" : "")">
+                                <a class="page-link" href="@pageBase&page=@p">@p</a>
+                            </li>
+                        }
+                        <li class="page-item @(Model.HasNext ? "" : "disabled")">
+                            <a class="page-link" href="@pageBase&page=@(Model.Page + 1)">›</a>
+                        </li>
+                    </ul>
+                    <p class="text-center text-muted small">
+                        @Model.FilteredCount bildiride @((Model.Page - 1) * Model.PageSize + 1)–@Math.Min(Model.Page * Model.PageSize, Model.FilteredCount) gösteriliyor
+                    </p>
+                </nav>
+            }
         }
     </div>
 
@@ -375,16 +431,8 @@
         font-weight: 900;
     }
 
-    .selected-conference-pill span,
-    .selected-conference-pill strong {
-        color: #0d6efd;
-    }
-
-    .selected-conference-pill em {
-        color: #64748b;
-        font-style: normal;
-        font-weight: 900;
-    }
+    .selected-conference-pill span, .selected-conference-pill strong { color: #0d6efd; }
+    .selected-conference-pill em { color: #64748b; font-style: normal; font-weight: 900; }
 
     .assignment-hero-actions {
         display: flex;
@@ -394,21 +442,18 @@
         flex-wrap: wrap;
     }
 
-    .assignment-light-btn,
-    .assignment-outline-btn {
-        min-height: 48px;
+    .assignment-light-btn, .assignment-outline-btn, .assignment-primary-btn, .assignment-reset-btn {
+        min-height: 44px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 0.55rem;
         border-radius: 999px;
-        padding: 0 1.35rem;
-        font-size: 0.95rem;
+        padding: 0 1.1rem;
+        font-size: 0.9rem;
         font-weight: 900;
         text-decoration: none;
         transition: all 0.2s ease;
         white-space: nowrap;
-        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.045);
     }
 
     .assignment-light-btn {
@@ -420,8 +465,6 @@
     .assignment-light-btn:hover {
         color: #0d6efd;
         border-color: rgba(13, 110, 253, 0.32);
-        background: #ffffff;
-        box-shadow: 0 12px 26px rgba(13, 110, 253, 0.10);
         transform: translateY(-1px);
     }
 
@@ -434,9 +477,94 @@
     .assignment-outline-btn:hover {
         color: #0d6efd;
         border-color: rgba(13, 110, 253, 0.32);
-        background: #ffffff;
-        box-shadow: 0 12px 26px rgba(13, 110, 253, 0.10);
         transform: translateY(-1px);
+    }
+
+    .assignment-primary-btn {
+        border: none;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        box-shadow: 0 10px 24px rgba(13, 110, 253, 0.20);
+    }
+
+    .assignment-primary-btn:hover { color: #ffffff; transform: translateY(-1px); }
+
+    .assignment-reset-btn {
+        border: 1px solid #dbe3ef;
+        background: #ffffff;
+        color: #334155;
+    }
+
+    .assignment-reset-btn:hover { color: #0d6efd; border-color: rgba(13, 110, 253, 0.25); }
+
+    .assignment-stat-card {
+        min-height: 94px;
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 22px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.045);
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    a.assignment-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.075);
+        text-decoration: none;
+    }
+
+    .assignment-stat-card.stat-active {
+        border-color: rgba(13, 110, 253, 0.30);
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.08), 0 12px 30px rgba(15, 23, 42, 0.06);
+    }
+
+    .stat-icon {
+        width: 48px; height: 48px; min-width: 48px;
+        border-radius: 16px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .stat-blue { background: rgba(13, 110, 253, 0.10); color: #0d6efd; }
+    .stat-cyan { background: rgba(0, 174, 239, 0.12); color: #00aeef; }
+    .stat-orange { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+    .stat-green { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+    .stat-purple { background: rgba(124, 58, 237, 0.10); color: #7c3aed; }
+
+    .stat-number { color: #0f172a; font-size: 2rem; font-weight: 900; line-height: 1; margin-bottom: 0.2rem; }
+    .stat-label { color: #64748b; font-size: 0.94rem; font-weight: 700; }
+
+    .assignment-filter-card {
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 24px;
+        padding: 1.1rem;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+    }
+
+    .submission-label {
+        display: block; margin-bottom: 0.55rem;
+        color: #0f172a; font-size: 0.88rem; font-weight: 900;
+    }
+
+    .submission-input-wrap { position: relative; }
+    .submission-input-wrap i { position: absolute; top: 50%; left: 1rem; transform: translateY(-50%); color: #94a3b8; font-size: 0.92rem; }
+
+    .submission-input-wrap input, .submission-select {
+        width: 100%; min-height: 50px; border-radius: 18px;
+        border: 1px solid #dbe3ef; background: #ffffff;
+        color: #0f172a; font-size: 0.92rem; font-weight: 700;
+        padding: 0.75rem 1rem; outline: none; transition: all 0.18s ease;
+    }
+
+    .submission-input-wrap input { padding-left: 2.65rem; }
+    .submission-input-wrap input:focus, .submission-select:focus {
+        border-color: rgba(13, 110, 253, 0.28);
+        box-shadow: 0 0 0 0.22rem rgba(13, 110, 253, 0.10);
     }
 
     .assignment-list-card {
@@ -457,19 +585,8 @@
         flex-wrap: wrap;
     }
 
-    .assignment-list-header h5 {
-        margin: 0 0 0.25rem;
-        color: #0f172a;
-        font-size: 1.25rem;
-        font-weight: 900;
-    }
-
-    .assignment-list-header p {
-        margin: 0;
-        color: #64748b;
-        font-size: 0.9rem;
-        font-weight: 600;
-    }
+    .assignment-list-header h5 { margin: 0 0 0.25rem; color: #0f172a; font-size: 1.25rem; font-weight: 900; }
+    .assignment-list-header p { margin: 0; color: #64748b; font-size: 0.9rem; font-weight: 600; }
 
     .assignment-count-pill {
         padding: 0.45rem 0.85rem;
@@ -481,18 +598,17 @@
         font-weight: 900;
     }
 
-    .assignment-table-wrap {
-        overflow-x: auto;
-    }
+    .assignment-table-wrap { overflow-x: auto; }
 
     .assignment-table {
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
+        min-width: 800px;
     }
 
     .assignment-table thead th {
-        padding: 1rem 1.5rem;
+        padding: 1rem 1.25rem;
         background: #f8fafc;
         color: #64748b;
         font-size: 0.78rem;
@@ -504,239 +620,100 @@
     }
 
     .assignment-table tbody td {
-        padding: 1rem 1.5rem;
+        padding: 1rem 1.25rem;
         border-bottom: 1px solid #edf2f7;
         vertical-align: middle;
     }
 
-    .assignment-table tbody tr {
-        transition: all 0.2s ease;
-    }
+    .assignment-table tbody tr:hover { background: #f8fbff; }
+    .assignment-table tbody tr:last-child td { border-bottom: none; }
 
-    .assignment-table tbody tr:hover {
-        background: #f8fbff;
-    }
+    .submission-title-cell strong { display: block; color: #0f172a; font-size: 0.95rem; font-weight: 900; line-height: 1.35; }
+    .submission-title-cell span { display: inline-flex; align-items: center; gap: 0.35rem; margin-top: 0.3rem; color: #64748b; font-size: 0.82rem; font-weight: 700; }
 
-    .assignment-table tbody tr:last-child td {
-        border-bottom: none;
-    }
+    .author-cell { display: flex; align-items: center; gap: 0.6rem; }
 
-    .submission-title-cell strong {
-        display: block;
-        color: #0f172a;
-        font-size: 0.95rem;
-        font-weight: 900;
-        line-height: 1.35;
-    }
-
-    .submission-title-cell span {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-        margin-top: 0.35rem;
-        color: #64748b;
-        font-size: 0.82rem;
-        font-weight: 700;
-    }
-
-    .author-cell {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .author-avatar {
-        width: 46px;
-        height: 46px;
-        min-width: 46px;
+    .author-avatar-sm {
+        width: 36px; height: 36px; min-width: 36px;
         border-radius: 999px;
         background: linear-gradient(135deg, #0d6efd, #00aeef);
         color: #ffffff;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1rem;
-        font-weight: 900;
-        box-shadow: 0 12px 24px rgba(13, 110, 253, 0.18);
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 0.88rem; font-weight: 900;
     }
 
-    .author-cell strong {
-        display: block;
-        color: #0f172a;
-        font-size: 0.94rem;
-        font-weight: 900;
+    .author-cell span { color: #0f172a; font-size: 0.92rem; font-weight: 900; }
+
+    .reviewer-badge-assigned {
+        display: inline-flex; align-items: center; gap: 0.35rem;
+        padding: 0.32rem 0.65rem; border-radius: 999px;
+        font-size: 0.78rem; font-weight: 900; white-space: nowrap;
+        background: rgba(16, 185, 129, 0.10); color: #059669;
+        border: 1px solid rgba(16, 185, 129, 0.22);
     }
 
-    .author-cell span {
-        display: block;
-        color: #64748b;
-        font-size: 0.82rem;
-        font-weight: 700;
+    .reviewer-badge-none {
+        display: inline-flex; align-items: center; gap: 0.35rem;
+        padding: 0.32rem 0.65rem; border-radius: 999px;
+        font-size: 0.78rem; font-weight: 900; white-space: nowrap;
+        background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0;
     }
 
     .assignment-status {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 30px;
-        padding: 0 0.75rem;
-        border-radius: 999px;
-        font-size: 0.76rem;
-        font-weight: 900;
-        white-space: nowrap;
+        display: inline-flex; align-items: center; justify-content: center;
+        min-height: 30px; padding: 0 0.75rem; border-radius: 999px;
+        font-size: 0.76rem; font-weight: 900; white-space: nowrap;
     }
 
-    .status-new {
-        background: rgba(0, 174, 239, 0.12);
-        color: #00aeef;
-    }
+    .status-new { background: rgba(0, 174, 239, 0.12); color: #00aeef; }
+    .status-pending { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+    .status-review { background: rgba(13, 110, 253, 0.10); color: #0d6efd; }
+    .status-accepted { background: rgba(34, 197, 94, 0.10); color: #16a34a; }
+    .status-rejected { background: rgba(239, 68, 68, 0.10); color: #ef4444; }
+    .status-revision { background: rgba(124, 58, 237, 0.10); color: #7c3aed; }
+    .status-presented { background: rgba(20, 184, 166, 0.12); color: #14b8a6; }
+    .status-default { background: #f1f5f9; color: #475569; }
 
-    .status-pending {
-        background: rgba(245, 158, 11, 0.12);
-        color: #f59e0b;
-    }
-
-    .status-review {
-        background: rgba(13, 110, 253, 0.10);
-        color: #0d6efd;
-    }
-
-    .status-accepted {
-        background: rgba(34, 197, 94, 0.10);
-        color: #16a34a;
-    }
-
-    .status-rejected {
-        background: rgba(239, 68, 68, 0.10);
-        color: #ef4444;
-    }
-
-    .status-revision {
-        background: rgba(124, 58, 237, 0.10);
-        color: #7c3aed;
-    }
-
-    .status-presented {
-        background: rgba(20, 184, 166, 0.12);
-        color: #14b8a6;
-    }
-
-    .status-default {
-        background: #f1f5f9;
-        color: #475569;
-    }
-
-    .reviewer-count-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.45rem;
-        min-height: 34px;
-        padding: 0 0.8rem;
-        border-radius: 999px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        color: #475569;
-        font-size: 0.82rem;
-        font-weight: 900;
-        white-space: nowrap;
-    }
-
-    .reviewer-count-pill i {
-        color: #0d6efd;
-    }
-
-    .date-cell strong {
-        display: block;
-        color: #0f172a;
-        font-size: 0.9rem;
-        font-weight: 900;
-        white-space: nowrap;
-    }
-
-    .date-cell span {
-        color: #64748b;
-        font-size: 0.8rem;
-        font-weight: 700;
-    }
+    .date-cell strong { display: block; color: #0f172a; font-size: 0.9rem; font-weight: 900; white-space: nowrap; }
+    .date-cell span { color: #64748b; font-size: 0.8rem; font-weight: 700; }
 
     .assign-reviewer-btn {
-        min-height: 44px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border: none;
-        border-radius: 999px;
-        padding: 0 1.15rem;
+        min-height: 40px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border: none; border-radius: 999px; padding: 0 1rem;
         background: linear-gradient(135deg, #0d6efd, #00aeef);
-        color: #ffffff;
-        font-weight: 900;
-        white-space: nowrap;
-        box-shadow: 0 14px 28px rgba(13, 110, 253, 0.20);
+        color: #ffffff; font-weight: 900; white-space: nowrap; font-size: 0.86rem;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.18);
         transition: all 0.2s ease;
     }
 
-    .assign-reviewer-btn:hover {
-        color: #ffffff;
-        transform: translateY(-1px);
-        box-shadow: 0 18px 36px rgba(13, 110, 253, 0.26);
-    }
+    .assign-reviewer-btn:hover { color: #ffffff; transform: translateY(-1px); box-shadow: 0 14px 28px rgba(13, 110, 253, 0.26); }
 
     .assignment-empty-state {
-        padding: 4rem 1.5rem;
+        padding: 3.5rem 1.5rem;
         text-align: center;
     }
 
     .empty-icon {
-        width: 76px;
-        height: 76px;
+        width: 72px; height: 72px;
         margin: 0 auto 1rem;
-        border-radius: 26px;
-        background: rgba(13, 110, 253, 0.10);
-        color: #0d6efd;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.9rem;
+        border-radius: 24px;
+        background: rgba(13, 110, 253, 0.10); color: #0d6efd;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 1.75rem;
     }
 
-    .assignment-empty-state h4 {
-        color: #0f172a;
-        font-size: 1.28rem;
-        font-weight: 900;
-        margin-bottom: 0.45rem;
-    }
-
-    .assignment-empty-state p {
-        color: #64748b;
-        font-weight: 600;
-        margin: 0 auto 1.25rem;
-        max-width: 520px;
-        line-height: 1.65;
-    }
+    .assignment-empty-state h4 { color: #0f172a; font-size: 1.28rem; font-weight: 900; margin-bottom: 0.45rem; }
+    .assignment-empty-state p { max-width: 520px; margin: 0 auto 1rem; color: #64748b; font-size: 0.92rem; font-weight: 600; line-height: 1.65; }
 
     @@media (max-width: 992px) {
-        .assignment-hero-card {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-
-        .assignment-hero-left {
-            align-items: flex-start;
-        }
-
-        .assignment-hero-actions,
-        .assignment-hero-actions .btn {
-            width: 100%;
-        }
-
-        .assignment-page-title {
-            font-size: 1.65rem;
-        }
+        .assignment-hero-card { align-items: flex-start; flex-direction: column; }
+        .assignment-hero-left { align-items: flex-start; }
+        .assignment-hero-actions, .assignment-hero-actions .btn { width: 100%; }
+        .assignment-page-title { font-size: 1.65rem; }
     }
 
     @@media (max-width: 768px) {
-        .assignment-hero-left {
-            flex-direction: column;
-        }
+        .assignment-hero-left { flex-direction: column; }
     }
 </style>

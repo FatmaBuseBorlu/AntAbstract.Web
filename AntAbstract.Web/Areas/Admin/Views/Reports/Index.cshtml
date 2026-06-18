@@ -1,4 +1,4 @@
-﻿@using AntAbstract.Web.Models.ViewModels
+@using AntAbstract.Web.Models.ViewModels
 @using AntAbstract.Web.Models.ViewModels.Admin.Reports
 @model ReportsIndexViewModel
 
@@ -33,269 +33,729 @@
     var submissionsExportUrl = string.IsNullOrWhiteSpace(slug)
         ? $"/Admin/Reports/SubmissionsExport?conferenceId={Model.ConferenceId}"
         : $"/{slug}/Admin/Reports/SubmissionsExport?conferenceId={Model.ConferenceId}";
+
+    int decidedCount = Model.AcceptedCount + Model.RejectedCount + Model.RevisionRequiredCount;
+    int totalForBar = Model.TotalSubmissions > 0 ? Model.TotalSubmissions : 1;
+    int acceptedPct = (int)Math.Round(Model.AcceptedCount * 100.0 / totalForBar);
+    int rejectedPct = (int)Math.Round(Model.RejectedCount * 100.0 / totalForBar);
+    int reviewPct   = (int)Math.Round(Model.UnderReviewCount * 100.0 / totalForBar);
+    int newPct      = (int)Math.Round(Model.NewCount * 100.0 / totalForBar);
+    int revisionPct = (int)Math.Round(Model.RevisionRequiredCount * 100.0 / totalForBar);
 }
 
-<div class="container-fluid py-4">
-
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h3 class="fw-bold mb-1 text-dark">@Localizer["PageHeading"]</h3>
-            <p class="text-muted mb-0">
-                @Localizer["ConferenceLabel"]
-                <span class="badge bg-light text-dark border">@Model.ConferenceTitle</span>
-            </p>
-        </div>
-
-        <div class="btn-group shadow-sm">
-            <a href="@excelUrl" class="btn btn-success btn-sm">
-                <i class="fas fa-file-excel me-1"></i> @Localizer["DownloadExcelButton"]
-            </a>
-            <a href="@pdfUrl" class="btn btn-danger btn-sm">
-                <i class="fas fa-file-pdf me-1"></i> PDF İndir
-            </a>
-            <a href="@refereeReportUrl" class="btn btn-info btn-sm text-white">
-                <i class="fas fa-user-graduate me-1"></i> Hakem Raporu
-            </a>
-        </div>
-    </div>
+<div class="reports-page">
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success border-0 shadow-sm">
-            <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+        <div class="alert reports-alert reports-alert-success mb-4">
+            <i class="fas fa-check-circle"></i>
+            @TempData["SuccessMessage"]
         </div>
     }
-
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger border-0 shadow-sm">
-            <i class="fas fa-times-circle me-2"></i> @TempData["ErrorMessage"]
+        <div class="alert reports-alert reports-alert-error mb-4">
+            <i class="fas fa-times-circle"></i>
+            @TempData["ErrorMessage"]
         </div>
     }
 
-    <div class="row g-3 mb-4">
-        <div class="col-md-6 col-lg-3">
-            <div class="card border-0 shadow-sm h-100 bg-primary text-white">
-                <div class="card-body p-4 text-center">
-                    <div class="small text-uppercase opacity-75 mb-2">@Localizer["TotalSubmissions"]</div>
-                    <div class="display-5 fw-bold">@Model.TotalSubmissions</div>
-                </div>
+    @* Hero header *@
+    <div class="reports-hero-card mb-4">
+        <div class="reports-hero-left">
+            <div class="reports-hero-icon">
+                <i class="fas fa-chart-bar"></i>
+            </div>
+            <div>
+                <h1 class="reports-hero-title">Raporlar</h1>
+                <p class="reports-hero-sub">@Model.ConferenceTitle</p>
             </div>
         </div>
+        <div class="reports-hero-actions">
+            <a href="@excelUrl" class="btn reports-btn-excel">
+                <i class="fas fa-file-excel"></i>
+                Excel
+            </a>
+            <a href="@pdfUrl" class="btn reports-btn-pdf">
+                <i class="fas fa-file-pdf"></i>
+                PDF
+            </a>
+            <a href="@refereeReportUrl" class="btn reports-btn-ref">
+                <i class="fas fa-user-graduate"></i>
+                Hakem Raporu
+            </a>
+        </div>
+    </div>
 
-        <div class="col-md-6 col-lg-3">
-            <div class="card border-0 shadow-sm h-100 bg-info text-white">
-                <div class="card-body p-4 text-center">
-                    <div class="small text-uppercase opacity-75 mb-2">@Localizer["AssignedToReviewer"]</div>
-                    <div class="display-5 fw-bold">@Model.AssignedSubmissions</div>
-                </div>
+    @* Stat row 1: submission stats *@
+    <div class="reports-stat-row mb-3">
+        <div class="reports-stat-card">
+            <div class="reports-stat-icon rsi-blue">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="reports-stat-body">
+                <div class="reports-stat-value">@Model.TotalSubmissions</div>
+                <div class="reports-stat-label">Toplam Bildiri</div>
             </div>
         </div>
-
-        <div class="col-md-6 col-lg-3">
-            <div class="card border-0 shadow-sm h-100 bg-success text-white">
-                <div class="card-body p-4 text-center">
-                    <div class="small text-uppercase opacity-75 mb-2">@Localizer["DecidedSubmissions"]</div>
-                    <div class="display-5 fw-bold">@Model.DecidedSubmissions</div>
-                </div>
+        <div class="reports-stat-card">
+            <div class="reports-stat-icon rsi-green">
+                <i class="fas fa-check-double"></i>
+            </div>
+            <div class="reports-stat-body">
+                <div class="reports-stat-value">@Model.AcceptedCount</div>
+                <div class="reports-stat-label">Kabul Edilen</div>
             </div>
         </div>
-
-        <div class="col-md-6 col-lg-3">
-            <div class="card border-0 shadow-sm h-100 bg-warning text-dark">
-                <div class="card-body p-4 text-center">
-                    <div class="small text-uppercase opacity-75 mb-2">@Localizer["TotalAssignments"]</div>
-                    <div class="display-5 fw-bold">@Model.TotalAssignments</div>
-                </div>
+        <div class="reports-stat-card">
+            <div class="reports-stat-icon rsi-red">
+                <i class="fas fa-times-circle"></i>
+            </div>
+            <div class="reports-stat-body">
+                <div class="reports-stat-value">@Model.RejectedCount</div>
+                <div class="reports-stat-label">Reddedilen</div>
+            </div>
+        </div>
+        <div class="reports-stat-card">
+            <div class="reports-stat-icon rsi-yellow">
+                <i class="fas fa-hourglass-half"></i>
+            </div>
+            <div class="reports-stat-body">
+                <div class="reports-stat-value">@Model.UnderReviewCount</div>
+                <div class="reports-stat-label">İncelemede</div>
+            </div>
+        </div>
+        <div class="reports-stat-card">
+            <div class="reports-stat-icon rsi-purple">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div class="reports-stat-body">
+                <div class="reports-stat-value">@Model.AssignedSubmissions</div>
+                <div class="reports-stat-label">Hakem Atanmış</div>
+            </div>
+        </div>
+        <div class="reports-stat-card">
+            <div class="reports-stat-icon rsi-cyan">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="reports-stat-body">
+                <div class="reports-stat-value">@Model.TotalRegistrations</div>
+                <div class="reports-stat-label">Kayıt</div>
+            </div>
+        </div>
+        <div class="reports-stat-card">
+            <div class="reports-stat-icon rsi-emerald">
+                <i class="fas fa-coins"></i>
+            </div>
+            <div class="reports-stat-body">
+                <div class="reports-stat-value">@Model.TotalRevenue.ToString("N0") ₺</div>
+                <div class="reports-stat-label">Toplam Gelir</div>
             </div>
         </div>
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-md-6 col-lg-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body p-4 text-center">
-                    <div class="small text-uppercase text-muted mb-2">@Localizer["TotalRegistrations"]</div>
-                    <div class="display-6 fw-bold">@Model.TotalRegistrations</div>
+    @* Main content: chart + status breakdown + export *@
+    <div class="reports-main-grid">
+
+        @* Doughnut chart card *@
+        <div class="reports-content-card reports-chart-card">
+            <div class="reports-card-header">
+                <i class="fas fa-chart-pie rch-icon-blue"></i>
+                <span>Bildiri Durum Dağılımı</span>
+            </div>
+            <div class="reports-chart-body">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+
+        @* Status detail card *@
+        <div class="reports-content-card">
+            <div class="reports-card-header">
+                <i class="fas fa-list-ul rch-icon-blue"></i>
+                <span>Durum Detayları</span>
+            </div>
+            <div class="reports-status-list">
+                <div class="status-row">
+                    <div class="status-row-left">
+                        <span class="status-dot sd-gray"></span>
+                        <span class="status-name">Yeni</span>
+                    </div>
+                    <div class="status-row-right">
+                        <div class="status-bar-track">
+                            <div class="status-bar-fill sbf-gray" style="width: @(newPct)%"></div>
+                        </div>
+                        <span class="status-count">@Model.NewCount</span>
+                    </div>
+                </div>
+                <div class="status-row">
+                    <div class="status-row-left">
+                        <span class="status-dot sd-yellow"></span>
+                        <span class="status-name">İncelemede</span>
+                    </div>
+                    <div class="status-row-right">
+                        <div class="status-bar-track">
+                            <div class="status-bar-fill sbf-yellow" style="width: @(reviewPct)%"></div>
+                        </div>
+                        <span class="status-count">@Model.UnderReviewCount</span>
+                    </div>
+                </div>
+                <div class="status-row">
+                    <div class="status-row-left">
+                        <span class="status-dot sd-green"></span>
+                        <span class="status-name">Kabul Edildi</span>
+                    </div>
+                    <div class="status-row-right">
+                        <div class="status-bar-track">
+                            <div class="status-bar-fill sbf-green" style="width: @(acceptedPct)%"></div>
+                        </div>
+                        <span class="status-count">@Model.AcceptedCount</span>
+                    </div>
+                </div>
+                <div class="status-row">
+                    <div class="status-row-left">
+                        <span class="status-dot sd-red"></span>
+                        <span class="status-name">Reddedildi</span>
+                    </div>
+                    <div class="status-row-right">
+                        <div class="status-bar-track">
+                            <div class="status-bar-fill sbf-red" style="width: @(rejectedPct)%"></div>
+                        </div>
+                        <span class="status-count">@Model.RejectedCount</span>
+                    </div>
+                </div>
+                <div class="status-row">
+                    <div class="status-row-left">
+                        <span class="status-dot sd-orange"></span>
+                        <span class="status-name">Revizyon</span>
+                    </div>
+                    <div class="status-row-right">
+                        <div class="status-bar-track">
+                            <div class="status-bar-fill sbf-orange" style="width: @(revisionPct)%"></div>
+                        </div>
+                        <span class="status-count">@Model.RevisionRequiredCount</span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-6 col-lg-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body p-4 text-center">
-                    <div class="small text-uppercase text-muted mb-2">@Localizer["TotalRevenue"]</div>
-                    <div class="display-6 fw-bold">@Model.TotalRevenue.ToString("N2") ₺</div>
-                </div>
+        @* Export card *@
+        <div class="reports-content-card reports-export-card">
+            <div class="reports-card-header">
+                <i class="fas fa-download rch-icon-green"></i>
+                <span>Dışa Aktarma</span>
             </div>
-        </div>
-    </div>
+            <div class="reports-export-body">
+                <div class="export-filter-row">
+                    <div class="export-filter-group">
+                        <label class="export-filter-label">Başlangıç Tarihi</label>
+                        <input type="date" id="exportDateFrom" class="export-filter-input" />
+                    </div>
+                    <div class="export-filter-group">
+                        <label class="export-filter-label">Bitiş Tarihi</label>
+                        <input type="date" id="exportDateTo" class="export-filter-input" />
+                    </div>
+                    <div class="export-filter-group">
+                        <label class="export-filter-label">Format</label>
+                        <select id="exportFormat" class="export-filter-input">
+                            <option value="csv">CSV</option>
+                            <option value="xlsx">Excel (XLSX)</option>
+                        </select>
+                    </div>
+                </div>
 
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white py-3 border-bottom-0">
-            <h6 class="fw-bold m-0">
-                <i class="fas fa-download me-2 text-success"></i> Dışa Aktarma
-            </h6>
-        </div>
-        <div class="card-body">
-            @* Ortak filtre alanları; JS ile her export formuna senkronize edilir *@
-            <div class="row g-2 align-items-end mb-3">
-                <div class="col-sm-4 col-md-3">
-                    <label class="form-label small fw-semibold">Başlangıç Tarihi</label>
-                    <input type="date" id="exportDateFrom" class="form-control form-control-sm" />
-                </div>
-                <div class="col-sm-4 col-md-3">
-                    <label class="form-label small fw-semibold">Bitiş Tarihi</label>
-                    <input type="date" id="exportDateTo" class="form-control form-control-sm" />
-                </div>
-                <div class="col-sm-4 col-md-2">
-                    <label class="form-label small fw-semibold">Format</label>
-                    <select id="exportFormat" class="form-select form-select-sm">
-                        <option value="csv">CSV</option>
-                        <option value="xlsx">Excel (XLSX)</option>
-                    </select>
-                </div>
-            </div>
-
-            @* noscript: bağımsız formlar, JS olmadan da çalışır *@
-            <noscript>
-                <div class="d-flex flex-wrap gap-2">
-                    @foreach (var (label, icon, url) in new[] {
-                        ("Katılımcılar",  "fa-users",    participantsExportUrl),
-                        ("Gelir Raporu",  "fa-coins",    revenueExportUrl),
-                        ("Bildiriler",    "fa-file-alt", submissionsExportUrl)
-                    })
-                    {
-                        <form method="get" action="@url" class="d-inline">
+                <noscript>
+                    <div class="export-btn-row">
+                        <form method="get" action="@participantsExportUrl" class="d-inline">
                             <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
-                            <button type="submit" class="btn btn-outline-success btn-sm">
-                                <i class="fas @icon me-1"></i> @label
+                            <button type="submit" class="export-action-btn">
+                                <i class="fas fa-users"></i> Katılımcılar
                             </button>
                         </form>
-                    }
-                </div>
-            </noscript>
+                        <form method="get" action="@revenueExportUrl" class="d-inline">
+                            <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
+                            <button type="submit" class="export-action-btn">
+                                <i class="fas fa-coins"></i> Gelir Raporu
+                            </button>
+                        </form>
+                        <form method="get" action="@submissionsExportUrl" class="d-inline">
+                            <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
+                            <button type="submit" class="export-action-btn">
+                                <i class="fas fa-file-alt"></i> Bildiriler
+                            </button>
+                        </form>
+                    </div>
+                </noscript>
 
-            @* JS: tek tıkla tüm filtreler ile export *@
-            <div class="d-flex flex-wrap gap-2 js-export-buttons">
-                <button type="button" class="btn btn-outline-success btn-sm"
-                        onclick="triggerExport('@participantsExportUrl')">
-                    <i class="fas fa-users me-1"></i> Katılımcılar
-                </button>
-                <button type="button" class="btn btn-outline-success btn-sm"
-                        onclick="triggerExport('@revenueExportUrl')">
-                    <i class="fas fa-coins me-1"></i> Gelir Raporu
-                </button>
-                <button type="button" class="btn btn-outline-success btn-sm"
-                        onclick="triggerExport('@submissionsExportUrl')">
-                    <i class="fas fa-file-alt me-1"></i> Bildiriler
-                </button>
+                <div class="export-btn-row js-export-buttons">
+                    <button type="button" class="export-action-btn" onclick="triggerExport('@participantsExportUrl')">
+                        <i class="fas fa-users"></i>
+                        Katılımcılar
+                    </button>
+                    <button type="button" class="export-action-btn" onclick="triggerExport('@revenueExportUrl')">
+                        <i class="fas fa-coins"></i>
+                        Gelir Raporu
+                    </button>
+                    <button type="button" class="export-action-btn" onclick="triggerExport('@submissionsExportUrl')">
+                        <i class="fas fa-file-alt"></i>
+                        Bildiriler
+                    </button>
+                </div>
             </div>
         </div>
+
     </div>
 
-    <script>
-    document.querySelector('.js-export-buttons').style.display = '';
-
-    function triggerExport(baseUrl) {
-        const dateFrom = document.getElementById('exportDateFrom').value;
-        const dateTo   = document.getElementById('exportDateTo').value;
-        const format   = document.getElementById('exportFormat').value;
-        const params = new URLSearchParams({ conferenceId: '@Model.ConferenceId' });
-        if (dateFrom) params.append('dateFrom', dateFrom);
-        if (dateTo)   params.append('dateTo', dateTo);
-        if (format)   params.append('format', format);
-        window.location.href = baseUrl + (baseUrl.includes('?') ? '&' : '?') + params.toString();
-    }
-    </script>
-
-    <div class="row g-4">
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white py-3 border-bottom-0">
-                    <h6 class="fw-bold m-0">
-                        <i class="fas fa-chart-pie me-2 text-primary"></i> @Localizer["StatusDistributionHeader"]
-                    </h6>
-                </div>
-                <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 360px;">
-                    <canvas id="statusChart" style="max-height: 280px;"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white py-3 border-bottom-0">
-                    <h6 class="fw-bold m-0">
-                        <i class="fas fa-list me-2 text-primary"></i> @Localizer["DetailedStatusesHeader"]
-                    </h6>
-                </div>
-                <div class="card-body p-0">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
-                            <span><i class="fas fa-circle text-primary me-2 small"></i> @Localizer["StatusNewLabel"]</span>
-                            <span class="badge bg-primary rounded-pill">@Model.NewCount</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
-                            <span><i class="fas fa-circle text-warning me-2 small"></i> @Localizer["StatusUnderReviewLabel"]</span>
-                            <span class="badge bg-warning text-dark rounded-pill">@Model.UnderReviewCount</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
-                            <span><i class="fas fa-circle text-success me-2 small"></i> @Localizer["StatusAcceptedLabel"]</span>
-                            <span class="badge bg-success rounded-pill">@Model.AcceptedCount</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
-                            <span><i class="fas fa-circle text-danger me-2 small"></i> @Localizer["StatusRejectedLabel"]</span>
-                            <span class="badge bg-danger rounded-pill">@Model.RejectedCount</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4 border-bottom-0">
-                            <span><i class="fas fa-circle text-secondary me-2 small"></i> @Localizer["StatusRevisionLabel"]</span>
-                            <span class="badge bg-secondary rounded-pill">@Model.RevisionRequiredCount</span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
+
+<style>
+    .reports-page {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        padding: 1.5rem 0 2rem;
+    }
+
+    .reports-alert {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-radius: 16px;
+        border: 1px solid transparent;
+        font-weight: 800;
+        padding: 0.85rem 1.2rem;
+    }
+
+    .reports-alert-success {
+        background: rgba(34, 197, 94, 0.10);
+        border-color: rgba(34, 197, 94, 0.20);
+        color: #15803d;
+    }
+
+    .reports-alert-error {
+        background: rgba(239, 68, 68, 0.10);
+        border-color: rgba(239, 68, 68, 0.20);
+        color: #dc2626;
+    }
+
+    /* Hero */
+    .reports-hero-card {
+        background: radial-gradient(circle at top right, rgba(0,174,239,0.14), transparent 40%),
+                    linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e2eaf4;
+        border-radius: 28px;
+        padding: 1.55rem 1.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+        box-shadow: 0 16px 40px rgba(15,23,42,0.06);
+    }
+
+    .reports-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1.1rem;
+    }
+
+    .reports-hero-icon {
+        width: 62px;
+        height: 62px;
+        min-width: 62px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        box-shadow: 0 14px 30px rgba(13,110,253,0.22);
+    }
+
+    .reports-hero-title {
+        font-size: 1.85rem;
+        font-weight: 900;
+        color: #0f172a;
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    .reports-hero-sub {
+        font-size: 0.88rem;
+        color: #64748b;
+        font-weight: 650;
+        margin: 0.2rem 0 0;
+    }
+
+    .reports-hero-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+
+    .reports-btn-excel, .reports-btn-pdf, .reports-btn-ref {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        border-radius: 999px;
+        padding: 0 1rem;
+        font-size: 0.82rem;
+        font-weight: 800;
+        border: none;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: all 0.18s ease;
+    }
+
+    .reports-btn-excel {
+        background: linear-gradient(135deg, #16a34a, #22c55e);
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(34,197,94,0.22);
+    }
+
+    .reports-btn-pdf {
+        background: linear-gradient(135deg, #dc2626, #ef4444);
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(239,68,68,0.22);
+    }
+
+    .reports-btn-ref {
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(168,85,247,0.22);
+    }
+
+    .reports-btn-excel:hover, .reports-btn-pdf:hover, .reports-btn-ref:hover {
+        transform: translateY(-1px);
+        color: #fff;
+    }
+
+    /* Stat row */
+    .reports-stat-row {
+        display: flex;
+        gap: 0.85rem;
+        flex-wrap: wrap;
+    }
+
+    .reports-stat-card {
+        flex: 1;
+        min-width: 130px;
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 20px;
+        padding: 1rem 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        box-shadow: 0 6px 18px rgba(15,23,42,0.05);
+    }
+
+    .reports-stat-icon {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .rsi-blue    { background: rgba(13,110,253,0.12); color: #0d6efd; }
+    .rsi-green   { background: rgba(34,197,94,0.12);  color: #16a34a; }
+    .rsi-red     { background: rgba(239,68,68,0.12);  color: #dc2626; }
+    .rsi-yellow  { background: rgba(245,158,11,0.12); color: #b45309; }
+    .rsi-purple  { background: rgba(168,85,247,0.12); color: #7c3aed; }
+    .rsi-cyan    { background: rgba(6,182,212,0.12);  color: #0891b2; }
+    .rsi-emerald { background: rgba(16,185,129,0.12); color: #047857; }
+
+    .reports-stat-value {
+        font-size: 1.35rem;
+        font-weight: 900;
+        color: #0f172a;
+        line-height: 1.1;
+    }
+
+    .reports-stat-label {
+        font-size: 0.74rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        margin-top: 0.15rem;
+    }
+
+    /* Main grid */
+    .reports-main-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto;
+        gap: 1.1rem;
+    }
+
+    .reports-content-card {
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 8px 24px rgba(15,23,42,0.05);
+    }
+
+    .reports-export-card {
+        grid-column: 1 / -1;
+    }
+
+    .reports-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 1.1rem 1.4rem;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.92rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .rch-icon-blue  { color: #0d6efd; font-size: 0.95rem; }
+    .rch-icon-green { color: #16a34a; font-size: 0.95rem; }
+
+    /* Chart */
+    .reports-chart-body {
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 280px;
+    }
+
+    #statusChart {
+        max-height: 260px;
+        max-width: 260px;
+    }
+
+    /* Status list */
+    .reports-status-list {
+        padding: 0.5rem 0;
+    }
+
+    .status-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.7rem 1.4rem;
+        gap: 1rem;
+        border-bottom: 1px solid #f8fafc;
+    }
+
+    .status-row:last-child {
+        border-bottom: none;
+    }
+
+    .status-row-left {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        min-width: 110px;
+    }
+
+    .status-dot {
+        width: 10px;
+        height: 10px;
+        min-width: 10px;
+        border-radius: 50%;
+    }
+
+    .sd-gray   { background: #94a3b8; }
+    .sd-yellow { background: #f59e0b; }
+    .sd-green  { background: #22c55e; }
+    .sd-red    { background: #ef4444; }
+    .sd-orange { background: #f97316; }
+
+    .status-name {
+        font-size: 0.83rem;
+        font-weight: 700;
+        color: #334155;
+    }
+
+    .status-row-right {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex: 1;
+    }
+
+    .status-bar-track {
+        flex: 1;
+        height: 8px;
+        border-radius: 999px;
+        background: #f1f5f9;
+        overflow: hidden;
+    }
+
+    .status-bar-fill {
+        height: 100%;
+        border-radius: 999px;
+        min-width: 4px;
+        transition: width 0.6s ease;
+    }
+
+    .sbf-gray   { background: #94a3b8; }
+    .sbf-yellow { background: #f59e0b; }
+    .sbf-green  { background: #22c55e; }
+    .sbf-red    { background: #ef4444; }
+    .sbf-orange { background: #f97316; }
+
+    .status-count {
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: #0f172a;
+        min-width: 30px;
+        text-align: right;
+    }
+
+    /* Export */
+    .reports-export-body {
+        padding: 1.25rem 1.4rem 1.4rem;
+    }
+
+    .export-filter-row {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.1rem;
+    }
+
+    .export-filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        min-width: 160px;
+    }
+
+    .export-filter-label {
+        font-size: 0.76rem;
+        font-weight: 800;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .export-filter-input {
+        height: 38px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0 0.75rem;
+        font-size: 0.83rem;
+        font-weight: 650;
+        color: #334155;
+        background: #f8fafc;
+        outline: none;
+        transition: border-color 0.18s;
+    }
+
+    .export-filter-input:focus {
+        border-color: #0d6efd;
+        background: #fff;
+    }
+
+    .export-btn-row {
+        display: flex;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+    }
+
+    .export-action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        height: 40px;
+        border-radius: 999px;
+        padding: 0 1.15rem;
+        font-size: 0.82rem;
+        font-weight: 800;
+        border: 1.5px solid #e2e8f0;
+        background: #f8fafc;
+        color: #334155;
+        cursor: pointer;
+        transition: all 0.18s ease;
+    }
+
+    .export-action-btn:hover {
+        border-color: #0d6efd;
+        color: #0d6efd;
+        background: rgba(13,110,253,0.06);
+    }
+
+    @@media (max-width: 992px) {
+        .reports-main-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .reports-hero-card {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .reports-hero-actions {
+            width: 100%;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .reports-stat-row {
+            gap: 0.6rem;
+        }
+
+        .reports-stat-card {
+            min-width: calc(50% - 0.3rem);
+        }
+    }
+</style>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            document.querySelector('.js-export-buttons').style.display = 'flex';
+
             var canvas = document.getElementById('statusChart');
             if (!canvas) return;
-
             var ctx = canvas.getContext('2d');
 
             new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: [
-                        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["ChartLabelNew"].Value)),
-                        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["ChartLabelUnderReview"].Value)),
-                        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["ChartLabelAccepted"].Value)),
-                        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["ChartLabelRejected"].Value)),
-                        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["ChartLabelRevision"].Value))
-                    ],
+                    labels: ['Yeni', 'İncelemede', 'Kabul Edildi', 'Reddedildi', 'Revizyon'],
                     datasets: [{
                         data: [@Model.NewCount, @Model.UnderReviewCount, @Model.AcceptedCount, @Model.RejectedCount, @Model.RevisionRequiredCount],
+                        backgroundColor: ['#94a3b8', '#f59e0b', '#22c55e', '#ef4444', '#f97316'],
                         borderWidth: 0,
-                        hoverOffset: 15
+                        hoverOffset: 12
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '70%',
+                    cutout: '68%',
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: { padding: 20, usePointStyle: true }
+                            labels: { padding: 16, usePointStyle: true, font: { weight: '700', size: 12 } }
                         }
                     }
                 }
             });
         });
+
+        function triggerExport(baseUrl) {
+            const dateFrom = document.getElementById('exportDateFrom').value;
+            const dateTo   = document.getElementById('exportDateTo').value;
+            const format   = document.getElementById('exportFormat').value;
+            const params = new URLSearchParams({ conferenceId: '@Model.ConferenceId' });
+            if (dateFrom) params.append('dateFrom', dateFrom);
+            if (dateTo)   params.append('dateTo', dateTo);
+            if (format)   params.append('format', format);
+            window.location.href = baseUrl + (baseUrl.includes('?') ? '&' : '?') + params.toString();
+        }
     </script>
 }

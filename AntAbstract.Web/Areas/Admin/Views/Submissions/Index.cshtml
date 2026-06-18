@@ -57,12 +57,6 @@
     }
 
     var totalCount = Model.TotalCount;
-    var newCount = Model.Items?.Count(x => x.Status == nameof(SubmissionStatus.New)) ?? 0;
-    var reviewCount = Model.Items?.Count(x => x.Status == nameof(SubmissionStatus.UnderReview)) ?? 0;
-    var decidedCount = Model.Items?.Count(x =>
-        x.Status == nameof(SubmissionStatus.Accepted) ||
-        x.Status == nameof(SubmissionStatus.Rejected) ||
-        x.Status == nameof(SubmissionStatus.RevisionRequired)) ?? 0;
 }
 
 <div class="container-fluid submissions-index-page">
@@ -135,54 +129,67 @@
     </div>
 
     <div class="row g-3 mb-4">
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl col-md-6">
             <div class="submission-stat-card">
                 <div class="stat-icon stat-blue">
                     <i class="fas fa-file-alt"></i>
                 </div>
 
                 <div>
-                    <div class="stat-number">@totalCount</div>
+                    <div class="stat-number">@Model.AllCount</div>
                     <div class="stat-label">Toplam Bildiri</div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl col-md-6">
             <div class="submission-stat-card">
                 <div class="stat-icon stat-cyan">
                     <i class="fas fa-sparkles"></i>
                 </div>
 
                 <div>
-                    <div class="stat-number">@newCount</div>
+                    <div class="stat-number">@Model.NewCount</div>
                     <div class="stat-label">Yeni Başvuru</div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl col-md-6">
             <div class="submission-stat-card">
                 <div class="stat-icon stat-orange">
                     <i class="fas fa-user-clock"></i>
                 </div>
 
                 <div>
-                    <div class="stat-number">@reviewCount</div>
+                    <div class="stat-number">@Model.UnderReviewCount</div>
                     <div class="stat-label">Hakem Sürecinde</div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl col-md-6">
             <div class="submission-stat-card">
                 <div class="stat-icon stat-green">
                     <i class="fas fa-circle-check"></i>
                 </div>
 
                 <div>
-                    <div class="stat-number">@decidedCount</div>
-                    <div class="stat-label">Karar Verilen</div>
+                    <div class="stat-number">@Model.AcceptedCount</div>
+                    <div class="stat-label">Kabul Edildi</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl col-md-6">
+            <div class="submission-stat-card">
+                <div class="stat-icon stat-red">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+
+                <div>
+                    <div class="stat-number">@Model.RejectedCount</div>
+                    <div class="stat-label">Reddedildi</div>
                 </div>
             </div>
         </div>
@@ -193,7 +200,7 @@
             <input type="hidden" name="conferenceId" value="@conferenceId" />
 
             <div class="row g-3 align-items-end">
-                <div class="col-xl-6 col-lg-5">
+                <div class="col-xl-4 col-lg-4">
                     <label class="submission-label">
                         Arama
                     </label>
@@ -204,7 +211,7 @@
                         <input type="text"
                                name="search"
                                value="@Model.Search"
-                               placeholder="Başlık, yazar adı veya e-posta ara..." />
+                               placeholder="Başlık, yazar adı veya e-posta..." />
                     </div>
                 </div>
 
@@ -238,6 +245,31 @@
                     </select>
                 </div>
 
+                @if (Model.AvailableTopics.Any())
+                {
+                    <div class="col-xl-2 col-lg-3">
+                        <label class="submission-label">
+                            Konu / Alan
+                        </label>
+
+                        <select name="topic" class="submission-select">
+                            <option value="">Tüm Konular</option>
+
+                            @foreach (var t in Model.AvailableTopics)
+                            {
+                                if (Model.Topic == t)
+                                {
+                                    <option value="@t" selected>@t</option>
+                                }
+                                else
+                                {
+                                    <option value="@t">@t</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                }
+
                 <div class="col-xl-2 col-lg-2">
                     <button type="submit" class="btn submission-primary-btn w-100">
                         <i class="fas fa-filter me-2"></i>
@@ -245,8 +277,8 @@
                     </button>
                 </div>
 
-                <div class="col-xl-1 col-lg-2">
-                    <a href="@listUrl" class="btn submission-reset-btn w-100">
+                <div class="col-xl-1 col-lg-1">
+                    <a href="@listUrl" class="btn submission-reset-btn w-100" title="Filtreleri Temizle">
                         <i class="fas fa-rotate-left"></i>
                     </a>
                 </div>
@@ -266,8 +298,19 @@
                 </p>
             </div>
 
-            <div class="submission-count-pill">
-                @totalCount bildiri
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                @{
+                    var exportUrl = string.IsNullOrWhiteSpace(slug)
+                        ? $"/Admin/Submissions/Export?conferenceId={conferenceId}&search={Model.Search}&status={Model.Status}&topic={Model.Topic}"
+                        : $"/{slug}/Admin/Submissions/Export?conferenceId={conferenceId}&search={Model.Search}&status={Model.Status}&topic={Model.Topic}";
+                }
+                <a href="@exportUrl" class="btn submission-export-btn" title="CSV olarak indir">
+                    <i class="fas fa-file-csv me-1"></i>
+                    Dışa Aktar
+                </a>
+                <div class="submission-count-pill">
+                    @totalCount bildiri
+                </div>
             </div>
         </div>
 
@@ -306,6 +349,7 @@
                             <th>Tarih</th>
                             <th>Bildiri</th>
                             <th>Yazar</th>
+                            <th>Hakemler</th>
                             <th>Durum</th>
                             <th class="text-end">İşlemler</th>
                         </tr>
@@ -355,6 +399,23 @@
 
                                         <span>@(string.IsNullOrWhiteSpace(item.AuthorName) ? "Yazar bilgisi yok" : item.AuthorName)</span>
                                     </div>
+                                </td>
+
+                                <td>
+                                    @if (item.AssignedReviewerCount > 0)
+                                    {
+                                        <span class="reviewer-badge reviewer-badge-assigned">
+                                            <i class="fas fa-user-check"></i>
+                                            @item.AssignedReviewerCount hakem
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="reviewer-badge reviewer-badge-none">
+                                            <i class="fas fa-user-slash"></i>
+                                            Atanmadı
+                                        </span>
+                                    }
                                 </td>
 
                                 <td>
@@ -635,6 +696,11 @@
     .stat-green {
         background: rgba(16, 185, 129, 0.12);
         color: #10b981;
+    }
+
+    .stat-red {
+        background: rgba(239, 68, 68, 0.11);
+        color: #dc2626;
     }
 
     .stat-number {
@@ -983,6 +1049,50 @@
     .modern-dropdown .dropdown-item:hover {
         background: #f8fbff;
         color: #0d6efd;
+    }
+
+    .submission-export-btn {
+        min-height: 40px;
+        border-radius: 14px;
+        border: 1px solid #dbe3ef;
+        background: #ffffff;
+        color: #334155;
+        font-size: 0.84rem;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        padding: 0 0.9rem;
+        gap: 0.3rem;
+        transition: all 0.2s ease;
+    }
+
+    .submission-export-btn:hover {
+        color: #059669;
+        border-color: rgba(5, 150, 105, 0.28);
+        background: rgba(5, 150, 105, 0.05);
+    }
+
+    .reviewer-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.32rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .reviewer-badge-assigned {
+        background: rgba(16, 185, 129, 0.10);
+        color: #059669;
+        border: 1px solid rgba(16, 185, 129, 0.22);
+    }
+
+    .reviewer-badge-none {
+        background: #f1f5f9;
+        color: #94a3b8;
+        border: 1px solid #e2e8f0;
     }
 
     @@media (max-width: 991.98px) {

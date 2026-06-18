@@ -577,6 +577,62 @@
         font-weight: 700;
     }
 
+    .load-cell {
+        min-width: 100px;
+    }
+
+    .load-label {
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 900;
+        color: #475569;
+        margin-bottom: 0.3rem;
+    }
+
+    .load-bar-track {
+        height: 8px;
+        border-radius: 999px;
+        background: #eef2f7;
+        overflow: hidden;
+        width: 100%;
+    }
+
+    .load-bar-fill {
+        height: 100%;
+        border-radius: 999px;
+        transition: width 0.3s ease;
+    }
+
+    .load-bar-ok { background: linear-gradient(135deg, #10b981, #34d399); }
+    .load-bar-warning { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+    .load-bar-danger { background: linear-gradient(135deg, #ef4444, #f97316); }
+
+    .remove-action-btn {
+        width: 36px; height: 36px;
+        border-radius: 999px;
+        border: 1px solid rgba(239, 68, 68, 0.24);
+        background: rgba(239, 68, 68, 0.06);
+        color: #dc2626;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 0.82rem; cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .remove-action-btn:hover {
+        background: #dc2626;
+        color: #ffffff;
+        border-color: #dc2626;
+    }
+
+    .overloaded-badge {
+        display: inline-flex; align-items: center;
+        padding: 0.32rem 0.65rem; border-radius: 999px;
+        font-size: 0.78rem; font-weight: 900;
+        background: rgba(239, 68, 68, 0.10);
+        color: #dc2626;
+        border: 1px solid rgba(239, 68, 68, 0.22);
+    }
+
     @@media (max-width: 992px) {
         .assign-hero-card {
             align-items: flex-start;
@@ -802,9 +858,9 @@
                     <thead>
                         <tr>
                             <th>@L("TableHeaderName", "Hakem")</th>
-                            <th>@L("TableHeaderEmail", "E-posta")</th>
                             <th>@L("TableHeaderExpertise", "Uzmanlık Alanı")</th>
-                            <th class="text-end" style="width: 190px;">
+                            <th>Yük</th>
+                            <th class="text-end" style="width: 200px;">
                                 @L("TableHeaderAction", "İşlem")
                             </th>
                         </tr>
@@ -818,65 +874,62 @@
                             var alreadyAssigned = IsAlreadyAssigned(reviewer.Id);
                             var load = GetReviewerLoad(reviewer.Id);
                             var overloaded = IsOverloaded(reviewer.Id);
+                            var loadPct = Math.Min(100, (int)Math.Round(load * 100.0 / maxLoad));
+                            var loadBarClass = load >= maxLoad ? "load-bar-danger" : load >= maxLoad * 0.7 ? "load-bar-warning" : "load-bar-ok";
 
                             <tr class="@(overloaded ? "table-warning" : "")">
                                 <td>
                                     <div class="reviewer-profile">
-                                        <span class="reviewer-avatar">
-                                            @firstLetter
-                                        </span>
-
+                                        <span class="reviewer-avatar">@firstLetter</span>
                                         <div>
-                                            <div class="reviewer-name">
-                                                @reviewerName
-                                            </div>
-
-                                            <div class="reviewer-email">
-                                                @reviewer.Email
-                                            </div>
+                                            <div class="reviewer-name">@reviewerName</div>
+                                            <div class="reviewer-email">@reviewer.Email</div>
                                         </div>
                                     </div>
                                 </td>
 
                                 <td>
-                                    <span class="reviewer-email">
-                                        @reviewer.Email
-                                    </span>
-                                </td>
-
-                                <td>
                                     <span class="expertise-badge">
                                         <i class="fas fa-brain"></i>
-                                        @(string.IsNullOrWhiteSpace(reviewer.ExpertiseAreas)
-                                            ? L("NoExpertise", "Belirtilmemiş")
-                                            : reviewer.ExpertiseAreas)
+                                        @(string.IsNullOrWhiteSpace(reviewer.ExpertiseAreas) ? L("NoExpertise", "Belirtilmemiş") : reviewer.ExpertiseAreas)
                                     </span>
                                 </td>
 
                                 <td>
-                                    @{
-                                        var loadColor = load >= maxLoad ? "danger" : load >= maxLoad * 0.7 ? "warning" : "success";
-                                    }
-                                    <span class="badge bg-@loadColor">
-                                        <i class="fas fa-tasks me-1"></i>@load / @maxLoad
-                                    </span>
-                                    @if (overloaded)
-                                    {
-                                        <div class="small text-danger mt-1">Limit dolu</div>
-                                    }
+                                    <div class="load-cell">
+                                        <span class="load-label">@load / @maxLoad</span>
+                                        <div class="load-bar-track">
+                                            <div class="load-bar-fill @loadBarClass" style="width: @(loadPct)%"></div>
+                                        </div>
+                                    </div>
                                 </td>
 
                                 <td class="text-end">
                                     @if (alreadyAssigned)
                                     {
-                                        <span class="already-assigned-badge">
-                                            <i class="fas fa-check"></i>
-                                            @L("AlreadyAssignedText", "Atanmış")
-                                        </span>
+                                        var removePostUrl = !string.IsNullOrWhiteSpace(currentSlug)
+                                            ? $"/{currentSlug}/Admin/Assignment/Remove"
+                                            : "/Admin/Assignment/Remove";
+                                        <div class="d-flex align-items-center justify-content-end gap-2">
+                                            <span class="already-assigned-badge">
+                                                <i class="fas fa-check"></i>
+                                                @L("AlreadyAssignedText", "Atanmış")
+                                            </span>
+                                            <form action="@removePostUrl" method="post" class="m-0">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="submissionId" value="@Model.Submission.Id" />
+                                                <input type="hidden" name="reviewerId" value="@reviewer.Id" />
+                                                <input type="hidden" name="conferenceId" value="@conferenceId" />
+                                                <button type="submit" class="remove-action-btn" title="Hakemi Kaldır"
+                                                        onclick="return confirm('Bu hakemi bildiriden kaldırmak istiyor musunuz?')">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </form>
+                                        </div>
                                     }
                                     else if (overloaded)
                                     {
-                                        <span class="badge bg-danger">
+                                        <span class="overloaded-badge">
                                             <i class="fas fa-ban me-1"></i>Limit Dolu
                                         </span>
                                     }
@@ -884,11 +937,9 @@
                                     {
                                         <form action="@assignPostUrl" method="post" class="m-0">
                                             @Html.AntiForgeryToken()
-
                                             <input type="hidden" name="submissionId" value="@Model.Submission.Id" />
                                             <input type="hidden" name="reviewerId" value="@reviewer.Id" />
                                             <input type="hidden" name="conferenceId" value="@conferenceId" />
-
                                             <button type="submit" class="assign-action-btn recommended">
                                                 <i class="fas fa-user-plus"></i>
                                                 @L("AssignRecommendedBtn", "Ata")
@@ -931,9 +982,9 @@
                 <thead>
                     <tr>
                         <th>@L("TableHeaderName", "Hakem")</th>
-                        <th>@L("TableHeaderEmail", "E-posta")</th>
                         <th>@L("TableHeaderExpertise", "Uzmanlık Alanı")</th>
-                        <th class="text-end" style="width: 190px;">
+                        <th>Yük</th>
+                        <th class="text-end" style="width: 200px;">
                             @L("TableHeaderAction", "İşlem")
                         </th>
                     </tr>
@@ -946,12 +997,8 @@
                             <td colspan="4">
                                 <div class="empty-box">
                                     <i class="fas fa-user-slash"></i>
-                                    <strong>
-                                        Hakem bulunamadı
-                                    </strong>
-                                    <span>
-                                        Bu bildiriye atanabilecek hakem bulunamadı. Önce Hakem Havuzu ekranından kullanıcıyı Hakem rolüyle bağlamalısınız.
-                                    </span>
+                                    <strong>Hakem bulunamadı</strong>
+                                    <span>Bu bildiriye atanabilecek hakem bulunamadı. Önce Hakem Havuzu ekranından kullanıcıyı Hakem rolüyle bağlamalısınız.</span>
                                 </div>
                             </td>
                         </tr>
@@ -963,58 +1010,74 @@
                             var reviewerName = GetReviewerName(reviewer);
                             var firstLetter = GetFirstLetter(reviewerName);
                             var alreadyAssigned = IsAlreadyAssigned(reviewer.Id);
+                            var load2 = GetReviewerLoad(reviewer.Id);
+                            var overloaded2 = IsOverloaded(reviewer.Id);
+                            var loadPct2 = Math.Min(100, (int)Math.Round(load2 * 100.0 / maxLoad));
+                            var loadBarClass2 = load2 >= maxLoad ? "load-bar-danger" : load2 >= (int)(maxLoad * 0.7) ? "load-bar-warning" : "load-bar-ok";
 
-                            <tr>
+                            <tr class="@(overloaded2 ? "table-warning" : "")">
                                 <td>
                                     <div class="reviewer-profile">
-                                        <span class="reviewer-avatar">
-                                            @firstLetter
-                                        </span>
-
+                                        <span class="reviewer-avatar">@firstLetter</span>
                                         <div>
-                                            <div class="reviewer-name">
-                                                @reviewerName
-                                            </div>
-
-                                            <div class="reviewer-email">
-                                                @reviewer.Email
-                                            </div>
+                                            <div class="reviewer-name">@reviewerName</div>
+                                            <div class="reviewer-email">@reviewer.Email</div>
                                         </div>
                                     </div>
                                 </td>
 
                                 <td>
-                                    <span class="reviewer-email">
-                                        @reviewer.Email
+                                    <span class="expertise-badge">
+                                        <i class="fas fa-brain"></i>
+                                        @(string.IsNullOrWhiteSpace(reviewer.ExpertiseAreas) ? L("NoExpertise", "Belirtilmemiş") : reviewer.ExpertiseAreas)
                                     </span>
                                 </td>
 
                                 <td>
-                                    <span class="expertise-badge">
-                                        <i class="fas fa-brain"></i>
-                                        @(string.IsNullOrWhiteSpace(reviewer.ExpertiseAreas)
-                                            ? L("NoExpertise", "Belirtilmemiş")
-                                            : reviewer.ExpertiseAreas)
-                                    </span>
+                                    <div class="load-cell">
+                                        <span class="load-label">@load2 / @maxLoad</span>
+                                        <div class="load-bar-track">
+                                            <div class="load-bar-fill @loadBarClass2" style="width: @(loadPct2)%"></div>
+                                        </div>
+                                    </div>
                                 </td>
 
                                 <td class="text-end">
                                     @if (alreadyAssigned)
                                     {
-                                        <span class="already-assigned-badge">
-                                            <i class="fas fa-check"></i>
-                                            @L("AlreadyAssignedText", "Atanmış")
+                                        var removePostUrl3 = !string.IsNullOrWhiteSpace(currentSlug)
+                                            ? $"/{currentSlug}/Admin/Assignment/Remove"
+                                            : "/Admin/Assignment/Remove";
+                                        <div class="d-flex align-items-center justify-content-end gap-2">
+                                            <span class="already-assigned-badge">
+                                                <i class="fas fa-check"></i>
+                                                @L("AlreadyAssignedText", "Atanmış")
+                                            </span>
+                                            <form action="@removePostUrl3" method="post" class="m-0">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="submissionId" value="@Model.Submission.Id" />
+                                                <input type="hidden" name="reviewerId" value="@reviewer.Id" />
+                                                <input type="hidden" name="conferenceId" value="@conferenceId" />
+                                                <button type="submit" class="remove-action-btn" title="Hakemi Kaldır"
+                                                        onclick="return confirm('Bu hakemi bildiriden kaldırmak istiyor musunuz?')">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    }
+                                    else if (overloaded2)
+                                    {
+                                        <span class="overloaded-badge">
+                                            <i class="fas fa-ban me-1"></i>Limit Dolu
                                         </span>
                                     }
                                     else
                                     {
                                         <form action="@assignPostUrl" method="post" class="m-0">
                                             @Html.AntiForgeryToken()
-
                                             <input type="hidden" name="submissionId" value="@Model.Submission.Id" />
                                             <input type="hidden" name="reviewerId" value="@reviewer.Id" />
                                             <input type="hidden" name="conferenceId" value="@conferenceId" />
-
                                             <button type="submit" class="assign-action-btn normal">
                                                 <i class="fas fa-user-plus"></i>
                                                 @L("AssignBtn", "Ata")

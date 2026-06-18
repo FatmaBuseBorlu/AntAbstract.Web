@@ -1,4 +1,4 @@
-﻿@model AntAbstract.Domain.Entities.Conference
+@model AntAbstract.Domain.Entities.Conference
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -8,70 +8,64 @@
     string L(string key, string fallback)
     {
         var value = Localizer[key].Value;
-
-        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
-            ? fallback
-            : value;
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase) ? fallback : value;
     }
 }
 
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-10">
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0">
-                        <i class="fas fa-edit text-primary me-2"></i> @Localizer["CardTitle"]
-                    </h5>
+<div class="container-fluid py-4 conference-form-page">
 
-                    <span class="badge bg-light text-dark border px-3 py-2">
-                        @Model.Title
-                    </span>
-                </div>
+    <div class="details-page-header d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4">
+        <div>
+            <h4 class="fw-bold mb-1"><i class="fas fa-edit text-primary me-2"></i>@Localizer["CardTitle"]</h4>
+            <p class="text-muted mb-0 small">@Model.Title</p>
+        </div>
+        <a asp-area="Admin" asp-controller="Conferences" asp-action="Index" asp-route-slug="@slug"
+           class="btn btn-light border text-muted">
+            <i class="fas fa-arrow-left me-1"></i> @Localizer["CancelButton"]
+        </a>
+    </div>
 
-                <div class="card-body p-4 p-lg-5">
-                    <form asp-area="Admin"
-                          asp-controller="Conferences"
-                          asp-action="Edit"
-                          asp-route-slug="@slug"
-                          asp-route-id="@Model.Id"
-                          method="post"
-                          enctype="multipart/form-data">
+    <form asp-area="Admin"
+          asp-controller="Conferences"
+          asp-action="Edit"
+          asp-route-slug="@slug"
+          asp-route-id="@Model.Id"
+          method="post"
+          enctype="multipart/form-data">
 
-                        @Html.AntiForgeryToken()
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="TenantId" />
 
-                        <input type="hidden" asp-for="Id" />
-                        <input type="hidden" asp-for="TenantId" />
+        <div class="row g-4 align-items-start">
 
-                        <h6 class="fw-bold text-dark mb-3">
-                            <i class="fas fa-info-circle text-info me-2"></i>
-                            @Localizer["BasicInfoHeader"]
-                        </h6>
+            <div class="col-lg-8">
 
+                <div class="modern-card mb-4">
+                    <div class="modern-card-header">
+                        <div class="modern-card-icon soft-info">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div>
+                            <h5 class="modern-card-title mb-1">@Localizer["BasicInfoHeader"]</h5>
+                            <p class="modern-card-text mb-0">Kongrenin adı, tarihi ve konumu.</p>
+                        </div>
+                    </div>
+                    <div class="modern-card-body">
                         <div class="mb-3">
-                            <label class="form-label fw-bold small text-muted">
-                                @Localizer["TitleLabel"]
-                            </label>
-
+                            <label class="form-label fw-semibold small text-muted">@Localizer["TitleLabel"]</label>
                             <input asp-for="Title" class="form-control form-control-lg" required />
                             <span asp-validation-for="Title" class="text-danger small"></span>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold small text-muted">
-                                    @Localizer["StartDateLabel"]
-                                </label>
-
+                                <label class="form-label fw-semibold small text-muted">@Localizer["StartDateLabel"]</label>
                                 <input asp-for="StartDate" type="datetime-local" class="form-control" required />
                                 <span asp-validation-for="StartDate" class="text-danger small"></span>
                             </div>
-
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold small text-muted">
-                                    @Localizer["EndDateLabel"]
-                                </label>
-
+                                <label class="form-label fw-semibold small text-muted">@Localizer["EndDateLabel"]</label>
                                 <input asp-for="EndDate" type="datetime-local" class="form-control" required />
                                 <span asp-validation-for="EndDate" class="text-danger small"></span>
                             </div>
@@ -79,224 +73,96 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold small text-muted">Şehir</label>
+                                <label class="form-label fw-semibold small text-muted">Şehir</label>
                                 <input asp-for="City" class="form-control" placeholder="İstanbul" />
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold small text-muted">Ülke</label>
+                                <label class="form-label fw-semibold small text-muted">Ülke</label>
                                 <input asp-for="Country" class="form-control" placeholder="Türkiye" />
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold small text-muted">
-                                @Localizer["VenueLabel"]
-                            </label>
-
+                            <label class="form-label fw-semibold small text-muted">@Localizer["VenueLabel"]</label>
                             <input asp-for="Venue" class="form-control" />
                             <span asp-validation-for="Venue" class="text-danger small"></span>
                         </div>
 
-                        <div class="mb-4">
-                            <label class="form-label fw-bold small text-muted">
-                                @Localizer["DescriptionLabel"]
-                            </label>
-
+                        <div class="mb-0">
+                            <label class="form-label fw-semibold small text-muted">@Localizer["DescriptionLabel"]</label>
                             <textarea asp-for="Description" class="form-control" rows="4"></textarea>
                             <span asp-validation-for="Description" class="text-danger small"></span>
                         </div>
+                    </div>
+                </div>
 
-                        @* Bildiri Başvuru Ayarları *@
-                        <div class="card border-0 bg-light rounded-3 p-3 mb-4">
-                            <h6 class="fw-bold mb-3 text-muted">
-                                <i class="fas fa-calendar-check me-1"></i>
-                                Bildiri Başvuru Ayarları
-                            </h6>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold small text-muted">Özet Son Gönderim Tarihi</label>
-                                    <input asp-for="AbstractSubmissionDeadline" type="datetime-local" class="form-control" />
-                                    <div class="form-text">Boş bırakırsanız sınır uygulanmaz.</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold small text-muted">Tam Metin Son Gönderim Tarihi</label>
-                                    <input asp-for="FullTextSubmissionDeadline" type="datetime-local" class="form-control" />
-                                    <div class="form-text">Boş bırakırsanız sınır uygulanmaz.</div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="form-check form-switch">
-                                        <input asp-for="IsSubmissionOpen" class="form-check-input" type="checkbox" role="switch" />
-                                        <label asp-for="IsSubmissionOpen" class="form-check-label fw-medium">
-                                            Bildiri Başvuruları Açık
-                                            <small class="text-muted ms-1">(kapatmak için işareti kaldırın)</small>
-                                        </label>
-                                    </div>
-                                </div>
+                <div class="modern-card mb-4">
+                    <div class="modern-card-header">
+                        <div class="modern-card-icon soft-warning">
+                            <i class="fas fa-signature"></i>
+                        </div>
+                        <div>
+                            <h5 class="modern-card-title mb-1">@L("CertificateSignersHeader", "Sertifika İmza Sahipleri")</h5>
+                            <p class="modern-card-text mb-0">@L("CertificateSignersLead", "Sertifikalarda görünecek isim ve unvanlar.")</p>
+                        </div>
+                    </div>
+                    <div class="modern-card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small text-muted">@L("FirstSignerNameLabel", "1. İmzalayan Adı")</label>
+                                <input asp-for="CertificateFirstSignerName" class="form-control"
+                                       placeholder="@L("FirstSignerNamePlaceholder", "Prof. Dr. Ad Soyad")" />
+                                <span asp-validation-for="CertificateFirstSignerName" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small text-muted">@L("FirstSignerTitleLabel", "1. İmzalayan Unvanı")</label>
+                                <input asp-for="CertificateFirstSignerTitle" class="form-control"
+                                       placeholder="@L("FirstSignerTitlePlaceholder", "Kongre Başkanı")" />
+                                <span asp-validation-for="CertificateFirstSignerTitle" class="text-danger small"></span>
                             </div>
                         </div>
-
-                        <hr class="my-5 border-secondary opacity-25" />
-
-                        @* Kayıt Kotası *@
-                        <div class="p-4 border rounded-4 bg-light bg-opacity-75 mb-5">
-                            <div class="d-flex align-items-start mb-4">
-                                <div class="bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center me-3"
-                                     style="width: 46px; height: 46px; min-width: 46px;">
-                                    <i class="fas fa-users fs-5"></i>
-                                </div>
-                                <div>
-                                    <h6 class="fw-bold text-dark mb-1">Kayıt Ayarları</h6>
-                                    <p class="text-muted small mb-0">
-                                        Katılımcı kotası ve kayıt açık/kapalı durumunu buradan yönetin.
-                                    </p>
-                                </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small text-muted">@L("SecondSignerNameLabel", "2. İmzalayan Adı")</label>
+                                <input asp-for="CertificateSecondSignerName" class="form-control"
+                                       placeholder="@L("SecondSignerNamePlaceholder", "Prof. Dr. Ad Soyad")" />
+                                <span asp-validation-for="CertificateSecondSignerName" class="text-danger small"></span>
                             </div>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label asp-for="MaxRegistrations" class="form-label fw-medium">
-                                        Maksimum Kayıt Sayısı
-                                        <small class="text-muted">(boş = sınırsız)</small>
-                                    </label>
-                                    <input asp-for="MaxRegistrations" type="number" min="1" class="form-control"
-                                           placeholder="Örn: 500" />
-                                </div>
-                                <div class="col-12">
-                                    <div class="form-check form-switch">
-                                        <input asp-for="IsRegistrationOpen" class="form-check-input" type="checkbox" role="switch" />
-                                        <label asp-for="IsRegistrationOpen" class="form-check-label fw-medium">
-                                            Kayıt Açık
-                                            <small class="text-muted ms-1">(kapatmak için işareti kaldırın)</small>
-                                        </label>
-                                    </div>
-                                </div>
+                            <div class="col-md-6 mb-0">
+                                <label class="form-label fw-semibold small text-muted">@L("SecondSignerTitleLabel", "2. İmzalayan Unvanı")</label>
+                                <input asp-for="CertificateSecondSignerTitle" class="form-control"
+                                       placeholder="@L("SecondSignerTitlePlaceholder", "Bilim Kurulu Başkanı")" />
+                                <span asp-validation-for="CertificateSecondSignerTitle" class="text-danger small"></span>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <hr class="my-5 border-secondary opacity-25" />
-
-                        <div class="p-4 border rounded-4 bg-light bg-opacity-75 mb-5">
-                            <div class="d-flex align-items-start mb-4">
-                                <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center me-3"
-                                     style="width: 46px; height: 46px; min-width: 46px;">
-                                    <i class="fas fa-certificate fs-5"></i>
-                                </div>
-
-                                <div>
-                                    <h6 class="fw-bold text-dark mb-1">
-                                        @L("CertificateSignersHeader", "Sertifika İmza Bilgileri")
-                                    </h6>
-
-                                    <p class="text-muted small mb-0">
-                                        @L("CertificateSignersLead", "Hakem sertifikalarında görünecek imza sahiplerini bu alandan belirleyebilirsiniz. Boş bırakılırsa varsayılan unvanlar kullanılır.")
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <div class="bg-white border rounded-4 p-4 h-100 shadow-sm">
-                                        <h6 class="fw-bold text-primary mb-3">
-                                            <i class="fas fa-signature me-2"></i>
-                                            @L("FirstSignerTitle", "Birinci İmza")
-                                        </h6>
-
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold small text-muted">
-                                                @L("FirstSignerNameLabel", "Ad Soyad")
-                                            </label>
-
-                                            <input asp-for="CertificateFirstSignerName"
-                                                   class="form-control"
-                                                   placeholder="@L("FirstSignerNamePlaceholder", "Örn: Prof. Dr. Mehmet Yılmaz")" />
-
-                                            <span asp-validation-for="CertificateFirstSignerName" class="text-danger small"></span>
-                                        </div>
-
-                                        <div class="mb-0">
-                                            <label class="form-label fw-bold small text-muted">
-                                                @L("FirstSignerTitleLabel", "Unvan / Görev")
-                                            </label>
-
-                                            <input asp-for="CertificateFirstSignerTitle"
-                                                   class="form-control"
-                                                   placeholder="@L("FirstSignerTitlePlaceholder", "Örn: Kongre Başkanı")" />
-
-                                            <span asp-validation-for="CertificateFirstSignerTitle" class="text-danger small"></span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div class="bg-white border rounded-4 p-4 h-100 shadow-sm">
-                                        <h6 class="fw-bold text-success mb-3">
-                                            <i class="fas fa-signature me-2"></i>
-                                            @L("SecondSignerTitle", "İkinci İmza")
-                                        </h6>
-
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold small text-muted">
-                                                @L("SecondSignerNameLabel", "Ad Soyad")
-                                            </label>
-
-                                            <input asp-for="CertificateSecondSignerName"
-                                                   class="form-control"
-                                                   placeholder="@L("SecondSignerNamePlaceholder", "Örn: Doç. Dr. Ayşe Demir")" />
-
-                                            <span asp-validation-for="CertificateSecondSignerName" class="text-danger small"></span>
-                                        </div>
-
-                                        <div class="mb-0">
-                                            <label class="form-label fw-bold small text-muted">
-                                                @L("SecondSignerTitleLabel", "Unvan / Görev")
-                                            </label>
-
-                                            <input asp-for="CertificateSecondSignerTitle"
-                                                   class="form-control"
-                                                   placeholder="@L("SecondSignerTitlePlaceholder", "Örn: Bilim Kurulu Başkanı")" />
-
-                                            <span asp-validation-for="CertificateSecondSignerTitle" class="text-danger small"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                <div class="modern-card mb-4">
+                    <div class="modern-card-header">
+                        <div class="modern-card-icon soft-secondary">
+                            <i class="fas fa-file-word"></i>
                         </div>
-
-                        <hr class="my-5 border-secondary opacity-25" />
-
-                        <h6 class="fw-bold text-dark mb-4">
-                            <i class="fas fa-file-word text-primary me-2"></i>
-                            @Localizer["DocumentsHeader"]
-                        </h6>
-
-                        <p class="text-muted small mb-4">
-                            @Localizer["DocumentsLead"]
-                        </p>
-
-                        <div class="row g-4 mb-5">
+                        <div>
+                            <h5 class="modern-card-title mb-1">@Localizer["DocumentsHeader"]</h5>
+                            <p class="modern-card-text mb-0">@Localizer["DocumentsLead"]</p>
+                        </div>
+                    </div>
+                    <div class="modern-card-body">
+                        <div class="row g-3">
 
                             <div class="col-md-4">
-                                <div class="p-4 border rounded-4 bg-light text-center h-100 d-flex flex-column justify-content-between">
+                                <div class="border rounded-3 p-3 text-center h-100 d-flex flex-column justify-content-between bg-light">
                                     <div>
-                                        <i class="fas fa-book-open fa-2x text-secondary mb-3"></i>
-
-                                        <h6 class="fw-bold text-dark">
-                                            @Localizer["WritingRulesTitle"]
-                                        </h6>
-
-                                        <input type="file"
-                                               name="WritingRulesFile"
-                                               class="form-control form-control-sm mb-3 shadow-sm"
-                                               accept=".doc,.docx,.pdf" />
+                                        <i class="fas fa-book-open fa-2x text-secondary mb-2"></i>
+                                        <h6 class="fw-semibold small text-dark mb-2">@Localizer["WritingRulesTitle"]</h6>
+                                        <input type="file" name="WritingRulesFile" class="form-control form-control-sm mb-2" accept=".doc,.docx,.pdf" />
                                     </div>
-
                                     @if (!string.IsNullOrEmpty(Model.WritingRulesPath))
                                     {
-                                        <a href="@Model.WritingRulesPath"
-                                           target="_blank"
-                                           class="badge bg-success text-decoration-none p-2 w-100 shadow-sm">
-                                            <i class="fas fa-check-circle me-1"></i>
-                                            @Localizer["UploadedView"]
-                                        </a>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle p-2 w-100">
+                                            <i class="fas fa-check-circle me-1"></i> @Localizer["UploadedView"]
+                                        </span>
                                     }
                                     else
                                     {
@@ -308,28 +174,17 @@
                             </div>
 
                             <div class="col-md-4">
-                                <div class="p-4 border rounded-4 bg-light text-center h-100 d-flex flex-column justify-content-between">
+                                <div class="border rounded-3 p-3 text-center h-100 d-flex flex-column justify-content-between bg-light">
                                     <div>
-                                        <i class="fas fa-file-alt fa-2x text-secondary mb-3"></i>
-
-                                        <h6 class="fw-bold text-dark">
-                                            @Localizer["AbstractTemplateTitle"]
-                                        </h6>
-
-                                        <input type="file"
-                                               name="AbstractTemplateFile"
-                                               class="form-control form-control-sm mb-3 shadow-sm"
-                                               accept=".doc,.docx,.pdf" />
+                                        <i class="fas fa-file-alt fa-2x text-secondary mb-2"></i>
+                                        <h6 class="fw-semibold small text-dark mb-2">@Localizer["AbstractTemplateTitle"]</h6>
+                                        <input type="file" name="AbstractTemplateFile" class="form-control form-control-sm mb-2" accept=".doc,.docx,.pdf" />
                                     </div>
-
                                     @if (!string.IsNullOrEmpty(Model.AbstractTemplatePath))
                                     {
-                                        <a href="@Model.AbstractTemplatePath"
-                                           target="_blank"
-                                           class="badge bg-success text-decoration-none p-2 w-100 shadow-sm">
-                                            <i class="fas fa-check-circle me-1"></i>
-                                            @Localizer["UploadedView"]
-                                        </a>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle p-2 w-100">
+                                            <i class="fas fa-check-circle me-1"></i> @Localizer["UploadedView"]
+                                        </span>
                                     }
                                     else
                                     {
@@ -341,28 +196,17 @@
                             </div>
 
                             <div class="col-md-4">
-                                <div class="p-4 border rounded-4 bg-light text-center h-100 d-flex flex-column justify-content-between">
+                                <div class="border rounded-3 p-3 text-center h-100 d-flex flex-column justify-content-between bg-light">
                                     <div>
-                                        <i class="fas fa-file-word fa-2x text-secondary mb-3"></i>
-
-                                        <h6 class="fw-bold text-dark">
-                                            @Localizer["FullTextTemplateTitle"]
-                                        </h6>
-
-                                        <input type="file"
-                                               name="FullTextTemplateFile"
-                                               class="form-control form-control-sm mb-3 shadow-sm"
-                                               accept=".doc,.docx,.pdf" />
+                                        <i class="fas fa-file-word fa-2x text-secondary mb-2"></i>
+                                        <h6 class="fw-semibold small text-dark mb-2">@Localizer["FullTextTemplateTitle"]</h6>
+                                        <input type="file" name="FullTextTemplateFile" class="form-control form-control-sm mb-2" accept=".doc,.docx,.pdf" />
                                     </div>
-
                                     @if (!string.IsNullOrEmpty(Model.FullTextTemplatePath))
                                     {
-                                        <a href="@Model.FullTextTemplatePath"
-                                           target="_blank"
-                                           class="badge bg-success text-decoration-none p-2 w-100 shadow-sm">
-                                            <i class="fas fa-check-circle me-1"></i>
-                                            @Localizer["UploadedView"]
-                                        </a>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle p-2 w-100">
+                                            <i class="fas fa-check-circle me-1"></i> @Localizer["UploadedView"]
+                                        </span>
                                     }
                                     else
                                     {
@@ -374,26 +218,119 @@
                             </div>
 
                         </div>
-
-                        <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded-4 border">
-                            <a asp-area="Admin"
-                               asp-controller="Conferences"
-                               asp-action="Index"
-                               asp-route-slug="@slug"
-                               class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
-                                @Localizer["CancelButton"]
-                            </a>
-
-                            <button type="submit" class="btn btn-primary btn-lg fw-bold px-5 rounded-pill shadow-sm">
-                                <i class="fas fa-save me-2"></i>
-                                @Localizer["SaveButton"]
-                            </button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
+
+            </div>
+
+            <div class="col-lg-4">
+
+                <div class="modern-card mb-4">
+                    <div class="modern-card-header">
+                        <div class="modern-card-icon soft-success">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div>
+                            <h5 class="modern-card-title mb-1">Son Başvuru Tarihleri</h5>
+                            <p class="modern-card-text mb-0">Bildiri ve tam metin deadline'ları.</p>
+                        </div>
+                    </div>
+                    <div class="modern-card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-muted">Özet Son Gönderim</label>
+                            <input asp-for="AbstractSubmissionDeadline" type="datetime-local" class="form-control" />
+                            <div class="form-text">Boş bırakırsanız sınır uygulanmaz.</div>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label fw-semibold small text-muted">Tam Metin Son Gönderim</label>
+                            <input asp-for="FullTextSubmissionDeadline" type="datetime-local" class="form-control" />
+                            <div class="form-text">Boş bırakırsanız sınır uygulanmaz.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modern-card mb-4">
+                    <div class="modern-card-header">
+                        <div class="modern-card-icon soft-secondary">
+                            <i class="fas fa-image"></i>
+                        </div>
+                        <div>
+                            <h5 class="modern-card-title mb-1">Görsel</h5>
+                            <p class="modern-card-text mb-0">Logo ve banner (JPG, PNG, WEBP — maks. 5 MB).</p>
+                        </div>
+                    </div>
+                    <div class="modern-card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-muted">Kongre Logosu</label>
+                            @if (!string.IsNullOrEmpty(Model.LogoPath))
+                            {
+                                <div class="mb-2">
+                                    <img src="@Model.LogoPath" alt="Logo" class="img-thumbnail" style="max-height:60px;" />
+                                </div>
+                            }
+                            <input type="file" name="LogoFile" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.webp" />
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label fw-semibold small text-muted">Banner Görseli</label>
+                            @if (!string.IsNullOrEmpty(Model.BannerPath))
+                            {
+                                <div class="mb-2">
+                                    <img src="@Model.BannerPath" alt="Banner" class="img-thumbnail w-100" style="max-height:80px;object-fit:cover;" />
+                                </div>
+                            }
+                            <input type="file" name="BannerFile" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.webp" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modern-card mb-4">
+                    <div class="modern-card-header">
+                        <div class="modern-card-icon soft-primary">
+                            <i class="fas fa-toggle-on"></i>
+                        </div>
+                        <div>
+                            <h5 class="modern-card-title mb-1">Ayarlar</h5>
+                            <p class="modern-card-text mb-0">Başvuru, kayıt durumları ve kota.</p>
+                        </div>
+                    </div>
+                    <div class="modern-card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-muted">
+                                Maksimum Kayıt Sayısı
+                                <small class="text-muted">(boş = sınırsız)</small>
+                            </label>
+                            <input asp-for="MaxRegistrations" type="number" min="1" class="form-control" placeholder="Örn: 500" />
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input asp-for="IsSubmissionOpen" class="form-check-input" type="checkbox" role="switch" />
+                            <label class="form-check-label fw-medium">
+                                Bildiri Başvuruları Açık
+                                <small class="text-muted d-block">kapatmak için işareti kaldırın</small>
+                            </label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input asp-for="IsRegistrationOpen" class="form-check-input" type="checkbox" role="switch" />
+                            <label class="form-check-label fw-medium">
+                                Kayıt Açık
+                                <small class="text-muted d-block">kapatmak için işareti kaldırın</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="conference-form-actions d-grid gap-2">
+                    <button type="submit" class="btn btn-primary fw-bold py-3">
+                        <i class="fas fa-save me-2"></i> @Localizer["SaveButton"]
+                    </button>
+                    <a asp-area="Admin" asp-controller="Conferences" asp-action="Index" asp-route-slug="@slug"
+                       class="btn btn-light border text-muted">
+                        @Localizer["CancelButton"]
+                    </a>
+                </div>
+
             </div>
         </div>
-    </div>
+    </form>
 </div>
 
 @section Scripts {

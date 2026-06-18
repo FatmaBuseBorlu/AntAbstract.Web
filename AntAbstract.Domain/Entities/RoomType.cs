@@ -7,20 +7,20 @@ namespace AntAbstract.Domain.Entities
     public class RoomType : BaseEntity
     {
         [Required]
-        public string Name { get; set; } 
+        public string Name { get; set; } = string.Empty;
 
         [Column(TypeName = "decimal(18,2)")]
-        public decimal Price { get; set; } 
+        public decimal Price { get; set; }
 
         public string Currency { get; set; } = "TL";
 
-        public int Capacity { get; set; } = 1; 
+        public int Capacity { get; set; } = 1;
 
-        public int TotalQuota { get; set; } = 100; 
+        public int TotalQuota { get; set; } = 100;
 
 
         public Guid HotelId { get; set; }
         [ForeignKey("HotelId")]
-        public Hotel Hotel { get; set; }
+        public Hotel Hotel { get; set; } = null!;
     }
 }

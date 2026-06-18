@@ -134,6 +134,24 @@
                 Kullanıcı / Hakem Bağla
             </a>
 
+            @{
+                var inviteUrl = string.IsNullOrWhiteSpace(slug)
+                    ? conferenceId != Guid.Empty ? $"/Admin/Referee/InviteByEmail?conferenceId={conferenceId}" : "/Admin/Referee/InviteByEmail"
+                    : conferenceId != Guid.Empty ? $"/{slug}/Admin/Referee/InviteByEmail?conferenceId={conferenceId}" : $"/{slug}/Admin/Referee/InviteByEmail";
+                var invitationsUrl = string.IsNullOrWhiteSpace(slug)
+                    ? conferenceId != Guid.Empty ? $"/Admin/Referee/Invitations?conferenceId={conferenceId}" : "/Admin/Referee/Invitations"
+                    : conferenceId != Guid.Empty ? $"/{slug}/Admin/Referee/Invitations?conferenceId={conferenceId}" : $"/{slug}/Admin/Referee/Invitations";
+            }
+            <a href="@inviteUrl" class="btn referee-outline-btn">
+                <i class="fas fa-envelope-open-text me-2"></i>
+                E-posta ile Davet Et
+            </a>
+
+            <a href="@invitationsUrl" class="btn referee-light-btn">
+                <i class="fas fa-list me-2"></i>
+                Davetler
+            </a>
+
         </div>
     </div>
 

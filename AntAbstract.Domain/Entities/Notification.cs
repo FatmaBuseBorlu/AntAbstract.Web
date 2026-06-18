@@ -11,18 +11,18 @@ namespace AntAbstract.Domain.Entities
     public class Notification : BaseEntity
     {
         [Key]
-        public int Id { get; set; }
+        public new int Id { get; set; }
 
         [Required]
-        public string UserId { get; set; }
+        public string UserId { get; set; } = string.Empty;
 
         [ForeignKey("UserId")]
-        public AppUser User { get; set; }
+        public AppUser User { get; set; } = null!;
 
         [Required]
-        public string Title { get; set; }
-        public string Message { get; set; }
-        public string Link { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public string Link { get; set; } = string.Empty;
 
         public bool IsRead { get; set; } = false;
         public string Icon { get; set; } = "fas fa-info-circle";

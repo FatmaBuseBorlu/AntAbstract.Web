@@ -918,5 +918,116 @@ namespace AntAbstract.Web.Controllers
                 ? normalized.Substring(0, maxLength).Trim().TrimEnd(',')
                 : normalized;
         }
+
+        // ── Bidding ──────────────────────────────────────────────────────────────
+
+        [HttpGet("/Review/Bidding")]
+        [HttpGet("/{slug}/Review/Bidding")]
+        public async Task<IActionResult> Bidding(string? slug = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var currentSlug = GetSlug(slug);
+            var conference = string.IsNullOrWhiteSpace(currentSlug)
+                ? null
+                : await GetConferenceBySlugAsync(currentSlug);
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = "Geçerli bir kongre seçilmedi.";
+                return RedirectToAction(nameof(Index), new { slug = currentSlug });
+            }
+
+            if (!conference.IsBiddingOpen)
+            {
+                TempData["InfoMessage"] = "Bu kongre için teklif fazı henüz açılmamış.";
+                return RedirectToAction(nameof(Index), new { slug = currentSlug });
+            }
+
+            var canonicalSlug = GetCanonicalSlug(conference, currentSlug);
+            if (!string.Equals(canonicalSlug, currentSlug, StringComparison.OrdinalIgnoreCase))
+                return Redirect(BuildUrl(canonicalSlug, "/Review/Bidding"));
+
+            var submissions = await _context.Submissions
+                .AsNoTracking()
+                .Where(s => s.ConferenceId == conference.Id &&
+                            s.Status != AntAbstract.Domain.Entities.SubmissionStatus.Withdrawn)
+                .Select(s => new { s.Id, s.Title, s.Abstract, s.Topic })
+                .OrderBy(s => s.Title)
+                .ToListAsync();
+
+            var myBids = await _context.ReviewBids
+                .AsNoTracking()
+                .Where(b => b.ReviewerId == user.Id &&
+                            b.Submission.ConferenceId == conference.Id)
+                .ToDictionaryAsync(b => b.SubmissionId, b => b.Preference);
+
+            ViewBag.Slug = canonicalSlug;
+            ViewBag.ConferenceTitle = conference.Title;
+            ViewBag.MyBids = myBids;
+            return View(submissions.Select(s => new AntAbstract.Web.Models.ViewModels.Review.BiddingSubmissionRow
+            {
+                Id = s.Id,
+                Title = s.Title ?? "",
+                Abstract = s.Abstract ?? "",
+                Topic = s.Topic ?? ""
+            }).ToList());
+        }
+
+        [HttpPost("/Review/Bidding")]
+        [HttpPost("/{slug}/Review/Bidding")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Bidding(
+            string? slug,
+            Guid submissionId,
+            AntAbstract.Domain.Entities.BidPreference preference)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var currentSlug = GetSlug(slug);
+
+            var existing = await _context.ReviewBids
+                .FirstOrDefaultAsync(b => b.ReviewerId == user.Id && b.SubmissionId == submissionId);
+
+            if (existing != null)
+            {
+                existing.Preference = preference;
+                existing.UpdatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                _context.ReviewBids.Add(new AntAbstract.Domain.Entities.ReviewBid
+                {
+                    SubmissionId = submissionId,
+                    ReviewerId = user.Id,
+                    Preference = preference,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+
+        [HttpDelete("/Review/Bidding/{submissionId}")]
+        [HttpDelete("/{slug}/Review/Bidding/{submissionId}")]
+        public async Task<IActionResult> RemoveBid(string? slug, Guid submissionId)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var bid = await _context.ReviewBids
+                .FirstOrDefaultAsync(b => b.ReviewerId == user.Id && b.SubmissionId == submissionId);
+
+            if (bid != null)
+            {
+                _context.ReviewBids.Remove(bid);
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok();
+        }
     }
 }

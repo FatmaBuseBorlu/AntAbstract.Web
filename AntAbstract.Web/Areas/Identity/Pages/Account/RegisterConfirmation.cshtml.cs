@@ -24,16 +24,16 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             _localizer = localizer;
         }
 
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
 
         public bool DisplayConfirmAccountLink { get; set; }
 
-        public string EmailConfirmationUrl { get; set; }
+        public string EmailConfirmationUrl { get; set; } = string.Empty;
 
         [TempData]
-        public string StatusMessage { get; set; }
+        public string StatusMessage { get; set; } = string.Empty;
 
-        public async Task<IActionResult> OnGetAsync(string email, string returnUrl = null)
+        public async Task<IActionResult> OnGetAsync(string email, string? returnUrl = null)
         {
             if (string.IsNullOrWhiteSpace(email))
             {
