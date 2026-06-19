@@ -94,6 +94,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             return await _context.Conferences
+                .IgnoreQueryFilters()
                 .Include(c => c.Tenant)
                 .AsNoTracking()
                 .Where(c =>
@@ -123,6 +124,7 @@ namespace AntAbstract.Web.Controllers
             if (selectedConferenceId.HasValue && selectedConferenceId.Value != Guid.Empty)
             {
                 var selectedConference = await _context.Conferences
+                    .IgnoreQueryFilters()
                     .Include(c => c.Tenant)
                     .AsNoTracking()
                     .FirstOrDefaultAsync(c => c.Id == selectedConferenceId.Value);
@@ -157,6 +159,7 @@ namespace AntAbstract.Web.Controllers
             Guid conferenceId)
         {
             var registration = await _context.Registrations
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(r => r.RegistrationType)
                 .FirstOrDefaultAsync(r =>
@@ -183,6 +186,7 @@ namespace AntAbstract.Web.Controllers
             Guid conferenceId)
         {
             return await _context.ConferenceAttendances
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x =>
                     x.UserId == userId &&
@@ -261,6 +265,7 @@ namespace AntAbstract.Web.Controllers
             SetSelectedConferenceSession(conference, canonicalSlug);
 
             var sessions = await _context.Sessions
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Where(s =>
                     s.ConferenceId == conference.Id &&
@@ -302,6 +307,7 @@ namespace AntAbstract.Web.Controllers
             SetSelectedConferenceSession(conference, canonicalSlug);
 
             var session = await _context.Sessions
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(s => s.Submissions)
                     .ThenInclude(sub => sub.Author)
