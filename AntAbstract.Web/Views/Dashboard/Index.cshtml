@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Http
 @using System
 @using System.Linq
+@using System.Text.Json
 
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
@@ -73,6 +74,12 @@
     var adminWebsiteUrl         = BuildUrl("/Admin/Website", "/Admin/Website");
     var adminRefereeUrl         = BuildUrl("/Admin/Referee", "/Admin/Referee");
     var adminIncompleteUrl      = BuildUrl("/Admin/Submissions/Incomplete", "/Admin/Submissions/Incomplete");
+
+    var trendLabelsJson = JsonSerializer.Serialize(Model?.TrendLabels?.ToArray() ?? Array.Empty<string>());
+    var dailyRegistrationsJson = JsonSerializer.Serialize(Model?.DailyRegistrationCounts?.ToArray() ?? Array.Empty<int>());
+    var dailyPaymentsJson = JsonSerializer.Serialize(Model?.DailyPaymentAmounts?.Select(x => Math.Round(x, 2)).ToArray() ?? Array.Empty<decimal>());
+    var trendRegistrationTotal = Model?.DailyRegistrationCounts?.Sum() ?? 0;
+    var trendRevenueTotal = Model?.DailyPaymentAmounts?.Sum() ?? 0m;
 }
 
 <style>
@@ -318,6 +325,74 @@
 
     .dashboard-card-body {
         padding: 1.35rem;
+    }
+
+    .dashboard-analytics-card {
+        margin-top: 1.25rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        background: radial-gradient(circle at top right, rgba(13, 110, 253, 0.10), transparent 35%), #ffffff;
+        overflow: hidden;
+    }
+
+    .dashboard-analytics-header {
+        padding: 1rem 1.1rem;
+        border-bottom: 1px solid #edf2f7;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .dashboard-analytics-title {
+        color: #0f172a;
+        font-size: 0.96rem;
+        font-weight: 900;
+        margin: 0;
+    }
+
+    .dashboard-analytics-subtitle {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 750;
+        margin: 0.2rem 0 0;
+    }
+
+    .dashboard-analytics-metrics {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+    }
+
+    .dashboard-analytics-metric {
+        min-width: 138px;
+        border-radius: 16px;
+        padding: 0.75rem 0.9rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .dashboard-analytics-metric strong {
+        display: block;
+        color: #0f172a;
+        font-size: 1.05rem;
+        font-weight: 900;
+        line-height: 1.1;
+    }
+
+    .dashboard-analytics-metric span {
+        display: block;
+        color: #64748b;
+        font-size: 0.72rem;
+        font-weight: 850;
+        margin-top: 0.25rem;
+    }
+
+    .dashboard-analytics-chart {
+        height: 285px;
+        padding: 1.1rem;
     }
 
     .quick-actions-grid {
@@ -774,6 +849,37 @@
                         <a href="@adminAssignmentUrl" class="btn btn-sm btn-danger ms-auto">@L("AssignButton", "Ata")</a>
                     </div>
                 }
+
+                <div class="dashboard-analytics-card">
+                    <div class="dashboard-analytics-header">
+                        <div>
+                            <h6 class="dashboard-analytics-title">
+                                <i class="fas fa-chart-line me-2 text-primary"></i>
+                                @L("DashboardTrendTitle", "Son 14 Gün Trendi")
+                            </h6>
+                            <p class="dashboard-analytics-subtitle">
+                                @L("DashboardTrendSubtitle", "Günlük kayıt sayısı ve ödeme gelirini birlikte izleyin.")
+                            </p>
+                        </div>
+
+                        <div class="dashboard-analytics-metrics">
+                            <div class="dashboard-analytics-metric">
+                                <strong>@trendRegistrationTotal</strong>
+                                <span>@L("TrendRegistrationsLabel", "14 günlük kayıt")</span>
+                            </div>
+                            <div class="dashboard-analytics-metric">
+                                <strong>@trendRevenueTotal.ToString("N0") @Model.RevenueCurrency</strong>
+                                <span>@L("TrendRevenueLabel", "14 günlük ödeme")</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-analytics-chart">
+                        <canvas id="dashboardTrendChart"
+                                aria-label="@L("DashboardTrendChartLabel", "Günlük kayıt ve ödeme trend grafiği")"
+                                role="img"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
     }
@@ -1016,3 +1122,102 @@
         </aside>
     </div>
 </div>
+
+@section Scripts {
+    @if (isAdmin && Model?.SelectedConference != null)
+    {
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const canvas = document.getElementById('dashboardTrendChart');
+
+                if (!canvas || typeof Chart === 'undefined') {
+                    return;
+                }
+
+                const labels = @Html.Raw(trendLabelsJson);
+                const registrations = @Html.Raw(dailyRegistrationsJson);
+                const payments = @Html.Raw(dailyPaymentsJson);
+                const currency = @Html.Raw(JsonSerializer.Serialize(Model.RevenueCurrency));
+
+                new Chart(canvas.getContext('2d'), {
+                    data: {
+                        labels,
+                        datasets: [
+                            {
+                                type: 'bar',
+                                label: 'Günlük kayıt',
+                                data: registrations,
+                                backgroundColor: 'rgba(13, 110, 253, 0.18)',
+                                borderColor: '#0d6efd',
+                                borderWidth: 1,
+                                borderRadius: 8,
+                                yAxisID: 'registrations'
+                            },
+                            {
+                                type: 'line',
+                                label: `Ödeme (${currency})`,
+                                data: payments,
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.36,
+                                pointRadius: 3,
+                                pointHoverRadius: 5,
+                                yAxisID: 'payments'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: { usePointStyle: true, font: { weight: '700' } }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (ctx) {
+                                        if (ctx.dataset.yAxisID === 'payments') {
+                                            return `${ctx.dataset.label}: ${Number(ctx.raw || 0).toLocaleString('tr-TR')} ${currency}`;
+                                        }
+
+                                        return `${ctx.dataset.label}: ${ctx.raw || 0}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { font: { weight: '700' } }
+                            },
+                            registrations: {
+                                type: 'linear',
+                                position: 'left',
+                                beginAtZero: true,
+                                ticks: { precision: 0 },
+                                title: { display: true, text: 'Kayıt' }
+                            },
+                            payments: {
+                                type: 'linear',
+                                position: 'right',
+                                beginAtZero: true,
+                                grid: { drawOnChartArea: false },
+                                ticks: {
+                                    callback: function (value) {
+                                        return Number(value).toLocaleString('tr-TR');
+                                    }
+                                },
+                                title: { display: true, text: currency }
+                            }
+                        }
+                    }
+                });
+            });
+        </script>
+    }
+}

@@ -810,6 +810,70 @@ namespace AntAbstract.Web.Controllers
                 viewModel.PendingPayments = await regQuery.CountAsync(r => !r.IsPaid && r.ReceiptFilePath == null);
                 viewModel.ReceiptWaiting = await regQuery.CountAsync(r => !r.IsPaid && r.ReceiptFilePath != null);
                 viewModel.TotalRevenue = await regQuery.Where(r => r.IsPaid).SumAsync(r => r.Amount);
+                viewModel.RevenueCurrency = await _context.RegistrationTypes.AsNoTracking()
+                    .Where(rt => rt.ConferenceId == confId)
+                    .Select(rt => rt.Currency)
+                    .FirstOrDefaultAsync() ?? "TRY";
+
+                var trendStartDate = DateTime.UtcNow.Date.AddDays(-13);
+                var trendEndDate = DateTime.UtcNow.Date.AddDays(1);
+
+                var registrationTrendRows = await regQuery
+                    .Where(r => r.RegistrationDate >= trendStartDate &&
+                                r.RegistrationDate < trendEndDate)
+                    .GroupBy(r => new
+                    {
+                        r.RegistrationDate.Year,
+                        r.RegistrationDate.Month,
+                        r.RegistrationDate.Day
+                    })
+                    .Select(g => new
+                    {
+                        g.Key.Year,
+                        g.Key.Month,
+                        g.Key.Day,
+                        Count = g.Count()
+                    })
+                    .ToListAsync();
+
+                var paymentTrendRows = await regQuery
+                    .Where(r => r.IsPaid &&
+                                r.PaymentDate.HasValue &&
+                                r.PaymentDate.Value >= trendStartDate &&
+                                r.PaymentDate.Value < trendEndDate)
+                    .GroupBy(r => new
+                    {
+                        r.PaymentDate!.Value.Year,
+                        r.PaymentDate.Value.Month,
+                        r.PaymentDate.Value.Day
+                    })
+                    .Select(g => new
+                    {
+                        g.Key.Year,
+                        g.Key.Month,
+                        g.Key.Day,
+                        Amount = g.Sum(r => r.Amount)
+                    })
+                    .ToListAsync();
+
+                var registrationTrendMap = registrationTrendRows
+                    .ToDictionary(
+                        x => new DateTime(x.Year, x.Month, x.Day),
+                        x => x.Count);
+
+                var paymentTrendMap = paymentTrendRows
+                    .ToDictionary(
+                        x => new DateTime(x.Year, x.Month, x.Day),
+                        x => x.Amount);
+
+                for (var day = trendStartDate; day < trendEndDate; day = day.AddDays(1))
+                {
+                    viewModel.TrendLabels.Add(day.ToString("dd.MM"));
+                    viewModel.DailyRegistrationCounts.Add(
+                        registrationTrendMap.TryGetValue(day, out var count) ? count : 0);
+                    viewModel.DailyPaymentAmounts.Add(
+                        paymentTrendMap.TryGetValue(day, out var amount) ? amount : 0m);
+                }
 
                 // Hakeme atanmamış kabul edilmiş / bekleyen bildirileri say
                 viewModel.PendingAssignments = await _context.Submissions.AsNoTracking()

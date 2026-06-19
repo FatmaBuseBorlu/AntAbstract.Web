@@ -10,6 +10,9 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Dashboard
         public int TotalReviews { get; set; }
         public List<string> ChartLabels { get; set; }
         public List<int> ChartData { get; set; }
+        public List<string> TrendLabels { get; set; }
+        public List<int> DailyRegistrationCounts { get; set; }
+        public List<decimal> DailyPaymentAmounts { get; set; }
 
         public int AcceptedSubmissions { get; set; }
         public int AwaitingDecision { get; set; }
@@ -38,6 +41,9 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Dashboard
         {
             ChartLabels = new List<string>();
             ChartData = new List<int>();
+            TrendLabels = new List<string>();
+            DailyRegistrationCounts = new List<int>();
+            DailyPaymentAmounts = new List<decimal>();
         }
     }
 
