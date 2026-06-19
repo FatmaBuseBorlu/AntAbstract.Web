@@ -136,10 +136,10 @@
                 <span class="badge bg-white text-primary ms-auto">@day.Count() oturum</span>
             </div>
 
-            <div class="row g-3 mb-4">
+            <div class="row g-3 mb-4 sortable-day" data-date="@day.Key.ToString("yyyy-MM-dd")">
                 @foreach (var session in day.OrderBy(s => s.StartTime).ThenBy(s => s.SortOrder))
                 {
-                    <div class="col-12 col-lg-6">
+                    <div class="col-12 col-lg-6" data-session-id="@session.Id">
                         <div class="session-card p-3 h-100">
                             <div class="d-flex align-items-start gap-2 mb-2">
                                 <span class="session-time-badge">
@@ -158,7 +158,9 @@
                                 }
                             </div>
 
-                            <h6 class="fw-bold mb-1">@session.Title</h6>
+                            <h6 class="fw-bold mb-1">
+                                <i class="fas fa-grip-vertical text-muted me-2 drag-handle" style="cursor:grab;opacity:0.4;"></i>@session.Title
+                            </h6>
 
                             @if (!string.IsNullOrWhiteSpace(session.SpeakerName))
                             {
@@ -206,3 +208,32 @@
         }
     }
 </div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.sortable-day').forEach(function (container) {
+        new Sortable(container, {
+            handle: '.drag-handle',
+            animation: 200,
+            ghostClass: 'bg-primary bg-opacity-10',
+            onEnd: function () {
+                var ids = [];
+                container.querySelectorAll('[data-session-id]').forEach(function (el) {
+                    ids.push(el.dataset.sessionId);
+                });
+                fetch('@Url("/Admin/Session/Reorder")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        conferenceId: '@confId',
+                        sessionIds: ids
+                    })
+                });
+            }
+        });
+    });
+});
+</script>
+}

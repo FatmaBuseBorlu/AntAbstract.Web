@@ -78,8 +78,25 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/access-denied";
 });
 
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "AntAbstract-Default-Key-Change-In-Production-2026!";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "AntAbstract";
+
 builder.Services
     .AddAuthentication()
+    .AddJwtBearer("Bearer", opt =>
+    {
+        opt.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtIssuer,
+            IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+                System.Text.Encoding.UTF8.GetBytes(jwtKey))
+        };
+    })
     .AddOpenIdConnect("ORCID", "ORCID", options =>
     {
         var authority = builder.Configuration["Authentication:ORCID:Authority"];

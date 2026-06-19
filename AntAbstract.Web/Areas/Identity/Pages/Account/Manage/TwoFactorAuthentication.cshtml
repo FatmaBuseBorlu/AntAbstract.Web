@@ -1,4 +1,4 @@
-﻿@page
+@page
 @using Microsoft.AspNetCore.Http.Features
 @model TwoFactorAuthenticationModel
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
@@ -9,86 +9,120 @@
 }
 
 <partial name="_StatusMessage" for="StatusMessage" />
-<h3>@ViewData["Title"]</h3>
+
+<div class="container" style="max-width:720px">
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#7c3aed,#a78bfa);display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-shield-halved text-white fs-5"></i>
+                </div>
+                <div>
+                    <h4 class="fw-bold mb-0">@ViewData["Title"]</h4>
+                    <p class="text-muted mb-0 small">Hesabınızın güvenliğini artırın</p>
+                </div>
+            </div>
 
 @{
     var consentFeature = HttpContext.Features.Get<ITrackingConsentFeature>();
 
-    @if (consentFeature?.CanTrack ?? true)
+    if (consentFeature?.CanTrack ?? true)
     {
-        @if (Model.Is2faEnabled)
+        if (Model.Is2faEnabled)
         {
+            <div class="alert alert-success border-0 rounded-3 d-flex align-items-center gap-2 mb-4">
+                <i class="fas fa-check-circle fs-5"></i>
+                <div>
+                    <strong>2FA Aktif</strong>
+                    <span class="text-muted ms-1">— Hesabınız iki faktörlü doğrulama ile korunuyor.</span>
+                </div>
+            </div>
+
             if (Model.RecoveryCodesLeft == 0)
             {
-                <div class="alert alert-danger">
-                    <strong>@Localizer["NoRecoveryCodesTitle"]</strong>
-                    <p>
-                        @Localizer["NoRecoveryCodesText_Part1"]
-                        <a asp-page="./GenerateRecoveryCodes">@Localizer["GenerateRecoveryCodesLink"]</a>
-                        @Localizer["NoRecoveryCodesText_Part2"]
-                    </p>
-                </div>
-            }
-            else if (Model.RecoveryCodesLeft == 1)
-            {
-                <div class="alert alert-danger">
-                    <strong>@Localizer["OneRecoveryCodeLeftTitle"]</strong>
-                    <p>
-                        @Localizer["OneRecoveryCodeLeftText_Part1"]
-                        <a asp-page="./GenerateRecoveryCodes">@Localizer["GenerateRecoveryCodesLink"]</a>
-                        @Localizer["OneRecoveryCodeLeftText_Part2"]
-                    </p>
+                <div class="alert alert-danger border-0 rounded-3 mb-3">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    <strong>Kurtarma kodunuz kalmadı!</strong>
+                    <a asp-page="./GenerateRecoveryCodes" class="alert-link">Yeni kodlar oluşturun</a>.
                 </div>
             }
             else if (Model.RecoveryCodesLeft <= 3)
             {
-                <div class="alert alert-warning">
-                    <strong>@Localizer["FewRecoveryCodesLeftTitle", Model.RecoveryCodesLeft]</strong>
-                    <p>
-                        @Localizer["FewRecoveryCodesLeftText_Part1"]
-                        <a asp-page="./GenerateRecoveryCodes">@Localizer["GenerateRecoveryCodesLink"]</a>
-                        @Localizer["FewRecoveryCodesLeftText_Part2"]
-                    </p>
+                <div class="alert alert-warning border-0 rounded-3 mb-3">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    <strong>@Model.RecoveryCodesLeft kurtarma kodunuz kaldı.</strong>
+                    <a asp-page="./GenerateRecoveryCodes" class="alert-link">Yeni kodlar oluşturun</a>.
                 </div>
             }
 
-            if (Model.IsMachineRemembered)
-            {
-                <form method="post" style="display: inline-block">
-                    <button type="submit" class="btn btn-primary">@Localizer["ForgetBrowserButton"]</button>
-                </form>
-            }
-
-            <a asp-page="./Disable2fa" class="btn btn-primary">@Localizer["Disable2faButton"]</a>
-            <a asp-page="./GenerateRecoveryCodes" class="btn btn-primary">@Localizer["ResetRecoveryCodesButton"]</a>
-        }
-
-        <h4>@Localizer["AuthenticatorAppHeader"]</h4>
-
-        @if (!Model.HasAuthenticator)
-        {
-            <a id="enable-authenticator" asp-page="./EnableAuthenticator" class="btn btn-primary">
-                @Localizer["AddAuthenticatorAppButton"]
-            </a>
+            <div class="d-flex gap-2 flex-wrap mb-4">
+                @if (Model.IsMachineRemembered)
+                {
+                    <form method="post" class="d-inline">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-desktop me-1"></i> Bu Cihazı Unut
+                        </button>
+                    </form>
+                }
+                <a asp-page="./Disable2fa" class="btn btn-outline-danger btn-sm">
+                    <i class="fas fa-power-off me-1"></i> 2FA Devre Dışı Bırak
+                </a>
+                <a asp-page="./GenerateRecoveryCodes" class="btn btn-outline-warning btn-sm">
+                    <i class="fas fa-key me-1"></i> Kurtarma Kodlarını Yenile
+                </a>
+                <a asp-page="./ResetAuthenticator" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-sync me-1"></i> Authenticator Sıfırla
+                </a>
+            </div>
         }
         else
         {
-            <a id="enable-authenticator" asp-page="./EnableAuthenticator" class="btn btn-primary">
-                @Localizer["SetupAuthenticatorAppButton"]
-            </a>
-            <a id="reset-authenticator" asp-page="./ResetAuthenticator" class="btn btn-primary">
-                @Localizer["ResetAuthenticatorAppButton"]
-            </a>
+            <div class="alert alert-warning border-0 rounded-3 d-flex align-items-center gap-2 mb-4">
+                <i class="fas fa-shield-halved fs-5"></i>
+                <div>
+                    <strong>2FA Kapalı</strong>
+                    <span class="text-muted ms-1">— Hesabınız sadece şifre ile korunuyor.</span>
+                </div>
+            </div>
         }
+
+        <div class="border rounded-3 p-4 text-center" style="background:#f8fafc;">
+            @if (!Model.HasAuthenticator)
+            {
+                <i class="fas fa-mobile-alt fa-3x text-primary mb-3 d-block"></i>
+                <h6 class="fw-bold">Authenticator Uygulaması Ekleyin</h6>
+                <p class="text-muted small mb-3">
+                    Google Authenticator veya Microsoft Authenticator ile hesabınızı güvence altına alın.
+                </p>
+                <a asp-page="./EnableAuthenticator" class="btn btn-primary px-4">
+                    <i class="fas fa-plus me-1"></i> Authenticator Ekle
+                </a>
+            }
+            else
+            {
+                <i class="fas fa-check-circle fa-3x text-success mb-3 d-block"></i>
+                <h6 class="fw-bold">Authenticator Bağlı</h6>
+                <p class="text-muted small mb-3">
+                    Authenticator uygulamanız yapılandırılmış durumda.
+                </p>
+                <a asp-page="./EnableAuthenticator" class="btn btn-outline-primary px-4">
+                    <i class="fas fa-cog me-1"></i> Yeniden Yapılandır
+                </a>
+            }
+        </div>
     }
     else
     {
-        <div class="alert alert-danger">
-            <strong>@Localizer["PrivacyPolicyNotAcceptedTitle"]</strong>
-            <p>@Localizer["PrivacyPolicyNotAcceptedText"]</p>
+        <div class="alert alert-danger border-0 rounded-3">
+            <i class="fas fa-cookie-bite me-1"></i>
+            <strong>Gizlilik politikası kabul edilmedi.</strong>
+            2FA kullanabilmek için çerez politikasını kabul etmeniz gerekmektedir.
         </div>
     }
 }
+        </div>
+    </div>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

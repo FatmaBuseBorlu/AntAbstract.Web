@@ -765,5 +765,41 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             return Redirect(BuildProgramSessionsUrl(slug, conference.Id));
         }
+
+        [HttpPost("/{slug}/Admin/Session/Reorder")]
+        [HttpPost("/Admin/Session/Reorder")]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> Reorder(
+            string? slug,
+            [FromBody] ReorderRequest request)
+        {
+            if (request?.SessionIds == null || !request.SessionIds.Any())
+                return BadRequest(new { success = false });
+
+            var conference = await GetConferenceOrNull(slug, request.ConferenceId);
+            if (conference == null)
+                return BadRequest(new { success = false });
+
+            var sessions = await _context.Sessions
+                .Where(s => s.ConferenceId == conference.Id &&
+                            request.SessionIds.Contains(s.Id))
+                .ToListAsync();
+
+            for (int i = 0; i < request.SessionIds.Count; i++)
+            {
+                var session = sessions.FirstOrDefault(s => s.Id == request.SessionIds[i]);
+                if (session != null)
+                    session.SortOrder = i;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { success = true });
+        }
+
+        public class ReorderRequest
+        {
+            public Guid ConferenceId { get; set; }
+            public List<Guid> SessionIds { get; set; } = new();
+        }
     }
 }
