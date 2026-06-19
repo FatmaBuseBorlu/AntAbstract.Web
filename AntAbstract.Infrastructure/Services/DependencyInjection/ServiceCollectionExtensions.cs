@@ -4,6 +4,7 @@ using AntAbstract.Infrastructure.Services.Certficates;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Infrastructure.Services.Email;
 using AntAbstract.Infrastructure.Services.Notifications;
+using AntAbstract.Infrastructure.Services.Pdf;
 using AntAbstract.Infrastructure.Services.ReviewerRecommendation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,6 +46,8 @@ namespace AntAbstract.Infrastructure.Services.DependencyInjection
 
             // Zamanlanmış toplu e-posta gönderimi
             services.AddHostedService<BroadcastWorker>();
+
+            services.AddSingleton<IPdfAnonymizer, PdfAnonymizer>();
 
             return services;
         }

@@ -96,5 +96,11 @@ namespace AntAbstract.Domain.Entities
         public bool IsPayTREnabled { get; set; } = false;
         /// <summary>Banka havalesi etkin mi?</summary>
         public bool IsBankTransferEnabled { get; set; } = false;
+
+        /// <summary>
+        /// Kör hakemlik aktif mi? Aktifse hakemler dosya indirdiğinde
+        /// PDF metadata'dan yazar bilgileri temizlenir ve dosya adı anonimleştirilir.
+        /// </summary>
+        public bool IsBlindReview { get; set; } = true;
     }
 }

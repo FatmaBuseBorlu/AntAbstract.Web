@@ -1,6 +1,7 @@
 using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
+using AntAbstract.Infrastructure.Services.Pdf;
 using AntAbstract.Web.Files;
 using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -28,6 +29,7 @@ namespace AntAbstract.Web.Controllers
         private readonly IAdminTenantAccessService _tenantAccess;
         private readonly IAuditService _audit;
         private readonly ILogger<SecureDownloadController> _logger;
+        private readonly IPdfAnonymizer _pdfAnonymizer;
 
         public SecureDownloadController(
             AppDbContext context,
@@ -35,7 +37,8 @@ namespace AntAbstract.Web.Controllers
             IWebHostEnvironment env,
             IAdminTenantAccessService tenantAccess,
             IAuditService audit,
-            ILogger<SecureDownloadController> logger)
+            ILogger<SecureDownloadController> logger,
+            IPdfAnonymizer pdfAnonymizer)
         {
             _context = context;
             _userManager = userManager;
@@ -43,6 +46,7 @@ namespace AntAbstract.Web.Controllers
             _tenantAccess = tenantAccess;
             _audit = audit;
             _logger = logger;
+            _pdfAnonymizer = pdfAnonymizer;
         }
 
         // ── Bildiri Dosyası ──────────────────────────────────────────────────────
@@ -91,16 +95,21 @@ namespace AntAbstract.Web.Controllers
             if (!isOwner && !isAdmin && !isReviewer)
                 return Forbid();
 
+            var blindReview = isReviewer && (submission.Conference?.IsBlindReview ?? true);
+
             await _audit.LogAsync(
                 category: "FileDownload",
-                action: "SubmissionFileDownloaded",
+                action: blindReview ? "SubmissionFileDownloadedAnonymized" : "SubmissionFileDownloaded",
                 userId: user.Id,
                 userName: $"{user.FirstName} {user.LastName}".Trim(),
                 entityType: "SubmissionFile",
                 entityId: fileId.ToString(),
-                description: $"Bildiri dosyası indirildi: {file.FileName} (SubmissionId={submission.Id})",
+                description: $"Bildiri dosyası indirildi{(blindReview ? " (anonim)" : "")}: {file.FileName} (SubmissionId={submission.Id})",
                 conferenceId: submission.ConferenceId,
                 ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            if (blindReview)
+                return ServeAnonymized(file.FilePath, submission.Id);
 
             return ServeFile(file.FilePath, file.FileName ?? "dosya");
         }
@@ -151,6 +160,43 @@ namespace AntAbstract.Web.Controllers
         }
 
         // ── Yardımcı ────────────────────────────────────────────────────────────
+
+        private IActionResult ServeAnonymized(string relativePath, Guid submissionId)
+        {
+            string fullPath;
+            try
+            {
+                fullPath = PrivateStorage.Resolve(_env, relativePath);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "İzin verilmeyen dosya yolu istendi: {Path}", relativePath);
+                return BadRequest();
+            }
+
+            if (!System.IO.File.Exists(fullPath))
+                return NotFound();
+
+            var ext = Path.GetExtension(fullPath).ToLowerInvariant();
+            var anonymousName = $"submission-{submissionId.ToString("N")[..8]}{ext}";
+
+            if (ext == ".pdf")
+            {
+                try
+                {
+                    var originalBytes = System.IO.File.ReadAllBytes(fullPath);
+                    var code = $"SUB-{submissionId.ToString("N")[..8].ToUpper()}";
+                    var anonymizedBytes = _pdfAnonymizer.AnonymizeMetadata(originalBytes, code);
+                    return File(anonymizedBytes, "application/pdf", anonymousName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "PDF anonimleştirme başarısız, orijinal dosya sunuluyor. FileId={Path}", relativePath);
+                }
+            }
+
+            return PhysicalFile(fullPath, "application/octet-stream", anonymousName);
+        }
 
         private IActionResult ServeFile(string relativePath, string downloadName)
         {
