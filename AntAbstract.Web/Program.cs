@@ -359,6 +359,12 @@ StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
 #region 6. HTTP �stek Hatt�
 
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
+                     | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -400,10 +406,10 @@ app.Use(async (ctx, next) =>
         "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com data:; " +
         "img-src 'self' data: https:; " +
         "connect-src 'self' https://api.stripe.com; " +
-        "frame-src https://js.stripe.com https://hooks.stripe.com; " +
+        "frame-src https://js.stripe.com https://hooks.stripe.com https://www.paytr.com; " +
         "object-src 'none'; " +
         "base-uri 'self'; " +
-        "form-action 'self';";
+        "form-action 'self' https://www.paytr.com;";
 
     await next();
 });

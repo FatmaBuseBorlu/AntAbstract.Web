@@ -26,17 +26,24 @@ otomatik olarak değiştirilir. Plesk panelinde şu değerleri tanımla:
 
 **Domains → domain.com → Deployment → Variables**
 
-| Token | Açıklama |
-|-------|----------|
-| `PRODUCTION_CONNECTION_STRING` | PostgreSQL/MSSQL bağlantı dizesi |
-| `STRIPE_PUBLISHABLE_KEY` | Stripe public key |
-| `STRIPE_SECRET_KEY` | Stripe secret key |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
-| `SMTP_SERVER` | SMTP sunucu adresi |
-| `SMTP_USERNAME` | SMTP kullanıcı adı |
-| `SMTP_PASSWORD` | SMTP şifre |
-| `ORCID_CLIENT_ID` | ORCID OAuth client ID |
-| `ORCID_CLIENT_SECRET` | ORCID OAuth client secret |
+| Token | Açıklama | Zorunlu |
+|-------|----------|--------|
+| `PRODUCTION_CONNECTION_STRING` | MSSQL bağlantı dizesi | ✅ |
+| `STRIPE_PUBLISHABLE_KEY` | Stripe public key | Stripe kullanılıyorsa |
+| `STRIPE_SECRET_KEY` | Stripe secret key | Stripe kullanılıyorsa |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | Stripe kullanılıyorsa |
+| `STRIPE_BASE_URL` | Sitenin public URL'i (ör: https://antabstract.com) | Stripe kullanılıyorsa |
+| `PAYTR_MERCHANT_ID` | PayTR merchant ID | PayTR kullanılıyorsa |
+| `PAYTR_MERCHANT_KEY` | PayTR merchant key | PayTR kullanılıyorsa |
+| `PAYTR_MERCHANT_SALT` | PayTR merchant salt | PayTR kullanılıyorsa |
+| `PLAGIARISM_API_KEY` | iThenticate/Turnitin API key | İntihal kontrolü kullanılıyorsa |
+| `SMTP_SERVER` | SMTP sunucu adresi | ✅ |
+| `SMTP_USERNAME` | SMTP kullanıcı adı | ✅ |
+| `SMTP_PASSWORD` | SMTP şifre | ✅ |
+| `PUBLIC_BASE_URL` | Sitenin public URL'i (ör: https://antabstract.com) | ✅ |
+| `ORCID_CLIENT_ID` | ORCID OAuth client ID | ORCID kullanılıyorsa |
+| `ORCID_CLIENT_SECRET` | ORCID OAuth client secret | ORCID kullanılıyorsa |
+| `HEALTH_API_KEY` | Health endpoint API key | Opsiyonel |
 
 > **Not:** Plesk bu token'ları dosya yüklendikten sonra değiştirir.
 > Elle yükleme yapıyorsan `appsettings.Production.json` dosyasını
@@ -109,8 +116,22 @@ işaret ediyor — user-secrets dışında hiçbir yere gerçek credential yazma
 
 ## Kontrol Listesi — Her Deploy Öncesi
 
-- [ ] `dotnet build -c Release` — hatasız build
-- [ ] `dotnet test` — testler geçiyor
+- [ ] `dotnet build -c Release` — hatasız build, 0 warning
+- [ ] `dotnet test` — tüm testler geçiyor
+- [ ] `dotnet list package --vulnerable` — High/Critical yok (veya kabul edilir)
 - [ ] `./deploy.sh` çıktısında "Bekleyen migration yok" veya migration hazır
-- [ ] Plesk deployment variables güncel
+- [ ] Plesk deployment variables güncel (yeni token eklendi mi?)
 - [ ] `deploy_output/` git'e commit edilmedi (`.gitignore`'da)
+
+## İlk Deploy — Ek Adımlar
+
+- [ ] MSSQL veritabanı oluşturuldu, connection string doğru
+- [ ] `dotnet ef database update` ile tüm migration'lar uygulandı
+- [ ] SMTP credential'ları test edildi (test maili gönder)
+- [ ] PayTR TestMode **false** (production'da)
+- [ ] Stripe webhook endpoint Stripe Dashboard'da kayıtlı: `https://<domain>/payment/stripe-webhook`
+- [ ] PayTR callback URL'i PayTR panelinde kayıtlı: `https://<domain>/payment/paytr-callback`
+- [ ] `private-uploads/` klasörü oluşturuldu ve yazma izni var
+- [ ] `wwwroot/uploads/` klasörü oluşturuldu ve yazma izni var
+- [ ] HTTPS sertifikası aktif (Let's Encrypt veya Plesk SSL)
+- [ ] `Email:BaseUrl` production domain'e ayarlı (https://antabstract.com)
