@@ -1,8 +1,8 @@
 ﻿#nullable disable
 
+using AntAbstract.Domain.Entities;
 using System.Text;
 using System.Threading.Tasks;
-using AntAbstract.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

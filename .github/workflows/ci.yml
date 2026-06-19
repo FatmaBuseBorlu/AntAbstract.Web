@@ -45,14 +45,13 @@ jobs:
         run: |
           dotnet tool install --global dotnet-ef --version 8.* 2>/dev/null || true
           export PATH="$PATH:$HOME/.dotnet/tools"
-          # Migration bundle oluşturmayı dene — derleme hatası varsa yakalar
-          dotnet ef migrations bundle \
+          # Migration metadata'sını design-time factory ile doğrula; canlı DB'ye bağlanmaz.
+          dotnet ef migrations list \
             --project AntAbstract.Infrastructure \
-            --startup-project AntAbstract.Web \
+            --startup-project AntAbstract.Infrastructure \
             --no-build \
             --configuration Release \
-            --output /tmp/efbundle \
-            --force 2>&1 || {
+            --no-connect 2>&1 || {
               echo "::error::EF Core migration derleme hatası. Migration dosyalarını kontrol edin."
               exit 1
             }

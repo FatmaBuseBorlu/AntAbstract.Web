@@ -22,6 +22,7 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Assignment
 
         // Paged items
         public List<AssignmentRowModel> Items { get; set; } = new();
+        public List<BulkReviewerOptionModel> BulkReviewers { get; set; } = new();
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 30;
         public int FilteredCount { get; set; }
@@ -39,5 +40,14 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Assignment
         public string Topic { get; set; } = "";
         public DateTime CreatedAt { get; set; }
         public int ReviewerCount { get; set; }
+    }
+
+    public class BulkReviewerOptionModel
+    {
+        public string Id { get; set; } = "";
+        public string FullName { get; set; } = "";
+        public string Email { get; set; } = "";
+        public int CurrentLoad { get; set; }
+        public int MaxLoad { get; set; } = 10;
     }
 }
