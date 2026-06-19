@@ -216,6 +216,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             "Reviewer"
         };
 
+        private const int MaxAssignmentsPerReviewer = 10;
+
         private async Task<List<AppUser>> GetUsersInReviewerRolesAsync()
         {
             var reviewerUsers = new Dictionary<string, AppUser>(StringComparer.OrdinalIgnoreCase);
@@ -645,6 +647,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .Select(g => new { g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.Key, x => x.Count);
 
+            var allAccessibleReferees = await GetAccessibleRefereesAsync(conference);
+            var accessibleReviewerIds = allAccessibleReferees.Select(r => r.Id).ToList();
+
+            var reviewerLoads = await _context.ReviewAssignments
+                .AsNoTracking()
+                .Where(ra => accessibleReviewerIds.Contains(ra.ReviewerId) &&
+                             ra.Submission != null &&
+                             ra.Submission.ConferenceId == conference.Id)
+                .GroupBy(ra => ra.ReviewerId)
+                .Select(g => new { ReviewerId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.ReviewerId, x => x.Count);
+
             var items = await orderedQuery
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -679,6 +693,29 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 AssignedCount = assignedCount,
                 UnderReviewCount = underReviewCount,
                 Items = items,
+                BulkReviewers = allAccessibleReferees
+                    .Where(r =>
+                        !ReviewerIsUnavailable(r) &&
+                        (!reviewerLoads.TryGetValue(r.Id, out var load) || load < MaxAssignmentsPerReviewer))
+                    .Select(r =>
+                    {
+                        reviewerLoads.TryGetValue(r.Id, out var load);
+                        var fullName = $"{r.FirstName} {r.LastName}".Trim();
+
+                        return new BulkReviewerOptionModel
+                        {
+                            Id = r.Id,
+                            FullName = string.IsNullOrWhiteSpace(fullName)
+                                ? r.UserName ?? r.Email ?? "Hakem"
+                                : fullName,
+                            Email = r.Email ?? "",
+                            CurrentLoad = load,
+                            MaxLoad = MaxAssignmentsPerReviewer
+                        };
+                    })
+                    .OrderBy(r => r.FullName)
+                    .ThenBy(r => r.Email)
+                    .ToList(),
                 Page = page,
                 PageSize = pageSize,
                 FilteredCount = filteredCount
@@ -884,7 +921,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
 
             // Hakem yük dengesi: aynı kongrede max 10 bildiri
-            const int MaxAssignmentsPerReviewer = 10;
             var currentLoad = await _context.ReviewAssignments
                 .AsNoTracking()
                 .CountAsync(ra =>
@@ -991,6 +1027,268 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 entityType: "Submission",
                 entityId: submissionId.ToString(),
                 description: $"Hakem atandı: {reviewer.Email} → '{submission.Title}'",
+                conferenceId: conference.Id,
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            return Redirect(BuildAssignmentUrl(slug, conference.Id));
+        }
+
+        [HttpPost("/{slug}/Admin/Assignment/BulkAssign")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BulkAssign(
+            string slug,
+            List<Guid>? submissionIds,
+            string reviewerId,
+            Guid? conferenceId = null)
+        {
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_SelectValidConferenceFirst",
+                    "Lütfen yetkili olduğunuz geçerli bir kongre seçiniz.");
+
+                return RedirectToAction(nameof(SelectConference));
+            }
+
+            SetSelectedConferenceSession(conference);
+
+            var selectedIds = (submissionIds ?? new List<Guid>())
+                .Where(id => id != Guid.Empty)
+                .Distinct()
+                .ToList();
+
+            if (!selectedIds.Any())
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_NoBulkAssignmentSelection",
+                    "Lütfen hakem atanacak en az bir bildiri seçin.");
+
+                return Redirect(BuildAssignmentUrl(slug, conference.Id));
+            }
+
+            if (string.IsNullOrWhiteSpace(reviewerId))
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_InvalidReviewerSelection",
+                    "Geçersiz hakem seçimi.");
+
+                return Redirect(BuildAssignmentUrl(slug, conference.Id));
+            }
+
+            var reviewer = await _userManager.FindByIdAsync(reviewerId);
+
+            if (reviewer == null ||
+                !await CanUseReviewerForConferenceAsync(reviewer, conference))
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_ReviewerUnauthorized",
+                    "Bu hakemi bu kongreye atama yetkiniz yok.");
+
+                return Redirect(BuildAssignmentUrl(slug, conference.Id));
+            }
+
+            if (ReviewerIsUnavailable(reviewer))
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_ReviewerUnavailable",
+                    "Bu hakem seçtiği tarih aralığında müsait değil.");
+
+                return Redirect(BuildAssignmentUrl(slug, conference.Id));
+            }
+
+            var currentLoad = await _context.ReviewAssignments
+                .AsNoTracking()
+                .CountAsync(ra =>
+                    ra.ReviewerId == reviewerId &&
+                    ra.Submission != null &&
+                    ra.Submission.ConferenceId == conference.Id);
+
+            if (currentLoad >= MaxAssignmentsPerReviewer)
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_ReviewerOverloaded",
+                    $"Bu hakem bu kongre için zaten {MaxAssignmentsPerReviewer} bildiri değerlendirmesine atanmış. Farklı bir hakem seçiniz.");
+
+                return Redirect(BuildAssignmentUrl(slug, conference.Id));
+            }
+
+            var submissions = await _context.Submissions
+                .Include(s => s.Author)
+                .Include(s => s.SubmissionAuthors)
+                .Include(s => s.ReviewAssignments)
+                .Where(s =>
+                    selectedIds.Contains(s.Id) &&
+                    s.ConferenceId == conference.Id)
+                .ToListAsync();
+
+            var skippedNotFound = selectedIds.Count - submissions.Count;
+            var skippedFinalStatus = 0;
+            var skippedAlreadyAssigned = 0;
+            var skippedConflict = 0;
+            var skippedOwnSubmission = 0;
+            var skippedLoadLimit = 0;
+            var assignedSubmissions = new List<Submission>();
+            var now = DateTime.UtcNow;
+
+            foreach (var submission in submissions)
+            {
+                if (submission.Status == SubmissionStatus.Accepted ||
+                    submission.Status == SubmissionStatus.Rejected ||
+                    submission.Status == SubmissionStatus.Presented)
+                {
+                    skippedFinalStatus++;
+                    continue;
+                }
+
+                if (submission.ReviewAssignments.Any(ra => ra.ReviewerId == reviewerId))
+                {
+                    skippedAlreadyAssigned++;
+                    continue;
+                }
+
+                if (submission.AuthorId == reviewer.Id)
+                {
+                    skippedOwnSubmission++;
+                    continue;
+                }
+
+                if (ReviewerHasSubmissionConflict(reviewer, submission))
+                {
+                    skippedConflict++;
+                    continue;
+                }
+
+                if (currentLoad + assignedSubmissions.Count >= MaxAssignmentsPerReviewer)
+                {
+                    skippedLoadLimit++;
+                    continue;
+                }
+
+                _context.ReviewAssignments.Add(new ReviewAssignment
+                {
+                    SubmissionId = submission.Id,
+                    ReviewerId = reviewerId,
+                    AssignedDate = now
+                });
+
+                if (submission.Status == SubmissionStatus.New ||
+                    submission.Status == SubmissionStatus.Pending)
+                {
+                    submission.Status = SubmissionStatus.UnderReview;
+                }
+
+                assignedSubmissions.Add(submission);
+            }
+
+            if (!assignedSubmissions.Any())
+            {
+                TempData["ErrorMessage"] = T(
+                    "Error_NoBulkAssignmentsCreated",
+                    "Seçilen bildiriler için yeni hakem ataması yapılamadı. Atanmış, sonuçlanmış, çıkar çatışması olan veya yük limiti dolmuş kayıtlar olabilir.");
+
+                return Redirect(BuildAssignmentUrl(slug, conference.Id));
+            }
+
+            await _context.SaveChangesAsync();
+
+            try
+            {
+                var reviewerFullName = $"{reviewer.FirstName} {reviewer.LastName}".Trim();
+                if (string.IsNullOrWhiteSpace(reviewerFullName))
+                    reviewerFullName = reviewer.UserName ?? reviewer.Email ?? "Hakem";
+
+                var reviewUrl = $"/{slug}/Review/Index";
+                var conferenceTitle = conference.Title ?? "";
+
+                await _notificationService.CreateAsync(
+                    userId: reviewer.Id,
+                    title: "Yeni Değerlendirme Görevleri",
+                    message: $"{assignedSubmissions.Count} bildiri değerlendirmeniz için atandı.",
+                    icon: "📋",
+                    color: "primary",
+                    link: reviewUrl);
+
+                foreach (var submission in assignedSubmissions)
+                {
+                    if (string.IsNullOrWhiteSpace(submission.AuthorId))
+                    {
+                        continue;
+                    }
+
+                    await _notificationService.CreateAsync(
+                        userId: submission.AuthorId,
+                        title: "Bildiriniz İncelemede",
+                        message: $"\"{submission.Title}\" başlıklı bildiriniz hakem incelemesine alındı.",
+                        icon: "🔍",
+                        color: "info",
+                        link: null);
+                }
+
+                if (!string.IsNullOrWhiteSpace(reviewer.Email))
+                {
+                    var titles = assignedSubmissions
+                        .Take(10)
+                        .Select(s => $"<li>{System.Net.WebUtility.HtmlEncode(s.Title ?? "Başlıksız bildiri")}</li>");
+
+                    var extraCount = assignedSubmissions.Count > 10
+                        ? $"<p>+ {assignedSubmissions.Count - 10} bildiri daha</p>"
+                        : "";
+
+                    var htmlBody = $@"
+<div style='font-family:Arial,sans-serif;max-width:640px;margin:auto'>
+  <div style='background:#1a2d5a;color:#fff;padding:24px 32px;border-radius:8px 8px 0 0'>
+    <h2 style='margin:0'>📋 Yeni Değerlendirme Görevleri</h2>
+    <p style='margin:6px 0 0;opacity:.85;font-size:14px'>{System.Net.WebUtility.HtmlEncode(conferenceTitle)}</p>
+  </div>
+  <div style='background:#f9fafb;padding:24px 32px'>
+    <p>Sayın <strong>{System.Net.WebUtility.HtmlEncode(reviewerFullName)}</strong>,</p>
+    <p>{assignedSubmissions.Count} bildiri sizin değerlendirmeniz için atanmıştır:</p>
+    <ul style='background:#fff;border-left:4px solid #1a2d5a;padding:16px 16px 16px 32px;margin:16px 0;border-radius:4px'>
+      {string.Join("", titles)}
+    </ul>
+    {extraCount}
+    <p>Lütfen sisteme giriş yaparak değerlendirme formlarını doldurunuz.</p>
+    <p style='margin-top:24px;color:#6b7280;font-size:13px'>Bu e-posta otomatik olarak gönderilmiştir.</p>
+  </div>
+</div>";
+
+                    await _emailService.SendAsync(
+                        reviewer.Email,
+                        $"Yeni Değerlendirme Görevleri — {conferenceTitle}",
+                        htmlBody);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Toplu hakem atama bildirimi gönderilemedi.");
+            }
+
+            var skippedTotal = skippedNotFound +
+                               skippedFinalStatus +
+                               skippedAlreadyAssigned +
+                               skippedConflict +
+                               skippedOwnSubmission +
+                               skippedLoadLimit;
+
+            var successMessage = $"{assignedSubmissions.Count} hakem ataması oluşturuldu.";
+            if (skippedTotal > 0)
+            {
+                successMessage += $" {skippedTotal} seçim atlandı.";
+            }
+
+            TempData["SuccessMessage"] = successMessage;
+
+            var adminUser = await _userManager.GetUserAsync(User);
+            await _audit.LogAsync(
+                category: "Review",
+                action: "BulkReviewerAssigned",
+                userId: adminUser?.Id,
+                userName: adminUser != null ? $"{adminUser.FirstName} {adminUser.LastName}".Trim() : null,
+                entityType: "ReviewAssignment",
+                entityId: reviewerId,
+                description: $"Toplu hakem atama: {reviewer.Email} için {assignedSubmissions.Count} atama eklendi, {skippedTotal} seçim atlandı.",
                 conferenceId: conference.Id,
                 ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
 

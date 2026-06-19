@@ -1,5 +1,6 @@
 ﻿#nullable disable
 
+using AntAbstract.Domain.Entities;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
@@ -7,7 +8,6 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading;
 using System.Threading.Tasks;
-using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
