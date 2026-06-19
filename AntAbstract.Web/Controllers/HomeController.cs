@@ -108,7 +108,7 @@ namespace AntAbstract.Web.Controllers
                 {
                     return NotFound(T(
                         "ConferenceNotActive",
-                        "Aktif kongre bulunamad�."));
+                        "Aktif kongre bulunamadı."));
                 }
 
                 var currentUser = await _userManager.GetUserAsync(User);
@@ -203,10 +203,10 @@ namespace AntAbstract.Web.Controllers
                 .OrderByDescending(c => c.ProceedingBookPublishedDate ?? c.EndDate)
                 .ToList();
 
-            var abstractNotFoundText = T("AbstractNotFound", "�zet bulunamad�.");
-            var guestUserText = T("GuestUser", "Misafir kullan�c�");
+            var abstractNotFoundText = T("AbstractNotFound", "Özet bulunamadı.");
+            var guestUserText = T("GuestUser", "Misafir kullanıcı");
             var institutionNotSpecifiedText = T("InstitutionNotSpecified", "Kurum belirtilmedi");
-            var reviewDetailsText = T("ReviewForDetails", "Detaylar i�in inceleyiniz.");
+            var reviewDetailsText = T("ReviewForDetails", "Detaylar için inceleyiniz.");
             var onlineText = T("Online", "Online");
 
             var lastSubmissions = await _context.Submissions

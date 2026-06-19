@@ -297,59 +297,62 @@ var app = builder.Build();
 
 #region 5. Veritaban� Ba�latma ve Ayarlar
 
-using (var scope = app.Services.CreateScope())
+if (!app.Environment.IsEnvironment("Testing"))
 {
-    var services = scope.ServiceProvider;
-
-    var startupLogger = services.GetRequiredService<ILogger<Program>>();
-    try
+    using (var scope = app.Services.CreateScope())
     {
-        var userManager = services.GetRequiredService<UserManager<AppUser>>();
-        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-        var context = services.GetRequiredService<AppDbContext>();
+        var services = scope.ServiceProvider;
 
-        // Production'da otomatik migration DEVRE DIŞI bırakıldı.
-        // Migration'lar deployment pipeline'ında (CI/CD) çalıştırılmalıdır:
-        //   dotnet ef database update --project AntAbstract.Infrastructure \
-        //     --startup-project AntAbstract.Web
-        // Development ortamında kolaylık için migration uygulanır.
-        // Testing ortamında (InMemory) relational migration API'si yoktur, atlanır.
-        if (app.Environment.IsDevelopment())
+        var startupLogger = services.GetRequiredService<ILogger<Program>>();
+        try
         {
-            await context.Database.MigrateAsync();
-        }
-        else if (!app.Environment.IsEnvironment("Testing"))
-        {
-            // Production'da veritabanının güncel olduğunu doğrula; değilse başlatmayı durdur
-            var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
-            if (pendingMigrations.Any())
+            var userManager = services.GetRequiredService<UserManager<AppUser>>();
+            var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+            var context = services.GetRequiredService<AppDbContext>();
+
+            // Production'da otomatik migration DEVRE DIŞI bırakıldı.
+            // Migration'lar deployment pipeline'ında (CI/CD) çalıştırılmalıdır:
+            //   dotnet ef database update --project AntAbstract.Infrastructure \
+            //     --startup-project AntAbstract.Web
+            // Development ortamında kolaylık için migration uygulanır.
+            // Testing ortamında (InMemory) relational migration API'si yoktur, atlanır.
+            if (app.Environment.IsDevelopment())
             {
-                startupLogger.LogCritical(
-                    "Bekleyen {Count} migration var: {Names}. Uygulamayı başlatmadan önce " +
-                    "'dotnet ef database update' komutunu çalıştırın.",
-                    pendingMigrations.Count(),
-                    string.Join(", ", pendingMigrations));
-                throw new InvalidOperationException("Veritabanı şeması güncel değil. Uygulama başlatılamadı.");
+                await context.Database.MigrateAsync();
+            }
+            else if (!app.Environment.IsEnvironment("Testing"))
+            {
+                // Production'da veritabanının güncel olduğunu doğrula; değilse başlatmayı durdur
+                var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+                if (pendingMigrations.Any())
+                {
+                    startupLogger.LogCritical(
+                        "Bekleyen {Count} migration var: {Names}. Uygulamayı başlatmadan önce " +
+                        "'dotnet ef database update' komutunu çalıştırın.",
+                        pendingMigrations.Count(),
+                        string.Join(", ", pendingMigrations));
+                    throw new InvalidOperationException("Veritabanı şeması güncel değil. Uygulama başlatılamadı.");
+                }
+            }
+
+            await AntAbstract.Infrastructure.Data.DbInitializer.Initialize(
+                userManager,
+                roleManager,
+                context
+            );
+
+            await AntAbstract.Infrastructure.Data.DbSeeder.SeedRolesAndUsers(services);
+
+            if (app.Environment.IsDevelopment())
+            {
+                await AntAbstract.Infrastructure.Data.TestDataSeeder.SeedAsync(userManager, context);
             }
         }
-
-        await AntAbstract.Infrastructure.Data.DbInitializer.Initialize(
-            userManager,
-            roleManager,
-            context
-        );
-
-        await AntAbstract.Infrastructure.Data.DbSeeder.SeedRolesAndUsers(services);
-
-        if (app.Environment.IsDevelopment())
+        catch (Exception ex)
         {
-            await AntAbstract.Infrastructure.Data.TestDataSeeder.SeedAsync(userManager, context);
+            startupLogger.LogError(ex, "Başlangıç sırasında hata oluştu.");
+            throw; // Uygulama kötü bir durumda başlamasın
         }
-    }
-    catch (Exception ex)
-    {
-        startupLogger.LogError(ex, "Başlangıç sırasında hata oluştu.");
-        throw; // Uygulama kötü bir durumda başlamasın
     }
 }
 

@@ -40,6 +40,8 @@ jobs:
           ASPNETCORE_ENVIRONMENT: Testing
 
       - name: Verify EF Core migrations compile
+        env:
+          ASPNETCORE_ENVIRONMENT: Testing
         run: |
           dotnet tool install --global dotnet-ef --version 8.* 2>/dev/null || true
           export PATH="$PATH:$HOME/.dotnet/tools"
