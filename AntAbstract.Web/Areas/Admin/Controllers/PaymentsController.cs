@@ -600,6 +600,189 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // ── İade (Refund) ────────────────────────────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [HttpPost("/{slug}/Admin/Payments/Refund")]
+        [HttpPost("/Admin/Payments/Refund")]
+        public async Task<IActionResult> Refund(string? slug, Guid registrationId, string? note, string? returnUrl)
+        {
+            var accessibleRegistrations = await _tenantAccess
+                .GetAccessibleRegistrationQueryAsync(User);
+            var registration = await accessibleRegistrations
+                .Include(r => r.AppUser)
+                .Include(r => r.Conference)
+                .FirstOrDefaultAsync(r => r.Id == registrationId);
+
+            if (registration == null)
+            {
+                TempData["ErrorMessage"] = "Kayıt bulunamadı.";
+                return RedirectBack(returnUrl);
+            }
+
+            if (!registration.IsPaid)
+            {
+                TempData["ErrorMessage"] = "Sadece ödemesi tamamlanmış kayıtlar iade edilebilir.";
+                return RedirectBack(returnUrl);
+            }
+
+            registration.IsPaid = false;
+            registration.Status = RegistrationStatus.Cancelled;
+            registration.AdminPaymentNote = string.IsNullOrWhiteSpace(note)
+                ? registration.AdminPaymentNote
+                : note;
+
+            var payment = await _context.Payments
+                .Where(p => p.ConferenceId == registration.ConferenceId &&
+                            p.AppUserId == registration.AppUserId)
+                .OrderByDescending(p => p.PaymentDate)
+                .FirstOrDefaultAsync();
+
+            if (payment != null)
+            {
+                var adminUser = await _userManager.GetUserAsync(User);
+                _context.PaymentStatusHistories.Add(new PaymentStatusHistory
+                {
+                    PaymentId = payment.Id,
+                    OldStatus = payment.Status,
+                    NewStatus = PaymentStatus.Refunded,
+                    ChangedByUserId = adminUser?.Id,
+                    ChangedByUserName = adminUser != null
+                        ? $"{adminUser.FirstName} {adminUser.LastName}".Trim() : null,
+                    Note = note,
+                    Source = "Admin"
+                });
+                payment.Status = PaymentStatus.Refunded;
+            }
+
+            await _context.SaveChangesAsync();
+
+            // Kullanıcıya bildirim
+            try
+            {
+                var user = registration.AppUser;
+                if (user?.Email != null)
+                {
+                    var fullName = $"{user.FirstName} {user.LastName}".Trim();
+                    if (string.IsNullOrWhiteSpace(fullName)) fullName = user.Email;
+
+                    await _emailService.SendAsync(user.Email,
+                        $"Ödemeniz İade Edildi — {registration.Conference?.Title}",
+                        $@"<div style='font-family:Arial,sans-serif;max-width:600px;margin:auto'>
+                          <div style='background:#0d6efd;color:#fff;padding:24px 32px;border-radius:8px 8px 0 0'>
+                            <h2 style='margin:0'>💸 Ödeme İade Bildirimi</h2>
+                          </div>
+                          <div style='background:#f9fafb;padding:24px 32px;border-radius:0 0 8px 8px'>
+                            <p>Sayın <strong>{System.Net.WebUtility.HtmlEncode(fullName)}</strong>,</p>
+                            <p><strong>{System.Net.WebUtility.HtmlEncode(registration.Conference?.Title ?? "")}</strong>
+                               kongresine ait ödemeniz yönetici tarafından iade edilmiştir.</p>
+                            {(string.IsNullOrWhiteSpace(note) ? "" : $"<p><strong>Açıklama:</strong> {System.Net.WebUtility.HtmlEncode(note)}</p>")}
+                            <p>Daha fazla bilgi için lütfen kongre organizasyonu ile iletişime geçiniz.</p>
+                          </div>
+                        </div>");
+
+                    await _notificationService.CreateAsync(
+                        userId: user.Id,
+                        title: "Ödemeniz İade Edildi 💸",
+                        message: $"{registration.Conference?.Title} kongresine ait ödemeniz iade edildi.",
+                        icon: "💸",
+                        color: "info",
+                        link: "/Registration/Details/" + registration.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "İade e-postası gönderilemedi. RegistrationId={Id}", registrationId);
+            }
+
+            var adminForAudit = await _userManager.GetUserAsync(User);
+            await _audit.LogAsync(
+                category: "Registration",
+                action: "PaymentRefunded",
+                userId: adminForAudit?.Id,
+                userName: adminForAudit != null ? $"{adminForAudit.FirstName} {adminForAudit.LastName}".Trim() : null,
+                entityType: "Registration",
+                entityId: registrationId.ToString(),
+                description: $"Ödeme iade edildi: {registration.AppUser?.Email} — Not: {note}",
+                conferenceId: registration.ConferenceId,
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            TempData["SuccessMessage"] = "Ödeme iade edildi ve kullanıcıya bildirim gönderildi.";
+            return RedirectBack(returnUrl);
+        }
+
+        // ── Finans Özeti ─────────────────────────────────────────────────────────
+        [HttpGet("/{slug}/Admin/Payments/FinanceSummary")]
+        [HttpGet("/Admin/Payments/FinanceSummary")]
+        public async Task<IActionResult> FinanceSummary(string? slug, Guid? conferenceId)
+        {
+            var accessibleConfs = await _tenantAccess.GetAccessibleConferenceQueryAsync(User);
+
+            Conference? conference = null;
+            if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
+                conference = await accessibleConfs.FirstOrDefaultAsync(c => c.Id == conferenceId.Value);
+
+            if (conference == null)
+                conference = await accessibleConfs.OrderByDescending(c => c.StartDate).FirstOrDefaultAsync();
+
+            if (conference == null)
+                return RedirectToAction(nameof(Index));
+
+            var regs = await _context.Registrations
+                .AsNoTracking()
+                .Where(r => r.ConferenceId == conference.Id)
+                .Include(r => r.RegistrationType)
+                .ToListAsync();
+
+            var paidRegs    = regs.Where(r => r.IsPaid).ToList();
+            var pendingRegs = regs.Where(r => !r.IsPaid && r.Status != RegistrationStatus.Cancelled).ToList();
+            var cancelledRegs = regs.Where(r => r.Status == RegistrationStatus.Cancelled).ToList();
+
+            // Ödeme yöntemi dağılımı
+            var payments = await _context.Payments
+                .AsNoTracking()
+                .Where(p => p.ConferenceId == conference.Id)
+                .ToListAsync();
+
+            var byMethod = payments
+                .GroupBy(p => p.PaymentMethod ?? "Bilinmiyor")
+                .Select(g => new { Method = g.Key, Count = g.Count(), Total = g.Sum(x => x.Amount) })
+                .OrderByDescending(g => g.Total)
+                .ToList();
+
+            // Kayıt tipine göre gelir
+            var byType = paidRegs
+                .GroupBy(r => r.RegistrationType?.Name ?? "Bilinmiyor")
+                .Select(g => new { Type = g.Key, Count = g.Count(), Total = g.Sum(r => r.Amount),
+                                   Currency = g.First().RegistrationType?.Currency ?? "TRY" })
+                .OrderByDescending(g => g.Total)
+                .ToList();
+
+            // Aylık gelir (son 12 ay)
+            var monthly = paidRegs
+                .Where(r => r.PaymentDate.HasValue)
+                .GroupBy(r => new { r.PaymentDate!.Value.Year, r.PaymentDate!.Value.Month })
+                .Select(g => new { Label = $"{g.Key.Year}-{g.Key.Month:00}", Total = g.Sum(r => r.Amount) })
+                .OrderBy(g => g.Label)
+                .TakeLast(12)
+                .ToList();
+
+            ViewBag.Slug              = slug ?? "";
+            ViewBag.Conference        = conference;
+            ViewBag.TotalRevenue      = paidRegs.Sum(r => r.Amount);
+            ViewBag.PendingRevenue    = pendingRegs.Sum(r => r.Amount);
+            ViewBag.PaidCount         = paidRegs.Count;
+            ViewBag.PendingCount      = pendingRegs.Count;
+            ViewBag.CancelledCount    = cancelledRegs.Count;
+            ViewBag.ByMethod          = byMethod.Cast<object>().ToList();
+            ViewBag.ByType            = byType.Cast<object>().ToList();
+            ViewBag.Monthly           = monthly.Cast<object>().ToList();
+            ViewBag.Currency          = regs.FirstOrDefault(r => r.RegistrationType?.Currency != null)
+                                            ?.RegistrationType?.Currency ?? "TRY";
+
+            return View();
+        }
+
         // Admin: Fatura PDF indirme
         [HttpGet("/{slug}/Admin/Payments/DownloadInvoice/{registrationId:guid}")]
         [HttpGet("/Admin/Payments/DownloadInvoice/{registrationId:guid}")]

@@ -1086,5 +1086,102 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             return Redirect(BuildAssignmentUrl(slug, conference.Id));
         }
+
+        // ── Workload Dashboard ───────────────────────────────────────────────────
+        [HttpGet("/{slug}/Admin/Assignment/Workload")]
+        [HttpGet("/Admin/Assignment/Workload")]
+        public async Task<IActionResult> Workload(string? slug, Guid? conferenceId)
+        {
+            var conference = await ResolveConferenceAsync(slug, conferenceId);
+            if (conference == null)
+                return Redirect($"/{slug}/Admin/Assignment");
+
+            const int MaxLoad = 10;
+
+            var referees = await GetAccessibleRefereesAsync(conference);
+            var refereeIds = referees.Select(r => r.Id).ToList();
+
+            // Atamalar: her hakem için
+            var assignments = await _context.ReviewAssignments
+                .AsNoTracking()
+                .Where(a => refereeIds.Contains(a.ReviewerId)
+                         && a.Submission.ConferenceId == conference.Id
+                         && !a.IsDeclined)
+                .Include(a => a.Review)
+                .Include(a => a.Submission)
+                .ToListAsync();
+
+            // Bidler: her hakemin "İncelemek İstiyorum" sayısı
+            var bids = await _context.ReviewBids
+                .AsNoTracking()
+                .Where(b => refereeIds.Contains(b.ReviewerId)
+                         && b.Submission.ConferenceId == conference.Id)
+                .GroupBy(b => b.ReviewerId)
+                .Select(g => new
+                {
+                    ReviewerId = g.Key,
+                    WantCount = g.Count(x => x.Preference == BidPreference.WantToReview),
+                    ConflictCount = g.Count(x => x.Preference == BidPreference.ConflictOfInterest),
+                })
+                .ToListAsync();
+
+            var bidMap = bids.ToDictionary(b => b.ReviewerId);
+
+            var rows = referees.Select(r =>
+            {
+                var myAssignments = assignments.Where(a => a.ReviewerId == r.Id).ToList();
+                var reviewed = myAssignments.Count(a => a.Review != null);
+                var pending = myAssignments.Count(a => a.Review == null);
+                bidMap.TryGetValue(r.Id, out var bid);
+
+                return new
+                {
+                    r.Id,
+                    FullName = $"{r.FirstName} {r.LastName}".Trim(),
+                    r.Email,
+                    Total = myAssignments.Count,
+                    Reviewed = reviewed,
+                    Pending = pending,
+                    WantBids = bid?.WantCount ?? 0,
+                    ConflictBids = bid?.ConflictCount ?? 0,
+                    LoadPct = (int)Math.Round(myAssignments.Count * 100.0 / MaxLoad),
+                };
+            })
+            .OrderByDescending(r => r.Total)
+            .ToList();
+
+            // Atanmamış bildiri sayısı
+            var unassignedCount = await _context.Submissions
+                .AsNoTracking()
+                .Where(s => s.ConferenceId == conference.Id
+                         && s.Status != SubmissionStatus.Accepted
+                         && s.Status != SubmissionStatus.Rejected)
+                .CountAsync(s => !_context.ReviewAssignments
+                    .Any(a => a.SubmissionId == s.Id && !a.IsDeclined));
+
+            ViewBag.Slug = slug ?? "";
+            ViewBag.ConferenceId = conference.Id;
+            ViewBag.ConferenceTitle = conference.Title;
+            ViewBag.MaxLoad = MaxLoad;
+            ViewBag.UnassignedCount = unassignedCount;
+            ViewBag.TotalSubmissions = await _context.Submissions
+                .AsNoTracking()
+                .CountAsync(s => s.ConferenceId == conference.Id);
+
+            return View(rows.Cast<object>().ToList());
+        }
+
+        private async Task<Conference?> ResolveConferenceAsync(string? slug, Guid? conferenceId)
+        {
+            Guid? id = conferenceId;
+            if (!id.HasValue || id.Value == Guid.Empty)
+                id = _selectedConferenceService.GetSelectedConferenceId();
+            if (!id.HasValue)
+                return null;
+
+            return await _context.Conferences
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == id.Value);
+        }
     }
 }

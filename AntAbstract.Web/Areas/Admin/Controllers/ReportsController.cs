@@ -704,6 +704,82 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return View("~/Areas/Admin/Views/Reports/RefereeReport.cshtml");
         }
 
+        // ── Hakem Performans Export (Excel) ─────────────────────────────────────
+
+        [HttpGet("/Admin/Reports/RefereeExport")]
+        [HttpGet("/{slug}/Admin/Reports/RefereeExport")]
+        public async Task<IActionResult> RefereeExport(
+            string slug,
+            Guid? conferenceId = null)
+        {
+            var conference = await GetAccessibleConferenceAsync(slug, conferenceId);
+            if (conference == null)
+                return RedirectToAction(nameof(Index), new { slug });
+
+            var stats = await _context.ReviewAssignments
+                .AsNoTracking()
+                .Where(ra => ra.Submission != null && ra.Submission.ConferenceId == conference.Id)
+                .GroupBy(ra => ra.ReviewerId)
+                .Select(g => new
+                {
+                    ReviewerId = g.Key,
+                    TotalAssigned = g.Count(),
+                    TotalCompleted = g.Count(ra => ra.Review != null),
+                    Declined = g.Count(ra => ra.IsDeclined),
+                    AverageScore = g.Where(ra => ra.Review != null && ra.Review.Score > 0)
+                                      .Select(ra => (double?)ra.Review!.Score)
+                                      .Average()
+                })
+                .ToListAsync();
+
+            var reviewerIds = stats.Select(s => s.ReviewerId).ToList();
+            var reviewers = await _context.Users
+                .AsNoTracking()
+                .Where(u => reviewerIds.Contains(u.Id))
+                .Select(u => new { u.Id, u.FirstName, u.LastName, u.Email, u.University })
+                .ToDictionaryAsync(u => u.Id);
+
+            using var wb = new ClosedXML.Excel.XLWorkbook();
+            var ws = wb.Worksheets.Add("Hakem Performans");
+
+            ws.Cell(1, 1).Value = $"Hakem Performans Raporu — {conference.Title}";
+            ws.Range(1, 1, 1, 7).Merge().Style.Font.SetBold().Font.SetFontSize(13);
+
+            var headers = new[] { "Ad Soyad", "E-posta", "Kurum", "Atanan", "Tamamlanan", "Bekleyen", "Ort. Puan", "Tamamlanma %" };
+            for (int i = 0; i < headers.Length; i++)
+            {
+                ws.Cell(3, i + 1).Value = headers[i];
+                ws.Cell(3, i + 1).Style.Font.SetBold();
+            }
+
+            int row = 4;
+            foreach (var s in stats.OrderByDescending(x => x.TotalCompleted))
+            {
+                reviewers.TryGetValue(s.ReviewerId, out var rev);
+                ws.Cell(row, 1).Value = rev != null ? $"{rev.FirstName} {rev.LastName}".Trim() : s.ReviewerId;
+                ws.Cell(row, 2).Value = rev?.Email ?? "";
+                ws.Cell(row, 3).Value = rev?.University ?? "";
+                ws.Cell(row, 4).Value = s.TotalAssigned;
+                ws.Cell(row, 5).Value = s.TotalCompleted;
+                ws.Cell(row, 6).Value = s.TotalAssigned - s.TotalCompleted;
+                ws.Cell(row, 7).Value = s.AverageScore.HasValue ? Math.Round(s.AverageScore.Value, 1) : 0;
+                ws.Cell(row, 8).Value = s.TotalAssigned > 0
+                    ? $"{(int)(s.TotalCompleted * 100.0 / s.TotalAssigned)}%"
+                    : "0%";
+                row++;
+            }
+
+            ws.Columns().AdjustToContents();
+
+            using var ms = new System.IO.MemoryStream();
+            wb.SaveAs(ms);
+            ms.Position = 0;
+
+            return File(ms.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"hakem-performans-{conference.Slug ?? "conf"}-{DateTime.UtcNow:yyyyMMdd}.xlsx");
+        }
+
         // ── Katılımcı Raporu (CSV) ──────────────────────────────────────────────
 
         [HttpGet("/Admin/Reports/ParticipantsExport")]

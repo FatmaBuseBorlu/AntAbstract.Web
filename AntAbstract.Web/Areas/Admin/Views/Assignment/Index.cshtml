@@ -19,6 +19,10 @@
         ? $"/Admin/ConferenceFlow?conferenceId={conferenceId}"
         : $"/{slug}/Admin/ConferenceFlow?conferenceId={conferenceId}";
 
+    var workloadUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Assignment/Workload?conferenceId={conferenceId}"
+        : $"/{slug}/Admin/Assignment/Workload?conferenceId={conferenceId}";
+
     var changeConferenceUrl = "/Admin/ConferenceFlow?forceSelect=true";
 
     string StatusLabel(string? status) => status switch
@@ -84,6 +88,10 @@
         </div>
 
         <div class="assignment-hero-actions">
+            <a href="@workloadUrl" class="btn assignment-outline-btn">
+                <i class="fas fa-balance-scale me-2"></i>
+                Yük Dengesi
+            </a>
             <a href="@flowUrl" class="btn assignment-light-btn">
                 <i class="fas fa-arrow-left me-2"></i>
                 Kongre Akışına Dön

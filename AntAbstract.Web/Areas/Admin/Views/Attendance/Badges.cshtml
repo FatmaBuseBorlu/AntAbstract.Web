@@ -1,0 +1,175 @@
+@model IEnumerable<AntAbstract.Domain.Entities.Registration>
+@{
+    ViewData["Title"] = "Yaka Kartı Baskı";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+
+    var conference = ViewBag.Conference as AntAbstract.Domain.Entities.Conference;
+    var slug       = ViewBag.Slug as string ?? "";
+    var filter     = ViewBag.Filter as string ?? "all";
+    var regs       = Model?.ToList() ?? new();
+
+    string IndexUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Attendance?conferenceId={conference?.Id}"
+        : $"/{slug}/Admin/Attendance?conferenceId={conference?.Id}";
+
+    string FilterUrl(string f) => string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Attendance/Badges?conferenceId={conference?.Id}&filter={f}"
+        : $"/{slug}/Admin/Attendance/Badges?conferenceId={conference?.Id}&filter={f}";
+}
+
+@section Styles {
+<style>
+    @@media print {
+        .no-print { display: none !important; }
+        body { background: white !important; }
+        .badge-grid { gap: 0 !important; }
+        .badge-card { break-inside: avoid; page-break-inside: avoid; }
+    }
+
+    .badge-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 16px;
+        padding: 16px 0;
+    }
+
+    .badge-card {
+        width: 200px; height: 280px;
+        border: 2px solid #1a2d5a;
+        border-radius: 12px;
+        background: white;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: space-between;
+        padding: 16px 12px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        overflow: hidden;
+        position: relative;
+    }
+
+    .badge-header-strip {
+        position: absolute; top: 0; left: 0; right: 0; height: 8px;
+        background: linear-gradient(90deg, #1a2d5a, #3b5bdb);
+    }
+
+    .badge-conf-name {
+        font-size: 0.62rem; font-weight: 800;
+        color: #1a2d5a; text-align: center;
+        text-transform: uppercase; letter-spacing: 0.04em;
+        line-height: 1.3; margin-top: 10px;
+        max-height: 36px; overflow: hidden;
+    }
+
+    .badge-qr {
+        width: 100px; height: 100px;
+        border: 1px solid #e2e8f0; border-radius: 8px;
+        overflow: hidden; background: white;
+        display: flex; align-items: center; justify-content: center;
+    }
+
+    .badge-name {
+        font-size: 0.88rem; font-weight: 900;
+        color: #0f172a; text-align: center;
+        line-height: 1.3; max-height: 50px; overflow: hidden;
+    }
+
+    .badge-type-pill {
+        display: inline-block; padding: 2px 10px;
+        border-radius: 999px; font-size: 0.62rem; font-weight: 800;
+        background: #1a2d5a; color: white; text-align: center;
+        max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    .badge-token {
+        font-size: 0.58rem; color: #94a3b8; font-family: monospace;
+        text-align: center; letter-spacing: 0.04em;
+    }
+</style>
+}
+
+<div class="container-fluid px-4 py-4 no-print">
+    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-3">
+        <div>
+            <h4 class="fw-bold mb-1"><i class="fas fa-id-badge me-2 text-primary"></i>Yaka Kartı Baskı</h4>
+            <p class="text-muted small mb-0">@(conference?.Title ?? "")</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="@FilterUrl("all")" class="btn btn-sm @(filter=="all"?"btn-primary":"btn-outline-secondary")">
+                Tümü (@regs.Count)
+            </a>
+            <a href="@FilterUrl("checkedin")" class="btn btn-sm @(filter=="checkedin"?"btn-primary":"btn-outline-secondary")">
+                Sadece Check-In
+            </a>
+            <button class="btn btn-sm btn-success" onclick="window.print()">
+                <i class="fas fa-print me-1"></i> Yazdır
+            </button>
+            <a href="@IndexUrl" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Listeye Dön
+            </a>
+        </div>
+    </div>
+    <div class="alert alert-info alert-dismissible fade show no-print py-2" role="alert">
+        <i class="fas fa-info-circle me-1"></i>
+        <strong>@regs.Count</strong> yaka kartı hazır. Yazdır düğmesine basın veya Ctrl+P kullanın.
+        QR kodlar yükleniyor…
+        <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+    </div>
+</div>
+
+<div class="badge-grid px-4">
+    @foreach (var reg in regs)
+    {
+        var fullName = $"{reg.AppUser?.FirstName} {reg.AppUser?.LastName}".Trim();
+        if (string.IsNullOrWhiteSpace(fullName)) fullName = reg.AppUser?.Email ?? "?";
+        var typeLabel = reg.RegistrationType?.Name ?? "Katılımcı";
+        var token = reg.QrToken ?? reg.Id.ToString("N")[..8].ToUpper();
+
+        <div class="badge-card">
+            <div class="badge-header-strip"></div>
+            <div class="badge-conf-name">@(conference?.Title ?? "")</div>
+            <div class="badge-qr" id="qr-@reg.Id.ToString("N")"></div>
+            <div class="badge-name">@fullName</div>
+            <span class="badge-type-pill">@typeLabel</span>
+            <div class="badge-token">@token</div>
+        </div>
+    }
+</div>
+
+@if (!regs.Any())
+{
+    <div class="text-center py-5 text-muted no-print">
+        <i class="fas fa-id-badge fa-3x mb-3 d-block"></i>
+        <p>Bu filtreye uygun katılımcı bulunamadı.</p>
+    </div>
+}
+
+@section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+        integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4zsAx4CcQdxOmgPNq5iEg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+(function () {
+    const tokens = @Html.Raw(
+        System.Text.Json.JsonSerializer.Serialize(
+            regs.Select(r => new {
+                id = r.Id.ToString("N"),
+                token = r.QrToken ?? r.Id.ToString("N").Substring(0, 8).ToUpper()
+            })
+        )
+    );
+
+    tokens.forEach(function (item) {
+        const el = document.getElementById('qr-' + item.id);
+        if (!el) return;
+        new QRCode(el, {
+            text: item.token,
+            width: 96,
+            height: 96,
+            colorDark: '#1a2d5a',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    });
+})();
+</script>
+}

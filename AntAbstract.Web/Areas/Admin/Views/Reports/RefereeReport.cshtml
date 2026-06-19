@@ -22,9 +22,15 @@
                 <span class="badge bg-light text-dark border">@title</span>
             </p>
         </div>
-        <a href="@backUrl" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-1"></i> Raporlar
-        </a>
+        <div class="d-flex gap-2">
+            <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Reports/RefereeExport?conferenceId={conferenceId}" : $"/{slug}/Admin/Reports/RefereeExport?conferenceId={conferenceId}")"
+               class="btn btn-outline-success btn-sm">
+                <i class="fas fa-file-excel me-1"></i> Excel
+            </a>
+            <a href="@backUrl" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i> Raporlar
+            </a>
+        </div>
     </div>
 
     @if (TempData["ErrorMessage"] != null)

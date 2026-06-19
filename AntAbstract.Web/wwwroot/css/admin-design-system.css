@@ -1,0 +1,188 @@
+/* ═══════════════════════════════════════════════════════════════════
+   AntAbstract Admin Design System
+   Ortak renkler, tipografi, spacing ve component token'ları.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+    /* ── Renkler ──────────────────────────────────────────────────── */
+    --aa-primary:       #1a2d5a;
+    --aa-primary-light: rgba(26, 45, 90, 0.10);
+    --aa-accent:        #3b5bdb;
+    --aa-blue:          #0d6efd;
+    --aa-blue-light:    rgba(13, 110, 253, 0.12);
+
+    --aa-success:       #16a34a;
+    --aa-success-light: rgba(34, 197, 94, 0.12);
+    --aa-success-bg:    #dcfce7;
+
+    --aa-warning:       #f59e0b;
+    --aa-warning-light: rgba(249, 115, 22, 0.12);
+    --aa-warning-bg:    #fef3c7;
+
+    --aa-danger:        #dc2626;
+    --aa-danger-light:  rgba(239, 68, 68, 0.10);
+    --aa-danger-bg:     #fee2e2;
+
+    --aa-info:          #0ea5e9;
+    --aa-purple:        #7c3aed;
+    --aa-purple-light:  rgba(124, 58, 237, 0.12);
+
+    --aa-text:          #0f172a;
+    --aa-text-secondary:#64748b;
+    --aa-text-muted:    #94a3b8;
+    --aa-border:        #e8eef6;
+    --aa-bg:            #f8fafc;
+    --aa-card-bg:       #ffffff;
+
+    /* ── Tipografi ────────────────────────────────────────────────── */
+    --aa-font:          'Plus Jakarta Sans', 'Inter', sans-serif;
+    --aa-font-mono:     'JetBrains Mono', monospace;
+
+    /* ── Spacing & Radius ────────────────────────────────────────── */
+    --aa-radius-sm:     8px;
+    --aa-radius-md:     12px;
+    --aa-radius-lg:     16px;
+    --aa-radius-xl:     20px;
+    --aa-radius-pill:   999px;
+
+    --aa-shadow-sm:     0 4px 14px rgba(15, 23, 42, 0.04);
+    --aa-shadow-md:     0 10px 28px rgba(15, 23, 42, 0.08);
+    --aa-shadow-lg:     0 16px 40px rgba(15, 23, 42, 0.12);
+}
+
+/* ── Stat Card ────────────────────────────────────────────────────── */
+.aa-stat-card {
+    background: var(--aa-card-bg);
+    border: 1px solid var(--aa-border);
+    border-radius: var(--aa-radius-xl);
+    padding: 1rem 1.25rem;
+    box-shadow: var(--aa-shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.aa-stat-icon {
+    width: 42px; height: 42px; min-width: 42px;
+    border-radius: var(--aa-radius-md);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+}
+
+.aa-stat-value {
+    font-size: 1.5rem; font-weight: 900;
+    color: var(--aa-text); line-height: 1.1;
+}
+
+.aa-stat-label {
+    font-size: 0.7rem; font-weight: 700;
+    color: var(--aa-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* ── Badge / Pill ─────────────────────────────────────────────────── */
+.aa-badge {
+    display: inline-flex; align-items: center;
+    height: 22px; border-radius: var(--aa-radius-pill);
+    padding: 0 8px; font-size: 0.7rem; font-weight: 800;
+    white-space: nowrap;
+}
+
+.aa-badge-success { background: var(--aa-success-bg);  color: var(--aa-success); }
+.aa-badge-warning { background: var(--aa-warning-bg);  color: #92400e; }
+.aa-badge-danger  { background: var(--aa-danger-bg);   color: #991b1b; }
+.aa-badge-info    { background: var(--aa-blue-light);   color: #1d4ed8; }
+.aa-badge-muted   { background: #f1f5f9;               color: var(--aa-text-secondary); }
+
+/* ── Card ─────────────────────────────────────────────────────────── */
+.aa-card {
+    background: var(--aa-card-bg);
+    border: 1px solid var(--aa-border);
+    border-radius: var(--aa-radius-xl);
+    box-shadow: var(--aa-shadow-sm);
+    overflow: hidden;
+}
+
+.aa-card-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--aa-border);
+}
+
+.aa-card-body {
+    padding: 1.5rem;
+}
+
+/* ── Hero Card ────────────────────────────────────────────────────── */
+.aa-hero-card {
+    background: radial-gradient(circle at top right, var(--aa-primary-light), transparent 40%),
+                linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid var(--aa-border);
+    border-radius: 28px;
+    padding: 1.4rem 1.75rem;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1.25rem; flex-wrap: wrap;
+    box-shadow: var(--aa-shadow-md);
+}
+
+.aa-hero-icon {
+    width: 58px; height: 58px; min-width: 58px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, var(--aa-primary), var(--aa-accent));
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    box-shadow: 0 12px 28px rgba(26, 45, 90, 0.28);
+}
+
+.aa-hero-title {
+    font-size: 1.75rem; font-weight: 900;
+    color: var(--aa-text); margin: 0; line-height: 1.2;
+}
+
+.aa-hero-sub {
+    font-size: 0.86rem; color: var(--aa-text-secondary);
+    font-weight: 650; margin: 0.15rem 0 0;
+}
+
+/* ── Progress Bar ─────────────────────────────────────────────────── */
+.aa-progress-track {
+    height: 8px; border-radius: var(--aa-radius-pill);
+    background: #f1f5f9; overflow: hidden;
+}
+
+.aa-progress-fill {
+    height: 100%; border-radius: var(--aa-radius-pill);
+    transition: width 0.4s;
+}
+
+.aa-progress-ok   { background: linear-gradient(90deg, #22c55e, var(--aa-success)); }
+.aa-progress-warn { background: linear-gradient(90deg, var(--aa-warning), #d97706); }
+.aa-progress-full { background: linear-gradient(90deg, #ef4444, var(--aa-danger)); }
+
+/* ── Table ────────────────────────────────────────────────────────── */
+.aa-table th {
+    font-size: 0.75rem; font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--aa-text-secondary);
+    background: var(--aa-bg);
+}
+
+.aa-table td { vertical-align: middle; }
+.aa-table tr:hover td { background: var(--aa-bg); }
+
+/* ── Section Title ────────────────────────────────────────────────── */
+.aa-section-title {
+    font-size: 0.8rem; font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--aa-text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .aa-hero-card { flex-direction: column; align-items: flex-start; }
+    .aa-hero-title { font-size: 1.3rem; }
+}
