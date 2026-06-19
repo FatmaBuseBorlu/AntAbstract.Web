@@ -1113,6 +1113,41 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return RedirectBack(returnUrl, slug, report.SubmissionId);
         }
 
+        [HttpPost("/{slug}/Admin/Submissions/SetDoi/{id:guid}")]
+        [HttpPost("/Admin/Submissions/SetDoi/{id:guid}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SetDoi(string? slug, Guid id, string doiUrl, string? returnUrl)
+        {
+            var submission = await GetAccessibleSubmissionAsync(id, slug, null);
+            if (submission == null)
+            {
+                TempData["ErrorMessage"] = "Bildiri bulunamadı.";
+                return RedirectBack(returnUrl, slug);
+            }
+
+            if (submission.Status != SubmissionStatus.Accepted && submission.Status != SubmissionStatus.Presented)
+            {
+                TempData["ErrorMessage"] = "DOI yalnızca kabul edilmiş bildiriler için atanabilir.";
+                return RedirectBack(returnUrl, slug, id);
+            }
+
+            if (string.IsNullOrWhiteSpace(doiUrl) || !Uri.TryCreate(doiUrl, UriKind.Absolute, out _))
+            {
+                TempData["ErrorMessage"] = "Geçerli bir DOI URL'si giriniz.";
+                return RedirectBack(returnUrl, slug, id);
+            }
+
+            var tracked = await _context.Submissions.FirstOrDefaultAsync(s => s.Id == id);
+            if (tracked != null)
+            {
+                tracked.DoiUrl = doiUrl.Trim();
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "DOI başarıyla atandı.";
+            }
+
+            return RedirectBack(returnUrl, slug, id);
+        }
+
         private IActionResult RedirectBack(string? returnUrl, string? slug, Guid? submissionId = null)
         {
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))

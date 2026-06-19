@@ -113,6 +113,9 @@ namespace AntAbstract.Domain.Entities
         [MaxLength(50)]
         public string PresentationType { get; set; } = string.Empty;
 
+        [MaxLength(500)]
+        public string? DoiUrl { get; set; }
+
         public virtual ICollection<SubmissionAuthor> SubmissionAuthors { get; set; }
 
         public virtual ICollection<SubmissionFile> Files { get; set; }

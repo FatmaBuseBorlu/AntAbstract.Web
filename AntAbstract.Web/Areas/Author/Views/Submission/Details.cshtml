@@ -1061,6 +1061,14 @@
                             @L("CertificateButton", "Sertifikalarım", "My Certificates")
                         </a>
 
+                        @if (!string.IsNullOrWhiteSpace(Model.DoiUrl))
+                        {
+                            <a href="@Model.DoiUrl" target="_blank" class="btn btn-outline-secondary quick-action-btn">
+                                <i class="fas fa-fingerprint"></i>
+                                DOI
+                            </a>
+                        }
+
                         @if (ViewBag.IsFullTextOpen == true)
                         {
                             <a href="@uploadFullTextUrl" class="btn btn-success quick-action-btn">

@@ -26,6 +26,7 @@ namespace AntAbstract.Application.DTOs.Submission
         public List<SubmissionFileDto> Files { get; set; } = new();
         public string Topic { get; set; } = string.Empty;
         public string PresentationType { get; set; } = string.Empty;
+        public string? DoiUrl { get; set; }
     }
 
 }
