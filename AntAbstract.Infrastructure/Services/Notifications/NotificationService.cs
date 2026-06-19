@@ -18,10 +18,12 @@ namespace AntAbstract.Infrastructure.Services.Notifications
         private const int MaxLinkLength = 500;
 
         private readonly AppDbContext _context;
+        private readonly IRealtimeNotifier? _realtime;
 
-        public NotificationService(AppDbContext context)
+        public NotificationService(AppDbContext context, IRealtimeNotifier? realtime = null)
         {
             _context = context;
+            _realtime = realtime;
         }
 
         public async Task CreateAsync(
@@ -62,6 +64,20 @@ namespace AntAbstract.Infrastructure.Services.Notifications
 
             await _context.Notifications.AddAsync(notification);
             await _context.SaveChangesAsync();
+
+            if (_realtime != null)
+            {
+                await _realtime.SendAsync(userId, new
+                {
+                    id = notification.Id,
+                    title,
+                    message,
+                    icon,
+                    color,
+                    link = link ?? "",
+                    createdAt = notification.CreatedDate.ToString("dd MMM HH:mm")
+                });
+            }
         }
 
         public async Task<List<Notification>> GetUserNotificationsAsync(string userId, int count = 10)

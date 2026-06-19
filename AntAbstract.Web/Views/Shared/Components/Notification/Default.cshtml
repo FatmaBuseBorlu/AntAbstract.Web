@@ -311,4 +311,66 @@
             updateNotificationBadgeVisibility();
         });
     }
+
+    // ── SignalR Gerçek Zamanlı Bildirimler ──
+    (function initSignalR() {
+        if (typeof signalR === 'undefined') return;
+
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl('/hubs/notifications')
+            .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+            .build();
+
+        connection.on('ReceiveNotification', function (n) {
+            const list = document.getElementById('notificationList');
+            if (!list) return;
+
+            // Boş durumu kaldır
+            var empty = document.getElementById('notificationEmptyState');
+            if (empty) empty.remove();
+
+            var icon = n.icon || 'fas fa-info-circle';
+            var color = n.color || 'primary';
+            var link = n.link || '#';
+
+            var html = '<a href="' + link + '" onclick="markRead(\'' + n.id + '\', this)" class="notif-item unread">'
+                + '<div class="notif-icon bg-' + color + ' bg-opacity-10 text-' + color + '">'
+                + '<i class="' + icon + '"></i></div>'
+                + '<div class="notif-content"><p><strong>' + escapeHtml(n.title) + '</strong><br>'
+                + '<span class="text-muted">' + escapeHtml(n.message) + '</span></p>'
+                + '<span class="notif-time">' + escapeHtml(n.createdAt) + '</span></div></a>';
+
+            list.insertAdjacentHTML('afterbegin', html);
+
+            // Badge göster
+            var badge = document.getElementById('notifBadge');
+            if (badge) {
+                badge.style.display = '';
+                badge.classList.add('badge-pulse');
+            } else {
+                var btn = document.getElementById('notifDropdownBtn');
+                if (btn) {
+                    var dot = document.createElement('span');
+                    dot.className = 'badge-dot badge-pulse';
+                    dot.id = 'notifBadge';
+                    btn.appendChild(dot);
+                }
+            }
+
+            // "Tümünü Okundu Yap" butonunu göster
+            var markAllBtn = document.getElementById('markAllReadBtn');
+            if (markAllBtn) markAllBtn.style.display = '';
+        });
+
+        connection.start().catch(function (err) {
+            console.debug('SignalR bağlantısı kurulamadı:', err);
+        });
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            var div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+    })();
 </script>

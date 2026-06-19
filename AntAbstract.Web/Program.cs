@@ -173,6 +173,9 @@ builder.Services.AddScoped<IAdminTenantAccessService, AdminTenantAccessService>(
 builder.Services.AddScoped<IAuthorizationHandler, TenantAdminAuthorizationHandler>();
 builder.Services.AddSingleton<IUploadFileValidator, UploadFileValidator>();
 
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IRealtimeNotifier, AntAbstract.Web.Hubs.SignalRNotifier>();
+
 #endregion
 
 #region 4. �oklu Dil ve MVC Ayarlar�
@@ -404,11 +407,11 @@ app.Use(async (ctx, next) =>
     // için gerekli — hashes ile kaldırılabilir ileride.
     h["Content-Security-Policy"] =
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' https://js.stripe.com https://cdn.jsdelivr.net; " +
+        "script-src 'self' 'unsafe-inline' https://js.stripe.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " +
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; " +
         "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com data:; " +
         "img-src 'self' data: https:; " +
-        "connect-src 'self' https://api.stripe.com; " +
+        "connect-src 'self' https://api.stripe.com wss: ws:; " +
         "frame-src https://js.stripe.com https://hooks.stripe.com https://www.paytr.com; " +
         "object-src 'none'; " +
         "base-uri 'self'; " +
@@ -495,6 +498,7 @@ app.UseRotativa();
 #region 7. Y�nlendirmeler
 
 app.MapRazorPages();
+app.MapHub<AntAbstract.Web.Hubs.NotificationHub>("/hubs/notifications");
 
 app.MapControllerRoute(
     name: "public_congresses",
