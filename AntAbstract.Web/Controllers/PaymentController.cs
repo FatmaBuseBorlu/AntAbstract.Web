@@ -1272,7 +1272,7 @@ namespace AntAbstract.Web.Controllers
         [HttpGet("/payment/paytr-iframe")]
         [HttpGet("/{slug}/payment/paytr-iframe")]
         [Authorize]
-        public async Task<IActionResult> PayTRIframe(Guid paymentId, string? slug = null)
+        public IActionResult PayTRIframe(Guid paymentId, string? slug = null)
         {
             var token = TempData["PayTRToken"] as string;
 
@@ -1291,11 +1291,9 @@ namespace AntAbstract.Web.Controllers
         [HttpGet("/payment/paytr-success")]
         [HttpGet("/{slug}/payment/paytr-success")]
         [Authorize]
-        public async Task<IActionResult> PayTRSuccess(Guid paymentId, string? slug = null)
+        public IActionResult PayTRSuccess(Guid paymentId, string? slug = null)
         {
             var canonicalSlug = slug ?? GetSlug();
-            // Ödeme durumu PayTR callback'iyle güncellenir.
-            // Kullanıcıya "işleniyor" mesajı göster, success page'e yönlendir.
             TempData["InfoMessage"] = "Ödemeniz işleniyor. Onay geldiğinde bildirim alacaksınız.";
             return Redirect(BuildUrl(canonicalSlug, $"/payment/success?id={paymentId}"));
         }

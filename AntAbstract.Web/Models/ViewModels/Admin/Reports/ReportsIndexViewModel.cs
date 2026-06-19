@@ -1,7 +1,17 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace AntAbstract.Web.Models.ViewModels.Admin.Reports
 {
+    public class FinanceCategoryItem
+    {
+        public string Label { get; set; } = string.Empty;
+        public decimal PaidAmount { get; set; }
+        public decimal UnpaidAmount { get; set; }
+        public int PaidCount { get; set; }
+        public int UnpaidCount { get; set; }
+    }
+
     public class ReportsIndexViewModel
     {
         public Guid ConferenceId { get; set; }
@@ -27,5 +37,11 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Reports
         public int AcceptedSubmissions => AcceptedCount;
         public int PendingSubmissions => PendingCount;
         public int RejectedSubmissions => RejectedCount;
+
+        public int PaidRegistrations { get; set; }
+        public int UnpaidRegistrations { get; set; }
+        public decimal UnpaidRevenue { get; set; }
+        public string RevenueCurrency { get; set; } = "TRY";
+        public List<FinanceCategoryItem> FinanceByCategory { get; set; } = new();
     }
 }

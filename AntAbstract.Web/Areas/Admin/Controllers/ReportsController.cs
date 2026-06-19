@@ -278,7 +278,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .Select(r => new
                 {
                     r.Amount,
-                    r.IsPaid
+                    r.IsPaid,
+                    TypeName = r.RegistrationType.Name,
+                    r.RegistrationType.Currency
                 })
                 .ToListAsync();
 
@@ -314,6 +316,26 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 TotalRevenue = registrations
                     .Where(x => x.IsPaid)
                     .Sum(x => x.Amount),
+                PaidRegistrations = registrations.Count(x => x.IsPaid),
+                UnpaidRegistrations = registrations.Count(x => !x.IsPaid),
+                UnpaidRevenue = registrations
+                    .Where(x => !x.IsPaid)
+                    .Sum(x => x.Amount),
+                RevenueCurrency = registrations
+                    .Select(x => x.Currency)
+                    .FirstOrDefault() ?? "TRY",
+                FinanceByCategory = registrations
+                    .GroupBy(x => x.TypeName)
+                    .Select(g => new FinanceCategoryItem
+                    {
+                        Label = g.Key,
+                        PaidAmount = g.Where(x => x.IsPaid).Sum(x => x.Amount),
+                        UnpaidAmount = g.Where(x => !x.IsPaid).Sum(x => x.Amount),
+                        PaidCount = g.Count(x => x.IsPaid),
+                        UnpaidCount = g.Count(x => !x.IsPaid)
+                    })
+                    .OrderByDescending(x => x.PaidAmount + x.UnpaidAmount)
+                    .ToList(),
 
                 NewCount = CountOf(SubmissionStatus.New),
                 PendingCount = CountOf(SubmissionStatus.Pending),

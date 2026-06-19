@@ -174,6 +174,7 @@ namespace AntAbstract.Web.Controllers
             if (user != null)
             {
                 registeredIds = await _context.Registrations
+                    .IgnoreQueryFilters()
                     .AsNoTracking()
                     .Where(r => r.AppUserId == user.Id)
                     .Select(r => r.ConferenceId)
@@ -181,6 +182,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             var allConferences = await _context.Conferences
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .OrderByDescending(c => c.StartDate)
@@ -208,6 +210,7 @@ namespace AntAbstract.Web.Controllers
             var onlineText = T("Online", "Online");
 
             var lastSubmissions = await _context.Submissions
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(s => s.Conference)
                 .Include(s => s.Author)
@@ -328,6 +331,7 @@ namespace AntAbstract.Web.Controllers
             if (user != null)
             {
                 var registrations = await _context.Registrations
+                    .IgnoreQueryFilters()
                     .AsNoTracking()
                     .Include(r => r.RegistrationType)
                     .Where(r => r.AppUserId == user.Id)
@@ -338,6 +342,7 @@ namespace AntAbstract.Web.Controllers
                     .ToDictionary(g => g.Key, g => g.First());
 
                 var submissions = await _context.Submissions
+                    .IgnoreQueryFilters()
                     .AsNoTracking()
                     .Where(s => s.AuthorId == user.Id)
                     .ToListAsync();
@@ -348,6 +353,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             var allCongresses = await _context.Conferences
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .OrderBy(c => c.StartDate)
