@@ -173,6 +173,9 @@ builder.Services.AddScoped<IAdminTenantAccessService, AdminTenantAccessService>(
 builder.Services.AddScoped<IAuthorizationHandler, TenantAdminAuthorizationHandler>();
 builder.Services.AddSingleton<IUploadFileValidator, UploadFileValidator>();
 
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IRealtimeNotifier, AntAbstract.Web.Hubs.SignalRNotifier>();
+
 #endregion
 
 #region 4. �oklu Dil ve MVC Ayarlar�
@@ -297,59 +300,62 @@ var app = builder.Build();
 
 #region 5. Veritaban� Ba�latma ve Ayarlar
 
-using (var scope = app.Services.CreateScope())
+if (!app.Environment.IsEnvironment("Testing"))
 {
-    var services = scope.ServiceProvider;
-
-    var startupLogger = services.GetRequiredService<ILogger<Program>>();
-    try
+    using (var scope = app.Services.CreateScope())
     {
-        var userManager = services.GetRequiredService<UserManager<AppUser>>();
-        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-        var context = services.GetRequiredService<AppDbContext>();
+        var services = scope.ServiceProvider;
 
-        // Production'da otomatik migration DEVRE DIŞI bırakıldı.
-        // Migration'lar deployment pipeline'ında (CI/CD) çalıştırılmalıdır:
-        //   dotnet ef database update --project AntAbstract.Infrastructure \
-        //     --startup-project AntAbstract.Web
-        // Development ortamında kolaylık için migration uygulanır.
-        // Testing ortamında (InMemory) relational migration API'si yoktur, atlanır.
-        if (app.Environment.IsDevelopment())
+        var startupLogger = services.GetRequiredService<ILogger<Program>>();
+        try
         {
-            await context.Database.MigrateAsync();
-        }
-        else if (!app.Environment.IsEnvironment("Testing"))
-        {
-            // Production'da veritabanının güncel olduğunu doğrula; değilse başlatmayı durdur
-            var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
-            if (pendingMigrations.Any())
+            var userManager = services.GetRequiredService<UserManager<AppUser>>();
+            var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+            var context = services.GetRequiredService<AppDbContext>();
+
+            // Production'da otomatik migration DEVRE DIŞI bırakıldı.
+            // Migration'lar deployment pipeline'ında (CI/CD) çalıştırılmalıdır:
+            //   dotnet ef database update --project AntAbstract.Infrastructure \
+            //     --startup-project AntAbstract.Web
+            // Development ortamında kolaylık için migration uygulanır.
+            // Testing ortamında (InMemory) relational migration API'si yoktur, atlanır.
+            if (app.Environment.IsDevelopment())
             {
-                startupLogger.LogCritical(
-                    "Bekleyen {Count} migration var: {Names}. Uygulamayı başlatmadan önce " +
-                    "'dotnet ef database update' komutunu çalıştırın.",
-                    pendingMigrations.Count(),
-                    string.Join(", ", pendingMigrations));
-                throw new InvalidOperationException("Veritabanı şeması güncel değil. Uygulama başlatılamadı.");
+                await context.Database.MigrateAsync();
+            }
+            else if (!app.Environment.IsEnvironment("Testing"))
+            {
+                // Production'da veritabanının güncel olduğunu doğrula; değilse başlatmayı durdur
+                var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+                if (pendingMigrations.Any())
+                {
+                    startupLogger.LogCritical(
+                        "Bekleyen {Count} migration var: {Names}. Uygulamayı başlatmadan önce " +
+                        "'dotnet ef database update' komutunu çalıştırın.",
+                        pendingMigrations.Count(),
+                        string.Join(", ", pendingMigrations));
+                    throw new InvalidOperationException("Veritabanı şeması güncel değil. Uygulama başlatılamadı.");
+                }
+            }
+
+            await AntAbstract.Infrastructure.Data.DbInitializer.Initialize(
+                userManager,
+                roleManager,
+                context
+            );
+
+            await AntAbstract.Infrastructure.Data.DbSeeder.SeedRolesAndUsers(services);
+
+            if (app.Environment.IsDevelopment())
+            {
+                await AntAbstract.Infrastructure.Data.TestDataSeeder.SeedAsync(userManager, context);
             }
         }
-
-        await AntAbstract.Infrastructure.Data.DbInitializer.Initialize(
-            userManager,
-            roleManager,
-            context
-        );
-
-        await AntAbstract.Infrastructure.Data.DbSeeder.SeedRolesAndUsers(services);
-
-        if (app.Environment.IsDevelopment())
+        catch (Exception ex)
         {
-            await AntAbstract.Infrastructure.Data.TestDataSeeder.SeedAsync(userManager, context);
+            startupLogger.LogError(ex, "Başlangıç sırasında hata oluştu.");
+            throw; // Uygulama kötü bir durumda başlamasın
         }
-    }
-    catch (Exception ex)
-    {
-        startupLogger.LogError(ex, "Başlangıç sırasında hata oluştu.");
-        throw; // Uygulama kötü bir durumda başlamasın
     }
 }
 
@@ -401,11 +407,11 @@ app.Use(async (ctx, next) =>
     // için gerekli — hashes ile kaldırılabilir ileride.
     h["Content-Security-Policy"] =
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' https://js.stripe.com https://cdn.jsdelivr.net; " +
+        "script-src 'self' 'unsafe-inline' https://js.stripe.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " +
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; " +
         "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com data:; " +
         "img-src 'self' data: https:; " +
-        "connect-src 'self' https://api.stripe.com; " +
+        "connect-src 'self' https://api.stripe.com wss: ws:; " +
         "frame-src https://js.stripe.com https://hooks.stripe.com https://www.paytr.com; " +
         "object-src 'none'; " +
         "base-uri 'self'; " +
@@ -492,6 +498,7 @@ app.UseRotativa();
 #region 7. Y�nlendirmeler
 
 app.MapRazorPages();
+app.MapHub<AntAbstract.Web.Hubs.NotificationHub>("/hubs/notifications");
 
 app.MapControllerRoute(
     name: "public_congresses",

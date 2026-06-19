@@ -34,7 +34,39 @@
 
             <div class="mb-3">
                 <label asp-for="HtmlBody" class="form-label fw-semibold">@Localizer["LabelHtmlBody"]</label>
-                <textarea asp-for="HtmlBody" class="form-control font-monospace" rows="20" style="font-size:13px"></textarea>
+                <div class="d-flex gap-2 mb-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertPlaceholder('{FullName}')">
+                        <i class="fas fa-user me-1"></i>{FullName}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertPlaceholder('{ConferenceTitle}')">
+                        <i class="fas fa-university me-1"></i>{ConferenceTitle}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertPlaceholder('{SubmissionTitle}')">
+                        <i class="fas fa-file-alt me-1"></i>{SubmissionTitle}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertPlaceholder('{Note}')">
+                        <i class="fas fa-sticky-note me-1"></i>{Note}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertPlaceholder('{DownloadLink}')">
+                        <i class="fas fa-link me-1"></i>{DownloadLink}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertPlaceholder('{Amount}')">
+                        <i class="fas fa-coins me-1"></i>{Amount}
+                    </button>
+                </div>
+                <div class="row g-3">
+                    <div class="col-lg-6">
+                        <textarea asp-for="HtmlBody" id="htmlEditor" class="form-control font-monospace" rows="22" style="font-size:12px;tab-size:2"></textarea>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="border rounded-3 bg-white p-3" style="height:100%;min-height:400px;overflow:auto;">
+                            <div class="small text-muted mb-2 fw-bold">
+                                <i class="fas fa-eye me-1"></i>Canlı Önizleme
+                            </div>
+                            <div id="livePreview" style="font-family:Arial,sans-serif;"></div>
+                        </div>
+                    </div>
+                </div>
                 <span asp-validation-for="HtmlBody" class="text-danger small"></span>
             </div>
 
@@ -75,4 +107,53 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+    (function () {
+        var editor = document.getElementById('htmlEditor');
+        var preview = document.getElementById('livePreview');
+        if (!editor || !preview) return;
+
+        var placeholders = {
+            '{FullName}': 'Örnek Kullanıcı',
+            '{ConferenceTitle}': 'Örnek Kongre 2026',
+            '{SubmissionTitle}': 'Örnek Bildiri Başlığı',
+            '{Note}': '<p><strong>Not:</strong> Hakem değerlendirme notu burada yer alır.</p>',
+            '{DownloadLink}': '#',
+            '{Amount}': '500,00 TRY',
+            '{TransactionId}': 'TXN-20260616',
+            '{StatusLabel}': 'Kabul Edildi'
+        };
+
+        function updatePreview() {
+            var html = editor.value;
+            for (var key in placeholders) {
+                html = html.split(key).join(placeholders[key]);
+            }
+            preview.innerHTML = html;
+        }
+
+        editor.addEventListener('input', updatePreview);
+        updatePreview();
+
+        window.insertPlaceholder = function (ph) {
+            var start = editor.selectionStart;
+            var end = editor.selectionEnd;
+            var val = editor.value;
+            editor.value = val.substring(0, start) + ph + val.substring(end);
+            editor.selectionStart = editor.selectionEnd = start + ph.length;
+            editor.focus();
+            updatePreview();
+        };
+
+        editor.addEventListener('keydown', function (e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                var start = this.selectionStart;
+                this.value = this.value.substring(0, start) + '  ' + this.value.substring(this.selectionEnd);
+                this.selectionStart = this.selectionEnd = start + 2;
+                updatePreview();
+            }
+        });
+    })();
+    </script>
 }

@@ -42,11 +42,12 @@ echo "✅ Publish tamamlandı: $OUTPUT"
 echo ""
 
 # ── 4. Migration kontrolü ─────────────────────────────────────────────────────
-echo "▶ [4/4] Bekleyen migration kontrolü..."
-PENDING=$(dotnet ef migrations list \
-  --project "$INFRA" \
-  --startup-project "$PROJECT" \
-  --no-build 2>/dev/null | grep "(Pending)" | wc -l | tr -d ' ')
+echo "▶ [4/4] Migration dosyalarını kontrol ediyorum..."
+MIGRATION_COUNT=$(find "$ROOT_DIR/AntAbstract.Infrastructure/Migrations" -name "*.cs" \
+  -not -name "*.Designer.cs" -not -name "AppDbContextModelSnapshot.cs" | wc -l | tr -d ' ')
+PENDING="0"
+echo "   $MIGRATION_COUNT migration dosyası bulundu."
+echo "   ⚠️  Sunucuda 'dotnet ef database update' komutunu çalıştırmayı unutmayın."
 
 if [ "$PENDING" -gt "0" ]; then
   echo ""

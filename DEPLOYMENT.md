@@ -134,4 +134,16 @@ işaret ediyor — user-secrets dışında hiçbir yere gerçek credential yazma
 - [ ] `private-uploads/` klasörü oluşturuldu ve yazma izni var
 - [ ] `wwwroot/uploads/` klasörü oluşturuldu ve yazma izni var
 - [ ] HTTPS sertifikası aktif (Let's Encrypt veya Plesk SSL)
-- [ ] `Email:BaseUrl` production domain'e ayarlı (https://antabstract.com)
+- [ ] `Email:BaseUrl` production domain'e ayarlı (https://antabstract.com.tr)
+
+## Dikkat — Upload Dosyaları
+
+`private-uploads/` ve `wwwroot/uploads/` klasörleri sunucudaki kullanıcı
+verilerini içerir (bildiri dosyaları, makbuzlar, şablonlar). Deploy sırasında
+bu klasörleri **asla silmeyin**. FTP/File Manager ile yükleme yaparken
+mevcut dosyaların üzerine yazın ama `uploads/` klasörlerini temizlemeyin.
+
+```bash
+# Güvenli deploy: sadece uygulama dosyalarını kopyala, uploads dokunma
+rsync -av --exclude='uploads/' deploy_output/ user@server:/var/www/vhosts/<domain>/httpdocs/
+```
