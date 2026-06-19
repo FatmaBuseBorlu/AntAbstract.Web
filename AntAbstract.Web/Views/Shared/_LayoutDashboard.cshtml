@@ -296,6 +296,8 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>@ViewData["Title"] - AntAbstract</title>
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico" />
+    <link rel="shortcut icon" type="image/x-icon" href="~/favicon.ico" />
 
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -1342,6 +1344,12 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                     Toplu E-posta
                 </a>
 
+                <a href="/Admin/PermissionMatrix"
+                   class="nav-link @(currentController == "PermissionMatrix" ? "active" : "")">
+                    <i class="fas fa-shield-alt text-info"></i>
+                    Yetki Matrisi
+                </a>
+
                 <div class="menu-label text-secondary">
                     @L("Section_System", "Sistem")
                 </div>
@@ -1497,9 +1505,15 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                     </a>
 
                     <a href="@assignmentUrl"
-                       class="nav-link @(currentController == "Assignment" ? "active" : "")">
+                       class="nav-link @(currentController == "Assignment" && currentAction != "Workload" ? "active" : "")">
                         <i class="fas fa-tasks text-info"></i>
                         @L("Management_Assignment", "Hakem Atama")
+                    </a>
+
+                    <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Assignment/Workload?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/Assignment/Workload?conferenceId={selectedConferenceId}")"
+                       class="nav-link @(currentController == "Assignment" && currentAction == "Workload" ? "active" : "")">
+                        <i class="fas fa-balance-scale text-info"></i>
+                        Yük Dengesi
                     </a>
 
                     <a href="@decisionUrl"
@@ -1528,6 +1542,24 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                        class="nav-link @(currentController == "Registrations" ? "active" : "")">
                         <i class="fas fa-credit-card text-info"></i>
                         @L("System_RegistrationsPayments", "Kayıtlar ve Ödemeler")
+                    </a>
+
+                    <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Payments/FinanceSummary?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/Payments/FinanceSummary?conferenceId={selectedConferenceId}")"
+                       class="nav-link @(currentController == "Payments" && currentAction == "FinanceSummary" ? "active" : "")">
+                        <i class="fas fa-chart-line text-success"></i>
+                        Finans Özeti
+                    </a>
+
+                    <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Attendance?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/Attendance?conferenceId={selectedConferenceId}")"
+                       class="nav-link @(currentController == "Attendance" && currentAction != "Badges" ? "active" : "")">
+                        <i class="fas fa-qrcode text-dark"></i>
+                        Check-in
+                    </a>
+
+                    <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Attendance/Badges?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/Attendance/Badges?conferenceId={selectedConferenceId}")"
+                       class="nav-link @(currentController == "Attendance" && currentAction == "Badges" ? "active" : "")">
+                        <i class="fas fa-id-badge text-primary"></i>
+                        Yaka Kartı Baskı
                     </a>
 
                     <a href="@registrationTypesUrl"
@@ -1570,6 +1602,18 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                        class="nav-link @(currentController == "Reports" ? "active" : "")">
                         <i class="fas fa-chart-pie text-warning"></i>
                         @L("Management_Reports", "Raporlar")
+                    </a>
+
+                    <a href="@(string.IsNullOrWhiteSpace(slug) ? "/Admin/Broadcast" : $"/{slug}/Admin/Broadcast")"
+                       class="nav-link @(currentController == "Broadcast" ? "active" : "")">
+                        <i class="fas fa-paper-plane text-primary"></i>
+                        Toplu E-posta
+                    </a>
+
+                    <a href="@(string.IsNullOrWhiteSpace(slug) ? "/Admin/PermissionMatrix" : $"/{slug}/Admin/PermissionMatrix")"
+                       class="nav-link @(currentController == "PermissionMatrix" ? "active" : "")">
+                        <i class="fas fa-shield-alt text-secondary"></i>
+                        Yetki Matrisi
                     </a>
 
                     <a href="@websiteAdminUrl"

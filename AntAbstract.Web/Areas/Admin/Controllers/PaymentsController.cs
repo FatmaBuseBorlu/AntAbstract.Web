@@ -604,6 +604,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         [HttpPost("/{slug}/Admin/Payments/Refund")]
         [HttpPost("/Admin/Payments/Refund")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Refund(string? slug, Guid registrationId, string? note, string? returnUrl)
         {
             var accessibleRegistrations = await _tenantAccess
