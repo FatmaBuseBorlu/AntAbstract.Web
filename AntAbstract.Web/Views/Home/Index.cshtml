@@ -9,7 +9,8 @@
 @model LandingPageViewModel
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"].Value;
+    ViewData["Title"] = L("HomeSeoTitle", "Kongre Yönetim Sistemi");
+    ViewData["MetaDescription"] = L("HomeSeoDescription", "AntAbstract ile kongre kayıt, bildiri gönderimi, hakem değerlendirme, program, ödeme ve sertifika süreçlerini tek panelden yönetin.");
     Layout = "_Layout";
 
     string L(string key, string fallback)
@@ -1681,7 +1682,7 @@
     </section>
     }
 
-    <section class="latest-submissions-section py-5">
+    <section class="latest-submissions-section py-5" data-nosnippet>
         <div class="container py-5">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-5">
                 <div>

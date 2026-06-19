@@ -14,13 +14,31 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
+@{
+    var rawTitle = ViewData["Title"]?.ToString();
+    var pageTitle = string.IsNullOrWhiteSpace(rawTitle)
+        ? "AntAbstract"
+        : $"{rawTitle} - AntAbstract";
+
+    var metaDescription = ViewData["MetaDescription"]?.ToString();
+    if (string.IsNullOrWhiteSpace(metaDescription))
+    {
+        metaDescription = "AntAbstract ile kongre kayit, bildiri gonderimi, hakem degerlendirme, program, odeme ve sertifika sureclerini tek panelden yonetin.";
+    }
+}
+
 <!DOCTYPE html>
 <html lang="@CultureInfo.CurrentUICulture.Name">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>@ViewData["Title"] - AntAbstract</title>
+    <title>@pageTitle</title>
+    <meta name="description" content="@metaDescription" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:title" content="@pageTitle" />
+    <meta property="og:description" content="@metaDescription" />
+    <meta property="og:type" content="website" />
 
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
