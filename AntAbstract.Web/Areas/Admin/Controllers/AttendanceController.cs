@@ -175,5 +175,50 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             return View(registrations);
         }
+
+        // ── Badge baskı sayfası ───────────────────────────────────────────────────
+        [HttpGet("/Admin/Attendance/Badges")]
+        [HttpGet("/{slug}/Admin/Attendance/Badges")]
+        public async Task<IActionResult> Badges(string? slug, Guid? conferenceId, string? filter)
+        {
+            var conferences = await _tenantAccess.GetAccessibleConferenceQueryAsync(User);
+
+            Conference? conference = null;
+            if (conferenceId.HasValue && conferenceId != Guid.Empty)
+                conference = await conferences.FirstOrDefaultAsync(c => c.Id == conferenceId);
+
+            if (conference == null)
+                conference = await conferences.OrderByDescending(c => c.StartDate).FirstOrDefaultAsync();
+
+            if (conference == null)
+            {
+                ViewBag.NoConference = true;
+                return View(Array.Empty<Registration>());
+            }
+
+            var query = _context.Registrations
+                .AsNoTracking()
+                .Include(r => r.AppUser)
+                .Include(r => r.RegistrationType)
+                .Where(r => r.ConferenceId == conference.Id && r.IsPaid);
+
+            if (filter == "checkedin")
+                query = query.Where(r => r.CheckedInAt.HasValue);
+
+            var registrations = await query
+                .OrderBy(r => r.AppUser!.LastName)
+                .ThenBy(r => r.AppUser!.FirstName)
+                .ToListAsync();
+
+            var tenant = await _context.Tenants
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == conference.TenantId);
+
+            ViewBag.Conference = conference;
+            ViewBag.Slug = slug ?? tenant?.Slug;
+            ViewBag.Filter = filter ?? "all";
+
+            return View(registrations);
+        }
     }
 }

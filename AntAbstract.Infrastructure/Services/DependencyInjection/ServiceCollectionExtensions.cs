@@ -43,6 +43,9 @@ namespace AntAbstract.Infrastructure.Services.DependencyInjection
             // Zamanlanmış mail hatırlatıcıları (deadline, ödeme bekleyen)
             services.AddHostedService<MailReminderWorker>();
 
+            // Zamanlanmış toplu e-posta gönderimi
+            services.AddHostedService<BroadcastWorker>();
+
             return services;
         }
     }

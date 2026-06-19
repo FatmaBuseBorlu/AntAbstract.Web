@@ -1,0 +1,156 @@
+@{
+    ViewData["Title"] = "Yetki Matrisi";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    var slug = ViewBag.Slug as string ?? "";
+    var isSuperAdmin = User.IsInRole("SuperAdmin");
+
+    // Modül tanımları: (ModülAdı, Açıklama, SuperAdmin, Admin, Author, Referee, Listener)
+    // Değerler: "full" | "read" | "own" | "-"
+    var modules = new[]
+    {
+        // Sistem yönetimi
+        new { Group = "Sistem", Name = "Tenant Yönetimi",       Desc = "Kurum oluşturma/düzenleme",       SA = "full", Ad = "-",      Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = "Sistem", Name = "Kullanıcı Yönetimi",    Desc = "Tüm kullanıcılar, rol atama",     SA = "full", Ad = "-",      Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = "Sistem", Name = "Tüm Kongreler",         Desc = "Platform geneli kongre listesi",  SA = "full", Ad = "-",      Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = "Sistem", Name = "Sistem Raporları",      Desc = "Platform istatistikleri",         SA = "full", Ad = "-",      Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = "Sistem", Name = "E-posta Şablonları",    Desc = "Sistem e-posta şablonları",       SA = "full", Ad = "-",      Au = "-",    Re = "-",    Li = "-"    },
+        // Kongre yönetimi
+        new { Group = "Kongre", Name = "Kongre Yönetimi",       Desc = "Kongre CRUD, ayarlar",            SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = "Kongre", Name = "Kongre Kurulum Sihirbazı", Desc = "Yeni kongre oluşturma",       SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = "Kongre", Name = "Kayıt Tipleri",         Desc = "Kayıt tipi yönetimi",            SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = "Kongre", Name = "Oturum Yönetimi",       Desc = "Program oturumları",             SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = "Kongre", Name = "Davetli Konuşmacılar",  Desc = "Speaker CRUD",                   SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = "Kongre", Name = "Sponsorlar",             Desc = "Sponsor CRUD",                   SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = "Kongre", Name = "Website / Vitrin",      Desc = "Kongre sayfası içerikleri",      SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        // Bildiri süreci
+        new { Group = "Bildiri", Name = "Bildiri Yönetimi (Admin)", Desc = "Tüm bildirileri görüntüle",  SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = "Bildiri", Name = "Bildiri Gönderimi",    Desc = "Kendi bildirisini gönder",       SA = "full", Ad = "full",   Au = "own",  Re = "-",    Li = "-"    },
+        new { Group = "Bildiri", Name = "Hakem Atama",          Desc = "Hakeme bildiri ata",             SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = "Bildiri", Name = "Hakem Değerlendirme",  Desc = "Atanan bildirileri değerlendir", SA = "full", Ad = "read",   Au = "-",    Re = "own",  Li = "-"    },
+        new { Group = "Bildiri", Name = "Karar Yönetimi",       Desc = "Kabul/red kararı",               SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = "Bildiri", Name = "Bildiri Kitabı",       Desc = "PDF yükleme/yayınlama",          SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        // Kayıt & ödeme
+        new { Group = "Kayıt", Name = "Kayıt & Ödeme (Admin)", Desc = "Tüm kayıtları yönet",            SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = "Kayıt", Name = "Kongre Kaydı (Kullanıcı)", Desc = "Kendisi kayıt yaptır/öde",   SA = "full", Ad = "full",   Au = "own",  Re = "own",  Li = "own"  },
+        new { Group = "Kayıt", Name = "Konaklama Rezervasyonu", Desc = "Otel rezervasyonu yap",         SA = "full", Ad = "full",   Au = "own",  Re = "own",  Li = "own"  },
+        new { Group = "Kayıt", Name = "Finans Raporları",       Desc = "Ödeme & gelir özeti",            SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        // Sertifika & Raporlar
+        new { Group = "Diğer", Name = "Sertifika",              Desc = "Sertifika oluşturma/indirme",    SA = "full", Ad = "full",   Au = "own",  Re = "own",  Li = "own"  },
+        new { Group = "Diğer", Name = "Raporlar (Admin)",       Desc = "Kongre raporları",               SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = "Diğer", Name = "Anket",                  Desc = "Memnuniyet anketi",              SA = "full", Ad = "read",   Au = "own",  Re = "-",    Li = "-"    },
+        new { Group = "Diğer", Name = "Bildirimler",            Desc = "Sistem bildirimleri",            SA = "full", Ad = "full",   Au = "own",  Re = "own",  Li = "own"  },
+        new { Group = "Diğer", Name = "Denetim Günlüğü",       Desc = "Audit log",                      SA = "full", Ad = "read",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = "Diğer", Name = "Profil",                 Desc = "Kendi profilini düzenle",        SA = "full", Ad = "full",   Au = "own",  Re = "own",  Li = "own"  },
+    };
+
+    var groups = modules.Select(m => m.Group).Distinct().ToList();
+
+    string Badge(string val) => val switch
+    {
+        "full" => "<span class='pm-badge pm-full'>Tam Erişim</span>",
+        "read" => "<span class='pm-badge pm-read'>Görüntüle</span>",
+        "own"  => "<span class='pm-badge pm-own'>Kendisi</span>",
+        _      => "<span class='pm-badge pm-none'>—</span>"
+    };
+}
+
+<style>
+    .pm-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .pm-full { background: #dcfce7; color: #15803d; }
+    .pm-read { background: #dbeafe; color: #1d4ed8; }
+    .pm-own  { background: #fef9c3; color: #92400e; }
+    .pm-none { background: #f1f5f9; color: #94a3b8; }
+
+    .pm-group-header th {
+        background: #f8fafc;
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        color: #64748b;
+        padding: 10px 16px !important;
+    }
+
+    .pm-table th, .pm-table td { vertical-align: middle; }
+    .pm-role-col { text-align: center; min-width: 110px; }
+    .pm-name { font-weight: 600; font-size: 0.9rem; }
+    .pm-desc { font-size: 0.78rem; color: #94a3b8; }
+
+    .pm-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.8rem; }
+</style>
+
+<div class="container-fluid px-4 py-4">
+
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+        <div>
+            <h4 class="fw-bold mb-1"><i class="fas fa-shield-alt me-2 text-primary"></i>Yetki Matrisi</h4>
+            <p class="text-muted small mb-0">Rollerin modül bazında erişim hakları. Değişiklik için kaynak kodu güncellenmesi gerekir.</p>
+        </div>
+        @if (isSuperAdmin)
+        {
+            <a href="/@slug/Admin/Users" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-users me-1"></i> Kullanıcı Rol Yönetimi
+            </a>
+        }
+    </div>
+
+    <!-- Efsane -->
+    <div class="pm-legend mb-4">
+        <span class="pm-badge pm-full">Tam Erişim</span> — Görüntüle + Oluştur + Düzenle + Sil
+        <span class="pm-badge pm-read">Görüntüle</span> — Yalnızca okuma
+        <span class="pm-badge pm-own">Kendisi</span> — Yalnızca kendi kayıtları
+        <span class="pm-badge pm-none">—</span> — Erişim yok
+    </div>
+
+    <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover mb-0 pm-table">
+                <thead>
+                    <tr class="table-dark">
+                        <th style="min-width:220px;">Modül</th>
+                        <th class="pm-role-col"><i class="fas fa-crown me-1 text-warning"></i>SuperAdmin</th>
+                        <th class="pm-role-col"><i class="fas fa-user-shield me-1 text-primary"></i>Admin</th>
+                        <th class="pm-role-col"><i class="fas fa-pen me-1 text-info"></i>Author</th>
+                        <th class="pm-role-col"><i class="fas fa-user-graduate me-1 text-success"></i>Referee</th>
+                        <th class="pm-role-col"><i class="fas fa-user me-1 text-secondary"></i>Listener</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var group in groups)
+                    {
+                        <tr class="pm-group-header">
+                            <th colspan="6">@group</th>
+                        </tr>
+                        @foreach (var m in modules.Where(x => x.Group == group))
+                        {
+                            <tr>
+                                <td>
+                                    <div class="pm-name">@m.Name</div>
+                                    <div class="pm-desc">@m.Desc</div>
+                                </td>
+                                <td class="pm-role-col">@Html.Raw(Badge(m.SA))</td>
+                                <td class="pm-role-col">@Html.Raw(Badge(m.Ad))</td>
+                                <td class="pm-role-col">@Html.Raw(Badge(m.Au))</td>
+                                <td class="pm-role-col">@Html.Raw(Badge(m.Re))</td>
+                                <td class="pm-role-col">@Html.Raw(Badge(m.Li))</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <p class="text-muted small mt-3">
+        <i class="fas fa-info-circle me-1"></i>
+        Bu matris kod tabanlı yetkileri yansıtır. Rol atama için
+        <a href="/@slug/Admin/Users">Kullanıcı Yönetimi</a> sayfasını kullanın.
+    </p>
+</div>

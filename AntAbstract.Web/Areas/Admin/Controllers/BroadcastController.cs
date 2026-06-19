@@ -3,6 +3,7 @@ using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -19,15 +20,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly AppDbContext _context;
         private readonly IAdminTenantAccessService _tenantAccess;
         private readonly IEmailQueue _emailQueue;
+        private readonly UserManager<AppUser> _userManager;
 
         public BroadcastController(
             AppDbContext context,
             IAdminTenantAccessService tenantAccess,
-            IEmailQueue emailQueue)
+            IEmailQueue emailQueue,
+            UserManager<AppUser> userManager)
         {
             _context = context;
             _tenantAccess = tenantAccess;
             _emailQueue = emailQueue;
+            _userManager = userManager;
         }
 
         private async Task<Guid?> GetTenantIdAsync()
@@ -51,8 +55,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .Select(c => new { c.Id, c.Title })
                 .ToListAsync();
 
+            var scheduled = await _context.ScheduledBroadcasts
+                .AsNoTracking()
+                .Include(b => b.Conference)
+                .Include(b => b.CreatedByUser)
+                .Where(b => b.TenantId == tenantId.Value)
+                .OrderByDescending(b => b.CreatedAt)
+                .Take(20)
+                .ToListAsync();
+
             ViewBag.Conferences = conferences;
             ViewBag.Slug = slug ?? "";
+            ViewBag.ScheduledBroadcasts = scheduled;
             return View();
         }
 
@@ -83,6 +97,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             string group,
             string subject,
             string body,
+            DateTime? scheduledAt,
             string? slug = null)
         {
             if (string.IsNullOrWhiteSpace(subject) || string.IsNullOrWhiteSpace(body))
@@ -95,15 +110,75 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (!tenantId.HasValue) return Challenge();
 
             var emails = await GetRecipientEmailsAsync(conferenceId, group, tenantId.Value);
+            var user = await _userManager.GetUserAsync(User);
 
-            // Kuyruğa al — HTTP isteği bloke olmaz, arka planda gönderilir
-            foreach (var email in emails)
+            if (scheduledAt.HasValue && scheduledAt.Value > DateTime.UtcNow.AddMinutes(5))
             {
-                _emailQueue.Enqueue(new EmailQueueItem(email, subject, body));
+                _context.ScheduledBroadcasts.Add(new ScheduledBroadcast
+                {
+                    ConferenceId = conferenceId,
+                    TargetGroup = group,
+                    Subject = subject,
+                    HtmlBody = body,
+                    ScheduledAt = scheduledAt.Value,
+                    RecipientCount = emails.Count,
+                    Status = BroadcastStatus.Pending,
+                    CreatedByUserId = user?.Id,
+                    TenantId = tenantId.Value,
+                });
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = $"{emails.Count} kişiye {scheduledAt.Value:dd.MM.yyyy HH:mm} tarihinde gönderilecek.";
+            }
+            else
+            {
+                foreach (var email in emails)
+                {
+                    _emailQueue.Enqueue(new EmailQueueItem(email, subject, body));
+                }
+
+                _context.ScheduledBroadcasts.Add(new ScheduledBroadcast
+                {
+                    ConferenceId = conferenceId,
+                    TargetGroup = group,
+                    Subject = subject,
+                    HtmlBody = body,
+                    ScheduledAt = DateTime.UtcNow,
+                    SentAt = DateTime.UtcNow,
+                    RecipientCount = emails.Count,
+                    Status = BroadcastStatus.Sent,
+                    CreatedByUserId = user?.Id,
+                    TenantId = tenantId.Value,
+                });
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = $"{emails.Count} kişi için e-posta kuyruğa alındı. Arka planda gönderilecek.";
             }
 
-            TempData["SuccessMessage"] = $"{emails.Count} kişi için e-posta kuyruğa alındı. Arka planda gönderilecek.";
+            return RedirectToAction(nameof(Index), new { slug });
+        }
 
+        [HttpPost("/Admin/Broadcast/Cancel")]
+        [HttpPost("/{slug}/Admin/Broadcast/Cancel")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Cancel(int broadcastId, string? slug = null)
+        {
+            var tenantId = await GetTenantIdAsync();
+            if (!tenantId.HasValue) return Challenge();
+
+            var broadcast = await _context.ScheduledBroadcasts
+                .FirstOrDefaultAsync(b => b.Id == broadcastId && b.TenantId == tenantId.Value);
+
+            if (broadcast == null || broadcast.Status != BroadcastStatus.Pending)
+            {
+                TempData["ErrorMessage"] = "Zamanlanmış gönderim bulunamadı veya zaten gönderilmiş.";
+                return RedirectToAction(nameof(Index), new { slug });
+            }
+
+            broadcast.Status = BroadcastStatus.Cancelled;
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Zamanlanmış gönderim iptal edildi.";
             return RedirectToAction(nameof(Index), new { slug });
         }
 
@@ -165,6 +240,29 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                             p.Status == PaymentStatus.Completed &&
                             p.AppUser != null)
                         .Select(p => p.AppUser!.Email);
+                    break;
+
+                // Revizyon gerekli bildiri sahipleri
+                case "revision":
+                    emailQuery = _context.Submissions
+                        .AsNoTracking()
+                        .Include(s => s.User)
+                        .Where(s => s.ConferenceId == conferenceId &&
+                            s.Status == SubmissionStatus.RevisionRequired &&
+                            s.User != null)
+                        .Select(s => s.User!.Email);
+                    break;
+
+                // Kayıt yaptırıp ödeme yapmamışlar
+                case "unpaid":
+                    emailQuery = _context.Registrations
+                        .AsNoTracking()
+                        .Include(r => r.AppUser)
+                        .Where(r => r.ConferenceId == conferenceId &&
+                            !r.IsPaid &&
+                            r.Status != RegistrationStatus.Cancelled &&
+                            r.AppUser != null)
+                        .Select(r => r.AppUser!.Email);
                     break;
 
                 // Tüm bildirim sahipleri (varsayılan)

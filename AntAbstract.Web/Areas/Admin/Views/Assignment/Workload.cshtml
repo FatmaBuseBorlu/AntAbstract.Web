@@ -1,0 +1,277 @@
+@using System.Dynamic
+@{
+    ViewData["Title"] = "Hakem Yük Dengesi";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+
+    var slug          = ViewBag.Slug as string ?? "";
+    var conferenceId  = (Guid)ViewBag.ConferenceId;
+    var confTitle     = ViewBag.ConferenceTitle as string ?? "";
+    var maxLoad       = (int)ViewBag.MaxLoad;
+    var unassigned    = (int)ViewBag.UnassignedCount;
+    var totalSubs     = (int)ViewBag.TotalSubmissions;
+
+    var rows = Model as List<object> ?? new();
+
+    string AssignUrl  = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Assignment?conferenceId={conferenceId}"
+        : $"/{slug}/Admin/Assignment?conferenceId={conferenceId}";
+
+    // Aggregate stats
+    int totalReferees  = rows.Count;
+    int overloaded     = 0;
+    int idle           = 0;
+    int totalAssigned  = 0;
+    int totalReviewed  = 0;
+
+    // We'll re-read via dynamic for stats
+    var dynRows = rows.Select(r => (dynamic)r).ToList();
+    foreach (var r in dynRows)
+    {
+        totalAssigned += (int)r.Total;
+        totalReviewed += (int)r.Reviewed;
+        if ((int)r.Total >= maxLoad) overloaded++;
+        if ((int)r.Total == 0)       idle++;
+    }
+}
+
+<style>
+    .wl-bar-track {
+        height: 8px; border-radius: 999px;
+        background: #f1f5f9; overflow: hidden;
+    }
+    .wl-bar-fill {
+        height: 100%; border-radius: 999px;
+        transition: width 0.4s;
+    }
+    .wl-bar-ok   { background: linear-gradient(90deg, #22c55e, #16a34a); }
+    .wl-bar-warn { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .wl-bar-full { background: linear-gradient(90deg, #ef4444, #dc2626); }
+
+    .wl-badge {
+        display: inline-flex; align-items: center;
+        height: 22px; border-radius: 999px; padding: 0 8px;
+        font-size: 0.7rem; font-weight: 800; white-space: nowrap;
+    }
+    .wl-badge-ok   { background: #dcfce7; color: #15803d; }
+    .wl-badge-warn { background: #fef3c7; color: #92400e; }
+    .wl-badge-full { background: #fee2e2; color: #991b1b; }
+    .wl-badge-idle { background: #f1f5f9; color: #64748b; }
+
+    .wl-bid-chip {
+        display: inline-flex; align-items: center; gap: 3px;
+        height: 20px; border-radius: 999px; padding: 0 7px;
+        font-size: 0.68rem; font-weight: 800;
+    }
+    .wl-chip-want     { background: rgba(34,197,94,0.12);  color: #15803d; }
+    .wl-chip-conflict { background: rgba(239,68,68,0.10);  color: #dc2626; }
+
+    .wl-stat-card {
+        background: #fff; border: 1px solid #e8eef6; border-radius: 18px;
+        padding: 1rem 1.25rem; box-shadow: 0 4px 14px rgba(15,23,42,0.04);
+    }
+    .wl-stat-icon {
+        width: 40px; height: 40px; min-width: 40px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center; font-size: 1rem;
+    }
+    .wl-stat-value { font-size: 1.6rem; font-weight: 900; color: #0f172a; line-height: 1.1; }
+    .wl-stat-label { font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+
+    .wl-table th { font-size: 0.75rem; font-weight: 800; text-transform: uppercase;
+                   letter-spacing: 0.04em; color: #64748b; background: #f8fafc; }
+    .wl-table td { vertical-align: middle; }
+    .wl-table tr:hover td { background: #f8fafc; }
+</style>
+
+<div class="container-fluid px-4 py-4">
+
+    @* Header *@
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+        <div>
+            <h4 class="fw-bold mb-1">
+                <i class="fas fa-balance-scale me-2 text-primary"></i>Hakem Yük Dengesi
+            </h4>
+            <p class="text-muted small mb-0">@confTitle</p>
+        </div>
+        <a href="@AssignUrl" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Hakem Atama
+        </a>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger mb-4 rounded-3">@TempData["ErrorMessage"]</div>
+    }
+
+    @* Stat row *@
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="wl-stat-card d-flex align-items-center gap-3">
+                <div class="wl-stat-icon" style="background:rgba(13,110,253,0.10);color:#0d6efd;">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div>
+                    <div class="wl-stat-value">@totalReferees</div>
+                    <div class="wl-stat-label">Hakem</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="wl-stat-card d-flex align-items-center gap-3">
+                <div class="wl-stat-icon" style="background:rgba(34,197,94,0.12);color:#16a34a;">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div>
+                    <div class="wl-stat-value">@totalReviewed</div>
+                    <div class="wl-stat-label">Tamamlanan</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="wl-stat-card d-flex align-items-center gap-3">
+                <div class="wl-stat-icon" style="background:rgba(239,68,68,0.10);color:#dc2626;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div>
+                    <div class="wl-stat-value">@overloaded</div>
+                    <div class="wl-stat-label">Dolu (@maxLoad / @maxLoad)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="wl-stat-card d-flex align-items-center gap-3">
+                <div class="wl-stat-icon" style="background:rgba(249,115,22,0.10);color:#ea580c;">
+                    <i class="fas fa-file-circle-question"></i>
+                </div>
+                <div>
+                    <div class="wl-stat-value">@unassigned</div>
+                    <div class="wl-stat-label">Atanmamış Bildiri</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Table *@
+    <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 wl-table">
+                <thead>
+                    <tr>
+                        <th style="min-width:200px;">Hakem</th>
+                        <th style="min-width:180px;">Yük</th>
+                        <th class="text-center" style="min-width:80px;">Atanan</th>
+                        <th class="text-center" style="min-width:90px;">Tamamlandı</th>
+                        <th class="text-center" style="min-width:80px;">Bekleyen</th>
+                        <th class="text-center" style="min-width:110px;">Teklifler</th>
+                        <th class="text-center" style="min-width:90px;">Durum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!dynRows.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-5">
+                                <i class="fas fa-users-slash fa-2x mb-3 d-block"></i>
+                                Bu kongre için hakem bulunamadı.
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var r in dynRows)
+                    {
+                        int total    = (int)r.Total;
+                        int reviewed = (int)r.Reviewed;
+                        int pending  = (int)r.Pending;
+                        int wantBids = (int)r.WantBids;
+                        int conflBids= (int)r.ConflictBids;
+                        int pct      = (int)r.LoadPct;
+
+                        string barClass = total >= maxLoad ? "wl-bar-full"
+                                        : total >= maxLoad * 0.7 ? "wl-bar-warn"
+                                        : "wl-bar-ok";
+
+                        string badgeClass = total >= maxLoad ? "wl-badge-full"
+                                          : total == 0       ? "wl-badge-idle"
+                                          : total >= maxLoad * 0.7 ? "wl-badge-warn"
+                                          : "wl-badge-ok";
+
+                        string badgeText = total >= maxLoad ? "Dolu"
+                                         : total == 0       ? "Boşta"
+                                         : total >= maxLoad * 0.7 ? "Yüksek"
+                                         : "Normal";
+
+                        <tr>
+                            <td>
+                                <div class="fw-semibold" style="font-size:0.88rem;">@r.FullName</div>
+                                <div class="text-muted" style="font-size:0.75rem;">@r.Email</div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="wl-bar-track flex-grow-1">
+                                        <div class="wl-bar-fill @barClass"
+                                             style="width:@(Math.Min(pct,100))%"></div>
+                                    </div>
+                                    <span style="font-size:0.75rem;font-weight:700;color:#64748b;min-width:36px;">
+                                        @total/@maxLoad
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="text-center fw-bold">@total</td>
+                            <td class="text-center">
+                                <span style="color:#16a34a;font-weight:700;">@reviewed</span>
+                            </td>
+                            <td class="text-center">
+                                @if (pending > 0)
+                                {
+                                    <span style="color:#f59e0b;font-weight:700;">@pending</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">0</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center gap-1">
+                                    @if (wantBids > 0)
+                                    {
+                                        <span class="wl-bid-chip wl-chip-want">
+                                            <i class="fas fa-thumbs-up"></i> @wantBids
+                                        </span>
+                                    }
+                                    @if (conflBids > 0)
+                                    {
+                                        <span class="wl-bid-chip wl-chip-conflict">
+                                            <i class="fas fa-ban"></i> @conflBids
+                                        </span>
+                                    }
+                                    @if (wantBids == 0 && conflBids == 0)
+                                    {
+                                        <span class="text-muted" style="font-size:0.75rem;">—</span>
+                                    }
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="wl-badge @badgeClass">@badgeText</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer bg-white border-top px-4 py-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <span class="text-muted small">
+                Maksimum yük: <strong>@maxLoad bildiri/hakem</strong>
+                &nbsp;·&nbsp; Toplam atama: <strong>@totalAssigned</strong>
+                &nbsp;·&nbsp; Boşta: <strong>@idle hakem</strong>
+            </span>
+            <a href="@AssignUrl" class="btn btn-primary btn-sm">
+                <i class="fas fa-user-check me-1"></i> Atama Yap
+            </a>
+        </div>
+    </div>
+
+    <p class="text-muted small mt-3">
+        <i class="fas fa-info-circle me-1"></i>
+        <strong>Teklifler</strong>: hakemler bidding aşamasında işaretledi.
+        <span class="wl-bid-chip wl-chip-want ms-1"><i class="fas fa-thumbs-up"></i> İncelemek İstiyorum</span>
+        <span class="wl-bid-chip wl-chip-conflict ms-1"><i class="fas fa-ban"></i> Çıkar Çatışması</span>
+    </p>
+</div>

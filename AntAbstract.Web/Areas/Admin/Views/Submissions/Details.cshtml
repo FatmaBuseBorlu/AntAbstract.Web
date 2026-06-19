@@ -251,26 +251,97 @@
                     }
                     else
                     {
-                        <div class="file-list">
-                            @foreach (var file in files)
+                        string TypeLabel(SubmissionFileType t) => t switch
                             {
-                                <div class="file-list-item">
-                                    <div class="file-icon">
-                                        <i class="fas fa-file-pdf"></i>
-                                    </div>
+                                SubmissionFileType.FullText => "Tam Metin",
+                                SubmissionFileType.Abstract => "Özet",
+                                SubmissionFileType.Presentation => "Sunum",
+                                SubmissionFileType.Supplementary => "Ek Dosya",
+                                _ => "Dosya"
+                            };
+                            string TypeIcon(SubmissionFileType t) => t switch
+                            {
+                                SubmissionFileType.FullText => "fa-file-pdf",
+                                SubmissionFileType.Abstract => "fa-file-lines",
+                                SubmissionFileType.Presentation => "fa-file-powerpoint",
+                                SubmissionFileType.Supplementary => "fa-file-zipper",
+                                _ => "fa-file"
+                            };
+                            string TypeColor(SubmissionFileType t) => t switch
+                            {
+                                SubmissionFileType.FullText => "#dc2626",
+                                SubmissionFileType.Abstract => "#2563eb",
+                                SubmissionFileType.Presentation => "#ea580c",
+                                SubmissionFileType.Supplementary => "#64748b",
+                                _ => "#64748b"
+                            };
+                            var grouped = files.GroupBy(f => f.Type).OrderBy(g => g.Key);
 
+                        @foreach (var group in grouped)
+                        {
+                            var sortedVersions = group.OrderByDescending(f => f.Version).ToList();
+                            var latest = sortedVersions.First();
+                            var hasMultiple = sortedVersions.Count > 1;
+                            var collapseId = $"ver-{group.Key}";
+
+                            <div style="margin-bottom:12px;">
+                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                                    <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:@(TypeColor(group.Key))15;color:@TypeColor(group.Key);font-size:0.85rem;">
+                                        <i class="fas @TypeIcon(group.Key)"></i>
+                                    </span>
+                                    <span style="font-weight:800;font-size:0.82rem;color:#334155;">@TypeLabel(group.Key)</span>
+                                    <span style="background:#f1f5f9;border-radius:999px;padding:1px 8px;font-size:0.68rem;font-weight:700;color:#64748b;">
+                                        @sortedVersions.Count versiyon
+                                    </span>
+                                </div>
+
+                                @* Son versiyon *@
+                                <div class="file-list-item" style="border-left:3px solid @TypeColor(group.Key);">
+                                    <div class="file-icon" style="color:@TypeColor(group.Key);">
+                                        <i class="fas @TypeIcon(group.Key)"></i>
+                                    </div>
                                     <div class="file-info">
-                                        <strong>@file.FileName</strong>
-                                        <span>@file.UploadedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                                        <strong>@latest.FileName</strong>
+                                        <span>
+                                            v@latest.Version · @latest.UploadedAt.ToString("dd.MM.yyyy HH:mm")
+                                            <span style="background:#dcfce7;color:#15803d;border-radius:999px;padding:1px 6px;font-size:0.62rem;font-weight:800;margin-left:4px;">Son</span>
+                                        </span>
                                     </div>
-
-                                    <a href="/download/submission/@file.Id" target="_blank" class="btn file-view-btn">
-                                        <i class="fas fa-download me-2"></i>
-                                        Aç
+                                    <a href="/download/submission/@latest.Id" target="_blank" class="btn file-view-btn">
+                                        <i class="fas fa-download me-2"></i>Aç
                                     </a>
                                 </div>
-                            }
-                        </div>
+
+                                @* Eski versiyonlar *@
+                                @if (hasMultiple)
+                                {
+                                    <div style="margin-top:4px;margin-left:14px;">
+                                        <button type="button" class="btn btn-sm btn-link text-muted p-0"
+                                                style="font-size:0.74rem;font-weight:700;text-decoration:none;"
+                                                data-bs-toggle="collapse" data-bs-target="#@collapseId">
+                                            <i class="fas fa-history me-1"></i> Önceki versiyonlar (@(sortedVersions.Count - 1))
+                                        </button>
+                                        <div class="collapse" id="@collapseId">
+                                            @foreach (var older in sortedVersions.Skip(1))
+                                            {
+                                                <div class="file-list-item" style="opacity:0.7;margin-top:4px;">
+                                                    <div class="file-icon" style="color:#94a3b8;">
+                                                        <i class="fas @TypeIcon(group.Key)"></i>
+                                                    </div>
+                                                    <div class="file-info">
+                                                        <strong>@older.FileName</strong>
+                                                        <span>v@older.Version · @older.UploadedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                                                    </div>
+                                                    <a href="/download/submission/@older.Id" target="_blank" class="btn file-view-btn">
+                                                        <i class="fas fa-download me-2"></i>Aç
+                                                    </a>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
                     }
                 </div>
             </div>
