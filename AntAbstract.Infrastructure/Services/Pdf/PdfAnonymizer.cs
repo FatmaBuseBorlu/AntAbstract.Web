@@ -1,33 +1,42 @@
-using PdfSharpCore.Pdf;
-using PdfSharpCore.Pdf.IO;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace AntAbstract.Infrastructure.Services.Pdf
 {
     public sealed class PdfAnonymizer : IPdfAnonymizer
     {
+        private static readonly Regex InfoValuePattern = new(
+            @"(/(?:Author|Creator|Title|Subject|Keywords|Producer|Company|Manager))\s*\(([^)]*)\)",
+            RegexOptions.Compiled);
+
         public byte[] AnonymizeMetadata(byte[] pdfBytes, string submissionCode)
         {
-            using var inputStream = new MemoryStream(pdfBytes);
-            using var document = PdfReader.Open(inputStream, PdfDocumentOpenMode.Modify);
+            var text = Encoding.Latin1.GetString(pdfBytes);
 
-            document.Info.Author = "";
-            document.Info.Creator = "AntAbstract";
-            document.Info.Title = submissionCode;
-            document.Info.Subject = "";
-            document.Info.Keywords = "";
-
-            var keysToRemove = new[] { "/Producer", "/Company", "/Manager" };
-            foreach (var key in keysToRemove)
+            var replacements = new Dictionary<string, string>
             {
-                if (document.Info.Elements.ContainsKey(key))
-                    document.Info.Elements.Remove(key);
-            }
+                { "/Author", "" },
+                { "/Creator", "AntAbstract" },
+                { "/Title", submissionCode },
+                { "/Subject", "" },
+                { "/Keywords", "" },
+                { "/Producer", "AntAbstract" },
+                { "/Company", "" },
+                { "/Manager", "" }
+            };
 
-            using var outputStream = new MemoryStream();
-            document.Save(outputStream, false);
-            return outputStream.ToArray();
+            var result = InfoValuePattern.Replace(text, match =>
+            {
+                var key = match.Groups[1].Value;
+                if (replacements.TryGetValue(key, out var replacement))
+                    return $"{key} ({replacement})";
+                return match.Value;
+            });
+
+            return Encoding.Latin1.GetBytes(result);
         }
     }
 }
