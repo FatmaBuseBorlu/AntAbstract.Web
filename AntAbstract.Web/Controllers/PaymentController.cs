@@ -1355,6 +1355,15 @@ namespace AntAbstract.Web.Controllers
             if (!_payTR.VerifyCallback(merchantOid, status, totalAmount, hash))
             {
                 _logger.LogWarning("PayTR callback hash doğrulama başarısız. Oid={Oid}", merchantOid);
+                _context.StripeWebhookEvents.Add(new StripeWebhookEvent
+                {
+                    StripeEventId = merchantOid,
+                    Provider = "PayTR",
+                    EventType = "callback",
+                    Status = "failed",
+                    ErrorMessage = "Hash doğrulama başarısız"
+                });
+                await _context.SaveChangesAsync();
                 return Content("PAYTR_INVALID_HASH");
             }
 
@@ -1472,6 +1481,18 @@ namespace AntAbstract.Web.Controllers
             {
                 await _context.SaveChangesAsync();
             }
+
+            _context.StripeWebhookEvents.Add(new StripeWebhookEvent
+            {
+                StripeEventId = merchantOid,
+                Provider = "PayTR",
+                EventType = $"callback:{status}",
+                Status = status == "success" ? "processed" : "failed",
+                PaymentId = paymentId,
+                StripeObjectId = form["payment_type"].ToString(),
+                PayloadPreview = $"status={status}&total_amount={totalAmount}&merchant_oid={merchantOid}"
+            });
+            await _context.SaveChangesAsync();
 
             return Content("OK");
         }

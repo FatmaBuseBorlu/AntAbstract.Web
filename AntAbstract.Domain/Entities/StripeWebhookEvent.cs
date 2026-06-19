@@ -3,16 +3,20 @@ using System.ComponentModel.DataAnnotations;
 namespace AntAbstract.Domain.Entities
 {
     /// <summary>
-    /// Stripe'tan gelen webhook olaylarının log kaydı.
+    /// Ödeme sağlayıcılarından gelen webhook/callback olaylarının log kaydı.
     /// </summary>
     public class StripeWebhookEvent
     {
         [Key]
         public int Id { get; set; }
 
-        /// <summary>Stripe'ın evt_xxx event ID'si — tekrar işlemeyi önlemek için.</summary>
+        /// <summary>Stripe evt_xxx veya PayTR merchant_oid — tekrar işlemeyi önlemek için.</summary>
         [Required, StringLength(100)]
         public string StripeEventId { get; set; } = string.Empty;
+
+        /// <summary>Stripe / PayTR</summary>
+        [StringLength(20)]
+        public string Provider { get; set; } = "Stripe";
 
         [Required, StringLength(100)]
         public string EventType { get; set; } = string.Empty;

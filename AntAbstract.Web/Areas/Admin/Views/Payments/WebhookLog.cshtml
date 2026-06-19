@@ -2,13 +2,19 @@
 @model List<StripeWebhookEvent>
 
 @{
-    ViewData["Title"] = "Stripe Webhook Log";
+    ViewData["Title"] = "Webhook & Callback Log";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     int page       = (int)ViewBag.Page;
     int totalPages = (int)ViewBag.TotalPages;
     int total      = (int)ViewBag.Total;
     string? filterType   = ViewBag.EventType as string;
     string? filterStatus = ViewBag.Status as string;
+
+    var processed = Model.Count(e => e.Status == "processed");
+    var failed = Model.Count(e => e.Status == "failed");
+    var skipped = Model.Count(e => e.Status == "skipped");
+    var stripeCount = Model.Count(e => e.Provider == "Stripe");
+    var paytrCount = Model.Count(e => e.Provider == "PayTR");
 
     string StatusBadge(string s) => s switch
     {
@@ -17,17 +23,61 @@
         "failed"    => "bg-danger",
         _           => "bg-light text-dark"
     };
+
+    string ProviderBadge(string p) => p switch
+    {
+        "PayTR"  => "bg-warning text-dark",
+        "Stripe" => "bg-primary",
+        _        => "bg-secondary"
+    };
 }
 
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h3 class="fw-bold mb-1 text-dark">Stripe Webhook Log</h3>
+            <h3 class="fw-bold mb-1 text-dark">
+                <i class="fas fa-satellite-dish me-2 text-primary"></i>Webhook & Callback Log
+            </h3>
             <p class="text-muted mb-0">Toplam <strong>@total</strong> kayıt</p>
         </div>
         <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
             <i class="fas fa-arrow-left me-1"></i> Ödemeler
         </a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-3">
+                    <div class="fw-bold fs-4 text-success">@processed</div>
+                    <div class="text-muted small">Başarılı</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-3">
+                    <div class="fw-bold fs-4 text-danger">@failed</div>
+                    <div class="text-muted small">Başarısız</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-3">
+                    <div class="fw-bold fs-4 text-primary">@stripeCount</div>
+                    <div class="text-muted small">Stripe</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-3">
+                    <div class="fw-bold fs-4 text-warning">@paytrCount</div>
+                    <div class="text-muted small">PayTR</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     @* Filtre *@
@@ -65,12 +115,13 @@
                     <thead class="table-light">
                         <tr>
                             <th class="px-4 py-3">Tarih</th>
+                            <th>Sağlayıcı</th>
                             <th>Event Tipi</th>
-                            <th>Stripe Event ID</th>
-                            <th>Stripe Object</th>
+                            <th>Event ID</th>
+                            <th>Object ID</th>
                             <th>Payment ID</th>
                             <th>Durum</th>
-                            <th>Duplicate</th>
+                            <th>Dup</th>
                             <th>Hata</th>
                         </tr>
                     </thead>
@@ -78,7 +129,7 @@
                         @if (!Model.Any())
                         {
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">Kayıt bulunamadı.</td>
+                                <td colspan="9" class="text-center text-muted py-4">Kayıt bulunamadı.</td>
                             </tr>
                         }
                         @foreach (var item in Model)
@@ -86,6 +137,9 @@
                             <tr>
                                 <td class="px-4 py-3 text-nowrap">
                                     @item.ReceivedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
+                                </td>
+                                <td>
+                                    <span class="badge @ProviderBadge(item.Provider)" style="font-size:0.7rem;">@item.Provider</span>
                                 </td>
                                 <td>
                                     <code class="small">@item.EventType</code>
