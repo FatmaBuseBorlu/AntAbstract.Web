@@ -5,6 +5,7 @@ using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Infrastructure.Services.Email;
 using AntAbstract.Infrastructure.Services.Notifications;
 using AntAbstract.Infrastructure.Services.Pdf;
+using AntAbstract.Infrastructure.Services.Plagiarism;
 using AntAbstract.Infrastructure.Services.ReviewerRecommendation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -48,6 +49,7 @@ namespace AntAbstract.Infrastructure.Services.DependencyInjection
             services.AddHostedService<BroadcastWorker>();
 
             services.AddSingleton<IPdfAnonymizer, PdfAnonymizer>();
+            services.AddScoped<IPlagiarismService, PlagiarismService>();
 
             return services;
         }

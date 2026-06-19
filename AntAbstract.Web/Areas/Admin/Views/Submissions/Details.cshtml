@@ -343,6 +343,85 @@
                             </div>
                         }
                     }
+
+                    @{
+                        var plagReport = ViewBag.PlagiarismReport as AntAbstract.Domain.Entities.PlagiarismReport;
+                        var plagConfigured = (bool)(ViewBag.PlagiarismConfigured ?? false);
+                        var hasFullText = files.Any(f => f.Type == SubmissionFileType.FullText);
+                        var plagSlug = ViewBag.Slug as string ?? "";
+                        var plagReturnUrl = ViewBag.ReturnUrl as string ?? "";
+                    }
+
+                    <div style="margin-top:16px;padding:16px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                            <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#7c3aed15;color:#7c3aed;font-size:0.85rem;">
+                                <i class="fas fa-shield-halved"></i>
+                            </span>
+                            <span style="font-weight:800;font-size:0.85rem;color:#334155;">İntihal Kontrolü</span>
+                        </div>
+
+                        @if (plagReport != null)
+                        {
+                            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                                @if (plagReport.Status == AntAbstract.Domain.Entities.PlagiarismStatus.Completed && plagReport.SimilarityScore.HasValue)
+                                {
+                                    var score = plagReport.SimilarityScore.Value;
+                                    var color = score <= 15 ? "#16a34a" : score <= 30 ? "#f59e0b" : "#dc2626";
+                                    <div style="display:flex;align-items:center;gap:8px;">
+                                        <span style="font-size:1.5rem;font-weight:900;color:@color;">%@score</span>
+                                        <span style="font-size:0.75rem;color:#64748b;">benzerlik oranı</span>
+                                    </div>
+                                    if (!string.IsNullOrWhiteSpace(plagReport.ReportUrl))
+                                    {
+                                        <a href="@plagReport.ReportUrl" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-external-link-alt me-1"></i>Rapor
+                                        </a>
+                                    }
+                                    <span style="font-size:0.68rem;color:#94a3b8;">@plagReport.CompletedAt?.ToString("dd.MM.yyyy HH:mm")</span>
+                                }
+                                else if (plagReport.Status == AntAbstract.Domain.Entities.PlagiarismStatus.Processing)
+                                {
+                                    <span class="spinner-border spinner-border-sm text-primary"></span>
+                                    <span style="font-size:0.8rem;color:#64748b;">İşleniyor...</span>
+                                    <form method="post" action="@(string.IsNullOrWhiteSpace(plagSlug) ? $"/Admin/Submissions/RefreshPlagiarism/{plagReport.Id}" : $"/{plagSlug}/Admin/Submissions/RefreshPlagiarism/{plagReport.Id}")" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="returnUrl" value="@plagReturnUrl" />
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                            <i class="fas fa-sync me-1"></i>Güncelle
+                                        </button>
+                                    </form>
+                                }
+                                else if (plagReport.Status == AntAbstract.Domain.Entities.PlagiarismStatus.Failed)
+                                {
+                                    <span style="font-size:0.8rem;color:#dc2626;">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>@(plagReport.ErrorMessage ?? "Hata oluştu")
+                                    </span>
+                                }
+                            </div>
+                        }
+                        else if (hasFullText && plagConfigured)
+                        {
+                            <form method="post" action="@(string.IsNullOrWhiteSpace(plagSlug) ? $"/Admin/Submissions/CheckPlagiarism/{Model.Id}" : $"/{plagSlug}/Admin/Submissions/CheckPlagiarism/{Model.Id}")">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="returnUrl" value="@plagReturnUrl" />
+                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-search me-1"></i>İntihal Kontrolü Başlat
+                                </button>
+                            </form>
+                        }
+                        else if (!plagConfigured)
+                        {
+                            <span style="font-size:0.78rem;color:#94a3b8;">
+                                <i class="fas fa-info-circle me-1"></i>İntihal kontrol servisi yapılandırılmamış.
+                            </span>
+                        }
+                        else
+                        {
+                            <span style="font-size:0.78rem;color:#94a3b8;">
+                                <i class="fas fa-info-circle me-1"></i>Tam metin dosyası yüklendikten sonra kontrol başlatılabilir.
+                            </span>
+                        }
+                    </div>
                 </div>
             </div>
         </div>

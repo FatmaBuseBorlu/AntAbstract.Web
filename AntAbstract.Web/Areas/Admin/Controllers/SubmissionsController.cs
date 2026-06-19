@@ -3,6 +3,7 @@ using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Infrastructure.Services.Email;
+using AntAbstract.Infrastructure.Services.Plagiarism;
 using AntAbstract.Web.Files;
 using AntAbstract.Web.Models.ViewModels.Admin.Submissions;
 using AntAbstract.Web.Models.ViewModels.Shared;
@@ -41,6 +42,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly INotificationService _notificationService;
         private readonly IEmailService _emailService;
         private readonly ILogger<SubmissionsController> _logger;
+        private readonly IPlagiarismService _plagiarism;
 
         public SubmissionsController(
             AppDbContext context,
@@ -56,7 +58,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             IAuditService audit,
             INotificationService notificationService,
             IEmailService emailService,
-            ILogger<SubmissionsController> logger)
+            ILogger<SubmissionsController> logger,
+            IPlagiarismService plagiarism)
         {
             _context = context;
             _submissionService = submissionService;
@@ -72,6 +75,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _audit = audit;
             _notificationService = notificationService;
             _emailService = emailService;
+            _plagiarism = plagiarism;
         }
 
         private string T(string key, string fallback)
@@ -1009,8 +1013,122 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 : BuildSubmissionsUrl(effectiveSlug, effectiveConferenceId);
 
             ViewBag.ReturnUrl = effectiveReturnUrl;
+            ViewBag.PlagiarismReport = await _plagiarism.GetLatestReportAsync(id);
+            ViewBag.PlagiarismConfigured = _plagiarism.IsConfigured;
 
             return View("~/Areas/Admin/Views/Submissions/Details.cshtml", submission);
+        }
+
+        [HttpPost("/{slug}/Admin/Submissions/CheckPlagiarism/{id:guid}")]
+        [HttpPost("/Admin/Submissions/CheckPlagiarism/{id:guid}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CheckPlagiarism(string? slug, Guid id, string? returnUrl)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var submission = await GetAccessibleSubmissionAsync(id, slug, null);
+            if (submission?.Files == null)
+            {
+                submission = await _context.Submissions
+                    .Include(s => s.Files)
+                    .Include(s => s.Conference)
+                    .FirstOrDefaultAsync(s => s.Id == id);
+            }
+
+            if (submission == null)
+            {
+                TempData["ErrorMessage"] = "Bildiri bulunamadı.";
+                return RedirectBack(returnUrl, slug);
+            }
+
+            var fullTextFile = submission.Files?
+                .Where(f => f.Type == SubmissionFileType.FullText)
+                .OrderByDescending(f => f.Version)
+                .FirstOrDefault();
+
+            if (fullTextFile == null)
+            {
+                TempData["ErrorMessage"] = "Bu bildiriye ait tam metin dosyası bulunamadı.";
+                return RedirectBack(returnUrl, slug);
+            }
+
+            string resolvedPath;
+            try
+            {
+                resolvedPath = Files.PrivateStorage.Resolve(_env, fullTextFile.FilePath);
+            }
+            catch
+            {
+                TempData["ErrorMessage"] = "Dosya yoluna erişilemedi.";
+                return RedirectBack(returnUrl, slug, id);
+            }
+
+            var report = await _plagiarism.SubmitForCheckAsync(
+                submission.Id,
+                fullTextFile.Id,
+                resolvedPath,
+                fullTextFile.FileName,
+                user.Id,
+                submission.TenantId);
+
+            if (report.Status == PlagiarismStatus.Failed)
+            {
+                TempData["ErrorMessage"] = $"İntihal kontrolü başlatılamadı: {report.ErrorMessage}";
+            }
+            else
+            {
+                TempData["SuccessMessage"] = "İntihal kontrolü başlatıldı. Sonuç hazır olduğunda bu sayfada gösterilecektir.";
+            }
+
+            return RedirectBack(returnUrl, slug, id);
+        }
+
+        [HttpPost("/{slug}/Admin/Submissions/RefreshPlagiarism/{reportId:guid}")]
+        [HttpPost("/Admin/Submissions/RefreshPlagiarism/{reportId:guid}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RefreshPlagiarism(string? slug, Guid reportId, string? returnUrl)
+        {
+            var report = await _plagiarism.RefreshStatusAsync(reportId);
+
+            if (report == null)
+            {
+                TempData["ErrorMessage"] = "Rapor bulunamadı.";
+                return RedirectBack(returnUrl, slug);
+            }
+
+            if (report.Status == PlagiarismStatus.Completed)
+            {
+                TempData["SuccessMessage"] = $"İntihal raporu tamamlandı. Benzerlik oranı: %{report.SimilarityScore}";
+            }
+            else if (report.Status == PlagiarismStatus.Processing)
+            {
+                TempData["InfoMessage"] = "Rapor henüz hazır değil. Lütfen birkaç dakika sonra tekrar deneyin.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = $"Rapor hatası: {report.ErrorMessage}";
+            }
+
+            return RedirectBack(returnUrl, slug, report.SubmissionId);
+        }
+
+        private IActionResult RedirectBack(string? returnUrl, string? slug, Guid? submissionId = null)
+        {
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            if (submissionId.HasValue)
+            {
+                var detailsUrl = string.IsNullOrWhiteSpace(slug)
+                    ? $"/Admin/Submissions/Details/{submissionId}"
+                    : $"/{slug}/Admin/Submissions/Details/{submissionId}";
+                return Redirect(detailsUrl);
+            }
+
+            return Redirect(string.IsNullOrWhiteSpace(slug)
+                ? "/Admin/Submissions"
+                : $"/{slug}/Admin/Submissions");
         }
 
         [HttpPost("/Admin/Submissions/ChangeStatus")]

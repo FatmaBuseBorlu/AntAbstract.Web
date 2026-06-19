@@ -62,6 +62,7 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<SurveyAnswer> SurveyAnswers { get; set; }
         public DbSet<ReviewCriterion> ReviewCriteria { get; set; }
         public DbSet<ReviewCriterionScore> ReviewCriterionScores { get; set; }
+        public DbSet<PlagiarismReport> PlagiarismReports { get; set; }
         public DbSet<ReviewerInvitation> ReviewerInvitations { get; set; }
         public DbSet<InvitedSpeaker> InvitedSpeakers { get; set; }
         public DbSet<Sponsor> Sponsors { get; set; }
