@@ -734,7 +734,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .Include(r => r.RegistrationType)
                 .ToListAsync();
 
-            var paidRegs    = regs.Where(r => r.IsPaid).ToList();
+            var paidRegs = regs.Where(r => r.IsPaid).ToList();
             var pendingRegs = regs.Where(r => !r.IsPaid && r.Status != RegistrationStatus.Cancelled).ToList();
             var cancelledRegs = regs.Where(r => r.Status == RegistrationStatus.Cancelled).ToList();
 
@@ -753,8 +753,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             // Kayıt tipine göre gelir
             var byType = paidRegs
                 .GroupBy(r => r.RegistrationType?.Name ?? "Bilinmiyor")
-                .Select(g => new { Type = g.Key, Count = g.Count(), Total = g.Sum(r => r.Amount),
-                                   Currency = g.First().RegistrationType?.Currency ?? "TRY" })
+                .Select(g => new
+                {
+                    Type = g.Key,
+                    Count = g.Count(),
+                    Total = g.Sum(r => r.Amount),
+                    Currency = g.First().RegistrationType?.Currency ?? "TRY"
+                })
                 .OrderByDescending(g => g.Total)
                 .ToList();
 
@@ -767,17 +772,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .TakeLast(12)
                 .ToList();
 
-            ViewBag.Slug              = slug ?? "";
-            ViewBag.Conference        = conference;
-            ViewBag.TotalRevenue      = paidRegs.Sum(r => r.Amount);
-            ViewBag.PendingRevenue    = pendingRegs.Sum(r => r.Amount);
-            ViewBag.PaidCount         = paidRegs.Count;
-            ViewBag.PendingCount      = pendingRegs.Count;
-            ViewBag.CancelledCount    = cancelledRegs.Count;
-            ViewBag.ByMethod          = byMethod.Cast<object>().ToList();
-            ViewBag.ByType            = byType.Cast<object>().ToList();
-            ViewBag.Monthly           = monthly.Cast<object>().ToList();
-            ViewBag.Currency          = regs.FirstOrDefault(r => r.RegistrationType?.Currency != null)
+            ViewBag.Slug = slug ?? "";
+            ViewBag.Conference = conference;
+            ViewBag.TotalRevenue = paidRegs.Sum(r => r.Amount);
+            ViewBag.PendingRevenue = pendingRegs.Sum(r => r.Amount);
+            ViewBag.PaidCount = paidRegs.Count;
+            ViewBag.PendingCount = pendingRegs.Count;
+            ViewBag.CancelledCount = cancelledRegs.Count;
+            ViewBag.ByMethod = byMethod.Cast<object>().ToList();
+            ViewBag.ByType = byType.Cast<object>().ToList();
+            ViewBag.Monthly = monthly.Cast<object>().ToList();
+            ViewBag.Currency = regs.FirstOrDefault(r => r.RegistrationType?.Currency != null)
                                             ?.RegistrationType?.Currency ?? "TRY";
 
             return View();
