@@ -11,6 +11,7 @@ namespace AntAbstract.Web.Controllers.Api
     [Route("api/[controller]")]
     [Produces("application/json")]
     [Authorize(AuthenticationSchemes = "Bearer")]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("api")]
     public class SubmissionsApiController : ControllerBase
     {
         private readonly AppDbContext _context;
