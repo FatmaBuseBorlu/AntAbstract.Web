@@ -84,6 +84,11 @@ namespace AntAbstract.Web.Controllers
 
         public async Task<IActionResult> Index(Guid? conferenceId = null)
         {
+            if (User.IsInRole("SuperAdmin"))
+            {
+                return Redirect("/Dashboard/SuperAdmin");
+            }
+
             if (_tenantContext.Current != null)
             {
                 var conferencesQuery = _context.Conferences
