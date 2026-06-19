@@ -129,6 +129,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             var conference = await _context.Conferences
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .Include(c => c.Registrations)
@@ -137,6 +138,7 @@ namespace AntAbstract.Web.Controllers
             if (conference == null && Guid.TryParse(slug, out var conferenceId))
             {
                 conference = await _context.Conferences
+                    .IgnoreQueryFilters()
                     .AsNoTracking()
                     .Include(c => c.Tenant)
                     .Include(c => c.Registrations)
@@ -153,6 +155,7 @@ namespace AntAbstract.Web.Controllers
             var culture = CultureInfo.CurrentUICulture.Name;
 
             var pageBlocks = await _context.ConferencePageBlocks
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Where(b =>
                     b.ConferenceId == conference.Id &&

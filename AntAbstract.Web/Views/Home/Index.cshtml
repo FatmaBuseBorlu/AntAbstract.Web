@@ -9,7 +9,8 @@
 @model LandingPageViewModel
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"].Value;
+    ViewData["Title"] = L("HomeSeoTitle", "Kongre Yönetim Sistemi");
+    ViewData["MetaDescription"] = L("HomeSeoDescription", "AntAbstract ile kongre kayıt, bildiri gönderimi, hakem değerlendirme, program, ödeme ve sertifika süreçlerini tek panelden yönetin.");
     Layout = "_Layout";
 
     string L(string key, string fallback)
@@ -1613,7 +1614,7 @@
             <div class="row g-4">
                 @foreach (var book in proceedingBooks.Take(4))
                 {
-                    var bookUrl = $"/{book.Slug}/Dashboard/ProceedingBook";
+                    var bookUrl = $"/{book.Slug}/Proceedings/Index?conferenceId={book.ConferenceId}";
                     <div class="col-sm-6 col-lg-3">
                         <a href="@bookUrl" class="text-decoration-none">
                             <div class="card border-0 rounded-4 shadow-sm h-100" style="transition:transform .2s;background:#fff;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
@@ -1681,7 +1682,7 @@
     </section>
     }
 
-    <section class="latest-submissions-section py-5">
+    <section class="latest-submissions-section py-5" data-nosnippet>
         <div class="container py-5">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-5">
                 <div>

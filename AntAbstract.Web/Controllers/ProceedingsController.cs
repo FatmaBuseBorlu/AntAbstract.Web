@@ -34,6 +34,7 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> IndexRoot()
         {
             var books = await _context.Conferences
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .Where(c =>
@@ -77,6 +78,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             var query = _context.Conferences
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .AsQueryable();
@@ -149,6 +151,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             var query = _context.Conferences
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .Where(c =>

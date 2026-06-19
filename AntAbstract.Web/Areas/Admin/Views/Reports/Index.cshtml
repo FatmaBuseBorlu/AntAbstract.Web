@@ -254,6 +254,40 @@
             </div>
         </div>
 
+        @* Finance summary card *@
+        <div class="reports-content-card" style="grid-column: 1 / -1;">
+            <div class="reports-card-header">
+                <i class="fas fa-coins rch-icon-green"></i>
+                <span>Finans Özeti</span>
+            </div>
+            <div class="p-3">
+                <div class="d-flex gap-4 mb-3 flex-wrap">
+                    <div>
+                        <div class="text-muted small">Toplam Gelir (Ödenen)</div>
+                        <div class="fw-bold fs-5 text-success">@Model.TotalRevenue.ToString("N0") @Model.RevenueCurrency</div>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Bekleyen Tutar</div>
+                        <div class="fw-bold fs-5 text-warning">@Model.UnpaidRevenue.ToString("N0") @Model.RevenueCurrency</div>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Ödemiş / Bekleyen Kayıt</div>
+                        <div class="fw-bold fs-5">@Model.PaidRegistrations / @Model.UnpaidRegistrations</div>
+                    </div>
+                </div>
+                @if (Model.FinanceByCategory.Any())
+                {
+                    <div style="height: 300px;">
+                        <canvas id="financeChart"></canvas>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">Henüz kayıt verisi bulunmuyor.</p>
+                }
+            </div>
+        </div>
+
         @* Export card *@
         <div class="reports-content-card reports-export-card">
             <div class="reports-card-header">
@@ -761,6 +795,52 @@
                     }
                 }
             });
+
+            var finCanvas = document.getElementById('financeChart');
+            if (finCanvas) {
+                var finCtx = finCanvas.getContext('2d');
+                new Chart(finCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: [@Html.Raw(string.Join(",", Model.FinanceByCategory.Select(c => $"'{c.Label}'")))],
+                        datasets: [
+                            {
+                                label: 'Ödenen (@Model.RevenueCurrency)',
+                                data: [@Html.Raw(string.Join(",", Model.FinanceByCategory.Select(c => c.PaidAmount.ToString("F0"))))],
+                                backgroundColor: '#22c55e',
+                                borderRadius: 6
+                            },
+                            {
+                                label: 'Bekleyen (@Model.RevenueCurrency)',
+                                data: [@Html.Raw(string.Join(",", Model.FinanceByCategory.Select(c => c.UnpaidAmount.ToString("F0"))))],
+                                backgroundColor: '#f59e0b',
+                                borderRadius: 6
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { stacked: true, grid: { display: false } },
+                            y: { stacked: true, ticks: { callback: function(v) { return v.toLocaleString('tr-TR'); } } }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: { usePointStyle: true, font: { weight: '600' } }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString('tr-TR');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
         });
 
         function triggerExport(baseUrl) {

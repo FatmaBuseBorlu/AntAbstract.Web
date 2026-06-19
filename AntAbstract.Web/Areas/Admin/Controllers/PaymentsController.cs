@@ -601,6 +601,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         // ── İade (Refund) ────────────────────────────────────────────────────────
+        [ValidateAntiForgeryToken]
         [HttpPost("/{slug}/Admin/Payments/Refund")]
         [HttpPost("/Admin/Payments/Refund")]
         [ValidateAntiForgeryToken]

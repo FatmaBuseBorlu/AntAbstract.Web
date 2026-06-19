@@ -471,6 +471,24 @@
             grid-template-columns: 1fr;
         }
     }
+
+    @@media (max-width: 575px) {
+        .dashboard-page {
+            padding: 1rem 0.75rem 2rem;
+        }
+
+        .program-title {
+            font-size: 1.2rem;
+        }
+
+        .dashboard-stat-value {
+            font-size: 1.4rem;
+        }
+
+        .quick-action-card {
+            padding: 1rem;
+        }
+    }
 </style>
 
 <div class="dashboard-page">
@@ -685,13 +703,13 @@
         <div class="dashboard-card mb-4" style="border-left:4px solid #1a2d5a">
             <div class="dashboard-card-header">
                 <div>
-                    <h5 class="dashboard-card-title">🏛️ Kongre Yönetim Özeti</h5>
+                    <h5 class="dashboard-card-title">🏛️ @L("AdminSummaryTitle", "Kongre Yönetim Özeti")</h5>
                     <p class="dashboard-card-subtitle">@Model.SelectedConference.Title</p>
                 </div>
                 <div class="d-flex gap-2 flex-wrap">
-                    <a href="@adminDecisionUrl" class="btn btn-sm btn-outline-primary">Kararlar</a>
-                    <a href="@adminAssignmentUrl" class="btn btn-sm btn-outline-secondary">Atamalar</a>
-                    <a href="@adminPaymentsUrl" class="btn btn-sm btn-outline-success">Ödemeler</a>
+                    <a href="@adminDecisionUrl" class="btn btn-sm btn-outline-primary">@L("AdminDecisions", "Kararlar")</a>
+                    <a href="@adminAssignmentUrl" class="btn btn-sm btn-outline-secondary">@L("AdminAssignments", "Atamalar")</a>
+                    <a href="@adminPaymentsUrl" class="btn btn-sm btn-outline-success">@L("AdminPayments", "Ödemeler")</a>
                 </div>
             </div>
             <div class="dashboard-card-body">
@@ -699,14 +717,14 @@
                     <div class="col-6 col-md-2">
                         <div class="text-center p-3 rounded-3" style="background:#f0f4ff">
                             <div class="fw-bold fs-3 text-primary">@(Model.TotalRegistrations)</div>
-                            <div class="text-muted small">Toplam Kayıt</div>
+                            <div class="text-muted small">@L("TotalRegistrationsLabel", "Toplam Kayıt")</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-2">
                         <a href="@(adminPaymentsUrl + "?status=receipt")" class="text-decoration-none">
                             <div class="text-center p-3 rounded-3 @(Model.ReceiptWaiting > 0 ? "bg-warning bg-opacity-25" : "")" style="@(Model.ReceiptWaiting == 0 ? "background:#f8f9fa" : "")">
                                 <div class="fw-bold fs-3 @(Model.ReceiptWaiting > 0 ? "text-warning" : "text-secondary")">@(Model.ReceiptWaiting)</div>
-                                <div class="text-muted small">Makbuz Bekliyor</div>
+                                <div class="text-muted small">@L("ReceiptWaitingLabel", "Makbuz Bekliyor")</div>
                             </div>
                         </a>
                     </div>
@@ -714,7 +732,7 @@
                         <a href="@(adminPaymentsUrl + "?status=pending")" class="text-decoration-none">
                             <div class="text-center p-3 rounded-3" style="background:#f8f9fa">
                                 <div class="fw-bold fs-3 text-secondary">@(Model.PendingPayments)</div>
-                                <div class="text-muted small">Ödeme Bekliyor</div>
+                                <div class="text-muted small">@L("PendingPaymentsLabel", "Ödeme Bekliyor")</div>
                             </div>
                         </a>
                     </div>
@@ -722,20 +740,20 @@
                         <a href="@adminAssignmentUrl" class="text-decoration-none">
                             <div class="text-center p-3 rounded-3 @(Model.PendingAssignments > 0 ? "bg-danger bg-opacity-10" : "")" style="@(Model.PendingAssignments == 0 ? "background:#f8f9fa" : "")">
                                 <div class="fw-bold fs-3 @(Model.PendingAssignments > 0 ? "text-danger" : "text-secondary")">@(Model.PendingAssignments)</div>
-                                <div class="text-muted small">Atamasız Bildiri</div>
+                                <div class="text-muted small">@L("UnassignedSubmissionsLabel", "Atamasız Bildiri")</div>
                             </div>
                         </a>
                     </div>
                     <div class="col-6 col-md-2">
                         <div class="text-center p-3 rounded-3" style="background:#f0fff4">
                             <div class="fw-bold fs-3 text-success">@(Model.TotalReferees)</div>
-                            <div class="text-muted small">Aktif Hakem</div>
+                            <div class="text-muted small">@L("ActiveRefereesLabel", "Aktif Hakem")</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-2">
                         <div class="text-center p-3 rounded-3" style="background:#f0fff4">
                             <div class="fw-bold fs-4 text-success">@(Model.TotalRevenue.ToString("N0")) <small class="fs-6">@Model.RevenueCurrency</small></div>
-                            <div class="text-muted small">Toplam Gelir</div>
+                            <div class="text-muted small">@L("TotalRevenueLabel", "Toplam Gelir")</div>
                         </div>
                     </div>
                 </div>
@@ -744,16 +762,16 @@
                 {
                     <div class="alert alert-warning border-0 rounded-3 mt-3 mb-0 d-flex align-items-center gap-2">
                         <span>⚠️</span>
-                        <span><strong>@Model.ReceiptWaiting</strong> ödeme makbuzu onayınızı bekliyor.</span>
-                        <a href="@(adminPaymentsUrl + "?status=receipt")" class="btn btn-sm btn-warning ms-auto">İncele</a>
+                        <span><strong>@Model.ReceiptWaiting</strong> @L("ReceiptWaitingAlert", "ödeme makbuzu onayınızı bekliyor.")</span>
+                        <a href="@(adminPaymentsUrl + "?status=receipt")" class="btn btn-sm btn-warning ms-auto">@L("ReviewButton", "İncele")</a>
                     </div>
                 }
                 @if (Model.PendingAssignments > 0)
                 {
                     <div class="alert alert-danger border-0 rounded-3 mt-2 mb-0 d-flex align-items-center gap-2">
                         <span>📋</span>
-                        <span><strong>@Model.PendingAssignments</strong> bildiri henüz hakeme atanmadı.</span>
-                        <a href="@adminAssignmentUrl" class="btn btn-sm btn-danger ms-auto">Ata</a>
+                        <span><strong>@Model.PendingAssignments</strong> @L("UnassignedAlert", "bildiri henüz hakeme atanmadı.")</span>
+                        <a href="@adminAssignmentUrl" class="btn btn-sm btn-danger ms-auto">@L("AssignButton", "Ata")</a>
                     </div>
                 }
             </div>
@@ -783,8 +801,8 @@
                                 <i class="fas fa-stream"></i>
                             </div>
                             <div>
-                                <div class="quick-action-title">Kongre Akışı</div>
-                                <p class="quick-action-text">Kongrenin tüm aşamalarını ve durumunu yönet.</p>
+                                <div class="quick-action-title">@L("AdminConferenceFlow", "Kongre Akışı")</div>
+                                <p class="quick-action-text">@L("AdminConferenceFlowText", "Kongrenin tüm aşamalarını ve durumunu yönet.")</p>
                             </div>
                         </a>
 
@@ -793,8 +811,8 @@
                                 <i class="fas fa-file-alt"></i>
                             </div>
                             <div>
-                                <div class="quick-action-title">Bildiri Yönetimi</div>
-                                <p class="quick-action-text">Tüm bildiri başvurularını görüntüle ve yönet.</p>
+                                <div class="quick-action-title">@L("AdminSubmissions", "Bildiri Yönetimi")</div>
+                                <p class="quick-action-text">@L("AdminSubmissionsText", "Tüm bildiri başvurularını görüntüle ve yönet.")</p>
                             </div>
                         </a>
 
@@ -803,8 +821,8 @@
                                 <i class="fas fa-user-check"></i>
                             </div>
                             <div>
-                                <div class="quick-action-title">Hakem Atamaları</div>
-                                <p class="quick-action-text">Bildirilere hakem ata, değerlendirme sürecini yönet.</p>
+                                <div class="quick-action-title">@L("AdminAssignmentsAction", "Hakem Atamaları")</div>
+                                <p class="quick-action-text">@L("AdminAssignmentsActionText", "Bildirilere hakem ata, değerlendirme sürecini yönet.")</p>
                             </div>
                         </a>
 
@@ -813,8 +831,8 @@
                                 <i class="fas fa-gavel"></i>
                             </div>
                             <div>
-                                <div class="quick-action-title">Karar Ekranı</div>
-                                <p class="quick-action-text">Bildiri kabul, ret ve revizyon kararlarını ver.</p>
+                                <div class="quick-action-title">@L("AdminDecisionAction", "Karar Ekranı")</div>
+                                <p class="quick-action-text">@L("AdminDecisionActionText", "Bildiri kabul, ret ve revizyon kararlarını ver.")</p>
                             </div>
                         </a>
 
@@ -823,8 +841,8 @@
                                 <i class="fas fa-id-card"></i>
                             </div>
                             <div>
-                                <div class="quick-action-title">Kayıtlar ve Ödemeler</div>
-                                <p class="quick-action-text">Katılımcı kayıtlarını ve ödeme makbuzlarını onayla.</p>
+                                <div class="quick-action-title">@L("AdminRegistrationsAction", "Kayıtlar ve Ödemeler")</div>
+                                <p class="quick-action-text">@L("AdminRegistrationsActionText", "Katılımcı kayıtlarını ve ödeme makbuzlarını onayla.")</p>
                             </div>
                         </a>
 
@@ -833,8 +851,8 @@
                                 <i class="fas fa-users-cog"></i>
                             </div>
                             <div>
-                                <div class="quick-action-title">Hakemler</div>
-                                <p class="quick-action-text">Hakem havuzunu yönet, davet gönder.</p>
+                                <div class="quick-action-title">@L("AdminRefereesAction", "Hakemler")</div>
+                                <p class="quick-action-text">@L("AdminRefereesActionText", "Hakem havuzunu yönet, davet gönder.")</p>
                             </div>
                         </a>
 
@@ -843,8 +861,8 @@
                                 <i class="fas fa-triangle-exclamation"></i>
                             </div>
                             <div>
-                                <div class="quick-action-title">Eksik Bildiriler</div>
-                                <p class="quick-action-text">Özet, dosya veya anahtar kelimesi eksik bildiriler.</p>
+                                <div class="quick-action-title">@L("AdminIncompleteAction", "Eksik Bildiriler")</div>
+                                <p class="quick-action-text">@L("AdminIncompleteActionText", "Özet, dosya veya anahtar kelimesi eksik bildiriler.")</p>
                             </div>
                         </a>
 
@@ -853,8 +871,8 @@
                                 <i class="fas fa-chart-bar"></i>
                             </div>
                             <div>
-                                <div class="quick-action-title">Raporlar</div>
-                                <p class="quick-action-text">Kongre istatistiklerini ve Excel raporlarını al.</p>
+                                <div class="quick-action-title">@L("AdminReportsAction", "Raporlar")</div>
+                                <p class="quick-action-text">@L("AdminReportsActionText", "Kongre istatistiklerini ve Excel raporlarını al.")</p>
                             </div>
                         </a>
 
@@ -863,8 +881,8 @@
                                 <i class="fas fa-pen-to-square"></i>
                             </div>
                             <div>
-                                <div class="quick-action-title">Website Yönetimi</div>
-                                <p class="quick-action-text">Kongre web sitesi içeriklerini düzenle.</p>
+                                <div class="quick-action-title">@L("AdminWebsiteAction", "Website Yönetimi")</div>
+                                <p class="quick-action-text">@L("AdminWebsiteActionText", "Kongre web sitesi içeriklerini düzenle.")</p>
                             </div>
                         </a>
 
@@ -873,8 +891,8 @@
                                 <i class="fas fa-certificate"></i>
                             </div>
                             <div>
-                                <div class="quick-action-title">Sertifikalar</div>
-                                <p class="quick-action-text">Katılım ve sunum sertifikalarını oluştur ve dağıt.</p>
+                                <div class="quick-action-title">@L("AdminCertificatesAction", "Sertifikalar")</div>
+                                <p class="quick-action-text">@L("AdminCertificatesActionText", "Katılım ve sunum sertifikalarını oluştur ve dağıt.")</p>
                             </div>
                         </a>
                     }

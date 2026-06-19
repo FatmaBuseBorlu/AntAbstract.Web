@@ -4,6 +4,7 @@ using AntAbstract.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AntAbstract.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260619161456_AddIsBlindReviewToConference")]
+    partial class AddIsBlindReviewToConference
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1042,64 +1045,6 @@ namespace AntAbstract.Infrastructure.Migrations
                     b.HasIndex("PaymentId");
 
                     b.ToTable("PaymentStatusHistories");
-                });
-
-            modelBuilder.Entity("AntAbstract.Domain.Entities.PlagiarismReport", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<string>("ExternalId")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("Provider")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("ReportUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("RequestedByUserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int?>("SimilarityScore")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("SubmissionFileId")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("SubmissionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RequestedByUserId");
-
-                    b.HasIndex("SubmissionFileId");
-
-                    b.HasIndex("SubmissionId");
-
-                    b.ToTable("PlagiarismReports");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.Registration", b =>
@@ -2480,29 +2425,6 @@ namespace AntAbstract.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Payment");
-                });
-
-            modelBuilder.Entity("AntAbstract.Domain.Entities.PlagiarismReport", b =>
-                {
-                    b.HasOne("AntAbstract.Domain.Entities.AppUser", "RequestedByUser")
-                        .WithMany()
-                        .HasForeignKey("RequestedByUserId");
-
-                    b.HasOne("AntAbstract.Domain.Entities.SubmissionFile", "SubmissionFile")
-                        .WithMany()
-                        .HasForeignKey("SubmissionFileId");
-
-                    b.HasOne("AntAbstract.Domain.Entities.Submission", "Submission")
-                        .WithMany()
-                        .HasForeignKey("SubmissionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("RequestedByUser");
-
-                    b.Navigation("Submission");
-
-                    b.Navigation("SubmissionFile");
                 });
 
             modelBuilder.Entity("AntAbstract.Domain.Entities.Registration", b =>

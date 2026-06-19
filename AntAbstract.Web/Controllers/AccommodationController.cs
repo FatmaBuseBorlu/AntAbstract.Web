@@ -205,7 +205,7 @@ namespace AntAbstract.Web.Controllers
                 return Redirect($"/{resolvedSlug}/Accommodation?conferenceId={conference.Id}");
             }
 
-            if (checkInDate >= checkOutDate || checkInDate < DateTime.Today)
+            if (checkInDate >= checkOutDate || checkInDate.Date < DateTime.UtcNow.AddHours(-12).Date)
             {
                 TempData["ErrorMessage"] = "Geçersiz tarih aralığı.";
                 return Redirect($"/{resolvedSlug}/Accommodation/Book/{roomTypeId}?conferenceId={conference.Id}");
