@@ -130,7 +130,7 @@ public sealed class PaymentFlowTests
     }
 
     [Fact]
-    public async Task Conference_BlindReview_DefaultsToTrue()
+    public void Conference_BlindReview_DefaultsToTrue()
     {
         var conf = new Conference
         {
@@ -237,7 +237,7 @@ public sealed class PaymentFlowTests
     }
 
     [Fact]
-    public async Task PlagiarismReport_StatusLifecycle()
+    public void PlagiarismReport_StatusLifecycle()
     {
         var report = new PlagiarismReport
         {

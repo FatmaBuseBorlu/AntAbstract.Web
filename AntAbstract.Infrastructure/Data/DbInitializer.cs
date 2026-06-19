@@ -30,7 +30,7 @@ namespace AntAbstract.Infrastructure.Data
                 }
             }
 
-            var superAdminEmail = "admin@antabstract.com";
+            var superAdminEmail = "admin@antabstract.com.tr";
 
             var superAdmin = await userManager.FindByEmailAsync(superAdminEmail);
 

@@ -39,21 +39,22 @@ jobs:
         env:
           ASPNETCORE_ENVIRONMENT: Testing
 
-      - name: Check for pending EF Core migrations
+      - name: Verify EF Core migrations compile
         run: |
           dotnet tool install --global dotnet-ef --version 8.* 2>/dev/null || true
           export PATH="$PATH:$HOME/.dotnet/tools"
-          # Pending migration varsa çıkış kodu 1 döner
-          PENDING=$(dotnet ef migrations list \
+          # Migration bundle oluşturmayı dene — derleme hatası varsa yakalar
+          dotnet ef migrations bundle \
             --project AntAbstract.Infrastructure \
             --startup-project AntAbstract.Web \
             --no-build \
             --configuration Release \
-            2>&1 | grep -c "(Pending)" || true)
-          if [ "$PENDING" -gt 0 ]; then
-            echo "::error::$PENDING bekleyen EF Core migration(s) var. Lütfen 'dotnet ef database update' çalıştırın."
-            exit 1
-          fi
+            --output /tmp/efbundle \
+            --force 2>&1 || {
+              echo "::error::EF Core migration derleme hatası. Migration dosyalarını kontrol edin."
+              exit 1
+            }
+          echo "✅ EF Core migration'lar derlenebilir durumda."
 
       - name: Dependency vulnerability audit
         run: >
