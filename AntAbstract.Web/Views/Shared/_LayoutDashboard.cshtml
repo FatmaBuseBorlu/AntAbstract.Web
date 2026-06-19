@@ -294,6 +294,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>if(localStorage.getItem('theme')==='dark')document.documentElement.setAttribute('data-theme','dark');</script>
 
     <title>@ViewData["Title"] - AntAbstract</title>
     <link rel="icon" type="image/x-icon" href="~/favicon.ico" />
@@ -322,7 +323,49 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
             --text-muted: #64748b;
             --danger: #ef4444;
             --page-bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --sidebar-bg: #ffffff;
+            --header-bg: #ffffff;
+            --input-bg: #ffffff;
+            --table-hover-bg: #f8fafc;
         }
+
+        [data-theme="dark"] {
+            --page-bg: #0f172a;
+            --card-bg: #1e293b;
+            --sidebar-bg: #1e293b;
+            --header-bg: #1e293b;
+            --input-bg: #334155;
+            --text-dark: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --menu-text: #94a3b8;
+            --menu-hover-bg: #334155;
+            --menu-active-bg: rgba(0, 174, 239, 0.15);
+            --table-hover-bg: #334155;
+            --dark-bg: #0f172a;
+        }
+
+        [data-theme="dark"] .card,
+        [data-theme="dark"] .modal-content,
+        [data-theme="dark"] .dropdown-menu {
+            background-color: var(--card-bg) !important;
+            color: var(--text-dark);
+            border-color: var(--border-color) !important;
+        }
+
+        [data-theme="dark"] .table { color: var(--text-dark); }
+        [data-theme="dark"] .table-light { background-color: #334155 !important; color: var(--text-dark); }
+        [data-theme="dark"] .table-hover > tbody > tr:hover { background-color: var(--table-hover-bg); }
+        [data-theme="dark"] .form-control,
+        [data-theme="dark"] .form-select { background-color: var(--input-bg); color: var(--text-dark); border-color: var(--border-color); }
+        [data-theme="dark"] .bg-white { background-color: var(--card-bg) !important; }
+        [data-theme="dark"] .bg-light { background-color: #334155 !important; }
+        [data-theme="dark"] .text-dark { color: var(--text-dark) !important; }
+        [data-theme="dark"] .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important; }
+        [data-theme="dark"] .alert { border-color: var(--border-color); }
+        [data-theme="dark"] .btn-outline-secondary { color: var(--text-muted); border-color: var(--border-color); }
+        [data-theme="dark"] .btn-outline-secondary:hover { background-color: #334155; color: #fff; }
 
         * {
             box-sizing: border-box;
@@ -341,7 +384,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
             position: fixed;
             top: 0;
             left: 0;
-            background-color: #ffffff;
+            background-color: var(--sidebar-bg);
             border-right: 1px solid var(--border-color);
             z-index: 1050;
             display: flex;
@@ -441,10 +484,10 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
 
         .top-header {
             height: var(--header-height);
-            background-color: rgba(255, 255, 255, 0.92);
+            background-color: var(--header-bg);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+            border-bottom: 1px solid var(--border-color);
             position: sticky;
             top: 0;
             z-index: 1040;
@@ -1797,6 +1840,11 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
 
                 @await Component.InvokeAsync("Notification")
 
+                <button type="button" class="header-icon-btn" id="themeToggleBtn"
+                        onclick="toggleTheme()" title="Tema Değiştir">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                </button>
+
                 <div class="dropdown account-dropdown">
                     <button class="user-menu-btn"
                             type="button"
@@ -2010,6 +2058,36 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
     </script>
 
     <script src="~/js/upload-dropzone.js" asp-append-version="true"></script>
+
+    <script>
+    (function () {
+        var saved = localStorage.getItem('theme');
+        if (saved === 'dark') applyTheme('dark');
+
+        function applyTheme(mode) {
+            document.documentElement.setAttribute('data-theme', mode);
+            var icon = document.getElementById('themeIcon');
+            if (icon) {
+                icon.className = mode === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            }
+        }
+
+        window.toggleTheme = function () {
+            var current = document.documentElement.getAttribute('data-theme');
+            var next = current === 'dark' ? 'light' : 'dark';
+            if (next === 'light') {
+                document.documentElement.removeAttribute('data-theme');
+            } else {
+                applyTheme('dark');
+            }
+            localStorage.setItem('theme', next);
+            var icon = document.getElementById('themeIcon');
+            if (icon) {
+                icon.className = next === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            }
+        };
+    })();
+    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>
