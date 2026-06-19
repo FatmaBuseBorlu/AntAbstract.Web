@@ -1,6 +1,7 @@
 ﻿using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
+using AntAbstract.Infrastructure.Services.Email;
 using AntAbstract.Infrastructure.Services.Invoice;
 using AntAbstract.Infrastructure.Services.Payment;
 using AntAbstract.Web.Files;
@@ -40,6 +41,8 @@ namespace AntAbstract.Web.Controllers
         private readonly IInvoicePdfService _invoicePdfService;
         private readonly IVisaLetterPdfService _visaLetterPdfService;
         private readonly IPayTRService _payTR;
+        private readonly IEmailService _emailService;
+        private readonly IAuditService _audit;
 
         public PaymentController(
             AppDbContext context,
@@ -53,7 +56,9 @@ namespace AntAbstract.Web.Controllers
             IUploadFileValidator uploadFileValidator,
             IInvoicePdfService invoicePdfService,
             IVisaLetterPdfService visaLetterPdfService,
-            IPayTRService payTR)
+            IPayTRService payTR,
+            IEmailService emailService,
+            IAuditService audit)
         {
             _context = context;
             _userManager = userManager;
@@ -67,6 +72,8 @@ namespace AntAbstract.Web.Controllers
             _invoicePdfService = invoicePdfService;
             _visaLetterPdfService = visaLetterPdfService;
             _payTR = payTR;
+            _emailService = emailService;
+            _audit = audit;
         }
 
         #region Helper Methods
@@ -295,9 +302,10 @@ namespace AntAbstract.Web.Controllers
             string? currency)
         {
             var payment = await _context.Payments
-            .Include(p => p.Conference)
-                .ThenInclude(c => c!.Tenant)
-            .FirstOrDefaultAsync(p => p.Id == paymentId);
+                .IgnoreQueryFilters()
+                .Include(p => p.Conference)
+                    .ThenInclude(c => c!.Tenant)
+                .FirstOrDefaultAsync(p => p.Id == paymentId);
 
             if (payment == null || payment.Status == PaymentStatus.Refunded)
             {
@@ -352,6 +360,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             var registration = await _context.Registrations
+                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(r =>
                     r.Id == payment.RelatedSubmissionId &&
                     r.AppUserId == payment.AppUserId &&
@@ -395,6 +404,28 @@ namespace AntAbstract.Web.Controllers
                     icon: "fas fa-check-circle",
                     color: "success",
                     link: BuildUrl(canonicalSlug, "/payments"));
+
+                var user = await _userManager.FindByIdAsync(payment.AppUserId);
+                if (user?.Email != null)
+                {
+                    var fullName = $"{user.FirstName} {user.LastName}".Trim();
+                    if (string.IsNullOrWhiteSpace(fullName)) fullName = user.Email;
+                    var confTitle = payment.Conference?.Title ?? "";
+
+                    await _emailService.SendAsync(user.Email,
+                        $"Ödemeniz Onaylandı — {confTitle}",
+                        $@"<div style='font-family:Arial,sans-serif;max-width:600px;margin:auto'>
+                          <div style='background:#198754;color:#fff;padding:24px 32px;border-radius:8px 8px 0 0'>
+                            <h2 style='margin:0'>✅ Ödeme Onayı</h2>
+                          </div>
+                          <div style='background:#f9fafb;padding:24px 32px;border-radius:0 0 8px 8px'>
+                            <p>Sayın <strong>{System.Net.WebUtility.HtmlEncode(fullName)}</strong>,</p>
+                            <p><strong>{System.Net.WebUtility.HtmlEncode(confTitle)}</strong> kongresine ait
+                               <strong>{payment.Amount:N2} {payment.Currency}</strong> tutarındaki ödemeniz başarıyla alınmıştır.</p>
+                            <p>Kongre süresince size yardımcı olmaktan mutluluk duyarız.</p>
+                          </div>
+                        </div>");
+                }
             }
             catch (Exception ex)
             {
@@ -1077,6 +1108,7 @@ namespace AntAbstract.Web.Controllers
 
                             // Durum geçmişi
                             var completedPayment = await _context.Payments
+                                .IgnoreQueryFilters()
                                 .FirstOrDefaultAsync(p => p.Id == paymentId);
                             if (completedPayment != null)
                             {
@@ -1095,6 +1127,7 @@ namespace AntAbstract.Web.Controllers
                     case "checkout.session.expired":
                     case "checkout.session.async_payment_failed":
                         var payment = await _context.Payments
+                            .IgnoreQueryFilters()
                             .FirstOrDefaultAsync(p => p.Id == paymentId);
 
                         if (payment != null && payment.Status == PaymentStatus.Pending)
@@ -1329,11 +1362,15 @@ namespace AntAbstract.Web.Controllers
                 return Content("OK");
 
             var payment = await _context.Payments
+                .IgnoreQueryFilters()
                 .Include(p => p.AppUser)
+                .Include(p => p.Conference)
                 .FirstOrDefaultAsync(p => p.Id == paymentId);
 
             if (payment == null)
                 return Content("OK");
+
+            var oldStatus = payment.Status;
 
             if (status == "success" && payment.Status != PaymentStatus.Completed)
             {
@@ -1341,22 +1378,101 @@ namespace AntAbstract.Web.Controllers
                 payment.TransactionId = form["payment_type"].ToString();
 
                 var registration = await _context.Registrations
+                    .IgnoreQueryFilters()
+                    .Include(r => r.Conference)
                     .FirstOrDefaultAsync(r => r.Id == payment.RelatedSubmissionId);
 
                 if (registration != null)
                 {
                     registration.IsPaid = true;
                     registration.PaymentDate = DateTime.UtcNow;
-                    registration.Status = AntAbstract.Domain.Entities.RegistrationStatus.Confirmed;
+                    registration.Status = RegistrationStatus.Confirmed;
                     registration.PaymentTransactionId = merchantOid;
                 }
+
+                _context.PaymentStatusHistories.Add(new PaymentStatusHistory
+                {
+                    PaymentId = payment.Id,
+                    OldStatus = oldStatus,
+                    NewStatus = PaymentStatus.Completed,
+                    Note = $"PayTR callback — payment_type: {payment.TransactionId}",
+                    Source = "PayTR"
+                });
+
+                await _context.SaveChangesAsync();
+
+                try
+                {
+                    if (payment.AppUser?.Email != null)
+                    {
+                        var fullName = $"{payment.AppUser.FirstName} {payment.AppUser.LastName}".Trim();
+                        if (string.IsNullOrWhiteSpace(fullName)) fullName = payment.AppUser.Email;
+                        var confTitle = payment.Conference?.Title ?? "";
+
+                        await _emailService.SendAsync(payment.AppUser.Email,
+                            $"Ödemeniz Onaylandı — {confTitle}",
+                            $@"<div style='font-family:Arial,sans-serif;max-width:600px;margin:auto'>
+                              <div style='background:#198754;color:#fff;padding:24px 32px;border-radius:8px 8px 0 0'>
+                                <h2 style='margin:0'>✅ Ödeme Onayı</h2>
+                              </div>
+                              <div style='background:#f9fafb;padding:24px 32px;border-radius:0 0 8px 8px'>
+                                <p>Sayın <strong>{System.Net.WebUtility.HtmlEncode(fullName)}</strong>,</p>
+                                <p><strong>{System.Net.WebUtility.HtmlEncode(confTitle)}</strong> kongresine ait
+                                   <strong>{payment.Amount:N2} {payment.Currency}</strong> tutarındaki ödemeniz başarıyla alınmıştır.</p>
+                                <p>Kongre süresince size yardımcı olmaktan mutluluk duyarız.</p>
+                              </div>
+                            </div>");
+
+                        await _notificationService.CreateAsync(
+                            userId: payment.AppUser.Id,
+                            title: "Ödemeniz Onaylandı ✅",
+                            message: $"{confTitle} — {payment.Amount:N2} {payment.Currency} ödemeniz alındı.",
+                            icon: "✅",
+                            color: "success",
+                            link: $"/Payment/My");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "PayTR ödeme onay bildirimi gönderilemedi. PaymentId={Id}", paymentId);
+                }
+
+                await _audit.LogAsync(
+                    category: "Payment",
+                    action: "PayTRCompleted",
+                    entityType: "Payment",
+                    entityId: paymentId.ToString(),
+                    description: $"PayTR ödeme tamamlandı: {payment.AppUser?.Email} — {payment.Amount:N2} {payment.Currency}",
+                    conferenceId: payment.ConferenceId);
             }
             else if (status == "failed")
             {
                 payment.Status = PaymentStatus.Failed;
+
+                _context.PaymentStatusHistories.Add(new PaymentStatusHistory
+                {
+                    PaymentId = payment.Id,
+                    OldStatus = oldStatus,
+                    NewStatus = PaymentStatus.Failed,
+                    Note = "PayTR callback — failed",
+                    Source = "PayTR"
+                });
+
+                await _context.SaveChangesAsync();
+
+                await _audit.LogAsync(
+                    category: "Payment",
+                    action: "PayTRFailed",
+                    entityType: "Payment",
+                    entityId: paymentId.ToString(),
+                    description: $"PayTR ödeme başarısız: {payment.AppUser?.Email}",
+                    conferenceId: payment.ConferenceId);
+            }
+            else
+            {
+                await _context.SaveChangesAsync();
             }
 
-            await _context.SaveChangesAsync();
             return Content("OK");
         }
 
