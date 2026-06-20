@@ -6,6 +6,7 @@ using AntAbstract.Infrastructure.Services.Doi;
 using AntAbstract.Infrastructure.Services.Email;
 using AntAbstract.Infrastructure.Services.Notifications;
 using AntAbstract.Infrastructure.Services.Pdf;
+using AntAbstract.Infrastructure.Services.Doi;
 using AntAbstract.Infrastructure.Services.Plagiarism;
 using AntAbstract.Infrastructure.Services.ReviewerRecommendation;
 using Microsoft.Extensions.Configuration;
@@ -52,6 +53,7 @@ namespace AntAbstract.Infrastructure.Services.DependencyInjection
 
             services.AddSingleton<IPdfAnonymizer, PdfAnonymizer>();
             services.AddScoped<IPlagiarismService, PlagiarismService>();
+            services.AddScoped<IDoiRegistrationService, DataCiteDoiService>();
 
             return services;
         }

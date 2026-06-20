@@ -261,6 +261,13 @@ builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = Compre
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = (ctx, _) =>
+    {
+        AntAbstract.Web.Infrastructure.RateLimitCounter.Record(
+            ctx.HttpContext.Request.Path,
+            ctx.HttpContext.Connection.RemoteIpAddress?.ToString());
+        return ValueTask.CompletedTask;
+    };
 
     // Login / Register / ForgotPassword: 10 istek / 5 dakika / IP
     options.AddSlidingWindowLimiter("auth", opt =>

@@ -1,6 +1,7 @@
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services;
+using AntAbstract.Web.Infrastructure;
 using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -103,6 +104,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .Where(k => !existingKeys.Contains(k))
                 .ToList();
 
+            var rateLimitPolicies = new[]
+            {
+                new { Policy = "auth", Limit = "10 istek / 5 dk", Scope = "Login, Register, ForgotPassword" },
+                new { Policy = "upload", Limit = "20 istek / dk", Scope = "Dosya yükleme" },
+                new { Policy = "webhook", Limit = "60 istek / dk", Scope = "Stripe/PayTR callback" },
+                new { Policy = "api", Limit = "30 istek / dk", Scope = "REST API endpoint'leri" },
+                new { Policy = "api-auth", Limit = "5 istek / 5 dk", Scope = "API login (brute force koruması)" }
+            };
+
+            var rateLimitRejections = RateLimitCounter.GetRecentRejections();
+
             ViewBag.DbOk = dbOk;
             ViewBag.DbError = dbError;
             ViewBag.StripeOk = stripeOk;
@@ -112,6 +124,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ViewBag.WebhookStats = webhookStats;
             ViewBag.MailStats = mailStats;
             ViewBag.MissingReminderTemplates = missingReminderTemplates;
+            ViewBag.RateLimitPolicies = rateLimitPolicies;
+            ViewBag.RateLimitRejections = rateLimitRejections;
             ViewBag.Slug = slug;
             ViewBag.GeneratedAt = DateTime.UtcNow;
 
