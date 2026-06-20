@@ -116,6 +116,18 @@ namespace AntAbstract.Domain.Entities
         [MaxLength(500)]
         public string? DoiUrl { get; set; }
 
+        public DoiStatus DoiStatus { get; set; } = DoiStatus.None;
+
+        [MaxLength(50)]
+        public string? DoiProvider { get; set; }
+
+        [MaxLength(1000)]
+        public string? DoiErrorMessage { get; set; }
+
+        public DateTime? DoiRequestedAt { get; set; }
+
+        public DateTime? DoiAssignedAt { get; set; }
+
         public virtual ICollection<SubmissionAuthor> SubmissionAuthors { get; set; }
 
         public virtual ICollection<SubmissionFile> Files { get; set; }

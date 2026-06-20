@@ -2,6 +2,7 @@
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
+using AntAbstract.Infrastructure.Services.Doi;
 using AntAbstract.Infrastructure.Services.Email;
 using AntAbstract.Infrastructure.Services.Plagiarism;
 using AntAbstract.Web.Files;
@@ -43,6 +44,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly IEmailService _emailService;
         private readonly ILogger<SubmissionsController> _logger;
         private readonly IPlagiarismService _plagiarism;
+        private readonly IDoiService _doiService;
 
         public SubmissionsController(
             AppDbContext context,
@@ -59,7 +61,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             INotificationService notificationService,
             IEmailService emailService,
             ILogger<SubmissionsController> logger,
-            IPlagiarismService plagiarism)
+            IPlagiarismService plagiarism,
+            IDoiService doiService)
         {
             _context = context;
             _submissionService = submissionService;
@@ -76,6 +79,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _notificationService = notificationService;
             _emailService = emailService;
             _plagiarism = plagiarism;
+            _doiService = doiService;
         }
 
         private string T(string key, string fallback)
@@ -1015,6 +1019,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ViewBag.ReturnUrl = effectiveReturnUrl;
             ViewBag.PlagiarismReport = await _plagiarism.GetLatestReportAsync(id);
             ViewBag.PlagiarismConfigured = _plagiarism.IsConfigured;
+            ViewBag.DoiMetadata = _doiService.BuildMetadataPreview(submission);
 
             return View("~/Areas/Admin/Views/Submissions/Details.cshtml", submission);
         }
@@ -1141,8 +1146,41 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (tracked != null)
             {
                 tracked.DoiUrl = doiUrl.Trim();
+                tracked.DoiStatus = DoiStatus.Assigned;
+                tracked.DoiProvider = "Manual";
+                tracked.DoiAssignedAt = DateTime.UtcNow;
+                tracked.DoiErrorMessage = null;
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "DOI başarıyla atandı.";
+            }
+
+            return RedirectBack(returnUrl, slug, id);
+        }
+
+        [HttpPost("/{slug}/Admin/Submissions/PrepareDoi/{id:guid}")]
+        [HttpPost("/Admin/Submissions/PrepareDoi/{id:guid}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PrepareDoi(string? slug, Guid id, string? returnUrl)
+        {
+            var submission = await GetAccessibleSubmissionAsync(id, slug, null);
+            if (submission == null)
+            {
+                TempData["ErrorMessage"] = "Bildiri bulunamadı.";
+                return RedirectBack(returnUrl, slug);
+            }
+
+            var result = await _doiService.PrepareAsync(id);
+            if (result.Success)
+            {
+                TempData["SuccessMessage"] = result.Message;
+            }
+            else if (result.Status == DoiStatus.ConfigMissing)
+            {
+                TempData["InfoMessage"] = result.Message;
+            }
+            else
+            {
+                TempData["ErrorMessage"] = result.Message;
             }
 
             return RedirectBack(returnUrl, slug, id);

@@ -100,7 +100,9 @@
     .hero-modern {
         position: relative;
         padding: 155px 0 95px;
-        background: radial-gradient(circle at 12% 20%, rgba(0, 174, 239, 0.14), transparent 28%), radial-gradient(circle at 85% 25%, rgba(14, 165, 233, 0.18), transparent 30%), linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+        overflow: hidden;
+        isolation: isolate;
+        background: radial-gradient(circle at 12% 20%, rgba(0, 174, 239, 0.16), transparent 28%), radial-gradient(circle at 84% 16%, rgba(99, 102, 241, 0.14), transparent 30%), radial-gradient(circle at 78% 72%, rgba(34, 197, 94, 0.12), transparent 24%), linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
     }
 
         .hero-modern::before {
@@ -112,6 +114,33 @@
             mask-image: linear-gradient(to bottom, black, transparent 72%);
             pointer-events: none;
         }
+
+    .hero-orb {
+        position: absolute;
+        border-radius: 999px;
+        pointer-events: none;
+        z-index: 0;
+        filter: blur(1px);
+        opacity: 0.72;
+        animation: orbFloat 9s ease-in-out infinite;
+    }
+
+    .hero-orb-one {
+        width: 210px;
+        height: 210px;
+        top: 120px;
+        right: 7%;
+        background: radial-gradient(circle, rgba(0, 174, 239, 0.22), rgba(0, 174, 239, 0));
+    }
+
+    .hero-orb-two {
+        width: 170px;
+        height: 170px;
+        left: 7%;
+        bottom: 70px;
+        background: radial-gradient(circle, rgba(34, 197, 94, 0.18), rgba(34, 197, 94, 0));
+        animation-delay: -3s;
+    }
 
     .hero-content {
         position: relative;
@@ -238,6 +267,41 @@
             color: #16a34a;
         }
 
+    .hero-metric-strip {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        max-width: 620px;
+        margin-top: 24px;
+    }
+
+    .hero-metric {
+        padding: 15px 16px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.82);
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+        backdrop-filter: blur(12px);
+    }
+
+        .hero-metric strong {
+            display: block;
+            color: #0f172a;
+            font-size: 1.45rem;
+            line-height: 1;
+            font-weight: 950;
+            letter-spacing: -0.7px;
+        }
+
+        .hero-metric span {
+            display: block;
+            margin-top: 6px;
+            color: #64748b;
+            font-size: 0.78rem;
+            font-weight: 800;
+            line-height: 1.35;
+        }
+
     .dashboard-shell {
         position: relative;
         z-index: 2;
@@ -295,6 +359,49 @@
 
     .dashboard-body {
         padding: 22px;
+    }
+
+    .hero-live-strip {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(2, 132, 199, 0.92));
+        color: #ffffff;
+        margin-bottom: 16px;
+        box-shadow: 0 16px 36px rgba(2, 132, 199, 0.18);
+    }
+
+    .live-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 0.82rem;
+        font-weight: 900;
+    }
+
+    .live-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #22c55e;
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+        animation: livePulse 1.9s ease-out infinite;
+    }
+
+    .live-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 0.74rem;
+        font-weight: 800;
+        white-space: nowrap;
     }
 
     .dashboard-grid {
@@ -394,6 +501,43 @@
         font-weight: 900;
         white-space: nowrap;
     }
+
+    .insight-rail {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 16px;
+    }
+
+    .insight-card {
+        border-radius: 16px;
+        padding: 12px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+    }
+
+        .insight-card i {
+            color: #00aeef;
+            margin-bottom: 7px;
+        }
+
+        .insight-card strong {
+            display: block;
+            color: #0f172a;
+            font-size: 0.78rem;
+            font-weight: 900;
+            line-height: 1.25;
+        }
+
+        .insight-card span {
+            display: block;
+            margin-top: 4px;
+            color: #64748b;
+            font-size: 0.7rem;
+            font-weight: 700;
+            line-height: 1.35;
+        }
 
     .floating-note {
         position: absolute;
@@ -1001,6 +1145,10 @@
         .dashboard-grid {
             grid-template-columns: 1fr;
         }
+
+        .hero-metric-strip {
+            grid-template-columns: 1fr;
+        }
     }
 
     @@media (max-width: 576px) {
@@ -1032,6 +1180,8 @@
         .hero-trust-row { flex-direction: column; gap: 8px; }
         .dashboard-shell { border-radius: 18px; padding: 10px; }
         .mock-stat-row { grid-template-columns: 1fr 1fr; }
+        .hero-live-strip { align-items: flex-start; flex-direction: column; }
+        .insight-rail { grid-template-columns: 1fr; }
 
         .role-card { padding: 20px; }
         .cta-box { padding: 24px; border-radius: 22px; }
@@ -1060,6 +1210,8 @@
     <section class="hero-modern">
         <!-- Yüzen partiküller -->
         <div class="hero-particles" id="heroParticles"></div>
+        <div class="hero-orb hero-orb-one"></div>
+        <div class="hero-orb hero-orb-two"></div>
 
         <div class="container hero-content">
             <div class="row align-items-center g-5">
@@ -1109,6 +1261,23 @@
                             @L("TrustItem3", "Dinamik kongre sayfaları")
                         </div>
                     </div>
+
+                    <div class="hero-metric-strip" data-animate data-delay="600">
+                        <div class="hero-metric">
+                            <strong>@Model.ActiveCongressesCount</strong>
+                            <span>@L("HeroMetricActiveCongress", "aktif kongre yayında")</span>
+                        </div>
+
+                        <div class="hero-metric">
+                            <strong>@Model.TotalUsers.ToString("N0")</strong>
+                            <span>@L("HeroMetricUsers", "akademik kullanıcı")</span>
+                        </div>
+
+                        <div class="hero-metric">
+                            <strong>360°</strong>
+                            <span>@L("HeroMetricWorkflow", "başvuru, hakem, ödeme ve sertifika")</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="col-lg-6" data-animate="fade-right" data-delay="300">
@@ -1127,6 +1296,18 @@
                             </div>
 
                             <div class="dashboard-body">
+                                <div class="hero-live-strip">
+                                    <div class="live-status">
+                                        <span class="live-dot"></span>
+                                        @L("LivePanelStatus", "Canlı yönetim paneli")
+                                    </div>
+
+                                    <div class="live-chip">
+                                        <i class="fas fa-bell"></i>
+                                        @L("LivePanelChip", "Anlık süreç takibi")
+                                    </div>
+                                </div>
+
                                 <div class="mock-stat-row">
                                     <div class="mock-stat">
                                         <strong>@Model.ActiveCongressesCount</strong>
@@ -1210,6 +1391,26 @@
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+
+                                <div class="insight-rail">
+                                    <div class="insight-card">
+                                        <i class="fas fa-user-check"></i>
+                                        <strong>@L("InsightReviewerTitle", "Hakem atama")</strong>
+                                        <span>@L("InsightReviewerText", "Rol ve konu bazlı takip")</span>
+                                    </div>
+
+                                    <div class="insight-card">
+                                        <i class="fas fa-credit-card"></i>
+                                        <strong>@L("InsightPaymentTitle", "Ödeme kontrolü")</strong>
+                                        <span>@L("InsightPaymentText", "Onay ve iade akışı")</span>
+                                    </div>
+
+                                    <div class="insight-card">
+                                        <i class="fas fa-certificate"></i>
+                                        <strong>@L("InsightCertificateTitle", "Sertifika")</strong>
+                                        <span>@L("InsightCertificateText", "Toplu üretim ve çıktı")</span>
                                     </div>
                                 </div>
                             </div>
@@ -1873,6 +2074,17 @@
         10%  { opacity: 1; }
         90%  { opacity: 0.7; }
         100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
+    }
+
+    @@keyframes orbFloat {
+        0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+        50% { transform: translate3d(16px, -18px, 0) scale(1.05); }
+    }
+
+    @@keyframes livePulse {
+        0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+        70% { box-shadow: 0 0 0 11px rgba(34, 197, 94, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
     }
 
     @@keyframes slideInLine {

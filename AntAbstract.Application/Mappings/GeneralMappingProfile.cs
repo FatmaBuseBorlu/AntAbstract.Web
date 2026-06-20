@@ -12,6 +12,7 @@ namespace AntAbstract.Application.Mappings
         {
             CreateMap<Submission, SubmissionDto>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.DoiStatus, opt => opt.MapFrom(src => src.DoiStatus.ToString()))
                 .ForMember(dest => dest.CorrespondingAuthorName, opt => opt.MapFrom(src =>
                     src.Author != null ? $"{src.Author.FirstName} {src.Author.LastName}" : "Unknown"))
                 .ForMember(dest => dest.ConferenceTitle, opt => opt.MapFrom(src => src.Conference.Title))
@@ -19,7 +20,6 @@ namespace AntAbstract.Application.Mappings
                 .ForMember(dest => dest.Authors, opt => opt.MapFrom(src => src.SubmissionAuthors))
 
                 .ForMember(dest => dest.Files, opt => opt.MapFrom(src => src.Files));
-            CreateMap<Submission, SubmissionDto>();
             CreateMap<SubmissionAuthor, SubmissionAuthorDto>();
 
             CreateMap<SubmissionFile, SubmissionFileDto>()
@@ -27,6 +27,11 @@ namespace AntAbstract.Application.Mappings
 
             CreateMap<SubmissionDto, Submission>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => Enum.Parse<SubmissionStatus>(src.Status)))
+                .ForMember(dest => dest.DoiStatus, opt => opt.Ignore())
+                .ForMember(dest => dest.DoiProvider, opt => opt.Ignore())
+                .ForMember(dest => dest.DoiErrorMessage, opt => opt.Ignore())
+                .ForMember(dest => dest.DoiRequestedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.DoiAssignedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.SubmissionAuthors, opt => opt.MapFrom(src => src.Authors))
                 .ForMember(dest => dest.Files, opt => opt.MapFrom(src => src.Files));
 

@@ -2,6 +2,7 @@
 using AntAbstract.Infrastructure.Services;
 using AntAbstract.Infrastructure.Services.Certficates;
 using AntAbstract.Infrastructure.Services.Conferences;
+using AntAbstract.Infrastructure.Services.Doi;
 using AntAbstract.Infrastructure.Services.Email;
 using AntAbstract.Infrastructure.Services.Notifications;
 using AntAbstract.Infrastructure.Services.Pdf;
@@ -32,6 +33,7 @@ namespace AntAbstract.Infrastructure.Services.DependencyInjection
 
             services.AddScoped<IReviewerRecommendationService, ReviewerRecommendationService>();
             services.AddScoped<IConferencePageBlockService, ConferencePageBlockService>();
+            services.AddScoped<IDoiService, DoiService>();
 
             // Audit log kuyruğu + background worker
             services.AddSingleton<AuditQueue>();

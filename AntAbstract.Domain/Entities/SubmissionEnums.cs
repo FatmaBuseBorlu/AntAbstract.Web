@@ -30,4 +30,13 @@ namespace AntAbstract.Domain.Entities
 
         FullTextDoc = 1
     }
+
+    public enum DoiStatus
+    {
+        None = 0,
+        Ready = 1,
+        Assigned = 2,
+        Failed = 3,
+        ConfigMissing = 4
+    }
 }

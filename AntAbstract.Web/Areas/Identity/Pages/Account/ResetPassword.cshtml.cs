@@ -57,15 +57,17 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             public string Code { get; set; }
         }
 
-        public IActionResult OnGet(string code = null)
+        public IActionResult OnGet(string code = null, string email = null)
         {
             if (code == null)
                 return BadRequest("Şifre sıfırlama kodu eksik.");
 
             Input = new InputModel
             {
-                Code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code))
+                Code = DecodeResetCode(code),
+                Email = email ?? string.Empty
             };
+
             return Page();
         }
 
@@ -109,6 +111,18 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 HttpContext.Connection.RemoteIpAddress?.ToString());
 
             return Page();
+        }
+
+        private static string DecodeResetCode(string code)
+        {
+            try
+            {
+                return Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
+            }
+            catch (FormatException)
+            {
+                return code;
+            }
         }
     }
 }

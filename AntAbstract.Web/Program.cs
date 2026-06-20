@@ -88,7 +88,7 @@ if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("
         "Production'da varsayılan JWT key kullanılamaz. Jwt:Key ayarını yapılandırın.");
 }
 
-builder.Services
+var authenticationBuilder = builder.Services
     .AddAuthentication()
     .AddJwtBearer("Bearer", opt =>
     {
@@ -103,19 +103,22 @@ builder.Services
             IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
                 System.Text.Encoding.UTF8.GetBytes(jwtKey))
         };
-    })
-    .AddOpenIdConnect("ORCID", "ORCID", options =>
+    });
+
+var orcidAuthority = builder.Configuration["Authentication:ORCID:Authority"];
+var orcidClientId = builder.Configuration["Authentication:ORCID:ClientId"];
+var orcidClientSecret = builder.Configuration["Authentication:ORCID:ClientSecret"];
+
+if (HasConfiguredValue(orcidClientId) && HasConfiguredValue(orcidClientSecret))
+{
+    authenticationBuilder.AddOpenIdConnect("ORCID", "ORCID", options =>
     {
-        var authority = builder.Configuration["Authentication:ORCID:Authority"];
-        var clientId = builder.Configuration["Authentication:ORCID:ClientId"];
-        var clientSecret = builder.Configuration["Authentication:ORCID:ClientSecret"];
-
-        options.Authority = string.IsNullOrWhiteSpace(authority)
+        options.Authority = string.IsNullOrWhiteSpace(orcidAuthority)
             ? "https://orcid.org"
-            : authority;
+            : orcidAuthority.Trim();
 
-        options.ClientId = clientId;
-        options.ClientSecret = clientSecret;
+        options.ClientId = orcidClientId!.Trim();
+        options.ClientSecret = orcidClientSecret!.Trim();
 
         options.CallbackPath = "/signin-orcid";
 
@@ -130,12 +133,14 @@ builder.Services
         options.Scope.Clear();
         options.Scope.Add("openid");
 
-        options.TokenValidationParameters.NameClaimType = "name";
+        options.TokenValidationParameters.NameClaimType = ClaimTypes.Name;
 
         options.ClaimActions.MapUniqueJsonKey("orcid", "sub");
+        options.ClaimActions.MapUniqueJsonKey(ClaimTypes.NameIdentifier, "sub");
         options.ClaimActions.MapUniqueJsonKey(ClaimTypes.Name, "name");
         options.ClaimActions.MapUniqueJsonKey(ClaimTypes.GivenName, "given_name");
         options.ClaimActions.MapUniqueJsonKey(ClaimTypes.Surname, "family_name");
+        options.ClaimActions.MapUniqueJsonKey(ClaimTypes.Email, "email");
 
         options.Events = new OpenIdConnectEvents
         {
@@ -161,6 +166,7 @@ builder.Services
             }
         };
     });
+}
 
 builder.Services.AddAuthorization(options =>
 {
@@ -692,4 +698,16 @@ app.MapControllers();
 #endregion
 
 app.Run();
+
+static bool HasConfiguredValue(string? value)
+{
+    if (string.IsNullOrWhiteSpace(value))
+        return false;
+
+    var trimmed = value.Trim();
+
+    return !trimmed.StartsWith("#{", StringComparison.Ordinal) &&
+           !trimmed.StartsWith("SET_", StringComparison.OrdinalIgnoreCase);
+}
+
 public partial class Program { }

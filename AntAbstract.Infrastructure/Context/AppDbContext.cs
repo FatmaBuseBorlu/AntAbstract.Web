@@ -99,6 +99,12 @@ namespace AntAbstract.Infrastructure.Context
 
                 entity.Property(s => s.PresentationType)
                     .HasMaxLength(50);
+
+                entity.Property(s => s.DoiProvider)
+                    .HasMaxLength(50);
+
+                entity.Property(s => s.DoiErrorMessage)
+                    .HasMaxLength(1000);
             });
 
             builder.Entity<SiteSectionTemplate>()

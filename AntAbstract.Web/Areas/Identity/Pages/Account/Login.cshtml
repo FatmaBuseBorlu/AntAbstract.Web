@@ -3,6 +3,7 @@
 @using Microsoft.AspNetCore.Localization
 @using Microsoft.AspNetCore.Mvc.Localization
 @using System.Globalization
+@using System.Linq
 @inject IViewLocalizer Localizer
 
 @{
@@ -563,32 +564,35 @@
                     </div>
                 </form>
 
-                <div class="divider">
-                    @Localizer["OrContinueWith"]
-                </div>
-
-                <form asp-page="./ExternalLogin"
-                      asp-route-returnUrl="@Model.ReturnUrl"
-                      method="post"
-                      class="w-100">
-
-                    <div class="d-grid">
-                        <button type="submit"
-                                class="btn btn-orcid fw-bold py-2 rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2"
-                                name="provider"
-                                value="ORCID"
-                                title="ORCID">
-
-                            <span class="orcid-icon-circle">
-                                iD
-                            </span>
-
-                            <span>
-                                @Localizer["LoginWithOrcid"]
-                            </span>
-                        </button>
+                @if (Model.ExternalLogins.Any(x => x.Name == "ORCID"))
+                {
+                    <div class="divider">
+                        @Localizer["OrContinueWith"]
                     </div>
-                </form>
+
+                    <form asp-page="./ExternalLogin"
+                          asp-route-returnUrl="@Model.ReturnUrl"
+                          method="post"
+                          class="w-100">
+
+                        <div class="d-grid">
+                            <button type="submit"
+                                    class="btn btn-orcid fw-bold py-2 rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2"
+                                    name="provider"
+                                    value="ORCID"
+                                    title="ORCID">
+
+                                <span class="orcid-icon-circle">
+                                    iD
+                                </span>
+
+                                <span>
+                                    @Localizer["LoginWithOrcid"]
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+                }
 
             </div>
         </div>

@@ -1,4 +1,5 @@
-﻿using AntAbstract.Infrastructure.Context;
+﻿using AntAbstract.Domain.Entities;
+using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Models.ViewModels.Proceedings;
 using Microsoft.AspNetCore.Hosting;
@@ -139,6 +140,71 @@ namespace AntAbstract.Web.Controllers
             }
 
             return View("~/Views/Proceedings/Index.cshtml", model);
+        }
+
+        [HttpGet("/Proceedings/Submission/{code}")]
+        [HttpGet("/{slug}/Proceedings/Submission/{code}")]
+        public async Task<IActionResult> Submission(string code, string? slug = null)
+        {
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                return NotFound("Bildiri bulunamadı.");
+            }
+
+            var normalizedCode = code.Trim();
+
+            var query = _context.Submissions
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .Include(s => s.Conference)
+                    .ThenInclude(c => c.Tenant)
+                .Include(s => s.SubmissionAuthors)
+                .Where(s =>
+                    s.SubmissionIdCode == normalizedCode &&
+                    (s.Status == SubmissionStatus.Accepted || s.Status == SubmissionStatus.Presented));
+
+            if (!string.IsNullOrWhiteSpace(slug))
+            {
+                query = query.Where(s =>
+                    s.Conference != null &&
+                    (
+                        s.Conference.Slug == slug ||
+                        (s.Conference.Tenant != null && s.Conference.Tenant.Slug == slug)
+                    ));
+            }
+
+            var submission = await query.FirstOrDefaultAsync();
+            if (submission == null)
+            {
+                return NotFound("Bildiri bulunamadı veya henüz yayında değil.");
+            }
+
+            var resolvedSlug = submission.Conference?.Tenant?.Slug
+                ?? submission.Conference?.Slug
+                ?? slug
+                ?? "";
+
+            var model = new ProceedingSubmissionViewModel
+            {
+                Slug = resolvedSlug,
+                SubmissionIdCode = submission.SubmissionIdCode ?? "",
+                Title = submission.Title ?? "",
+                Abstract = submission.Abstract ?? "",
+                Keywords = submission.Keywords ?? "",
+                Topic = submission.Topic ?? "",
+                PresentationType = submission.PresentationType ?? "",
+                ConferenceTitle = submission.Conference?.Title ?? "",
+                ConferenceStartDate = submission.Conference?.StartDate ?? DateTime.MinValue,
+                ConferenceEndDate = submission.Conference?.EndDate ?? DateTime.MinValue,
+                DoiUrl = submission.DoiUrl,
+                Authors = submission.SubmissionAuthors
+                    .OrderBy(a => a.Order)
+                    .Select(a => $"{a.FirstName} {a.LastName}".Trim())
+                    .Where(a => !string.IsNullOrWhiteSpace(a))
+                    .ToList()
+            };
+
+            return View("~/Views/Proceedings/Submission.cshtml", model);
         }
 
         [HttpGet("/Proceedings/Download/{conferenceId:guid}")]
