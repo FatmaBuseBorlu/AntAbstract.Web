@@ -1023,6 +1023,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ViewBag.PlagiarismReport = await _plagiarism.GetLatestReportAsync(id);
             ViewBag.PlagiarismConfigured = _plagiarism.IsConfigured;
             ViewBag.DoiMetadata = _doiService.BuildMetadataPreview(submission);
+            ViewBag.DoiRegistrationConfigured = _doiRegistration.IsConfigured;
 
             return View("~/Areas/Admin/Views/Submissions/Details.cshtml", submission);
         }
