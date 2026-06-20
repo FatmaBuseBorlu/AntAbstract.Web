@@ -52,6 +52,7 @@ namespace AntAbstract.Infrastructure.Services.DependencyInjection
 
             services.AddSingleton<IPdfAnonymizer, PdfAnonymizer>();
             services.AddScoped<IPlagiarismService, PlagiarismService>();
+            services.AddScoped<IDoiRegistrationService, DataCiteDoiService>();
 
             return services;
         }

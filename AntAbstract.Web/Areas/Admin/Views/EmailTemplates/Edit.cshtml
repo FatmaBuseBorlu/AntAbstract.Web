@@ -33,7 +33,17 @@
             </div>
 
             <div class="mb-3">
-                <label asp-for="HtmlBody" class="form-label fw-semibold">@Localizer["LabelHtmlBody"]</label>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label asp-for="HtmlBody" class="form-label fw-semibold mb-0">@Localizer["LabelHtmlBody"]</label>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-primary active" id="btnCodeMode" onclick="switchMode('code')">
+                            <i class="fas fa-code me-1"></i>Kod
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" id="btnWysiwygMode" onclick="switchMode('wysiwyg')">
+                            <i class="fas fa-paint-brush me-1"></i>Görsel
+                        </button>
+                    </div>
+                </div>
                 <div class="d-flex gap-2 mb-2">
                     <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertPlaceholder('{FullName}')">
                         <i class="fas fa-user me-1"></i>{FullName}
@@ -55,8 +65,11 @@
                     </button>
                 </div>
                 <div class="row g-3">
-                    <div class="col-lg-6">
+                    <div class="col-lg-6" id="codePanel">
                         <textarea asp-for="HtmlBody" id="htmlEditor" class="form-control font-monospace" rows="22" style="font-size:12px;tab-size:2"></textarea>
+                    </div>
+                    <div class="col-lg-12 d-none" id="wysiwygPanel">
+                        <div id="wysiwygEditor" style="min-height:400px;border:1px solid #e2e8f0;border-radius:8px;padding:16px;background:#fff;"></div>
                     </div>
                     <div class="col-lg-6">
                         <div class="border rounded-3 bg-white p-3" style="height:100%;min-height:400px;overflow:auto;">
@@ -155,5 +168,66 @@
             }
         });
     })();
+
+    var tinyLoaded = false;
+    window.switchMode = function (mode) {
+        var codePanel = document.getElementById('codePanel');
+        var previewCol = codePanel.nextElementSibling; // live preview col
+        var wysiwygPanel = document.getElementById('wysiwygPanel');
+        var btnCode = document.getElementById('btnCodeMode');
+        var btnWysiwyg = document.getElementById('btnWysiwygMode');
+
+        if (mode === 'wysiwyg') {
+            codePanel.classList.add('d-none');
+            if (previewCol) previewCol.classList.add('d-none');
+            wysiwygPanel.classList.remove('d-none');
+            btnCode.classList.remove('active');
+            btnWysiwyg.classList.add('active');
+
+            if (!tinyLoaded) {
+                var script = document.createElement('script');
+                script.src = 'https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js';
+                script.referrerPolicy = 'origin';
+                script.onload = function () { initTiny(); };
+                document.head.appendChild(script);
+                tinyLoaded = true;
+            } else if (window.tinymce) {
+                var inst = tinymce.get('wysiwygEditor');
+                if (inst) inst.setContent(document.getElementById('htmlEditor').value);
+            }
+        } else {
+            if (window.tinymce) {
+                var inst = tinymce.get('wysiwygEditor');
+                if (inst) {
+                    document.getElementById('htmlEditor').value = inst.getContent();
+                    updatePreview();
+                }
+            }
+            codePanel.classList.remove('d-none');
+            if (previewCol) previewCol.classList.remove('d-none');
+            wysiwygPanel.classList.add('d-none');
+            btnCode.classList.add('active');
+            btnWysiwyg.classList.remove('active');
+        }
+    };
+
+    function initTiny() {
+        tinymce.init({
+            target: document.getElementById('wysiwygEditor'),
+            height: 450,
+            menubar: false,
+            plugins: 'lists link code table',
+            toolbar: 'undo redo | blocks | bold italic underline | forecolor backcolor | alignleft aligncenter alignright | bullist numlist | link table | code',
+            content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; }',
+            setup: function (ed) {
+                ed.on('init', function () {
+                    ed.setContent(document.getElementById('htmlEditor').value);
+                });
+                ed.on('change keyup', function () {
+                    document.getElementById('htmlEditor').value = ed.getContent();
+                });
+            }
+        });
+    }
     </script>
 }
