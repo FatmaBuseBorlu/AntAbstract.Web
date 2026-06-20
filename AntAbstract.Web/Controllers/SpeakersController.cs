@@ -31,13 +31,13 @@ namespace AntAbstract.Web.Controllers
             var confIdStr = HttpContext.Session.GetString("SelectedConferenceId");
             if (Guid.TryParse(confIdStr, out var confId) && confId != Guid.Empty)
             {
-                var bySession = await _context.Conferences.Include(c => c.Tenant)
+                var bySession = await _context.Conferences.IgnoreQueryFilters().Include(c => c.Tenant)
                     .AsNoTracking().FirstOrDefaultAsync(c => c.Id == confId);
                 if (bySession != null && (bySession.Slug == slug || bySession.Tenant?.Slug == slug))
                     return bySession;
             }
 
-            return await _context.Conferences.Include(c => c.Tenant)
+            return await _context.Conferences.IgnoreQueryFilters().Include(c => c.Tenant)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Slug == slug || (c.Tenant != null && c.Tenant.Slug == slug));
         }

@@ -1,4 +1,5 @@
 ﻿@using AntAbstract.Domain.Entities
+@using AntAbstract.Infrastructure.Services.Doi
 @using System.Linq
 
 @model Submission
@@ -64,6 +65,31 @@
         };
     }
 
+    string DoiStatusLabel(DoiStatus status)
+    {
+        return status switch
+        {
+            DoiStatus.None => "Hazırlanmadı",
+            DoiStatus.Ready => "Metadata Hazır",
+            DoiStatus.Assigned => "Atandı",
+            DoiStatus.Failed => "Hatalı",
+            DoiStatus.ConfigMissing => "Ayar Eksik",
+            _ => status.ToString()
+        };
+    }
+
+    string DoiBadgeClass(DoiStatus status)
+    {
+        return status switch
+        {
+            DoiStatus.Ready => "bg-info text-dark",
+            DoiStatus.Assigned => "bg-success",
+            DoiStatus.Failed => "bg-danger",
+            DoiStatus.ConfigMissing => "bg-warning text-dark",
+            _ => "bg-secondary"
+        };
+    }
+
     var authorFullName = Model.Author == null
         ? "Yazar bilgisi yok"
         : $"{Model.Author.FirstName} {Model.Author.LastName}".Trim();
@@ -78,6 +104,7 @@
     var allAssignments   = Model.ReviewAssignments?.ToList() ?? new List<ReviewAssignment>();
     var assignments      = allAssignments.Where(a => !a.IsDeclined).ToList();
     var declinedAssignments = allAssignments.Where(a => a.IsDeclined).ToList();
+    var doiMetadata = ViewBag.DoiMetadata as DoiMetadataPreview;
 }
 
 <div class="container-fluid submission-detail-page">
@@ -508,7 +535,12 @@
             @if (Model.Status == SubmissionStatus.Accepted || Model.Status == SubmissionStatus.Presented)
             {
                 var doiSlug = ViewBag.Slug as string ?? "";
-                var doiConfId = ViewBag.ConferenceId as Guid?;
+                var prepareDoiUrl = string.IsNullOrWhiteSpace(doiSlug)
+                    ? $"/Admin/Submissions/PrepareDoi/{Model.Id}"
+                    : $"/{doiSlug}/Admin/Submissions/PrepareDoi/{Model.Id}";
+                var setDoiUrl = string.IsNullOrWhiteSpace(doiSlug)
+                    ? $"/Admin/Submissions/SetDoi/{Model.Id}"
+                    : $"/{doiSlug}/Admin/Submissions/SetDoi/{Model.Id}";
                 <div class="side-card mb-4" style="border-color:rgba(99,102,241,0.28);background:linear-gradient(135deg,rgba(99,102,241,0.06),rgba(139,92,246,0.04));">
                     <div class="side-card-header" style="border-color:rgba(99,102,241,0.18);">
                         <div>
@@ -519,29 +551,82 @@
                             <i class="fas fa-fingerprint"></i>
                         </div>
                     </div>
-                    @if (!string.IsNullOrWhiteSpace(Model.DoiUrl))
-                    {
-                        <div class="p-3">
-                            <a href="@Model.DoiUrl" target="_blank" class="text-decoration-none fw-bold" style="font-size:0.85rem;word-break:break-all;">
+
+                    <div class="p-3">
+                        <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                            <span class="badge @DoiBadgeClass(Model.DoiStatus)">
+                                @DoiStatusLabel(Model.DoiStatus)
+                            </span>
+                            @if (!string.IsNullOrWhiteSpace(Model.DoiProvider))
+                            {
+                                <span class="text-muted" style="font-size:0.78rem;font-weight:800;">
+                                    Provider: @Model.DoiProvider
+                                </span>
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(Model.DoiUrl))
+                        {
+                            <a href="@Model.DoiUrl" target="_blank" class="text-decoration-none fw-bold d-block mb-3" style="font-size:0.85rem;word-break:break-all;">
                                 <i class="fas fa-external-link-alt me-1"></i>@Model.DoiUrl
                             </a>
-                        </div>
-                    }
-                    else
-                    {
-                        <form method="post"
-                              action="@(string.IsNullOrWhiteSpace(doiSlug) ? $"/Admin/Submissions/SetDoi/{Model.Id}" : $"/{doiSlug}/Admin/Submissions/SetDoi/{Model.Id}")"
-                              class="p-3">
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(Model.DoiErrorMessage))
+                        {
+                            <div class="alert alert-warning py-2 px-3 mb-3" style="font-size:0.78rem;">
+                                <i class="fas fa-triangle-exclamation me-1"></i>@Model.DoiErrorMessage
+                            </div>
+                        }
+
+                        @if (doiMetadata != null)
+                        {
+                            <div class="rounded-3 border bg-white p-3 mb-3" style="font-size:0.78rem;">
+                                <div class="fw-bold text-muted mb-2">Metadata Önizleme</div>
+                                <div class="mb-1"><strong>Başlık:</strong> @doiMetadata.Title</div>
+                                <div class="mb-1"><strong>Kongre:</strong> @doiMetadata.ConferenceTitle</div>
+                                <div class="mb-1"><strong>Yazarlar:</strong> @(doiMetadata.Authors.Any() ? string.Join(", ", doiMetadata.Authors) : "-")</div>
+                                @if (!string.IsNullOrWhiteSpace(doiMetadata.SuggestedDoiUrl))
+                                {
+                                    <div class="mb-1" style="word-break:break-all;"><strong>Önerilen DOI:</strong> @doiMetadata.SuggestedDoiUrl</div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(doiMetadata.LandingUrl))
+                                {
+                                    <div style="word-break:break-all;"><strong>Landing URL:</strong> @doiMetadata.LandingUrl</div>
+                                }
+                                @if (doiMetadata.MissingSettings.Any())
+                                {
+                                    <div class="text-warning fw-bold mt-2">
+                                        Eksik ayarlar: @string.Join(", ", doiMetadata.MissingSettings)
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        <form method="post" action="@prepareDoiUrl" class="mb-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+                            <button type="submit" class="btn btn-outline-secondary btn-sm w-100">
+                                <i class="fas fa-rotate me-1"></i>Metadata Hazırla / Kontrol Et
+                            </button>
+                        </form>
+
+                        <form method="post" action="@setDoiUrl">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
                             <div class="input-group input-group-sm">
-                                <input type="url" name="doiUrl" class="form-control" placeholder="https://doi.org/10.xxxx/..." required />
+                                <input type="url"
+                                       name="doiUrl"
+                                       class="form-control"
+                                       value="@(string.IsNullOrWhiteSpace(Model.DoiUrl) ? doiMetadata?.SuggestedDoiUrl : Model.DoiUrl)"
+                                       placeholder="https://doi.org/10.xxxx/..."
+                                       required />
                                 <button type="submit" class="btn btn-outline-primary">
                                     <i class="fas fa-save me-1"></i>Kaydet
                                 </button>
                             </div>
                         </form>
-                    }
+                    </div>
                 </div>
             }
 

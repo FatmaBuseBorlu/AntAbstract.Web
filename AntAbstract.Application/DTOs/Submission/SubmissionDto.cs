@@ -27,6 +27,11 @@ namespace AntAbstract.Application.DTOs.Submission
         public string Topic { get; set; } = string.Empty;
         public string PresentationType { get; set; } = string.Empty;
         public string? DoiUrl { get; set; }
+        public string DoiStatus { get; set; } = string.Empty;
+        public string? DoiProvider { get; set; }
+        public string? DoiErrorMessage { get; set; }
+        public DateTime? DoiRequestedAt { get; set; }
+        public DateTime? DoiAssignedAt { get; set; }
     }
 
 }

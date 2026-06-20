@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.WebUtilities;
 using System.ComponentModel.DataAnnotations;
+using System.Text;
 using System.Text.Encodings.Web;
 
 namespace AntAbstract.Web.Areas.Identity.Pages.Account
@@ -65,6 +67,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             }
 
             var code = await _userManager.GeneratePasswordResetTokenAsync(user);
+            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
             var callbackUrl = Url.Page(
                 "/Account/ResetPassword",
@@ -72,7 +75,8 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 values: new
                 {
                     area = "Identity",
-                    code
+                    code,
+                    email = Input.Email
                 },
                 protocol: Request.Scheme);
 
@@ -85,7 +89,21 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             await _emailSender.SendEmailAsync(
                 Input.Email,
                 "Şifrenizi sıfırlayın",
-                $"Şifrenizi sıfırlamak için <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>buraya tıklayın</a>.");
+                $"""
+                <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
+                    <h2 style="margin:0 0 12px;color:#0f172a">Şifre sıfırlama isteği</h2>
+                    <p>AntAbstract hesabınız için şifre sıfırlama bağlantısı oluşturuldu.</p>
+                    <p>
+                        <a href="{HtmlEncoder.Default.Encode(callbackUrl)}"
+                           style="display:inline-block;background:#0ea5e9;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:700">
+                            Yeni şifre oluştur
+                        </a>
+                    </p>
+                    <p style="color:#64748b;font-size:13px">
+                        Bu işlemi siz başlatmadıysanız bu e-postayı yok sayabilirsiniz.
+                    </p>
+                </div>
+                """);
 
             _logger.LogInformation(
                 "Şifre sıfırlama bağlantısı gönderildi. UserId={UserId} IP={IP}",

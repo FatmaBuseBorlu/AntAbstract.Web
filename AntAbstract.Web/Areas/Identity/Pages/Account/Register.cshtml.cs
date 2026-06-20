@@ -33,6 +33,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
         private const string ExternalEmailKey = "ExternalEmail";
         private const string ExternalFirstNameKey = "ExternalFirstName";
         private const string ExternalLastNameKey = "ExternalLastName";
+        private const string ExternalOrcidIdKey = "ExternalOrcidId";
 
         private readonly SignInManager<AppUser> _signInManager;
         private readonly UserManager<AppUser> _userManager;
@@ -160,6 +161,8 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             public string? FirstName { get; set; }
 
             public string? LastName { get; set; }
+
+            public string? OrcidId { get; set; }
         }
 
         public async Task OnGetAsync(string? returnUrl = null)
@@ -258,6 +261,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 Title = NormalizeTitleCase(Input.Title),
                 Faculty = selectedFaculty,
                 Department = selectedDepartment,
+                OrcidId = NormalizeOrcidId(externalLoginState?.OrcidId),
 
                 EmailConfirmed = true
             };
@@ -366,7 +370,8 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 DisplayName = TempData.Peek(ExternalProviderDisplayNameKey)?.ToString(),
                 Email = TempData.Peek(ExternalEmailKey)?.ToString(),
                 FirstName = TempData.Peek(ExternalFirstNameKey)?.ToString(),
-                LastName = TempData.Peek(ExternalLastNameKey)?.ToString()
+                LastName = TempData.Peek(ExternalLastNameKey)?.ToString(),
+                OrcidId = TempData.Peek(ExternalOrcidIdKey)?.ToString()
             };
         }
 
@@ -384,6 +389,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             TempData.Keep(ExternalEmailKey);
             TempData.Keep(ExternalFirstNameKey);
             TempData.Keep(ExternalLastNameKey);
+            TempData.Keep(ExternalOrcidIdKey);
         }
 
         private async Task<IdentityResult> TryAddExternalLoginAsync(
@@ -814,6 +820,23 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             return value.ResourceNotFound
                 ? fallback
                 : value.Value;
+        }
+
+        private static string? NormalizeOrcidId(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            var trimmed = value.Trim();
+            var marker = "orcid.org/";
+            var markerIndex = trimmed.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+
+            if (markerIndex >= 0)
+            {
+                trimmed = trimmed[(markerIndex + marker.Length)..];
+            }
+
+            return trimmed.Length > 50 ? trimmed[..50] : trimmed;
         }
 
         private async Task<(bool Success, string? FilePath, string ErrorMessage)> TryUploadProfileImageAsync(IFormFile file)

@@ -3,6 +3,7 @@
 using AntAbstract.Domain.Entities;
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -74,9 +75,21 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             return RedirectToPage("./Login");
         }
 
-        public IActionResult OnPost(string provider, string returnUrl = null)
+        public async Task<IActionResult> OnPostAsync(string provider, string returnUrl = null)
         {
             returnUrl ??= Url.Content("~/");
+
+            var schemes = await _signInManager.GetExternalAuthenticationSchemesAsync();
+            if (string.IsNullOrWhiteSpace(provider) ||
+                !schemes.Any(s => string.Equals(s.Name, provider, StringComparison.Ordinal)))
+            {
+                TempData["ErrorMessage"] =
+                    "ORCID girişi şu anda yapılandırılmamış. Lütfen daha sonra tekrar deneyiniz.";
+
+                return RedirectToPage(
+                    "./Login",
+                    new { ReturnUrl = returnUrl });
+            }
 
             var redirectUrl = Url.Page(
                 "./ExternalLogin",
@@ -122,6 +135,8 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
 
             if (externalUser != null)
             {
+                await UpdateOrcidProfileAsync(externalUser, info);
+
                 await _signInManager.SignInAsync(
                     externalUser,
                     isPersistent: false,
@@ -169,6 +184,8 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                             new { ReturnUrl = returnUrl });
                     }
 
+                    await UpdateOrcidProfileAsync(existingUserByEmail, info);
+
                     await _signInManager.SignInAsync(
                         existingUserByEmail,
                         isPersistent: false,
@@ -204,6 +221,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             TempData["ExternalEmail"] = email ?? "";
             TempData["ExternalFirstName"] = GetExternalFirstName(info);
             TempData["ExternalLastName"] = GetExternalLastName(info);
+            TempData["ExternalOrcidId"] = GetExternalOrcidId(info);
 
             var registerUrl = string.IsNullOrWhiteSpace(email)
                 ? $"/register?returnUrl={Uri.EscapeDataString(returnUrl)}"
@@ -242,6 +260,9 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                     CancellationToken.None);
 
                 user.EmailConfirmed = true;
+                user.FirstName = GetExternalFirstName(info);
+                user.LastName = GetExternalLastName(info);
+                user.OrcidId = NormalizeOrcidId(GetExternalOrcidId(info));
 
                 var result = await _userManager.CreateAsync(user);
 
@@ -507,6 +528,38 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             return Url.Content("~/");
         }
 
+        private async Task UpdateOrcidProfileAsync(AppUser user, ExternalLoginInfo info)
+        {
+            var changed = false;
+            var orcidId = NormalizeOrcidId(GetExternalOrcidId(info));
+
+            if (!string.IsNullOrWhiteSpace(orcidId) &&
+                !string.Equals(user.OrcidId, orcidId, StringComparison.OrdinalIgnoreCase))
+            {
+                user.OrcidId = orcidId;
+                changed = true;
+            }
+
+            var firstName = GetExternalFirstName(info);
+            if (string.IsNullOrWhiteSpace(user.FirstName) && !string.IsNullOrWhiteSpace(firstName))
+            {
+                user.FirstName = firstName;
+                changed = true;
+            }
+
+            var lastName = GetExternalLastName(info);
+            if (string.IsNullOrWhiteSpace(user.LastName) && !string.IsNullOrWhiteSpace(lastName))
+            {
+                user.LastName = lastName;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                await _userManager.UpdateAsync(user);
+            }
+        }
+
         private static string GetExternalEmail(ExternalLoginInfo info)
         {
             return info.Principal.FindFirstValue(ClaimTypes.Email)
@@ -526,6 +579,32 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             return info.Principal.FindFirstValue(ClaimTypes.Surname)
                    ?? info.Principal.FindFirstValue("family_name")
                    ?? "";
+        }
+
+        private static string GetExternalOrcidId(ExternalLoginInfo info)
+        {
+            return info.Principal.FindFirstValue("orcid")
+                   ?? info.Principal.FindFirstValue("sub")
+                   ?? info.Principal.FindFirstValue(ClaimTypes.NameIdentifier)
+                   ?? info.ProviderKey
+                   ?? "";
+        }
+
+        private static string NormalizeOrcidId(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            var trimmed = value.Trim();
+            var marker = "orcid.org/";
+            var markerIndex = trimmed.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+
+            if (markerIndex >= 0)
+            {
+                trimmed = trimmed[(markerIndex + marker.Length)..];
+            }
+
+            return trimmed.Length > 50 ? trimmed[..50] : trimmed;
         }
 
         private AppUser CreateUser()

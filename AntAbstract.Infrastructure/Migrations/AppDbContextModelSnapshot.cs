@@ -1856,6 +1856,23 @@ namespace AntAbstract.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<DateTime?>("DoiAssignedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DoiErrorMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("DoiProvider")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("DoiRequestedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DoiStatus")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsFeedbackGiven")
                         .HasColumnType("bit");
 

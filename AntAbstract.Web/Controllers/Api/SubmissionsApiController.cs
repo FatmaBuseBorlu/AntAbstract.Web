@@ -11,6 +11,7 @@ namespace AntAbstract.Web.Controllers.Api
     [Route("api/[controller]")]
     [Produces("application/json")]
     [Authorize(AuthenticationSchemes = "Bearer")]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("api")]
     public class SubmissionsApiController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -42,6 +43,9 @@ namespace AntAbstract.Web.Controllers.Api
                     s.CreatedDate,
                     s.DecisionDate,
                     s.DoiUrl,
+                    doiStatus = s.DoiStatus.ToString(),
+                    s.DoiProvider,
+                    s.DoiAssignedAt,
                     conference = new { s.Conference.Id, s.Conference.Title },
                     hasRebuttal = !string.IsNullOrWhiteSpace(s.RebuttalText),
                     fileCount = s.Files.Count
@@ -84,6 +88,11 @@ namespace AntAbstract.Web.Controllers.Api
                 submission.CreatedDate,
                 submission.DecisionDate,
                 submission.DoiUrl,
+                doiStatus = submission.DoiStatus.ToString(),
+                submission.DoiProvider,
+                submission.DoiErrorMessage,
+                submission.DoiRequestedAt,
+                submission.DoiAssignedAt,
                 submission.AdminDecisionNote,
                 submission.RebuttalText,
                 submission.RebuttalDate,
@@ -136,6 +145,9 @@ namespace AntAbstract.Web.Controllers.Api
                     s.CreatedDate,
                     s.DecisionDate,
                     s.DoiUrl,
+                    doiStatus = s.DoiStatus.ToString(),
+                    s.DoiProvider,
+                    s.DoiAssignedAt,
                     author = s.Author != null ? $"{s.Author.FirstName} {s.Author.LastName}" : null,
                     authorEmail = s.Author != null ? s.Author.Email : null
                 })

@@ -135,6 +135,7 @@ işaret ediyor — user-secrets dışında hiçbir yere gerçek credential yazma
 - [ ] `wwwroot/uploads/` klasörü oluşturuldu ve yazma izni var
 - [ ] HTTPS sertifikası aktif (Let's Encrypt veya Plesk SSL)
 - [ ] `Email:BaseUrl` production domain'e ayarlı (https://antabstract.com.tr)
+- [ ] wkhtmltopdf Linux'ta kurulu: `sudo apt-get install wkhtmltopdf` (kabul/ret mektubu PDF için)
 
 ## Dikkat — Upload Dosyaları
 

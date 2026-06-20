@@ -26,11 +26,11 @@ namespace AntAbstract.Web.Controllers
             var confIdStr = HttpContext.Session.GetString("SelectedConferenceId");
             if (Guid.TryParse(confIdStr, out var confId) && confId != Guid.Empty)
             {
-                var c = await _context.Conferences.Include(x => x.Tenant).AsNoTracking()
+                var c = await _context.Conferences.IgnoreQueryFilters().Include(x => x.Tenant).AsNoTracking()
                     .FirstOrDefaultAsync(x => x.Id == confId);
                 if (c != null && (c.Slug == slug || c.Tenant?.Slug == slug)) return c;
             }
-            return await _context.Conferences.Include(x => x.Tenant).AsNoTracking()
+            return await _context.Conferences.IgnoreQueryFilters().Include(x => x.Tenant).AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Slug == slug || (x.Tenant != null && x.Tenant.Slug == slug));
         }
 
@@ -47,7 +47,7 @@ namespace AntAbstract.Web.Controllers
             HttpContext.Session.SetString("SelectedConferenceSlug", canonicalSlug);
             HttpContext.Session.SetString("SelectedConferenceTitle", conference.Title ?? "");
 
-            var sponsors = await _context.Sponsors.AsNoTracking()
+            var sponsors = await _context.Sponsors.IgnoreQueryFilters().AsNoTracking()
                 .Where(s => s.ConferenceId == conference.Id && s.IsActive)
                 .OrderBy(s => s.Tier).ThenBy(s => s.SortOrder).ThenBy(s => s.Name)
                 .ToListAsync();

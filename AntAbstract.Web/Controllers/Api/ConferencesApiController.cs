@@ -7,6 +7,7 @@ namespace AntAbstract.Web.Controllers.Api
     [ApiController]
     [Route("api/[controller]")]
     [Produces("application/json")]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("api")]
     public class ConferencesApiController : ControllerBase
     {
         private readonly AppDbContext _context;

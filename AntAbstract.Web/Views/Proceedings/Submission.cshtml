@@ -1,0 +1,201 @@
+@using System.Linq
+@model AntAbstract.Web.Models.ViewModels.Proceedings.ProceedingSubmissionViewModel
+
+@{
+    ViewData["Title"] = Model.Title;
+    var proceedingsUrl = string.IsNullOrWhiteSpace(Model.Slug)
+        ? "/Proceedings/Index"
+        : $"/{Model.Slug}/Proceedings";
+}
+
+<section class="submission-landing">
+    <div class="submission-hero">
+        <a href="@proceedingsUrl" class="back-link">
+            <i class="fas fa-arrow-left"></i>
+            Bildiri kitabına dön
+        </a>
+
+        <div class="submission-code">@Model.SubmissionIdCode</div>
+        <h1>@Model.Title</h1>
+
+        @if (Model.Authors.Any())
+        {
+            <p class="authors">@string.Join(", ", Model.Authors)</p>
+        }
+
+        <div class="meta-grid">
+            <div>
+                <span>Kongre</span>
+                <strong>@Model.ConferenceTitle</strong>
+            </div>
+            <div>
+                <span>Tarih</span>
+                <strong>@Model.ConferenceStartDate.ToString("dd.MM.yyyy") - @Model.ConferenceEndDate.ToString("dd.MM.yyyy")</strong>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.PresentationType))
+            {
+                <div>
+                    <span>Sunum Türü</span>
+                    <strong>@Model.PresentationType</strong>
+                </div>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.DoiUrl))
+        {
+            <a href="@Model.DoiUrl" target="_blank" rel="noopener" class="doi-link">
+                <i class="fas fa-fingerprint"></i>
+                @Model.DoiUrl
+            </a>
+        }
+    </div>
+
+    <div class="submission-body">
+        @if (!string.IsNullOrWhiteSpace(Model.Topic))
+        {
+            <div class="info-pill">
+                <span>Konu</span>
+                @Model.Topic
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Model.Keywords))
+        {
+            <div class="info-pill">
+                <span>Anahtar Kelimeler</span>
+                @Model.Keywords
+            </div>
+        }
+
+        <article class="abstract-card">
+            <h2>Özet</h2>
+            <p>@Model.Abstract</p>
+        </article>
+    </div>
+</section>
+
+<style>
+    .submission-landing {
+        min-height: 100vh;
+        background: #f8fafc;
+        padding: 3rem 1rem;
+    }
+
+    .submission-hero,
+    .submission-body {
+        max-width: 980px;
+        margin: 0 auto;
+    }
+
+    .submission-hero {
+        background: linear-gradient(135deg, #0f172a, #1e3a8a);
+        color: #fff;
+        border-radius: 28px;
+        padding: 2rem;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.20);
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        color: rgba(255,255,255,0.85);
+        text-decoration: none;
+        font-weight: 800;
+        margin-bottom: 1.25rem;
+    }
+
+    .back-link:hover {
+        color: #fff;
+    }
+
+    .submission-code {
+        display: inline-flex;
+        padding: 0.45rem 0.75rem;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.20);
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        margin-bottom: 1rem;
+    }
+
+    .submission-hero h1 {
+        font-size: clamp(2rem, 4vw, 3.4rem);
+        font-weight: 900;
+        line-height: 1.08;
+        margin-bottom: 1rem;
+    }
+
+    .authors {
+        color: rgba(255,255,255,0.82);
+        font-size: 1.05rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .meta-grid div {
+        background: rgba(255,255,255,0.10);
+        border: 1px solid rgba(255,255,255,0.16);
+        border-radius: 18px;
+        padding: 1rem;
+    }
+
+    .meta-grid span,
+    .info-pill span {
+        display: block;
+        color: #94a3b8;
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 0.35rem;
+    }
+
+    .doi-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        background: #fff;
+        color: #1d4ed8;
+        border-radius: 999px;
+        padding: 0.75rem 1rem;
+        text-decoration: none;
+        font-weight: 900;
+        word-break: break-all;
+    }
+
+    .submission-body {
+        padding-top: 1.5rem;
+    }
+
+    .info-pill,
+    .abstract-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
+    }
+
+    .abstract-card h2 {
+        color: #0f172a;
+        font-size: 1.25rem;
+        font-weight: 900;
+        margin-bottom: 0.75rem;
+    }
+
+    .abstract-card p {
+        color: #334155;
+        line-height: 1.8;
+        margin: 0;
+        white-space: pre-line;
+    }
+</style>

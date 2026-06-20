@@ -1,6 +1,7 @@
 using AntAbstract.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.ComponentModel.DataAnnotations;
@@ -38,6 +39,7 @@ namespace AntAbstract.Web.Controllers.Api
         }
 
         [HttpPost("login")]
+        [EnableRateLimiting("api-auth")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace AntAbstract.Web.Hubs
 {
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Identity.Application,Bearer")]
     public sealed class NotificationHub : Hub
     {
         public override async Task OnConnectedAsync()

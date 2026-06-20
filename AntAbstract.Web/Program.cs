@@ -81,7 +81,14 @@ builder.Services.ConfigureApplicationCookie(options =>
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "AntAbstract-Default-Key-Change-In-Production-2026!";
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "AntAbstract";
 
-builder.Services
+if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing") &&
+    jwtKey.Contains("Default-Key"))
+{
+    throw new InvalidOperationException(
+        "Production'da varsayılan JWT key kullanılamaz. Jwt:Key ayarını yapılandırın.");
+}
+
+var authenticationBuilder = builder.Services
     .AddAuthentication()
     .AddJwtBearer("Bearer", opt =>
     {
@@ -96,19 +103,22 @@ builder.Services
             IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
                 System.Text.Encoding.UTF8.GetBytes(jwtKey))
         };
-    })
-    .AddOpenIdConnect("ORCID", "ORCID", options =>
+    });
+
+var orcidAuthority = builder.Configuration["Authentication:ORCID:Authority"];
+var orcidClientId = builder.Configuration["Authentication:ORCID:ClientId"];
+var orcidClientSecret = builder.Configuration["Authentication:ORCID:ClientSecret"];
+
+if (HasConfiguredValue(orcidClientId) && HasConfiguredValue(orcidClientSecret))
+{
+    authenticationBuilder.AddOpenIdConnect("ORCID", "ORCID", options =>
     {
-        var authority = builder.Configuration["Authentication:ORCID:Authority"];
-        var clientId = builder.Configuration["Authentication:ORCID:ClientId"];
-        var clientSecret = builder.Configuration["Authentication:ORCID:ClientSecret"];
-
-        options.Authority = string.IsNullOrWhiteSpace(authority)
+        options.Authority = string.IsNullOrWhiteSpace(orcidAuthority)
             ? "https://orcid.org"
-            : authority;
+            : orcidAuthority.Trim();
 
-        options.ClientId = clientId;
-        options.ClientSecret = clientSecret;
+        options.ClientId = orcidClientId!.Trim();
+        options.ClientSecret = orcidClientSecret!.Trim();
 
         options.CallbackPath = "/signin-orcid";
 
@@ -123,12 +133,14 @@ builder.Services
         options.Scope.Clear();
         options.Scope.Add("openid");
 
-        options.TokenValidationParameters.NameClaimType = "name";
+        options.TokenValidationParameters.NameClaimType = ClaimTypes.Name;
 
         options.ClaimActions.MapUniqueJsonKey("orcid", "sub");
+        options.ClaimActions.MapUniqueJsonKey(ClaimTypes.NameIdentifier, "sub");
         options.ClaimActions.MapUniqueJsonKey(ClaimTypes.Name, "name");
         options.ClaimActions.MapUniqueJsonKey(ClaimTypes.GivenName, "given_name");
         options.ClaimActions.MapUniqueJsonKey(ClaimTypes.Surname, "family_name");
+        options.ClaimActions.MapUniqueJsonKey(ClaimTypes.Email, "email");
 
         options.Events = new OpenIdConnectEvents
         {
@@ -154,6 +166,7 @@ builder.Services
             }
         };
     });
+}
 
 builder.Services.AddAuthorization(options =>
 {
@@ -278,11 +291,65 @@ builder.Services.AddRateLimiter(options =>
         opt.QueueLimit = 0;
         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
     });
+
+    // API: 30 istek / dakika / IP
+    options.AddSlidingWindowLimiter("api", opt =>
+    {
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.SegmentsPerWindow = 6;
+        opt.PermitLimit = 30;
+        opt.QueueLimit = 0;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+
+    // API login: 5 istek / 5 dakika / IP (brute force koruması)
+    options.AddSlidingWindowLimiter("api-auth", opt =>
+    {
+        opt.Window = TimeSpan.FromMinutes(5);
+        opt.SegmentsPerWindow = 5;
+        opt.PermitLimit = 5;
+        opt.QueueLimit = 0;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
 });
 
 builder.Services.AddControllersWithViews()
     .AddViewLocalization(Microsoft.AspNetCore.Mvc.Razor.LanguageViewLocationExpanderFormat.Suffix)
     .AddDataAnnotationsLocalization();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "AntAbstract API",
+        Version = "v1",
+        Description = "Kongre Yönetim Sistemi REST API"
+    });
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "JWT token giriniz: Bearer {token}"
+    });
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 builder.Services.AddRazorPages(options =>
 {
@@ -391,6 +458,8 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
+    app.UseSwagger();
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "AntAbstract API v1"));
 }
 else
 {
@@ -508,7 +577,10 @@ app.Use(async (ctx, next) =>
 
 app.UseAuthorization();
 
-app.UseRotativa();
+if (OperatingSystem.IsLinux())
+    RotativaConfiguration.Setup(app.Environment.WebRootPath, "");
+else
+    app.UseRotativa();
 
 #endregion
 
@@ -626,4 +698,16 @@ app.MapControllers();
 #endregion
 
 app.Run();
+
+static bool HasConfiguredValue(string? value)
+{
+    if (string.IsNullOrWhiteSpace(value))
+        return false;
+
+    var trimmed = value.Trim();
+
+    return !trimmed.StartsWith("#{", StringComparison.Ordinal) &&
+           !trimmed.StartsWith("SET_", StringComparison.OrdinalIgnoreCase);
+}
+
 public partial class Program { }
