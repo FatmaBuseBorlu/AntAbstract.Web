@@ -6,7 +6,6 @@ using AntAbstract.Infrastructure.Services.Doi;
 using AntAbstract.Infrastructure.Services.Email;
 using AntAbstract.Infrastructure.Services.Notifications;
 using AntAbstract.Infrastructure.Services.Pdf;
-using AntAbstract.Infrastructure.Services.Doi;
 using AntAbstract.Infrastructure.Services.Plagiarism;
 using AntAbstract.Infrastructure.Services.ReviewerRecommendation;
 using Microsoft.Extensions.Configuration;

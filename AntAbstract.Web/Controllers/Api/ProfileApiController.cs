@@ -147,7 +147,7 @@ namespace AntAbstract.Web.Controllers.Api
                     p.PaymentMethod,
                     p.PaymentDate,
                     p.TransactionId,
-                    conference = new { p.Conference.Id, p.Conference.Title }
+                    conference = p.Conference != null ? new { p.Conference.Id, p.Conference.Title } : null
                 })
                 .ToListAsync();
 
