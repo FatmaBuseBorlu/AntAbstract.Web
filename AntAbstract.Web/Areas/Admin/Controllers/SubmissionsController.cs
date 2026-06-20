@@ -44,6 +44,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly IEmailService _emailService;
         private readonly ILogger<SubmissionsController> _logger;
         private readonly IPlagiarismService _plagiarism;
+        private readonly AntAbstract.Infrastructure.Services.Doi.IDoiRegistrationService _doiRegistration;
         private readonly IDoiService _doiService;
 
         public SubmissionsController(
@@ -62,7 +63,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             IEmailService emailService,
             ILogger<SubmissionsController> logger,
             IPlagiarismService plagiarism,
-            IDoiService doiService)
+            IDoiService doiService,
+            AntAbstract.Infrastructure.Services.Doi.IDoiRegistrationService doiRegistration)
         {
             _context = context;
             _submissionService = submissionService;
@@ -80,6 +82,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _emailService = emailService;
             _plagiarism = plagiarism;
             _doiService = doiService;
+            _doiRegistration = doiRegistration;
         }
 
         private string T(string key, string fallback)
@@ -1181,6 +1184,67 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             else
             {
                 TempData["ErrorMessage"] = result.Message;
+            }
+
+            return RedirectBack(returnUrl, slug, id);
+        }
+
+        [HttpPost("/{slug}/Admin/Submissions/RegisterDoi/{id:guid}")]
+        [HttpPost("/Admin/Submissions/RegisterDoi/{id:guid}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RegisterDoi(string? slug, Guid id, string? returnUrl)
+        {
+            if (!_doiRegistration.IsConfigured)
+            {
+                TempData["ErrorMessage"] = "DataCite servisi yapılandırılmamış.";
+                return RedirectBack(returnUrl, slug, id);
+            }
+
+            var submission = await GetAccessibleSubmissionAsync(id, slug, null);
+            if (submission == null)
+            {
+                TempData["ErrorMessage"] = "Bildiri bulunamadı.";
+                return RedirectBack(returnUrl, slug);
+            }
+
+            var authors = submission.SubmissionAuthors?
+                .OrderBy(a => a.Order)
+                .Select(a => new AntAbstract.Infrastructure.Services.Doi.DoiRegistrationAuthor
+                {
+                    FirstName = a.FirstName,
+                    LastName = a.LastName,
+                    Institution = a.Institution
+                })
+                .ToList() ?? new();
+
+            var result = await _doiRegistration.RegisterAsync(
+                new AntAbstract.Infrastructure.Services.Doi.DoiRegistrationRequest
+                {
+                    SubmissionId = id,
+                    Title = submission.Title,
+                    Authors = authors,
+                    ConferenceTitle = submission.Conference?.Title ?? "",
+                    Year = submission.Conference?.StartDate.Year ?? DateTime.UtcNow.Year,
+                    Abstract = submission.Abstract
+                });
+
+            if (result.Success && !string.IsNullOrWhiteSpace(result.DoiUrl))
+            {
+                var tracked = await _context.Submissions.FirstOrDefaultAsync(s => s.Id == id);
+                if (tracked != null)
+                {
+                    tracked.DoiUrl = result.DoiUrl;
+                    tracked.DoiStatus = Domain.Entities.DoiStatus.Assigned;
+                    tracked.DoiProvider = "DataCite";
+                    tracked.DoiAssignedAt = DateTime.UtcNow;
+                    tracked.DoiErrorMessage = null;
+                    await _context.SaveChangesAsync();
+                }
+                TempData["SuccessMessage"] = $"DOI başarıyla kaydedildi: {result.DoiUrl}";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = $"DOI kaydı başarısız: {result.Error}";
             }
 
             return RedirectBack(returnUrl, slug, id);
