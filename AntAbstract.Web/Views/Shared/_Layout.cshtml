@@ -746,6 +746,11 @@
             publicDisplayName = currentUser?.Email ?? User.Identity?.Name ?? L("Role_User", "Kullanıcı");
         }
 
+        if (isSuperAdmin && string.Equals(publicDisplayName, "Sistem Yöneticisi", StringComparison.OrdinalIgnoreCase))
+        {
+            publicDisplayName = L("SystemAdministratorDisplayName", "Sistem Yöneticisi");
+        }
+
         var publicEmail = currentUser?.Email ?? User.Identity?.Name ?? "";
 
         var publicRoleText = L("Role_User", "Kullanıcı");
@@ -789,7 +794,10 @@
             publicPanelIcon = "fas fa-gauge-high";
         }
 
-        var publicRoleUpper = publicRoleText.ToUpper(new CultureInfo("tr-TR"));
+        var publicTextCulture = CultureInfo.GetCultureInfo(
+            currentCulture.StartsWith("en", StringComparison.OrdinalIgnoreCase) ? "en-US" : "tr-TR");
+
+        var publicRoleUpper = publicRoleText.ToUpper(publicTextCulture);
 
         var nameParts = publicDisplayName
         .Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -809,7 +817,7 @@
             publicInitials = publicEmail.Substring(0, Math.Min(2, publicEmail.Length));
         }
 
-        publicInitials = publicInitials.ToUpper(new CultureInfo("tr-TR"));
+        publicInitials = publicInitials.ToUpper(publicTextCulture);
 
         var publicProfileImg = !string.IsNullOrWhiteSpace(currentUser?.ProfileImagePath)
         ? currentUser.ProfileImagePath
@@ -898,12 +906,12 @@
                             {
                                 <li class="nav-item">
                                     <a class="nav-link" href="/@slug/Speakers">
-                                        <i class="fas fa-chalkboard-teacher me-1"></i>Konuşmacılar
+                                        <i class="fas fa-chalkboard-teacher me-1"></i>@L("Menu_Speakers", "Konuşmacılar")
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" href="/@slug/Sponsors">
-                                        <i class="fas fa-handshake me-1"></i>Sponsorlar
+                                        <i class="fas fa-handshake me-1"></i>@L("Menu_Sponsors", "Sponsorlar")
                                     </a>
                                 </li>
                             }
