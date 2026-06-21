@@ -58,6 +58,14 @@ namespace AntAbstract.Domain.Entities
         [Display(Name = "İngilizce Sunum / Bildiri Başlığı")]
         public string? PresentationTitleEn { get; set; }
 
+        [StringLength(500)]
+        [Display(Name = "Canlı Yayın Linki")]
+        public string? LiveStreamUrl { get; set; }
+
+        [StringLength(50)]
+        [Display(Name = "Yayın Platformu")]
+        public string? LiveStreamPlatform { get; set; }
+
         [Display(Name = "Sıralama")]
         public int SortOrder { get; set; } = 0;
 

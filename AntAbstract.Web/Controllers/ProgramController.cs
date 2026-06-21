@@ -325,5 +325,36 @@ namespace AntAbstract.Web.Controllers
 
             return View(session);
         }
+
+        [HttpGet("/{slug}/Program/Posters")]
+        public async Task<IActionResult> Posters(string slug)
+        {
+            if (string.IsNullOrWhiteSpace(slug)) return NotFound();
+
+            var conference = await ResolveConferenceAsync(slug);
+            if (conference == null) return NotFound();
+
+            var canonicalSlug = GetCanonicalSlug(conference, slug);
+            SetSelectedConferenceSession(conference, canonicalSlug);
+
+            var posters = await _context.Submissions
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .Include(s => s.Author)
+                .Include(s => s.SubmissionAuthors)
+                .Where(s =>
+                    s.ConferenceId == conference.Id &&
+                    s.PresentationType.Contains("Poster") &&
+                    (s.Status == Domain.Entities.SubmissionStatus.Accepted ||
+                     s.Status == Domain.Entities.SubmissionStatus.Presented))
+                .OrderBy(s => s.Title)
+                .ToListAsync();
+
+            ViewBag.ConferenceName = conference.Title;
+            ViewBag.Slug = canonicalSlug;
+            ViewBag.ConferenceId = conference.Id;
+
+            return View(posters);
+        }
     }
 }

@@ -32,6 +32,8 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Dashboard
         public int TotalReferees { get; set; }
         public decimal TotalRevenue { get; set; }
         public string RevenueCurrency { get; set; } = "TRY";
+        public int UnreadNotifications { get; set; }
+        public int TotalNotifications24h { get; set; }
         public Conference? SelectedConference { get; set; }
 
         /// <summary>Kongre yöneticisine gösterilecek eksik yapılandırma uyarıları.</summary>

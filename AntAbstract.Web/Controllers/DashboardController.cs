@@ -888,6 +888,18 @@ namespace AntAbstract.Web.Controllers
                     .Distinct()
                     .CountAsync();
 
+                var adminUser = await _userManager.GetUserAsync(User);
+                if (adminUser != null)
+                {
+                    viewModel.UnreadNotifications = await _context.Notifications
+                        .AsNoTracking()
+                        .CountAsync(n => n.UserId == adminUser.Id && !n.IsRead);
+                    viewModel.TotalNotifications24h = await _context.Notifications
+                        .AsNoTracking()
+                        .CountAsync(n => n.UserId == adminUser.Id &&
+                                        n.CreatedAt >= DateTime.UtcNow.AddHours(-24));
+                }
+
                 // ── Eksik Yapılandırma Uyarıları ────────────────────────────────
                 var warnings = new List<ConfigWarning>();
                 var currentSlug = GetSlug();

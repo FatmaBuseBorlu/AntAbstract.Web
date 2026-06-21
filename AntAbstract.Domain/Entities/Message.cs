@@ -29,5 +29,10 @@ namespace AntAbstract.Domain.Entities
         [ForeignKey("ReceiverId")]
         public AppUser Receiver { get; set; } = null!;
         public bool IsDeleted { get; set; } = false;
+
+        public Guid? ParentMessageId { get; set; }
+
+        [ForeignKey(nameof(ParentMessageId))]
+        public Message? ParentMessage { get; set; }
     }
 }
