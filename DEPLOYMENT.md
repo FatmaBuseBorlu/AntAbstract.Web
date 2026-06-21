@@ -16,6 +16,7 @@ Sunucu: migration → restart
 ```
 
 Çıktı: `deploy_output/` klasörü (repoya girmez, her seferinde yeniden oluşturulur).
+Bu klasör içinde idempotent `migration.sql` dosyası da üretilir.
 
 ---
 
@@ -32,7 +33,6 @@ otomatik olarak değiştirilir. Plesk panelinde şu değerleri tanımla:
 | `STRIPE_PUBLISHABLE_KEY` | Stripe public key | Stripe kullanılıyorsa |
 | `STRIPE_SECRET_KEY` | Stripe secret key | Stripe kullanılıyorsa |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | Stripe kullanılıyorsa |
-| `STRIPE_BASE_URL` | Sitenin public URL'i (ör: https://antabstract.com) | Stripe kullanılıyorsa |
 | `PAYTR_MERCHANT_ID` | PayTR merchant ID | PayTR kullanılıyorsa |
 | `PAYTR_MERCHANT_KEY` | PayTR merchant key | PayTR kullanılıyorsa |
 | `PAYTR_MERCHANT_SALT` | PayTR merchant salt | PayTR kullanılıyorsa |
@@ -40,14 +40,24 @@ otomatik olarak değiştirilir. Plesk panelinde şu değerleri tanımla:
 | `SMTP_SERVER` | SMTP sunucu adresi | ✅ |
 | `SMTP_USERNAME` | SMTP kullanıcı adı | ✅ |
 | `SMTP_PASSWORD` | SMTP şifre | ✅ |
-| `PUBLIC_BASE_URL` | Sitenin public URL'i (ör: https://antabstract.com) | ✅ |
+| `PUBLIC_BASE_URL` | Sitenin public URL'i (ör: https://antabstract.com.tr) | ✅ |
 | `ORCID_CLIENT_ID` | ORCID OAuth client ID | ORCID kullanılıyorsa |
 | `ORCID_CLIENT_SECRET` | ORCID OAuth client secret | ORCID kullanılıyorsa |
 | `HEALTH_API_KEY` | Health endpoint API key | Opsiyonel |
+| `JWT_SECRET_KEY` | JWT token imzalama anahtarı (min 32 karakter) | ✅ |
+| `BOOTSTRAP_ADMIN_EMAIL` | İlk kurulumda oluşturulacak SuperAdmin e-postası | SuperAdmin yoksa gerekli |
+| `BOOTSTRAP_ADMIN_PASSWORD` | İlk kurulum SuperAdmin şifresi (min 12 karakter) | SuperAdmin yoksa gerekli |
+| `DOI_REPOSITORY_ID` | DataCite repository ID | DOI kullanılıyorsa |
+| `DOI_PASSWORD` | DataCite API şifresi | DOI kullanılıyorsa |
+| `DOI_PREFIX` | DOI prefix (ör: 10.12345) | DOI kullanılıyorsa |
 
 > **Not:** Plesk bu token'ları dosya yüklendikten sonra değiştirir.
 > Elle yükleme yapıyorsan `appsettings.Production.json` dosyasını
 > sunucuda doğrudan düzenle — git'e **asla** gerçek değerleri commit etme.
+>
+> `BOOTSTRAP_ADMIN_*` değerleri yalnızca sistemde bu e-postaya sahip kullanıcı
+> yoksa ilk SuperAdmin hesabını oluşturmak için kullanılır. Canlıya aldıktan
+> sonra bu hesabın şifresini değiştir ve mümkünse bootstrap değişkenlerini kaldır.
 
 ---
 
@@ -62,21 +72,22 @@ sunucunun httpdocs klasörüne yükle. Mevcut dosyaların üzerine yaz.
 
 ---
 
-## 4. Sunucu — Migration Çalıştır
+## 4. Sunucu — Migration SQL Uygula
 
-Uygulama bekleyen migration varsa **başlamayı reddeder**. SSH ile:
+> **ÖNEMLİ:** Uygulama bekleyen migration varsa **başlamayı reddeder**.
+> Deploy sonrası migration uygulanmazsa site 500 verir.
+
+Önerilen yol:
+
+1. `deploy_output/migration.sql` dosyasını aç.
+2. Plesk MSSQL yönetim aracı, SQL Server Management Studio veya hosting panelindeki SQL çalıştırma ekranında production veritabanına uygula.
+3. İşlem başarılı olduktan sonra uygulamayı restart et.
+
+Alternatif olarak sunucuda kaynak proje dosyaları da varsa EF CLI kullanılabilir:
 
 ```bash
-cd /var/www/vhosts/<domain>/httpdocs
-
-# Seçenek A — Startup'ta migrate (Program.cs'e eklenirse):
-dotnet AntAbstract.Web.dll
-
-# Seçenek B — EF CLI ile (önerilen):
 export ConnectionStrings__Default="Server=...;Database=...;..."
-dotnet ef database update \
-  --project AntAbstract.Infrastructure \
-  --startup-project AntAbstract.Web
+dotnet ef database update --project AntAbstract.Infrastructure --startup-project AntAbstract.Web
 ```
 
 ---
@@ -119,7 +130,7 @@ işaret ediyor — user-secrets dışında hiçbir yere gerçek credential yazma
 - [ ] `dotnet build -c Release` — hatasız build, 0 warning
 - [ ] `dotnet test` — tüm testler geçiyor
 - [ ] `dotnet list package --vulnerable` — High/Critical yok (veya kabul edilir)
-- [ ] `./deploy.sh` çıktısında "Bekleyen migration yok" veya migration hazır
+- [ ] `deploy_output/migration.sql` production veritabanına uygulandı
 - [ ] Plesk deployment variables güncel (yeni token eklendi mi?)
 - [ ] `deploy_output/` git'e commit edilmedi (`.gitignore`'da)
 

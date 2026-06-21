@@ -1,6 +1,7 @@
 ﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -11,7 +12,8 @@ namespace AntAbstract.Infrastructure.Data
         public static async Task Initialize(
             UserManager<AppUser> userManager,
             RoleManager<IdentityRole> roleManager,
-            AppDbContext context)
+            AppDbContext context,
+            IConfiguration configuration)
         {
             string[] roleNames =
             {
@@ -30,7 +32,30 @@ namespace AntAbstract.Infrastructure.Data
                 }
             }
 
-            var superAdminEmail = "admin@antabstract.com.tr";
+            var configuredEmail = configuration["BootstrapAdmin:Email"];
+            var configuredPassword = configuration["BootstrapAdmin:Password"];
+            var hasConfiguredEmail = HasConfiguredValue(configuredEmail);
+            var hasConfiguredPassword = HasConfiguredValue(configuredPassword);
+
+            if (hasConfiguredEmail != hasConfiguredPassword)
+            {
+                throw new InvalidOperationException(
+                    "BootstrapAdmin:Email ve BootstrapAdmin:Password birlikte yapılandırılmalıdır.");
+            }
+
+            if (!hasConfiguredEmail)
+            {
+                return;
+            }
+
+            var superAdminEmail = configuredEmail!.Trim();
+            var superAdminPassword = configuredPassword!.Trim();
+
+            if (superAdminPassword.Length < 12)
+            {
+                throw new InvalidOperationException(
+                    "BootstrapAdmin:Password en az 12 karakter olmalıdır.");
+            }
 
             var superAdmin = await userManager.FindByEmailAsync(superAdminEmail);
 
@@ -49,7 +74,7 @@ namespace AntAbstract.Infrastructure.Data
                     TenantId = null
                 };
 
-                var result = await userManager.CreateAsync(superAdmin, "P@ssword123");
+                var result = await userManager.CreateAsync(superAdmin, superAdminPassword);
 
                 if (result.Succeeded)
                 {
@@ -82,6 +107,17 @@ namespace AntAbstract.Infrastructure.Data
             {
                 await userManager.AddToRoleAsync(superAdmin, "SuperAdmin");
             }
+        }
+
+        private static bool HasConfiguredValue(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            var trimmed = value.Trim();
+
+            return !trimmed.StartsWith("#{", StringComparison.Ordinal) &&
+                   !trimmed.StartsWith("SET_", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

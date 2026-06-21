@@ -49,7 +49,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             // ── Stripe yapılandırması ────────────────────────────────────────
             var stripeKey = _configuration["Stripe:SecretKey"];
-            var stripeOk = !string.IsNullOrWhiteSpace(stripeKey) && !stripeKey.StartsWith("SET_VIA");
+            var stripeOk = HasConfiguredValue(stripeKey);
 
             // ── Audit queue ──────────────────────────────────────────────────
             var auditQueuePending = _auditQueue.PendingCount;
@@ -148,7 +148,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             try { dbOk = await _context.Database.CanConnectAsync(); } catch { }
 
             var stripeKey = _configuration["Stripe:SecretKey"];
-            var stripeOk = !string.IsNullOrWhiteSpace(stripeKey) && !stripeKey.StartsWith("SET_VIA");
+            var stripeOk = HasConfiguredValue(stripeKey);
 
             return Ok(new
             {
@@ -172,11 +172,21 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             // Dış araçlar için X-Health-Key header kontrolü
             var configuredKey = _configuration["Health:StatusApiKey"];
-            if (string.IsNullOrWhiteSpace(configuredKey) || configuredKey.StartsWith("SET_VIA"))
+            if (!HasConfiguredValue(configuredKey))
                 return false;
 
             var providedKey = Request.Headers["X-Health-Key"].FirstOrDefault();
-            return string.Equals(configuredKey, providedKey, StringComparison.Ordinal);
+            return string.Equals(configuredKey!.Trim(), providedKey, StringComparison.Ordinal);
+        }
+
+        private static bool HasConfiguredValue(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            var trimmed = value.Trim();
+            return !trimmed.StartsWith("#{", StringComparison.Ordinal) &&
+                   !trimmed.StartsWith("SET_", StringComparison.OrdinalIgnoreCase);
         }
     }
 

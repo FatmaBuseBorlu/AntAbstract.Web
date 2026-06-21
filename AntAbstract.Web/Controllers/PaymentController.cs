@@ -258,8 +258,12 @@ namespace AntAbstract.Web.Controllers
 
         private static bool IsConfiguredSecret(string? value)
         {
-            return !string.IsNullOrWhiteSpace(value) &&
-                   !value.StartsWith("#{", StringComparison.Ordinal);
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            var trimmed = value.Trim();
+            return !trimmed.StartsWith("#{", StringComparison.Ordinal) &&
+                   !trimmed.StartsWith("SET_", StringComparison.OrdinalIgnoreCase);
         }
 
         private bool IsStripeConfigured()

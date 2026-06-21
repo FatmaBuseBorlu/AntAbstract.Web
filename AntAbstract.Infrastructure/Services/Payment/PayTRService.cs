@@ -29,9 +29,19 @@ namespace AntAbstract.Infrastructure.Services.Payment
         }
 
         public bool IsConfigured =>
-            !string.IsNullOrWhiteSpace(_merchantId) &&
-            !string.IsNullOrWhiteSpace(_merchantKey) &&
-            !string.IsNullOrWhiteSpace(_merchantSalt);
+            HasConfiguredValue(_merchantId) &&
+            HasConfiguredValue(_merchantKey) &&
+            HasConfiguredValue(_merchantSalt);
+
+        private static bool HasConfiguredValue(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            var trimmed = value.Trim();
+            return !trimmed.StartsWith("#{", StringComparison.Ordinal) &&
+                   !trimmed.StartsWith("SET_", StringComparison.OrdinalIgnoreCase);
+        }
 
         public async Task<PayTRTokenResult> GetIframeTokenAsync(PayTRPaymentRequest req)
         {
