@@ -29,11 +29,15 @@ namespace AntAbstract.Infrastructure.Services.Doi
         }
 
         public bool IsConfigured =>
-            !string.IsNullOrWhiteSpace(_repositoryId) &&
-            !string.IsNullOrWhiteSpace(_password) &&
-            !string.IsNullOrWhiteSpace(_prefix) &&
-            !_repositoryId!.StartsWith("#{") &&
-            !_password!.StartsWith("#{");
+            HasValue(_repositoryId) &&
+            HasValue(_password) &&
+            HasValue(_prefix) &&
+            HasValue(_landingPageBase);
+
+        private static bool HasValue(string? v) =>
+            !string.IsNullOrWhiteSpace(v) &&
+            !v!.StartsWith("#{") &&
+            !v.StartsWith("SET_VIA", StringComparison.OrdinalIgnoreCase);
 
         public async Task<DoiRegistrationResult> RegisterAsync(DoiRegistrationRequest request)
         {
