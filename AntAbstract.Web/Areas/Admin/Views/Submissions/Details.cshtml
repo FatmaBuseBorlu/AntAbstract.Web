@@ -611,6 +611,25 @@
                             </button>
                         </form>
 
+                        @{
+                            var registerDoiUrl = string.IsNullOrWhiteSpace(doiSlug)
+                                ? $"/Admin/Submissions/RegisterDoi/{Model.Id}"
+                                : $"/{doiSlug}/Admin/Submissions/RegisterDoi/{Model.Id}";
+                            var doiRegConfigured = ViewBag.DoiRegistrationConfigured as bool? ?? false;
+                        }
+
+                        @if (doiRegConfigured && string.IsNullOrWhiteSpace(Model.DoiUrl))
+                        {
+                            <form method="post" action="@registerDoiUrl" class="mb-2">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+                                <button type="submit" class="btn btn-primary btn-sm w-100">
+                                    <i class="fas fa-cloud-upload-alt me-1"></i>DataCite'a Otomatik Kaydet
+                                </button>
+                            </form>
+                            <div class="text-center text-muted small mb-2">veya</div>
+                        }
+
                         <form method="post" action="@setDoiUrl">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
@@ -622,7 +641,7 @@
                                        placeholder="https://doi.org/10.xxxx/..."
                                        required />
                                 <button type="submit" class="btn btn-outline-primary">
-                                    <i class="fas fa-save me-1"></i>Kaydet
+                                    <i class="fas fa-save me-1"></i>Manuel Kaydet
                                 </button>
                             </div>
                         </form>

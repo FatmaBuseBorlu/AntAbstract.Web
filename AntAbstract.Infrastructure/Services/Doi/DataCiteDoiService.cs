@@ -31,7 +31,9 @@ namespace AntAbstract.Infrastructure.Services.Doi
         public bool IsConfigured =>
             !string.IsNullOrWhiteSpace(_repositoryId) &&
             !string.IsNullOrWhiteSpace(_password) &&
-            !string.IsNullOrWhiteSpace(_prefix);
+            !string.IsNullOrWhiteSpace(_prefix) &&
+            !_repositoryId!.StartsWith("#{") &&
+            !_password!.StartsWith("#{");
 
         public async Task<DoiRegistrationResult> RegisterAsync(DoiRegistrationRequest request)
         {
@@ -40,9 +42,19 @@ namespace AntAbstract.Infrastructure.Services.Doi
 
             try
             {
-                var suffix = request.SubmissionId.ToString("N")[..12];
-                var doi = $"{_prefix}/{suffix}";
-                var landingPage = $"{_landingPageBase}/doi/{suffix}";
+                var code = !string.IsNullOrWhiteSpace(request.SubmissionCode)
+                    ? request.SubmissionCode
+                    : request.SubmissionId.ToString("N")[..8].ToUpperInvariant();
+
+                var slugPart = !string.IsNullOrWhiteSpace(request.Slug)
+                    ? $"{request.Slug}.{code}".ToLowerInvariant()
+                    : $"submission.{code}".ToLowerInvariant();
+
+                var doi = $"{_prefix}/{slugPart}";
+
+                var landingPage = !string.IsNullOrWhiteSpace(request.Slug)
+                    ? $"{_landingPageBase.TrimEnd('/')}/{request.Slug}/Proceedings/Submission/{Uri.EscapeDataString(code)}"
+                    : $"{_landingPageBase.TrimEnd('/')}/Proceedings/Submission/{Uri.EscapeDataString(code)}";
 
                 var payload = new
                 {
