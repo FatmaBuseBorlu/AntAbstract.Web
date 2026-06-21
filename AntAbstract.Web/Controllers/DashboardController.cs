@@ -926,7 +926,7 @@ namespace AntAbstract.Web.Controllers
                 }
 
                 var stripeKey = _configuration["Stripe:SecretKey"];
-                if (string.IsNullOrWhiteSpace(stripeKey) || stripeKey.StartsWith("SET_VIA"))
+                if (!HasConfiguredValue(stripeKey))
                 {
                     var callerIsSuperAdmin = User.IsInRole("SuperAdmin");
                     warnings.Add(new ConfigWarning(
@@ -1225,6 +1225,16 @@ namespace AntAbstract.Web.Controllers
             await signInManager.SignOutAsync();
 
             return Redirect("/");
+        }
+
+        private static bool HasConfiguredValue(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            var trimmed = value.Trim();
+            return !trimmed.StartsWith("#{", StringComparison.Ordinal) &&
+                   !trimmed.StartsWith("SET_", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

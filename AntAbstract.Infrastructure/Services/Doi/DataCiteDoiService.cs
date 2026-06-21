@@ -34,10 +34,15 @@ namespace AntAbstract.Infrastructure.Services.Doi
             HasValue(_prefix) &&
             HasValue(_landingPageBase);
 
-        private static bool HasValue(string? v) =>
-            !string.IsNullOrWhiteSpace(v) &&
-            !v!.StartsWith("#{") &&
-            !v.StartsWith("SET_VIA", StringComparison.OrdinalIgnoreCase);
+        private static bool HasValue(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            var trimmed = value.Trim();
+            return !trimmed.StartsWith("#{", StringComparison.Ordinal) &&
+                   !trimmed.StartsWith("SET_", StringComparison.OrdinalIgnoreCase);
+        }
 
         public async Task<DoiRegistrationResult> RegisterAsync(DoiRegistrationRequest request)
         {

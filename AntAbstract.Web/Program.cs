@@ -82,10 +82,10 @@ var jwtKey = builder.Configuration["Jwt:Key"] ?? "AntAbstract-Default-Key-Change
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "AntAbstract";
 
 if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing") &&
-    jwtKey.Contains("Default-Key"))
+    !IsSecureJwtKey(jwtKey))
 {
     throw new InvalidOperationException(
-        "Production'da varsayılan JWT key kullanılamaz. Jwt:Key ayarını yapılandırın.");
+        "Production'da Jwt:Key gerçek ve en az 32 karakterli bir secret olarak yapılandırılmalıdır.");
 }
 
 var authenticationBuilder = builder.Services
@@ -432,7 +432,8 @@ if (!app.Environment.IsEnvironment("Testing"))
             await AntAbstract.Infrastructure.Data.DbInitializer.Initialize(
                 userManager,
                 roleManager,
-                context
+                context,
+                builder.Configuration
             );
 
             await AntAbstract.Infrastructure.Data.DbSeeder.SeedRolesAndUsers(services);
@@ -715,6 +716,17 @@ static bool HasConfiguredValue(string? value)
 
     return !trimmed.StartsWith("#{", StringComparison.Ordinal) &&
            !trimmed.StartsWith("SET_", StringComparison.OrdinalIgnoreCase);
+}
+
+static bool IsSecureJwtKey(string? value)
+{
+    if (!HasConfiguredValue(value))
+        return false;
+
+    var trimmed = value!.Trim();
+
+    return trimmed.Length >= 32 &&
+           !trimmed.Contains("Default-Key", StringComparison.OrdinalIgnoreCase);
 }
 
 public partial class Program { }

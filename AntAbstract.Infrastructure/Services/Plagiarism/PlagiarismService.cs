@@ -30,7 +30,17 @@ namespace AntAbstract.Infrastructure.Services.Plagiarism
             _baseUrl = config["Plagiarism:BaseUrl"] ?? "https://api.turnitin.com/api/v1";
         }
 
-        public bool IsConfigured => !string.IsNullOrWhiteSpace(_apiKey);
+        public bool IsConfigured => HasConfiguredValue(_apiKey);
+
+        private static bool HasConfiguredValue(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            var trimmed = value.Trim();
+            return !trimmed.StartsWith("#{", StringComparison.Ordinal) &&
+                   !trimmed.StartsWith("SET_", StringComparison.OrdinalIgnoreCase);
+        }
 
         public async Task<PlagiarismReport> SubmitForCheckAsync(
             Guid submissionId,
