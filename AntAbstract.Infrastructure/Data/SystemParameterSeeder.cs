@@ -1,6 +1,8 @@
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
+using System.Text.Json;
 
 namespace AntAbstract.Infrastructure.Data
 {
@@ -11,282 +13,71 @@ namespace AntAbstract.Infrastructure.Data
             if (await context.SystemParameters.AnyAsync())
                 return;
 
+            var json = ReadEmbeddedJson();
+            if (!json.HasValue) return;
+
             var parameters = new List<SystemParameter>();
-            int order = 0;
 
-            // ── Akademik Unvanlar ────────────────────────────────────────────
-            var titles = new[]
+            foreach (var group in json.Value.EnumerateObject())
             {
-                ("Prof. Dr.", "Prof. Dr."),
-                ("Doç. Dr.", "Assoc. Prof. Dr."),
-                ("Dr. Öğr. Üyesi", "Asst. Prof. Dr."),
-                ("Öğr. Gör. Dr.", "Lecturer Dr."),
-                ("Öğr. Gör.", "Lecturer"),
-                ("Arş. Gör. Dr.", "Research Asst. Dr."),
-                ("Arş. Gör.", "Research Assistant"),
-                ("Dr.", "Dr."),
-                ("Uzm.", "Specialist"),
-                ("Öğrenci", "Student"),
-            };
-            foreach (var (tr, en) in titles)
-                parameters.Add(new SystemParameter { Group = "Title", Name = tr, NameEn = en, Order = order++ });
-
-            // ── Üniversiteler (YÖK güncel liste) ────────────────────────────
-            order = 0;
-            var universities = new[]
-            {
-                "Adana Alparslan Türkeş Bilim ve Teknoloji Üniversitesi",
-                "Adıyaman Üniversitesi",
-                "Afyon Kocatepe Üniversitesi",
-                "Ağrı İbrahim Çeçen Üniversitesi",
-                "Aksaray Üniversitesi",
-                "Amasya Üniversitesi",
-                "Anadolu Üniversitesi",
-                "Ankara Hacı Bayram Veli Üniversitesi",
-                "Ankara Müzik ve Güzel Sanatlar Üniversitesi",
-                "Ankara Sosyal Bilimler Üniversitesi",
-                "Ankara Üniversitesi",
-                "Ankara Yıldırım Beyazıt Üniversitesi",
-                "Antalya Bilim Üniversitesi",
-                "Ardahan Üniversitesi",
-                "Artvin Çoruh Üniversitesi",
-                "Atatürk Üniversitesi",
-                "Aydın Adnan Menderes Üniversitesi",
-                "Balıkesir Üniversitesi",
-                "Bandırma Onyedi Eylül Üniversitesi",
-                "Bartın Üniversitesi",
-                "Başkent Üniversitesi",
-                "Batman Üniversitesi",
-                "Bayburt Üniversitesi",
-                "Bilecik Şeyh Edebali Üniversitesi",
-                "Bingöl Üniversitesi",
-                "Bitlis Eren Üniversitesi",
-                "Boğaziçi Üniversitesi",
-                "Bolu Abant İzzet Baysal Üniversitesi",
-                "Burdur Mehmet Akif Ersoy Üniversitesi",
-                "Bursa Teknik Üniversitesi",
-                "Bursa Uludağ Üniversitesi",
-                "Çanakkale Onsekiz Mart Üniversitesi",
-                "Çankırı Karatekin Üniversitesi",
-                "Çukurova Üniversitesi",
-                "Dicle Üniversitesi",
-                "Dokuz Eylül Üniversitesi",
-                "Düzce Üniversitesi",
-                "Ege Üniversitesi",
-                "Erciyes Üniversitesi",
-                "Erzincan Binali Yıldırım Üniversitesi",
-                "Erzurum Teknik Üniversitesi",
-                "Eskişehir Osmangazi Üniversitesi",
-                "Eskişehir Teknik Üniversitesi",
-                "Fırat Üniversitesi",
-                "Galatasaray Üniversitesi",
-                "Gazi Üniversitesi",
-                "Gaziantep Üniversitesi",
-                "Gebze Teknik Üniversitesi",
-                "Giresun Üniversitesi",
-                "Gümüşhane Üniversitesi",
-                "Hacettepe Üniversitesi",
-                "Hakkari Üniversitesi",
-                "Harran Üniversitesi",
-                "Hatay Mustafa Kemal Üniversitesi",
-                "Hitit Üniversitesi",
-                "Iğdır Üniversitesi",
-                "Isparta Uygulamalı Bilimler Üniversitesi",
-                "İnönü Üniversitesi",
-                "İskenderun Teknik Üniversitesi",
-                "İstanbul Medeniyet Üniversitesi",
-                "İstanbul Teknik Üniversitesi",
-                "İstanbul Üniversitesi",
-                "İstanbul Üniversitesi-Cerrahpaşa",
-                "İzmir Bakırçay Üniversitesi",
-                "İzmir Demokrasi Üniversitesi",
-                "İzmir Kâtip Çelebi Üniversitesi",
-                "İzmir Yüksek Teknoloji Enstitüsü",
-                "Kafkas Üniversitesi",
-                "Kahramanmaraş İstiklal Üniversitesi",
-                "Kahramanmaraş Sütçü İmam Üniversitesi",
-                "Karabük Üniversitesi",
-                "Karadeniz Teknik Üniversitesi",
-                "Karamanoğlu Mehmetbey Üniversitesi",
-                "Kastamonu Üniversitesi",
-                "Kayseri Üniversitesi",
-                "Kırıkkale Üniversitesi",
-                "Kırklareli Üniversitesi",
-                "Kırşehir Ahi Evran Üniversitesi",
-                "Kilis 7 Aralık Üniversitesi",
-                "Kocaeli Üniversitesi",
-                "Konya Teknik Üniversitesi",
-                "Kütahya Dumlupınar Üniversitesi",
-                "Malatya Turgut Özal Üniversitesi",
-                "Manisa Celâl Bayar Üniversitesi",
-                "Mardin Artuklu Üniversitesi",
-                "Marmara Üniversitesi",
-                "Mersin Üniversitesi",
-                "Mimar Sinan Güzel Sanatlar Üniversitesi",
-                "Muğla Sıtkı Koçman Üniversitesi",
-                "Munzur Üniversitesi",
-                "Muş Alparslan Üniversitesi",
-                "Necmettin Erbakan Üniversitesi",
-                "Nevşehir Hacı Bektaş Veli Üniversitesi",
-                "Niğde Ömer Halisdemir Üniversitesi",
-                "Ondokuz Mayıs Üniversitesi",
-                "Ordu Üniversitesi",
-                "Orta Doğu Teknik Üniversitesi",
-                "Osmaniye Korkut Ata Üniversitesi",
-                "Pamukkale Üniversitesi",
-                "Recep Tayyip Erdoğan Üniversitesi",
-                "Sakarya Üniversitesi",
-                "Sakarya Uygulamalı Bilimler Üniversitesi",
-                "Samsun Üniversitesi",
-                "Selçuk Üniversitesi",
-                "Siirt Üniversitesi",
-                "Sinop Üniversitesi",
-                "Sivas Cumhuriyet Üniversitesi",
-                "Sivas Bilim ve Teknoloji Üniversitesi",
-                "Süleyman Demirel Üniversitesi",
-                "Şırnak Üniversitesi",
-                "Tarsus Üniversitesi",
-                "Tekirdağ Namık Kemal Üniversitesi",
-                "Tokat Gaziosmanpaşa Üniversitesi",
-                "Trabzon Üniversitesi",
-                "Trakya Üniversitesi",
-                "Uşak Üniversitesi",
-                "Van Yüzüncü Yıl Üniversitesi",
-                "Yalova Üniversitesi",
-                "Yıldız Teknik Üniversitesi",
-                "Yozgat Bozok Üniversitesi",
-                "Zonguldak Bülent Ecevit Üniversitesi",
-                // Vakıf üniversiteleri (seçilmiş)
-                "Acıbadem Mehmet Ali Aydınlar Üniversitesi",
-                "Altınbaş Üniversitesi",
-                "Atılım Üniversitesi",
-                "Bahçeşehir Üniversitesi",
-                "Beykent Üniversitesi",
-                "Bilkent Üniversitesi",
-                "Çankaya Üniversitesi",
-                "Doğuş Üniversitesi",
-                "Hasan Kalyoncu Üniversitesi",
-                "İstanbul Bilgi Üniversitesi",
-                "İstanbul Kültür Üniversitesi",
-                "İstanbul Ticaret Üniversitesi",
-                "İzmir Ekonomi Üniversitesi",
-                "Kadir Has Üniversitesi",
-                "Koç Üniversitesi",
-                "Maltepe Üniversitesi",
-                "MEF Üniversitesi",
-                "Nişantaşı Üniversitesi",
-                "Özyeğin Üniversitesi",
-                "Sabancı Üniversitesi",
-                "TED Üniversitesi",
-                "TOBB Ekonomi ve Teknoloji Üniversitesi",
-                "Yaşar Üniversitesi",
-                "Yeditepe Üniversitesi",
-            };
-            foreach (var u in universities)
-                parameters.Add(new SystemParameter { Group = "University", Name = u, Order = order++ });
-
-            // ── Fakülteler ───────────────────────────────────────────────────
-            order = 0;
-            var faculties = new[]
-            {
-                ("Diş Hekimliği Fakültesi", "Faculty of Dentistry"),
-                ("Eczacılık Fakültesi", "Faculty of Pharmacy"),
-                ("Edebiyat Fakültesi", "Faculty of Letters"),
-                ("Eğitim Fakültesi", "Faculty of Education"),
-                ("Fen Fakültesi", "Faculty of Science"),
-                ("Fen-Edebiyat Fakültesi", "Faculty of Arts and Sciences"),
-                ("Güzel Sanatlar Fakültesi", "Faculty of Fine Arts"),
-                ("Hemşirelik Fakültesi", "Faculty of Nursing"),
-                ("Hukuk Fakültesi", "Faculty of Law"),
-                ("İktisadi ve İdari Bilimler Fakültesi", "Faculty of Economics and Administrative Sciences"),
-                ("İlahiyat Fakültesi", "Faculty of Theology"),
-                ("İletişim Fakültesi", "Faculty of Communication"),
-                ("İnsan ve Toplum Bilimleri Fakültesi", "Faculty of Humanities and Social Sciences"),
-                ("İşletme Fakültesi", "Faculty of Business"),
-                ("Mimarlık Fakültesi", "Faculty of Architecture"),
-                ("Mühendislik Fakültesi", "Faculty of Engineering"),
-                ("Mühendislik ve Doğa Bilimleri Fakültesi", "Faculty of Engineering and Natural Sciences"),
-                ("Sağlık Bilimleri Fakültesi", "Faculty of Health Sciences"),
-                ("Sanat ve Tasarım Fakültesi", "Faculty of Art and Design"),
-                ("Spor Bilimleri Fakültesi", "Faculty of Sport Sciences"),
-                ("Teknoloji Fakültesi", "Faculty of Technology"),
-                ("Tıp Fakültesi", "Faculty of Medicine"),
-                ("Turizm Fakültesi", "Faculty of Tourism"),
-                ("Veteriner Fakültesi", "Faculty of Veterinary Medicine"),
-                ("Ziraat Fakültesi", "Faculty of Agriculture"),
-                ("Diğer", "Other"),
-            };
-            foreach (var (tr, en) in faculties)
-                parameters.Add(new SystemParameter { Group = "Faculty", Name = tr, NameEn = en, Order = order++ });
-
-            // ── Bölümler ─────────────────────────────────────────────────────
-            order = 0;
-            var departments = new[]
-            {
-                ("Bilgisayar Mühendisliği", "Computer Engineering"),
-                ("Bilişim Sistemleri Mühendisliği", "Information Systems Engineering"),
-                ("Biyokimya", "Biochemistry"),
-                ("Biyoloji", "Biology"),
-                ("Biyomedikal Mühendisliği", "Biomedical Engineering"),
-                ("Cerrahi Tıp Bilimleri", "Surgical Medical Sciences"),
-                ("Coğrafya", "Geography"),
-                ("Çevre Mühendisliği", "Environmental Engineering"),
-                ("Dahili Tıp Bilimleri", "Internal Medical Sciences"),
-                ("Diş Hekimliği", "Dentistry"),
-                ("Eczacılık", "Pharmacy"),
-                ("Eğitim Bilimleri", "Educational Sciences"),
-                ("Elektrik-Elektronik Mühendisliği", "Electrical-Electronics Engineering"),
-                ("Endüstri Mühendisliği", "Industrial Engineering"),
-                ("Fen Bilgisi Eğitimi", "Science Education"),
-                ("Fizik", "Physics"),
-                ("Gıda Mühendisliği", "Food Engineering"),
-                ("Grafik Tasarımı", "Graphic Design"),
-                ("Halk Sağlığı", "Public Health"),
-                ("Hemşirelik", "Nursing"),
-                ("Hukuk", "Law"),
-                ("İç Mimarlık", "Interior Architecture"),
-                ("İktisat", "Economics"),
-                ("İlköğretim Matematik Eğitimi", "Primary Mathematics Education"),
-                ("İngiliz Dili ve Edebiyatı", "English Language and Literature"),
-                ("İnşaat Mühendisliği", "Civil Engineering"),
-                ("İşletme", "Business Administration"),
-                ("Kimya", "Chemistry"),
-                ("Kimya Mühendisliği", "Chemical Engineering"),
-                ("Klinik Eczacılık", "Clinical Pharmacy"),
-                ("Makine Mühendisliği", "Mechanical Engineering"),
-                ("Malzeme Bilimi ve Mühendisliği", "Materials Science and Engineering"),
-                ("Matematik", "Mathematics"),
-                ("Matematik Eğitimi", "Mathematics Education"),
-                ("Mekatronik Mühendisliği", "Mechatronics Engineering"),
-                ("Mimarlık", "Architecture"),
-                ("Moleküler Biyoloji ve Genetik", "Molecular Biology and Genetics"),
-                ("Müzik", "Music"),
-                ("Okul Öncesi Eğitimi", "Pre-school Education"),
-                ("Psikoloji", "Psychology"),
-                ("Radyo, Televizyon ve Sinema", "Radio, Television and Cinema"),
-                ("Rehberlik ve Psikolojik Danışmanlık", "Guidance and Psychological Counseling"),
-                ("Sağlık Yönetimi", "Health Management"),
-                ("Sınıf Eğitimi", "Primary Education"),
-                ("Siyaset Bilimi ve Kamu Yönetimi", "Political Science and Public Administration"),
-                ("Sosyoloji", "Sociology"),
-                ("Tarih", "History"),
-                ("Temel Tıp Bilimleri", "Basic Medical Sciences"),
-                ("Tıp", "Medicine"),
-                ("Turizm İşletmeciliği", "Tourism Management"),
-                ("Türk Dili ve Edebiyatı", "Turkish Language and Literature"),
-                ("Türkçe Eğitimi", "Turkish Education"),
-                ("Uluslararası İlişkiler", "International Relations"),
-                ("Uluslararası Ticaret ve Lojistik", "International Trade and Logistics"),
-                ("Veterinerlik", "Veterinary Medicine"),
-                ("Yazılım Mühendisliği", "Software Engineering"),
-                ("Yönetim Bilişim Sistemleri", "Management Information Systems"),
-                ("Diğer", "Other"),
-            };
-            foreach (var (tr, en) in departments)
-                parameters.Add(new SystemParameter { Group = "Department", Name = tr, NameEn = en, Order = order++ });
+                int order = 0;
+                foreach (var item in group.Value.EnumerateArray())
+                {
+                    if (item.ValueKind == JsonValueKind.String)
+                    {
+                        parameters.Add(new SystemParameter
+                        {
+                            Group = group.Name,
+                            Name = item.GetString()!,
+                            Order = order++
+                        });
+                    }
+                    else if (item.ValueKind == JsonValueKind.Object)
+                    {
+                        parameters.Add(new SystemParameter
+                        {
+                            Group = group.Name,
+                            Name = item.GetProperty("name").GetString()!,
+                            NameEn = item.TryGetProperty("nameEn", out var en) ? en.GetString() : null,
+                            Order = order++
+                        });
+                    }
+                }
+            }
 
             context.SystemParameters.AddRange(parameters);
             await context.SaveChangesAsync();
+        }
+
+        private static JsonElement? ReadEmbeddedJson()
+        {
+            var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
+            var filePath = Path.Combine(dir, "SeedData", "system-parameters.json");
+
+            if (!File.Exists(filePath))
+            {
+                var projectDir = FindProjectRoot(dir);
+                if (projectDir != null)
+                    filePath = Path.Combine(projectDir, "Data", "SeedData", "system-parameters.json");
+            }
+
+            if (!File.Exists(filePath))
+                return null;
+
+            var text = File.ReadAllText(filePath);
+            return JsonDocument.Parse(text).RootElement;
+        }
+
+        private static string? FindProjectRoot(string startDir)
+        {
+            var dir = new DirectoryInfo(startDir);
+            while (dir != null)
+            {
+                if (File.Exists(Path.Combine(dir.FullName, "AntAbstract.Infrastructure.csproj")))
+                    return dir.FullName;
+                dir = dir.Parent;
+            }
+            return null;
         }
     }
 }
