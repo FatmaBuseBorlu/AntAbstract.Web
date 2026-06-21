@@ -304,7 +304,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
-    <link rel="stylesheet" href="~/css/admin-design-system.css" />
+    <link rel="stylesheet" href="~/css/admin-design-system.css" asp-append-version="true" />
 
     <style>
         :root {
@@ -2237,6 +2237,171 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
             }
 
             @RenderBody()
+
+            <style id="dashboard-dark-mode-late-overrides">
+                [data-theme="dark"] .content-wrapper :is(
+                    .tenants-card,
+                    .users-card,
+                    .users-filter-card,
+                    .conference-list-card,
+                    .conference-select-card,
+                    .page-blocks-card,
+                    .admin-list-card,
+                    .admin-filter-card,
+                    .admin-card,
+                    .stat-card,
+                    .action-card,
+                    .conference-card,
+                    .selection-hero-card,
+                    .section-block
+                ) {
+                    background: #1e293b !important;
+                    border-color: #334155 !important;
+                    color: #e2e8f0 !important;
+                    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22) !important;
+                }
+
+                [data-theme="dark"] .content-wrapper :is(
+                    .tenants-card-header,
+                    .users-card-header,
+                    .conference-list-header,
+                    .page-blocks-card-header,
+                    .admin-list-card-header,
+                    .admin-card-header
+                ) {
+                    background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.14), transparent 36%),
+                                linear-gradient(135deg, #1e293b 0%, #111827 100%) !important;
+                    border-color: #334155 !important;
+                    color: #e2e8f0 !important;
+                }
+
+                [data-theme="dark"] .content-wrapper :is(
+                    .tenants-card-title,
+                    .users-card-title,
+                    .conference-list-header h5,
+                    .page-blocks-card-title,
+                    .admin-list-card-title,
+                    .admin-card-title,
+                    .tenant-name,
+                    .user-name,
+                    .block-title,
+                    .conference-title,
+                    .conference-title-row h6,
+                    .selection-title,
+                    .stat-card .number,
+                    .stat-card .fw-semibold,
+                    .action-card strong
+                ) {
+                    color: #e2e8f0 !important;
+                }
+
+                [data-theme="dark"] .content-wrapper :is(
+                    .tenants-card-subtitle,
+                    .users-card-subtitle,
+                    .conference-list-header p,
+                    .page-blocks-card-subtitle,
+                    .admin-list-card-subtitle,
+                    .admin-card-subtitle,
+                    .tenant-id,
+                    .user-id,
+                    .user-email,
+                    .block-subtitle,
+                    .selection-description,
+                    .stat-card .label,
+                    .action-card small,
+                    .selected-info-text
+                ) {
+                    color: #94a3b8 !important;
+                }
+
+                [data-theme="dark"] .content-wrapper :is(
+                    .tenants-card-count,
+                    .users-card-count,
+                    .page-blocks-card-count,
+                    .admin-list-count,
+                    .tenant-meta-badge,
+                    .order-badge,
+                    .date-card,
+                    .conference-radio-visual,
+                    .selection-light-btn,
+                    .select-cancel-btn,
+                    .user-action-btn,
+                    .admin-action-btn
+                ) {
+                    background: #111827 !important;
+                    border-color: #334155 !important;
+                    color: #cbd5e1 !important;
+                }
+
+                [data-theme="dark"] .content-wrapper :is(
+                    .tenants-table,
+                    .users-table,
+                    .page-block-table,
+                    .all-conferences-table,
+                    .central-vitrin-table
+                ) thead th {
+                    background: #111827 !important;
+                    border-color: #334155 !important;
+                    color: #94a3b8 !important;
+                }
+
+                [data-theme="dark"] .content-wrapper :is(
+                    .tenants-table,
+                    .users-table,
+                    .page-block-table,
+                    .all-conferences-table,
+                    .central-vitrin-table
+                ) tbody td {
+                    background: #1e293b !important;
+                    border-color: #334155 !important;
+                    color: #e2e8f0 !important;
+                }
+
+                [data-theme="dark"] .content-wrapper :is(
+                    .tenants-table,
+                    .users-table,
+                    .page-block-table,
+                    .all-conferences-table,
+                    .central-vitrin-table
+                ) tbody tr:hover td {
+                    background: #273449 !important;
+                }
+
+                [data-theme="dark"] .content-wrapper :is(.conference-select-card, .conference-card) {
+                    background: #1e293b !important;
+                }
+
+                [data-theme="dark"] .content-wrapper :is(.conference-select-card:hover, .conference-card:hover) {
+                    background: #243247 !important;
+                    border-color: rgba(56, 189, 248, 0.28) !important;
+                }
+
+                [data-theme="dark"] .content-wrapper :is(.conference-select-card.is-selected, .conference-card.selected) {
+                    background: rgba(56, 189, 248, 0.12) !important;
+                    border-color: rgba(56, 189, 248, 0.42) !important;
+                }
+
+                [data-theme="dark"] .content-wrapper :is(.form-control, .form-select, .admin-filter-control) {
+                    background: #334155 !important;
+                    border-color: #334155 !important;
+                    color: #e2e8f0 !important;
+                }
+
+                [data-theme="dark"] .content-wrapper :is(.form-control, .form-select, .admin-filter-control)::placeholder {
+                    color: #94a3b8 !important;
+                }
+
+                [data-theme="dark"] .content-wrapper :is(.btn-light, .btn-outline-light, .btn-outline-secondary) {
+                    background: #111827 !important;
+                    border-color: #334155 !important;
+                    color: #cbd5e1 !important;
+                }
+
+                [data-theme="dark"] .content-wrapper :is(.btn-light, .btn-outline-light, .btn-outline-secondary):hover {
+                    background: #273449 !important;
+                    color: #38bdf8 !important;
+                }
+            </style>
         </div>
     </div>
 
