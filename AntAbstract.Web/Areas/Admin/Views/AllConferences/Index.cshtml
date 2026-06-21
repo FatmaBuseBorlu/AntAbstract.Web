@@ -2,9 +2,10 @@
 @using AntAbstract.WebUI.Models.ViewModels.Admin.AllConferences
 
 @model List<AllConferenceListItemViewModel>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Tüm Kongreler";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     ViewData["HideSelectedConferenceBar"] = true;
     Layout = "_LayoutDashboard";
 

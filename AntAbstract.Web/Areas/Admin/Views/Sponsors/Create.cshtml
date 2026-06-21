@@ -1,7 +1,8 @@
 @using AntAbstract.Domain.Entities
 @model Sponsor
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Sponsor Ekle";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
 }
 @await Html.PartialAsync("_Form", Model)

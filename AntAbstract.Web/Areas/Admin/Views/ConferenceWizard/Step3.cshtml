@@ -1,6 +1,7 @@
 @model List<AntAbstract.Domain.Entities.RegistrationType>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
-    ViewData["Title"] = "Yeni Kongre — Kayıt Tipleri";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     var slug = ViewBag.Slug as string ?? "";
     var confId = (Guid)ViewBag.ConferenceId;

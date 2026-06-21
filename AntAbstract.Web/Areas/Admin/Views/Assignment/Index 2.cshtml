@@ -1,0 +1,966 @@
+@using AntAbstract.Domain.Entities
+@using AntAbstract.Web.Models.ViewModels.Admin.Assignment
+
+@model AssignmentIndexViewModel
+
+@{
+    ViewData["Title"] = Localizer["PageTitle"].Value;
+    ViewData["HideSelectedConferenceBar"] = true;
+    Layout = "_LayoutDashboard";
+
+    var slug = Model.Slug;
+    var conferenceId = Model.ConferenceId;
+
+    var baseUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Assignment?conferenceId={conferenceId}"
+        : $"/{slug}/Admin/Assignment?conferenceId={conferenceId}";
+
+    var flowUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/ConferenceFlow?conferenceId={conferenceId}"
+        : $"/{slug}/Admin/ConferenceFlow?conferenceId={conferenceId}";
+
+    var workloadUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Assignment/Workload?conferenceId={conferenceId}"
+        : $"/{slug}/Admin/Assignment/Workload?conferenceId={conferenceId}";
+
+    var bulkAssignUrl = string.IsNullOrWhiteSpace(slug)
+        ? $"/Admin/Assignment/BulkAssign?conferenceId={conferenceId}"
+        : $"/{slug}/Admin/Assignment/BulkAssign?conferenceId={conferenceId}";
+
+    var changeConferenceUrl = "/Admin/ConferenceFlow?forceSelect=true";
+
+    string StatusLabel(string? status) => status switch
+    {
+        nameof(SubmissionStatus.New) => "Yeni",
+        nameof(SubmissionStatus.Pending) => "Beklemede",
+        nameof(SubmissionStatus.UnderReview) => "Hakem Sürecinde",
+        nameof(SubmissionStatus.Accepted) => "Kabul Edildi",
+        nameof(SubmissionStatus.Rejected) => "Reddedildi",
+        nameof(SubmissionStatus.RevisionRequired) => "Revizyon Gerekli",
+        nameof(SubmissionStatus.Presented) => "Sunuldu",
+        _ => string.IsNullOrWhiteSpace(status) ? "Bilinmiyor" : status
+    };
+
+    string StatusClass(string? status) => status switch
+    {
+        nameof(SubmissionStatus.New) => "status-new",
+        nameof(SubmissionStatus.Pending) => "status-pending",
+        nameof(SubmissionStatus.UnderReview) => "status-review",
+        nameof(SubmissionStatus.Accepted) => "status-accepted",
+        nameof(SubmissionStatus.Rejected) => "status-rejected",
+        nameof(SubmissionStatus.RevisionRequired) => "status-revision",
+        nameof(SubmissionStatus.Presented) => "status-presented",
+        _ => "status-default"
+    };
+
+    var filterSearch = Model.Search ?? "";
+    var filterStatus = Model.Status ?? "";
+    var filterAssigned = Model.AssignedFilter ?? "";
+}
+
+<div class="container-fluid assignment-page">
+
+    <div class="assignment-hero-card mb-4">
+        <div class="assignment-hero-left">
+            <div class="assignment-hero-icon">
+                <i class="fas fa-user-check"></i>
+            </div>
+
+            <div>
+                <div class="assignment-section-label">
+                    @Localizer["ConferenceOps"]
+                </div>
+
+                <h2 class="assignment-page-title">
+                    @Localizer["PageTitle"]
+                </h2>
+
+                <p class="assignment-page-description">
+                    @Localizer["PageDescription"]
+                </p>
+
+                <div class="selected-conference-pill">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>@Localizer["SelectedConference"]</span>
+                    <strong>@(string.IsNullOrWhiteSpace(Model.ConferenceTitle) ? Localizer["NoConferenceSelected"].Value : Model.ConferenceTitle)</strong>
+                    @if (!string.IsNullOrWhiteSpace(slug))
+                    {
+                        <em>/@slug</em>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="assignment-hero-actions">
+            <a href="@workloadUrl" class="btn assignment-outline-btn">
+                <i class="fas fa-balance-scale me-2"></i>
+                @Localizer["WorkloadBalance"]
+            </a>
+            <a href="@flowUrl" class="btn assignment-light-btn">
+                <i class="fas fa-arrow-left me-2"></i>
+                @Localizer["BackToFlow"]
+            </a>
+            <a href="@changeConferenceUrl" class="btn assignment-outline-btn">
+                <i class="fas fa-exchange-alt me-2"></i>
+                @Localizer["ChangeConference"]
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-4 mb-4">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-4 mb-4">
+            <i class="fas fa-times-circle me-2"></i>
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <a href="@baseUrl" class="assignment-stat-card @(string.IsNullOrEmpty(filterAssigned) ? "stat-active" : "")">
+                <div class="stat-icon stat-blue">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div>
+                    <div class="stat-number">@Model.TotalCount</div>
+                    <div class="stat-label">Toplam Bildiri</div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <a href="@(baseUrl)&assigned=unassigned" class="assignment-stat-card @(filterAssigned == "unassigned" ? "stat-active" : "")">
+                <div class="stat-icon stat-orange">
+                    <i class="fas fa-user-slash"></i>
+                </div>
+                <div>
+                    <div class="stat-number">@Model.UnassignedCount</div>
+                    <div class="stat-label">Hakem Atanmamış</div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <a href="@(baseUrl)&assigned=assigned" class="assignment-stat-card @(filterAssigned == "assigned" ? "stat-active" : "")">
+                <div class="stat-icon stat-green">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div>
+                    <div class="stat-number">@Model.AssignedCount</div>
+                    <div class="stat-label">Hakem Atanmış</div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="assignment-stat-card">
+                <div class="stat-icon stat-purple">
+                    <i class="fas fa-magnifying-glass"></i>
+                </div>
+                <div>
+                    <div class="stat-number">@Model.UnderReviewCount</div>
+                    <div class="stat-label">İnceleme Sürecinde</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="assignment-filter-card mb-4">
+        <form method="get" action="@baseUrl">
+            <input type="hidden" name="conferenceId" value="@conferenceId" />
+            <input type="hidden" name="assigned" value="@filterAssigned" />
+
+            <div class="row g-3 align-items-end">
+                <div class="col-xl-5 col-lg-5">
+                    <label class="submission-label">Arama</label>
+                    <div class="submission-input-wrap">
+                        <i class="fas fa-search"></i>
+                        <input type="text"
+                               name="search"
+                               value="@filterSearch"
+                               placeholder="Başlık, yazar adı veya e-posta..." />
+                    </div>
+                </div>
+
+                <div class="col-xl-4 col-lg-4">
+                    <label class="submission-label">Bildiri Durumu</label>
+                    <select name="status" class="submission-select">
+                        <option value="">Tüm Durumlar</option>
+                        @foreach (var s in Enum.GetValues(typeof(SubmissionStatus)).Cast<SubmissionStatus>())
+                        {
+                            var val = s.ToString();
+                            if (filterStatus == val)
+                            {
+                                <option value="@val" selected>@StatusLabel(val)</option>
+                            }
+                            else
+                            {
+                                <option value="@val">@StatusLabel(val)</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-xl-2 col-lg-2">
+                    <button type="submit" class="btn assignment-primary-btn w-100">
+                        <i class="fas fa-filter me-2"></i>
+                        Filtrele
+                    </button>
+                </div>
+
+                <div class="col-xl-1 col-lg-1">
+                    <a href="@baseUrl" class="btn assignment-reset-btn w-100" title="Filtreleri Temizle">
+                        <i class="fas fa-rotate-left"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="assignment-list-card">
+        <div class="assignment-list-header">
+            <div>
+                <h5>Bildiri Listesi</h5>
+                <p>@Localizer["SubmissionListDesc"]</p>
+            </div>
+            <div class="assignment-list-meta">
+                <div class="assignment-count-pill">@Model.FilteredCount @Localizer["Submissions"]</div>
+            </div>
+        </div>
+
+        @if (!Model.Items.Any())
+        {
+            <div class="assignment-empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-file-circle-question"></i>
+                </div>
+                <h4>@Localizer["NoSubmissionsFound"]</h4>
+                <p>@Localizer["NoSubmissionsMessage"]</p>
+                <a href="@baseUrl" class="btn assignment-light-btn">
+                    <i class="fas fa-rotate-left me-2"></i>
+                    @Localizer["ClearFilters"]
+                </a>
+            </div>
+        }
+        else
+        {
+            <form method="post" action="@bulkAssignUrl" id="bulkAssignmentForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="conferenceId" value="@conferenceId" />
+
+                <div class="bulk-assignment-toolbar">
+                    <div class="bulk-assignment-summary">
+                        <span id="bulkSelectedCount">0</span>
+                        <strong>@Localizer["SubmissionsSelected"]</strong>
+                        <small>@Localizer["BulkAssignNote"]</small>
+                    </div>
+
+                    <div class="bulk-assignment-controls">
+                        <select name="reviewerId"
+                                class="bulk-reviewer-select"
+                                aria-label="Toplu atanacak hakem"
+                                disabled="@(!Model.BulkReviewers.Any())">
+                            <option value="">@Localizer["SelectReferee"]</option>
+                            @foreach (var reviewer in Model.BulkReviewers)
+                            {
+                                var label = string.IsNullOrWhiteSpace(reviewer.Email)
+                                    ? $"{reviewer.FullName} ({reviewer.CurrentLoad}/{reviewer.MaxLoad})"
+                                    : $"{reviewer.FullName} - {reviewer.Email} ({reviewer.CurrentLoad}/{reviewer.MaxLoad})";
+
+                                <option value="@reviewer.Id">@label</option>
+                            }
+                        </select>
+
+                        <button type="submit"
+                                class="btn bulk-assign-btn"
+                                id="bulkAssignSubmit"
+                                disabled>
+                            <i class="fas fa-users-gear me-2"></i>
+                            @Localizer["AssignToSelected"]
+                        </button>
+                    </div>
+                </div>
+
+                @if (!Model.BulkReviewers.Any())
+                {
+                    <div class="bulk-assignment-warning">
+                        <i class="fas fa-triangle-exclamation me-2"></i>
+                        @Localizer["NoAvailableReferees"]
+                    </div>
+                }
+
+                <div class="assignment-table-wrap">
+                    <table class="assignment-table">
+                        <thead>
+                            <tr>
+                                <th class="bulk-check-cell">
+                                    <input type="checkbox"
+                                           id="bulkCheckAll"
+                                           class="form-check-input"
+                                           aria-label="Tüm bildirileri seç" />
+                                </th>
+                                <th>@Localizer["Submission"]</th>
+                                <th>@Localizer["Author"]</th>
+                                <th>@Localizer["Referees"]</th>
+                                <th>@Localizer["Status"]</th>
+                                <th>@Localizer["Date"]</th>
+                                <th class="text-end">@Localizer["Action"]</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var item in Model.Items)
+                            {
+                                var assignUrl = string.IsNullOrWhiteSpace(slug)
+                                    ? $"/Admin/Assignment/Assign/{item.Id}?conferenceId={conferenceId}"
+                                    : $"/{slug}/Admin/Assignment/Assign/{item.Id}?conferenceId={conferenceId}";
+
+                                <tr>
+                                    <td class="bulk-check-cell">
+                                        <input type="checkbox"
+                                               name="submissionIds"
+                                               value="@item.Id"
+                                               class="form-check-input bulk-assignment-checkbox"
+                                               aria-label="@item.Title bildirisi seç" />
+                                    </td>
+
+                                    <td>
+                                        <div class="submission-title-cell">
+                                            <strong>@item.Title</strong>
+                                            @if (!string.IsNullOrWhiteSpace(item.Topic))
+                                            {
+                                                <span><i class="fas fa-tag"></i>@item.Topic</span>
+                                            }
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <div class="author-cell">
+                                            <div class="author-avatar-sm">
+                                                @(string.IsNullOrWhiteSpace(item.AuthorName) ? "Y" : item.AuthorName.Substring(0, 1).ToUpper())
+                                            </div>
+                                            <span>@(string.IsNullOrWhiteSpace(item.AuthorName) ? Localizer["NoAuthorInfo"].Value : item.AuthorName)</span>
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        @if (item.ReviewerCount > 0)
+                                        {
+                                            <span class="reviewer-badge-assigned">
+                                                <i class="fas fa-user-check"></i>
+                                                @item.ReviewerCount hakem
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="reviewer-badge-none">
+                                                <i class="fas fa-user-slash"></i>
+                                                Atanmadı
+                                            </span>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        <span class="assignment-status @StatusClass(item.Status)">
+                                            @StatusLabel(item.Status)
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <div class="date-cell">
+                                            <strong>@item.CreatedAt.ToString("dd MMM yyyy")</strong>
+                                            <span>@item.CreatedAt.ToString("HH:mm")</span>
+                                        </div>
+                                    </td>
+
+                                    <td class="text-end">
+                                        <a href="@assignUrl" class="btn assign-reviewer-btn">
+                                            <i class="fas fa-user-plus me-2"></i>
+                                            @(item.ReviewerCount > 0 ? "Düzenle" : "Hakem Ata")
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+
+            @if (Model.TotalPages > 1)
+            {
+                var pageBase = $"{baseUrl}&search={filterSearch}&status={filterStatus}&assigned={filterAssigned}";
+                <nav aria-label="Sayfalama" class="mt-3 pb-3">
+                    <ul class="pagination pagination-sm justify-content-center">
+                        <li class="page-item @(Model.HasPrev ? "" : "disabled")">
+                            <a class="page-link" href="@pageBase&page=@(Model.Page - 1)">‹</a>
+                        </li>
+                        @for (var p = Math.Max(1, Model.Page - 2); p <= Math.Min(Model.TotalPages, Model.Page + 2); p++)
+                        {
+                            <li class="page-item @(p == Model.Page ? "active" : "")">
+                                <a class="page-link" href="@pageBase&page=@p">@p</a>
+                            </li>
+                        }
+                        <li class="page-item @(Model.HasNext ? "" : "disabled")">
+                            <a class="page-link" href="@pageBase&page=@(Model.Page + 1)">›</a>
+                        </li>
+                    </ul>
+                    <p class="text-center text-muted small">
+                        @Model.FilteredCount bildiride @((Model.Page - 1) * Model.PageSize + 1)–@Math.Min(Model.Page * Model.PageSize, Model.FilteredCount) gösteriliyor
+                    </p>
+                </nav>
+            }
+        }
+    </div>
+
+</div>
+
+<style>
+    .assignment-page {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .assignment-hero-card {
+        background: radial-gradient(circle at top right, rgba(0, 174, 239, 0.15), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+        border: 1px solid #e8eef6;
+        border-radius: 28px;
+        padding: 1.55rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+    }
+
+    .assignment-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 300px;
+        flex: 1;
+    }
+
+    .assignment-hero-icon {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.55rem;
+        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.22);
+    }
+
+    .assignment-section-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .assignment-page-title {
+        margin: 0 0 0.35rem;
+        color: #0f172a;
+        font-size: 2rem;
+        font-weight: 900;
+        letter-spacing: -0.05em;
+    }
+
+    .assignment-page-description {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.96rem;
+        font-weight: 600;
+        line-height: 1.65;
+    }
+
+    .selected-conference-pill {
+        width: fit-content;
+        margin-top: 0.75rem;
+        display: inline-flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 0.5rem 0.85rem;
+        border-radius: 999px;
+        background: rgba(0, 174, 239, 0.10);
+        border: 1px solid rgba(0, 174, 239, 0.22);
+        color: #0d6efd;
+        font-size: 0.82rem;
+        font-weight: 900;
+    }
+
+    .selected-conference-pill span, .selected-conference-pill strong { color: #0d6efd; }
+    .selected-conference-pill em { color: #64748b; font-style: normal; font-weight: 900; }
+
+    .assignment-hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .assignment-light-btn, .assignment-outline-btn, .assignment-primary-btn, .assignment-reset-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0 1.1rem;
+        font-size: 0.9rem;
+        font-weight: 900;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .assignment-light-btn {
+        background: #ffffff;
+        color: #0f172a;
+        border: 1px solid #dbe3ef;
+    }
+
+    .assignment-light-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.32);
+        transform: translateY(-1px);
+    }
+
+    .assignment-outline-btn {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+    }
+
+    .assignment-outline-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.32);
+        transform: translateY(-1px);
+    }
+
+    .assignment-primary-btn {
+        border: none;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        box-shadow: 0 10px 24px rgba(13, 110, 253, 0.20);
+    }
+
+    .assignment-primary-btn:hover { color: #ffffff; transform: translateY(-1px); }
+
+    .assignment-reset-btn {
+        border: 1px solid #dbe3ef;
+        background: #ffffff;
+        color: #334155;
+    }
+
+    .assignment-reset-btn:hover { color: #0d6efd; border-color: rgba(13, 110, 253, 0.25); }
+
+    .assignment-stat-card {
+        min-height: 94px;
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 22px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.045);
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    a.assignment-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.075);
+        text-decoration: none;
+    }
+
+    .assignment-stat-card.stat-active {
+        border-color: rgba(13, 110, 253, 0.30);
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.08), 0 12px 30px rgba(15, 23, 42, 0.06);
+    }
+
+    .stat-icon {
+        width: 48px; height: 48px; min-width: 48px;
+        border-radius: 16px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .stat-blue { background: rgba(13, 110, 253, 0.10); color: #0d6efd; }
+    .stat-cyan { background: rgba(0, 174, 239, 0.12); color: #00aeef; }
+    .stat-orange { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+    .stat-green { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+    .stat-purple { background: rgba(124, 58, 237, 0.10); color: #7c3aed; }
+
+    .stat-number { color: #0f172a; font-size: 2rem; font-weight: 900; line-height: 1; margin-bottom: 0.2rem; }
+    .stat-label { color: #64748b; font-size: 0.94rem; font-weight: 700; }
+
+    .assignment-filter-card {
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 24px;
+        padding: 1.1rem;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+    }
+
+    .submission-label {
+        display: block; margin-bottom: 0.55rem;
+        color: #0f172a; font-size: 0.88rem; font-weight: 900;
+    }
+
+    .submission-input-wrap { position: relative; }
+    .submission-input-wrap i { position: absolute; top: 50%; left: 1rem; transform: translateY(-50%); color: #94a3b8; font-size: 0.92rem; }
+
+    .submission-input-wrap input, .submission-select {
+        width: 100%; min-height: 50px; border-radius: 18px;
+        border: 1px solid #dbe3ef; background: #ffffff;
+        color: #0f172a; font-size: 0.92rem; font-weight: 700;
+        padding: 0.75rem 1rem; outline: none; transition: all 0.18s ease;
+    }
+
+    .submission-input-wrap input { padding-left: 2.65rem; }
+    .submission-input-wrap input:focus, .submission-select:focus {
+        border-color: rgba(13, 110, 253, 0.28);
+        box-shadow: 0 0 0 0.22rem rgba(13, 110, 253, 0.10);
+    }
+
+    .assignment-list-card {
+        background: #ffffff;
+        border: 1px solid #e8eef6;
+        border-radius: 28px;
+        overflow: hidden;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+    }
+
+    .assignment-list-header {
+        padding: 1.4rem 1.5rem;
+        border-bottom: 1px solid #edf2f7;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .assignment-list-header h5 { margin: 0 0 0.25rem; color: #0f172a; font-size: 1.25rem; font-weight: 900; }
+    .assignment-list-header p { margin: 0; color: #64748b; font-size: 0.9rem; font-weight: 600; }
+
+    .assignment-count-pill {
+        padding: 0.45rem 0.85rem;
+        border-radius: 999px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 0.8rem;
+        font-weight: 900;
+    }
+
+    .assignment-list-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .bulk-assignment-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        padding: 1rem 1.25rem;
+        background: linear-gradient(135deg, #f8fbff, #ffffff);
+        border-bottom: 1px solid #edf2f7;
+    }
+
+    .bulk-assignment-summary {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        flex-wrap: wrap;
+        color: #475569;
+        font-size: 0.88rem;
+        font-weight: 800;
+    }
+
+    .bulk-assignment-summary span {
+        min-width: 34px;
+        min-height: 34px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(13, 110, 253, 0.10);
+        color: #0d6efd;
+        font-weight: 900;
+    }
+
+    .bulk-assignment-summary small {
+        color: #94a3b8;
+        font-size: 0.78rem;
+        font-weight: 800;
+    }
+
+    .bulk-assignment-controls {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+    }
+
+    .bulk-reviewer-select {
+        min-width: 320px;
+        min-height: 44px;
+        border-radius: 16px;
+        border: 1px solid #dbe3ef;
+        background: #ffffff;
+        color: #0f172a;
+        font-size: 0.88rem;
+        font-weight: 800;
+        padding: 0.65rem 0.85rem;
+        outline: none;
+    }
+
+    .bulk-reviewer-select:focus {
+        border-color: rgba(13, 110, 253, 0.28);
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.10);
+    }
+
+    .bulk-assign-btn {
+        min-height: 44px;
+        border: none;
+        border-radius: 999px;
+        padding: 0 1rem;
+        background: linear-gradient(135deg, #1d4ed8, #00aeef);
+        color: #ffffff;
+        font-size: 0.86rem;
+        font-weight: 900;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.16);
+    }
+
+    .bulk-assign-btn:hover:not(:disabled) {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 28px rgba(13, 110, 253, 0.24);
+    }
+
+    .bulk-assign-btn:disabled {
+        opacity: 0.48;
+        box-shadow: none;
+        cursor: not-allowed;
+    }
+
+    .bulk-assignment-warning {
+        padding: 0.85rem 1.25rem;
+        border-bottom: 1px solid #fed7aa;
+        background: #fff7ed;
+        color: #9a3412;
+        font-size: 0.86rem;
+        font-weight: 800;
+    }
+
+    .bulk-check-cell {
+        width: 48px;
+        text-align: center;
+    }
+
+    .assignment-table-wrap { overflow-x: auto; }
+
+    .assignment-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 800px;
+    }
+
+    .assignment-table thead th {
+        padding: 1rem 1.25rem;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 1px solid #edf2f7;
+        white-space: nowrap;
+    }
+
+    .assignment-table tbody td {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #edf2f7;
+        vertical-align: middle;
+    }
+
+    .assignment-table tbody tr:hover { background: #f8fbff; }
+    .assignment-table tbody tr:last-child td { border-bottom: none; }
+
+    .submission-title-cell strong { display: block; color: #0f172a; font-size: 0.95rem; font-weight: 900; line-height: 1.35; }
+    .submission-title-cell span { display: inline-flex; align-items: center; gap: 0.35rem; margin-top: 0.3rem; color: #64748b; font-size: 0.82rem; font-weight: 700; }
+
+    .author-cell { display: flex; align-items: center; gap: 0.6rem; }
+
+    .author-avatar-sm {
+        width: 36px; height: 36px; min-width: 36px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 0.88rem; font-weight: 900;
+    }
+
+    .author-cell span { color: #0f172a; font-size: 0.92rem; font-weight: 900; }
+
+    .reviewer-badge-assigned {
+        display: inline-flex; align-items: center; gap: 0.35rem;
+        padding: 0.32rem 0.65rem; border-radius: 999px;
+        font-size: 0.78rem; font-weight: 900; white-space: nowrap;
+        background: rgba(16, 185, 129, 0.10); color: #059669;
+        border: 1px solid rgba(16, 185, 129, 0.22);
+    }
+
+    .reviewer-badge-none {
+        display: inline-flex; align-items: center; gap: 0.35rem;
+        padding: 0.32rem 0.65rem; border-radius: 999px;
+        font-size: 0.78rem; font-weight: 900; white-space: nowrap;
+        background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0;
+    }
+
+    .assignment-status {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-height: 30px; padding: 0 0.75rem; border-radius: 999px;
+        font-size: 0.76rem; font-weight: 900; white-space: nowrap;
+    }
+
+    .status-new { background: rgba(0, 174, 239, 0.12); color: #00aeef; }
+    .status-pending { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+    .status-review { background: rgba(13, 110, 253, 0.10); color: #0d6efd; }
+    .status-accepted { background: rgba(34, 197, 94, 0.10); color: #16a34a; }
+    .status-rejected { background: rgba(239, 68, 68, 0.10); color: #ef4444; }
+    .status-revision { background: rgba(124, 58, 237, 0.10); color: #7c3aed; }
+    .status-presented { background: rgba(20, 184, 166, 0.12); color: #14b8a6; }
+    .status-default { background: #f1f5f9; color: #475569; }
+
+    .date-cell strong { display: block; color: #0f172a; font-size: 0.9rem; font-weight: 900; white-space: nowrap; }
+    .date-cell span { color: #64748b; font-size: 0.8rem; font-weight: 700; }
+
+    .assign-reviewer-btn {
+        min-height: 40px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border: none; border-radius: 999px; padding: 0 1rem;
+        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        color: #ffffff; font-weight: 900; white-space: nowrap; font-size: 0.86rem;
+        box-shadow: 0 10px 22px rgba(13, 110, 253, 0.18);
+        transition: all 0.2s ease;
+    }
+
+    .assign-reviewer-btn:hover { color: #ffffff; transform: translateY(-1px); box-shadow: 0 14px 28px rgba(13, 110, 253, 0.26); }
+
+    .assignment-empty-state {
+        padding: 3.5rem 1.5rem;
+        text-align: center;
+    }
+
+    .empty-icon {
+        width: 72px; height: 72px;
+        margin: 0 auto 1rem;
+        border-radius: 24px;
+        background: rgba(13, 110, 253, 0.10); color: #0d6efd;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 1.75rem;
+    }
+
+    .assignment-empty-state h4 { color: #0f172a; font-size: 1.28rem; font-weight: 900; margin-bottom: 0.45rem; }
+    .assignment-empty-state p { max-width: 520px; margin: 0 auto 1rem; color: #64748b; font-size: 0.92rem; font-weight: 600; line-height: 1.65; }
+
+    @@media (max-width: 992px) {
+        .assignment-hero-card { align-items: flex-start; flex-direction: column; }
+        .assignment-hero-left { align-items: flex-start; }
+        .assignment-hero-actions, .assignment-hero-actions .btn { width: 100%; }
+        .bulk-reviewer-select { min-width: 100%; width: 100%; }
+        .bulk-assignment-controls { width: 100%; }
+        .bulk-assignment-controls .btn { width: 100%; }
+        .assignment-page-title { font-size: 1.65rem; }
+    }
+
+    @@media (max-width: 768px) {
+        .assignment-hero-left { flex-direction: column; }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        (() => {
+            const form = document.getElementById('bulkAssignmentForm');
+
+            if (!form) {
+                return;
+            }
+
+            const checkAll = document.getElementById('bulkCheckAll');
+            const checkboxes = Array.from(form.querySelectorAll('.bulk-assignment-checkbox'));
+            const selectedCount = document.getElementById('bulkSelectedCount');
+            const submitButton = document.getElementById('bulkAssignSubmit');
+            const reviewerSelect = form.querySelector('select[name="reviewerId"]');
+
+            function updateBulkState() {
+                const count = checkboxes.filter(x => x.checked).length;
+
+                if (selectedCount) {
+                    selectedCount.textContent = count.toString();
+                }
+
+                if (checkAll) {
+                    checkAll.checked = count > 0 && count === checkboxes.length;
+                    checkAll.indeterminate = count > 0 && count < checkboxes.length;
+                }
+
+                if (submitButton) {
+                    submitButton.disabled = count === 0 || !reviewerSelect || !reviewerSelect.value;
+                }
+            }
+
+            checkAll?.addEventListener('change', () => {
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = checkAll.checked;
+                });
+
+                updateBulkState();
+            });
+
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateBulkState);
+            });
+
+            reviewerSelect?.addEventListener('change', updateBulkState);
+
+            form.addEventListener('submit', (event) => {
+                const count = checkboxes.filter(x => x.checked).length;
+
+                if (count === 0 || !reviewerSelect?.value) {
+                    event.preventDefault();
+                    updateBulkState();
+                }
+            });
+
+            updateBulkState();
+        })();
+    </script>
+}

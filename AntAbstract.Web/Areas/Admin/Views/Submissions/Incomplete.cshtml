@@ -1,8 +1,9 @@
 @model AntAbstract.Web.Models.ViewModels.Admin.Submissions.IncompleteSubmissionsViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @using Microsoft.AspNetCore.Routing
 @{
-    ViewData["Title"] = "Eksik Bildirileri Takip Et";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     ViewData["HideSelectedConferenceBar"] = true;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 

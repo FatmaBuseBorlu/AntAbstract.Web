@@ -1,6 +1,6 @@
 @using AntAbstract.Web.Areas.Admin.Controllers
 @{
-    ViewData["Title"] = "Sistem Sağlığı";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
 
     var dbOk          = (bool)ViewBag.DbOk;
@@ -19,14 +19,14 @@
                          ?? new();
 
     string Badge(bool ok) => ok
-        ? "<span class=\"badge bg-success\"><i class=\"fas fa-check me-1\"></i>OK</span>"
-        : "<span class=\"badge bg-danger\"><i class=\"fas fa-times me-1\"></i>HATA</span>";
+        ? $"<span class=\"badge bg-success\"><i class=\"fas fa-check me-1\"></i>OK</span>"
+        : $"<span class=\"badge bg-danger\"><i class=\"fas fa-times me-1\"></i>{Localizer["Error"].Value}</span>";
 }
 
 <div class="container-fluid py-4">
 
     <div class="d-flex align-items-center justify-content-between mb-4">
-        <h4 class="mb-0"><i class="fas fa-heartbeat me-2 text-danger"></i>Sistem Sağlığı</h4>
+        <h4 class="mb-0"><i class="fas fa-heartbeat me-2 text-danger"></i>@Localizer["PageTitle"]</h4>
         <small class="text-muted">@generatedAt.ToString("dd.MM.yyyy HH:mm:ss") UTC</small>
     </div>
 
@@ -40,7 +40,7 @@
                         <i class="fas fa-database"></i>
                     </div>
                     <div>
-                        <div class="fw-semibold">Veritabanı</div>
+                        <div class="fw-semibold">@Localizer["Database"]</div>
                         @Html.Raw(Badge(dbOk))
                         @if (!dbOk && dbError != null)
                         {
@@ -65,7 +65,7 @@
                         }
                         else
                         {
-                            <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-triangle me-1"></i>Yapılandırılmamış</span>
+                            <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-triangle me-1"></i>@Localizer["NotConfigured"]</span>
                         }
                     </div>
                 </div>
@@ -79,9 +79,9 @@
                         <i class="fas fa-layer-group"></i>
                     </div>
                     <div>
-                        <div class="fw-semibold">Audit Kuyruğu</div>
+                        <div class="fw-semibold">@Localizer["AuditQueue"]</div>
                         <span class="fw-bold fs-5">@(auditPending < 0 ? "—" : auditPending.ToString())</span>
-                        <div class="text-muted small">bekleyen kayıt</div>
+                        <div class="text-muted small">@Localizer["PendingRecords"]</div>
                     </div>
                 </div>
             </div>
@@ -94,12 +94,12 @@
                         <i class="fas fa-bell"></i>
                     </div>
                     <div>
-                        <div class="fw-semibold">Son 24 Saat</div>
+                        <div class="fw-semibold">@Localizer["Last24Hours"]</div>
                         <div class="small">
-                            Webhook: <strong>@wStats.Total</strong> / <span class="text-danger">@wStats.Failed hata</span>
+                            Webhook: <strong>@wStats.Total</strong> / <span class="text-danger">@wStats.Failed @Localizer["ErrorCount"]</span>
                         </div>
                         <div class="small">
-                            E-posta: <strong>@mStats.Total</strong> / <span class="text-danger">@mStats.Failed hata</span>
+                            E-posta: <strong>@mStats.Total</strong> / <span class="text-danger">@mStats.Failed @Localizer["ErrorCount"]</span>
                         </div>
                     </div>
                 </div>
@@ -113,20 +113,20 @@
         <div class="card-header bg-white border-0 pt-3 pb-0">
             <h6 class="mb-0">
                 <i class="fas fa-bolt me-2 text-warning"></i>
-                Son Webhook Hataları
+                @Localizer["RecentWebhookErrors"]
                 @if (webhookErrors.Any())
                 {
                     <span class="badge bg-danger ms-2">@webhookErrors.Count</span>
                 }
                 <a href="/Admin/Payments/WebhookLog?status=failed" class="btn btn-sm btn-outline-secondary ms-auto float-end">
-                    Tümünü Gör
+                    @Localizer["ViewAll"]
                 </a>
             </h6>
         </div>
         <div class="card-body p-0">
             @if (!webhookErrors.Any())
             {
-                <p class="text-muted p-3 mb-0"><i class="fas fa-check-circle text-success me-1"></i>Son dönemde webhook hatası yok.</p>
+                <p class="text-muted p-3 mb-0"><i class="fas fa-check-circle text-success me-1"></i>@Localizer["NoRecentWebhookErrors"]</p>
             }
             else
             {
@@ -134,10 +134,10 @@
                     <table class="table table-sm table-hover mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th>Tarih</th>
-                                <th>Event Tipi</th>
+                                <th>@Localizer["Date"]</th>
+                                <th>@Localizer["EventType"]</th>
                                 <th>Stripe Event ID</th>
-                                <th>Hata</th>
+                                <th>@Localizer["ErrorHeader"]</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -162,20 +162,20 @@
         <div class="card-header bg-white border-0 pt-3 pb-0">
             <h6 class="mb-0">
                 <i class="fas fa-envelope me-2 text-primary"></i>
-                Son Mail Hataları
+                @Localizer["RecentMailErrors"]
                 @if (mailErrors.Any())
                 {
                     <span class="badge bg-danger ms-2">@mailErrors.Count</span>
                 }
                 <a href="/Admin/EmailTemplates/SendLog?status=failed" class="btn btn-sm btn-outline-secondary ms-auto float-end">
-                    Tümünü Gör
+                    @Localizer["ViewAll"]
                 </a>
             </h6>
         </div>
         <div class="card-body p-0">
             @if (!mailErrors.Any())
             {
-                <p class="text-muted p-3 mb-0"><i class="fas fa-check-circle text-success me-1"></i>Son dönemde mail hatası yok.</p>
+                <p class="text-muted p-3 mb-0"><i class="fas fa-check-circle text-success me-1"></i>@Localizer["NoRecentMailErrors"]</p>
             }
             else
             {
@@ -183,11 +183,11 @@
                     <table class="table table-sm table-hover mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th>Tarih</th>
-                                <th>Alıcı</th>
-                                <th>Konu</th>
-                                <th>Şablon</th>
-                                <th>Hata</th>
+                                <th>@Localizer["Date"]</th>
+                                <th>@Localizer["Recipient"]</th>
+                                <th>@Localizer["Subject"]</th>
+                                <th>@Localizer["Template"]</th>
+                                <th>@Localizer["ErrorHeader"]</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -213,14 +213,13 @@
     {
         <div class="alert alert-warning border-0 rounded-4 mb-4">
             <i class="fas fa-exclamation-triangle me-2"></i>
-            <strong>Eksik mail şablonları:</strong> Aşağıdaki şablon key'leri tanımlı değil veya pasif —
-            mail hatırlatıcıları çalışsa da bu şablon bulunamaz ve sessizce atlanır.
+            <strong>@Localizer["MissingMailTemplates"]</strong> @Localizer["MissingTemplatesDescription"]
             <ul class="mb-0 mt-2 ps-3">
                 @foreach (var key in missingTemplates)
                 {
                     <li>
                         <code>@key</code>
-                        <a href="/Admin/EmailTemplates/Create" class="btn btn-sm btn-outline-warning ms-2">Şablon Oluştur</a>
+                        <a href="/Admin/EmailTemplates/Create" class="btn btn-sm btn-outline-warning ms-2">@Localizer["CreateTemplate"]</a>
                     </li>
                 }
             </ul>
@@ -230,13 +229,13 @@
     @* ── Rate Limiting ───────────────────────────────────────────── *@
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-header bg-white border-bottom fw-bold py-3">
-            <i class="fas fa-tachometer-alt me-2 text-warning"></i>Rate Limiting Politikaları
+            <i class="fas fa-tachometer-alt me-2 text-warning"></i>@Localizer["RateLimitPolicies"]
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-sm mb-0 small">
                     <thead class="table-light">
-                        <tr><th class="px-3">Politika</th><th>Limit</th><th>Kapsam</th></tr>
+                        <tr><th class="px-3">@Localizer["Policy"]</th><th>Limit</th><th>@Localizer["Scope"]</th></tr>
                     </thead>
                     <tbody>
                         @if (ratePolicies != null)
@@ -260,14 +259,14 @@
     {
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-header bg-white border-bottom fw-bold py-3">
-                <i class="fas fa-ban me-2 text-danger"></i>Son Rate Limit Reddleri
+                <i class="fas fa-ban me-2 text-danger"></i>@Localizer["RecentRateLimitRejections"]
                 <span class="badge bg-danger ms-2">@rateRejections.Count</span>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-sm mb-0 small">
                         <thead class="table-light">
-                            <tr><th class="px-3">Zaman</th><th>Path</th><th>IP</th></tr>
+                            <tr><th class="px-3">@Localizer["Time"]</th><th>Path</th><th>IP</th></tr>
                         </thead>
                         <tbody>
                             @foreach (var r in rateRejections)
@@ -290,7 +289,7 @@
     {
         <div class="alert alert-info border-0 rounded-4">
             <i class="fas fa-copy me-2"></i>
-            Son 24 saatte <strong>@wStats.Duplicate</strong> duplicate webhook eventi alındı — idempotency koruması devrede.
+            @Html.Raw(string.Format(Localizer["DuplicateWebhookInfo"].Value, wStats.Duplicate))
         </div>
     }
 

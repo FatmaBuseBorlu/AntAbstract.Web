@@ -1,8 +1,9 @@
 @using AntAbstract.Domain.Entities
 @model List<EmailLog>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "E-posta Gönderim Geçmişi";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
 
     int page         = (int)ViewBag.Page;

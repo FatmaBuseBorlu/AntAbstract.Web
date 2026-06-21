@@ -367,6 +367,43 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
         [data-theme="dark"] .btn-outline-secondary { color: var(--text-muted); border-color: var(--border-color); }
         [data-theme="dark"] .btn-outline-secondary:hover { background-color: #334155; color: #fff; }
 
+        /* Dark mode: tüm beyaz arka planları yakala */
+        [data-theme="dark"] .card-body,
+        [data-theme="dark"] .card-header,
+        [data-theme="dark"] .card-footer { background-color: var(--card-bg) !important; color: var(--text-dark); }
+        [data-theme="dark"] .list-group-item { background-color: var(--card-bg); color: var(--text-dark); border-color: var(--border-color); }
+        [data-theme="dark"] .border { border-color: var(--border-color) !important; }
+        [data-theme="dark"] .border-bottom { border-color: var(--border-color) !important; }
+        [data-theme="dark"] [style*="background:#fff"],
+        [data-theme="dark"] [style*="background: #fff"],
+        [data-theme="dark"] [style*="background:white"],
+        [data-theme="dark"] [style*="background: white"],
+        [data-theme="dark"] [style*="background:#ffffff"],
+        [data-theme="dark"] [style*="background: #ffffff"] { background-color: var(--card-bg) !important; }
+        [data-theme="dark"] [style*="background:#f"] { background-color: #1e293b !important; }
+        [data-theme="dark"] .badge { border-color: var(--border-color) !important; }
+        [data-theme="dark"] .text-muted { color: var(--text-muted) !important; }
+        [data-theme="dark"] .bg-opacity-10,
+        [data-theme="dark"] .bg-opacity-25 { opacity: 0.2; }
+        [data-theme="dark"] .rounded-3[style*="background"],
+        [data-theme="dark"] .rounded-4[style*="background"] { color: var(--text-dark); }
+        [data-theme="dark"] .page-link { background-color: var(--card-bg); color: var(--text-dark); border-color: var(--border-color); }
+        [data-theme="dark"] .page-item.active .page-link { background-color: var(--primary-color); border-color: var(--primary-color); }
+        [data-theme="dark"] .breadcrumb { background-color: transparent; }
+        [data-theme="dark"] .nav-tabs .nav-link { color: var(--text-muted); border-color: var(--border-color); }
+        [data-theme="dark"] .nav-tabs .nav-link.active { background-color: var(--card-bg); color: var(--text-dark); border-color: var(--border-color); }
+        [data-theme="dark"] .offcanvas { background-color: var(--card-bg); color: var(--text-dark); }
+        [data-theme="dark"] .content-wrapper { color: var(--text-dark); }
+        [data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3,
+        [data-theme="dark"] h4, [data-theme="dark"] h5, [data-theme="dark"] h6 { color: var(--text-dark); }
+        [data-theme="dark"] p { color: var(--text-muted); }
+        [data-theme="dark"] .sidebar-brand { color: var(--text-dark); }
+        [data-theme="dark"] .btn-outline-primary { color: var(--primary-color); border-color: var(--primary-color); }
+        [data-theme="dark"] .btn-outline-danger { color: #f87171; border-color: #f87171; }
+        [data-theme="dark"] .btn-outline-success { color: #4ade80; border-color: #4ade80; }
+        [data-theme="dark"] .btn-outline-warning { color: #fbbf24; border-color: #fbbf24; }
+        [data-theme="dark"] .btn-outline-info { color: #38bdf8; border-color: #38bdf8; }
+
         * {
             box-sizing: border-box;
         }
@@ -1378,19 +1415,19 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                 <a href="/Admin/EmailTemplates"
                    class="nav-link @(currentController == "EmailTemplates" ? "active" : "")">
                     <i class="fas fa-envelope-open-text text-primary"></i>
-                    E-posta Şablonları
+                    @L("Tools_EmailTemplates", "E-posta Şablonları")
                 </a>
 
                 <a href="/Admin/Broadcast"
                    class="nav-link @(currentController == "Broadcast" ? "active" : "")">
                     <i class="fas fa-paper-plane text-primary"></i>
-                    Toplu E-posta
+                    @L("Tools_BulkEmail", "Toplu E-posta")
                 </a>
 
                 <a href="/Admin/PermissionMatrix"
                    class="nav-link @(currentController == "PermissionMatrix" ? "active" : "")">
                     <i class="fas fa-shield-alt text-info"></i>
-                    Yetki Matrisi
+                    @L("Tools_PermissionMatrix", "Yetki Matrisi")
                 </a>
 
                 <div class="menu-label text-secondary">
@@ -1412,13 +1449,13 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                 <a href="/Admin/AuditLogs"
                    class="nav-link @(currentController == "AuditLogs" ? "active" : "")">
                     <i class="fas fa-history text-secondary"></i>
-                    Denetim Günlüğü
+                    @L("System_AuditLog", "Denetim Günlüğü")
                 </a>
 
                 <a href="/Admin/Health"
                    class="nav-link @(currentController == "Health" ? "active" : "")">
                     <i class="fas fa-heartbeat text-danger"></i>
-                    Sistem Sağlığı
+                    @L("System_Health", "Sistem Sağlığı")
                 </a>
             }
 
@@ -1650,13 +1687,13 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                     <a href="@(string.IsNullOrWhiteSpace(slug) ? "/Admin/Broadcast" : $"/{slug}/Admin/Broadcast")"
                        class="nav-link @(currentController == "Broadcast" ? "active" : "")">
                         <i class="fas fa-paper-plane text-primary"></i>
-                        Toplu E-posta
+                        @L("Tools_BulkEmail", "Toplu E-posta")
                     </a>
 
                     <a href="@(string.IsNullOrWhiteSpace(slug) ? "/Admin/PermissionMatrix" : $"/{slug}/Admin/PermissionMatrix")"
                        class="nav-link @(currentController == "PermissionMatrix" ? "active" : "")">
                         <i class="fas fa-shield-alt text-secondary"></i>
-                        Yetki Matrisi
+                        @L("Tools_PermissionMatrix", "Yetki Matrisi")
                     </a>
 
                     <a href="@websiteAdminUrl"
@@ -1697,7 +1734,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                     <a href="@broadcastUrl"
                        class="nav-link @(currentController == "Broadcast" ? "active" : "")">
                         <i class="fas fa-paper-plane text-primary"></i>
-                        Toplu E-posta
+                        @L("Tools_BulkEmail", "Toplu E-posta")
                     </a>
 
                     var attendanceUrl = string.IsNullOrWhiteSpace(slug)
@@ -1728,7 +1765,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                 <a href="@auditUrl"
                    class="nav-link @(currentController == "AuditLogs" ? "active" : "")">
                     <i class="fas fa-history text-secondary"></i>
-                    Denetim Günlüğü
+                    @L("System_AuditLog", "Denetim Günlüğü")
                 </a>
 
                 var healthUrl = string.IsNullOrWhiteSpace(slug)
@@ -1737,7 +1774,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                 <a href="@healthUrl"
                    class="nav-link @(currentController == "Health" ? "active" : "")">
                     <i class="fas fa-heartbeat text-danger"></i>
-                    Sistem Sağlığı
+                    @L("System_Health", "Sistem Sağlığı")
                 </a>
             }
         </div>

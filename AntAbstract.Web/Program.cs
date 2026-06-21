@@ -506,7 +506,7 @@ app.Use(async (ctx, next) =>
         "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com data:; " +
         "img-src 'self' data: https:; " +
         "connect-src 'self' https://api.stripe.com wss: ws:; " +
-        "frame-src https://js.stripe.com https://hooks.stripe.com https://www.paytr.com; " +
+        "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.paytr.com; " +
         "object-src 'none'; " +
         "base-uri 'self'; " +
         "form-action 'self' https://www.paytr.com;";

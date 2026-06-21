@@ -3,9 +3,10 @@
 @using System.Linq
 
 @model RegistrationsAndPaymentsViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Kayıtlar ve Ödemeler";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     ViewData["HideSelectedConferenceBar"] = true;
     Layout = "_LayoutDashboard";
 
