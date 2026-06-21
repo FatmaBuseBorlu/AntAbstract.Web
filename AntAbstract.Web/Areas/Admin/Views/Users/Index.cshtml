@@ -4,7 +4,7 @@
 @using System.Linq
 
 @{
-    ViewData["Title"] = "Kullanıcı Yönetimi";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
     var users = Model ?? new List<AntAbstract.Web.Models.ViewModels.Admin.Users.UserListItemViewModel>();
@@ -33,11 +33,11 @@
     {
         return role switch
         {
-            "SuperAdmin" => "Süper Admin",
-            "Admin" => "Admin",
-            "Author" => "Yazar",
-            "Listener" => "Dinleyici",
-            "Referee" => "Hakem",
+            "SuperAdmin" => Localizer["SuperAdmin"].Value,
+            "Admin" => Localizer["Admin"].Value,
+            "Author" => Localizer["Author"].Value,
+            "Listener" => Localizer["Listener"].Value,
+            "Referee" => Localizer["Referee"].Value,
             _ => role
         };
     }
@@ -720,15 +720,15 @@
 
             <div>
                 <div class="admin-hero-kicker">
-                    Yönetim
+                    @Localizer["Kicker"]
                 </div>
 
                 <h3 class="admin-hero-title">
-                    Kullanıcı Yönetimi
+                    @Localizer["PageTitle"]
                 </h3>
 
                 <p class="admin-hero-lead">
-                    Sistemdeki kullanıcıları görüntüleyin, rolleri düzenleyin ve yetki atamalarını yönetin.
+                    @Localizer["PageDescription"]
                 </p>
             </div>
         </div>
@@ -736,7 +736,7 @@
         <div class="admin-hero-actions">
             <a href="/Admin/Tenants" class="admin-hero-btn admin-hero-btn-light">
                 <i class="fas fa-building"></i>
-                Kurumlara Git
+                @Localizer["GoToInstitutions"]
             </a>
         </div>
     </div>
@@ -753,7 +753,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    Toplam Kullanıcı
+                    @Localizer["TotalUsers"]
                 </div>
             </div>
         </div>
@@ -769,7 +769,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    Süper Admin
+                    @Localizer["SuperAdmin"]
                 </div>
             </div>
         </div>
@@ -785,7 +785,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    Admin
+                    @Localizer["Admin"]
                 </div>
             </div>
         </div>
@@ -801,7 +801,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    Yazar
+                    @Localizer["Author"]
                 </div>
             </div>
         </div>
@@ -817,7 +817,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    Hakem
+                    @Localizer["Referee"]
                 </div>
             </div>
         </div>
@@ -833,7 +833,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    Dinleyici
+                    @Localizer["Listener"]
                 </div>
             </div>
         </div>
@@ -848,29 +848,29 @@
 
             <div class="col-lg-6">
                 <label class="filter-label">
-                    Arama
+                    @Localizer["Search"]
                 </label>
 
                 <input type="text"
                        name="search"
                        value="@search"
                        class="form-control filter-control"
-                       placeholder="Ad, soyad veya e-posta ara..." />
+                       placeholder="@Localizer["SearchPlaceholder"]" />
             </div>
 
             <div class="col-lg-3">
                 <label class="filter-label">
-                    Rol
+                    @Localizer["Role"]
                 </label>
 
                 <select name="role" class="form-select filter-control">
                     @if (string.IsNullOrWhiteSpace(selectedRole) || selectedRole == "All")
                     {
-                        <option value="All" selected>Tüm Roller</option>
+                        <option value="All" selected>@Localizer["AllRoles"]</option>
                     }
                     else
                     {
-                        <option value="All">Tüm Roller</option>
+                        <option value="All">@Localizer["AllRoles"]</option>
                     }
 
                     @foreach (var role in allowedRoles)
@@ -891,10 +891,10 @@
                 <div class="d-flex gap-2">
                     <button type="submit" class="filter-btn flex-fill">
                         <i class="fas fa-search"></i>
-                        Filtrele
+                        @Localizer["Filter"]
                     </button>
 
-                    <a href="/Admin/Users" class="reset-btn" title="Filtreyi temizle">
+                    <a href="/Admin/Users" class="reset-btn" title="@Localizer["ClearFilter"]">
                         <i class="fas fa-rotate-left"></i>
                     </a>
                 </div>
@@ -906,17 +906,17 @@
         <div class="users-card-header">
             <div>
                 <h5 class="users-card-title">
-                    Kullanıcı Listesi
+                    @Localizer["UserList"]
                 </h5>
 
                 <p class="users-card-subtitle">
-                    Kullanıcı rolleri bu ekrandan düzenlenir. Süper Admin kendi Süper Admin rolünü kaldıramaz.
+                    @Localizer["UserListDescription"]
                 </p>
             </div>
 
             <span class="users-card-count">
                 <i class="fas fa-list-ul"></i>
-                @users.Count kayıt
+                @users.Count @Localizer["Records"]
             </span>
         </div>
 
@@ -938,11 +938,11 @@
                 </div>
 
                 <h6 class="users-empty-title">
-                    Kullanıcı bulunamadı
+                    @Localizer["NoUsersFound"]
                 </h6>
 
                 <p class="users-empty-text">
-                    Arama veya filtre kriterlerine uygun kullanıcı yok.
+                    @Localizer["NoUsersDescription"]
                 </p>
             </div>
         }
@@ -953,23 +953,23 @@
                     <thead>
                         <tr>
                             <th class="ps-4" style="width: 28%;">
-                                Kullanıcı
+                                @Localizer["User"]
                             </th>
 
                             <th style="width: 24%;">
-                                E-posta
+                                @Localizer["Email"]
                             </th>
 
                             <th style="width: 28%;">
-                                Mevcut Roller
+                                @Localizer["CurrentRoles"]
                             </th>
 
                             <th class="text-center" style="width: 10%;">
-                                Durum
+                                @Localizer["Status"]
                             </th>
 
                             <th class="pe-4 text-end" style="min-width: 280px;">
-                                İşlemler
+                                @Localizer["Actions"]
                             </th>
                         </tr>
                     </thead>
@@ -1036,7 +1036,7 @@
 
                                                         <button type="submit"
                                                                 class="role-remove-btn"
-                                                                title="@GetRoleLabel(role) rolünü kaldır">
+                                                                title="@string.Format(Localizer["RemoveRoleTitle"].Value, GetRoleLabel(role))">
                                                             ×
                                                         </button>
                                                     </form>
@@ -1047,7 +1047,7 @@
                                     else
                                     {
                                         <span class="text-muted small fw-bold">
-                                            Rol atanmamış
+                                            @Localizer["NoRoleAssigned"]
                                         </span>
                                     }
                                 </td>
@@ -1056,20 +1056,20 @@
                                     @if (item.IsLockedOut)
                                     {
                                         <span class="badge bg-danger rounded-pill">
-                                            <i class="fas fa-ban me-1"></i>Askıda
+                                            <i class="fas fa-ban me-1"></i>@Localizer["Suspended"]
                                         </span>
                                     }
                                     else if (!item.EmailConfirmed)
                                     {
                                         <span class="badge bg-warning text-dark rounded-pill">
-                                            <i class="fas fa-envelope me-1"></i>Doğrulanmamış
+                                            <i class="fas fa-envelope me-1"></i>@Localizer["Unverified"]
                                         </span>
                                     }
                                     else
                                     {
                                         <span class="status-badge status-active">
                                             <i class="fas fa-check-circle"></i>
-                                            Aktif
+                                            @Localizer["Active"]
                                         </span>
                                     }
                                 </td>
@@ -1082,7 +1082,7 @@
                                            asp-route-userId="@item.UserId"
                                            class="user-action-btn user-action-roles">
                                             <i class="fas fa-eye"></i>
-                                            Detay
+                                            @Localizer["Details"]
                                         </a>
 
                                         <a asp-area="Admin"
@@ -1091,7 +1091,7 @@
                                            asp-route-userId="@item.UserId"
                                            class="user-action-btn user-action-roles">
                                             <i class="fas fa-user-gear"></i>
-                                            Roller
+                                            @Localizer["Roles"]
                                         </a>
 
                                         @if (item.IsLockedOut)
@@ -1102,7 +1102,7 @@
                                                 <input type="hidden" name="userId" value="@item.UserId" />
                                                 <button type="submit" class="user-action-btn"
                                                         style="background:#d1fae5;color:#065f46;border:1.5px solid #a7f3d0;">
-                                                    <i class="fas fa-lock-open"></i> Aktif Et
+                                                    <i class="fas fa-lock-open"></i> @Localizer["Activate"]
                                                 </button>
                                             </form>
                                         }
@@ -1115,7 +1115,7 @@
                                                 <input type="hidden" name="userId" value="@item.UserId" />
                                                 <button type="submit" class="user-action-btn"
                                                         style="background:#fef3c7;color:#92400e;border:1.5px solid #fde68a;">
-                                                    <i class="fas fa-ban"></i> Askıya Al
+                                                    <i class="fas fa-ban"></i> @Localizer["Suspend"]
                                                 </button>
                                             </form>
                                         }
@@ -1126,7 +1126,7 @@
                                                     data-bs-toggle="dropdown"
                                                     data-bs-boundary="viewport"
                                                     aria-expanded="false">
-                                                Yetki Ver
+                                                @Localizer["AssignPermission"]
                                             </button>
 
                                             <ul class="dropdown-menu dropdown-menu-end user-role-dropdown rounded-3 p-2">
@@ -1164,7 +1164,7 @@
                                                 {
                                                     <li>
                                                         <span class="dropdown-item text-muted small fw-bold">
-                                                            Tüm roller atanmış
+                                                            @Localizer["AllRolesAssigned"]
                                                         </span>
                                                     </li>
                                                 }
@@ -1180,7 +1180,7 @@
 
             @if (pgTotalPages > 1)
             {
-                <nav aria-label="Kullanıcı sayfalaması" class="mt-3">
+                <nav aria-label="@Localizer["UserPagination"]" class="mt-3">
                     <ul class="pagination pagination-sm justify-content-center">
                         <li class="page-item @(pgCurrentPage > 1 ? "" : "disabled")">
                             <a class="page-link" href="@pgBaseUrl&page=@(pgCurrentPage - 1)">‹</a>
@@ -1196,7 +1196,7 @@
                         </li>
                     </ul>
                     <p class="text-center text-muted small">
-                        @pgFilteredCount kullanıcıdan @((pgCurrentPage - 1) * pgPageSize + 1)–@Math.Min(pgCurrentPage * pgPageSize, pgFilteredCount) gösteriliyor
+                        @string.Format(Localizer["PaginationInfo"].Value, pgFilteredCount, (pgCurrentPage - 1) * pgPageSize + 1, Math.Min(pgCurrentPage * pgPageSize, pgFilteredCount))
                     </p>
                 </nav>
             }

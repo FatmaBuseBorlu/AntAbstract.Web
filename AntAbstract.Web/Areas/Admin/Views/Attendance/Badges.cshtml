@@ -1,6 +1,7 @@
 @model IEnumerable<AntAbstract.Domain.Entities.Registration>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
-    ViewData["Title"] = "Yaka Kartı Baskı";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
     var conference = ViewBag.Conference as AntAbstract.Domain.Entities.Conference;

@@ -2,9 +2,10 @@
 @using AntAbstract.Web.Models.ViewModels.Admin.ConferenceFlow
 
 @model ConferenceFlowIndexViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Kongre Akışı";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     ViewData["HideSelectedConferenceBar"] = true;
     Layout = "_LayoutDashboard";
 

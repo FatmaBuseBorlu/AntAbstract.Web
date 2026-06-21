@@ -18,7 +18,7 @@
     </div>
     <div class="d-flex gap-2">
         <a asp-action="FinanceSummary" asp-route-slug="@slug" asp-route-conferenceId="@conference?.Id" class="btn btn-outline-success btn-sm">
-            <i class="fas fa-chart-line me-1"></i> Finans Özeti
+            <i class="fas fa-chart-line me-1"></i> @Localizer["FinanceSummary"]
         </a>
         <a asp-action="WebhookLog" class="btn btn-outline-primary btn-sm">
             <i class="fab fa-stripe-s me-1"></i> Stripe Webhook Log
@@ -71,15 +71,15 @@
 <div class="card border-0 shadow-sm mb-3">
     <div class="card-body d-flex flex-wrap gap-2 align-items-center">
         <a asp-action="Index" asp-route-slug="@slug" asp-route-conferenceId="@conference?.Id" asp-route-status="all"   asp-route-search="@search" class="@TabClass("all")">@Localizer["TabAll"] <span class="badge bg-light text-dark ms-1">@ViewBag.TotalCount</span></a>
-        <a asp-action="Index" asp-route-slug="@slug" asp-route-conferenceId="@conference?.Id" asp-route-status="receipt" asp-route-search="@search" class="@TabClass("receipt")">⚠️ Makbuz Bekleyen <span class="badge bg-warning text-dark ms-1">@ViewBag.ReceiptCount</span></a>
+        <a asp-action="Index" asp-route-slug="@slug" asp-route-conferenceId="@conference?.Id" asp-route-status="receipt" asp-route-search="@search" class="@TabClass("receipt")">⚠️ @Localizer["TabReceiptPending"] <span class="badge bg-warning text-dark ms-1">@ViewBag.ReceiptCount</span></a>
         <a asp-action="Index" asp-route-slug="@slug" asp-route-conferenceId="@conference?.Id" asp-route-status="paid"    asp-route-search="@search" class="@TabClass("paid")">✅ @Localizer["TabPaid"] <span class="badge bg-success ms-1">@ViewBag.PaidCount</span></a>
-        <a asp-action="Index" asp-route-slug="@slug" asp-route-conferenceId="@conference?.Id" asp-route-status="pending" asp-route-search="@search" class="@TabClass("pending")">⏳ Bekliyor</a>
+        <a asp-action="Index" asp-route-slug="@slug" asp-route-conferenceId="@conference?.Id" asp-route-status="pending" asp-route-search="@search" class="@TabClass("pending")">⏳ @Localizer["TabPending"]</a>
 
         <form method="get" class="ms-auto d-flex gap-2">
             <input type="hidden" name="slug" value="@slug" />
             <input type="hidden" name="conferenceId" value="@conference?.Id" />
             <input type="hidden" name="status" value="@status" />
-            <input type="text" name="search" value="@search" class="form-control form-control-sm" placeholder="Ad, e-posta ara..." style="width:220px" />
+            <input type="text" name="search" value="@search" class="form-control form-control-sm" placeholder="@Localizer["SearchPlaceholder"]" style="width:220px" />
             <button type="submit" class="btn btn-sm btn-outline-primary">@Localizer["SearchButton"]</button>
         </form>
     </div>
@@ -92,7 +92,7 @@
         {
             <div class="text-center py-5 text-muted">
                 <div class="fs-1">💳</div>
-                <p>Bu filtreye uygun kayıt bulunamadı.</p>
+                <p>@Localizer["EmptyMessage"]</p>
             </div>
         }
         else
@@ -102,10 +102,10 @@
                     <thead class="table-light">
                         <tr>
                             <th>@Localizer["ColParticipant"]</th>
-                            <th>Kayıt Türü</th>
+                            <th>@Localizer["ColRegistrationType"]</th>
                             <th class="text-end">@Localizer["ColAmount"]</th>
                             <th class="text-center">@Localizer["ColStatus"]</th>
-                            <th class="text-center">Makbuz</th>
+                            <th class="text-center">@Localizer["ColReceipt"]</th>
                             <th class="text-end">@Localizer["ColActions"]</th>
                         </tr>
                     </thead>
@@ -136,15 +136,15 @@
                                     @{
                                         var statusBadge = reg.Status switch
                                         {
-                                            AntAbstract.Domain.Entities.RegistrationStatus.Confirmed       => "<span class='badge bg-success'>✅ Onaylandı</span>",
-                                            AntAbstract.Domain.Entities.RegistrationStatus.AwaitingApproval => "<span class='badge bg-warning text-dark'>⏳ Onay Bekliyor</span>",
-                                            AntAbstract.Domain.Entities.RegistrationStatus.PaymentRejected  => "<span class='badge bg-danger'>❌ Makbuz Reddedildi</span>",
-                                            AntAbstract.Domain.Entities.RegistrationStatus.Cancelled        => "<span class='badge bg-dark'>İptal</span>",
+                                            AntAbstract.Domain.Entities.RegistrationStatus.Confirmed       => $"<span class='badge bg-success'>✅ {Localizer["StatusConfirmed"].Value}</span>",
+                                            AntAbstract.Domain.Entities.RegistrationStatus.AwaitingApproval => $"<span class='badge bg-warning text-dark'>⏳ {Localizer["StatusAwaitingApproval"].Value}</span>",
+                                            AntAbstract.Domain.Entities.RegistrationStatus.PaymentRejected  => $"<span class='badge bg-danger'>❌ {Localizer["StatusReceiptRejected"].Value}</span>",
+                                            AntAbstract.Domain.Entities.RegistrationStatus.Cancelled        => $"<span class='badge bg-dark'>{Localizer["StatusCancelled"].Value}</span>",
                                             _ => reg.IsPaid
-                                                ? "<span class='badge bg-success'>✅ Ödendi</span>"
+                                                ? $"<span class='badge bg-success'>✅ {Localizer["StatusPaid"].Value}</span>"
                                                 : (reg.ReceiptFilePath != null
-                                                    ? "<span class='badge bg-warning text-dark'>⏳ Makbuz Yüklendi</span>"
-                                                    : "<span class='badge bg-secondary'>Bekliyor</span>")
+                                                    ? $"<span class='badge bg-warning text-dark'>⏳ {Localizer["StatusReceiptUploaded"].Value}</span>"
+                                                    : $"<span class='badge bg-secondary'>{Localizer["StatusPending"].Value}</span>")
                                         };
                                     }
                                     @Html.Raw(statusBadge)
@@ -161,7 +161,7 @@
                                     @if (reg.ReceiptFilePath != null)
                                     {
                                         <a href="/download/receipt/@reg.Id" target="_blank" class="btn btn-sm btn-outline-primary">
-                                            📄 Görüntüle
+                                            📄 @Localizer["ViewReceiptLink"]
                                         </a>
                                     }
                                     else
@@ -172,34 +172,34 @@
                                 <td class="text-end">
                                     @if (reg.Status == AntAbstract.Domain.Entities.RegistrationStatus.Cancelled)
                                     {
-                                        <span class="text-muted small">İptal edildi</span>
+                                        <span class="text-muted small">@Localizer["CancelledText"]</span>
                                     }
                                     else if (!reg.IsPaid)
                                     {
                                         <button type="button" class="btn btn-sm btn-success"
                                                 data-bs-toggle="modal" data-bs-target="#approveModal"
                                                 data-reg-id="@reg.Id" data-name="@fullName" data-return="@returnUrl">
-                                            ✅ Onayla
+                                            ✅ @Localizer["ApproveButton"]
                                         </button>
                                         if (reg.ReceiptFilePath != null)
                                         {
                                             <button type="button" class="btn btn-sm btn-outline-danger ms-1"
                                                     data-bs-toggle="modal" data-bs-target="#rejectModal"
                                                     data-reg-id="@reg.Id" data-name="@fullName" data-return="@returnUrl">
-                                                ❌ Reddet
+                                                ❌ @Localizer["RejectButton"]
                                             </button>
                                         }
                                         <button type="button" class="btn btn-sm btn-outline-dark ms-1"
                                                 data-bs-toggle="modal" data-bs-target="#cancelModal"
                                                 data-reg-id="@reg.Id" data-name="@fullName" data-return="@returnUrl">
-                                            🚫 İptal
+                                            🚫 @Localizer["CancelButton"]
                                         </button>
                                     }
                                     else
                                     {
-                                        <span class="text-success small">Tamamlandı</span>
+                                        <span class="text-success small">@Localizer["CompletedText"]</span>
                                         <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Payments/DownloadInvoice/{reg.Id}" : $"/{slug}/Admin/Payments/DownloadInvoice/{reg.Id}")" target="_blank"
-                                           class="btn btn-sm btn-outline-success ms-1" title="Fatura İndir">
+                                           class="btn btn-sm btn-outline-success ms-1" title="@Localizer["DownloadInvoice"]">
                                             <i class="fas fa-file-invoice"></i>
                                         </a>
                                         @if (reg.PaymentTransactionId != null)
@@ -209,7 +209,7 @@
                                             if (payId.HasValue)
                                             {
                                                 <a asp-action="History" asp-route-paymentId="@payId"
-                                                   class="btn btn-sm btn-outline-info ms-1" title="Durum Geçmişi">
+                                                   class="btn btn-sm btn-outline-info ms-1" title="@Localizer["StatusHistory"]">
                                                     <i class="fas fa-history"></i>
                                                 </a>
                                             }
@@ -217,13 +217,13 @@
                                         <button type="button" class="btn btn-sm btn-outline-dark ms-1"
                                                 data-bs-toggle="modal" data-bs-target="#cancelModal"
                                                 data-reg-id="@reg.Id" data-name="@fullName" data-return="@returnUrl">
-                                            🚫 İptal
+                                            🚫 @Localizer["CancelButton"]
                                         </button>
                                         <button type="button" class="btn btn-sm btn-outline-info ms-1"
                                                 data-bs-toggle="modal" data-bs-target="#refundModal"
                                                 data-reg-id="@reg.Id" data-name="@fullName" data-return="@returnUrl"
-                                                title="İade">
-                                            💸 İade
+                                                title="@Localizer["RefundButton"]">
+                                            💸 @Localizer["RefundButton"]
                                         </button>
                                     }
                                 </td>
@@ -241,7 +241,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header border-0">
-                <h5 class="modal-title fw-bold">✅ Ödemeyi Onayla</h5>
+                <h5 class="modal-title fw-bold">✅ @Localizer["ModalApproveTitle"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-action="Approve" method="post">
@@ -249,15 +249,15 @@
                 <input type="hidden" name="registrationId" id="approveRegId" />
                 <input type="hidden" name="returnUrl" id="approveReturnUrl" />
                 <div class="modal-body">
-                    <p><strong id="approveName"></strong> adlı katılımcının ödemesi onaylanacak.</p>
+                    <p><strong id="approveName"></strong> @Localizer["ModalApproveBody"]</p>
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">Yönetici Notu (opsiyonel)</label>
-                        <textarea name="note" class="form-control" rows="2" placeholder="Onay açıklaması..."></textarea>
+                        <label class="form-label small fw-semibold">@Localizer["AdminNoteLabel"]</label>
+                        <textarea name="note" class="form-control" rows="2" placeholder="@Localizer["ApproveNotePlaceholder"]"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
-                    <button type="submit" class="btn btn-success px-4">Onayla</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@Localizer["ModalCancel"]</button>
+                    <button type="submit" class="btn btn-success px-4">@Localizer["ApproveButton"]</button>
                 </div>
             </form>
         </div>
@@ -269,7 +269,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header border-0">
-                <h5 class="modal-title fw-bold">❌ Makbuzu Reddet</h5>
+                <h5 class="modal-title fw-bold">❌ @Localizer["ModalRejectTitle"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-action="Reject" method="post">
@@ -277,15 +277,15 @@
                 <input type="hidden" name="registrationId" id="rejectRegId" />
                 <input type="hidden" name="returnUrl" id="rejectReturnUrl" />
                 <div class="modal-body">
-                    <p><strong id="rejectName"></strong> adlı katılımcının makbuzu reddedilecek ve yeniden yüklemesi istenecek.</p>
+                    <p><strong id="rejectName"></strong> @Localizer["ModalRejectBody"]</p>
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">Red Nedeni</label>
-                        <textarea name="note" class="form-control" rows="2" placeholder="Neden reddedildi?"></textarea>
+                        <label class="form-label small fw-semibold">@Localizer["RejectReasonLabel"]</label>
+                        <textarea name="note" class="form-control" rows="2" placeholder="@Localizer["RejectReasonPlaceholder"]"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
-                    <button type="submit" class="btn btn-danger px-4">Reddet</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@Localizer["ModalCancel"]</button>
+                    <button type="submit" class="btn btn-danger px-4">@Localizer["RejectButton"]</button>
                 </div>
             </form>
         </div>
@@ -297,7 +297,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header border-0">
-                <h5 class="modal-title fw-bold">🚫 Kaydı İptal Et</h5>
+                <h5 class="modal-title fw-bold">🚫 @Localizer["ModalCancelTitle"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-action="Cancel" method="post">
@@ -306,16 +306,16 @@
                 <input type="hidden" name="returnUrl" id="cancelReturnUrl" />
                 <div class="modal-body">
                     <div class="alert alert-warning py-2 mb-3">
-                        <strong id="cancelName"></strong> adlı katılımcının kaydı iptal edilecek. Bu işlem geri alınamaz.
+                        <strong id="cancelName"></strong> @Localizer["ModalCancelBody"]
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">İptal Nedeni (opsiyonel)</label>
-                        <textarea name="note" class="form-control" rows="2" placeholder="İptal açıklaması..."></textarea>
+                        <label class="form-label small fw-semibold">@Localizer["CancelReasonLabel"]</label>
+                        <textarea name="note" class="form-control" rows="2" placeholder="@Localizer["CancelReasonPlaceholder"]"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Vazgeç</button>
-                    <button type="submit" class="btn btn-dark px-4">İptal Et</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@Localizer["ModalDismiss"]</button>
+                    <button type="submit" class="btn btn-dark px-4">@Localizer["CancelConfirmButton"]</button>
                 </div>
             </form>
         </div>
@@ -327,7 +327,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header border-0">
-                <h5 class="modal-title fw-bold">💸 Ödemeyi İade Et</h5>
+                <h5 class="modal-title fw-bold">💸 @Localizer["ModalRefundTitle"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-action="Refund" asp-route-slug="@slug" method="post">
@@ -336,16 +336,16 @@
                 <input type="hidden" name="returnUrl" id="refundReturnUrl" />
                 <div class="modal-body">
                     <div class="alert alert-info py-2 mb-3">
-                        <strong id="refundName"></strong> adlı katılımcının ödemesi iade edilecek. Kayıt iptal edilir ve kullanıcıya e-posta gönderilir.
+                        <strong id="refundName"></strong> @Localizer["ModalRefundBody"]
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">İade Nedeni (opsiyonel)</label>
-                        <textarea name="note" class="form-control" rows="2" placeholder="İade açıklaması..."></textarea>
+                        <label class="form-label small fw-semibold">@Localizer["RefundReasonLabel"]</label>
+                        <textarea name="note" class="form-control" rows="2" placeholder="@Localizer["RefundReasonPlaceholder"]"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Vazgeç</button>
-                    <button type="submit" class="btn btn-info text-white px-4">İade Et</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@Localizer["ModalDismiss"]</button>
+                    <button type="submit" class="btn btn-info text-white px-4">@Localizer["RefundConfirmButton"]</button>
                 </div>
             </form>
         </div>

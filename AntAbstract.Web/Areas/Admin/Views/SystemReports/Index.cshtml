@@ -4,9 +4,10 @@
 @using System.Collections.Generic
 
 @model SystemReportsIndexViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Sistem Raporları";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     ViewData["HideSelectedConferenceBar"] = true;
     Layout = "_LayoutDashboard";
 

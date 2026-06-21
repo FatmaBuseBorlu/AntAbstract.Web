@@ -7,7 +7,7 @@
 @model DecisionIndexViewModel
 
 @{
-    ViewData["Title"] = "Bildiri Karar Ekranı";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     ViewData["HideSelectedConferenceBar"] = true;
     Layout = "_LayoutDashboard";
 
@@ -136,16 +136,15 @@
 
             <div>
                 <div class="decision-section-label">
-                    Kongre Operasyonları
+                    @Localizer["ConferenceOps"]
                 </div>
 
                 <h2 class="decision-page-title">
-                    Bildiri Karar Ekranı
+                    @Localizer["PageTitle"]
                 </h2>
 
                 <p class="decision-page-description">
-                    <strong>@(string.IsNullOrWhiteSpace(conferenceTitle) ? "Seçili kongre" : conferenceTitle)</strong>
-                    kongresine ait bildirilerin kabul, ret veya revizyon kararlarını buradan yönetebilirsiniz.
+                    @Localizer["PageDescription"]
                 </p>
 
                 @if (!string.IsNullOrWhiteSpace(conferenceTitle) || !string.IsNullOrWhiteSpace(slug))
@@ -153,10 +152,10 @@
                     <div class="selected-conference-pill">
                         <i class="fas fa-calendar-check"></i>
 
-                        <span>Seçili Kongre:</span>
+                        <span>@Localizer["SelectedConference"]</span>
 
                         <strong>
-                            @(string.IsNullOrWhiteSpace(conferenceTitle) ? "Kongre seçilmedi" : conferenceTitle)
+                            @(string.IsNullOrWhiteSpace(conferenceTitle) ? Localizer["NoConferenceSelected"].Value : conferenceTitle)
                         </strong>
 
                         @if (!string.IsNullOrWhiteSpace(slug))
@@ -172,13 +171,13 @@
             <a href="@flowUrl"
                class="btn decision-light-btn">
                 <i class="fas fa-arrow-left me-2"></i>
-                Kongre Akışına Dön
+                @Localizer["BackToFlow"]
             </a>
 
             <a href="@changeConferenceUrl"
                class="btn decision-outline-btn">
                 <i class="fas fa-exchange-alt me-2"></i>
-                Kongre Değiştir
+                @Localizer["ChangeConference"]
             </a>
         </div>
     </div>
@@ -207,7 +206,7 @@
     {
         <div class="alert alert-warning border-0 shadow-sm rounded-4 mb-4">
             <i class="fas fa-triangle-exclamation me-2"></i>
-            Kongre bağlantısı bulunamadı. Karar işlemleri için önce geçerli bir kongre seçmelisiniz.
+            @Localizer["NoConferenceLink"]
         </div>
     }
 
@@ -218,8 +217,8 @@
             </div>
 
             <div>
-                <strong>Kabul</strong>
-                <span>Yazar ödeme adımına geçebilir.</span>
+                <strong>@Localizer["Accept"]</strong>
+                <span>@Localizer["AcceptDesc"]</span>
             </div>
         </div>
 
@@ -229,8 +228,8 @@
             </div>
 
             <div>
-                <strong>Revizyon</strong>
-                <span>Yazar revizyon dosyası yükler.</span>
+                <strong>@Localizer["Revision"]</strong>
+                <span>@Localizer["RevisionDesc"]</span>
             </div>
         </div>
 
@@ -240,8 +239,8 @@
             </div>
 
             <div>
-                <strong>Ret</strong>
-                <span>Ödeme adımı açılmaz.</span>
+                <strong>@Localizer["Reject"]</strong>
+                <span>@Localizer["RejectDesc"]</span>
             </div>
         </div>
     </div>
@@ -255,7 +254,7 @@
 
                 <div>
                     <div class="stat-number">@waitingCount</div>
-                    <div class="stat-label">Bekleyen Karar</div>
+                    <div class="stat-label">@Localizer["PendingDecisions"]</div>
                 </div>
             </div>
         </div>
@@ -268,7 +267,7 @@
 
                 <div>
                     <div class="stat-number">@acceptedCount</div>
-                    <div class="stat-label">Kabul Edilen</div>
+                    <div class="stat-label">@Localizer["AcceptedCount"]</div>
                 </div>
             </div>
         </div>
@@ -281,7 +280,7 @@
 
                 <div>
                     <div class="stat-number">@revisionCount</div>
-                    <div class="stat-label">Revizyon İstenen</div>
+                    <div class="stat-label">@Localizer["RevisionRequested"]</div>
                 </div>
             </div>
         </div>
@@ -294,7 +293,7 @@
 
                 <div>
                     <div class="stat-number">@rejectedCount</div>
-                    <div class="stat-label">Reddedilen</div>
+                    <div class="stat-label">@Localizer["RejectedCount"]</div>
                 </div>
             </div>
         </div>
@@ -305,7 +304,7 @@
                 class="decision-tab active"
                 data-tab-target="waitingPanel">
             <i class="fas fa-hourglass-half"></i>
-            Bekleyen Kararlar
+            @Localizer["PendingDecisionsTab"]
             <span>@waitingCount</span>
         </button>
 
@@ -313,7 +312,7 @@
                 class="decision-tab"
                 data-tab-target="decidedPanel">
             <i class="fas fa-check-circle"></i>
-            Sonuçlananlar
+            @Localizer["DecidedTab"]
             <span>@decidedCount</span>
         </button>
     </div>
@@ -322,12 +321,12 @@
         <div class="decision-list-card">
             <div class="decision-list-header">
                 <div>
-                    <h5>Karar Bekleyen Bildiriler</h5>
-                    <p>Hakem sürecinden gelen bildiriler için karar işlemi yapabilirsiniz.</p>
+                    <h5>@Localizer["AwaitingDecision"]</h5>
+                    <p>@Localizer["AwaitingDecisionDesc"]</p>
                 </div>
 
                 <div class="decision-count-pill">
-                    @waitingCount bildiri
+                    @waitingCount @Localizer["Submissions"]
                 </div>
             </div>
 
@@ -338,16 +337,16 @@
                         <i class="fas fa-clipboard-check"></i>
                     </div>
 
-                    <h4>Şu an karar bekleyen bildiri yok</h4>
+                    <h4>@Localizer["NoPendingDecisions"]</h4>
 
                     <p>
-                        Karar aşamasına gelen bildiriler olduğunda burada listelenecek.
+                        @Localizer["NoPendingMessage"]
                     </p>
 
                     <a href="@flowUrl"
                        class="btn decision-light-btn">
                         <i class="fas fa-arrow-left me-2"></i>
-                        Kongre Akışına Dön
+                        @Localizer["BackToFlow"]
                     </a>
                 </div>
             }
@@ -363,21 +362,21 @@
                         <button type="button" class="btn btn-sm btn-success"
                                 onclick="submitBulk('Accept')"
                                 title="Seçilenleri Kabul Et">
-                            <i class="fas fa-check me-1"></i> Kabul Et
+                            <i class="fas fa-check me-1"></i> @Localizer["AcceptBtn"]
                         </button>
                         <button type="button" class="btn btn-sm btn-warning text-white"
                                 onclick="submitBulk('Revision')"
                                 title="Seçilenler için Revizyon İste">
-                            <i class="fas fa-rotate me-1"></i> Revizyon İste
+                            <i class="fas fa-rotate me-1"></i> @Localizer["RevisionBtn"]
                         </button>
                         <button type="button" class="btn btn-sm btn-danger"
                                 onclick="submitBulk('Reject')"
                                 title="Seçilenleri Reddet">
-                            <i class="fas fa-xmark me-1"></i> Reddet
+                            <i class="fas fa-xmark me-1"></i> @Localizer["RejectBtn"]
                         </button>
                         <button type="button" class="btn btn-sm btn-outline-secondary"
                                 onclick="clearBulkSelection()">
-                            Seçimi Temizle
+                            @Localizer["ClearSelection"]
                         </button>
                     </form>
                 </div>
@@ -390,11 +389,11 @@
                                     <input type="checkbox" id="checkAll" class="form-check-input"
                                            title="Tümünü Seç" onchange="toggleAllCheckboxes(this)" />
                                 </th>
-                                <th>Bildiri</th>
-                                <th>Yazar</th>
-                                <th>Hakem Durumu</th>
-                                <th>Mevcut Durum</th>
-                                <th class="text-end">Karar</th>
+                                <th>@Localizer["Submission"]</th>
+                                <th>@Localizer["Author"]</th>
+                                <th>@Localizer["RefereeStatus"]</th>
+                                <th>@Localizer["CurrentStatus"]</th>
+                                <th class="text-end">@Localizer["Decision"]</th>
                             </tr>
                         </thead>
 
@@ -451,7 +450,7 @@
                                             <a href="@detailUrl"
                                                class="btn decision-view-btn">
                                                 <i class="fas fa-eye me-2"></i>
-                                                İncele
+                                                @Localizer["Review"]
                                             </a>
 
                                             <form method="post"
@@ -522,12 +521,12 @@
         <div class="decision-list-card">
             <div class="decision-list-header">
                 <div>
-                    <h5>Sonuçlanan Bildiriler</h5>
-                    <p>Kabul, ret veya revizyon kararı verilmiş bildiriler.</p>
+                    <h5>@Localizer["DecidedSubmissions"]</h5>
+                    <p>@Localizer["DecidedSubmissionsDesc"]</p>
                 </div>
 
                 <div class="decision-count-pill">
-                    @decidedCount bildiri
+                    @decidedCount @Localizer["Submissions"]
                 </div>
             </div>
 
@@ -538,16 +537,16 @@
                         <i class="fas fa-folder-open"></i>
                     </div>
 
-                    <h4>Henüz sonuçlanan bildiri yok</h4>
+                    <h4>@Localizer["NoDecidedSubmissions"]</h4>
 
                     <p>
-                        Karar verilen bildiriler burada listelenecek.
+                        @Localizer["NoDecidedMessage"]
                     </p>
 
                     <a href="@flowUrl"
                        class="btn decision-light-btn">
                         <i class="fas fa-arrow-left me-2"></i>
-                        Kongre Akışına Dön
+                        @Localizer["BackToFlow"]
                     </a>
                 </div>
             }
@@ -557,12 +556,12 @@
                     <table class="decision-table">
                         <thead>
                             <tr>
-                                <th>Bildiri</th>
-                                <th>Yazar</th>
-                                <th>Hakem Durumu</th>
-                                <th>Karar</th>
-                                <th>Sonuç</th>
-                                <th class="text-end">İşlem</th>
+                                <th>@Localizer["Submission"]</th>
+                                <th>@Localizer["Author"]</th>
+                                <th>@Localizer["RefereeStatus"]</th>
+                                <th>@Localizer["Decision"]</th>
+                                <th>@Localizer["Result"]</th>
+                                <th class="text-end">@Localizer["Action"]</th>
                             </tr>
                         </thead>
 
@@ -626,7 +625,7 @@
                                         <a href="@detailUrl"
                                            class="btn decision-view-btn">
                                             <i class="fas fa-eye me-2"></i>
-                                            İncele
+                                            @Localizer["Review"]
                                         </a>
                                     </td>
                                 </tr>

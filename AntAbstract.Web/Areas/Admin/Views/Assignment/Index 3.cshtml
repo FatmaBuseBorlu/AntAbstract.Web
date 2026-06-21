@@ -133,7 +133,7 @@
                 </div>
                 <div>
                     <div class="stat-number">@Model.TotalCount</div>
-                    <div class="stat-label">Toplam Bildiri</div>
+                    <div class="stat-label">@Localizer["TotalSubmissions"]</div>
                 </div>
             </a>
         </div>
@@ -145,7 +145,7 @@
                 </div>
                 <div>
                     <div class="stat-number">@Model.UnassignedCount</div>
-                    <div class="stat-label">Hakem Atanmamış</div>
+                    <div class="stat-label">@Localizer["Unassigned"]</div>
                 </div>
             </a>
         </div>
@@ -157,7 +157,7 @@
                 </div>
                 <div>
                     <div class="stat-number">@Model.AssignedCount</div>
-                    <div class="stat-label">Hakem Atanmış</div>
+                    <div class="stat-label">@Localizer["Assigned"]</div>
                 </div>
             </a>
         </div>
@@ -169,7 +169,7 @@
                 </div>
                 <div>
                     <div class="stat-number">@Model.UnderReviewCount</div>
-                    <div class="stat-label">İnceleme Sürecinde</div>
+                    <div class="stat-label">@Localizer["UnderReview"]</div>
                 </div>
             </div>
         </div>
@@ -182,20 +182,20 @@
 
             <div class="row g-3 align-items-end">
                 <div class="col-xl-5 col-lg-5">
-                    <label class="submission-label">Arama</label>
+                    <label class="submission-label">@Localizer["Search"]</label>
                     <div class="submission-input-wrap">
                         <i class="fas fa-search"></i>
                         <input type="text"
                                name="search"
                                value="@filterSearch"
-                               placeholder="Başlık, yazar adı veya e-posta..." />
+                               placeholder="@Localizer["SearchPlaceholder"]" />
                     </div>
                 </div>
 
                 <div class="col-xl-4 col-lg-4">
-                    <label class="submission-label">Bildiri Durumu</label>
+                    <label class="submission-label">@Localizer["SubmissionStatus"]</label>
                     <select name="status" class="submission-select">
-                        <option value="">Tüm Durumlar</option>
+                        <option value="">@Localizer["AllStatuses"]</option>
                         @foreach (var s in Enum.GetValues(typeof(SubmissionStatus)).Cast<SubmissionStatus>())
                         {
                             var val = s.ToString();
@@ -214,7 +214,7 @@
                 <div class="col-xl-2 col-lg-2">
                     <button type="submit" class="btn assignment-primary-btn w-100">
                         <i class="fas fa-filter me-2"></i>
-                        Filtrele
+                        @Localizer["Filter"]
                     </button>
                 </div>
 
@@ -230,11 +230,11 @@
     <div class="assignment-list-card">
         <div class="assignment-list-header">
             <div>
-                <h5>Bildiri Listesi</h5>
-                <p>@Localizer["SubmissionListDesc"]</p>
+                <h5>@Localizer["SubmissionList"]</h5>
+                <p>Hakem ataması yapılacak bildirileri buradan görüntüleyebilirsiniz.</p>
             </div>
             <div class="assignment-list-meta">
-                <div class="assignment-count-pill">@Model.FilteredCount @Localizer["Submissions"]</div>
+                <div class="assignment-count-pill">@Model.FilteredCount bildiri</div>
             </div>
         </div>
 
@@ -244,11 +244,11 @@
                 <div class="empty-icon">
                     <i class="fas fa-file-circle-question"></i>
                 </div>
-                <h4>@Localizer["NoSubmissionsFound"]</h4>
-                <p>@Localizer["NoSubmissionsMessage"]</p>
+                <h4>Bildiri bulunamadı</h4>
+                <p>Seçili filtrelere uygun bildiri bulunamadı. Filtreleri temizleyerek tekrar deneyebilirsiniz.</p>
                 <a href="@baseUrl" class="btn assignment-light-btn">
                     <i class="fas fa-rotate-left me-2"></i>
-                    @Localizer["ClearFilters"]
+                    Filtreleri Temizle
                 </a>
             </div>
         }
@@ -261,8 +261,8 @@
                 <div class="bulk-assignment-toolbar">
                     <div class="bulk-assignment-summary">
                         <span id="bulkSelectedCount">0</span>
-                        <strong>@Localizer["SubmissionsSelected"]</strong>
-                        <small>@Localizer["BulkAssignNote"]</small>
+                        <strong>bildiri seçildi</strong>
+                        <small>Seçilen bildiriler için aynı hakem atanır.</small>
                     </div>
 
                     <div class="bulk-assignment-controls">
@@ -270,7 +270,7 @@
                                 class="bulk-reviewer-select"
                                 aria-label="Toplu atanacak hakem"
                                 disabled="@(!Model.BulkReviewers.Any())">
-                            <option value="">@Localizer["SelectReferee"]</option>
+                            <option value="">Hakem seçin</option>
                             @foreach (var reviewer in Model.BulkReviewers)
                             {
                                 var label = string.IsNullOrWhiteSpace(reviewer.Email)
@@ -286,7 +286,7 @@
                                 id="bulkAssignSubmit"
                                 disabled>
                             <i class="fas fa-users-gear me-2"></i>
-                            @Localizer["AssignToSelected"]
+                            Seçilenlere Ata
                         </button>
                     </div>
                 </div>
@@ -295,7 +295,7 @@
                 {
                     <div class="bulk-assignment-warning">
                         <i class="fas fa-triangle-exclamation me-2"></i>
-                        @Localizer["NoAvailableReferees"]
+                        Atanabilir hakem bulunamadı. Hakem rolleri, müsaitlik veya yük limiti kontrol edilmeli.
                     </div>
                 }
 
@@ -309,12 +309,12 @@
                                            class="form-check-input"
                                            aria-label="Tüm bildirileri seç" />
                                 </th>
-                                <th>@Localizer["Submission"]</th>
-                                <th>@Localizer["Author"]</th>
-                                <th>@Localizer["Referees"]</th>
-                                <th>@Localizer["Status"]</th>
-                                <th>@Localizer["Date"]</th>
-                                <th class="text-end">@Localizer["Action"]</th>
+                                <th>Bildiri</th>
+                                <th>Yazar</th>
+                                <th>Hakemler</th>
+                                <th>Durum</th>
+                                <th>Tarih</th>
+                                <th class="text-end">İşlem</th>
                             </tr>
                         </thead>
 

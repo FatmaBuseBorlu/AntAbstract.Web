@@ -4,7 +4,7 @@
 @using System.Linq
 
 @{
-    ViewData["Title"] = "Kurum Yönetimi";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
     var tenants = Model ?? new List<AntAbstract.Web.Models.ViewModels.Admin.Tenants.TenantListItemViewModel>();
@@ -570,15 +570,15 @@
 
             <div>
                 <div class="admin-hero-kicker">
-                    Global Sistem
+                    @Localizer["GlobalSystem"]
                 </div>
 
                 <h3 class="admin-hero-title">
-                    Kurum Yönetimi
+                    @Localizer["PageTitle"]
                 </h3>
 
                 <p class="admin-hero-lead">
-                    Sistemdeki kurumları, kurum adminlerini, bağlı kullanıcıları ve kongre sayılarını buradan takip edebilirsiniz.
+                    @Localizer["PageDescription"]
                 </p>
             </div>
         </div>
@@ -589,13 +589,13 @@
                asp-action="Create"
                class="admin-hero-btn admin-hero-btn-primary">
                 <i class="fas fa-plus"></i>
-                Yeni Kurum Ekle
+                @Localizer["AddTenant"]
             </a>
 
             <a href="/Admin/AllConferences"
                class="admin-hero-btn admin-hero-btn-light">
                 <i class="fas fa-calendar-alt"></i>
-                Tüm Kongreler
+                @Localizer["AllConferences"]
             </a>
         </div>
     </div>
@@ -612,7 +612,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    Toplam Kurum
+                    @Localizer["TotalTenants"]
                 </div>
             </div>
         </div>
@@ -628,7 +628,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    Admin Atanmış Kurum
+                    @Localizer["TenantsWithAdmin"]
                 </div>
             </div>
         </div>
@@ -644,7 +644,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    Toplam Kongre
+                    @Localizer["TotalConferences"]
                 </div>
             </div>
         </div>
@@ -660,7 +660,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    Bağlı Kullanıcı
+                    @Localizer["ConnectedUsers"]
                 </div>
             </div>
         </div>
@@ -670,17 +670,17 @@
         <div class="tenants-card-header">
             <div>
                 <h5 class="tenants-card-title">
-                    Kurum Listesi
+                    @Localizer["TenantList"]
                 </h5>
 
                 <p class="tenants-card-subtitle">
-                    Bu listede sistemde kayıtlı kurumları, admin atama durumlarını ve bağlı kayıt sayılarını görebilirsiniz.
+                    @Localizer["TenantListDescription"]
                 </p>
             </div>
 
             <span class="tenants-card-count">
                 <i class="fas fa-list-ul"></i>
-                @tenants.Count kayıt
+                @tenants.Count @Localizer["Records"]
             </span>
         </div>
 
@@ -692,11 +692,11 @@
                 </div>
 
                 <h6 class="tenants-empty-title">
-                    Kurum bulunamadı
+                    @Localizer["NoTenantsFound"]
                 </h6>
 
                 <p class="tenants-empty-text">
-                    Henüz sisteme kayıtlı kurum bulunmuyor.
+                    @Localizer["NoTenantsMessage"]
                 </p>
             </div>
         }
@@ -707,7 +707,7 @@
                     <thead>
                         <tr>
                             <th class="ps-4" style="width: 26%;">
-                                Kurum
+                                @Localizer["Tenant"]
                             </th>
 
                             <th style="width: 14%;">
@@ -715,23 +715,23 @@
                             </th>
 
                             <th style="width: 22%;">
-                                Kurum Admini
+                                @Localizer["TenantAdmin"]
                             </th>
 
                             <th class="text-center" style="width: 10%;">
-                                Kongre
+                                @Localizer["Conference"]
                             </th>
 
                             <th class="text-center" style="width: 10%;">
-                                Kullanıcı
+                                @Localizer["User"]
                             </th>
 
                             <th class="text-center" style="width: 8%;">
-                                Durum
+                                @Localizer["Status"]
                             </th>
 
                             <th class="text-end pe-4" style="min-width: 260px;">
-                                İşlemler
+                                @Localizer["Actions"]
                             </th>
                         </tr>
                     </thead>
@@ -813,7 +813,7 @@
                                     {
                                         <span class="tenant-admin-badge tenant-admin-missing">
                                             <i class="fas fa-triangle-exclamation"></i>
-                                            Admin atanmamış
+                                            @Localizer["NoAdminAssigned"]
                                         </span>
                                     }
                                 </td>
@@ -833,7 +833,7 @@
                                 <td class="text-center">
                                     <span class="status-badge status-active">
                                         <i class="fas fa-check-circle"></i>
-                                        Aktif
+                                        @Localizer["Active"]
                                     </span>
                                 </td>
 
@@ -844,7 +844,7 @@
                                            asp-action="Details"
                                            asp-route-id="@item.Id"
                                            class="admin-action-btn admin-action-info"
-                                           title="Detay">
+                                           title="@Localizer["Details"]">
                                             <i class="fas fa-search"></i>
                                         </a>
 
@@ -853,7 +853,7 @@
                                            asp-action="Edit"
                                            asp-route-id="@item.Id"
                                            class="admin-action-btn admin-action-edit"
-                                           title="Düzenle">
+                                           title="@Localizer["Edit"]">
                                             <i class="fas fa-pen-to-square"></i>
                                         </a>
 
@@ -862,7 +862,7 @@
                                            asp-action="Delete"
                                            asp-route-id="@item.Id"
                                            class="admin-action-btn admin-action-delete"
-                                           title="Sil">
+                                           title="@Localizer["Delete"]">
                                             <i class="fas fa-trash"></i>
                                         </a>
                                     </div>

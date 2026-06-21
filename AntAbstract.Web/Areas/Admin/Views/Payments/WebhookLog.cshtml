@@ -1,8 +1,9 @@
 @using AntAbstract.Domain.Entities
 @model List<StripeWebhookEvent>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Webhook & Callback Log";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     int page       = (int)ViewBag.Page;
     int totalPages = (int)ViewBag.TotalPages;

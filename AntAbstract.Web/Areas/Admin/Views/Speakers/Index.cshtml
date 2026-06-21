@@ -1,8 +1,9 @@
 @using AntAbstract.Domain.Entities
 @model List<InvitedSpeaker>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Davetli Konuşmacılar";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     var slug   = (string?)ViewBag.Slug ?? "";
     var confId = (Guid)ViewBag.ConferenceId;
     string Url(string p) => $"/{slug}{p}";

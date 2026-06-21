@@ -2,9 +2,10 @@
 @using AntAbstract.Web.Models.ViewModels.Admin.ConferenceTopics
 
 @model AdminConferenceTopicsIndexModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Bildiri Konuları";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
     var slug = Model.Slug ?? "";
