@@ -32,7 +32,7 @@ otomatik olarak değiştirilir. Plesk panelinde şu değerleri tanımla:
 | `STRIPE_PUBLISHABLE_KEY` | Stripe public key | Stripe kullanılıyorsa |
 | `STRIPE_SECRET_KEY` | Stripe secret key | Stripe kullanılıyorsa |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | Stripe kullanılıyorsa |
-| `STRIPE_BASE_URL` | Sitenin public URL'i (ör: https://antabstract.com) | Stripe kullanılıyorsa |
+| `STRIPE_BASE_URL` | Sitenin public URL'i (ör: https://antabstract.com.tr) | Stripe kullanılıyorsa |
 | `PAYTR_MERCHANT_ID` | PayTR merchant ID | PayTR kullanılıyorsa |
 | `PAYTR_MERCHANT_KEY` | PayTR merchant key | PayTR kullanılıyorsa |
 | `PAYTR_MERCHANT_SALT` | PayTR merchant salt | PayTR kullanılıyorsa |
@@ -40,10 +40,14 @@ otomatik olarak değiştirilir. Plesk panelinde şu değerleri tanımla:
 | `SMTP_SERVER` | SMTP sunucu adresi | ✅ |
 | `SMTP_USERNAME` | SMTP kullanıcı adı | ✅ |
 | `SMTP_PASSWORD` | SMTP şifre | ✅ |
-| `PUBLIC_BASE_URL` | Sitenin public URL'i (ör: https://antabstract.com) | ✅ |
+| `PUBLIC_BASE_URL` | Sitenin public URL'i (ör: https://antabstract.com.tr) | ✅ |
 | `ORCID_CLIENT_ID` | ORCID OAuth client ID | ORCID kullanılıyorsa |
 | `ORCID_CLIENT_SECRET` | ORCID OAuth client secret | ORCID kullanılıyorsa |
 | `HEALTH_API_KEY` | Health endpoint API key | Opsiyonel |
+| `JWT_SECRET_KEY` | JWT token imzalama anahtarı (min 32 karakter) | ✅ |
+| `DOI_REPOSITORY_ID` | DataCite repository ID | DOI kullanılıyorsa |
+| `DOI_PASSWORD` | DataCite API şifresi | DOI kullanılıyorsa |
+| `DOI_PREFIX` | DOI prefix (ör: 10.12345) | DOI kullanılıyorsa |
 
 > **Not:** Plesk bu token'ları dosya yüklendikten sonra değiştirir.
 > Elle yükleme yapıyorsan `appsettings.Production.json` dosyasını
