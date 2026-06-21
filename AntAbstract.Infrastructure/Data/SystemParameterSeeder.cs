@@ -10,15 +10,20 @@ namespace AntAbstract.Infrastructure.Data
     {
         public static async Task SeedAsync(AppDbContext context)
         {
-            if (await context.SystemParameters.AnyAsync())
-                return;
-
             var json = ReadEmbeddedJson();
             if (!json.HasValue) return;
+
+            var existingGroups = await context.SystemParameters
+                .Select(p => p.Group)
+                .Distinct()
+                .ToListAsync();
 
             var parameters = new List<SystemParameter>();
 
             foreach (var group in json.Value.EnumerateObject())
+            {
+                if (existingGroups.Contains(group.Name))
+                    continue;
             {
                 int order = 0;
                 foreach (var item in group.Value.EnumerateArray())
@@ -43,10 +48,13 @@ namespace AntAbstract.Infrastructure.Data
                         });
                     }
                 }
-            }
+            }}
 
-            context.SystemParameters.AddRange(parameters);
-            await context.SaveChangesAsync();
+            if (parameters.Any())
+            {
+                context.SystemParameters.AddRange(parameters);
+                await context.SaveChangesAsync();
+            }
         }
 
         private static JsonElement? ReadEmbeddedJson()
