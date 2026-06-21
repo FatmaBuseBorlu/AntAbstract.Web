@@ -25,6 +25,7 @@ namespace AntAbstract.Web.Controllers
         public async Task<IActionResult> ConferenceIcs(Guid conferenceId, string? slug = null)
         {
             var conference = await _context.Conferences
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == conferenceId);
 
