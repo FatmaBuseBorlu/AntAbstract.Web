@@ -150,10 +150,10 @@
                 <div class="icon bg-success bg-opacity-10 text-success"><i class="fas fa-calendar-alt"></i></div>
                 <div class="number">@totalConferences</div>
                 <div class="label">
-                    Kongre
+                    @Localizer["Conference"]
                     @if (activeConferences > 0)
                     {
-                        <span class="badge bg-success ms-1" style="font-size:.6rem;">@activeConferences aktif</span>
+                        <span class="badge bg-success ms-1" style="font-size:.6rem;">@activeConferences @Localizer["Active"]</span>
                     }
                 </div>
             </div>
@@ -198,9 +198,9 @@
                     var roleRows = new[]
                     {
                         ("Admin",     totalAdmins,    "#3b82f6"),
-                        ("Yazar",     totalAuthors,   "#22c55e"),
-                        ("Hakem",     totalReferees,  "#f59e0b"),
-                        ("Dinleyici", totalListeners, "#a855f7"),
+                        (@Localizer["RoleAuthor"].Value,     totalAuthors,   "#22c55e"),
+                        (@Localizer["RoleReferee"].Value,     totalReferees,  "#f59e0b"),
+                        (@Localizer["RoleListener"].Value, totalListeners, "#a855f7"),
                     };
                     var maxRole = roleRows.Max(r => r.Item2) is int mx && mx > 0 ? mx : 1;
                 }
@@ -225,10 +225,10 @@
                 @{
                     var subRows = new[]
                     {
-                        ("Kabul Edildi",     submissionAccepted,    "#22c55e"),
-                        ("İncelemede",       submissionUnderReview, "#3b82f6"),
-                        ("Karar Bekliyor",   submissionPending,     "#f59e0b"),
-                        ("Reddedildi",       submissionRejected,    "#ef4444"),
+                        (@Localizer["Accepted"].Value,     submissionAccepted,    "#22c55e"),
+                        (@Localizer["UnderReview"].Value,       submissionUnderReview, "#3b82f6"),
+                        (@Localizer["AwaitingDecision"].Value,   submissionPending,     "#f59e0b"),
+                        (@Localizer["Rejected"].Value,       submissionRejected,    "#ef4444"),
                     };
                     var maxSub = subRows.Max(r => r.Item2) is int ms && ms > 0 ? ms : 1;
                 }
@@ -267,7 +267,7 @@
                             <div class="text-muted text-truncate" style="font-size:.75rem;">@(reg.Conference?.Title ?? "—")</div>
                         </div>
                         <span class="badge @(reg.IsPaid ? "bg-success" : "bg-warning text-dark")" style="font-size:.65rem;">
-                            @(reg.IsPaid ? "Ödendi" : "Bekliyor")
+                            @(reg.IsPaid ? Localizer["Paid"].Value : Localizer["Pending"].Value)
                         </span>
                     </div>
                 }
@@ -293,7 +293,7 @@
                             <th></th>
                             <th></th>
                             <th></th>
-                            <th class="text-center">Durum</th>
+                            <th class="text-center">@Localizer["Status"]</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -327,7 +327,7 @@
                                     @if (!string.IsNullOrWhiteSpace(slug2))
                                     {
                                         <a href="/@slug2/Admin/ConferenceFlow" class="btn btn-xs btn-outline-primary btn-sm py-0 px-2" style="font-size:.75rem;">
-                                            Yönet
+                                            @Localizer["Manage"]
                                         </a>
                                     }
                                 </td>
@@ -345,9 +345,9 @@
         @{
             var quickLinks = new[]
             {
-                ("/Admin/Tenants",        "fas fa-building",    "bg-primary bg-opacity-10 text-primary",   "Kurum Yönetimi",    "Kurum ekle, düzenle, yönet."),
+                ("/Admin/Tenants",        "fas fa-building",    "bg-primary bg-opacity-10 text-primary",   Localizer["QA_InstitutionMgmt"].Value,    Localizer["QA_InstitutionDesc"].Value),
                 ("/Admin/Users",          "fas fa-user-tie",    "bg-info bg-opacity-10 text-info",         "Kullanıcılar",      "Admin ata, rolleri görüntüle."),
-                ("/Admin/AllConferences", "fas fa-calendar",    "bg-success bg-opacity-10 text-success",   "Tüm Kongreler",     "Sistemdeki tüm kongreleri listele."),
+                ("/Admin/AllConferences", "fas fa-calendar",    "bg-success bg-opacity-10 text-success",   Localizer["QA_AllConferences"].Value,     Localizer["QA_AllConferencesDesc"].Value),
                 ("/Admin/SystemReports",  "fas fa-chart-bar",   "bg-warning bg-opacity-10 text-warning",   "Sistem Raporları",  "Sistem geneli istatistikler."),
                 ("/Admin/SystemParameters","fas fa-sliders",    "bg-secondary bg-opacity-10 text-secondary","Sistem Parametreleri","Genel sistem ayarlarını düzenle."),
                 ("/Admin/CentralVitrin",  "fas fa-store",              "bg-danger bg-opacity-10 text-danger",       "Merkezi Vitrin",      "Ana sayfada gösterilen kongre vitrinini yönet."),
