@@ -32,7 +32,6 @@ otomatik olarak değiştirilir. Plesk panelinde şu değerleri tanımla:
 | `STRIPE_PUBLISHABLE_KEY` | Stripe public key | Stripe kullanılıyorsa |
 | `STRIPE_SECRET_KEY` | Stripe secret key | Stripe kullanılıyorsa |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | Stripe kullanılıyorsa |
-| `STRIPE_BASE_URL` | Sitenin public URL'i (ör: https://antabstract.com.tr) | Stripe kullanılıyorsa |
 | `PAYTR_MERCHANT_ID` | PayTR merchant ID | PayTR kullanılıyorsa |
 | `PAYTR_MERCHANT_KEY` | PayTR merchant key | PayTR kullanılıyorsa |
 | `PAYTR_MERCHANT_SALT` | PayTR merchant salt | PayTR kullanılıyorsa |
@@ -68,15 +67,14 @@ sunucunun httpdocs klasörüne yükle. Mevcut dosyaların üzerine yaz.
 
 ## 4. Sunucu — Migration Çalıştır
 
-Uygulama bekleyen migration varsa **başlamayı reddeder**. SSH ile:
+> **ÖNEMLİ:** Uygulama bekleyen migration varsa **başlamayı reddeder**.
+> Deploy sonrası migration uygulanmazsa site 500 verir.
+
+SSH ile:
 
 ```bash
 cd /var/www/vhosts/<domain>/httpdocs
 
-# Seçenek A — Startup'ta migrate (Program.cs'e eklenirse):
-dotnet AntAbstract.Web.dll
-
-# Seçenek B — EF CLI ile (önerilen):
 export ConnectionStrings__Default="Server=...;Database=...;..."
 dotnet ef database update \
   --project AntAbstract.Infrastructure \
