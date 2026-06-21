@@ -9,6 +9,8 @@ namespace AntAbstract.Infrastructure.Services.Doi
     public class DoiRegistrationRequest
     {
         public Guid SubmissionId { get; set; }
+        public string SubmissionCode { get; set; } = string.Empty;
+        public string Slug { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public List<DoiRegistrationAuthor> Authors { get; set; } = new();
         public string ConferenceTitle { get; set; } = string.Empty;

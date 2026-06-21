@@ -1208,6 +1208,25 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return RedirectBack(returnUrl, slug);
             }
 
+            if (submission.Status != SubmissionStatus.Accepted && submission.Status != SubmissionStatus.Presented)
+            {
+                TempData["ErrorMessage"] = "DOI yalnızca kabul edilmiş bildiriler için kaydedilebilir.";
+                return RedirectBack(returnUrl, slug, id);
+            }
+
+            if (!string.IsNullOrWhiteSpace(submission.DoiUrl))
+            {
+                TempData["InfoMessage"] = $"Bu bildiriye zaten DOI atanmış: {submission.DoiUrl}";
+                return RedirectBack(returnUrl, slug, id);
+            }
+
+            var conferenceSlug = submission.Conference?.Tenant?.Slug
+                                 ?? submission.Conference?.Slug ?? slug ?? "";
+
+            var submissionCode = !string.IsNullOrWhiteSpace(submission.SubmissionIdCode)
+                ? submission.SubmissionIdCode
+                : id.ToString("N")[..8].ToUpperInvariant();
+
             var authors = submission.SubmissionAuthors?
                 .OrderBy(a => a.Order)
                 .Select(a => new AntAbstract.Infrastructure.Services.Doi.DoiRegistrationAuthor
@@ -1222,6 +1241,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 new AntAbstract.Infrastructure.Services.Doi.DoiRegistrationRequest
                 {
                     SubmissionId = id,
+                    SubmissionCode = submissionCode,
+                    Slug = conferenceSlug,
                     Title = submission.Title,
                     Authors = authors,
                     ConferenceTitle = submission.Conference?.Title ?? "",
