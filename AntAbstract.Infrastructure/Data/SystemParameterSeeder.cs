@@ -52,7 +52,10 @@ namespace AntAbstract.Infrastructure.Data
         private static JsonElement? ReadEmbeddedJson()
         {
             var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
-            var filePath = Path.Combine(dir, "SeedData", "system-parameters.json");
+            var filePath = Path.Combine(dir, "Data", "SeedData", "system-parameters.json");
+
+            if (!File.Exists(filePath))
+                filePath = Path.Combine(dir, "SeedData", "system-parameters.json");
 
             if (!File.Exists(filePath))
             {
