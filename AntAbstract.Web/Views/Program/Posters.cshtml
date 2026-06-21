@@ -1,0 +1,73 @@
+@model List<AntAbstract.Domain.Entities.Submission>
+@{
+    ViewData["Title"] = "Poster Galerisi";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var slug = ViewBag.Slug as string ?? "";
+    var confName = ViewBag.ConferenceName as string ?? "";
+}
+
+<div class="container py-5" style="padding-top:120px;">
+    <div class="text-center mb-5">
+        <div class="d-inline-block px-3 py-1 rounded-pill mb-3" style="background:rgba(124,58,237,.1);color:#7c3aed;font-size:.8rem;font-weight:800;">
+            <i class="fas fa-image me-1"></i> Poster Galerisi
+        </div>
+        <h2 class="fw-900 mb-2">@confName</h2>
+        <p class="text-muted">Kabul edilen poster sunumları</p>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5 text-muted">
+            <i class="fas fa-images fa-3x mb-3 d-block"></i>
+            <p class="fw-bold">Henüz poster bildirisi bulunmuyor.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var poster in Model)
+            {
+                var authorNames = poster.SubmissionAuthors?.OrderBy(a => a.Order)
+                    .Select(a => $"{a.FirstName} {a.LastName}".Trim())
+                    .Where(a => !string.IsNullOrWhiteSpace(a))
+                    .ToList() ?? new();
+
+                var authorText = authorNames.Any()
+                    ? string.Join(", ", authorNames)
+                    : (poster.Author != null ? $"{poster.Author.FirstName} {poster.Author.LastName}".Trim() : "");
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-4 h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <span class="badge rounded-pill" style="background:#7c3aed;font-size:.7rem;">Poster</span>
+                                @if (!string.IsNullOrWhiteSpace(poster.DoiUrl))
+                                {
+                                    <a href="@poster.DoiUrl" target="_blank" class="badge rounded-pill bg-info text-decoration-none" style="font-size:.65rem;">
+                                        <i class="fas fa-fingerprint me-1"></i>DOI
+                                    </a>
+                                }
+                            </div>
+                            <h6 class="fw-bold mb-2" style="font-size:.92rem;line-height:1.4;">@poster.Title</h6>
+                            <p class="text-muted small mb-2">
+                                <i class="fas fa-users me-1"></i>@authorText
+                            </p>
+                            @if (!string.IsNullOrWhiteSpace(poster.Abstract))
+                            {
+                                <p class="text-muted small mb-0" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">
+                                    @poster.Abstract
+                                </p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <div class="text-center mt-4">
+        <a href="/@slug/Program" class="btn btn-outline-secondary rounded-pill px-4">
+            <i class="fas fa-arrow-left me-1"></i> Programa Dön
+        </a>
+    </div>
+</div>

@@ -57,6 +57,7 @@ namespace AntAbstract.Web.Controllers
             HttpContext.Session.SetString("SelectedConferenceTitle", conference.Title ?? "");
 
             var speakers = await _context.InvitedSpeakers
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Where(s => s.ConferenceId == conference.Id && s.IsActive)
                 .OrderBy(s => s.SortOrder).ThenBy(s => s.FullName)

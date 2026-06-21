@@ -401,6 +401,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 SpeakerName = string.IsNullOrWhiteSpace(model.SpeakerName) ? null : model.SpeakerName.Trim(),
                 PresentationTitle = string.IsNullOrWhiteSpace(model.PresentationTitle) ? null : model.PresentationTitle.Trim(),
                 PresentationTitleEn = string.IsNullOrWhiteSpace(model.PresentationTitleEn) ? null : model.PresentationTitleEn.Trim(),
+                LiveStreamUrl = string.IsNullOrWhiteSpace(model.LiveStreamUrl) ? null : model.LiveStreamUrl.Trim(),
+                LiveStreamPlatform = string.IsNullOrWhiteSpace(model.LiveStreamPlatform) ? null : model.LiveStreamPlatform.Trim(),
                 SortOrder = model.SortOrder,
                 IsActive = model.IsActive,
                 CreatedDate = DateTime.UtcNow
@@ -520,6 +522,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             existingSession.SpeakerName = string.IsNullOrWhiteSpace(session.SpeakerName) ? null : session.SpeakerName.Trim();
             existingSession.PresentationTitle = string.IsNullOrWhiteSpace(session.PresentationTitle) ? null : session.PresentationTitle.Trim();
             existingSession.PresentationTitleEn = string.IsNullOrWhiteSpace(session.PresentationTitleEn) ? null : session.PresentationTitleEn.Trim();
+            existingSession.LiveStreamUrl = string.IsNullOrWhiteSpace(session.LiveStreamUrl) ? null : session.LiveStreamUrl.Trim();
+            existingSession.LiveStreamPlatform = string.IsNullOrWhiteSpace(session.LiveStreamPlatform) ? null : session.LiveStreamPlatform.Trim();
             existingSession.SortOrder = session.SortOrder;
             existingSession.IsActive = session.IsActive;
             existingSession.UpdatedDate = DateTime.UtcNow;

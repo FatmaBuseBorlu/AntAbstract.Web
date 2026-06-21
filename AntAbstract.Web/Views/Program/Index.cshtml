@@ -944,6 +944,15 @@
                                                 <i class="fas fa-file-lines"></i>
                                                 @submissionCount @L("SubmissionText", "bildiri", "abstracts")
                                             </span>
+
+                                            @if (!string.IsNullOrWhiteSpace(session.LiveStreamUrl))
+                                            {
+                                                <a href="@session.LiveStreamUrl" target="_blank"
+                                                   class="program-meta text-decoration-none text-danger fw-bold">
+                                                    <i class="fas fa-video"></i>
+                                                    @(session.LiveStreamPlatform ?? "Canlı Yayın")
+                                                </a>
+                                            }
                                         </div>
 
                                         @if (!string.IsNullOrWhiteSpace(presentationTitle))

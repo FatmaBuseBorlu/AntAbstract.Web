@@ -648,6 +648,28 @@
                                 <span asp-validation-for="SpeakerName" class="text-danger small fw-bold"></span>
                             </div>
 
+                            <div class="col-md-8">
+                                <label asp-for="LiveStreamUrl" class="form-label-modern">
+                                    <i class="fas fa-video me-1"></i> Canlı Yayın Linki
+                                </label>
+                                <input asp-for="LiveStreamUrl" class="form-control-modern"
+                                       placeholder="https://zoom.us/j/... veya https://teams.microsoft.com/..." />
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="LiveStreamPlatform" class="form-label-modern">
+                                    Platform
+                                </label>
+                                <select asp-for="LiveStreamPlatform" class="form-control-modern">
+                                    <option value="">Seçiniz</option>
+                                    <option value="Zoom">Zoom</option>
+                                    <option value="Teams">Microsoft Teams</option>
+                                    <option value="Meet">Google Meet</option>
+                                    <option value="YouTube">YouTube Live</option>
+                                    <option value="Other">Diğer</option>
+                                </select>
+                            </div>
+
                             <div class="col-md-12">
                                 <label asp-for="PresentationTitle" class="form-label-modern">
                                     @L("PresentationTitleLabel", "Sunum / Bildiri Başlığı")

@@ -21,19 +21,22 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly IAdminTenantAccessService _tenantAccess;
         private readonly IStringLocalizer<CertificatesController> _localizer;
         private readonly ILogger<CertificatesController> _logger;
+        private readonly INotificationService _notificationService;
 
         public CertificatesController(
             AppDbContext context,
             ICertificateService certificateService,
             IAdminTenantAccessService tenantAccess,
             IStringLocalizer<CertificatesController> localizer,
-            ILogger<CertificatesController> logger)
+            ILogger<CertificatesController> logger,
+            INotificationService notificationService)
         {
             _context = context;
             _certificateService = certificateService;
             _tenantAccess = tenantAccess;
             _localizer = localizer;
             _logger = logger;
+            _notificationService = notificationService;
         }
 
         private string T(string key, string fallback)
@@ -322,8 +325,29 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 }
             }
 
+            var allUserIds = authorSubmissions.Select(s => s.UserId!)
+                .Union(reviewerIds)
+                .Union(attendeeIds.Where(id => id != null).Select(id => id!))
+                .Distinct()
+                .ToList();
+
+            foreach (var uid in allUserIds)
+            {
+                try
+                {
+                    await _notificationService.CreateAsync(
+                        userId: uid,
+                        title: "Sertifikanız Hazır",
+                        message: $"{conference.Title} kongresine ait sertifikanız oluşturuldu.",
+                        icon: "fas fa-certificate",
+                        color: "success",
+                        link: "/Certificates/Index");
+                }
+                catch { }
+            }
+
             if (errors == 0)
-                TempData["SuccessMessage"] = $"Toplu sertifika oluşturma tamamlandı. {generated} sertifika işlendi.";
+                TempData["SuccessMessage"] = $"Toplu sertifika oluşturma tamamlandı. {generated} sertifika işlendi, {allUserIds.Count} kullanıcıya bildirim gönderildi.";
             else
                 TempData["SuccessMessage"] = $"{generated} sertifika işlendi, {errors} hata oluştu.";
 
