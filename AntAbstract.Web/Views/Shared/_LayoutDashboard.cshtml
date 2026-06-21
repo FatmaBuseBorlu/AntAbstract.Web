@@ -1415,19 +1415,19 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                 <a href="/Admin/EmailTemplates"
                    class="nav-link @(currentController == "EmailTemplates" ? "active" : "")">
                     <i class="fas fa-envelope-open-text text-primary"></i>
-                    E-posta Şablonları
+                    @L("Tools_EmailTemplates", "E-posta Şablonları")
                 </a>
 
                 <a href="/Admin/Broadcast"
                    class="nav-link @(currentController == "Broadcast" ? "active" : "")">
                     <i class="fas fa-paper-plane text-primary"></i>
-                    Toplu E-posta
+                    @L("Tools_BulkEmail", "Toplu E-posta")
                 </a>
 
                 <a href="/Admin/PermissionMatrix"
                    class="nav-link @(currentController == "PermissionMatrix" ? "active" : "")">
                     <i class="fas fa-shield-alt text-info"></i>
-                    Yetki Matrisi
+                    @L("Tools_PermissionMatrix", "Yetki Matrisi")
                 </a>
 
                 <div class="menu-label text-secondary">
@@ -1449,13 +1449,13 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                 <a href="/Admin/AuditLogs"
                    class="nav-link @(currentController == "AuditLogs" ? "active" : "")">
                     <i class="fas fa-history text-secondary"></i>
-                    Denetim Günlüğü
+                    @L("System_AuditLog", "Denetim Günlüğü")
                 </a>
 
                 <a href="/Admin/Health"
                    class="nav-link @(currentController == "Health" ? "active" : "")">
                     <i class="fas fa-heartbeat text-danger"></i>
-                    Sistem Sağlığı
+                    @L("System_Health", "Sistem Sağlığı")
                 </a>
             }
 
@@ -1687,13 +1687,13 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                     <a href="@(string.IsNullOrWhiteSpace(slug) ? "/Admin/Broadcast" : $"/{slug}/Admin/Broadcast")"
                        class="nav-link @(currentController == "Broadcast" ? "active" : "")">
                         <i class="fas fa-paper-plane text-primary"></i>
-                        Toplu E-posta
+                        @L("Tools_BulkEmail", "Toplu E-posta")
                     </a>
 
                     <a href="@(string.IsNullOrWhiteSpace(slug) ? "/Admin/PermissionMatrix" : $"/{slug}/Admin/PermissionMatrix")"
                        class="nav-link @(currentController == "PermissionMatrix" ? "active" : "")">
                         <i class="fas fa-shield-alt text-secondary"></i>
-                        Yetki Matrisi
+                        @L("Tools_PermissionMatrix", "Yetki Matrisi")
                     </a>
 
                     <a href="@websiteAdminUrl"
@@ -1734,7 +1734,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                     <a href="@broadcastUrl"
                        class="nav-link @(currentController == "Broadcast" ? "active" : "")">
                         <i class="fas fa-paper-plane text-primary"></i>
-                        Toplu E-posta
+                        @L("Tools_BulkEmail", "Toplu E-posta")
                     </a>
 
                     var attendanceUrl = string.IsNullOrWhiteSpace(slug)
@@ -1765,7 +1765,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                 <a href="@auditUrl"
                    class="nav-link @(currentController == "AuditLogs" ? "active" : "")">
                     <i class="fas fa-history text-secondary"></i>
-                    Denetim Günlüğü
+                    @L("System_AuditLog", "Denetim Günlüğü")
                 </a>
 
                 var healthUrl = string.IsNullOrWhiteSpace(slug)
@@ -1774,7 +1774,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                 <a href="@healthUrl"
                    class="nav-link @(currentController == "Health" ? "active" : "")">
                     <i class="fas fa-heartbeat text-danger"></i>
-                    Sistem Sağlığı
+                    @L("System_Health", "Sistem Sağlığı")
                 </a>
             }
         </div>
