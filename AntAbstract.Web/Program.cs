@@ -437,7 +437,6 @@ if (!app.Environment.IsEnvironment("Testing"))
             );
 
             await AntAbstract.Infrastructure.Data.DbSeeder.SeedRolesAndUsers(services);
-            await AntAbstract.Infrastructure.Data.SystemParameterSeeder.SeedAsync(context);
 
             if (app.Environment.IsDevelopment())
             {
