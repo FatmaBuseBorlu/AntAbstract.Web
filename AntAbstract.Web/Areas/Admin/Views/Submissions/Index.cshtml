@@ -290,11 +290,11 @@
         <div class="submission-list-header">
             <div>
                 <h5>
-                    Başvuru Listesi
+                    @Localizer["SubmissionList"]
                 </h5>
 
                 <p>
-                    Seçili kongreye ait bildiriler ve güncel durumları.
+                    @Localizer["SubmissionListDesc"]
                 </p>
             </div>
 
@@ -306,10 +306,10 @@
                 }
                 <a href="@exportUrl" class="btn submission-export-btn" title="CSV olarak indir">
                     <i class="fas fa-file-csv me-1"></i>
-                    Dışa Aktar
+                    @Localizer["Export"]
                 </a>
                 <div class="submission-count-pill">
-                    @totalCount bildiri
+                    @totalCount @Localizer["Submissions"]
                 </div>
             </div>
         </div>
@@ -321,16 +321,16 @@
                     <i class="fas fa-file-circle-question"></i>
                 </div>
 
-                <h4>Bildiri bulunamadı</h4>
+                <h4>@Localizer["NoSubmissionsFound"]</h4>
 
                 <p>
-                    Seçili filtrelere uygun bildiri bulunamadı. Filtreleri temizleyerek tekrar deneyebilirsiniz.
+                    @Localizer["NoSubmissionsMessage"]
                 </p>
 
                 <div class="d-flex flex-wrap justify-content-center gap-2">
                     <a href="@listUrl" class="btn submission-primary-btn">
                         <i class="fas fa-rotate-left me-2"></i>
-                        Filtreleri Temizle
+                        @Localizer["ClearFilters"]
                     </a>
 
                     <a href="@flowUrl" class="btn submission-light-btn">
@@ -346,12 +346,12 @@
                 <table class="submission-table">
                     <thead>
                         <tr>
-                            <th>Tarih</th>
-                            <th>Bildiri</th>
-                            <th>Yazar</th>
-                            <th>Hakemler</th>
-                            <th>Durum</th>
-                            <th class="text-end">İşlemler</th>
+                            <th>@Localizer["Date"]</th>
+                            <th>@Localizer["Submission"]</th>
+                            <th>@Localizer["Author"]</th>
+                            <th>@Localizer["Reviewers"]</th>
+                            <th>@Localizer["Status"]</th>
+                            <th class="text-end">@Localizer["Actions"]</th>
                         </tr>
                     </thead>
 
@@ -397,7 +397,7 @@
                                             <i class="fas fa-user"></i>
                                         </div>
 
-                                        <span>@(string.IsNullOrWhiteSpace(item.AuthorName) ? "Yazar bilgisi yok" : item.AuthorName)</span>
+                                        <span>@(string.IsNullOrWhiteSpace(item.AuthorName) ? Localizer["NoAuthorInfo"].Value : item.AuthorName)</span>
                                     </div>
                                 </td>
 
@@ -406,14 +406,14 @@
                                     {
                                         <span class="reviewer-badge reviewer-badge-assigned">
                                             <i class="fas fa-user-check"></i>
-                                            @item.AssignedReviewerCount hakem
+                                            @item.AssignedReviewerCount @Localizer["Referee"]
                                         </span>
                                     }
                                     else
                                     {
                                         <span class="reviewer-badge reviewer-badge-none">
                                             <i class="fas fa-user-slash"></i>
-                                            Atanmadı
+                                            @Localizer["NotAssigned"]
                                         </span>
                                     }
                                 </td>
@@ -428,7 +428,7 @@
                                     <div class="submission-actions">
                                         <a href="@detailsUrl" class="btn action-view-btn">
                                             <i class="fas fa-eye"></i>
-                                            <span>İncele</span>
+                                            <span>@Localizer["Review"]</span>
                                         </a>
 
                                         <button type="button"
@@ -442,21 +442,21 @@
                                             <li>
                                                 <a class="dropdown-item" href="@detailsUrl">
                                                     <i class="fas fa-magnifying-glass me-2"></i>
-                                                    Detayları Gör
+                                                    @Localizer["ViewDetails"]
                                                 </a>
                                             </li>
 
                                             <li>
                                                 <a class="dropdown-item" href="@assignUrl">
                                                     <i class="fas fa-user-check me-2"></i>
-                                                    Hakem Ata
+                                                    @Localizer["AssignReferee"]
                                                 </a>
                                             </li>
 
                                             <li>
                                                 <a class="dropdown-item" href="@decisionUrl">
                                                     <i class="fas fa-gavel me-2"></i>
-                                                    Karar Ekranı
+                                                    @Localizer["DecisionScreen"]
                                                 </a>
                                             </li>
                                         </ul>

@@ -3,7 +3,6 @@
 @using System.Linq
 
 @model Submission
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -118,7 +117,7 @@
 
             <div>
                 <div class="detail-section-label">
-                    Bildiri İnceleme
+                    @Localizer["PageTitle"]
                 </div>
 
                 <h2 class="detail-page-title">
@@ -145,12 +144,12 @@
         <div class="detail-hero-actions">
             <a href="@listUrl" class="btn detail-light-btn">
                 <i class="fas fa-arrow-left me-2"></i>
-                Listeye Dön
+                @Localizer["BackToList"]
             </a>
 
             <a href="@assignUrl" class="btn detail-primary-btn">
                 <i class="fas fa-user-check me-2"></i>
-                Hakem Ata
+                @Localizer["AssignReferee"]
             </a>
         </div>
     </div>
@@ -161,17 +160,17 @@
                 <div class="modern-tabs">
                     <button type="button" class="modern-tab active" data-tab-target="summary">
                         <i class="fas fa-file-lines"></i>
-                        Özet
+                        @Localizer["Summary"]
                     </button>
 
                     <button type="button" class="modern-tab" data-tab-target="authors">
                         <i class="fas fa-users"></i>
-                        Yazarlar
+                        @Localizer["Authors"]
                     </button>
 
                     <button type="button" class="modern-tab" data-tab-target="files">
                         <i class="fas fa-paperclip"></i>
-                        Dosyalar
+                        @Localizer["Files"]
                     </button>
                 </div>
 
@@ -181,29 +180,29 @@
 
                         <div class="summary-meta-grid">
                             <div>
-                                <span>Konu</span>
-                                <strong>@(string.IsNullOrWhiteSpace(Model.Topic) ? "Belirtilmedi" : Model.Topic)</strong>
+                                <span>@Localizer["Topic"]</span>
+                                <strong>@(string.IsNullOrWhiteSpace(Model.Topic) ? Localizer["NotSpecified"].Value : Model.Topic)</strong>
                             </div>
 
                             <div>
-                                <span>Sunum Türü</span>
+                                <span>@Localizer["PresentationType"]</span>
                                 <strong>@Model.PresentationType</strong>
                             </div>
 
                             <div>
-                                <span>Gönderim Tarihi</span>
+                                <span>@Localizer["SubmissionDate"]</span>
                                 <strong>@Model.CreatedDate.ToString("dd.MM.yyyy HH:mm")</strong>
                             </div>
 
                             <div>
-                                <span>Mevcut Durum</span>
+                                <span>@Localizer["CurrentStatus"]</span>
                                 <strong>@StatusLabel(Model.Status)</strong>
                             </div>
                         </div>
 
                         <div class="abstract-box">
                             <div class="content-label">
-                                Bildiri Özeti
+                                @Localizer["Abstract"]
                             </div>
 
                             <p>
@@ -212,11 +211,11 @@
                         </div>
 
                         <div class="keywords-box">
-                            <span>Anahtar Kelimeler</span>
+                            <span>@Localizer["Keywords"]</span>
 
                             @if (string.IsNullOrWhiteSpace(Model.Keywords))
                             {
-                                <strong>Belirtilmedi</strong>
+                                <strong>@Localizer["NotSpecified"]</strong>
                             }
                             else
                             {
@@ -236,7 +235,7 @@
                     {
                         <div class="mini-empty">
                             <i class="fas fa-user-slash"></i>
-                            <strong>Yazar bilgisi bulunamadı</strong>
+                            <strong>@Localizer["NoAuthorInfo"]</strong>
                             <span>Bu bildiriye ait yazar listesi henüz oluşmamış.</span>
                         </div>
                     }
@@ -259,7 +258,7 @@
                                     @if (author.IsCorrespondingAuthor)
                                     {
                                         <div class="corresponding-badge">
-                                            Sorumlu Yazar
+                                            @Localizer["CorrespondingAuthor"]
                                         </div>
                                     }
                                 </div>
@@ -273,7 +272,7 @@
                     {
                         <div class="mini-empty">
                             <i class="fas fa-file-circle-xmark"></i>
-                            <strong>Dosya bulunamadı</strong>
+                            <strong>@Localizer["NoFilesFound"]</strong>
                             <span>Bu bildiriye ait yüklenmiş dosya yok.</span>
                         </div>
                     }
@@ -385,7 +384,7 @@
                             <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#7c3aed15;color:#7c3aed;font-size:0.85rem;">
                                 <i class="fas fa-shield-halved"></i>
                             </span>
-                            <span style="font-weight:800;font-size:0.85rem;color:#334155;">İntihal Kontrolü</span>
+                            <span style="font-weight:800;font-size:0.85rem;color:#334155;">@Localizer["PlagiarismCheck"]</span>
                         </div>
 
                         @if (plagReport != null)
@@ -458,8 +457,8 @@
             <div class="side-card status-side-card mb-4">
                 <div class="side-card-header">
                     <div>
-                        <span>Durum Yönetimi</span>
-                        <h5>Bildiri Durumu</h5>
+                        <span>@Localizer["StatusManagement"]</span>
+                        <h5>@Localizer["SubmissionStatus"]</h5>
                     </div>
 
                     <div class="status-icon">
@@ -468,7 +467,7 @@
                 </div>
 
                 <div class="current-status-box @StatusClass(Model.Status)">
-                    <span>Mevcut Durum</span>
+                    <span>@Localizer["CurrentStatus"]</span>
                     <strong>@StatusLabel(Model.Status)</strong>
                 </div>
 
@@ -479,7 +478,7 @@
                     <input type="hidden" name="conferenceId" value="@conferenceId" />
                     <input type="hidden" name="returnUrl" value="@listUrl" />
 
-                    <label>Durumu Değiştir</label>
+                    <label>@Localizer["ChangeStatus"]</label>
 
                     <select name="status" class="detail-select">
                         @foreach (SubmissionStatus statusItem in Enum.GetValues(typeof(SubmissionStatus)))
@@ -497,7 +496,7 @@
 
                     <div class="mt-3">
                         <label class="form-label small fw-semibold text-muted">
-                            Yazara Not <small class="fw-normal">(isteğe bağlı)</small>
+                            @Localizer["NoteToAuthor"] <small class="fw-normal">(isteğe bağlı)</small>
                         </label>
                         <textarea name="adminNote" class="form-control form-control-sm" rows="3"
                                   placeholder="Karar hakkında yazara iletilecek açıklama..."
@@ -507,7 +506,7 @@
 
                     <button type="submit" class="btn detail-primary-btn w-100 mt-3">
                         <i class="fas fa-save me-2"></i>
-                        Durumu Kaydet
+                        @Localizer["SaveStatus"]
                     </button>
                 </form>
             </div>
@@ -653,8 +652,8 @@
             <div class="side-card mb-4">
                 <div class="side-card-header">
                     <div>
-                        <span>Hakem Değerlendirmeleri</span>
-                        <h5>Atama Durumu</h5>
+                        <span>@Localizer["RefereeReviews"]</span>
+                        <h5>@Localizer["AssignmentStatus"]</h5>
                     </div>
 
                     <div class="status-icon review-icon">
@@ -666,7 +665,7 @@
                 {
                     <div class="review-empty">
                         <i class="fas fa-user-clock"></i>
-                        <strong>Henüz atama yapılmamış</strong>
+                        <strong>@Localizer["NoAssignment"]</strong>
                         <span>Bu bildiriye henüz hakem atanmamış.</span>
                     </div>
                 }
@@ -737,15 +736,15 @@
 
                 <a href="@assignUrl" class="btn detail-light-btn w-100 mt-3">
                     <i class="fas fa-plus me-2"></i>
-                    Yeni Hakem Ata
+                    @Localizer["AssignNewReferee"]
                 </a>
             </div>
 
             <div class="side-card danger-card">
                 <div class="side-card-header">
                     <div>
-                        <span>Silme İşlemi</span>
-                        <h5>Bildiri Sil</h5>
+                        <span>@Localizer["DeleteOperation"]</span>
+                        <h5>@Localizer["DeleteSubmission"]</h5>
                     </div>
 
                     <div class="status-icon danger-icon">
@@ -754,7 +753,7 @@
                 </div>
 
                 <p>
-                    Bu işlem geri alınamaz. Bildiri ve ilişkili dosya kayıtları silinebilir.
+                    @Localizer["DeleteWarning"]
                 </p>
 
                 <form method="post" action="@deleteUrl" onsubmit="return confirm('Bu bildiriyi silmek istediğinize emin misiniz?');">
@@ -766,7 +765,7 @@
 
                     <button type="submit" class="btn danger-delete-btn w-100">
                         <i class="fas fa-trash me-2"></i>
-                        Bildiriyi Sil
+                        @Localizer["DeleteSubmissionBtn"]
                     </button>
                 </form>
             </div>
