@@ -641,11 +641,8 @@
     @{
         Func<string, string, string> L = (key, fallback) =>
         {
-            var value = Localizer[key].Value;
-
-            return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
-            ? fallback
-            : value;
+            var loc = Localizer[key];
+            return loc.ResourceNotFound ? fallback : loc.Value;
         };
 
         var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";

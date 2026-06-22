@@ -11,11 +11,8 @@
 @{
     string L(string key, string fallback)
     {
-        var value = Localizer[key].Value;
-
-        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
-            ? fallback
-            : value;
+        var loc = Localizer[key];
+        return loc.ResourceNotFound ? fallback : loc.Value;
     }
 
     ViewData["Title"] = L("PageTitle", "Sertifikalarım");
