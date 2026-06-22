@@ -714,11 +714,11 @@
 
         Func<string, string, string, string> T = (key, trFallback, enFallback) =>
         {
-            var value = Localizer[key].Value;
+            var loc = Localizer[key];
 
-            if (!string.Equals(value, key, StringComparison.OrdinalIgnoreCase))
+            if (!loc.ResourceNotFound)
             {
-                return value;
+                return loc.Value;
             }
 
             return currentCulture.StartsWith("en", StringComparison.OrdinalIgnoreCase)
