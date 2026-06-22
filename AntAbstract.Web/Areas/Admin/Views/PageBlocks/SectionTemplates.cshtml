@@ -25,16 +25,16 @@
     {
         return blockType switch
         {
-            ConferencePageBlockType.Hero => "Ana Karşılama",
-            ConferencePageBlockType.About => "Hakkında / İçerik",
-            ConferencePageBlockType.Topics => "Kongre Konuları",
-            ConferencePageBlockType.ImportantDates => "Önemli Tarihler",
-            ConferencePageBlockType.Fees => "Katılım Ücreti",
+            ConferencePageBlockType.Hero => Localizer.GetString("TypeHero").Value,
+            ConferencePageBlockType.About => Localizer.GetString("TypeAbout").Value,
+            ConferencePageBlockType.Topics => Localizer.GetString("TypeTopics").Value,
+            ConferencePageBlockType.ImportantDates => Localizer.GetString("TypeDates").Value,
+            ConferencePageBlockType.Fees => Localizer.GetString("TypeFees").Value,
             ConferencePageBlockType.Committees => "Bilim Kurulu",
             ConferencePageBlockType.Sponsors => "Sponsorlar",
-            ConferencePageBlockType.Contact => "İletişim",
-            ConferencePageBlockType.FAQ => "Sık Sorulan Sorular",
-            ConferencePageBlockType.CallForPapers => "Kongreye Çağrı",
+            ConferencePageBlockType.Contact => Localizer.GetString("TypeContact").Value,
+            ConferencePageBlockType.FAQ => Localizer.GetString("TypeFAQ").Value,
+            ConferencePageBlockType.CallForPapers => Localizer.GetString("TypeCallForPapers").Value,
             _ => blockType.ToString()
         };
     }
@@ -743,7 +743,6 @@
                 </h3>
 
                 <p class="admin-hero-lead">
-                    Kongre sitelerinde kullanılabilecek hazır bölüm şablonlarını buradan ekleyebilir, düzenleyebilir ve aktif/pasif yapabilirsiniz.
                 </p>
             </div>
         </div>
@@ -752,13 +751,13 @@
             <a href="/Admin/CentralVitrin"
                class="admin-hero-btn admin-hero-btn-light">
                 <i class="fas fa-globe"></i>
-                Kongre Sitelerine Git
+                @Localizer["GoToSites"]
             </a>
 
             <a href="/Admin/PageBlocks/Create"
                class="admin-hero-btn admin-hero-btn-primary">
                 <i class="fas fa-plus"></i>
-                Yeni Şablon Ekle
+                @Localizer["AddNew"]
             </a>
         </div>
     </div>
@@ -801,7 +800,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    Toplam Şablon
+                    @Localizer["TotalTemplates"]
                 </div>
             </div>
         </div>
@@ -817,7 +816,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    Aktif Şablon
+                    @Localizer["ActiveTemplates"]
                 </div>
             </div>
         </div>
@@ -880,64 +879,64 @@
                 <select name="status" class="form-select admin-filter-control">
                     @if (string.IsNullOrWhiteSpace(status) || status == "All")
                     {
-                        <option value="All" selected>Tüm Durumlar</option>
+                        <option value="All" selected>@Localizer["AllStatuses"]</option>
                     }
                     else
                     {
-                        <option value="All">Tüm Durumlar</option>
+                        <option value="All">@Localizer["AllStatuses"]</option>
                     }
 
                     @if (status == "Active")
                     {
-                        <option value="Active" selected>Aktif</option>
+                        <option value="Active" selected>@Localizer["Active"]</option>
                     }
                     else
                     {
-                        <option value="Active">Aktif</option>
+                        <option value="Active">@Localizer["Active"]</option>
                     }
 
                     @if (status == "Passive")
                     {
-                        <option value="Passive" selected>Pasif</option>
+                        <option value="Passive" selected>@Localizer["Passive"]</option>
                     }
                     else
                     {
-                        <option value="Passive">Pasif</option>
+                        <option value="Passive">@Localizer["Passive"]</option>
                     }
                 </select>
             </div>
 
             <div class="col-lg-3">
                 <label class="admin-filter-label">
-                    Şablon Tipi
+                    @Localizer["TemplateType"]
                 </label>
 
                 <select name="defaultFilter" class="form-select admin-filter-control">
                     @if (string.IsNullOrWhiteSpace(defaultFilter) || defaultFilter == "All")
                     {
-                        <option value="All" selected>Tüm Şablonlar</option>
+                        <option value="All" selected>@Localizer["AllTemplates"]</option>
                     }
                     else
                     {
-                        <option value="All">Tüm Şablonlar</option>
+                        <option value="All">@Localizer["AllTemplates"]</option>
                     }
 
                     @if (defaultFilter == "Default")
                     {
-                        <option value="Default" selected>Varsayılan</option>
+                        <option value="Default" selected>@Localizer["Default"]</option>
                     }
                     else
                     {
-                        <option value="Default">Varsayılan</option>
+                        <option value="Default">@Localizer["Default"]</option>
                     }
 
                     @if (defaultFilter == "Custom")
                     {
-                        <option value="Custom" selected>Özel</option>
+                        <option value="Custom" selected>@Localizer["Custom"]</option>
                     }
                     else
                     {
-                        <option value="Custom">Özel</option>
+                        <option value="Custom">@Localizer["Custom"]</option>
                     }
                 </select>
             </div>
@@ -965,7 +964,7 @@
         <div class="section-templates-card-header">
             <div>
                 <h5 class="section-templates-card-title">
-                    Şablon Listesi
+                    @Localizer["ListTitle"]
                 </h5>
 
                 <p class="section-templates-card-subtitle">
@@ -988,7 +987,7 @@
                 </div>
 
                 <h6 class="section-templates-empty-title">
-                    Şablon bulunamadı
+                    @Localizer["EmptyTitle"]
                 </h6>
 
                 <p class="section-templates-empty-text">
@@ -1120,12 +1119,12 @@
                                                 @if (item.IsActive)
                                                 {
                                                     <i class="fas fa-eye-slash"></i>
-                                                    <span>Pasif Yap</span>
+                                                    <span>@Localizer["MakePassive"]</span>
                                                 }
                                                 else
                                                 {
                                                     <i class="fas fa-eye"></i>
-                                                    <span>Aktif Yap</span>
+                                                    <span>@Localizer["MakeActive"]</span>
                                                 }
                                             </button>
                                         </form>

@@ -757,7 +757,7 @@
 
             <div>
                 <div class="admin-hero-kicker">
-                    Kongre Operasyonları
+                    @Localizer["HeroKicker"]
                 </div>
 
                 <h3 class="admin-hero-title">
@@ -774,7 +774,7 @@
             <a href="/Admin"
                class="admin-hero-btn admin-hero-btn-light">
                 <i class="fas fa-arrow-left"></i>
-                Panele Dön
+                @Localizer["BackToPanel"]
             </a>
         </div>
     </div>
@@ -858,7 +858,7 @@
 
                     <input type="text"
                            id="conferenceSearchInput"
-                           placeholder="Kongre adı, kurum veya slug ara..." />
+                           placeholder="@Localizer["SearchPlaceholder"]" />
                 </div>
             </div>
 
@@ -868,7 +868,7 @@
                 </label>
 
                 <select id="tenantFilterSelect" class="form-select admin-filter-control">
-                    <option value="">Tüm Kurumlar</option>
+                    <option value="">@Localizer["AllInstitutions"]</option>
 
                     @foreach (var tenantSlug in conferences
                                         .Where(x => x.Tenant != null && !string.IsNullOrWhiteSpace(x.Tenant.Slug))
@@ -917,7 +917,7 @@
                     </h5>
 
                     <p>
-                        İşlem yapmak istediğiniz kongreyi seçip devam edin.
+                        @Localizer["SelectInstruction"]
                     </p>
                 </div>
 
@@ -935,11 +935,11 @@
                     </div>
 
                     <h4>
-                        Görüntülenecek kongre bulunamadı
+                        @Localizer["EmptyTitle"]
                     </h4>
 
                     <p>
-                        Bu işlem için erişebileceğiniz bir kongre bulunmuyor.
+                        @Localizer["EmptyDescription"]
                     </p>
                 </div>
             }
@@ -1004,7 +1004,7 @@
                                        class="conference-site-btn"
                                        onclick="event.stopPropagation();">
                                         <i class="fas fa-external-link-alt"></i>
-                                        Siteyi Gör
+                                        @Localizer["ViewSite"]
                                     </a>
                                 }
                                 else
@@ -1026,18 +1026,18 @@
                     </div>
 
                     <h4>
-                        Filtreye uygun kongre bulunamadı
+                        @Localizer["FilterEmptyTitle"]
                     </h4>
 
                     <p>
-                        Arama metnini veya kurum filtresini değiştirerek tekrar deneyebilirsiniz.
+                        @Localizer["FilterEmptyDescription"]
                     </p>
                 </div>
             }
 
             <div class="conference-list-footer">
                 <div class="selected-info-text" id="selectedConferenceText">
-                    Devam etmek için bir kongre seçin.
+                    @Localizer["SelectPrompt"]
                 </div>
 
                 <div class="footer-actions">
@@ -1098,7 +1098,7 @@
                     const title = titleElement ? titleElement.innerText.trim() : "Kongre";
 
                     if (selectedText) {
-                        selectedText.innerText = "Seçilen kongre: " + title;
+                        selectedText.innerText = Localizer.GetString("SelectedConference").Value + title;
                     }
 
                     if (continueButton) {
