@@ -655,15 +655,15 @@
 
             <div>
                 <div class="admin-hero-kicker">
-                    @Localizer["ConferenceOperations"]
+                    Kongre Operasyonları
                 </div>
 
                 <h3 class="admin-hero-title">
-                    @Localizer["ConferenceFlow"]
+                    Kongre Akışı
                 </h3>
 
                 <p class="admin-hero-lead">
-                    @Html.Raw(string.Format(Localizer["HeroLead"].Value, $"<strong>{Model.ConferenceTitle}</strong>"))
+                    <strong>@Model.ConferenceTitle</strong> kongresinin bildiri, hakem atama, karar, kayıt, program ve bildiri kitabı süreçlerini buradan takip edebilirsiniz.
                 </p>
 
                 <div class="flow-chip-row">
@@ -684,18 +684,18 @@
                     {
                         <span class="flow-chip @(Model.AbstractSubmissionDeadline.Value < DateTime.Now ? "flow-chip-danger" : "flow-chip-warning")">
                             <i class="fas fa-hourglass-half"></i>
-                            @Localizer["SubmissionDeadline"] @Model.AbstractSubmissionDeadline.Value.ToString("dd MMM yyyy")
+                            Son Başvuru: @Model.AbstractSubmissionDeadline.Value.ToString("dd MMM yyyy")
                         </span>
                     }
 
                     <span class="flow-chip @(Model.IsSubmissionOpen ? "flow-chip-success" : "flow-chip-muted")">
                         <i class="fas @(Model.IsSubmissionOpen ? "fa-check-circle" : "fa-lock")"></i>
-                        @Localizer["Submission"] @(Model.IsSubmissionOpen ? Localizer["Open"] : Localizer["Closed"])
+                        Bildiri @(Model.IsSubmissionOpen ? "Açık" : "Kapalı")
                     </span>
 
                     <span class="flow-chip @(Model.IsRegistrationOpen ? "flow-chip-success" : "flow-chip-muted")">
                         <i class="fas @(Model.IsRegistrationOpen ? "fa-check-circle" : "fa-lock")"></i>
-                        @Localizer["Registration"] @(Model.IsRegistrationOpen ? Localizer["Open"] : Localizer["Closed"])
+                        Kayıt @(Model.IsRegistrationOpen ? "Açık" : "Kapalı")
                     </span>
 
                     <form method="post" action="/@Model.Slug/Admin/ConferenceFlow/ToggleBidding" class="d-inline">
@@ -703,7 +703,7 @@
                         <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
                         <button type="submit" class="flow-chip flow-chip-btn @(Model.IsBiddingOpen ? "flow-chip-success" : "flow-chip-muted")">
                             <i class="fas @(Model.IsBiddingOpen ? "fa-hand-pointer" : "fa-hand")"></i>
-                            @Localizer["BiddingPhase"] @(Model.IsBiddingOpen ? Localizer["Open"] : Localizer["Closed"])
+                            Teklif Fazı @(Model.IsBiddingOpen ? "Açık" : "Kapalı")
                         </button>
                     </form>
 
@@ -712,13 +712,13 @@
                         <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
                         <button type="submit" class="flow-chip flow-chip-btn @(Model.IsFullTextOpen ? "flow-chip-success" : "flow-chip-muted")">
                             <i class="fas @(Model.IsFullTextOpen ? "fa-file-word" : "fa-file")"></i>
-                            @Localizer["FullText"] @(Model.IsFullTextOpen ? Localizer["Open"] : Localizer["Closed"])
+                            Tam Metin @(Model.IsFullTextOpen ? "Açık" : "Kapalı")
                         </button>
                     </form>
 
                     <span class="flow-chip">
                         <i class="fas @(isSuperAdmin ? "fa-user-gear" : "fa-user-shield")"></i>
-                        @(isSuperAdmin ? "SuperAdmin" : Localizer["TenantAdmin"])
+                        @(isSuperAdmin ? "SuperAdmin" : "Kurum Admini")
                     </span>
                 </div>
             </div>
@@ -728,7 +728,7 @@
             <a href="@changeConferenceUrl"
                class="admin-hero-btn admin-hero-btn-light">
                 <i class="fas fa-exchange-alt"></i>
-                @Localizer["ChangeConference"]
+                Kongre Değiştir
             </a>
 
             @if (!string.IsNullOrWhiteSpace(slug))
@@ -737,7 +737,7 @@
                    target="_blank"
                    class="admin-hero-btn admin-hero-btn-primary">
                     <i class="fas fa-external-link-alt"></i>
-                    @Localizer["ViewSite"]
+                    Siteyi Gör
                 </a>
             }
         </div>
@@ -752,7 +752,7 @@
             <button type="button"
                     class="btn-close"
                     data-bs-dismiss="alert"
-                    aria-label="@Localizer["Close"]"></button>
+                    aria-label="Kapat"></button>
         </div>
     }
 
@@ -765,7 +765,7 @@
             <button type="button"
                     class="btn-close"
                     data-bs-dismiss="alert"
-                    aria-label="@Localizer["Close"]"></button>
+                    aria-label="Kapat"></button>
         </div>
     }
 

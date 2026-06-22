@@ -39,15 +39,15 @@
     {
         if (item.StartDate <= now && item.EndDate >= now)
         {
-            return Localizer["StatusActive"].Value;
+            return "Devam Eden";
         }
 
         if (item.EndDate < now)
         {
-            return Localizer["StatusCompleted"].Value;
+            return "Tamamlandı";
         }
 
-        return Localizer["StatusUpcoming"].Value;
+        return "Yaklaşan";
     }
 
     string GetStatusClass(Conference item)
@@ -668,15 +668,15 @@
 
             <div>
                 <div class="admin-hero-kicker">
-                    @Localizer["HeroKicker"]
+                    Global Sistem
                 </div>
 
                 <h3 class="admin-hero-title">
-                    @Localizer["HeroTitle"]
+                    Kongre Siteleri
                 </h3>
 
                 <p class="admin-hero-lead">
-                    @Localizer["HeroLead"]
+                    Sistemdeki tüm kongre web sitelerini buradan görüntüleyebilir, site içeriklerini yönetebilir ve kongre operasyon akışına hızlıca geçebilirsiniz.
                 </p>
             </div>
         </div>
@@ -685,13 +685,13 @@
             <a href="/Admin/AllConferences"
                class="admin-hero-btn admin-hero-btn-light">
                 <i class="fas fa-calendar-days"></i>
-                @Localizer["BtnAllConferences"]
+                Tüm Kongrelere Git
             </a>
 
             <a href="/Admin/SystemReports"
                class="admin-hero-btn admin-hero-btn-primary">
                 <i class="fas fa-chart-line"></i>
-                @Localizer["BtnSystemReports"]
+                Sistem Raporları
             </a>
         </div>
     </div>
@@ -708,7 +708,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    @Localizer["StatTotalSites"]
+                    Toplam Site
                 </div>
             </div>
         </div>
@@ -724,7 +724,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    @Localizer["StatActive"]
+                    Devam Eden
                 </div>
             </div>
         </div>
@@ -740,7 +740,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    @Localizer["StatUpcoming"]
+                    Yaklaşan
                 </div>
             </div>
         </div>
@@ -756,7 +756,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    @Localizer["StatCompleted"]
+                    Tamamlanan
                 </div>
             </div>
         </div>
@@ -771,23 +771,23 @@
 
             <div class="col-lg-4">
                 <label class="admin-filter-label">
-                    @Localizer["FilterSearch"]
+                    Arama
                 </label>
 
                 <input type="text"
                        name="search"
                        value="@search"
                        class="form-control admin-filter-control"
-                       placeholder="@Localizer["FilterSearchPlaceholder"]" />
+                       placeholder="Kongre adı, kurum veya site adresi ara..." />
             </div>
 
             <div class="col-lg-3">
                 <label class="admin-filter-label">
-                    @Localizer["FilterOrganization"]
+                    Kurum
                 </label>
 
                 <select name="tenantId" class="form-select admin-filter-control">
-                    <option value="">@Localizer["FilterAllOrganizations"]</option>
+                    <option value="">Tüm Kurumlar</option>
 
                     @foreach (var tenant in tenants)
                     {
@@ -805,44 +805,44 @@
 
             <div class="col-lg-3">
                 <label class="admin-filter-label">
-                    @Localizer["FilterStatus"]
+                    Durum
                 </label>
 
                 <select name="status" class="form-select admin-filter-control">
                     @if (string.IsNullOrWhiteSpace(selectedStatus) || selectedStatus == "All")
                     {
-                        <option value="All" selected>@Localizer["FilterAllStatuses"]</option>
+                        <option value="All" selected>Tüm Durumlar</option>
                     }
                     else
                     {
-                        <option value="All">@Localizer["FilterAllStatuses"]</option>
+                        <option value="All">Tüm Durumlar</option>
                     }
 
                     @if (selectedStatus == "Active")
                     {
-                        <option value="Active" selected>@Localizer["StatusActive"]</option>
+                        <option value="Active" selected>Devam Eden</option>
                     }
                     else
                     {
-                        <option value="Active">@Localizer["StatusActive"]</option>
+                        <option value="Active">Devam Eden</option>
                     }
 
                     @if (selectedStatus == "Upcoming")
                     {
-                        <option value="Upcoming" selected>@Localizer["StatusUpcoming"]</option>
+                        <option value="Upcoming" selected>Yaklaşan</option>
                     }
                     else
                     {
-                        <option value="Upcoming">@Localizer["StatusUpcoming"]</option>
+                        <option value="Upcoming">Yaklaşan</option>
                     }
 
                     @if (selectedStatus == "Completed")
                     {
-                        <option value="Completed" selected>@Localizer["StatusCompleted"]</option>
+                        <option value="Completed" selected>Tamamlanan</option>
                     }
                     else
                     {
-                        <option value="Completed">@Localizer["StatusCompleted"]</option>
+                        <option value="Completed">Tamamlanan</option>
                     }
                 </select>
             </div>
@@ -852,12 +852,12 @@
                     <button type="submit"
                             class="admin-filter-btn flex-fill">
                         <i class="fas fa-search"></i>
-                        @Localizer["BtnFilter"]
+                        Filtrele
                     </button>
 
                     <a href="/Admin/CentralVitrin"
                        class="admin-reset-btn"
-                       title="@Localizer["BtnClearFilters"]">
+                       title="Filtreleri Temizle">
                         <i class="fas fa-rotate-left"></i>
                     </a>
                 </div>
@@ -870,17 +870,17 @@
         <div class="admin-list-card-header">
             <div>
                 <h5 class="admin-list-card-title">
-                    @Localizer["ListTitle"]
+                    Kongre Site Listesi
                 </h5>
 
                 <p class="admin-list-card-subtitle">
-                    @Localizer["ListSubtitle"]
+                    Her kongrenin web sitesi içeriklerini buradan yönetebilir, canlı siteyi açabilir veya kongre operasyon akışına geçebilirsiniz.
                 </p>
             </div>
 
             <span class="admin-list-count">
                 <i class="fas fa-list-ul"></i>
-                @conferences.Count @Localizer["Records"]
+                @conferences.Count kayıt
             </span>
         </div>
 
@@ -892,11 +892,11 @@
                 </div>
 
                 <h6 class="site-empty-title">
-                    @Localizer["EmptyTitle"]
+                    Kongre sitesi bulunamadı
                 </h6>
 
                 <p class="site-empty-text">
-                    @Localizer["EmptyText"]
+                    Arama veya filtre kriterlerine uygun kongre sitesi bulunamadı.
                 </p>
             </div>
         }
@@ -907,27 +907,27 @@
                     <thead>
                         <tr>
                             <th class="ps-4" style="width: 30%;">
-                                @Localizer["ThConference"]
+                                Kongre
                             </th>
 
                             <th style="width: 18%;">
-                                @Localizer["ThOrganization"]
+                                Kurum
                             </th>
 
                             <th style="width: 14%;">
-                                @Localizer["ThDate"]
+                                Tarih
                             </th>
 
                             <th style="width: 14%;">
-                                @Localizer["ThSiteAddress"]
+                                Site Adresi
                             </th>
 
                             <th class="text-center" style="width: 10%;">
-                                @Localizer["ThStatus"]
+                                Durum
                             </th>
 
                             <th class="text-end pe-4" style="width: 14%; min-width: 170px;">
-                                @Localizer["ThActions"]
+                                İşlemler
                             </th>
                         </tr>
                     </thead>
@@ -1026,7 +1026,7 @@
                                            asp-action="ManageBlocks"
                                            asp-route-conferenceId="@item.Id"
                                            class="admin-action-btn admin-action-manage"
-                                           title="@Localizer["TitleManageBlocks"]">
+                                           title="Site Bölümlerini Yönet">
                                             <i class="fas fa-pen-to-square"></i>
                                         </a>
 
@@ -1035,14 +1035,14 @@
                                             <a href="@siteUrl"
                                                target="_blank"
                                                class="admin-action-btn admin-action-site"
-                                               title="@Localizer["TitleViewSite"]">
+                                               title="Siteyi Gör">
                                                 <i class="fas fa-arrow-up-right-from-square"></i>
                                             </a>
                                         }
 
                                         <a href="@flowUrl"
                                            class="admin-action-btn admin-action-flow"
-                                           title="@Localizer["TitleGoToFlow"]">
+                                           title="Kongre Akışına Git">
                                             <i class="fas fa-stream"></i>
                                         </a>
 

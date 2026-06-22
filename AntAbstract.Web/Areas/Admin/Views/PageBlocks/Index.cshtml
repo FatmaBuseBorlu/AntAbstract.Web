@@ -13,7 +13,7 @@
         ?? ViewContext.RouteData.Values["slug"]?.ToString()
         ?? "";
 
-    var conferenceTitle = ViewBag.ConferenceTitle as string ?? Localizer["DefaultConferenceTitle"].Value;
+    var conferenceTitle = ViewBag.ConferenceTitle as string ?? "Seçili Kongre";
 
     var blocks = Model?
         .OrderBy(x => x.Order)
@@ -29,12 +29,12 @@
     {
         return blockType switch
         {
-            ConferencePageBlockType.Hero => Localizer["BlockType_Hero"].Value,
-            ConferencePageBlockType.About => Localizer["BlockType_About"].Value,
-            ConferencePageBlockType.CallForPapers => Localizer["BlockType_CallForPapers"].Value,
-            ConferencePageBlockType.Topics => Localizer["BlockType_Topics"].Value,
-            ConferencePageBlockType.Committees => Localizer["BlockType_Committees"].Value,
-            ConferencePageBlockType.Fees => Localizer["BlockType_Fees"].Value,
+            ConferencePageBlockType.Hero => "Ana Karşılama",
+            ConferencePageBlockType.About => "Hakkında / İçerik",
+            ConferencePageBlockType.CallForPapers => "Kongreye Çağrı",
+            ConferencePageBlockType.Topics => "Kongre Konuları",
+            ConferencePageBlockType.Committees => "Bilim Kurulu",
+            ConferencePageBlockType.Fees => "Katılım Ücreti",
             _ => blockType.ToString()
         };
     }
@@ -549,15 +549,15 @@
 
             <div>
                 <div class="admin-hero-kicker">
-                    @Localizer["HeroKicker"]
+                    Kongre Sitesi
                 </div>
 
                 <h3 class="admin-hero-title">
-                    @Localizer["HeroTitle"]
+                    Kongre Site Blokları
                 </h3>
 
                 <p class="admin-hero-lead">
-                    @Html.Raw(Localizer["HeroLead", conferenceTitle].Value)
+                    <strong>@conferenceTitle</strong> kongresinin web sitesinde görünecek bölümleri buradan yönetebilirsiniz.
                 </p>
             </div>
         </div>
@@ -569,7 +569,7 @@
                    target="_blank"
                    class="admin-hero-btn admin-hero-btn-light">
                     <i class="fas fa-external-link-alt"></i>
-                    @Localizer["ViewSiteButton"]
+                    Siteyi Gör
                 </a>
             }
         </div>
@@ -584,7 +584,7 @@
             <button type="button"
                     class="btn-close"
                     data-bs-dismiss="alert"
-                    aria-label="@Localizer["CloseButton"]"></button>
+                    aria-label="Kapat"></button>
         </div>
     }
 
@@ -597,7 +597,7 @@
             <button type="button"
                     class="btn-close"
                     data-bs-dismiss="alert"
-                    aria-label="@Localizer["CloseButton"]"></button>
+                    aria-label="Kapat"></button>
         </div>
     }
 
@@ -613,7 +613,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    @Localizer["StatTotalBlocks"]
+                    Toplam Blok
                 </div>
             </div>
         </div>
