@@ -11,7 +11,7 @@
 @{
     string L(string key, string fallback)
     {
-        var loc = Localizer[key];
+        var loc = Localizer.GetString(key);
         return loc.ResourceNotFound ? fallback : loc.Value;
     }
 

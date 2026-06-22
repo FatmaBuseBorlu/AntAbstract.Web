@@ -641,7 +641,7 @@
     @{
         Func<string, string, string> L = (key, fallback) =>
         {
-            var loc = Localizer[key];
+            var loc = Localizer.GetString(key);
             return loc.ResourceNotFound ? fallback : loc.Value;
         };
 
@@ -714,7 +714,7 @@
 
         Func<string, string, string, string> T = (key, trFallback, enFallback) =>
         {
-            var loc = Localizer[key];
+            var loc = Localizer.GetString(key);
 
             if (!loc.ResourceNotFound)
             {
