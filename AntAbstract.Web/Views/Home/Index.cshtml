@@ -1586,19 +1586,19 @@
                                         @if (item.IsSubmissionOpen)
                                         {
                                             <span class="badge" style="background:rgba(34,197,94,.12);color:#15803d;font-size:.72rem;font-weight:800;border:1px solid rgba(34,197,94,.2);padding:5px 9px;border-radius:999px;">
-                                                <i class="fas fa-file-alt me-1"></i>("SubmissionOpen", "Bildiri Açık")
+                                                <i class="fas fa-file-alt me-1"></i>@L("SubmissionOpen", "Bildiri Açık")
                                             </span>
                                         }
                                         @if (item.IsRegistrationOpen)
                                         {
                                             <span class="badge" style="background:rgba(0,174,239,.10);color:#0284c7;font-size:.72rem;font-weight:800;border:1px solid rgba(0,174,239,.2);padding:5px 9px;border-radius:999px;">
-                                                <i class="fas fa-user-plus me-1"></i>("RegistrationOpen", "Kayıt Açık")
+                                                <i class="fas fa-user-plus me-1"></i>@L("RegistrationOpen", "Kayıt Açık")
                                             </span>
                                         }
                                         @if (item.AbstractSubmissionDeadline.HasValue && item.AbstractSubmissionDeadline > DateTime.Now)
                                         {
                                             <span class="badge" style="background:rgba(245,158,11,.10);color:#b45309;font-size:.72rem;font-weight:800;border:1px solid rgba(245,158,11,.2);padding:5px 9px;border-radius:999px;">
-                                                <i class="fas fa-clock me-1"></i>("DeadlinePrefix", "Son:") @item.AbstractSubmissionDeadline.Value.ToString("dd MMM")
+                                                <i class="fas fa-clock me-1"></i>@L("DeadlinePrefix", "Son:") @item.AbstractSubmissionDeadline.Value.ToString("dd MMM")
                                             </span>
                                         }
                                     </div>
