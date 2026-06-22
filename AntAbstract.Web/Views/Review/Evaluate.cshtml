@@ -12,11 +12,8 @@
 
     string L(string key, string fallback)
     {
-        var value = Localizer[key].Value;
-
-        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
-            ? fallback
-            : value;
+        var loc = Localizer.GetString(key);
+        return loc.ResourceNotFound ? fallback : loc.Value;
     }
 
     var slug = ViewBag.Slug as string
