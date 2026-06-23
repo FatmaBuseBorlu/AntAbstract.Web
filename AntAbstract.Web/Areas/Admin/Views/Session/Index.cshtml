@@ -191,8 +191,9 @@
                                    class="btn btn-sm btn-outline-secondary">
                                     <i class="fas fa-edit me-1"></i>@Localizer["Edit"]
                                 </a>
+                                @{ var confirmDel = Localizer["ConfirmDelete"].Value; }
                                 <form method="post" action="@Url($"/Admin/Session/Delete")" class="d-inline ms-auto"
-                                      onsubmit="return confirm("@Localizer["ConfirmDelete"]")">
+                                      onsubmit="return confirm('@confirmDel')">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="id" value="@session.Id" />
                                     <input type="hidden" name="conferenceId" value="@confId" />

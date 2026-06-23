@@ -96,8 +96,9 @@
                                     <a href="@editUrl" class="btn btn-sm btn-outline-secondary me-1">
                                         <i class="fas fa-edit"></i>
                                     </a>
+                                    @{ var confirmDel = Localizer["ConfirmDelete"].Value; }
                                     <form method="post" action="@deleteUrl" class="d-inline"
-                                          onsubmit="return confirm("@Localizer["ConfirmDelete"]")">
+                                          onsubmit="return confirm('@confirmDel')">
                                         @Html.AntiForgeryToken()
                                         <button type="submit" class="btn btn-sm btn-outline-danger">
                                             <i class="fas fa-trash"></i>

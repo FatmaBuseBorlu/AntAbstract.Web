@@ -109,8 +109,9 @@
                                         <div class="d-flex gap-1">
                                             <a href="@Url($"/Admin/Sponsors/Edit/{s.Id}?conferenceId={confId}")"
                                                class="btn btn-sm btn-outline-secondary"><i class="fas fa-edit"></i></a>
+                                            @{ var confirmDel = Localizer["ConfirmDelete"].Value; }
                                             <form method="post" action="@Url($"/Admin/Sponsors/Delete/{s.Id}")"
-                                                  onsubmit="return confirm("@Localizer["ConfirmDelete"]")">
+                                                  onsubmit="return confirm('@confirmDel')">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                                     <i class="fas fa-trash"></i>
