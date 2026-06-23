@@ -1,18 +1,14 @@
-﻿@model AntAbstract.Domain.Entities.Registration
+@model AntAbstract.Domain.Entities.Registration
 
 @using AntAbstract.Domain.Entities
 @using System
 @using System.Globalization
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Kongre Ön Kayıt Onayı";
+    ViewData["Title"] = Localizer["PreRegistrationPageTitle"].Value;
 
     var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
-
-    string T(string tr, string en)
-    {
-        return isEnglish ? en : tr;
-    }
 
     var ticket = ViewBag.Ticket as RegistrationType;
     var user = ViewBag.User as AppUser;
@@ -22,7 +18,7 @@
 
     var conferenceTitle = ViewBag.ConferenceTitle as string
         ?? ticket?.Conference?.Title
-        ?? T("Kongre", "Congress");
+        ?? Localizer["Congress"].Value;
 
     DateTime? conferenceStartDate = null;
 
@@ -45,7 +41,7 @@
 
     if (string.IsNullOrWhiteSpace(ticketName))
     {
-        ticketName = T("Başvuru Türü", "Application Type");
+        ticketName = Localizer["ApplicationType"].Value;
     }
 
     if (!isEnglish && ticketName.Contains("Yazar Katılım Ücreti", StringComparison.OrdinalIgnoreCase))
@@ -95,96 +91,6 @@
     }
 
     var userEmail = user?.Email ?? "";
-
-    var titleText = T(
-        "Kongre Ön Kaydınızı Onaylayın",
-        "Confirm Your Congress Pre-Registration"
-    );
-
-    var welcomeText = T(
-        "Aşağıdaki kongre için ön kayıt oluşturuyorsunuz",
-        "You are creating a pre-registration for"
-    );
-
-    var descriptionText = T(
-        "Bu aşamada ödeme alınmayacaktır. Ön kayıt sonrası bildiri gönderim ekranına yönlendirileceksiniz. Ödeme yalnızca bildiriniz kabul edildikten sonra istenecektir.",
-        "At this step, no payment will be collected. After your pre-registration, you will be redirected to the abstract submission screen. Payment will be requested only after your abstract is accepted."
-    );
-
-    var submitText = T(
-        "Ön Kaydı Oluştur ve Bildiri Gönderimine Geç",
-        "Create Pre-Registration and Continue to Abstract Submission"
-    );
-
-    var backText = T(
-        "Başvuru Türlerine Dön",
-        "Back to Application Types"
-    );
-
-    var selectedTypeText = T(
-        "Seçilen Başvuru Türü",
-        "Selected Application Type"
-    );
-
-    var feeLabelText = T(
-        "Kabul Sonrası Katılım Ücreti",
-        "Post-acceptance participation fee"
-    );
-
-    var paymentLaterText = T(
-        "Ödeme yalnızca bildiriniz kabul edildikten sonra istenecektir.",
-        "Payment will be requested only after your abstract is accepted."
-    );
-
-    var noImmediatePaymentText = T(
-        "Bu aşamada ödeme veya fatura bilgisi istenmez.",
-        "No payment or invoice information is required at this step."
-    );
-
-    var processTitleText = T(
-        "Sonraki Süreç Nasıl İlerleyecek?",
-        "What happens next?"
-    );
-
-    var step1Text = T(
-        "Ön kaydınız oluşturulacak.",
-        "Your pre-registration will be created."
-    );
-
-    var step2Text = T(
-        "Bildirinizi sisteme yükleyeceksiniz.",
-        "You will submit your abstract."
-    );
-
-    var step3Text = T(
-        "Hakemler bildiriyi değerlendirecek.",
-        "Reviewers will evaluate your abstract."
-    );
-
-    var step4Text = T(
-        "Kabul edilirse ödeme ve katılım adımları açılacak.",
-        "If accepted, payment and participation steps will open."
-    );
-
-    var missingCongressText = T(
-        "Kongre bilgisi eksik olduğu için işlem yapılamıyor.",
-        "The operation cannot continue because congress information is missing."
-    );
-
-    var expiredDeadlineText = T(
-        "Bu başvuru türü için son başvuru tarihi geçti.",
-        "The application deadline for this type has passed."
-    );
-
-    var applicationDeadlineText = T(
-        "Başvuru Son Tarihi",
-        "Application Deadline"
-    );
-
-    var congressText = T("Kongre", "Congress");
-    var applicantText = T("Başvuru Sahibi", "Applicant");
-    var emailText = T("E-posta", "Email");
-    var preRegistrationText = T("Ön Kayıt Onayı", "Pre-Registration Confirmation");
 
     var canSubmit = hasSlug &&
                     Model != null &&
@@ -536,15 +442,15 @@
         <div class="checkout-hero">
             <div class="checkout-badge">
                 <i class="fas fa-clipboard-check"></i>
-                @preRegistrationText
+                @Localizer["PreRegistrationConfirmation"]
             </div>
 
             <h1 class="checkout-title">
-                @titleText
+                @Localizer["ConfirmYourPreRegistration"]
             </h1>
 
             <div class="mb-2 text-white-50 fw-bold">
-                @welcomeText
+                @Localizer["WelcomeText"]
             </div>
 
             <h2 class="checkout-conference-name">
@@ -560,7 +466,7 @@
             }
 
             <p class="checkout-description">
-                @descriptionText
+                @Localizer["DescriptionText"]
             </p>
         </div>
 
@@ -568,7 +474,7 @@
             <div class="col-lg-4">
                 <div class="summary-card">
                     <div class="summary-label">
-                        @congressText
+                        @Localizer["Congress"]
                     </div>
 
                     <div class="summary-value">
@@ -578,7 +484,7 @@
                     @if (!string.IsNullOrWhiteSpace(userFullName))
                     {
                         <div class="summary-label">
-                            @applicantText
+                            @Localizer["Applicant"]
                         </div>
 
                         <div class="summary-value">
@@ -589,7 +495,7 @@
                     @if (!string.IsNullOrWhiteSpace(userEmail))
                     {
                         <div class="summary-label">
-                            @emailText
+                            @Localizer["Email"]
                         </div>
 
                         <div class="summary-value">
@@ -598,7 +504,7 @@
                     }
 
                     <div class="summary-label">
-                        @selectedTypeText
+                        @Localizer["SelectedApplicationType"]
                     </div>
 
                     <div class="summary-value">
@@ -606,7 +512,7 @@
                     </div>
 
                     <div class="summary-label">
-                        @feeLabelText
+                        @Localizer["PostAcceptanceFee"]
                     </div>
 
                     <div class="summary-price">
@@ -616,22 +522,22 @@
 
                     <div class="summary-note">
                         <i class="fas fa-info-circle me-1"></i>
-                        @paymentLaterText
+                        @Localizer["PaymentLaterText"]
                         <br />
-                        @noImmediatePaymentText
+                        @Localizer["NoImmediatePaymentText"]
                     </div>
 
                     @if (ticket?.Deadline != null)
                     {
                         <div class="summary-deadline">
                             <div class="summary-label">
-                                @applicationDeadlineText
+                                @Localizer["ApplicationDeadline"]
                             </div>
 
                             @if (isDeadlineExpired)
                             {
                                 <div class="summary-value summary-deadline-expired mb-0">
-                                    @expiredDeadlineText
+                                    @Localizer["ExpiredDeadlineText"]
                                 </div>
                             }
                             else
@@ -652,30 +558,27 @@
                     {
                         <div class="warning-box">
                             <i class="fas fa-exclamation-triangle me-2"></i>
-                            @missingCongressText
+                            @Localizer["MissingCongressText"]
                         </div>
                     }
                     else if (isDeadlineExpired)
                     {
                         <div class="warning-box">
                             <i class="fas fa-exclamation-triangle me-2"></i>
-                            @expiredDeadlineText
+                            @Localizer["ExpiredDeadlineText"]
                         </div>
                     }
                     else
                     {
                         <div class="info-box">
                             <i class="fas fa-circle-info me-2"></i>
-                            @T(
-                                "Bu ekran yalnızca kongre ön kaydınızı oluşturur. Şu anda ödeme alınmaz. Bildiriniz kabul edildikten sonra ödeme adımı aktif olacaktır.",
-                                "This screen only creates your congress pre-registration. You will not be charged now. After your abstract is accepted, the payment step will become available."
-                            )
+                            @Localizer["InfoBoxText"]
                         </div>
                     }
 
                     <div class="process-box mb-4">
                         <h4 class="process-title">
-                            @processTitleText
+                            @Localizer["ProcessTitle"]
                         </h4>
 
                         <div class="process-item">
@@ -684,7 +587,7 @@
                             </div>
 
                             <div class="process-text">
-                                @step1Text
+                                @Localizer["Step1"]
                             </div>
                         </div>
 
@@ -694,7 +597,7 @@
                             </div>
 
                             <div class="process-text">
-                                @step2Text
+                                @Localizer["Step2"]
                             </div>
                         </div>
 
@@ -704,7 +607,7 @@
                             </div>
 
                             <div class="process-text">
-                                @step3Text
+                                @Localizer["Step3"]
                             </div>
                         </div>
 
@@ -714,7 +617,7 @@
                             </div>
 
                             <div class="process-text">
-                                @step4Text
+                                @Localizer["Step4"]
                             </div>
                         </div>
                     </div>
@@ -725,13 +628,13 @@
                         <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mt-4 checkout-actions">
                             <a href="@registrationBackUrl" class="btn btn-outline-secondary btn-back-registration">
                                 <i class="fas fa-arrow-left me-2"></i>
-                                @backText
+                                @Localizer["BackToApplicationTypes"]
                             </a>
 
                             <button type="submit"
                                     class="btn btn-create-registration px-4"
                                     @(canSubmit ? "" : "disabled")>
-                                @submitText
+                                @Localizer["SubmitButton"]
                                 <i class="fas fa-arrow-right ms-2"></i>
                             </button>
                         </div>
