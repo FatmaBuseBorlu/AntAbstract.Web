@@ -911,16 +911,16 @@
                     </div>
 
                     <div class="summary-box">
-                        <span>Bekleyen</span>
+                        <span>@Localizer["Pending"]</span>
                         <strong>@Model.PendingPayments</strong>
                     </div>
                 </div>
 
                 <div class="revenue-box">
-                    <span>Toplam Gelir</span>
+                    <span>@Localizer["TotalRevenue"]</span>
                     <strong>@Money(Model.TotalRevenue)</strong>
                     <small>
-                        Tamamlanan ödemeler ve ödenmiş kayıtlar üzerinden hesaplanır.
+                        @Localizer["RevenueDescription"]
                     </small>
                 </div>
             </div>
@@ -929,8 +929,8 @@
         <div class="admin-card">
             <div class="admin-card-header">
                 <div>
-                    <div class="admin-card-kicker">Kongre Analizi</div>
-                    <h5 class="admin-card-title">Kongrelere Göre Bildiri Sayıları</h5>
+                    <div class="admin-card-kicker">@Localizer["ConferenceAnalysis"]</div>
+                    <h5 class="admin-card-title">@Localizer["SubmissionsByConference"]</h5>
                 </div>
 
                 <div class="admin-card-icon stat-blue">
@@ -943,8 +943,8 @@
                 {
                     <div class="report-empty-mini">
                         <i class="fas fa-file-circle-question"></i>
-                        <strong>Bildiri raporu bulunamadı</strong>
-                        <span>Kongrelere bildiri eklendikçe burada görünecek.</span>
+                        <strong>@Localizer["NoSubmissionReport"]</strong>
+                        <span>@Localizer["NoSubmissionReportDesc"]</span>
                     </div>
                 }
                 else
@@ -964,7 +964,7 @@
                                     </div>
 
                                     <div class="bar-report-count">
-                                        @item.SubmissionCount bildiri
+                                        @item.SubmissionCount @Localizer["Submission"]
                                     </div>
                                 </div>
 
@@ -976,7 +976,7 @@
                                 {
                                     <a href="@siteUrl" target="_blank" class="mini-link">
                                         <i class="fas fa-arrow-up-right-from-square"></i>
-                                        /@item.Slug sitesini gör
+                                        /@item.Slug @Localizer["ViewSite"]
                                     </a>
                                 }
                             </div>
@@ -993,8 +993,8 @@
         <div class="admin-card">
             <div class="admin-card-header">
                 <div>
-                    <div class="admin-card-kicker">Kurum Analizi</div>
-                    <h5 class="admin-card-title">Kurumlara Göre Kongre Dağılımı</h5>
+                    <div class="admin-card-kicker">@Localizer["InstitutionAnalysis"]</div>
+                    <h5 class="admin-card-title">@Localizer["ConferencesByInstitution"]</h5>
                 </div>
 
                 <div class="admin-card-icon stat-cyan">
@@ -1007,8 +1007,8 @@
                 {
                     <div class="report-empty-mini">
                         <i class="fas fa-building-circle-exclamation"></i>
-                        <strong>Kurum raporu bulunamadı</strong>
-                        <span>Kurum ve kongre verileri oluştukça burada görünecek.</span>
+                        <strong>@Localizer["NoInstitutionReport"]</strong>
+                        <span>@Localizer["NoInstitutionReportDesc"]</span>
                     </div>
                 }
                 else
@@ -1053,8 +1053,8 @@
         <div class="admin-card">
             <div class="admin-card-header">
                 <div>
-                    <div class="admin-card-kicker">Son Hareketler</div>
-                    <h5 class="admin-card-title">Son Eklenen Kongreler</h5>
+                    <div class="admin-card-kicker">@Localizer["RecentActivity"]</div>
+                    <h5 class="admin-card-title">@Localizer["RecentConferences"]</h5>
                 </div>
 
                 <div class="admin-card-icon stat-purple">
@@ -1067,8 +1067,8 @@
                 {
                     <div class="report-empty-mini">
                         <i class="fas fa-calendar-xmark"></i>
-                        <strong>Henüz kongre yok</strong>
-                        <span>Yeni kongre oluşturulduğunda burada listelenecek.</span>
+                        <strong>@Localizer["NoConferencesYet"]</strong>
+                        <span>@Localizer["NoConferencesDesc"]</span>
                     </div>
                 }
                 else
@@ -1110,8 +1110,8 @@
     <div class="admin-card">
         <div class="admin-card-header">
             <div>
-                <div class="admin-card-kicker">Kullanıcı Hareketleri</div>
-                <h5 class="admin-card-title">Kullanıcı Özeti</h5>
+                <div class="admin-card-kicker">@Localizer["UserActivity"]</div>
+                <h5 class="admin-card-title">@Localizer["UserSummary"]</h5>
             </div>
 
             <div class="admin-card-icon stat-orange">
@@ -1124,8 +1124,8 @@
             {
                 <div class="report-empty-mini">
                     <i class="fas fa-user-slash"></i>
-                    <strong>Henüz kullanıcı bulunamadı</strong>
-                    <span>Kullanıcı kayıtları oluştukça burada görünecek.</span>
+                    <strong>@Localizer["NoUsersYet"]</strong>
+                    <span>@Localizer["NoUsersDesc"]</span>
                 </div>
             }
             else
@@ -1145,7 +1145,7 @@
                             </div>
 
                             <div class="user-date">
-                                @(user.CreatedDate.HasValue ? user.CreatedDate.Value.ToString("dd.MM.yyyy") : "Tarih yok")
+                                @(user.CreatedDate.HasValue ? user.CreatedDate.Value.ToString("dd.MM.yyyy") : Localizer.GetString("NoDate").Value)
                             </div>
                         </div>
                     }
