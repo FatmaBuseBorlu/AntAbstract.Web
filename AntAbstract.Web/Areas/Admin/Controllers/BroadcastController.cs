@@ -45,21 +45,27 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpGet("/{slug}/Admin/Broadcast")]
         public async Task<IActionResult> Index(string? slug = null)
         {
+            var isSuperAdmin = _tenantAccess.IsSuperAdmin(User);
             var tenantId = await GetTenantIdAsync();
-            if (!tenantId.HasValue) return Challenge();
+            if (!tenantId.HasValue && !isSuperAdmin)
+                return Challenge();
 
-            var conferences = await _context.Conferences
-                .AsNoTracking()
-                .Where(c => c.TenantId == tenantId.Value)
+            var confQuery = isSuperAdmin
+                ? _context.Conferences.IgnoreQueryFilters().AsNoTracking()
+                : _context.Conferences.AsNoTracking().Where(c => c.TenantId == tenantId!.Value);
+
+            var conferences = await confQuery
                 .OrderByDescending(c => c.StartDate)
                 .Select(c => new { c.Id, c.Title })
                 .ToListAsync();
 
-            var scheduled = await _context.ScheduledBroadcasts
-                .AsNoTracking()
+            var schedQuery = isSuperAdmin
+                ? _context.ScheduledBroadcasts.IgnoreQueryFilters().AsNoTracking()
+                : _context.ScheduledBroadcasts.AsNoTracking().Where(b => b.TenantId == tenantId!.Value);
+
+            var scheduled = await schedQuery
                 .Include(b => b.Conference)
                 .Include(b => b.CreatedByUser)
-                .Where(b => b.TenantId == tenantId.Value)
                 .OrderByDescending(b => b.CreatedAt)
                 .Take(20)
                 .ToListAsync();
