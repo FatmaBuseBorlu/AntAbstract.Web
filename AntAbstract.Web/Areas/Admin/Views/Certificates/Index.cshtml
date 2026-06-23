@@ -54,7 +54,7 @@
         @if (bulkConferenceId != Guid.Empty)
         {
             <form asp-action="TriggerBulk" method="post"
-                  onsubmit="return confirm('Tüm katılımcılar için sertifika oluşturulsun mu?');">
+                  onsubmit="return confirm('');">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="conferenceId" value="@bulkConferenceId" />
                 <button type="submit" class="btn cert-bulk-btn">
@@ -143,11 +143,11 @@
             <div class="cert-filter-group cert-filter-check-group">
                 <label class="cert-check-label">
                     <input type="checkbox" name="onlyMissingFile" value="true" @(onlyMissingFile ? "checked" : "") class="cert-checkbox" />
-                    <span>Dosyası eksik</span>
+                    <span></span>
                 </label>
                 <label class="cert-check-label">
                     <input type="checkbox" name="onlyEmailNotSent" value="true" @(onlyEmailNotSent ? "checked" : "") class="cert-checkbox" />
-                    <span>E-posta gönderilmemiş</span>
+                    <span></span>
                 </label>
             </div>
             <div class="cert-filter-actions">
@@ -167,7 +167,7 @@
         <div class="cert-empty">
             <div class="cert-empty-icon"><i class="fas fa-certificate"></i></div>
             <h4></h4>
-            <p>Seçili kriterlere uyan sertifika kaydı yok.</p>
+            <p></p>
         </div>
     }
     else

@@ -171,7 +171,7 @@
                         <tr>
                             <td colspan="7" class="text-center text-muted py-5">
                                 <i class="fas fa-users-slash fa-2x mb-3 d-block"></i>
-                                Bu kongre için hakem bulunamadı.
+                                
                             </td>
                         </tr>
                     }
@@ -194,8 +194,8 @@
                                           : "wl-badge-ok";
 
                         string badgeText = total >= maxLoad ? "Dolu"
-                                         : total == 0       ? "Boşta"
-                                         : total >= maxLoad * 0.7 ? "Yüksek"
+                                         : total == 0       ? Localizer.GetString("Idle").Value
+                                         : total >= maxLoad * 0.7 ? Localizer.GetString("High").Value
                                          : "Normal";
 
                         <tr>
