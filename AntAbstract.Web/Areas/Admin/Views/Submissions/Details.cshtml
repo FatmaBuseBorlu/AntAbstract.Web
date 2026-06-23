@@ -206,7 +206,7 @@
                             </div>
 
                             <p>
-                                @(string.IsNullOrWhiteSpace(Model.Abstract) ? "Özet bilgisi bulunmuyor." : Model.Abstract)
+                                @(string.IsNullOrWhiteSpace(Model.Abstract) ? " bilgisi bulunmuyor." : Model.Abstract)
                             </p>
                         </div>
 
@@ -281,7 +281,7 @@
                         string TypeLabel(SubmissionFileType t) => t switch
                             {
                                 SubmissionFileType.FullText => "",
-                                SubmissionFileType.Abstract => "Özet",
+                                SubmissionFileType.Abstract => "",
                                 SubmissionFileType.Presentation => "Sunum",
                                 SubmissionFileType.Supplementary => "",
                                 _ => "Dosya"
