@@ -25,7 +25,12 @@
 
     if (string.IsNullOrWhiteSpace(displayName))
     {
-        displayName = user?.Email ?? "Kullanıcı";
+        displayName = user?.Email ?? L("User", "Kullanıcı");
+    }
+
+    if (User.IsInRole("SuperAdmin") && string.Equals(displayName, "Sistem Yöneticisi", StringComparison.OrdinalIgnoreCase))
+    {
+        displayName = L("SystemAdministratorDisplayName", "Sistem Yöneticisi");
     }
 
     var shortDisplayName = displayName;
