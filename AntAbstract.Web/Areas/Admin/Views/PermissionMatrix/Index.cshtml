@@ -88,16 +88,24 @@
 
 <div class="container-fluid px-4 py-4">
 
-    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
-        <div>
-            <h4 class="fw-bold mb-1"><i class="fas fa-shield-alt me-2 text-primary"></i>@Localizer["PermissionMatrix"]</h4>
-            <p class="text-muted small mb-0">@Localizer["PermissionMatrixDesc"]</p>
+    <div class="admin-hero">
+        <div class="admin-hero-left">
+            <div class="admin-hero-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div>
+                <div class="admin-hero-kicker">SYSTEM</div>
+                <h3 class="admin-hero-title">@Localizer["PermissionMatrix"]</h3>
+                <p class="admin-hero-lead">@Localizer["PermissionMatrixDesc"]</p>
+            </div>
         </div>
         @if (isSuperAdmin)
         {
-            <a href="/@slug/Admin/Users" class="btn btn-outline-primary btn-sm">
-                <i class="fas fa-users me-1"></i> @Localizer["UserRoleManagement"]
-            </a>
+            <div class="admin-hero-actions">
+                <a href="/@slug/Admin/Users" class="admin-hero-btn admin-hero-btn-primary">
+                    <i class="fas fa-users"></i> @Localizer["UserRoleManagement"]
+                </a>
+            </div>
         }
     </div>
 

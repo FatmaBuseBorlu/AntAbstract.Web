@@ -2,17 +2,11 @@
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
-}
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h4 class="fw-bold mb-1">📧 @Localizer["PageTitle"]</h4>
-        <p class="text-muted mb-0">@Localizer["PageLead"]</p>
-    </div>
-    <a asp-action="SendLog" class="btn btn-outline-secondary btn-sm">
-        <i class="fas fa-history me-1"></i> Gönderim Geçmişi
-    </a>
-</div>
+    var totalCount = Model.Count();
+    var activeCount = Model.Count(t => t.IsActive);
+    var inactiveCount = totalCount - activeCount;
+}
 
 @if (TempData["Success"] != null)
 {
@@ -29,9 +23,50 @@
     </div>
 }
 
-<div class="card shadow-sm border-0">
-    <div class="card-body p-0">
-        <div class="table-responsive">
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <div class="admin-hero-icon">
+            <i class="fas fa-envelope-open-text"></i>
+        </div>
+        <div>
+            <div class="admin-hero-kicker">CONFERENCE TOOLS</div>
+            <h3 class="admin-hero-title">@Localizer["PageTitle"]</h3>
+            <p class="admin-hero-lead">@Localizer["PageLead"]</p>
+        </div>
+    </div>
+    <div class="admin-hero-actions">
+        <a asp-action="SendLog" class="admin-hero-btn admin-hero-btn-light">
+            <i class="fas fa-history"></i> @Localizer["SendLogButton"]
+        </a>
+    </div>
+</div>
+
+<div class="admin-stat-grid">
+    <div class="admin-stat-card stat-blue">
+        <div class="admin-stat-icon"><i class="fas fa-envelope"></i></div>
+        <div class="admin-stat-value">@totalCount</div>
+        <div class="admin-stat-label">@Localizer["StatTotal"]</div>
+    </div>
+    <div class="admin-stat-card stat-green">
+        <div class="admin-stat-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="admin-stat-value">@activeCount</div>
+        <div class="admin-stat-label">@Localizer["StatActive"]</div>
+    </div>
+    <div class="admin-stat-card stat-slate">
+        <div class="admin-stat-icon"><i class="fas fa-pause-circle"></i></div>
+        <div class="admin-stat-value">@inactiveCount</div>
+        <div class="admin-stat-label">@Localizer["StatInactive"]</div>
+    </div>
+</div>
+
+<div class="admin-list-card">
+    <div class="admin-list-card-header">
+        <div>
+            <h5 class="admin-list-card-title">@Localizer["PageTitle"]</h5>
+        </div>
+        <span class="admin-list-count"><i class="fas fa-list-ul"></i> @totalCount</span>
+    </div>
+    <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
@@ -71,7 +106,7 @@
                                 </button>
                             </form>
                             <a asp-action="Edit" asp-route-id="@t.Id" class="btn btn-sm btn-outline-primary">
-                                ✏️ @Localizer["EditButton"]
+                                <i class="fas fa-edit"></i> @Localizer["EditButton"]
                             </a>
                         </td>
                     </tr>
@@ -82,13 +117,14 @@
                 }
             </tbody>
         </table>
-        </div>
     </div>
 </div>
 
-<div class="card mt-4 border-0 bg-light">
-    <div class="card-body">
-        <h6 class="fw-semibold mb-2">📌 @Localizer["PlaceholderTitle"]</h6>
+<div class="admin-list-card">
+    <div class="admin-list-card-header">
+        <h5 class="admin-list-card-title"><i class="fas fa-thumbtack me-2"></i>@Localizer["PlaceholderTitle"]</h5>
+    </div>
+    <div class="p-4">
         <div class="row g-2">
             @foreach (var ph in new[] {
                 ("{FullName}", Localizer["Ph_FullName"].Value.Length > 0 ? Localizer["Ph_FullName"].Value : "Kullanıcının adı soyadı"),

@@ -32,174 +32,187 @@
     };
 }
 
-<div class="container-fluid py-4" style="max-width:860px;">
-
-    <div class="mb-4">
-        <h4 class="fw-bold mb-1"><i class="fas fa-paper-plane me-2 text-primary"></i>@Localizer["PageTitle"]</h4>
-        <p class="text-muted mb-0">@Localizer["PageDescription"]</p>
-    </div>
-
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success border-0 shadow-sm mb-4">
-            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <div class="admin-hero-icon">
+            <i class="fas fa-paper-plane"></i>
         </div>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger border-0 shadow-sm mb-4">
-            <i class="fas fa-times-circle me-2"></i>@TempData["ErrorMessage"]
-        </div>
-    }
-
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-4">
-            <form id="broadcastForm" action="@sendUrl" method="post">
-                @Html.AntiForgeryToken()
-                @if (!string.IsNullOrWhiteSpace(slug))
-                {
-                    <input type="hidden" name="slug" value="@slug" />
-                }
-
-                <div class="row g-3 mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">@Localizer["Conference"] <span class="text-danger">*</span></label>
-                        <select name="conferenceId" id="conferenceId" class="form-select" required>
-                            <option value="">@Localizer["SelectConference"]</option>
-                            @foreach (var c in conferences)
-                            {
-                                <option value="@c.Id">@c.Title</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">@Localizer["RecipientGroup"] <span class="text-danger">*</span></label>
-                        <select name="group" id="groupSelect" class="form-select" required>
-                            <option value="all">@Localizer["GroupAll"]</option>
-                            <option value="accepted">@Localizer["GroupAccepted"]</option>
-                            <option value="reviewers">@Localizer["GroupReviewers"]</option>
-                            <option value="registered">@Localizer["GroupRegistered"]</option>
-                            <option value="paid">@Localizer["GroupPaid"]</option>
-                            <option value="revision">@Localizer["GroupRevision"]</option>
-                            <option value="unpaid">@Localizer["GroupUnpaid"]</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <button type="button" id="previewBtn" class="btn btn-outline-secondary btn-sm">
-                        <i class="fas fa-users me-1"></i> @Localizer["ViewRecipientCount"]
-                    </button>
-                    <span id="previewResult" class="ms-2 text-muted small"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">@Localizer["EmailSubject"] <span class="text-danger">*</span></label>
-                    <input type="text" name="subject" class="form-control" required
-                           placeholder="@Localizer["SubjectPlaceholder"]" />
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">
-                        @Localizer["EmailBody"] <span class="text-danger">*</span>
-                    </label>
-                    <textarea name="body" id="emailBody" class="form-control" rows="10" required
-                              placeholder=""></textarea>
-                    <div class="form-text">
-                        <i class="fas fa-info-circle me-1"></i>
-                        @Localizer["HtmlSupportNote"]
-                    </div>
-                </div>
-
-                <div class="mb-4">
-                    <label class="form-label fw-semibold">@Localizer["SendTime"]</label>
-                    <div class="d-flex gap-3 align-items-center">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="sendMode" id="sendNow" value="now" checked
-                                   onchange="document.getElementById('scheduledAtField').style.display='none';" />
-                            <label class="form-check-label fw-semibold" for="sendNow">@Localizer["SendNow"]</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="sendMode" id="sendLater" value="later"
-                                   onchange="document.getElementById('scheduledAtField').style.display='block';" />
-                            <label class="form-check-label fw-semibold" for="sendLater">@Localizer["ScheduleLater"]</label>
-                        </div>
-                    </div>
-                    <div id="scheduledAtField" style="display:none;margin-top:8px;">
-                        <input type="datetime-local" name="scheduledAt" class="form-control" style="max-width:260px;" />
-                        <div class="form-text">@Localizer["UtcTimezoneNote"]</div>
-                    </div>
-                </div>
-
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary px-4"
-                            onclick="return confirm('');">
-                        <i class="fas fa-paper-plane me-2"></i>@Localizer["Send"]
-                    </button>
-                    <button type="reset" class="btn btn-outline-secondary">@Localizer["Clear"]</button>
-                </div>
-            </form>
+        <div>
+            <div class="admin-hero-kicker">CONFERENCE TOOLS</div>
+            <h3 class="admin-hero-title">@Localizer["PageTitle"]</h3>
+            <p class="admin-hero-lead">@Localizer["PageDescription"]</p>
         </div>
     </div>
-
-    @* Gönderim geçmişi *@
-    @if (scheduled.Any())
-    {
-        <h5 class="fw-bold mb-3"><i class="fas fa-history me-2 text-muted"></i>@Localizer["SendHistory"]</h5>
-        <div class="card border-0 shadow-sm">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>@Localizer["Subject"]</th>
-                            <th>@Localizer["Target"]</th>
-                            <th class="text-center">@Localizer["Recipient"]</th>
-                            <th>@Localizer["Schedule"]</th>
-                            <th class="text-center">@Localizer["Status"]</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var b in scheduled)
-                        {
-                            <tr>
-                                <td>
-                                    <div class="fw-semibold" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                                        @b.Subject
-                                    </div>
-                                    <small class="text-muted">@(b.Conference?.Title ?? "")</small>
-                                </td>
-                                <td><span class="badge bg-light text-dark">@GroupLabel(b.TargetGroup)</span></td>
-                                <td class="text-center fw-bold">@b.RecipientCount</td>
-                                <td>
-                                    <div style="font-size:0.82rem;">@b.ScheduledAt.ToString("dd.MM.yyyy HH:mm")</div>
-                                    @if (b.SentAt.HasValue)
-                                    {
-                                        <small class="text-success">@Localizer["SentAt"] @b.SentAt.Value.ToString("dd.MM.yyyy HH:mm")</small>
-                                    }
-                                </td>
-                                <td class="text-center">@Html.Raw(StatusBadge(b.Status))</td>
-                                <td class="text-end">
-                                    @if (b.Status == BroadcastStatus.Pending)
-                                    {
-                                        <form action="@cancelUrl" method="post" class="d-inline"
-                                              onsubmit="return confirm('');">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="broadcastId" value="@b.Id" />
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="@Localizer["Cancel"]">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </form>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    }
 </div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success border-0 shadow-sm mb-4">
+        <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger border-0 shadow-sm mb-4">
+        <i class="fas fa-times-circle me-2"></i>@TempData["ErrorMessage"]
+    </div>
+}
+
+<div class="admin-list-card">
+    <div class="admin-list-card-header">
+        <h5 class="admin-list-card-title"><i class="fas fa-edit me-2"></i>@Localizer["ComposeEmail"]</h5>
+    </div>
+    <div class="p-4">
+        <form id="broadcastForm" action="@sendUrl" method="post">
+            @Html.AntiForgeryToken()
+            @if (!string.IsNullOrWhiteSpace(slug))
+            {
+                <input type="hidden" name="slug" value="@slug" />
+            }
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">@Localizer["Conference"] <span class="text-danger">*</span></label>
+                    <select name="conferenceId" id="conferenceId" class="form-select" required>
+                        <option value="">@Localizer["SelectConference"]</option>
+                        @foreach (var c in conferences)
+                        {
+                            <option value="@c.Id">@c.Title</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">@Localizer["RecipientGroup"] <span class="text-danger">*</span></label>
+                    <select name="group" id="groupSelect" class="form-select" required>
+                        <option value="all">@Localizer["GroupAll"]</option>
+                        <option value="accepted">@Localizer["GroupAccepted"]</option>
+                        <option value="reviewers">@Localizer["GroupReviewers"]</option>
+                        <option value="registered">@Localizer["GroupRegistered"]</option>
+                        <option value="paid">@Localizer["GroupPaid"]</option>
+                        <option value="revision">@Localizer["GroupRevision"]</option>
+                        <option value="unpaid">@Localizer["GroupUnpaid"]</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <button type="button" id="previewBtn" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-users me-1"></i> @Localizer["ViewRecipientCount"]
+                </button>
+                <span id="previewResult" class="ms-2 text-muted small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">@Localizer["EmailSubject"] <span class="text-danger">*</span></label>
+                <input type="text" name="subject" class="form-control" required
+                       placeholder="@Localizer["SubjectPlaceholder"]" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">
+                    @Localizer["EmailBody"] <span class="text-danger">*</span>
+                </label>
+                <textarea name="body" id="emailBody" class="form-control" rows="10" required
+                          placeholder=""></textarea>
+                <div class="form-text">
+                    <i class="fas fa-info-circle me-1"></i>
+                    @Localizer["HtmlSupportNote"]
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold">@Localizer["SendTime"]</label>
+                <div class="d-flex gap-3 align-items-center">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="sendMode" id="sendNow" value="now" checked
+                               onchange="document.getElementById('scheduledAtField').style.display='none';" />
+                        <label class="form-check-label fw-semibold" for="sendNow">@Localizer["SendNow"]</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="sendMode" id="sendLater" value="later"
+                               onchange="document.getElementById('scheduledAtField').style.display='block';" />
+                        <label class="form-check-label fw-semibold" for="sendLater">@Localizer["ScheduleLater"]</label>
+                    </div>
+                </div>
+                <div id="scheduledAtField" style="display:none;margin-top:8px;">
+                    <input type="datetime-local" name="scheduledAt" class="form-control" style="max-width:260px;" />
+                    <div class="form-text">@Localizer["UtcTimezoneNote"]</div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary px-4"
+                        onclick="return confirm('');">
+                    <i class="fas fa-paper-plane me-2"></i>@Localizer["Send"]
+                </button>
+                <button type="reset" class="btn btn-outline-secondary">@Localizer["Clear"]</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* Gönderim geçmişi *@
+@if (scheduled.Any())
+{
+    <div class="admin-list-card" style="margin-top:1.5rem;">
+        <div class="admin-list-card-header">
+            <div>
+                <h5 class="admin-list-card-title"><i class="fas fa-history me-2"></i>@Localizer["SendHistory"]</h5>
+            </div>
+            <span class="admin-list-count"><i class="fas fa-list-ul"></i> @scheduled.Count</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>@Localizer["Subject"]</th>
+                        <th>@Localizer["Target"]</th>
+                        <th class="text-center">@Localizer["Recipient"]</th>
+                        <th>@Localizer["Schedule"]</th>
+                        <th class="text-center">@Localizer["Status"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in scheduled)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                    @b.Subject
+                                </div>
+                                <small class="text-muted">@(b.Conference?.Title ?? "")</small>
+                            </td>
+                            <td><span class="badge bg-light text-dark">@GroupLabel(b.TargetGroup)</span></td>
+                            <td class="text-center fw-bold">@b.RecipientCount</td>
+                            <td>
+                                <div style="font-size:0.82rem;">@b.ScheduledAt.ToString("dd.MM.yyyy HH:mm")</div>
+                                @if (b.SentAt.HasValue)
+                                {
+                                    <small class="text-success">@Localizer["SentAt"] @b.SentAt.Value.ToString("dd.MM.yyyy HH:mm")</small>
+                                }
+                            </td>
+                            <td class="text-center">@Html.Raw(StatusBadge(b.Status))</td>
+                            <td class="text-end">
+                                @if (b.Status == BroadcastStatus.Pending)
+                                {
+                                    <form action="@cancelUrl" method="post" class="d-inline"
+                                          onsubmit="return confirm('');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="broadcastId" value="@b.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="@Localizer["Cancel"]">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
 
 @section Scripts {
 <script>
