@@ -273,17 +273,17 @@
                         <div class="mini-empty">
                             <i class="fas fa-file-circle-xmark"></i>
                             <strong>@Localizer["NoFilesFound"]</strong>
-                            <span>Bu bildiriye ait yüklenmiş dosya yok.</span>
+                            <span></span>
                         </div>
                     }
                     else
                     {
                         string TypeLabel(SubmissionFileType t) => t switch
                             {
-                                SubmissionFileType.FullText => "Tam Metin",
+                                SubmissionFileType.FullText => "",
                                 SubmissionFileType.Abstract => "Özet",
                                 SubmissionFileType.Presentation => "Sunum",
-                                SubmissionFileType.Supplementary => "Ek Dosya",
+                                SubmissionFileType.Supplementary => "",
                                 _ => "Dosya"
                             };
                             string TypeIcon(SubmissionFileType t) => t switch
