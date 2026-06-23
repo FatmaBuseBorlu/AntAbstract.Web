@@ -509,18 +509,18 @@
                                 </p>
 
                                 <div class="congress-action-buttons">
-                                    @if (isRegistered)
-                                    {
-                                        <a href="@panelUrl" class="congress-action-button btn-registered-congress">
-                                            <span>@Localizer["GoToPanel"]</span>
-                                            <i class="fas fa-check-circle"></i>
-                                        </a>
-                                    }
-                                    else
+                                    @if (!isSystemUser && !isReferee && !isRegistered)
                                     {
                                         <a href="@registrationUrl" class="congress-action-button btn-register-congress">
                                             <span>@Localizer["Register"]</span>
                                             <i class="fas fa-paper-plane"></i>
+                                        </a>
+                                    }
+                                    else if (isRegistered)
+                                    {
+                                        <a href="@panelUrl" class="congress-action-button btn-registered-congress">
+                                            <span>@Localizer["GoToPanel"]</span>
+                                            <i class="fas fa-check-circle"></i>
                                         </a>
                                     }
                                     <a href="@siteUrl" class="congress-action-button btn-site-view">
