@@ -1533,7 +1533,7 @@
                                            target="_blank"
                                            class="admin-mini-btn admin-mini-btn-primary">
                                             <i class="fas fa-maximize"></i>
-                                            Tam Ekran
+                                            @Localizer["FullScreen"]
                                         </a>
                                     </div>
                                 </div>
@@ -1557,7 +1557,7 @@
                         </div>
 
                         <p class="empty-upload-text">
-                            PDF dosyasını manuel yükleyebilir veya kabul edilmiş bildirilerden otomatik bildiri kitabı oluşturabilirsiniz.
+                            @Localizer["NoPdfDescription"]
                         </p>
                     </div>
                 }
@@ -1635,12 +1635,12 @@
                     <div class="form-actions">
                         <a href="@backUrl" class="admin-cancel-btn">
                             <i class="fas fa-times"></i>
-                            Vazgeç
+                            @Localizer["Cancel"]
                         </a>
 
                         <button type="submit" class="admin-save-btn">
                             <i class="fas fa-save"></i>
-                            Kaydet
+                            @Localizer["Save"]
                         </button>
                     </div>
                 </form>
@@ -1683,7 +1683,7 @@
                 <li>
                     <i class="fas fa-file-pdf"></i>
                     <span>
-                        Dosya Durumu:
+                        @Localizer["FileStatus"]
                         <strong>@(hasFile ? Localizer.GetString("PdfUploaded").Value : Localizer.GetString("PdfNotUploaded").Value)</strong>
                     </span>
                 </li>
@@ -1725,7 +1725,7 @@
                     </h5>
 
                     <p class="remove-modal-subtitle">
-                        Sistem kabul edilmiş bildirilerden PDF oluşturacak.
+                        @Localizer["GenerateModalSubtitle"]
                     </p>
                 </div>
 
@@ -1737,14 +1737,13 @@
 
             <div class="modal-body remove-modal-body">
                 <p class="mb-3 fw-bold text-secondary">
-                    Bu kongreye ait kabul edilmiş bildirilerden otomatik bildiri kitabı oluşturulsun mu?
+                    @Localizer["GenerateModalBody"]
                 </p>
 
                 <div class="remove-warning">
                     <i class="fas fa-circle-info"></i>
                     <span>
-                        Mevcut PDF varsa yeni oluşturulan dosya ile değiştirilecektir.
-                        Sadece kabul edilmiş bildiriler bildiri kitabına eklenir.
+                        @Localizer["GenerateModalWarning"]
                     </span>
                 </div>
             </div>
@@ -1753,7 +1752,7 @@
                 <button type="button"
                         class="btn remove-cancel-btn"
                         data-bs-dismiss="modal">
-                    Vazgeç
+                    @Localizer["Cancel"]
                 </button>
 
                 <form action="@generateUrl"
@@ -1766,7 +1765,7 @@
                     <button type="submit"
                             class="btn remove-confirm-btn generate-confirm-btn">
                         <i class="fas fa-file-circle-plus me-2"></i>
-                        Evet, Oluştur
+                        @Localizer["YesGenerate"]
                     </button>
                 </form>
             </div>
@@ -1790,11 +1789,11 @@
 
                     <div>
                         <h5 class="remove-modal-title" id="removeProceedingBookModalLabel">
-                            PDF Dosyasını Kaldır
+                            @Localizer["RemovePdfTitle"]
                         </h5>
 
                         <p class="remove-modal-subtitle">
-                            Bu işlem mevcut bildiri kitabını yayından kaldırır.
+                            @Localizer["RemovePdfSubtitle"]
                         </p>
                     </div>
 
@@ -1806,14 +1805,14 @@
 
                 <div class="modal-body remove-modal-body">
                     <p class="mb-3 fw-bold text-secondary">
-                         PDF dosyasını kaldırmak istediğinize emin misiniz?
+                         @Localizer["RemovePdfConfirm"]
                     </p>
 
                     <div class="remove-warning">
                         <i class="fas fa-circle-info"></i>
                         <span>
                             
-                            Yazar panelinde artık görüntülenmez.
+                            @Localizer["RemovePdfWarning"]
                         </span>
                     </div>
                 </div>

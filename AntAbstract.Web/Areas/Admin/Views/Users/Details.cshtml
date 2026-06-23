@@ -23,7 +23,7 @@
         <h4 class="fw-bold mb-0">@(string.IsNullOrWhiteSpace(fullName) ? user?.Email : fullName)</h4>
         @if (isLockedOut)
         {
-            <span class="badge bg-danger">Askıya Alındı</span>
+            <span class="badge bg-danger"></span>
         }
         else if (user?.EmailConfirmed == true)
         {
@@ -54,17 +54,17 @@
         <div class="col-lg-7">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-bottom py-3">
-                    <h6 class="fw-bold mb-0"><i class="fas fa-user me-2 text-primary"></i>Hesap Bilgileri</h6>
+                    <h6 class="fw-bold mb-0"><i class="fas fa-user me-2 text-primary"></i></h6>
                 </div>
                 <div class="card-body">
                     <table class="table table-sm table-borderless mb-0">
                         <tr><th class="text-muted" style="width:40%">@Localizer["FullName"]</th><td>@(string.IsNullOrWhiteSpace(fullName) ? "—" : fullName)</td></tr>
                         <tr><th class="text-muted">@Localizer["Email"]</th><td>@user?.Email</td></tr>
-                        <tr><th class="text-muted">Üniversite</th><td>@(string.IsNullOrWhiteSpace(user?.University) ? "—" : user.University)</td></tr>
+                        <tr><th class="text-muted"></th><td>@(string.IsNullOrWhiteSpace(user?.University) ? "—" : user.University)</td></tr>
                         <tr><th class="text-muted">@Localizer["Institution"]</th><td>@(string.IsNullOrWhiteSpace(user?.Institution) ? "—" : user.Institution)</td></tr>
                         <tr><th class="text-muted">@Localizer["City"]</th><td>@(string.IsNullOrWhiteSpace(user?.City) ? "—" : user.City)</td></tr>
-                        <tr><th class="text-muted">E-posta Doğrulandı</th><td>@(user?.EmailConfirmed == true ? "✅ Evet" : "❌ Hayır")</td></tr>
-                        <tr><th class="text-muted">Durum</th><td>@(isLockedOut ? "🔒 Askıya Alındı" : "✅ Aktif")</td></tr>
+                        <tr><th class="text-muted"></th><td>@(user?.EmailConfirmed == true ? "✅ Evet" : "❌ Hayır")</td></tr>
+                        <tr><th class="text-muted">Durum</th><td>@(isLockedOut ? "🔒 " : "✅ Aktif")</td></tr>
                         <tr>
                             <th class="text-muted">@Localizer["Roles"]</th>
                             <td>

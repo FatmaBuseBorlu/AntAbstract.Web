@@ -19,8 +19,8 @@
             ConferencePageBlockType.Topics => Localizer.GetString("TypeTopics").Value,
             ConferencePageBlockType.ImportantDates => Localizer.GetString("TypeDates").Value,
             ConferencePageBlockType.Fees => Localizer.GetString("TypeFees").Value,
-            ConferencePageBlockType.Committees => "Bilim Kurulu",
-            ConferencePageBlockType.Sponsors => "Sponsorlar",
+            ConferencePageBlockType.Committees => Localizer.GetString("TypeCommittees").Value,
+            ConferencePageBlockType.Sponsors => Localizer.GetString("TypeSponsors").Value,
             ConferencePageBlockType.Contact => Localizer.GetString("TypeContact").Value,
             ConferencePageBlockType.FAQ => Localizer.GetString("TypeFAQ").Value,
             ConferencePageBlockType.CallForPapers => Localizer.GetString("TypeCallForPapers").Value,
@@ -38,11 +38,11 @@
             </div>
 
             <h2 class="fw-bold mb-1 text-dark">
-                Yeni Şablon Ekle
+                @Localizer["AddNewTemplate"]
             </h2>
 
             <p class="text-muted mb-0">
-                Kongre sitelerinde kullanılabilecek yeni bir bölüm şablonu tanımlayabilirsiniz.
+                @Localizer["AddNewTemplateDesc"]
             </p>
         </div>
 
@@ -62,11 +62,11 @@
 
                 <div>
                     <h4 class="fw-bold mb-1">
-                        Şablon Oluşturma
+                        @Localizer["CreateTemplate"]
                     </h4>
 
                     <p class="mb-0 text-white-50">
-                        Bu kayıt sistem genelindeki hazır site bölüm şablonları listesine eklenecek.
+                        @Localizer["CreateTemplateDesc"]
                     </p>
                 </div>
             </div>
@@ -87,7 +87,7 @@
 
                     <div class="col-md-3">
                         <label asp-for="Order" class="form-label fw-bold">
-                            Sıra
+                            @Localizer["Order"]
                         </label>
 
                         <input asp-for="Order"

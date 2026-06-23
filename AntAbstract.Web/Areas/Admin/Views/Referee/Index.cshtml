@@ -125,13 +125,13 @@
             <a href="@changeConferenceUrl"
                class="btn referee-outline-btn">
                 <i class="fas fa-exchange-alt me-2"></i>
-                Kongre Değiştir
+                @Localizer["ChangeConference"]
             </a>
 
             <a href="@assignUserUrl"
                class="btn referee-primary-btn">
                 <i class="fas fa-user-plus me-2"></i>
-                Kullanıcı / Hakem Bağla
+                @Localizer["AssignUserReferee"]
             </a>
 
             @{
@@ -144,12 +144,12 @@
             }
             <a href="@inviteUrl" class="btn referee-outline-btn">
                 <i class="fas fa-envelope-open-text me-2"></i>
-                 Et
+                @Localizer["InviteByEmail"]
             </a>
 
             <a href="@invitationsUrl" class="btn referee-light-btn">
                 <i class="fas fa-list me-2"></i>
-                Davetler
+                @Localizer["Invitations"]
             </a>
 
         </div>
@@ -202,11 +202,11 @@
 
                 <div>
                     <div class="referee-stat-number">
-                        @(targetTenantId == Guid.Empty ? "-" : "Aktif")
+                        @(targetTenantId == Guid.Empty ? "-" : Localizer.GetString("Active").Value)
                     </div>
 
                     <div class="referee-stat-label">
-                        Kurum Bağlantısı
+                        @Localizer["InstitutionConnection"]
                     </div>
                 </div>
             </div>
@@ -224,7 +224,7 @@
                     </div>
 
                     <div class="referee-stat-label">
-                        Desteklenen Hakem Rolü
+                        @Localizer["SupportedRefereeRoles"]
                     </div>
                 </div>
             </div>
@@ -238,12 +238,11 @@
 
         <div>
             <div class="role-info-title">
-                Hakem rolleri birlikte desteklenir
+                @Localizer["RolesInfoTitle"]
             </div>
 
             <p class="role-info-text">
-                Bu havuzda <strong>Referee</strong>, <strong>Hakem</strong> veya <strong>Reviewer</strong> rollerinden herhangi birine sahip kullanıcılar listelenir.
-                Rol kaldırma işleminde kullanıcı silinmez; sadece varsa bu hakem rolleri kaldırılır.
+                @Localizer["RolesInfoText"]
             </p>
         </div>
     </div>
@@ -252,16 +251,16 @@
         <div class="referee-list-header">
             <div>
                 <h5>
-                    Hakem Listesi
+                    @Localizer["RefereeList"]
                 </h5>
 
                 <p>
-                    Bu listede seçili kongrenin kurumuna bağlı hakem rolündeki kullanıcılar görüntülenir.
+                    @Localizer["RefereeListDescription"]
                 </p>
             </div>
 
             <div class="referee-count-pill">
-                @referees.Count hakem
+                @referees.Count @Localizer["Referee"]
             </div>
         </div>
 
@@ -273,20 +272,18 @@
                 </div>
 
                 <h4>
-                    Bu kongrenin kurumuna bağlı hakem bulunmuyor
+                    @Localizer["NoRefereesFound"]
                 </h4>
 
                 <p>
-                    Hakem atama ekranında kullanıcıların görünebilmesi için kullanıcının
-                    <strong>Referee</strong>, <strong>Hakem</strong> veya <strong>Reviewer</strong>
-                    rollerinden en az birine sahip olması ve seçili kongrenin kurumuna bağlı olması gerekir.
+                    @Localizer["NoRefereesDescription"]
                 </p>
 
                 <div class="d-flex flex-wrap justify-content-center gap-2">
                     <a href="@assignUserUrl"
                        class="btn referee-primary-btn">
                         <i class="fas fa-user-plus me-2"></i>
-                        Kullanıcı / Hakem Bağla
+                        @Localizer["AssignUserReferee"]
                     </a>
 
                     <a href="@flowUrl"
@@ -304,23 +301,23 @@
                     <thead>
                         <tr>
                             <th class="ps-4">
-                                Hakem
+                                @Localizer["Referee"]
                             </th>
 
                             <th>
-                                E-posta
+                                @Localizer["Email"]
                             </th>
 
                             <th>
-                                Kurum
+                                @Localizer["Institution"]
                             </th>
 
                             <th>
-                                Rol Bilgisi
+                                @Localizer["RoleInfo"]
                             </th>
 
                             <th class="text-end pe-4">
-                                İşlem
+                                @Localizer["Action"]
                             </th>
                         </tr>
                     </thead>
@@ -364,7 +361,7 @@
                                     else
                                     {
                                         <span class="text-muted small fw-bold">
-                                            Kurum bilgisi yok
+                                            @Localizer["NoInstitution"]
                                         </span>
                                     }
                                 </td>
@@ -372,7 +369,7 @@
                                 <td>
                                     <span class="reviewer-role-badge">
                                         <i class="fas fa-user-tie"></i>
-                                        Hakem Rolü
+                                        @Localizer["RefereeRole"]
                                     </span>
                                 </td>
 
@@ -394,7 +391,7 @@
                                         <button type="submit"
                                                 class="btn referee-remove-btn">
                                             <i class="fas fa-user-minus me-1"></i>
-                                            Hakem Rollerini Kaldır
+                                            @Localizer["RemoveRefereeRoles"]
                                         </button>
                                     </form>
                                 </td>
