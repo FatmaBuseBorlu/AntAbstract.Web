@@ -945,27 +945,33 @@
 
             @{
                 var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.Name;
+                var currentShortCulture = currentCulture.StartsWith("tr", StringComparison.OrdinalIgnoreCase) ? "TR" : "EN";
                 var returnUrl = Context.Request.Path + Context.Request.QueryString;
             }
-            <div class="dropdown">
-                <button class="btn btn-sm btn-outline-dark dropdown-toggle d-flex align-items-center gap-1"
-                        type="button" data-bs-toggle="dropdown" aria-expanded="false"
-                        style="border-radius:999px;font-size:.82rem;font-weight:900;padding:6px 14px;border-color:#334155;">
+            <div class="dropdown language-dropdown">
+                <button class="language-current-btn dropdown-toggle"
+                        type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-globe"></i>
-                    @(currentCulture.StartsWith("tr", StringComparison.OrdinalIgnoreCase) ? "TR" : "EN")
+                    <span>@currentShortCulture</span>
                 </button>
-                <div class="dropdown-menu dropdown-menu-end" style="min-width:auto;">
+                <div class="dropdown-menu dropdown-menu-end language-menu">
                     <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="culture" value="tr-TR" />
                         <input type="hidden" name="returnUrl" value="@returnUrl" />
-                        <button type="submit" class="dropdown-item small fw-bold @(currentCulture.StartsWith("tr") ? "active" : "")">🇹🇷 Türkçe</button>
+                        <button type="submit" class="language-menu-item @(currentCulture.StartsWith("tr") ? "active" : "")">
+                            <span class="language-code">TR</span>
+                            <span class="language-name">Türkçe</span>
+                        </button>
                     </form>
                     <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="culture" value="en-US" />
                         <input type="hidden" name="returnUrl" value="@returnUrl" />
-                        <button type="submit" class="dropdown-item small fw-bold @(currentCulture.StartsWith("en") ? "active" : "")">🇬🇧 English</button>
+                        <button type="submit" class="language-menu-item @(currentCulture.StartsWith("en") ? "active" : "")">
+                            <span class="language-code">EN</span>
+                            <span class="language-name">English</span>
+                        </button>
                     </form>
                 </div>
             </div>
