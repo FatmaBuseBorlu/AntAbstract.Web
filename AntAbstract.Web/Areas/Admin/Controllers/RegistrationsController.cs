@@ -214,7 +214,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var vm = new SelectConferenceViewModel
             {
                 Title = "Kayıtlar ve Ödemeler",
-                Lead = T("SelectConference_Lead", "Kayıtları ve ödemeleri yönetmek için önce kongre seçin."),
+                Lead = "Kayıtları ve ödemeleri yönetmek için önce kongre seçin.",
                 PostUrl = "/Admin/Registrations/Select",
                 SubmitText = "Devam Et",
                 Conferences = conferences,
