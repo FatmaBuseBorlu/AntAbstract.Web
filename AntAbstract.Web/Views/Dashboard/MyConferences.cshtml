@@ -824,13 +824,13 @@
             <div>
                 <div class="selection-label">
                     @(isAdmin
-                        ? "Kurum Admini"
+                        ? @Localizer["AdminLabel"]
                         : L("WorkspaceSelection", "Çalışma Alanı Seçimi"))
                 </div>
 
                 <h2 class="selection-title">
                     @(isAdmin
-                        ? "Kurum Kongrelerim"
+                        ? @Localizer["AdminConferences"]
                         : L("Welcome", "Hoş Geldiniz"))
                 </h2>
 
@@ -838,7 +838,7 @@
                     @if (isAdmin)
                     {
                         <span>
-                            Kurumunuza bağlı kongreleri buradan seçebilir, kongre akışına geçebilir ve operasyon ekranlarını yönetebilirsiniz.
+                            @Localizer["AdminDescription"]
                         </span>
                     }
                     else
@@ -857,7 +857,7 @@
                 <a href="/Dashboard"
                    class="btn selection-light-btn">
                     <i class="fas fa-gauge-high"></i>
-                    Admin Paneline Dön
+                    @Localizer["AdminReturnToPanel"]
                 </a>
             }
             else
@@ -878,7 +878,7 @@
             <input type="text"
                    id="conferenceSearch"
                    class="search-input"
-                   placeholder="@(isAdmin ? "Kongre adı, şehir veya kurum slug ile ara..." : L("SearchPlaceholder", "Kongre adı ile arama yapın..."))" />
+                   placeholder="@(isAdmin ? @Localizer["AdminSearchPlaceholder"].Value : L("SearchPlaceholder", "Kongre adı ile arama yapın..."))" />
         </div>
     </div>
 
@@ -891,7 +891,7 @@
 
             <h3 class="fw-bold text-dark">
                 @(isAdmin
-                    ? "Kurumunuza bağlı kongre bulunamadı"
+                    ? @Localizer["AdminNoConferenceTitle"]
                     : L("NoConferenceTitle", "Henüz görüntülenebilir kongre bulunamadı"))
             </h3>
 
@@ -899,7 +899,7 @@
                 @if (isAdmin)
                 {
                     <span>
-                        Admin hesabınız bir kuruma bağlı olabilir ancak bu kuruma ait kongre henüz tanımlanmamış görünüyor.
+                        @Localizer["AdminNoConferenceDescription"]
                     </span>
                 }
                 else
@@ -946,7 +946,7 @@
                     <div>
                         <h3 class="section-title">
                             @(isAdmin
-                                ? "Kurumuma Bağlı Kongreler"
+                                ? @Localizer["AdminLinkedConferences"]
                                 : L("RegisteredConferencesTitle", "Kayıtlı Olduğum Kongreler"))
                         </h3>
 
@@ -954,7 +954,7 @@
                             @if (isAdmin)
                             {
                                 <span>
-                                    Bu kongreleri seçerek bildiri, hakem, karar, kayıt ve program süreçlerini yönetebilirsiniz.
+                                    @Localizer["AdminSectionDescription"]
                                 </span>
                             }
                             else
@@ -1083,7 +1083,7 @@
                                                 @if (isAdmin)
                                                 {
                                                     <span>
-                                                        @(isSelected ? "Kongre Akışına Dön" : "Seç ve Yönet")
+                                                        @(isSelected ? @Localizer["AdminReturnToFlow"] : @Localizer["AdminSelectAndManage"])
                                                     </span>
                                                     <i class="fas fa-stream"></i>
                                                 }
@@ -1106,19 +1106,19 @@
                                                 <a href="@conferenceFlowUrl"
                                                    class="small-action-btn">
                                                     <i class="fas fa-stream"></i>
-                                                    Akış
+                                                    @Localizer["AdminFlow"]
                                                 </a>
 
                                                 <a href="@adminSubmissionsUrl"
                                                    class="small-action-btn">
                                                     <i class="fas fa-file-lines"></i>
-                                                    Bildiriler
+                                                    @Localizer["AdminSubmissions"]
                                                 </a>
 
                                                 <a href="@adminAssignmentUrl"
                                                    class="small-action-btn">
                                                     <i class="fas fa-user-check"></i>
-                                                    Hakem Ata
+                                                    @Localizer["AdminAssignReviewer"]
                                                 </a>
                                             </div>
 
@@ -1126,7 +1126,7 @@
                                                target="_blank"
                                                class="secondary-action-btn">
                                                 <i class="fas fa-arrow-up-right-from-square"></i>
-                                                Siteyi Gör
+                                                @Localizer["AdminViewSite"]
                                             </a>
                                         }
                                         else
@@ -1135,19 +1135,19 @@
                                                 <a href="@submissionIndexUrl"
                                                    class="secondary-action-btn">
                                                     <i class="fas fa-file-lines"></i>
-                                                    Bildirilerim
+                                                    @Localizer["MySubmissions"]
                                                 </a>
 
                                                 <a href="@submissionCreateUrl"
                                                    class="secondary-action-btn">
                                                     <i class="fas fa-paper-plane"></i>
-                                                    Bildiri Gönder
+                                                    @Localizer["SubmitPaper"]
                                                 </a>
 
                                                 <a href="@paymentsUrl"
                                                    class="secondary-action-btn">
                                                     <i class="fas fa-receipt"></i>
-                                                    Ödemelerim
+                                                    @Localizer["MyPayments"]
                                                 </a>
                                             </div>
 
@@ -1155,7 +1155,7 @@
                                                 <a href="@paymentUrl"
                                                    class="secondary-action-btn">
                                                     <i class="fas fa-credit-card"></i>
-                                                    Ödeme
+                                                    @Localizer["Payment"]
                                                 </a>
 
                                                 <a href="@websiteUrl"
@@ -1389,7 +1389,7 @@
             </h4>
 
             <p class="mb-0">
-                Farklı bir kongre adı, şehir veya slug ile tekrar arama yapabilirsiniz.
+                @Localizer["NoSearchResultsDescription"]
             </p>
         </div>
     }

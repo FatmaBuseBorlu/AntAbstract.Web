@@ -1,21 +1,16 @@
-﻿@model List<AntAbstract.Domain.Entities.RegistrationType>
+@model List<AntAbstract.Domain.Entities.RegistrationType>
 
 @using System
 @using System.Globalization
 @using System.Linq
 
 @{
-    ViewData["Title"] = "Kongre Ön Kaydı";
+    ViewData["Title"] = Localizer["IndexPageTitle"].Value;
 
     var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 
-    string T(string tr, string en)
-    {
-        return isEnglish ? en : tr;
-    }
-
     var slug = ViewBag.Slug as string ?? "";
-    var conferenceTitle = ViewBag.ConferenceTitle as string ?? T("Kongre", "Congress");
+    var conferenceTitle = ViewBag.ConferenceTitle as string ?? Localizer.GetString("Congress").Value;
 
     DateTime? conferenceStartDate = null;
 
@@ -29,101 +24,6 @@
         : $"/{slug}";
 
     var hasSlug = !string.IsNullOrWhiteSpace(slug);
-
-    var titleText = T(
-        "Kongre Ön Kayıt Ekranına Hoş Geldiniz",
-        "Welcome to the Congress Pre-Registration Page"
-    );
-
-    var descriptionText = T(
-        "Bu ekrandan kongre ön kaydınızı oluşturabilirsiniz. Ön kayıt sonrasında bildirinizin özetini göndereceksiniz. Ödeme yalnızca bildiriniz kabul edildikten sonra istenecektir.",
-        "You can create your pre-registration here. After pre-registration, you will submit your abstract. Payment will be requested only after your abstract is accepted."
-    );
-
-    var selectTypeText = T(
-        "Başvuru Türü Seçiniz",
-        "Select Application Type"
-    );
-
-    var emptyTitle = T(
-        "Aktif başvuru türü bulunamadı",
-        "No active application type found"
-    );
-
-    var emptyDescription = T(
-        "Bu kongre için şu anda aktif bir başvuru türü bulunmuyor. Lütfen kongre organizasyon ekibiyle iletişime geçiniz.",
-        "There is currently no active application type for this congress. Please contact the congress organization team."
-    );
-
-    var continueText = T(
-        "Ön Kayda Devam Et",
-        "Continue to Pre-Registration"
-    );
-
-    var backText = T(
-        "Kongre Sayfasına Dön",
-        "Back to Congress Page"
-    );
-
-    var processTitleText = T(
-        "Başvuru Süreci",
-        "Application Process"
-    );
-
-    var step1Text = T(
-        "Ön kayıt oluştur",
-        "Create pre-registration"
-    );
-
-    var step2Text = T(
-        "Bildiri gönder",
-        "Submit abstract"
-    );
-
-    var step3Text = T(
-        "Hakem değerlendirmesi",
-        "Reviewer evaluation"
-    );
-
-    var step4Text = T(
-        "Kabul sonrası ödeme yap",
-        "Pay after acceptance"
-    );
-
-    var paymentInformationTitle = T(
-        "Ödeme Bilgilendirmesi",
-        "Payment Information"
-    );
-
-    var paymentLaterText = T(
-        "Ön kayıt aşamasında ödeme alınmaz. Bildiriniz hakem değerlendirmesi sonrası kabul edilirse ödeme adımı açılacaktır.",
-        "No payment is collected during pre-registration. If your abstract is accepted after reviewer evaluation, the payment step will be opened."
-    );
-
-    var applicationDeadlineText = T(
-        "Başvuru son tarihi",
-        "Application deadline"
-    );
-
-    var deadlineExpiredText = T(
-        "Başvuru süresi doldu",
-        "Application deadline has passed"
-    );
-
-    var missingCongressText = T(
-        "Kongre bilgisi eksik",
-        "Congress information is missing"
-    );
-
-    var defaultTicketName = T(
-        "Başvuru Türü",
-        "Application Type"
-    );
-
-    var defaultTicketDescription = T(
-        "Bildiri gönderimi ve kongre katılım süreci için ön başvuru türüdür.",
-        "This option creates your pre-application for abstract submission and congress participation."
-    );
 }
 
 <style>
@@ -505,11 +405,11 @@
         <div class="registration-hero">
             <div class="registration-badge">
                 <i class="fas fa-clipboard-check"></i>
-                @T("Kongre Ön Kaydı", "Congress Pre-Registration")
+                @Localizer["CongressPreRegistration"]
             </div>
 
             <h1 class="registration-title">
-                @titleText
+                @Localizer["WelcomeTitle"]
             </h1>
 
             <h2 class="registration-conference-name mb-3">
@@ -525,13 +425,13 @@
             }
 
             <p class="registration-description">
-                @descriptionText
+                @Localizer["WelcomeDescription"]
             </p>
         </div>
 
         <div class="process-card">
             <h4 class="process-title">
-                @processTitleText
+                @Localizer["ProcessTitle"]
             </h4>
 
             <div class="row g-3">
@@ -542,7 +442,7 @@
                         </div>
 
                         <div class="process-step-text">
-                            @step1Text
+                            @Localizer["Step1Text"]
                         </div>
                     </div>
                 </div>
@@ -554,7 +454,7 @@
                         </div>
 
                         <div class="process-step-text">
-                            @step2Text
+                            @Localizer["Step2Text"]
                         </div>
                     </div>
                 </div>
@@ -566,7 +466,7 @@
                         </div>
 
                         <div class="process-step-text">
-                            @step3Text
+                            @Localizer["Step3Text"]
                         </div>
                     </div>
                 </div>
@@ -578,7 +478,7 @@
                         </div>
 
                         <div class="process-step-text">
-                            @step4Text
+                            @Localizer["Step4Text"]
                         </div>
                     </div>
                 </div>
@@ -586,7 +486,7 @@
         </div>
 
         <h3 class="registration-section-title">
-            @selectTypeText
+            @Localizer["SelectApplicationType"]
         </h3>
 
         @if (Model == null || !Model.Any())
@@ -597,16 +497,16 @@
                 </div>
 
                 <h4 class="fw-bold text-dark mb-2">
-                    @emptyTitle
+                    @Localizer["EmptyTitle"]
                 </h4>
 
                 <p class="text-muted mb-4">
-                    @emptyDescription
+                    @Localizer["EmptyDescription"]
                 </p>
 
                 <a href="@congressHomeUrl" class="btn btn-outline-primary rounded-pill px-4 fw-bold">
                     <i class="fas fa-arrow-left me-2"></i>
-                    @backText
+                    @Localizer["BackButton"]
                 </a>
             </div>
         }
@@ -620,10 +520,10 @@
                         <table class="table table-hover mb-0 align-middle">
                             <thead style="background:#f8fafc;">
                                 <tr>
-                                    <th class="ps-4 py-3">@T("Kayıt Türü", "Registration Type")</th>
-                                    <th class="py-3">@T("Fiyat", "Price")</th>
-                                    <th class="py-3">@T("Son Tarih", "Deadline")</th>
-                                    <th class="py-3">@T("Durum", "Status")</th>
+                                    <th class="ps-4 py-3">@Localizer["RegistrationType"]</th>
+                                    <th class="py-3">@Localizer["Price"]</th>
+                                    <th class="py-3">@Localizer["Deadline"]</th>
+                                    <th class="py-3">@Localizer["Status"]</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -638,14 +538,14 @@
                                             @if (earlyRow)
                                             {
                                                 <span class="badge ms-2" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:.7rem;">
-                                                    @T("Erken Kayıt", "Early Bird")
+                                                    @Localizer["EarlyBird"]
                                                 </span>
                                             }
                                         </td>
                                         <td class="fw-bold">
                                             @if (t.Price <= 0)
                                             {
-                                                <span class="text-success">@T("Ücretsiz", "Free")</span>
+                                                <span class="text-success">@Localizer["Free"]</span>
                                             }
                                             else
                                             {
@@ -658,11 +558,11 @@
                                         <td>
                                             @if (expired)
                                             {
-                                                <span class="badge bg-danger">@T("Sona Erdi", "Expired")</span>
+                                                <span class="badge bg-danger">@Localizer["Expired"]</span>
                                             }
                                             else
                                             {
-                                                <span class="badge bg-success">@T("Açık", "Open")</span>
+                                                <span class="badge bg-success">@Localizer["Open"]</span>
                                             }
                                         </td>
                                     </tr>
@@ -686,7 +586,7 @@
 
                     if (string.IsNullOrWhiteSpace(ticketName))
                     {
-                        ticketName = defaultTicketName;
+                        ticketName = Localizer.GetString("DefaultTicketName").Value;
                     }
 
                     if (!isEnglish && ticketName.Contains("Yazar Katılım Ücreti", StringComparison.OrdinalIgnoreCase))
@@ -718,7 +618,7 @@
                         (!isEnglish && ticketDescription.Contains("ücret", StringComparison.OrdinalIgnoreCase)) ||
                         (isEnglish && ticketDescription.Contains("fee", StringComparison.OrdinalIgnoreCase)))
                     {
-                        ticketDescription = defaultTicketDescription;
+                        ticketDescription = Localizer.GetString("DefaultTicketDescription").Value;
                     }
 
                     var checkoutUrl = hasSlug
@@ -745,11 +645,11 @@
                                     <i class="fas fa-bolt"></i>
                                     @if (urgentDeadline)
                                     {
-                                        @($"Son {daysUntilDeadline} gün!")
+                                        @(string.Format(Localizer.GetString("LastDays").Value, daysUntilDeadline))
                                     }
                                     else
                                     {
-                                        @T("Erken Kayıt", "Early Bird")
+                                        @Localizer["EarlyBird"]
                                     }
                                 </div>
                             }
@@ -766,7 +666,7 @@
                                 @if (ticket.Price <= 0)
                                 {
                                     <div class="ticket-price-free">
-                                        <i class="fas fa-check-circle me-1"></i>@T("Ücretsiz", "Free")
+                                        <i class="fas fa-check-circle me-1"></i>@Localizer["Free"]
                                     </div>
                                 }
                                 else
@@ -776,19 +676,19 @@
                                     </div>
                                     @if (isEarlyBird)
                                     {
-                                        <small class="text-muted">@T("Erken kayıt fiyatı", "Early bird price")</small>
+                                        <small class="text-muted">@Localizer["EarlyBirdPrice"]</small>
                                     }
                                 }
                             </div>
 
                             <div class="payment-later-box">
                                 <div class="payment-later-label">
-                                    @paymentInformationTitle
+                                    @Localizer["PaymentInformationTitle"]
                                 </div>
 
                                 <p class="payment-later-note">
                                     <i class="fas fa-info-circle me-1"></i>
-                                    @paymentLaterText
+                                    @Localizer["PaymentLaterText"]
                                 </p>
                             </div>
 
@@ -799,11 +699,11 @@
 
                                     @if (isDeadlineExpired)
                                     {
-                                        @deadlineExpiredText
+                                        @Localizer["DeadlineExpired"]
                                     }
                                     else
                                     {
-                                        @applicationDeadlineText
+                                        @Localizer["ApplicationDeadline"]
                                         <span>:</span>
                                         @ticket.Deadline.Value.ToLocalTime().ToString("dd.MM.yyyy")
                                     }
@@ -813,19 +713,19 @@
                             @if (!hasSlug)
                             {
                                 <button type="button" class="btn-register-ticket" disabled>
-                                    @missingCongressText
+                                    @Localizer["MissingCongress"]
                                 </button>
                             }
                             else if (isDeadlineExpired)
                             {
                                 <button type="button" class="btn-register-ticket" disabled>
-                                    @deadlineExpiredText
+                                    @Localizer["DeadlineExpired"]
                                 </button>
                             }
                             else
                             {
                                 <a href="@checkoutUrl" class="btn-register-ticket">
-                                    @continueText
+                                    @Localizer["ContinueButton"]
                                     <i class="fas fa-arrow-right"></i>
                                 </a>
                             }

@@ -553,16 +553,16 @@
 
                                         @* Banka bilgileri — banka havalesi seçilince göster *@
                                         <div id="bank-details" class="alert alert-warning rounded-3 mt-2" style="display:none;">
-                                            <h6 class="fw-bold mb-2"><i class="fas fa-university me-2"></i>Banka Bilgileri</h6>
+                                            <h6 class="fw-bold mb-2"><i class="fas fa-university me-2"></i>@Localizer["BankDetailsTitle"]</h6>
                                             @if (!string.IsNullOrWhiteSpace(bankName))
-                                            { <div><strong>Banka:</strong> @bankName</div> }
+                                            { <div><strong>@Localizer["BankLabel"]</strong> @bankName</div> }
                                             @if (!string.IsNullOrWhiteSpace(bankAccountName))
-                                            { <div><strong>Hesap Adı:</strong> @bankAccountName</div> }
+                                            { <div><strong>@Localizer["AccountNameLabel"]</strong> @bankAccountName</div> }
                                             @if (!string.IsNullOrWhiteSpace(bankBranch))
-                                            { <div><strong>Şube:</strong> @bankBranch</div> }
+                                            { <div><strong>@Localizer["BranchLabel"]</strong> @bankBranch</div> }
                                             @if (!string.IsNullOrWhiteSpace(bankIban))
                                             { <div class="font-monospace mt-1"><strong>IBAN:</strong> @bankIban</div> }
-                                            <small class="text-muted mt-2 d-block">Ödemeyi yaptıktan sonra bir sonraki adımda makbuzunuzu yükleyin.</small>
+                                            <small class="text-muted mt-2 d-block">@Localizer["BankUploadHint"]</small>
                                         </div>
                                     }
 
