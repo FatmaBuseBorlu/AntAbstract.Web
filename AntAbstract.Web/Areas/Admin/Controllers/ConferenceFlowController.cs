@@ -286,10 +286,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var vm = new SelectConferenceViewModel
             {
-                Title = "Kongre Akışı İçin Kongre Seç",
+                Title = T("SelectConference_Title", "Kongre Akışı İçin Kongre Seç"),
                 Lead = IsSuperAdminUser()
-                    ? "SuperAdmin olarak sistemdeki tüm kongreleri görebilirsiniz. Akışını incelemek istediğiniz kongreyi seçiniz."
-                    : "Kongre akışını görüntülemek için kongre seçiniz.",
+                    ? T("SelectConference_LeadSA", "SuperAdmin olarak sistemdeki tüm kongreleri görebilirsiniz. Akışını incelemek istediğiniz kongreyi seçiniz.")
+                    : T("SelectConference_Lead", "Kongre akışını görüntülemek için kongre seçiniz."),
                 PostUrl = "/Admin/ConferenceFlow/Select",
                 SubmitText = T("SelectConference_Submit", "Devam Et"),
                 Conferences = conferences,
