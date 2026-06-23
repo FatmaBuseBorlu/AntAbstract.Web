@@ -10,8 +10,8 @@
 
     string TierLabel(SponsorTier t) => t switch {
         SponsorTier.Platinum => "Platin",
-        SponsorTier.Gold     => "Altın",
-        SponsorTier.Silver   => "Gümüş",
+        SponsorTier.Gold     => Localizer.GetString("Gold").Value,
+        SponsorTier.Silver   => Localizer.GetString("Silver").Value,
         SponsorTier.Bronze   => "Bronz",
         SponsorTier.Partner  => "Partner",
         SponsorTier.Media    => "Medya",
@@ -110,7 +110,7 @@
                                             <a href="@Url($"/Admin/Sponsors/Edit/{s.Id}?conferenceId={confId}")"
                                                class="btn btn-sm btn-outline-secondary"><i class="fas fa-edit"></i></a>
                                             <form method="post" action="@Url($"/Admin/Sponsors/Delete/{s.Id}")"
-                                                  onsubmit="return confirm('Sponsoru silmek istediğinizden emin misiniz?')">
+                                                  onsubmit="return confirm("@Localizer["ConfirmDelete"]")">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                                     <i class="fas fa-trash"></i>

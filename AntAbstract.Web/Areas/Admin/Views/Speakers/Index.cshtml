@@ -50,7 +50,7 @@
                     <thead class="table-light">
                         <tr>
                             <th style="width:48px;">#</th>
-                            <th>Konuşmacı</th>
+                            <th>@Localizer["Speaker"]</th>
                             <th>@Localizer["Institution"]</th>
                             <th>@Localizer["TalkTitle"]</th>
                             <th style="width:80px;">@Localizer["Order"]</th>
@@ -118,7 +118,7 @@
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         <form method="post" action="@Url($"/Admin/Speakers/Delete/{s.Id}")"
-                                              onsubmit="return confirm('Konuşmacıyı silmek istediğinizden emin misiniz?')">
+                                              onsubmit="return confirm("@Localizer["ConfirmDelete"]")">
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="btn btn-sm btn-outline-danger">
                                                 <i class="fas fa-trash"></i>

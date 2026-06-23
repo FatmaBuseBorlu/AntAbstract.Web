@@ -43,7 +43,7 @@
         <p class="text-muted mb-0">Toplam @total kayıt</p>
     </div>
     <a href="@Url.Action("Export", exportRoute)" class="btn btn-sm btn-outline-success">
-        ⬇️ CSV İndir
+        ⬇️ @Localizer["DownloadCsv"]
     </a>
 </div>
 
@@ -65,7 +65,7 @@
             <div class="col-md-2">
                 <label class="form-label small fw-semibold">Kategori</label>
                 <select name="category" class="form-select form-select-sm">
-                    <option value="">— Tümü —</option>
+                    <option value="">— @Localizer["All"] —</option>
                     @foreach (var cat in categories)
                     {
                         if (cat == category)
