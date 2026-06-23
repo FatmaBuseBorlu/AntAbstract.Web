@@ -784,6 +784,7 @@
                                     </div>
                                 </div>
 
+                                @{ var confirmRemove = Localizer["ConfirmRemove"].Value; }
                                 <form asp-area="Admin"
                                       asp-controller="Session"
                                       asp-action="RemoveSubmission"
@@ -791,7 +792,7 @@
                                       asp-route-conferenceId="@conferenceIdText"
                                       method="post"
                                       class="m-0"
-                                      onsubmit="return confirm("@Localizer["ConfirmRemove"]");">
+                                      onsubmit="return confirm('@confirmRemove');">
 
                                     @Html.AntiForgeryToken()
 
