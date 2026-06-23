@@ -38,7 +38,7 @@
         nameof(SubmissionStatus.Rejected) => Localizer.GetString("StatusRejected").Value,
         nameof(SubmissionStatus.RevisionRequired) => Localizer.GetString("StatusRevision").Value,
         nameof(SubmissionStatus.Presented) => Localizer.GetString("StatusPresented").Value,
-        _ => string.IsNullOrWhiteSpace(status) ? "Bilinmiyor" : status
+        _ => string.IsNullOrWhiteSpace(status) ? Localizer.GetString("StatusUnknown").Value : status
     };
 
     string StatusClass(string? status) => status switch
@@ -231,7 +231,7 @@
         <div class="assignment-list-header">
             <div>
                 <h5>@Localizer["SubmissionList"]</h5>
-                <p></p>
+                <p>@Localizer["SubmissionListDesc"]</p>
             </div>
             <div class="assignment-list-meta">
                 <div class="assignment-count-pill">@Model.FilteredCount bildiri</div>
