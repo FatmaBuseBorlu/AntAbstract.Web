@@ -39,7 +39,7 @@
             <h3 class="fw-bold mb-1 text-dark">
                 <i class="fas fa-satellite-dish me-2 text-primary"></i>Webhook & Callback Log
             </h3>
-            <p class="text-muted mb-0">Toplam <strong>@total</strong> kayıt</p>
+            <p class="text-muted mb-0">Toplam <strong>@total</strong> @Localizer["Records"]</p>
         </div>
         <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
             <i class="fas fa-arrow-left me-1"></i> Ödemeler
@@ -130,7 +130,7 @@
                         @if (!Model.Any())
                         {
                             <tr>
-                                <td colspan="9" class="text-center text-muted py-4">Kayıt bulunamadı.</td>
+                                <td colspan="9" class="text-center text-muted py-4">@Localizer["NoRecordsFound"]</td>
                             </tr>
                         }
                         @foreach (var item in Model)

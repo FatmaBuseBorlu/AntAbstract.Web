@@ -17,7 +17,7 @@
     };
     string StatusLabel(PaymentStatus? s) => s switch
     {
-        PaymentStatus.Pending   => "Bekliyor",
+        PaymentStatus.Pending   => Localizer.GetString("StatusPending").Value,
         PaymentStatus.Completed => Localizer.GetString("StatusCompleted").Value,
         PaymentStatus.Failed    => Localizer.GetString("StatusFailed").Value,
         PaymentStatus.Refunded  => Localizer.GetString("StatusRefunded").Value,

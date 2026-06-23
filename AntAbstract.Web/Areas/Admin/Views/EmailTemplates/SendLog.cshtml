@@ -20,7 +20,7 @@
         <h4 class="fw-bold mb-1">
             <i class="fas fa-history me-2 text-secondary"></i> E-posta Gönderim Geçmişi
         </h4>
-        <p class="text-muted mb-0">Toplam <strong>@total</strong> kayıt</p>
+        <p class="text-muted mb-0">Toplam <strong>@total</strong> @Localizer["Records"]</p>
     </div>
     <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
         <i class="fas fa-arrow-left me-1"></i> Şablonlar
@@ -89,7 +89,7 @@
                     @if (!Model.Any())
                     {
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-4">Kayıt bulunamadı.</td>
+                            <td colspan="7" class="text-center text-muted py-4">@Localizer["NoRecordsFound"]</td>
                         </tr>
                     }
                     @foreach (var log in Model)
