@@ -13,7 +13,7 @@
     var total        = (int)(ViewBag.Total ?? 0);
     var categories   = ViewBag.Categories as List<string> ?? new List<string>();
     var conferenceId = ViewBag.ConferenceId as Guid?;
-    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     ViewData["Title"] = Localizer["PageTitle"].Value;
 
     string CategoryBadge(string cat) => cat switch
@@ -39,8 +39,8 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="fw-bold mb-1">🔍 Denetim Günlüğü</h4>
-        <p class="text-muted mb-0">Toplam @total kayıt</p>
+        <h4 class="fw-bold mb-1">🔍 @Localizer["PageTitle"]</h4>
+        <p class="text-muted mb-0">@Localizer["TotalRecords"]: @total</p>
     </div>
     <a href="@Url.Action("Export", exportRoute)" class="btn btn-sm btn-outline-success">
         ⬇️ @Localizer["DownloadCsv"]
@@ -63,7 +63,7 @@
             }
 
             <div class="col-md-2">
-                <label class="form-label small fw-semibold">Kategori</label>
+                <label class="form-label small fw-semibold"></label>
                 <select name="category" class="form-select form-select-sm">
                     <option value="">— @Localizer["All"] —</option>
                     @foreach (var cat in categories)
@@ -81,25 +81,25 @@
             </div>
 
             <div class="col-md-2">
-                <label class="form-label small fw-semibold">Başlangıç</label>
+                <label class="form-label small fw-semibold">@Localizer["StartDate"]</label>
                 <input type="date" name="dateFrom" value="@dateFrom" class="form-control form-control-sm" />
             </div>
 
             <div class="col-md-2">
-                <label class="form-label small fw-semibold">Bitiş</label>
+                <label class="form-label small fw-semibold">@Localizer["EndDate"]</label>
                 <input type="date" name="dateTo" value="@dateTo" class="form-control form-control-sm" />
             </div>
 
             <div class="col-md-3">
-                <label class="form-label small fw-semibold">Arama (kullanıcı, işlem, açıklama, ID)</label>
-                <input type="text" name="search" value="@search" class="form-control form-control-sm" placeholder="Ara..." />
+                <label class="form-label small fw-semibold">@Localizer["SearchLabel"]</label>
+                <input type="text" name="search" value="@search" class="form-control form-control-sm" placeholder="@Localizer["SearchPlaceholder"]" />
             </div>
 
             <div class="col-md-1">
                 <button type="submit" class="btn btn-sm btn-primary w-100">@Localizer["Filter"]</button>
             </div>
             <div class="col-md-2">
-                <a href="@Url.Action("Index", new { slug, conferenceId })" class="btn btn-sm btn-outline-secondary w-100">Temizle</a>
+                <a href="@Url.Action("Index", new { slug, conferenceId })" class="btn btn-sm btn-outline-secondary w-100">@Localizer["Clear"]</a>
             </div>
         </form>
     </div>
@@ -122,7 +122,7 @@
                     <thead class="table-light">
                         <tr>
                             <th style="width:150px">@Localizer["Date"]</th>
-                            <th style="width:100px">Kategori</th>
+                            <th style="width:100px"></th>
                             <th style="width:160px">@Localizer["Action"]</th>
                             <th>@Localizer["User"]</th>
                             <th>@Localizer["Description"]</th>
@@ -147,7 +147,7 @@
                                     }
                                     else
                                     {
-                                        <span class="text-muted">Sistem</span>
+                                        <span class="text-muted">@Localizer["System"]</span>
                                     }
                                 </td>
                                 <td>
