@@ -1275,13 +1275,13 @@
                         @if (Model.Conference.IsSubmissionOpen && isRegisteredToThisConference)
                         {
                             <a href="@submitAbstractUrl" class="action-secondary-btn">
-                                <i class="fas fa-file-arrow-up"></i> Bildiri Gönder
+                                <i class="fas fa-file-arrow-up"></i> @Localizer["SubmitAbstractButton"]
                             </a>
                         }
                         else if (!isRegisteredToThisConference && Model.Conference.IsSubmissionOpen)
                         {
                             <div class="action-secondary-btn" style="cursor:default;opacity:.65;">
-                                <i class="fas fa-info-circle me-1"></i> Bildiri için önce kayıt olun
+                                <i class="fas fa-info-circle me-1"></i> @Localizer["RegisterFirstForAbstract"]
                             </div>
                         }
                     </div>
@@ -1372,17 +1372,17 @@
             {
                 <a href="@registrationUrl" class="hero-primary-btn">
                     <i class="fas fa-user-plus"></i>
-                    @(isRegisteredToThisConference ? "Kaydınızı Görüntüleyin" : "Hemen Kayıt Olun")
+                    @(isRegisteredToThisConference ? Localizer["ViewYourRegistration"].Value : Localizer["RegisterNowButton"].Value)
                 </a>
             }
             @if (Model.Conference.IsSubmissionOpen && isRegisteredToThisConference)
             {
                 <a href="@submitAbstractUrl" class="hero-secondary-btn">
-                    <i class="fas fa-file-arrow-up"></i> Bildiri Gönder
+                    <i class="fas fa-file-arrow-up"></i> @Localizer["SubmitAbstractButton"]
                 </a>
             }
             <a href="@programUrl" class="hero-secondary-btn">
-                <i class="fas fa-calendar-alt"></i> Programı İncele
+                <i class="fas fa-calendar-alt"></i> @Localizer["ViewProgramButton"]
             </a>
         </div>
 
