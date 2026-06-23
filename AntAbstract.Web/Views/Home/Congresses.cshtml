@@ -508,11 +508,26 @@
                                     @description
                                 </p>
 
-                                <a href="@actionUrl"
-                                   class="congress-action-button @actionClass">
-                                    <span>@actionText</span>
-                                    <i class="@actionIcon"></i>
-                                </a>
+                                <div class="congress-action-buttons">
+                                    @if (!isSystemUser && !isRegistered)
+                                    {
+                                        <a href="@registrationUrl" class="congress-action-button btn-register-congress">
+                                            <span>@Localizer["Register"]</span>
+                                            <i class="fas fa-paper-plane"></i>
+                                        </a>
+                                    }
+                                    else if (isRegistered)
+                                    {
+                                        <a href="@panelUrl" class="congress-action-button btn-registered-congress">
+                                            <span>@Localizer["GoToPanel"]</span>
+                                            <i class="fas fa-check-circle"></i>
+                                        </a>
+                                    }
+                                    <a href="@siteUrl" class="congress-action-button btn-site-view">
+                                        <span>@Localizer["ViewSite"]</span>
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
                             </div>
                         </article>
                     }
@@ -996,20 +1011,27 @@
         min-height: 48px;
     }
 
-    .congress-action-button {
+    .congress-action-buttons {
         margin-top: auto;
-        min-height: 48px;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .congress-action-button {
+        flex: 1;
+        min-height: 44px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 0.55rem;
-        border-radius: 14px;
+        gap: 0.45rem;
+        border-radius: 12px;
         text-decoration: none;
-        font-size: 0.92rem;
-        font-weight: 900;
+        font-size: 0.82rem;
+        font-weight: 800;
         border: 1px solid #dbe3ef;
         background: #ffffff;
         transition: all 0.2s ease;
+        padding: 0 0.75rem;
     }
 
     .btn-register-congress {
