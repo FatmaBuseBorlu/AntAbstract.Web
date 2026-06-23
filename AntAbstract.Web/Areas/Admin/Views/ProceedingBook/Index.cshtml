@@ -1516,7 +1516,7 @@
 
                                     <div class="pdf-cover-meta-item">
                                         <i class="fas fa-eye"></i>
-                                        <span>@(Model.IsProceedingBookPublished ? "Yazar panelinde görünür" : "Yazar panelinde gizli")</span>
+                                        <span>@(Model.IsProceedingBookPublished ? Localizer.GetString("VisibleToAuthors").Value : Localizer.GetString("HiddenFromAuthors").Value)</span>
                                     </div>
                                 </div>
                             </div>
@@ -1525,7 +1525,7 @@
                                 <div class="pdf-viewer-toolbar">
                                     <div class="pdf-viewer-toolbar-left">
                                         <span class="pdf-live-dot"></span>
-                                        <span>Canlı PDF önizleme</span>
+                                        <span>@Localizer["LivePreview"]</span>
                                     </div>
 
                                     <div class="pdf-modern-actions">
@@ -1553,7 +1553,7 @@
                         </div>
 
                         <div class="empty-upload-title">
-                            Henüz PDF yüklenmedi
+                            @Localizer["NoPdfYet"]
                         </div>
 
                         <p class="empty-upload-text">
@@ -1577,7 +1577,7 @@
 
                     <div class="mb-4">
                         <label for="ProceedingBookFile" class="form-label-modern">
-                            Yeni PDF Dosyası
+                            @Localizer["NewPdfFile"]
                         </label>
 
                         <div class="file-upload-box">
@@ -1599,7 +1599,7 @@
                     <div class="admin-switch-card">
                         <div>
                             <div class="admin-switch-title">
-                                Bildiri kitabı yayında olsun
+                                @Localizer["PublishToggle"]
                             </div>
 
                             <div class="admin-switch-text">
@@ -1659,12 +1659,12 @@
             {
                 <div class="status-badge status-draft">
                     <i class="fas fa-clock"></i>
-                    Yayında Değil
+                    @Localizer["NotPublished"]
                 </div>
             }
 
             <h5 class="side-title">
-                Yayın Bilgisi
+                @Localizer["PublishInfo"]
             </h5>
 
             <p class="side-text">
@@ -1675,7 +1675,7 @@
                 <li>
                     <i class="fas fa-calendar-check"></i>
                     <span>
-                        Yayın Tarihi:
+                        @Localizer["PublishDate"]
                         <strong>@publishedDateText</strong>
                     </span>
                 </li>
@@ -1692,7 +1692,7 @@
                     <i class="fas fa-eye"></i>
                     <span>
                         Görünürlük:
-                        <strong>@(Model.IsProceedingBookPublished ? "Yazar panelinde görünür" : "Yazar panelinde gizli")</strong>
+                        <strong>@(Model.IsProceedingBookPublished ? Localizer.GetString("VisibleToAuthors").Value : Localizer.GetString("HiddenFromAuthors").Value)</strong>
                     </span>
                 </li>
 

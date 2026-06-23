@@ -39,13 +39,13 @@
     {
         return status switch
         {
-            SubmissionStatus.New => "Yeni",
-            SubmissionStatus.Pending => "Beklemede",
-            SubmissionStatus.UnderReview => "Hakem Değerlendirmesinde",
-            SubmissionStatus.Accepted => "Kabul Edildi",
-            SubmissionStatus.Rejected => "Reddedildi",
-            SubmissionStatus.RevisionRequired => "Revizyon Gerekli",
-            SubmissionStatus.Presented => "Sunuldu",
+            SubmissionStatus.New => Localizer.GetString("StatusNew").Value,
+            SubmissionStatus.Pending => Localizer.GetString("StatusPending").Value,
+            SubmissionStatus.UnderReview => Localizer.GetString("StatusUnderReview").Value,
+            SubmissionStatus.Accepted => Localizer.GetString("StatusAccepted").Value,
+            SubmissionStatus.Rejected => Localizer.GetString("StatusRejected").Value,
+            SubmissionStatus.RevisionRequired => Localizer.GetString("StatusRevision").Value,
+            SubmissionStatus.Presented => Localizer.GetString("StatusPresented").Value,
             _ => status.ToString()
         };
     }
@@ -69,11 +69,11 @@
     {
         return status switch
         {
-            DoiStatus.None => "Hazırlanmadı",
-            DoiStatus.Ready => "Metadata Hazır",
-            DoiStatus.Assigned => "Atandı",
-            DoiStatus.Failed => "Hatalı",
-            DoiStatus.ConfigMissing => "Ayar Eksik",
+            DoiStatus.None => Localizer.GetString("DoiNone").Value,
+            DoiStatus.Ready => Localizer.GetString("DoiReady").Value,
+            DoiStatus.Assigned => Localizer.GetString("DoiAssigned").Value,
+            DoiStatus.Failed => Localizer.GetString("DoiFailed").Value,
+            DoiStatus.ConfigMissing => Localizer.GetString("DoiConfigMissing").Value,
             _ => status.ToString()
         };
     }
@@ -91,12 +91,12 @@
     }
 
     var authorFullName = Model.Author == null
-        ? "Yazar bilgisi yok"
+        ? Localizer.GetString("NoAuthorInfo").Value
         : $"{Model.Author.FirstName} {Model.Author.LastName}".Trim();
 
     if (string.IsNullOrWhiteSpace(authorFullName))
     {
-        authorFullName = Model.Author?.Email ?? "Yazar bilgisi yok";
+        authorFullName = Model.Author?.Email ?? Localizer.GetString("NoAuthorInfo").Value;
     }
 
     var files = Model.Files?.ToList() ?? new List<SubmissionFile>();
