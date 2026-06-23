@@ -791,7 +791,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    Toplam Kongre
+                    @Localizer["TotalConferences"]
                 </div>
             </div>
         </div>
@@ -807,7 +807,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    Devam Eden
+                    @Localizer["Ongoing"]
                 </div>
             </div>
         </div>
@@ -839,7 +839,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    Kurum
+                    @Localizer["Institution"]
                 </div>
             </div>
         </div>
@@ -850,7 +850,7 @@
 
             <div class="col-xl-5 col-lg-5">
                 <label class="admin-filter-label">
-                    Arama
+                    @Localizer["Search"]
                 </label>
 
                 <div class="admin-input-wrap">
@@ -864,7 +864,7 @@
 
             <div class="col-xl-4 col-lg-4">
                 <label class="admin-filter-label">
-                    Kurum
+                    @Localizer["Institution"]
                 </label>
 
                 <select id="tenantFilterSelect" class="form-select admin-filter-control">
@@ -888,7 +888,7 @@
                         id="filterConferenceButton"
                         class="admin-filter-btn w-100">
                     <i class="fas fa-search"></i>
-                    Filtrele
+                    @Localizer["Filter"]
                 </button>
             </div>
 
@@ -896,7 +896,7 @@
                 <button type="button"
                         id="resetConferenceButton"
                         class="admin-reset-btn w-100"
-                        title="Temizle">
+                        title="@Localizer["Clear"]">
                     <i class="fas fa-rotate-left"></i>
                 </button>
             </div>
@@ -913,7 +913,7 @@
             <div class="conference-list-header">
                 <div>
                     <h5>
-                        Kongre Listesi
+                        @Localizer["ConferenceList"]
                     </h5>
 
                     <p>
@@ -923,7 +923,7 @@
 
                 <div class="conference-count-pill">
                     <i class="fas fa-list-ul"></i>
-                    <span id="visibleConferenceCount">@conferences.Count</span> / @conferences.Count kongre
+                    <span id="visibleConferenceCount">@conferences.Count</span> / @conferences.Count @Localizer["Conferences"]
                 </div>
             </div>
 
@@ -979,14 +979,14 @@
 
                                     <span class="conference-status-pill">
                                         <i class="fas fa-circle"></i>
-                                        Aktif
+                                        @Localizer["Active"]
                                     </span>
                                 </div>
 
                                 <div class="conference-meta-row">
                                     <span>
                                         <i class="fas fa-link"></i>
-                                        Slug: @(string.IsNullOrWhiteSpace(tenantSlug) ? "Belirtilmedi" : tenantSlug)
+                                        Slug: @(string.IsNullOrWhiteSpace(tenantSlug) ? Localizer["NotSpecified"].Value : tenantSlug)
                                     </span>
 
                                     <span>
