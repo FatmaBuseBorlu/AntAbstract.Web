@@ -1,7 +1,7 @@
 @using AntAbstract.Web.Areas.Admin.Controllers
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
-    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
     var dbOk          = (bool)ViewBag.DbOk;
     var dbError       = ViewBag.DbError as string;
@@ -99,7 +99,7 @@
                             Webhook: <strong>@wStats.Total</strong> / <span class="text-danger">@wStats.Failed @Localizer["ErrorCount"]</span>
                         </div>
                         <div class="small">
-                            E-posta: <strong>@mStats.Total</strong> / <span class="text-danger">@mStats.Failed @Localizer["ErrorCount"]</span>
+                            @Localizer["Email"]: <strong>@mStats.Total</strong> / <span class="text-danger">@mStats.Failed @Localizer["ErrorCount"]</span>
                         </div>
                     </div>
                 </div>
