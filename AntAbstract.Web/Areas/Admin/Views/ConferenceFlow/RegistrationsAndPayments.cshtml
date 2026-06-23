@@ -464,7 +464,7 @@
                                         {
                                             <form method="post"
                                                   action="@approvePaymentUrl"
-                                                  onsubmit="return confirm('Bu kaydın ödemesini onaylamak istediğinize emin misiniz?');">
+                                                  onsubmit="return confirm('');">
 
                                                 @Html.AntiForgeryToken()
 
@@ -474,7 +474,7 @@
 
                                                 <button type="submit" class="approve-payment-btn">
                                                     <i class="fas fa-circle-check"></i>
-                                                    Ödemeyi Onayla
+                                                    
                                                 </button>
                                             </form>
                                         }
@@ -483,11 +483,11 @@
                                             <div class="d-flex align-items-center gap-2">
                                                 <span class="payment-approved-pill">
                                                     <i class="fas fa-check"></i>
-                                                    Onaylandı
+                                                    
                                                 </span>
                                                 <form method="post"
                                                       action="@revokePaymentUrl"
-                                                      onsubmit="return confirm('Bu kaydın ödeme onayını geri almak istediğinize emin misiniz?');">
+                                                      onsubmit="return confirm('');">
                                                     @Html.AntiForgeryToken()
                                                     <input type="hidden" name="registrationId" value="@item.RegistrationId" />
                                                     <input type="hidden" name="conferenceId" value="@conferenceId" />
@@ -517,7 +517,7 @@
                                     else
                                     {
                                         <span class="muted-pill">
-                                            Ödeme yok
+                                            
                                         </span>
                                     }
                                 </td>
@@ -525,19 +525,19 @@
                                 <td>
                                     <div class="billing-cell">
                                         <strong>
-                                            @(string.IsNullOrWhiteSpace(item.BillingName) ? "Fatura adı yok" : item.BillingName)
+                                            @(string.IsNullOrWhiteSpace(item.BillingName) ? Localizer.GetString("NoBillingName").Value : item.BillingName)
                                         </strong>
 
                                         @if (!string.IsNullOrWhiteSpace(item.PaymentTransactionId))
                                         {
                                             <span>
-                                                İşlem ID: @item.PaymentTransactionId
+                                                : @item.PaymentTransactionId
                                             </span>
                                         }
                                         else
                                         {
                                             <span>
-                                                İşlem ID yok
+                                                
                                             </span>
                                         }
 
