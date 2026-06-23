@@ -31,13 +31,13 @@
 
     string StatusLabel(string? status) => status switch
     {
-        nameof(SubmissionStatus.New) => "Yeni",
-        nameof(SubmissionStatus.Pending) => "Beklemede",
+        nameof(SubmissionStatus.New) => Localizer.GetString("StatusNew").Value,
+        nameof(SubmissionStatus.Pending) => Localizer.GetString("StatusPending").Value,
         nameof(SubmissionStatus.UnderReview) => "Hakem Sürecinde",
-        nameof(SubmissionStatus.Accepted) => "Kabul Edildi",
-        nameof(SubmissionStatus.Rejected) => "Reddedildi",
-        nameof(SubmissionStatus.RevisionRequired) => "Revizyon Gerekli",
-        nameof(SubmissionStatus.Presented) => "Sunuldu",
+        nameof(SubmissionStatus.Accepted) => Localizer.GetString("StatusAccepted").Value,
+        nameof(SubmissionStatus.Rejected) => Localizer.GetString("StatusRejected").Value,
+        nameof(SubmissionStatus.RevisionRequired) => Localizer.GetString("StatusRevision").Value,
+        nameof(SubmissionStatus.Presented) => Localizer.GetString("StatusPresented").Value,
         _ => string.IsNullOrWhiteSpace(status) ? "Bilinmiyor" : status
     };
 

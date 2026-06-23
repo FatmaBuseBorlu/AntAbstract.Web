@@ -118,8 +118,8 @@
                 var (dotClass, chipClass, statusLabel) = item.Status switch
                 {
                     "ongoing"  => ("dot-green",  "status-chip-ongoing",  "Devam Ediyor"),
-                    "upcoming" => ("dot-blue",   "status-chip-upcoming", "Yaklaşan"),
-                    _          => ("dot-gray",   "status-chip-past",     "Tamamlandı")
+                    "upcoming" => ("dot-blue",   "status-chip-upcoming", Localizer.GetString("StatusUpcoming").Value),
+                    _          => ("dot-gray",   "status-chip-past",     Localizer.GetString("StatusCompleted").Value)
                 };
 
                 <div class="conf-card">

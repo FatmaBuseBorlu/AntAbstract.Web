@@ -41,13 +41,13 @@
     {
         return status switch
         {
-            SubmissionStatus.New => "Yeni",
-            SubmissionStatus.Pending => "Beklemede",
+            SubmissionStatus.New => Localizer.GetString("StatusNew").Value,
+            SubmissionStatus.Pending => Localizer.GetString("StatusPending").Value,
             SubmissionStatus.UnderReview => "Hakem Değerlendirmesinde",
-            SubmissionStatus.Accepted => "Kabul Edildi",
-            SubmissionStatus.Rejected => "Reddedildi",
-            SubmissionStatus.RevisionRequired => "Revizyon Gerekli",
-            SubmissionStatus.Presented => "Sunuldu",
+            SubmissionStatus.Accepted => Localizer.GetString("StatusAccepted").Value,
+            SubmissionStatus.Rejected => Localizer.GetString("StatusRejected").Value,
+            SubmissionStatus.RevisionRequired => Localizer.GetString("StatusRevision").Value,
+            SubmissionStatus.Presented => Localizer.GetString("StatusPresented").Value,
             _ => status.ToString()
         };
     }

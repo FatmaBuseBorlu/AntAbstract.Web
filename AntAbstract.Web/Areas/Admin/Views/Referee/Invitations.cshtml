@@ -77,8 +77,8 @@
                                 var (badgeClass, badgeText) = inv.Status switch
                                 {
                                     AntAbstract.Domain.Entities.InvitationStatus.Pending  => ("bg-warning text-dark", "Bekliyor"),
-                                    AntAbstract.Domain.Entities.InvitationStatus.Accepted => ("bg-success",          "Kabul Edildi"),
-                                    AntAbstract.Domain.Entities.InvitationStatus.Declined => ("bg-danger",           "Reddedildi"),
+                                    AntAbstract.Domain.Entities.InvitationStatus.Accepted => ("bg-success",          Localizer.GetString("StatusAccepted").Value),
+                                    AntAbstract.Domain.Entities.InvitationStatus.Declined => ("bg-danger",           Localizer.GetString("StatusRejected").Value),
                                     AntAbstract.Domain.Entities.InvitationStatus.Expired  => ("bg-secondary",        "Süresi Doldu"),
                                     _ => ("bg-secondary", "Bilinmiyor")
                                 };

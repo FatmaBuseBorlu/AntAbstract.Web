@@ -18,7 +18,7 @@
     string StatusLabel(PaymentStatus? s) => s switch
     {
         PaymentStatus.Pending   => "Bekliyor",
-        PaymentStatus.Completed => "Tamamlandı",
+        PaymentStatus.Completed => Localizer.GetString("StatusCompleted").Value,
         PaymentStatus.Failed    => "Başarısız",
         PaymentStatus.Refunded  => "İade Edildi",
         _                       => "—"
