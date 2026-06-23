@@ -89,13 +89,13 @@
 
     var pageHeading = L(
         "PageHeading",
-        "Güvenli Ödeme",
+        L("SecurePayment", "Güvenli Ödeme", "Secure Payment"),
         "Secure Payment"
     );
 
     var pageDescription = L(
         "PageDescription",
-        "Kongre katılım ödemenizi güvenli ödeme ekranı üzerinden tamamlayabilirsiniz.",
+        L("PaymentPageDesc", "Kongre katılım ödemenizi güvenli ödeme ekranı üzerinden tamamlayabilirsiniz.", "You can complete your congress participation payment through the secure payment screen."),
         "You can complete your congress participation payment through the secure payment page."
     );
 
@@ -362,7 +362,7 @@
         <div class="payment-header">
             <div class="payment-kicker">
                 <i class="fas fa-lock"></i>
-                @L("HeroBadge", "Güvenli Ödeme", "Secure Payment")
+                @L("HeroBadge", L("SecurePayment", "Güvenli Ödeme", "Secure Payment"), "Secure Payment")
             </div>
 
             <h2 class="payment-title">
@@ -500,10 +500,10 @@
                                     </div>
                                 </div>
 
-                                @* ── Ödeme Yöntemi Seçimi ─────────────────────────────────── *@
+                                @* ──  Seçimi ─────────────────────────────────── *@
                                 <div class="mb-3">
                                     <label class="form-label fw-semibold">
-                                        @L("PaymentMethodLabel", "Ödeme Yöntemi", "Payment Method")
+                                        @L("PaymentMethodLabel", "", "Payment Method")
                                     </label>
 
                                     @if (isStripeEnabled)
@@ -553,16 +553,16 @@
 
                                         @* Banka bilgileri — banka havalesi seçilince göster *@
                                         <div id="bank-details" class="alert alert-warning rounded-3 mt-2" style="display:none;">
-                                            <h6 class="fw-bold mb-2"><i class="fas fa-university me-2"></i>Banka Bilgileri</h6>
+                                            <h6 class="fw-bold mb-2"><i class="fas fa-university me-2"></i>@Localizer["BankDetailsTitle"]</h6>
                                             @if (!string.IsNullOrWhiteSpace(bankName))
-                                            { <div><strong>Banka:</strong> @bankName</div> }
+                                            { <div><strong>@Localizer["BankLabel"]</strong> @bankName</div> }
                                             @if (!string.IsNullOrWhiteSpace(bankAccountName))
-                                            { <div><strong>Hesap Adı:</strong> @bankAccountName</div> }
+                                            { <div><strong>@Localizer["AccountNameLabel"]</strong> @bankAccountName</div> }
                                             @if (!string.IsNullOrWhiteSpace(bankBranch))
-                                            { <div><strong>Şube:</strong> @bankBranch</div> }
+                                            { <div><strong>@Localizer["BranchLabel"]</strong> @bankBranch</div> }
                                             @if (!string.IsNullOrWhiteSpace(bankIban))
                                             { <div class="font-monospace mt-1"><strong>IBAN:</strong> @bankIban</div> }
-                                            <small class="text-muted mt-2 d-block">Ödemeyi yaptıktan sonra bir sonraki adımda makbuzunuzu yükleyin.</small>
+                                            <small class="text-muted mt-2 d-block">@Localizer["BankUploadHint"]</small>
                                         </div>
                                     }
 
@@ -695,9 +695,9 @@
 
             if (payBtn) {
                 var labels = {
-                    'StripeCheckout': 'Stripe ile Öde',
-                    'PayTR': 'PayTR ile Öde',
-                    'BankTransfer': 'Banka Havalesi Seç ve Devam Et'
+                    'StripeCheckout': Localizer.GetString('PayWithStripe').Value,
+                    'PayTR': Localizer.GetString('PayWithPayTR').Value,
+                    'BankTransfer': Localizer.GetString('SelectBankTransfer').Value
                 };
                 var icon = selected.value === 'BankTransfer' ? 'fa-university' : 'fa-lock';
                 payBtn.innerHTML = '<i class="fas ' + icon + ' me-2"></i>' + (labels[selected.value] || 'Ödemeye Devam Et');

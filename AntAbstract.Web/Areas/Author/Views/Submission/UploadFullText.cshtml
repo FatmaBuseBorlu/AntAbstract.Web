@@ -8,7 +8,7 @@
 @model SubmissionDto
 
 @{
-    ViewData["Title"] = "Tam Metin Yükle";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
     var slug = ViewContext.RouteData.Values["slug"]?.ToString()
@@ -319,20 +319,19 @@
                 <i class="fas fa-file-word"></i>
             </div>
             <div>
-                <div class="fulltext-kicker">Bildiri İşlemleri</div>
-                <h2 class="fulltext-title">Tam Metin Yükle</h2>
+                <div class="fulltext-kicker">@Localizer["Kicker"]</div>
+                <h2 class="fulltext-title">@Localizer["PageTitle"]</h2>
                 <p class="fulltext-description">
-                    Kabul edilen bildiriniz için tam metin dosyanızı bu ekrandan yükleyebilirsiniz.
-                    Kongre yazım kurallarına uygun formatı kullandığınızdan emin olun.
+                    @Localizer["PageDescription"]
                 </p>
             </div>
         </div>
         <div class="fulltext-hero-actions">
             <a href="@detailsUrl" class="fulltext-hero-btn fulltext-hero-btn-light">
-                <i class="fas fa-arrow-left"></i> Detaya Dön
+                <i class="fas fa-arrow-left"></i> @Localizer["BackToDetailsButton"]
             </a>
             <a href="@listUrl" class="fulltext-hero-btn fulltext-hero-btn-primary">
-                <i class="fas fa-list"></i> Listeye Dön
+                <i class="fas fa-list"></i> @Localizer["BackToListButton"]
             </a>
         </div>
     </div>
@@ -342,17 +341,16 @@
             <div class="fulltext-card">
                 <div class="fulltext-card-header">
                     <h5 class="fulltext-card-title">
-                        <i class="fas fa-circle-info text-success me-2"></i>Tam Metin Bilgisi
+                        <i class="fas fa-circle-info text-success me-2"></i>@Localizer["InfoCardTitle"]
                     </h5>
-                    <p class="fulltext-card-subtitle">Bildiri ve son yükleme bilgileri</p>
+                    <p class="fulltext-card-subtitle">@Localizer["InfoCardSubtitle"]</p>
                 </div>
                 <div class="fulltext-card-body">
 
                     <div class="info-box">
                         <i class="fas fa-check-circle"></i>
                         <div>
-                            Bildiriniz <strong>kabul edilmiştir</strong>. Tam metin dosyanızı kongre yazım
-                            kurallarına uygun şekilde hazırlayarak yükleyiniz.
+                            @Html.Raw(Localizer["AcceptedInfoText"].Value)
                         </div>
                     </div>
 
@@ -360,7 +358,7 @@
                     {
                         <div class="deadline-box">
                             <i class="fas fa-clock"></i>
-                            <span>Son yükleme tarihi: <strong>@deadline.Value.ToString("dd.MM.yyyy")</strong></span>
+                            <span>@Localizer["DeadlineLabel"] <strong>@deadline.Value.ToString("dd.MM.yyyy")</strong></span>
                         </div>
                     }
 
@@ -368,11 +366,11 @@
                     {
                         <a href="@conference!.FullTextTemplatePath" target="_blank"
                            class="btn btn-outline-success rounded-pill w-100 mt-3 fw-bold">
-                            <i class="fas fa-download me-2"></i>Şablon Dosyasını İndir
+                            <i class="fas fa-download me-2"></i>@Localizer["DownloadTemplateButton"]
                         </a>
                     }
 
-                    <h6 class="fw-bold small mt-4 mb-2 text-muted text-uppercase">Mevcut Tam Metin</h6>
+                    <h6 class="fw-bold small mt-4 mb-2 text-muted text-uppercase">@Localizer["CurrentFullTextHeading"]</h6>
 
                     @if (lastFullText != null)
                     {
@@ -388,13 +386,13 @@
                             </div>
                         </div>
                         <p class="text-muted small mt-2 mb-0">
-                            <i class="fas fa-info-circle me-1"></i>Yeni dosya yüklerseniz mevcut dosyanın üzerine yazılır.
+                            <i class="fas fa-info-circle me-1"></i>@Localizer["OverwriteWarning"]
                         </p>
                     }
                     else
                     {
                         <div class="alert alert-light border text-muted small mb-0">
-                            <i class="fas fa-file-circle-question me-2"></i>Henüz tam metin yüklenmemiş.
+                            <i class="fas fa-file-circle-question me-2"></i>@Localizer["NoFullTextYet"]
                         </div>
                     }
                 </div>
@@ -405,9 +403,9 @@
             <div class="fulltext-card">
                 <div class="fulltext-card-header">
                     <h5 class="fulltext-card-title">
-                        <i class="fas fa-upload text-success me-2"></i>Tam Metin Dosyası Yükle
+                        <i class="fas fa-upload text-success me-2"></i>@Localizer["UploadCardTitle"]
                     </h5>
-                    <p class="fulltext-card-subtitle">PDF, DOC veya DOCX formatında, maksimum 50 MB</p>
+                    <p class="fulltext-card-subtitle">@Localizer["UploadCardSubtitle"]</p>
                 </div>
                 <div class="fulltext-card-body">
                     <form action="@postUrl" method="post" enctype="multipart/form-data">
@@ -419,16 +417,16 @@
                                 <div class="upload-icon">
                                     <i class="fas fa-cloud-upload-alt fa-2x"></i>
                                 </div>
-                                <h6 class="fw-bold text-dark mb-1">Tam metin dosyanızı seçin</h6>
+                                <h6 class="fw-bold text-dark mb-1">@Localizer["SelectFileHeading"]</h6>
                                 <p class="text-muted small mb-0">
-                                    PDF, DOC veya DOCX &bull; Maks. 50 MB
+                                    @Localizer["SelectFileHint"]
                                 </p>
                             </div>
                             <div id="file-preview" class="d-none align-items-center justify-content-center flex-column">
                                 <i class="fas fa-file-word fa-3x text-success mb-3"></i>
                                 <h6 class="fw-bold text-dark mb-1" id="fileNameText">dosya.pdf</h6>
                                 <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">
-                                    Yüklemeye hazır
+                                    @Localizer["ReadyToUploadBadge"]
                                 </span>
                             </div>
                             <input type="file"
@@ -442,12 +440,12 @@
 
                         <p class="text-muted small mt-2 mb-0">
                             <i class="fas fa-circle-info me-1"></i>
-                            Kongre yazım kurallarına uygun şablon kullandığınızdan emin olun.
+                            @Localizer["TemplateWarning"]
                         </p>
 
                         <div class="d-grid mt-4">
                             <button type="submit" class="btn submit-fulltext-btn">
-                                <i class="fas fa-cloud-upload-alt me-2"></i>Tam Metni Yükle
+                                <i class="fas fa-cloud-upload-alt me-2"></i>@Localizer["SubmitButton"]
                             </button>
                         </div>
                     </form>

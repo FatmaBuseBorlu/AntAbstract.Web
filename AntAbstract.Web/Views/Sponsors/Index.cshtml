@@ -2,13 +2,13 @@
 @model List<Sponsor>
 @{
     Layout = "_LayoutDashboard";
-    ViewData["Title"] = "Sponsorlar";
+    ViewData["Title"] = "";
     var slug = (string?)ViewBag.Slug ?? "";
 
     string TierLabel(SponsorTier t) => t switch {
         SponsorTier.Platinum => "Platin Sponsor",
-        SponsorTier.Gold     => "Altın Sponsor",
-        SponsorTier.Silver   => "Gümüş Sponsor",
+        SponsorTier.Gold     => Localizer.GetString("GoldSponsor").Value,
+        SponsorTier.Silver   => Localizer.GetString("SilverSponsor").Value,
         SponsorTier.Bronze   => "Bronz Sponsor",
         SponsorTier.Partner  => "Partner",
         SponsorTier.Media    => "Medya Sponsoru",
@@ -66,7 +66,7 @@
 <div class="sponsors-page">
 
     <div class="sponsors-hero">
-        <h1><i class="fas fa-handshake text-primary me-2"></i>Sponsorlar</h1>
+        <h1><i class="fas fa-handshake text-primary me-2"></i></h1>
         <p class="text-muted">@ViewBag.ConferenceTitle</p>
     </div>
 
@@ -74,7 +74,7 @@
     {
         <div class="text-center py-5 text-muted">
             <i class="fas fa-handshake fa-3x mb-3 opacity-50"></i>
-            <p>Sponsor bilgisi henüz yayınlanmadı.</p>
+            <p></p>
         </div>
     }
     else

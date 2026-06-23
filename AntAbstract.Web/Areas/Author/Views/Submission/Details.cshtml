@@ -904,7 +904,7 @@
                     <div class="alert alert-info border-0 small mt-3">
                         <div class="fw-semibold mb-1">
                             <i class="fas fa-comment-dots me-1"></i>
-                            Yönetici Notu
+                            @L("AdminDecisionNoteLabel", "Yönetici Notu", "Admin Note")
                         </div>
                         <p class="mb-0">@Model.AdminDecisionNote</p>
                     </div>
@@ -918,8 +918,8 @@
                                 <i class="fas fa-reply"></i>
                             </div>
                             <div>
-                                <div style="font-size:0.95rem;font-weight:900;color:#0f172a;">Hakem Notuna Yanıt (Rebuttal)</div>
-                                <div style="font-size:0.78rem;color:#64748b;font-weight:700;">Editöre itirazınızı veya açıklamanızı iletebilirsiniz.</div>
+                                <div style="font-size:0.95rem;font-weight:900;color:#0f172a;">@L("RebuttalTitle", "Hakem Notuna Yanıt (Rebuttal)", "Response to Reviewer (Rebuttal)")</div>
+                                <div style="font-size:0.78rem;color:#64748b;font-weight:700;">@L("RebuttalDescription", "Edit&ouml;re itirazınızı veya açıklamanızı iletebilirsiniz.", "You can submit your objection or explanation to the editor.")</div>
                             </div>
                         </div>
                         <div style="padding:1.15rem;background:#fff;">
@@ -928,13 +928,13 @@
                                 <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:1rem;margin-bottom:1rem;">
                                     <div style="font-size:0.74rem;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:#94a3b8;margin-bottom:0.5rem;">
                                         <i class="fas fa-check-circle" style="color:#16a34a;"></i>
-                                        Gönderilen Yanıt — @(Model.RebuttalDate?.ToString("dd.MM.yyyy HH:mm") ?? "")
+                                        @L("RebuttalSentLabel", "Gönderilen Yanıt", "Submitted Response") — @(Model.RebuttalDate?.ToString("dd.MM.yyyy HH:mm") ?? "")
                                     </div>
                                     <p style="margin:0;color:#334155;font-size:0.9rem;line-height:1.6;">@Model.RebuttalText</p>
                                 </div>
                                 <div style="font-size:0.82rem;color:#64748b;font-weight:700;">
                                     <i class="fas fa-info-circle" style="color:#0d6efd;"></i>
-                                    Yanıtınız editöre iletilmiştir. Nihai karar için bekleyiniz.
+                                    @L("RebuttalSentInfo", "Yanıtınız editöre iletilmiştir. Nihai karar için bekleyiniz.", "Your response has been forwarded to the editor. Please wait for the final decision.")
                                 </div>
                             }
                             else
@@ -943,21 +943,21 @@
                                     @Html.AntiForgeryToken()
                                     <div style="margin-bottom:0.85rem;">
                                         <label style="font-size:0.84rem;font-weight:900;color:#475569;display:block;margin-bottom:0.5rem;">
-                                            Yanıt Metni
+                                            @L("RebuttalTextLabel", "Yanıt Metni", "Response Text")
                                         </label>
                                         <textarea name="rebuttalText"
                                                   rows="5"
                                                   required
                                                   minlength="10"
                                                   maxlength="2000"
-                                                  placeholder="Hakem notuna ilişkin açıklama veya itirazınızı buraya yazın..."
+                                                  placeholder="@L("RebuttalPlaceholder", "Hakem notuna ilişkin açıklama veya itirazınızı buraya yazın...", "Write your explanation or objection regarding the reviewer note here...")"
                                                   style="width:100%;border:1px solid #dbe4ef;border-radius:16px;padding:0.85rem 1rem;font-size:0.9rem;resize:vertical;font-family:inherit;color:#0f172a;"></textarea>
-                                        <div style="font-size:0.75rem;color:#94a3b8;margin-top:0.35rem;">Maksimum 2000 karakter.</div>
+                                        <div style="font-size:0.75rem;color:#94a3b8;margin-top:0.35rem;">@L("RebuttalCharLimit", "Maksimum 2000 karakter.", "Maximum 2000 characters.")</div>
                                     </div>
                                     <button type="submit"
                                             style="min-height:44px;border:none;border-radius:999px;background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;font-size:0.86rem;font-weight:950;padding:0 1.2rem;display:inline-flex;align-items:center;gap:0.5rem;box-shadow:0 12px 26px rgba(245,158,11,0.24);cursor:pointer;transition:all 0.2s ease;">
                                         <i class="fas fa-paper-plane"></i>
-                                        Yanıtı Gönder
+                                        @L("RebuttalSubmitButton", "Yanıtı Gönder", "Submit Response")
                                     </button>
                                 </form>
                             }
@@ -1073,14 +1073,14 @@
                         {
                             <a href="@uploadFullTextUrl" class="btn btn-success quick-action-btn">
                                 <i class="fas fa-file-word"></i>
-                                Tam Metin Yükle
+                                @L("UploadFullTextButton", "Tam Metin Yükle", "Upload Full Text")
                             </a>
                         }
                         else
                         {
-                            <button class="btn btn-outline-secondary quick-action-btn" disabled title="Tam metin yükleme henüz açılmadı">
+                            <button class="btn btn-outline-secondary quick-action-btn" disabled title="@L("FullTextClosedTooltip", "Tam metin yükleme henüz açılmadı", "Full text upload is not open yet")">
                                 <i class="fas fa-file-word"></i>
-                                Tam Metin (Kapalı)
+                                @L("FullTextClosedButton", "Tam Metin (Kapalı)", "Full Text (Closed)")
                             </button>
                         }
                     }

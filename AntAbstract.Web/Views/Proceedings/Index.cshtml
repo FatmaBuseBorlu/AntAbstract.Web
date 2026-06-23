@@ -76,7 +76,7 @@
 
                         <button type="button" class="proceeding-chip" data-filter="bildiri kitabı">
                             <i class="fas fa-file-lines"></i>
-                            @L("FilterProceedings", "Bildiri Kitabı")
+                            @L("FilterProceedings", "")
                         </button>
 
                         <button type="button" class="proceeding-chip" data-filter="yayında">
@@ -156,7 +156,7 @@
                             ? book.PublishedDate.Value.ToString("dd.MM.yyyy")
                             : L("PublishedDateUnknown", "Yayın tarihi belirtilmedi");
 
-                        var searchText = $"{book.ConferenceTitle} {book.Year} {book.CategoryText} {book.StatusText} bildiri kitabı pdf".ToLowerInvariant();
+                        var searchText = $"{book.ConferenceTitle} {book.Year} {book.CategoryText} {book.StatusText} proceeding book pdf".ToLowerInvariant();
 
                         <article class="proceeding-card @accentClass"
                                  data-search="@searchText">
@@ -179,7 +179,7 @@
                                         </div>
 
                                         <div class="book-front-title">
-                                            @L("BookCoverTitle", "Bildiri Kitabı")
+                                            @L("BookCoverTitle", "")
                                         </div>
 
                                         <div class="book-front-year">

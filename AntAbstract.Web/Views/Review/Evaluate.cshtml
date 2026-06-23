@@ -472,7 +472,7 @@
                 <h1 class="evaluate-title">
                     @(isReviewed
                         ? L("ReviewedPageHeading", "Değerlendirme Detayı")
-                        : L("PageHeading", "Değerlendirme Formu"))
+                        : L("PageHeading", ""))
                 </h1>
 
                 <p class="evaluate-description">
@@ -596,14 +596,14 @@
                     <h5 class="evaluation-title">
                         <i class="fas fa-gavel text-primary me-2"></i>
                         @(isReviewed
-                            ? L("ReviewedDecisionTitle", "Gönderilen Değerlendirme")
+                            ? L("ReviewedDecisionTitle", "ilen Değerlendirme")
                             : L("ReviewerDecisionTitle", "Hakem Kararı"))
                     </h5>
 
                     <p class="evaluation-subtitle">
                         @(isReviewed
                             ? L("ReviewedDecisionSubtitle", "Bu değerlendirme tamamlanmıştır. Bilgiler yalnızca görüntülenir.")
-                            : L("ReviewerDecisionSubtitle", "Puanınızı, karar önerinizi ve yazara iletilecek notunuzu giriniz."))
+                            : L("ReviewerDecisionSubtitle", "ınızı, karar önerinizi ve yazara iletilecek notunuzu giriniz."))
                     </p>
                 </div>
 
@@ -637,7 +637,7 @@
                     {
                         <div class="mb-4 text-center">
                             <label class="form-label fw-bold text-muted small text-uppercase mb-3">
-                                @L("OverallScoreLabel", "Genel Puan")
+                                @L("OverallScoreLabel", "Genel ")
                             </label>
 
                             <span class="score-display">@currentScore</span>
@@ -705,10 +705,10 @@
 
                             <input type="hidden" name="ReviewAssignmentId" value="@Model.Id" />
 
-                            <!-- Alt Kriter Puanları -->
+                            <!-- Alt Kriter ları -->
                             <div class="mb-4">
                                 <label class="form-label fw-bold text-muted small text-uppercase mb-3">
-                                    Alt Kriter Puanları <small class="fw-normal text-muted">(isteğe bağlı, 0–100)</small>
+                                    Alt Kriter ları <small class="fw-normal text-muted">(isteğe bağlı, 0–100)</small>
                                 </label>
                                 @{
                                     var customCriteria = ViewBag.CustomCriteria as List<AntAbstract.Domain.Entities.ReviewCriterion>;
@@ -752,10 +752,10 @@
                                     // Standart 4 kriter (fallback)
                                     var subCriteria = new[]
                                     {
-                                        ("ScoreOriginality",  "Özgünlük",    "fas fa-lightbulb"),
-                                        ("ScoreMethodology",  "Metodoloji",  "fas fa-flask"),
-                                        ("ScorePresentation", "Sunum/Yazım", "fas fa-align-left"),
-                                        ("ScoreRelevance",    "Konu Uygunluğu", "fas fa-bullseye")
+                                        ("ScoreOriginality",  Localizer.GetString("Originality").Value,    "fas fa-lightbulb"),
+                                        ("ScoreMethodology",  Localizer.GetString("Methodology").Value,  "fas fa-flask"),
+                                        ("ScorePresentation", Localizer.GetString("Presentation").Value, "fas fa-align-left"),
+                                        ("ScoreRelevance",    Localizer.GetString("Relevance").Value, "fas fa-bullseye")
                                     };
                                     foreach (var (fieldName, label, icon) in subCriteria)
                                     {
@@ -778,14 +778,14 @@
                                 </div>
                                 <div class="form-text mt-2">
                                     <i class="fas fa-info-circle me-1"></i>
-                                    Alt kriterleri doldurursanız genel puan otomatik hesaplanır.
+                                    
                                 </div>
                             </div>
 
-                            <!-- Genel Puan -->
+                            <!-- Genel  -->
                             <div class="mb-5 text-center">
                                 <label class="form-label fw-bold text-muted small text-uppercase mb-3">
-                                    @L("OverallScoreLabel", "Genel Puan")
+                                    @L("OverallScoreLabel", "Genel ")
                                 </label>
 
                                 <span id="scoreValue" class="score-display">@currentScore</span>
@@ -883,7 +883,7 @@
                                         class="btn btn-primary py-3 submit-btn"
                                         onclick="return confirmEvaluation();">
                                     <i class="fas fa-paper-plane me-2"></i>
-                                    @L("CompleteReportButton", "Değerlendirmeyi Gönder")
+                                    @L("CompleteReportButton", "Değerlendirmeyi ")
                                 </button>
                             </div>
                         </form>

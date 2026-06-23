@@ -13,7 +13,7 @@
     var total        = (int)(ViewBag.Total ?? 0);
     var categories   = ViewBag.Categories as List<string> ?? new List<string>();
     var conferenceId = ViewBag.ConferenceId as Guid?;
-    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     ViewData["Title"] = Localizer["PageTitle"].Value;
 
     string CategoryBadge(string cat) => cat switch
@@ -35,16 +35,51 @@
         action = (string?)actionFilter, userId = (string?)userIdFilter,
         dateFrom = (string?)dateFrom, dateTo = (string?)dateTo
     };
+
+    var todayCount = Model.Count(l => l.CreatedAt.Date == DateTime.UtcNow.Date);
+    var uniqueUsers = Model.Select(l => l.UserName).Where(u => !string.IsNullOrWhiteSpace(u)).Distinct().Count();
+    var categoryCount = Model.Select(l => l.Category).Distinct().Count();
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h4 class="fw-bold mb-1">🔍 Denetim Günlüğü</h4>
-        <p class="text-muted mb-0">Toplam @total kayıt</p>
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <div class="admin-hero-icon">
+            <i class="fas fa-clipboard-list"></i>
+        </div>
+        <div>
+            <div class="admin-hero-kicker">SYSTEM</div>
+            <h3 class="admin-hero-title">@Localizer["PageTitle"]</h3>
+            <p class="admin-hero-lead">@Localizer["TotalRecords"]: @total</p>
+        </div>
     </div>
-    <a href="@Url.Action("Export", exportRoute)" class="btn btn-sm btn-outline-success">
-        ⬇️ @Localizer["DownloadCsv"]
-    </a>
+    <div class="admin-hero-actions">
+        <a href="@Url.Action("Export", exportRoute)" class="admin-hero-btn admin-hero-btn-primary">
+            <i class="fas fa-download"></i> @Localizer["DownloadCsv"]
+        </a>
+    </div>
+</div>
+
+<div class="admin-stat-grid">
+    <div class="admin-stat-card stat-blue">
+        <div class="admin-stat-icon"><i class="fas fa-list"></i></div>
+        <div class="admin-stat-value">@total</div>
+        <div class="admin-stat-label">@Localizer["TotalRecords"]</div>
+    </div>
+    <div class="admin-stat-card stat-green">
+        <div class="admin-stat-icon"><i class="fas fa-calendar-day"></i></div>
+        <div class="admin-stat-value">@todayCount</div>
+        <div class="admin-stat-label">@Localizer["TodayLogs"]</div>
+    </div>
+    <div class="admin-stat-card stat-cyan">
+        <div class="admin-stat-icon"><i class="fas fa-users"></i></div>
+        <div class="admin-stat-value">@uniqueUsers</div>
+        <div class="admin-stat-label">@Localizer["UniqueUsers"]</div>
+    </div>
+    <div class="admin-stat-card stat-slate">
+        <div class="admin-stat-icon"><i class="fas fa-tags"></i></div>
+        <div class="admin-stat-value">@categoryCount</div>
+        <div class="admin-stat-label">@Localizer["Categories"]</div>
+    </div>
 </div>
 
 @if (TempData["SuccessMessage"] != null)
@@ -52,159 +87,158 @@
     <div class="alert alert-success alert-dismissible fade show">@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
 }
 
-<!-- Filtreler -->
-<div class="card border-0 shadow-sm mb-3">
-    <div class="card-body">
-        <form method="get" class="row g-2 align-items-end">
-            <input type="hidden" name="slug" value="@slug" />
-            @if (conferenceId.HasValue)
-            {
-                <input type="hidden" name="conferenceId" value="@conferenceId" />
-            }
+<div class="admin-filter-card">
+    <form method="get" class="row g-2 align-items-end">
+        <input type="hidden" name="slug" value="@slug" />
+        @if (conferenceId.HasValue)
+        {
+            <input type="hidden" name="conferenceId" value="@conferenceId" />
+        }
 
-            <div class="col-md-2">
-                <label class="form-label small fw-semibold">Kategori</label>
-                <select name="category" class="form-select form-select-sm">
-                    <option value="">— @Localizer["All"] —</option>
-                    @foreach (var cat in categories)
+        <div class="col-md-2">
+            <label class="admin-filter-label"></label>
+            <select name="category" class="form-select form-select-sm admin-filter-control">
+                <option value="">— @Localizer["All"] —</option>
+                @foreach (var cat in categories)
+                {
+                    if (cat == category)
                     {
-                        if (cat == category)
-                        {
-                            <option value="@cat" selected="selected">@cat</option>
-                        }
-                        else
-                        {
-                            <option value="@cat">@cat</option>
-                        }
+                        <option value="@cat" selected="selected">@cat</option>
                     }
-                </select>
-            </div>
+                    else
+                    {
+                        <option value="@cat">@cat</option>
+                    }
+                }
+            </select>
+        </div>
 
-            <div class="col-md-2">
-                <label class="form-label small fw-semibold">Başlangıç</label>
-                <input type="date" name="dateFrom" value="@dateFrom" class="form-control form-control-sm" />
-            </div>
+        <div class="col-md-2">
+            <label class="admin-filter-label">@Localizer["StartDate"]</label>
+            <input type="date" name="dateFrom" value="@dateFrom" class="form-control form-control-sm admin-filter-control" />
+        </div>
 
-            <div class="col-md-2">
-                <label class="form-label small fw-semibold">Bitiş</label>
-                <input type="date" name="dateTo" value="@dateTo" class="form-control form-control-sm" />
-            </div>
+        <div class="col-md-2">
+            <label class="admin-filter-label">@Localizer["EndDate"]</label>
+            <input type="date" name="dateTo" value="@dateTo" class="form-control form-control-sm admin-filter-control" />
+        </div>
 
-            <div class="col-md-3">
-                <label class="form-label small fw-semibold">Arama (kullanıcı, işlem, açıklama, ID)</label>
-                <input type="text" name="search" value="@search" class="form-control form-control-sm" placeholder="Ara..." />
-            </div>
+        <div class="col-md-3">
+            <label class="admin-filter-label">@Localizer["SearchLabel"]</label>
+            <input type="text" name="search" value="@search" class="form-control form-control-sm admin-filter-control" placeholder="@Localizer["SearchPlaceholder"]" />
+        </div>
 
-            <div class="col-md-1">
-                <button type="submit" class="btn btn-sm btn-primary w-100">@Localizer["Filter"]</button>
-            </div>
-            <div class="col-md-2">
-                <a href="@Url.Action("Index", new { slug, conferenceId })" class="btn btn-sm btn-outline-secondary w-100">Temizle</a>
-            </div>
-        </form>
-    </div>
+        <div class="col-md-1">
+            <button type="submit" class="admin-filter-btn btn btn-sm btn-primary w-100">@Localizer["Filter"]</button>
+        </div>
+        <div class="col-md-2">
+            <a href="@Url.Action("Index", new { slug, conferenceId })" class="btn btn-sm btn-outline-secondary w-100">@Localizer["Clear"]</a>
+        </div>
+    </form>
 </div>
 
-<!-- Log Tablosu -->
-<div class="card border-0 shadow-sm">
-    <div class="card-body p-0">
-        @if (!Model.Any())
-        {
-            <div class="text-center py-5 text-muted">
-                <div class="fs-1">📋</div>
-                <p></p>
-            </div>
-        }
-        else
-        {
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 small">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="width:150px">@Localizer["Date"]</th>
-                            <th style="width:100px">Kategori</th>
-                            <th style="width:160px">@Localizer["Action"]</th>
-                            <th>@Localizer["User"]</th>
-                            <th>@Localizer["Description"]</th>
-                            <th style="width:110px">IP</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var log in Model)
-                        {
-                            <tr>
-                                <td class="text-nowrap text-muted">
-                                    @log.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
-                                </td>
-                                <td>
-                                    <span class="badge @CategoryBadge(log.Category)">@log.Category</span>
-                                </td>
-                                <td class="fw-semibold">@log.Action</td>
-                                <td>
-                                    @if (!string.IsNullOrWhiteSpace(log.UserName))
-                                    {
-                                        <span>@log.UserName</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">Sistem</span>
-                                    }
-                                </td>
-                                <td>
-                                    <div>@log.Description</div>
-                                    @if (!string.IsNullOrWhiteSpace(log.OldValues) || !string.IsNullOrWhiteSpace(log.NewValues))
-                                    {
-                                        <small class="text-muted">
-                                            @if (!string.IsNullOrWhiteSpace(log.OldValues))
-                                            {
-                                                <span class="text-danger">@log.OldValues</span>
-                                                <span> → </span>
-                                            }
-                                            @if (!string.IsNullOrWhiteSpace(log.NewValues))
-                                            {
-                                                <span class="text-success">@log.NewValues</span>
-                                            }
-                                        </small>
-                                    }
-                                    @if (!string.IsNullOrWhiteSpace(log.EntityType) && !string.IsNullOrWhiteSpace(log.EntityId))
-                                    {
-                                        <div><small class="text-muted">@log.EntityType #@log.EntityId</small></div>
-                                    }
-                                </td>
-                                <td class="text-muted text-nowrap">@(log.IpAddress ?? "—")</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-
-            @if (totalPages > 1)
-            {
-                <div class="d-flex justify-content-center py-3">
-                    <nav>
-                        <ul class="pagination pagination-sm mb-0">
-                            @if (page > 1)
-                            {
-                                <li class="page-item">
-                                    <a class="page-link" href="@Url.Action("Index", new { slug, conferenceId, category, search, dateFrom, dateTo, page = page - 1 })">‹</a>
-                                </li>
-                            }
-                            @for (int p = Math.Max(1, page - 2); p <= Math.Min(totalPages, page + 2); p++)
-                            {
-                                <li class="page-item @(p == page ? "active" : "")">
-                                    <a class="page-link" href="@Url.Action("Index", new { slug, conferenceId, category, search, dateFrom, dateTo, page = p })">@p</a>
-                                </li>
-                            }
-                            @if (page < totalPages)
-                            {
-                                <li class="page-item">
-                                    <a class="page-link" href="@Url.Action("Index", new { slug, conferenceId, category, search, dateFrom, dateTo, page = page + 1 })">›</a>
-                                </li>
-                            }
-                        </ul>
-                    </nav>
-                </div>
-            }
-        }
+<div class="admin-list-card">
+    <div class="admin-list-card-header">
+        <div>
+            <h5 class="admin-list-card-title">@Localizer["PageTitle"]</h5>
+        </div>
+        <span class="admin-list-count"><i class="fas fa-list-ul"></i> @total</span>
     </div>
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5 text-muted">
+            <p></p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 small">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:150px">@Localizer["Date"]</th>
+                        <th style="width:100px"></th>
+                        <th style="width:160px">@Localizer["Action"]</th>
+                        <th>@Localizer["User"]</th>
+                        <th>@Localizer["Description"]</th>
+                        <th style="width:110px">IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model)
+                    {
+                        <tr>
+                            <td class="text-nowrap text-muted">
+                                @log.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
+                            </td>
+                            <td>
+                                <span class="badge @CategoryBadge(log.Category)">@log.Category</span>
+                            </td>
+                            <td class="fw-semibold">@log.Action</td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(log.UserName))
+                                {
+                                    <span>@log.UserName</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">@Localizer["System"]</span>
+                                }
+                            </td>
+                            <td>
+                                <div>@log.Description</div>
+                                @if (!string.IsNullOrWhiteSpace(log.OldValues) || !string.IsNullOrWhiteSpace(log.NewValues))
+                                {
+                                    <small class="text-muted">
+                                        @if (!string.IsNullOrWhiteSpace(log.OldValues))
+                                        {
+                                            <span class="text-danger">@log.OldValues</span>
+                                            <span> → </span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(log.NewValues))
+                                        {
+                                            <span class="text-success">@log.NewValues</span>
+                                        }
+                                    </small>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(log.EntityType) && !string.IsNullOrWhiteSpace(log.EntityId))
+                                {
+                                    <div><small class="text-muted">@log.EntityType #@log.EntityId</small></div>
+                                }
+                            </td>
+                            <td class="text-muted text-nowrap">@(log.IpAddress ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (totalPages > 1)
+        {
+            <div class="d-flex justify-content-center py-3">
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        @if (page > 1)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index", new { slug, conferenceId, category, search, dateFrom, dateTo, page = page - 1 })">‹</a>
+                            </li>
+                        }
+                        @for (int p = Math.Max(1, page - 2); p <= Math.Min(totalPages, page + 2); p++)
+                        {
+                            <li class="page-item @(p == page ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("Index", new { slug, conferenceId, category, search, dateFrom, dateTo, page = p })">@p</a>
+                            </li>
+                        }
+                        @if (page < totalPages)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index", new { slug, conferenceId, category, search, dateFrom, dateTo, page = page + 1 })">›</a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            </div>
+        }
+    }
 </div>

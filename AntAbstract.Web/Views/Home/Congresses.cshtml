@@ -164,11 +164,11 @@
 
     string GetSlug(object item)
     {
-        var slug = GetText(item, "", "Slug", "ConferenceSlug", "TenantSlug");
+        var slug = GetNestedText(item, "Tenant", "", "Slug", "TenantSlug");
 
         if (string.IsNullOrWhiteSpace(slug))
         {
-            slug = GetNestedText(item, "Tenant", "", "Slug", "TenantSlug");
+            slug = GetText(item, "", "Slug", "ConferenceSlug", "TenantSlug");
         }
 
         return slug?.Trim('/') ?? "";
@@ -268,15 +268,15 @@
 
                 <div class="hero-pill">
                     <i class="fas fa-calendar-check"></i>
-                    Güncel bilimsel gelişmeleri keşfedin
+                    @Localizer["HeroPill"]
                 </div>
 
                 <h1 class="congress-hero-title">
-                    Kongreler & Etkinlikler
+                    @Localizer["HeroTitle"]
                 </h1>
 
                 <p class="congress-hero-description">
-                    Alanınızdaki en güncel bilimsel gelişmeleri keşfedin, kaydınızı oluşturun.
+                    @Localizer["HeroDescription"]
                 </p>
 
                 <div class="congress-search-card">
@@ -286,41 +286,41 @@
                         <input type="text"
                                id="congressSearchInput"
                                autocomplete="off"
-                               placeholder="Kongre adı, şehir veya konu ara..." />
+                               placeholder="@Localizer["SearchPlaceholder"]" />
                     </div>
 
                     <button type="button"
                             id="congressSearchButton"
                             class="congress-search-button">
                         <i class="fas fa-search"></i>
-                        ARA
+                        @Localizer["SearchButton"]
                     </button>
                 </div>
 
                 <div class="congress-filter-chips">
                     <button type="button" class="filter-chip active" data-filter="">
                         <i class="fas fa-border-all"></i>
-                        Tümü
+                        @Localizer["All"]
                     </button>
 
                     <button type="button" class="filter-chip" data-filter="tıp sağlık medicine health">
                         <i class="fas fa-stethoscope"></i>
-                        Tıp & Sağlık
+                        @Localizer["FilterMedicine"]
                     </button>
 
                     <button type="button" class="filter-chip" data-filter="veteriner vet">
                         <i class="fas fa-paw"></i>
-                        Veterinerlik
+                        @Localizer["FilterVeterinary"]
                     </button>
 
                     <button type="button" class="filter-chip" data-filter="teknoloji tech ai artificial intelligence">
                         <i class="fas fa-microchip"></i>
-                        Teknoloji
+                        @Localizer["FilterTechnology"]
                     </button>
 
                     <button type="button" class="filter-chip" data-filter="yapay zeka artificial intelligence ai">
                         <i class="fas fa-brain"></i>
-                        Yapay Zeka
+                        @Localizer["FilterAI"]
                     </button>
                 </div>
 
@@ -333,12 +333,12 @@
 
             <div class="congress-list-header">
                 <div>
-                    <h2>Kongre Listesi</h2>
-                    <p>Katılabileceğiniz güncel kongreleri ve etkinlikleri inceleyin.</p>
+                    <h2>@Localizer["CongressList"]</h2>
+                    <p>@Localizer["CongressListDescription"]</p>
                 </div>
 
                 <div class="congress-count-badge">
-                    <span id="visibleCongressCount">@conferences.Count</span> / @conferences.Count kongre
+                    <span id="visibleCongressCount">@conferences.Count</span> / @conferences.Count @Localizer["Congresses"]
                 </div>
             </div>
 
@@ -349,10 +349,10 @@
                         <i class="fas fa-calendar-xmark"></i>
                     </div>
 
-                    <h3>Henüz kongre bulunamadı</h3>
+                    <h3>@Localizer["NoCongressFound"]</h3>
 
                     <p>
-                        Şu anda görüntülenecek aktif kongre bulunmuyor.
+                        @Localizer["NoCongressDescription"]
                     </p>
                 </div>
             }
@@ -371,7 +371,7 @@
 
                         var tenantName = GetNestedText(item, "Tenant", "", "Name", "TenantName");
                         var city = GetText(item, "", "City", "LocationCity", "CongressCity");
-                        var country = GetText(item, "Türkiye", "Country", "LocationCountry", "CongressCountry");
+                        var country = GetText(item, "Turkey", "Country", "LocationCountry", "CongressCountry");
 
                         if (string.IsNullOrWhiteSpace(city))
                         {
@@ -394,8 +394,8 @@
                         var rawDescription = GetText(
                         item,
                         !string.IsNullOrWhiteSpace(tenantName)
-                        ? $"{tenantName} tarafından düzenlenen bilimsel kongre."
-                        : "Bilimsel program, bildiri süreçleri ve kayıt bilgilerini inceleyebilirsiniz.",
+                        ? $"{tenantName} {Localizer.GetString("OrganizedByDesc").Value}"
+                        : Localizer.GetString("DefaultDescription").Value,
                         "Description",
                         "ShortDescription",
                         "Summary",
@@ -428,7 +428,7 @@
                         if (isSystemUser)
                         {
                             actionUrl = siteUrl;
-                            actionText = "Siteyi Gör";
+                            actionText = Localizer.GetString("ViewSite").Value;
                             actionIcon = "fas fa-external-link-alt";
                             actionClass = "btn-site-view";
                         }
@@ -442,7 +442,7 @@
                         else
                         {
                             actionUrl = registrationUrl;
-                            actionText = "Kayıt Ol";
+                            actionText = Localizer.GetString("Register").Value;
                             actionIcon = "fas fa-paper-plane";
                             actionClass = "btn-register-congress";
                         }
@@ -456,7 +456,7 @@
                             {
                                 <div class="registered-ribbon">
                                     <i class="fas fa-check-circle"></i>
-                                    Kayıtlı
+                                    
                                 </div>
                             }
 
@@ -508,11 +508,26 @@
                                     @description
                                 </p>
 
-                                <a href="@actionUrl"
-                                   class="congress-action-button @actionClass">
-                                    <span>@actionText</span>
-                                    <i class="@actionIcon"></i>
-                                </a>
+                                <div class="congress-action-buttons">
+                                    @if (!isSystemUser && !isReferee && !isRegistered)
+                                    {
+                                        <a href="@registrationUrl" class="congress-action-button btn-register-congress">
+                                            <span>@Localizer["Register"]</span>
+                                            <i class="fas fa-paper-plane"></i>
+                                        </a>
+                                    }
+                                    else if (isRegistered)
+                                    {
+                                        <a href="@panelUrl" class="congress-action-button btn-registered-congress">
+                                            <span>@Localizer["GoToPanel"]</span>
+                                            <i class="fas fa-check-circle"></i>
+                                        </a>
+                                    }
+                                    <a href="@siteUrl" class="congress-action-button btn-site-view">
+                                        <span>@Localizer["ViewSite"]</span>
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
                             </div>
                         </article>
                     }
@@ -523,10 +538,10 @@
                         <i class="fas fa-magnifying-glass"></i>
                     </div>
 
-                    <h3>Arama sonucu bulunamadı</h3>
+                    <h3></h3>
 
                     <p>
-                        Farklı bir kongre adı, şehir veya konu deneyin.
+                        
                     </p>
                 </div>
             }
@@ -996,20 +1011,27 @@
         min-height: 48px;
     }
 
-    .congress-action-button {
+    .congress-action-buttons {
         margin-top: auto;
-        min-height: 48px;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .congress-action-button {
+        flex: 1;
+        min-height: 44px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 0.55rem;
-        border-radius: 14px;
+        gap: 0.45rem;
+        border-radius: 12px;
         text-decoration: none;
-        font-size: 0.92rem;
-        font-weight: 900;
+        font-size: 0.82rem;
+        font-weight: 800;
         border: 1px solid #dbe3ef;
         background: #ffffff;
         transition: all 0.2s ease;
+        padding: 0 0.75rem;
     }
 
     .btn-register-congress {

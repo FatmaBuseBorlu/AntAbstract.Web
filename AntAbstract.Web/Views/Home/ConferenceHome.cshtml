@@ -94,8 +94,7 @@
 
     var heroSubtitle = !string.IsNullOrWhiteSpace(heroBlock?.Subtitle)
         ? heroBlock.Subtitle
-        : L(
-            "ConferenceHeroDefaultSubtitle",
+        : L("ConferenceHeroDefaultSubtitle",
             "Bilimsel paylaşımı, akademik iş birliğini ve yenilikçi fikirleri aynı platformda buluşturan kongre deneyimi.");
 
     var cityText = !string.IsNullOrWhiteSpace(Model.Conference?.City)
@@ -984,7 +983,7 @@
                         </div>
 
                         <div>
-                            <small>Konum</small>
+                            <small>@Localizer["LocationLabel"]</small>
                             <strong>@cityText</strong>
                         </div>
                     </div>
@@ -995,7 +994,7 @@
                         </div>
 
                         <div>
-                            <small>Başlangıç</small>
+                            <small>@Localizer["StartDateLabel"]</small>
                             <strong>@conferenceDateText</strong>
                         </div>
                     </div>
@@ -1006,7 +1005,7 @@
                         </div>
 
                         <div>
-                            <small>Bitiş</small>
+                            <small>@Localizer["EndDateLabel"]</small>
                             <strong>@endDateText</strong>
                         </div>
                     </div>
@@ -1017,8 +1016,8 @@
                 <div class="hero-info-card">
                     <div class="hero-info-card-header">
                         <div>
-                            <span>Kongre Bilgileri</span>
-                            <h3>Başvuru ve Katılım</h3>
+                            <span>@Localizer["ConferenceInfoLabel"]</span>
+                            <h3>@Localizer["ApplicationAndParticipation"]</h3>
                         </div>
 
                         @if (!string.IsNullOrWhiteSpace(Model.Conference.LogoPath))
@@ -1037,36 +1036,36 @@
 
                     <div class="hero-info-grid">
                         <div>
-                            <small>Kayıt Durumu</small>
+                            <small>@Localizer["RegistrationStatusLabel"]</small>
                             @if (Model.Conference.IsRegistrationOpen)
                             {
-                                <strong class="text-success"><i class="fas fa-circle me-1" style="font-size:.6rem;"></i>Açık</strong>
+                                <strong class="text-success"><i class="fas fa-circle me-1" style="font-size:.6rem;"></i>@Localizer["StatusOpen"]</strong>
                             }
                             else
                             {
-                                <strong class="text-danger"><i class="fas fa-circle me-1" style="font-size:.6rem;"></i>Kapalı</strong>
+                                <strong class="text-danger"><i class="fas fa-circle me-1" style="font-size:.6rem;"></i>@Localizer["StatusClosed"]</strong>
                             }
                         </div>
 
                         <div>
-                            <small>Bildiri Gönderimi</small>
+                            <small>@Localizer["AbstractSubmissionLabel"]</small>
                             @if (Model.Conference.IsSubmissionOpen)
                             {
-                                <strong class="text-success"><i class="fas fa-circle me-1" style="font-size:.6rem;"></i>Aktif</strong>
+                                <strong class="text-success"><i class="fas fa-circle me-1" style="font-size:.6rem;"></i>@Localizer["StatusActive"]</strong>
                             }
                             else
                             {
-                                <strong class="text-danger"><i class="fas fa-circle me-1" style="font-size:.6rem;"></i>Kapalı</strong>
+                                <strong class="text-danger"><i class="fas fa-circle me-1" style="font-size:.6rem;"></i>@Localizer["StatusClosed"]</strong>
                             }
                         </div>
 
                         <div>
-                            <small>Konum</small>
+                            <small>@Localizer["LocationLabel"]</small>
                             <strong>@cityText</strong>
                         </div>
 
                         <div>
-                            <small>Tarih</small>
+                            <small>@Localizer["DateLabel"]</small>
                             <strong>@conferenceDateText</strong>
                         </div>
                     </div>
@@ -1084,7 +1083,7 @@
                     else
                     {
                         <div class="hero-card-cta" style="background:#94a3b8;cursor:default;">
-                            <span><i class="fas fa-lock me-1"></i> Başvurular Kapalı</span>
+                            <span><i class="fas fa-lock me-1"></i> @Localizer["ApplicationsClosed"]</span>
                         </div>
                     }
                 </div>
@@ -1102,7 +1101,7 @@
                 <div class="sticky-sidebar">
                     <div class="modern-menu-list list-group">
                         <div class="modern-menu-title">
-                            Hızlı Erişim
+                            @Localizer["QuickAccessLabel"]
                         </div>
 
                         @if (!contentBlocks.Any())
@@ -1209,14 +1208,14 @@
                         {
                             <div class="action-card-badge">
                                 <i class="fas fa-circle"></i>
-                                Başvurular Açık
+                                @Localizer["ApplicationsOpen"]
                             </div>
                         }
                         else
                         {
                             <div class="action-card-badge" style="background:rgba(239,68,68,.10);color:#dc2626;">
                                 <i class="fas fa-lock"></i>
-                                Başvurular Kapalı
+                                @Localizer["ApplicationsClosed"]
                             </div>
                         }
 
@@ -1224,33 +1223,33 @@
                             <i class="fas fa-paper-plane"></i>
                         </div>
 
-                        <h4>Kayıt ve Bildiri İşlemleri</h4>
+                        <h4>@Localizer["RegistrationAndSubmissionTitle"]</h4>
 
                         <p>
-                            Kongreye kayıt olabilir, kayıt sonrası bildirinizin özetini sistem üzerinden gönderebilirsiniz.
+                            @Localizer["RegistrationAndSubmissionDesc"]
                         </p>
 
                         <div class="action-info-grid">
                             <div class="action-info-item">
-                                <span>Kayıt</span>
+                                <span>@Localizer["RegistrationLabel"]</span>
                                 @if (Model.Conference.IsRegistrationOpen)
                                 {
-                                    <strong class="text-success">Açık</strong>
+                                    <strong class="text-success">@Localizer["StatusOpen"]</strong>
                                 }
                                 else
                                 {
-                                    <strong class="text-danger">Kapalı</strong>
+                                    <strong class="text-danger">@Localizer["StatusClosed"]</strong>
                                 }
                             </div>
                             <div class="action-info-item">
-                                <span>Bildiri</span>
+                                <span>@Localizer["AbstractLabel"]</span>
                                 @if (Model.Conference.IsSubmissionOpen)
                                 {
-                                    <strong class="text-success">Aktif</strong>
+                                    <strong class="text-success">@Localizer["StatusActive"]</strong>
                                 }
                                 else
                                 {
-                                    <strong class="text-danger">Kapalı</strong>
+                                    <strong class="text-danger">@Localizer["StatusClosed"]</strong>
                                 }
                             </div>
                         </div>
@@ -1258,9 +1257,9 @@
                         @if (Model.Conference.AbstractSubmissionDeadline.HasValue && Model.Conference.AbstractSubmissionDeadline > DateTime.Now)
                         {
                             <div class="mb-3 p-3 rounded-3 border text-center" style="background:#fffbeb;border-color:#fbbf24!important;">
-                                <div class="small fw-bold text-warning mb-1"><i class="fas fa-clock me-1"></i>Bildiri Son Tarihi</div>
+                                <div class="small fw-bold text-warning mb-1"><i class="fas fa-clock me-1"></i>@Localizer["AbstractDeadlineLabel"]</div>
                                 <div class="fw-bold text-dark small">@Model.Conference.AbstractSubmissionDeadline.Value.ToString("dd MMM yyyy HH:mm")</div>
-                                <div id="deadline-countdown" class="mt-1 fw-bold" style="color:#d97706;font-size:.82rem;letter-spacing:.03em;">Hesaplanıyor...</div>
+                                <div id="deadline-countdown" class="mt-1 fw-bold" style="color:#d97706;font-size:.82rem;letter-spacing:.03em;">@Localizer["Calculating"]</div>
                             </div>
                         }
 
@@ -1268,20 +1267,20 @@
                         {
                             <a href="@registrationUrl" class="action-primary-btn">
                                 <i class="fas fa-user-plus"></i>
-                                @(isRegisteredToThisConference ? "Kaydınız Mevcut" : "Kongreye Kayıt Ol")
+                                @(isRegisteredToThisConference ? Localizer["AlreadyRegistered"].Value : Localizer["RegisterForConference"].Value)
                             </a>
                         }
 
                         @if (Model.Conference.IsSubmissionOpen && isRegisteredToThisConference)
                         {
                             <a href="@submitAbstractUrl" class="action-secondary-btn">
-                                <i class="fas fa-file-arrow-up"></i> Bildiri Gönder
+                                <i class="fas fa-file-arrow-up"></i> @Localizer["SubmitAbstractButton"]
                             </a>
                         }
                         else if (!isRegisteredToThisConference && Model.Conference.IsSubmissionOpen)
                         {
                             <div class="action-secondary-btn" style="cursor:default;opacity:.65;">
-                                <i class="fas fa-info-circle me-1"></i> Bildiri için önce kayıt olun
+                                <i class="fas fa-info-circle me-1"></i> @Localizer["RegisterFirstForAbstract"]
                             </div>
                         }
                     </div>
@@ -1372,17 +1371,17 @@
             {
                 <a href="@registrationUrl" class="hero-primary-btn">
                     <i class="fas fa-user-plus"></i>
-                    @(isRegisteredToThisConference ? "Kaydınızı Görüntüleyin" : "Hemen Kayıt Olun")
+                    @(isRegisteredToThisConference ? Localizer["ViewYourRegistration"].Value : Localizer["RegisterNowButton"].Value)
                 </a>
             }
             @if (Model.Conference.IsSubmissionOpen && isRegisteredToThisConference)
             {
                 <a href="@submitAbstractUrl" class="hero-secondary-btn">
-                    <i class="fas fa-file-arrow-up"></i> Bildiri Gönder
+                    <i class="fas fa-file-arrow-up"></i> @Localizer["SubmitAbstractButton"]
                 </a>
             }
             <a href="@programUrl" class="hero-secondary-btn">
-                <i class="fas fa-calendar-alt"></i> Programı İncele
+                <i class="fas fa-calendar-alt"></i> @Localizer["ViewProgramButton"]
             </a>
         </div>
 

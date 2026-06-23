@@ -527,12 +527,11 @@
              style="border-radius:16px;border-left:5px solid #f59e0b;background:#fffbeb;color:#92400e;">
             <i class="fas fa-exclamation-triangle fa-lg" style="color:#f59e0b;flex-shrink:0;"></i>
             <div class="flex-grow-1">
-                <strong>Kongre kaydınızı tamamlamayı unutmayın!</strong>
-                Bildiriniz kabul edildi. Katılımcı sertifikası ve tam metin yayını için
-                kongre kaydı &amp; ödeme tamamlanmış olmalıdır.
+                <strong>@Localizer["RegistrationWarningTitle"]</strong>
+                @Localizer["RegistrationWarningMessage"]
             </div>
             <a href="@paymentUrl" class="btn btn-warning btn-sm fw-bold text-dark" style="white-space:nowrap;">
-                <i class="fas fa-credit-card me-1"></i>Kayıt Ol
+                <i class="fas fa-credit-card me-1"></i>@Localizer["RegisterButton"]
             </a>
         </div>
     }
@@ -570,35 +569,35 @@
         <div class="d-flex flex-wrap gap-2 mb-4">
             <a href="@FilterUrl("")"
                class="btn btn-sm @(currentFilter == "" ? "btn-primary" : "btn-outline-secondary") rounded-pill">
-                <i class="fas fa-list me-1"></i> Tümü
+                <i class="fas fa-list me-1"></i> @Localizer["FilterAll"]
             </a>
             <a href="@FilterUrl("New")"
                class="btn btn-sm @(currentFilter == "New" ? "btn-primary" : "btn-outline-secondary") rounded-pill">
-                Taslak
+                @Localizer["FilterDraft"]
             </a>
             <a href="@FilterUrl("Pending")"
                class="btn btn-sm @(currentFilter == "Pending" ? "btn-warning" : "btn-outline-secondary") rounded-pill">
-                Beklemede
+                @Localizer["FilterPending"]
             </a>
             <a href="@FilterUrl("UnderReview")"
                class="btn btn-sm @(currentFilter == "UnderReview" ? "btn-info" : "btn-outline-secondary") rounded-pill">
-                İncelemede
+                @Localizer["FilterUnderReview"]
             </a>
             <a href="@FilterUrl("Accepted")"
                class="btn btn-sm @(currentFilter == "Accepted" ? "btn-success" : "btn-outline-secondary") rounded-pill">
-                Kabul
+                @Localizer["FilterAccepted"]
             </a>
             <a href="@FilterUrl("Rejected")"
                class="btn btn-sm @(currentFilter == "Rejected" ? "btn-danger" : "btn-outline-secondary") rounded-pill">
-                Red
+                @Localizer["FilterRejected"]
             </a>
             <a href="@FilterUrl("RevisionRequired")"
                class="btn btn-sm @(currentFilter == "RevisionRequired" ? "btn-warning" : "btn-outline-secondary") rounded-pill">
-                Revizyon
+                @Localizer["FilterRevision"]
             </a>
             <a href="@FilterUrl("Withdrawn")"
                class="btn btn-sm @(currentFilter == "Withdrawn" ? "btn-secondary" : "btn-outline-secondary") rounded-pill">
-                Geri Çekildi
+                @Localizer["FilterWithdrawn"]
             </a>
         </div>
 
@@ -722,7 +721,7 @@
                             <a href="@detailsUrl"
                                class="author-action-btn author-action-light">
                                 <i class="fas fa-eye text-primary"></i>
-                                Detay
+                                @Localizer["DetailButton"]
                             </a>
 
                             @if (statusEnum == SubmissionStatus.New)
@@ -742,7 +741,7 @@
                                 <a href="@withdrawUrl"
                                    class="author-action-btn author-action-warning">
                                     <i class="fas fa-undo-alt"></i>
-                                    Geri Çek
+                                    @Localizer["WithdrawButton"]
                                 </a>
                             }
                             else if (statusEnum == SubmissionStatus.Pending || statusEnum == SubmissionStatus.UnderReview)
@@ -750,7 +749,7 @@
                                 <a href="@withdrawUrl"
                                    class="author-action-btn author-action-warning">
                                     <i class="fas fa-undo-alt"></i>
-                                    Geri Çek
+                                    @Localizer["WithdrawButton"]
                                 </a>
                             }
                             else if (statusEnum == SubmissionStatus.RevisionRequired)
@@ -758,19 +757,19 @@
                                 <a href="@revisionUrl"
                                    class="author-action-btn author-action-warning">
                                     <i class="fas fa-upload"></i>
-                                    Revizyon
+                                    @Localizer["RevisionButton"]
                                 </a>
 
                                 <a href="@editUrl"
                                    class="author-action-btn author-action-light">
                                     <i class="fas fa-edit text-warning"></i>
-                                    Düzenle
+                                    @Localizer["EditButton"]
                                 </a>
 
                                 <a href="@withdrawUrl"
                                    class="author-action-btn author-action-warning">
                                     <i class="fas fa-undo-alt"></i>
-                                    Geri Çek
+                                    @Localizer["WithdrawButton"]
                                 </a>
                             }
                             else if (statusEnum == SubmissionStatus.Accepted || statusEnum == SubmissionStatus.Presented)
@@ -780,7 +779,7 @@
                                     <a href="@paymentUrl"
                                        class="author-action-btn author-action-payment">
                                         <i class="fas fa-credit-card"></i>
-                                        Ödeme
+                                        @Localizer["PaymentButton"]
                                     </a>
                                 }
 
@@ -788,7 +787,7 @@
                                    class="author-action-btn author-action-light"
                                    target="_blank">
                                     <i class="fas fa-file-signature text-success"></i>
-                                    Kabul
+                                    @Localizer["AcceptanceButton"]
                                 </a>
 
                                 @if (canDownloadAuthorCertificate)
@@ -796,7 +795,7 @@
                                     <a href="@certificatesUrl"
                                        class="author-action-btn author-action-success">
                                         <i class="fas fa-certificate"></i>
-                                        Sertifika
+                                        @Localizer["CertificateButton"]
                                     </a>
                                 }
                                 else
@@ -804,9 +803,9 @@
                                     <button type="button"
                                             class="author-action-disabled"
                                             disabled
-                                            title="Katılım sertifikası, kongre katılımınız tamamlandıktan sonra oluşturulur.">
+                                            title="@Localizer["CertificateDisabledTooltip"]">
                                         <i class="fas fa-lock"></i>
-                                        Sertifika
+                                        @Localizer["CertificateButton"]
                                     </button>
                                 }
                             }
