@@ -236,7 +236,7 @@
                         <div class="mini-empty">
                             <i class="fas fa-user-slash"></i>
                             <strong>@Localizer["NoAuthorInfo"]</strong>
-                            <span>Bu bildiriye ait yazar listesi henüz oluşmamış.</span>
+                            <span></span>
                         </div>
                     }
                     else
@@ -499,7 +499,7 @@
                             @Localizer["NoteToAuthor"] <small class="fw-normal">(isteğe bağlı)</small>
                         </label>
                         <textarea name="adminNote" class="form-control form-control-sm" rows="3"
-                                  placeholder="Karar hakkında yazara iletilecek açıklama..."
+                                  placeholder=""
                                   maxlength="1000">@(Model.AdminDecisionNote ?? "")</textarea>
                         <div class="form-text">Bu not bildiri detayında yazara gösterilecektir.</div>
                     </div>
@@ -516,7 +516,7 @@
                 <div class="side-card mb-4" style="border-color:rgba(245,158,11,0.28);background:linear-gradient(135deg,rgba(245,158,11,0.06),rgba(249,115,22,0.04));">
                     <div class="side-card-header" style="border-color:rgba(245,158,11,0.18);">
                         <div>
-                            <span>Yazar Yanıtı</span>
+                            <span></span>
                             <h5>Rebuttal</h5>
                         </div>
                         <div class="status-icon" style="background:linear-gradient(135deg,#f59e0b,#f97316);">
@@ -544,7 +544,7 @@
                 <div class="side-card mb-4" style="border-color:rgba(99,102,241,0.28);background:linear-gradient(135deg,rgba(99,102,241,0.06),rgba(139,92,246,0.04));">
                     <div class="side-card-header" style="border-color:rgba(99,102,241,0.18);">
                         <div>
-                            <span>Dijital Tanımlayıcı</span>
+                            <span></span>
                             <h5>DOI</h5>
                         </div>
                         <div class="status-icon" style="background:rgba(99,102,241,0.12);color:#6366f1;">
@@ -691,7 +691,7 @@
                                 <div>
                                     <strong>@reviewerName</strong>
                                     <span>
-                                        @(assignment.Review == null ? "Değerlendirme bekliyor" : "Değerlendirildi")
+                                        @(assignment.Review == null ? Localizer.GetString("AwaitingReview").Value : Localizer.GetString("Reviewed").Value)
                                     </span>
                                 </div>
                             </div>
