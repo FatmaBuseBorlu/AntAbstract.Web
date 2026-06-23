@@ -164,11 +164,11 @@
 
     string GetSlug(object item)
     {
-        var slug = GetText(item, "", "Slug", "ConferenceSlug", "TenantSlug");
+        var slug = GetNestedText(item, "Tenant", "", "Slug", "TenantSlug");
 
         if (string.IsNullOrWhiteSpace(slug))
         {
-            slug = GetNestedText(item, "Tenant", "", "Slug", "TenantSlug");
+            slug = GetText(item, "", "Slug", "ConferenceSlug", "TenantSlug");
         }
 
         return slug?.Trim('/') ?? "";
