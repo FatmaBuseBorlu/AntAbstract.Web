@@ -43,7 +43,7 @@
         {
             SubmissionStatus.New => Localizer.GetString("StatusNew").Value,
             SubmissionStatus.Pending => Localizer.GetString("StatusPending").Value,
-            SubmissionStatus.UnderReview => "Hakem Değerlendirmesinde",
+            SubmissionStatus.UnderReview => Localizer.GetString("StatusUnderReview").Value,
             SubmissionStatus.Accepted => Localizer.GetString("StatusAccepted").Value,
             SubmissionStatus.Rejected => Localizer.GetString("StatusRejected").Value,
             SubmissionStatus.RevisionRequired => Localizer.GetString("StatusRevision").Value,
@@ -101,21 +101,21 @@
 
         if (totalReviewerCount == 0)
         {
-            return "Hakem atanmamış";
+            return Localizer.GetString("NoRefereeAssigned").Value;
         }
 
-        return $"{reviewCount} / {totalReviewerCount} değerlendirme";
+        return $"{reviewCount} / {totalReviewerCount} " + Localizer.GetString("Reviews").Value;
     }
 
     string GetDecisionHelpText(SubmissionStatus status)
     {
         return status switch
         {
-            SubmissionStatus.Accepted => "Kabul edildiği için yazar ödeme adımına geçebilir.",
-            SubmissionStatus.Rejected => "Reddedildiği için ödeme adımı açılmaz.",
-            SubmissionStatus.RevisionRequired => "Yazar revizyon dosyası yükleyebilir.",
-            SubmissionStatus.Presented => "Sunum tamamlanmış görünüyor.",
-            _ => "Karar süreci devam ediyor."
+            SubmissionStatus.Accepted => Localizer.GetString("HelpAccepted").Value,
+            SubmissionStatus.Rejected => Localizer.GetString("HelpRejected").Value,
+            SubmissionStatus.RevisionRequired => Localizer.GetString("HelpRevision").Value,
+            SubmissionStatus.Presented => Localizer.GetString("HelpPresented").Value,
+            _ => Localizer.GetString("HelpOngoing").Value
         };
     }
 
