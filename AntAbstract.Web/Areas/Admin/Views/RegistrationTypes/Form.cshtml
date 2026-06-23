@@ -1,4 +1,3 @@
-﻿@using System.Globalization
 @using AntAbstract.Web.Models.ViewModels
 @using AntAbstract.Web.Models.ViewModels.Admin.RegistrationTypes
 
@@ -9,16 +8,10 @@
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
     var slug = Model.Slug ?? "";
-    var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
-
-    string T(string tr, string en)
-    {
-        return isEnglish ? en : tr;
-    }
 
     ViewData["Title"] = Model.Id.HasValue
-        ? T("Kayıt Tipi Düzenle", "Edit Registration Type")
-        : T("Yeni Kayıt Tipi", "Create Registration Type");
+        ? Localizer.GetString("EditPageTitle")
+        : Localizer.GetString("CreatePageTitle");
 }
 
 <style>
@@ -67,7 +60,7 @@
             </h3>
 
             <div class="text-muted">
-                @T("Kongre:", "Conference:")
+                @Localizer["ConferenceLabel"]
                 <span class="badge bg-light text-dark border">
                     @Model.ConferenceTitle
                 </span>
@@ -76,7 +69,7 @@
 
         <a class="btn btn-outline-secondary btn-sm" href="@Model.ReturnUrl">
             <i class="fas fa-arrow-left me-1"></i>
-            @T("Geri Dön", "Go Back")
+            @Localizer["BackButton"]
         </a>
     </div>
 
@@ -85,10 +78,7 @@
 
             <div class="language-info-box mb-4">
                 <i class="fas fa-info-circle me-2 text-primary"></i>
-                @T(
-                "Bu kayıt tipi kullanıcıların kayıt ekranında görünecektir. İngilizce alanlar boş bırakılırsa sistem Türkçe içerikleri gösterebilir.",
-                                "This registration type will be shown on the user registration page. If English fields are left empty, the system may display the Turkish content."
-                                )
+                @Localizer["InfoBoxText"]
             </div>
 
             <form method="post" action="/@slug/Admin/RegistrationTypes/Save">
@@ -105,25 +95,22 @@
                     <div class="col-12">
                         <div class="form-section-title">
                             <i class="fas fa-language"></i>
-                            <span>@T("Türkçe İçerik", "Turkish Content")</span>
+                            <span>@Localizer["TurkishContentSection"]</span>
                         </div>
                     </div>
 
                     <div class="col-md-12">
                         <label class="form-label fw-semibold">
-                            @T("Kayıt Türü Adı (TR)", "Registration Type Name (TR)")
+                            @Localizer["NameTrLabel"]
                             <span class="required-star">*</span>
                         </label>
 
                         <input class="form-control"
                                asp-for="Name"
-                               placeholder="@T("Örn: Yazar Katılım Ücreti", "Example: Yazar Katılım Ücreti")" />
+                               placeholder="@Localizer["NameTrPlaceholder"]" />
 
                         <div class="form-help-text">
-                            @T(
-                                                        "Türkçe arayüzde görünecek kayıt tipi adıdır.",
-                                                        "This is the registration type name shown in the Turkish interface."
-                                                        )
+                            @Localizer["NameTrHelpText"]
                         </div>
 
                         <span class="text-danger small" asp-validation-for="Name"></span>
@@ -131,19 +118,16 @@
 
                     <div class="col-12">
                         <label class="form-label fw-semibold">
-                            @T("Açıklama (TR)", "Description (TR)")
+                            @Localizer["DescriptionTrLabel"]
                         </label>
 
                         <textarea class="form-control"
                                   asp-for="Description"
                                   rows="4"
-                                  placeholder="@T("Örn: Bildiri gönderimi ve kongre katılımı için standart kayıt türüdür.", "Example: Bildiri gönderimi ve kongre katılımı için standart kayıt türüdür.")"></textarea>
+                                  placeholder="@Localizer["DescriptionTrPlaceholder"]"></textarea>
 
                         <div class="form-help-text">
-                            @T(
-                                                        "Türkçe kayıt ekranında kart açıklaması olarak gösterilir.",
-                                                        "This is shown as the card description on the Turkish registration page."
-                                                        )
+                            @Localizer["DescriptionTrHelpText"]
                         </div>
 
                         <span class="text-danger small" asp-validation-for="Description"></span>
@@ -152,24 +136,21 @@
                     <div class="col-12 mt-2">
                         <div class="form-section-title">
                             <i class="fas fa-globe"></i>
-                            <span>@T("İngilizce İçerik", "English Content")</span>
+                            <span>@Localizer["EnglishContentSection"]</span>
                         </div>
                     </div>
 
                     <div class="col-md-12">
                         <label class="form-label fw-semibold">
-                            @T("Kayıt Türü Adı (EN)", "Registration Type Name (EN)")
+                            @Localizer["NameEnLabel"]
                         </label>
 
                         <input class="form-control"
                                asp-for="NameEn"
-                               placeholder="@T("Örn: Author Participation Fee", "Example: Author Participation Fee")" />
+                               placeholder="@Localizer["NameEnPlaceholder"]" />
 
                         <div class="form-help-text">
-                            @T(
-                                                        "İngilizce arayüzde görünecek kayıt tipi adıdır.",
-                                                        "This is the registration type name shown in the English interface."
-                                                        )
+                            @Localizer["NameEnHelpText"]
                         </div>
 
                         <span class="text-danger small" asp-validation-for="NameEn"></span>
@@ -177,19 +158,16 @@
 
                     <div class="col-12">
                         <label class="form-label fw-semibold">
-                            @T("Açıklama (EN)", "Description (EN)")
+                            @Localizer["DescriptionEnLabel"]
                         </label>
 
                         <textarea class="form-control"
                                   asp-for="DescriptionEn"
                                   rows="4"
-                                  placeholder="@T("Örn: Standard registration type for abstract submission and congress participation.", "Example: Standard registration type for abstract submission and congress participation.")"></textarea>
+                                  placeholder="@Localizer["DescriptionEnPlaceholder"]"></textarea>
 
                         <div class="form-help-text">
-                            @T(
-                                                        "İngilizce kayıt ekranında kart açıklaması olarak gösterilir.",
-                                                        "This is shown as the card description on the English registration page."
-                                                        )
+                            @Localizer["DescriptionEnHelpText"]
                         </div>
 
                         <span class="text-danger small" asp-validation-for="DescriptionEn"></span>
@@ -198,13 +176,13 @@
                     <div class="col-12 mt-2">
                         <div class="form-section-title">
                             <i class="fas fa-credit-card"></i>
-                            <span>@T("Ücret Bilgisi", "Pricing Information")</span>
+                            <span>@Localizer["PricingSection"]</span>
                         </div>
                     </div>
 
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">
-                            @T("Ücret", "Price")
+                            @Localizer["PriceLabel"]
                             <span class="required-star">*</span>
                         </label>
 
@@ -213,10 +191,7 @@
                                placeholder="1500" />
 
                         <div class="form-help-text">
-                            @T(
-                                                        "Kullanıcıdan alınacak kayıt ücretidir. Örn: 1500,00",
-                                                        "The registration fee to be charged to the user. Example: 1500.00"
-                                                        )
+                            @Localizer["PriceHelpText"]
                         </div>
 
                         <span class="text-danger small" asp-validation-for="Price"></span>
@@ -224,7 +199,7 @@
 
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">
-                            @T("Para Birimi", "Currency")
+                            @Localizer["CurrencyLabel"]
                             <span class="required-star">*</span>
                         </label>
 
@@ -235,10 +210,7 @@
                         </select>
 
                         <div class="form-help-text">
-                            @T(
-                                                        "Kayıt ücretinin para birimidir.",
-                                                        "Currency of the registration fee."
-                                                        )
+                            @Localizer["CurrencyHelpText"]
                         </div>
 
                         <span class="text-danger small" asp-validation-for="Currency"></span>
@@ -248,48 +220,45 @@
                     <div class="col-12">
                         <div class="form-section-title mt-2">
                             <i class="fas fa-clock"></i>
-                            <span>@T("Son Başvuru / Erken Kayıt Tarihi", "Application Deadline / Early Bird")</span>
+                            <span>@Localizer["DeadlineSection"]</span>
                         </div>
                     </div>
 
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">
-                            @T("Son Başvuru Tarihi", "Deadline")
+                            @Localizer["DeadlineLabel"]
                         </label>
                         <input type="date" class="form-control" asp-for="Deadline"
                                value="@(Model.Deadline.HasValue ? Model.Deadline.Value.ToString("yyyy-MM-dd") : "")" />
                         <div class="form-help-text">
-                            @T(
-                                "Bu tarihten sonra bu kayıt türü pasif olur. Erken kayıt için son tarih belirleyin, sonra normal fiyatlı yeni bir tür oluşturun.",
-                                "After this date this type becomes inactive. Set it for early-bird pricing, then create a new type for regular price."
-                            )
+                            @Localizer["DeadlineHelpText"]
                         </div>
                     </div>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label fw-semibold">
-                        @T("Katılımcı Rolü", "Participant Role")
+                        @Localizer["ParticipantRoleLabel"]
                         <span class="text-danger">*</span>
                     </label>
                     <select class="form-select" asp-for="RoleName">
-                        <option value="Author">@T("Yazar (Bildiri gönderebilir)", "Author (Can submit abstracts)")</option>
-                        <option value="Listener">@T("Dinleyici (Programa ve sertifikaya erişir)", "Listener (Access to program and certificate)")</option>
+                        <option value="Author">@Localizer["RoleAuthor"]</option>
+                        <option value="Listener">@Localizer["RoleListener"]</option>
                     </select>
                     <div class="form-text text-muted">
-                        @T("Kayıt yapan kullanıcının sisteme hangi rolde gireceğini belirler.", "Determines the role the registering user will have in the system.")
+                        @Localizer["ParticipantRoleHelpText"]
                     </div>
                     <span class="text-danger small" asp-validation-for="RoleName"></span>
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 mt-4">
                     <a href="@Model.ReturnUrl" class="btn btn-light border">
-                        @T("Vazgeç", "Cancel")
+                        @Localizer["CancelButton"]
                     </a>
 
                     <button class="btn btn-primary px-4" type="submit">
                         <i class="fas fa-save me-1"></i>
-                        @T("Kaydet", "Save")
+                        @Localizer["SaveButton"]
                     </button>
                 </div>
             </form>

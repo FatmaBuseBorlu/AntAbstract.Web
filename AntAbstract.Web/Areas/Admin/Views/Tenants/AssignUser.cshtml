@@ -63,12 +63,12 @@
         ? rawReturnUrl
         : Url.Action("Details", "Tenants", new { area = "Admin", id = Model.TenantId });
 
-    var backButtonText = "Geri Dön";
+    var backButtonText = Localizer.GetString("GoBack").Value;
     var backButtonIcon = "fas fa-arrow-left";
 
     if (normalizedReturnUrl.Contains("conferenceflow"))
     {
-        backButtonText = "Kongre Akışına Dön";
+        backButtonText = Localizer.GetString("BackToConferenceFlow").Value;
         backButtonIcon = "fas fa-stream";
 
         backUrl = conferenceId != Guid.Empty
@@ -81,17 +81,17 @@
     }
     else if (normalizedReturnUrl.Contains("/tenants/details"))
     {
-        backButtonText = "Kurum Detayına Dön";
+        backButtonText = Localizer.GetString("BackToTenantDetails").Value;
         backButtonIcon = "fas fa-building";
     }
     else if (normalizedReturnUrl.Contains("/tenants"))
     {
-        backButtonText = "Kurum Listesine Dön";
+        backButtonText = Localizer.GetString("BackToTenantList").Value;
         backButtonIcon = "fas fa-list";
     }
     else if (normalizedReturnUrl.Contains("/referee"))
     {
-        backButtonText = "Hakem Havuzuna Dön";
+        backButtonText = Localizer.GetString("BackToRefereePool").Value;
         backButtonIcon = "fas fa-user-tie";
     }
 
@@ -390,11 +390,11 @@
         <div>
             <h2 class="tenant-user-title">
                 <i class="fas fa-user-plus text-primary me-2"></i>
-                Kullanıcıyı Kuruma Bağla
+                @Localizer["PageHeading"]
             </h2>
 
             <p class="tenant-user-lead">
-                <strong>@Model.TenantName</strong> kurumu için mevcut bir kullanıcıyı bağlayabilir veya yeni kullanıcı oluşturup rol verebilirsiniz.
+                <strong>@Model.TenantName</strong> @Localizer["PageLeadSuffix"]
             </p>
         </div>
 
@@ -423,19 +423,19 @@
 
                     <div class="mb-4">
                         <label asp-for="SelectedRole" class="tenant-user-label">
-                            Verilecek Rol
+                            @Localizer["RoleToAssign"]
                         </label>
 
                         <select asp-for="SelectedRole"
                                 asp-items="Model.AvailableRoles"
                                 class="form-select tenant-user-form-control">
-                            <option value="">Rol seçiniz...</option>
+                            <option value="">@Localizer["SelectRole"]</option>
                         </select>
 
                         <span asp-validation-for="SelectedRole"></span>
 
                         <div class="tenant-user-help">
-                            Hakem atama ekranında görünmesi için kullanıcıya <strong>Hakem</strong> rolü verilmeli ve kullanıcı bu kuruma bağlanmalıdır.
+                            @Html.Raw(Localizer["RoleHelpText"].Value)
                         </div>
                     </div>
 
@@ -453,11 +453,11 @@
 
                                 <span>
                                     <span class="assign-mode-title">
-                                        Mevcut Kullanıcıyı Bağla
+                                        @Localizer["AssignExistingUser"]
                                     </span>
 
                                     <span class="assign-mode-desc">
-                                        Sistemde kayıtlı bir kullanıcıyı bu kuruma bağla ve seçilen rolü ver.
+                                        @Localizer["AssignExistingUserDesc"]
                                     </span>
                                 </span>
                             </label>
@@ -476,11 +476,11 @@
 
                                 <span>
                                     <span class="assign-mode-title">
-                                        Yeni Kullanıcı Oluştur
+                                        @Localizer["CreateNewUser"]
                                     </span>
 
                                     <span class="assign-mode-desc">
-                                        Yeni hesap oluştur, bu kuruma bağla ve seçilen rolü ver.
+                                        @Localizer["CreateNewUserDesc"]
                                     </span>
                                 </span>
                             </label>

@@ -9,7 +9,7 @@
 
     var conferenceName = ViewBag.ConferenceName as string
                          ?? Model.Conference?.Title
-                         ?? "Kongre";
+                         ?? Localizer.GetString("ConferenceFallback");
 
     var conferenceSlug = ViewBag.ConferenceSlug as string ?? "";
 
@@ -25,12 +25,12 @@
     {
         return blockType switch
         {
-            ConferencePageBlockType.Hero => "Ana Karşılama",
-            ConferencePageBlockType.CallForPapers => "Kongreye Çağrı",
-            ConferencePageBlockType.Topics => "Kongre Konuları",
-            ConferencePageBlockType.Committees => "Bilim Kurulu",
-            ConferencePageBlockType.About => "Hakkında / İçerik",
-            ConferencePageBlockType.Fees => "Katılım Ücreti",
+            ConferencePageBlockType.Hero => Localizer.GetString("BlockType_Hero"),
+            ConferencePageBlockType.CallForPapers => Localizer.GetString("BlockType_CallForPapers"),
+            ConferencePageBlockType.Topics => Localizer.GetString("BlockType_Topics"),
+            ConferencePageBlockType.Committees => Localizer.GetString("BlockType_Committees"),
+            ConferencePageBlockType.About => Localizer.GetString("BlockType_About"),
+            ConferencePageBlockType.Fees => Localizer.GetString("BlockType_Fees"),
             _ => blockType.ToString()
         };
     }
@@ -39,13 +39,13 @@
     {
         return blockType switch
         {
-            ConferencePageBlockType.Hero => "Sayfanın en üstünde yer alan ana karşılama alanıdır.",
-            ConferencePageBlockType.CallForPapers => "Bildiri çağrısı, başvuru duyurusu veya önemli açıklamalar için kullanılır.",
-            ConferencePageBlockType.Topics => "Kongre konuları ve çalışma alanlarını listelemek için kullanılır.",
-            ConferencePageBlockType.Committees => "Bilim kurulu, düzenleme kurulu veya komite bilgileri için kullanılır.",
-            ConferencePageBlockType.About => "Genel içerik, açıklama, program veya süreç anlatımı için kullanılabilir.",
-            ConferencePageBlockType.Fees => "Katılım ücretleri ve ödeme bilgileri için kullanılır.",
-            _ => "Bu blok türü vitrin sayfasında özel içerik alanı olarak kullanılır."
+            ConferencePageBlockType.Hero => Localizer.GetString("BlockTypeDesc_Hero"),
+            ConferencePageBlockType.CallForPapers => Localizer.GetString("BlockTypeDesc_CallForPapers"),
+            ConferencePageBlockType.Topics => Localizer.GetString("BlockTypeDesc_Topics"),
+            ConferencePageBlockType.Committees => Localizer.GetString("BlockTypeDesc_Committees"),
+            ConferencePageBlockType.About => Localizer.GetString("BlockTypeDesc_About"),
+            ConferencePageBlockType.Fees => Localizer.GetString("BlockTypeDesc_Fees"),
+            _ => Localizer.GetString("BlockTypeDesc_Default")
         };
     }
 
@@ -533,20 +533,20 @@
 
             <div>
                 <div class="create-block-section-label">
-                    İçerik Yönetimi
+                    @Localizer["ContentManagement"]
                 </div>
 
                 <h2 class="create-block-title">
-                    Yeni Vitrin Bloğu Ekle
+                    @Localizer["PageTitle"]
                 </h2>
 
                 <p class="create-block-description">
-                    <strong>@conferenceName</strong> kongresinin vitrin sayfasında gösterilecek yeni bir içerik bloğu oluşturabilirsiniz.
+                    @Html.Raw(string.Format(Localizer.GetString("HeroDescription"), $"<strong>{conferenceName}</strong>"))
                 </p>
 
                 <div class="selected-conference-chip">
                     <i class="fas fa-calendar-check"></i>
-                    <span>Seçili Kongre:</span>
+                    <span>@Localizer["SelectedConference"]</span>
                     <strong>@conferenceName</strong>
 
                     @if (!string.IsNullOrWhiteSpace(conferenceSlug))
@@ -564,7 +564,7 @@
                asp-route-conferenceId="@Model.ConferenceId"
                class="btn create-light-btn">
                 <i class="fas fa-arrow-left"></i>
-                Blok Listesine Dön
+                @Localizer["BackToBlockList"]
             </a>
 
             @if (!string.IsNullOrWhiteSpace(conferenceSlug))
@@ -573,14 +573,14 @@
                    target="_blank"
                    class="btn create-outline-btn">
                     <i class="fas fa-arrow-up-right-from-square"></i>
-                    Siteyi Gör
+                    @Localizer["ViewSite"]
                 </a>
             }
 
             <a href="@flowUrl"
                class="btn create-outline-btn">
                 <i class="fas fa-stream"></i>
-                Kongre Akışına Git
+                @Localizer["GoToConferenceFlow"]
             </a>
         </div>
     </div>
@@ -604,11 +604,11 @@
 
                     <div>
                         <div class="create-card-title">
-                            Blok Bilgileri
+                            @Localizer["BlockInfo"]
                         </div>
 
                         <p class="create-card-subtitle">
-                            Oluşturulan blok, seçilen türe göre kongre vitrininde gösterilir.
+                            @Localizer["BlockInfoSubtitle"]
                         </p>
                     </div>
                 </div>
@@ -618,25 +618,25 @@
                     <div class="row g-3 mb-4">
                         <div class="col-md-7">
                             <label asp-for="Title" class="create-label">
-                                Menüde Görünen Başlık
+                                @Localizer["MenuTitle"]
                                 <span class="text-danger">*</span>
                             </label>
 
                             <input asp-for="Title"
                                    class="form-control create-form-control"
-                                   placeholder="Örn: Sponsorlar, Ulaşım, Konaklama"
+                                   placeholder="@Localizer["TitlePlaceholder"]"
                                    required />
 
                             <span asp-validation-for="Title" class="text-danger small fw-bold"></span>
 
                             <div class="form-help">
-                                Bu başlık vitrin sayfasındaki bölüm başlığı olarak kullanılabilir.
+                                @Localizer["MenuTitleHelp"]
                             </div>
                         </div>
 
                         <div class="col-md-5">
                             <label asp-for="BlockType" class="create-label">
-                                Blok Türü
+                                @Localizer["BlockType"]
                                 <span class="text-danger">*</span>
                             </label>
 
@@ -672,20 +672,20 @@
                             <span asp-validation-for="BlockType" class="text-danger small fw-bold"></span>
 
                             <div class="form-help">
-                                Blok türü, bu içeriğin vitrin sayfasında nasıl yorumlanacağını belirler.
+                                @Localizer["BlockTypeHelp"]
                             </div>
                         </div>
                     </div>
 
                     <div class="mb-4">
                         <label asp-for="Subtitle" class="create-label">
-                            Kısa Açıklama
+                            @Localizer["ShortDescription"]
                         </label>
 
                         <textarea asp-for="Subtitle"
                                   class="form-control create-form-control"
                                   rows="7"
-                                  placeholder="Bu blok için kısa bir açıklama yazabilirsiniz."></textarea>
+                                  placeholder="@Localizer["DescriptionPlaceholder"]"></textarea>
 
                         <span asp-validation-for="Subtitle" class="text-danger small fw-bold"></span>
                     </div>
@@ -705,11 +705,11 @@
                                        class="fw-bold text-dark mb-1"
                                        for="activeSwitch"
                                        style="cursor:pointer;">
-                                    Sitede Yayında Göster
+                                    @Localizer["ShowOnSite"]
                                 </label>
 
                                 <div class="text-muted small fw-semibold">
-                                    Açık olursa bu blok vitrin sayfasında görünür. Kapalı olursa taslak gibi saklanır.
+                                    @Localizer["ShowOnSiteHelp"]
                                 </div>
                             </div>
                         </div>
@@ -717,7 +717,7 @@
                         <button type="submit"
                                 class="save-btn">
                             <i class="fas fa-check"></i>
-                            Bloğu Oluştur
+                            @Localizer["CreateBlock"]
                         </button>
                     </div>
 

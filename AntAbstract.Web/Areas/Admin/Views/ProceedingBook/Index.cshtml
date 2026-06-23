@@ -46,7 +46,7 @@
 
     var publishedDateText = Model.ProceedingBookPublishedDate.HasValue
         ? Model.ProceedingBookPublishedDate.Value.ToString("dd MMMM yyyy HH:mm")
-        : "Henüz yayınlanmadı";
+        : Localizer.GetString("NotPublishedYet");
 
     var proceedingYear = Model.ProceedingBookPublishedDate?.Year ?? DateTime.Now.Year;
 }
@@ -1289,21 +1289,21 @@
 
             <div>
                 <div class="admin-hero-kicker">
-                    Kongre Operasyonları
+                    @Localizer["ConferenceOperations"]
                 </div>
 
                 <h3 class="admin-hero-title">
-                    Bildiri Kitabı Yönetimi
+                    @Localizer["PageTitle"]
                 </h3>
 
                 <p class="admin-hero-lead">
-                    Kongreye ait bildiri kitabı PDF dosyasını yükleyebilir, otomatik oluşturabilir, yayına alabilir veya yayından kaldırabilirsiniz.
+                    @Localizer["PageLead"]
                 </p>
 
                 <div class="admin-chip-row">
                     <span class="admin-chip admin-chip-primary">
                         <i class="fas fa-calendar-check"></i>
-                        Seçili Kongre
+                        @Localizer["SelectedConference"]
                     </span>
 
                     @if (!string.IsNullOrWhiteSpace(slug))
@@ -1316,7 +1316,7 @@
 
                     <span class="admin-chip">
                         <i class="fas @fileStatusIconClass"></i>
-                        @(hasFile ? "PDF yüklü" : "PDF yok")
+                        @(hasFile ? Localizer["PdfUploaded"].Value : Localizer["NoPdf"].Value)
                     </span>
                 </div>
             </div>
@@ -1325,12 +1325,12 @@
         <div class="admin-hero-actions">
             <a href="@backUrl" class="admin-hero-btn admin-hero-btn-light">
                 <i class="fas fa-arrow-left"></i>
-                Kongre Akışına Dön
+                @Localizer["BackToFlowButton"]
             </a>
 
             <a href="@changeConferenceUrl" class="admin-hero-btn admin-hero-btn-light">
                 <i class="fas fa-exchange-alt"></i>
-                Kongre Değiştir
+                @Localizer["ChangeConferenceButton"]
             </a>
 
             @if (!string.IsNullOrWhiteSpace(slug))
@@ -1339,7 +1339,7 @@
                    target="_blank"
                    class="admin-hero-btn admin-hero-btn-primary">
                     <i class="fas fa-arrow-up-right-from-square"></i>
-                    Siteyi Gör
+                    @Localizer["ViewSiteButton"]
                 </a>
             }
         </div>
@@ -1355,11 +1355,11 @@
 
                     <div>
                         <h5 class="admin-card-title">
-                            PDF ve Yayın Ayarları
+                            @Localizer["PdfAndPublishSettings"]
                         </h5>
 
                         <p class="admin-card-subtitle">
-                            Bildiri kitabı dosyasını yükleyin, otomatik oluşturun ve yazar panelinde görünürlüğünü yönetin.
+                            @Localizer["PdfAndPublishSettingsLead"]
                         </p>
                     </div>
                 </div>
@@ -1378,7 +1378,7 @@
 
                     <div>
                         <div class="conference-mini-label">
-                            Seçili Kongre
+                            @Localizer["SelectedConference"]
                         </div>
 
                         <div class="conference-mini-title">
@@ -1395,12 +1395,11 @@
 
                         <div>
                             <div class="admin-action-panel-title">
-                                Sistemden Otomatik Bildiri Kitabı Oluştur
+                                @Localizer["AutoGenerateTitle"]
                             </div>
 
                             <div class="admin-action-panel-text">
-                                Sistem bu kongreye ait kabul edilmiş bildirileri alır ve otomatik PDF bildiri kitabı oluşturur.
-                                Mevcut PDF varsa yeni oluşturulan dosya ile değiştirilir.
+                                @Localizer["AutoGenerateText"]
                             </div>
                         </div>
                     </div>
@@ -1410,7 +1409,7 @@
                             data-bs-toggle="modal"
                             data-bs-target="#generateProceedingBookModal">
                         <i class="fas fa-file-circle-plus"></i>
-                        Otomatik Oluştur
+                        @Localizer["AutoGenerateButton"]
                     </button>
                 </div>
 
@@ -1424,7 +1423,7 @@
 
                             <div class="min-w-0">
                                 <div class="file-status-title">
-                                    Mevcut bildiri kitabı PDF’i yüklü
+                                    @Localizer["ExistingPdfUploaded"]
                                 </div>
 
                                 <div class="file-status-path">
@@ -1438,7 +1437,7 @@
                                target="_blank"
                                class="admin-mini-btn admin-mini-btn-primary">
                                 <i class="fas fa-eye"></i>
-                                Görüntüle
+                                @Localizer["ViewButton"]
                             </a>
 
                             <button type="button"
@@ -1446,7 +1445,7 @@
                                     data-bs-toggle="modal"
                                     data-bs-target="#removeProceedingBookModal">
                                 <i class="fas fa-trash"></i>
-                                Kaldır
+                                @Localizer["RemoveButton"]
                             </button>
                         </div>
                     </div>
@@ -1459,8 +1458,8 @@
                                 </div>
 
                                 <div>
-                                    <strong>Bildiri Kitabı Önizleme</strong>
-                                    <span>PDF dosyasını modern kapak görünümüyle kontrol edebilirsiniz.</span>
+                                    <strong>@Localizer["ProceedingBookPreview"]</strong>
+                                    <span>@Localizer["ProceedingBookPreviewLead"]</span>
                                 </div>
                             </div>
 
@@ -1469,14 +1468,14 @@
                                    target="_blank"
                                    class="admin-mini-btn admin-mini-btn-primary">
                                     <i class="fas fa-up-right-from-square"></i>
-                                    Yeni Sekmede Aç
+                                    @Localizer["OpenInNewTab"]
                                 </a>
 
                                 <a href="@Model.ProceedingBookFilePath"
                                    download
                                    class="admin-mini-btn admin-mini-btn-primary">
                                     <i class="fas fa-download"></i>
-                                    İndir
+                                    @Localizer["DownloadButton"]
                                 </a>
                             </div>
                         </div>
@@ -1486,7 +1485,7 @@
                                 <div class="pdf-cover-art">
                                     <div class="pdf-cover-badge">
                                         <i class="fas fa-file-pdf"></i>
-                                        PDF Bildiri Kitabı
+                                        @Localizer["PdfProceedingBook"]
                                     </div>
 
                                     <div class="pdf-cover-center">
@@ -1495,7 +1494,7 @@
                                         </div>
 
                                         <h4>
-                                            Bildiri Kitabı
+                                            @Localizer["ProceedingBook"]
                                         </h4>
 
                                         <p>
@@ -1512,7 +1511,7 @@
                                 <div class="pdf-cover-meta">
                                     <div class="pdf-cover-meta-item">
                                         <i class="fas fa-calendar-check"></i>
-                                        <span>Yayın tarihi: <strong>@publishedDateText</strong></span>
+                                        <span>@Localizer["PublishDate"]: <strong>@publishedDateText</strong></span>
                                     </div>
 
                                     <div class="pdf-cover-meta-item">

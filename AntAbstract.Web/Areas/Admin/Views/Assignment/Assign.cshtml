@@ -91,13 +91,13 @@
             return email;
         }
 
-        return "Hakem";
+        return L("DefaultReviewerName", "Hakem");
     }
 
     string GetFirstLetter(string value)
     {
         return string.IsNullOrWhiteSpace(value)
-            ? "H"
+            ? L("DefaultReviewerInitial", "H")
             : value.Trim().Substring(0, 1).ToUpper();
     }
 }
@@ -679,7 +679,7 @@
 
             <div>
                 <div class="assign-section-label">
-                    Kongre Operasyonları
+                    @L("SectionLabel", "Kongre Operasyonları")
                 </div>
 
                 <h2 class="assign-page-title">
@@ -719,7 +719,7 @@
             <a href="@flowUrl"
                class="btn assign-light-btn">
                 <i class="fas fa-stream"></i>
-                Kongre Akışına Dön
+                @L("BackToFlowButton", "Kongre Akışına Dön")
             </a>
 
             <a href="@backUrl"
@@ -743,7 +743,7 @@
                     </div>
 
                     <div class="assign-stat-title">
-                        Toplam Erişilebilir Hakem
+                        @L("StatTotalAccessible", "Toplam Erişilebilir Hakem")
                     </div>
                 </div>
             </div>
@@ -761,7 +761,7 @@
                     </div>
 
                     <div class="assign-stat-title">
-                        Atanabilir Hakem
+                        @L("StatAssignable", "Atanabilir Hakem")
                     </div>
                 </div>
             </div>
@@ -779,7 +779,7 @@
                     </div>
 
                     <div class="assign-stat-title">
-                        Önerilen Hakem
+                        @L("StatRecommended", "Önerilen Hakem")
                     </div>
                 </div>
             </div>
@@ -824,16 +824,16 @@
         <div class="reviewer-card-header">
             <div>
                 <div class="reviewer-card-title">
-                    Önerilen Hakemler
+                    @L("RecommendedCardTitle", "Önerilen Hakemler")
                 </div>
 
                 <p class="reviewer-card-subtitle">
-                    Bildiri anahtar kelimelerine göre önerilen hakemler burada listelenir.
+                    @L("RecommendedCardSubtitle", "Bildiri anahtar kelimelerine göre önerilen hakemler burada listelenir.")
                 </p>
             </div>
 
             <span class="reviewer-count-pill">
-                @recommendedCount hakem
+                @recommendedCount @L("ReviewerCountUnit", "hakem")
             </span>
         </div>
 
@@ -843,10 +843,10 @@
                 <div class="empty-box">
                     <i class="fas fa-circle-info"></i>
                     <strong>
-                        Önerilen hakem bulunamadı
+                        @L("NoRecommendedTitle", "Önerilen hakem bulunamadı")
                     </strong>
                     <span>
-                        Bu bildiri için öneri eşleşmesi bulunmadı. Aşağıdaki atanabilir hakemlerden seçim yapabilirsiniz.
+                        @L("NoRecommendedMessage", "Bu bildiri için öneri eşleşmesi bulunmadı. Aşağıdaki atanabilir hakemlerden seçim yapabilirsiniz.")
                     </span>
                 </div>
             </div>
@@ -859,7 +859,7 @@
                         <tr>
                             <th>@L("TableHeaderName", "Hakem")</th>
                             <th>@L("TableHeaderExpertise", "Uzmanlık Alanı")</th>
-                            <th>Yük</th>
+                            <th>@L("TableHeaderLoad", "Yük")</th>
                             <th class="text-end" style="width: 200px;">
                                 @L("TableHeaderAction", "İşlem")
                             </th>
@@ -983,7 +983,7 @@
                     <tr>
                         <th>@L("TableHeaderName", "Hakem")</th>
                         <th>@L("TableHeaderExpertise", "Uzmanlık Alanı")</th>
-                        <th>Yük</th>
+                        <th>@L("TableHeaderLoad", "Yük")</th>
                         <th class="text-end" style="width: 200px;">
                             @L("TableHeaderAction", "İşlem")
                         </th>

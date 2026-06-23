@@ -41,7 +41,7 @@
 
     string PaymentStatusText(bool isPaid)
     {
-        return isPaid ? "Ödendi" : "Bekliyor";
+        return isPaid ? Localizer.GetString("Paid").Value : Localizer.GetString("Pending").Value;
     }
 
     string PaymentStatusClass(bool isPaid)
@@ -101,21 +101,21 @@
 
             <div>
                 <div class="operation-section-label">
-                    Kongre Operasyonları
+                    @Localizer["ConferenceOperations"]
                 </div>
 
                 <h2 class="operation-title">
-                    Kayıtlar ve Ödemeler
+                    @Localizer["RegistrationsAndPayments"]
                 </h2>
 
                 <p class="operation-description">
-                    <strong>@conferenceTitle</strong> kongresine ait katılımcı kayıtlarını, ödeme durumlarını ve işlem özetlerini buradan takip edebilirsiniz.
+                    <strong>@conferenceTitle</strong> @Localizer["HeaderDescriptionSuffix"]
                 </p>
 
                 <div class="operation-chip-row">
                     <span class="operation-chip operation-chip-primary">
                         <i class="fas fa-calendar-check"></i>
-                        Seçili Kongre
+                        @Localizer["SelectedConference"]
                     </span>
 
                     @if (!string.IsNullOrWhiteSpace(slug))
@@ -128,7 +128,7 @@
 
                     <span class="operation-chip">
                         <i class="fas fa-receipt"></i>
-                        @Model.TotalRegistrations kayıt
+                        @Model.TotalRegistrations @Localizer["RegistrationCount"]
                     </span>
                 </div>
             </div>
@@ -138,13 +138,13 @@
             <a href="@backUrl"
                class="btn operation-light-btn">
                 <i class="fas fa-arrow-left"></i>
-                Kongre Akışına Dön
+                @Localizer["BackToConferenceFlow"]
             </a>
 
             <a href="@changeConferenceUrl"
                class="btn operation-outline-btn">
                 <i class="fas fa-exchange-alt"></i>
-                Kongre Değiştir
+                @Localizer["ChangeConference"]
             </a>
 
             @if (!string.IsNullOrWhiteSpace(slug))
@@ -153,7 +153,7 @@
                    target="_blank"
                    class="btn operation-primary-btn">
                     <i class="fas fa-arrow-up-right-from-square"></i>
-                    Siteyi Gör
+                    @Localizer["ViewSite"]
                 </a>
             }
         </div>
@@ -168,7 +168,7 @@
                 </div>
                 <div>
                     <div class="operation-stat-number">@Model.TotalRegistrations</div>
-                    <div class="operation-stat-label">Toplam Kayıt</div>
+                    <div class="operation-stat-label">@Localizer["TotalRegistrations"]</div>
                 </div>
             </a>
         </div>
@@ -180,7 +180,7 @@
                 </div>
                 <div>
                     <div class="operation-stat-number">@Model.PaidRegistrations</div>
-                    <div class="operation-stat-label">Ödeme Tamamlandı</div>
+                    <div class="operation-stat-label">@Localizer["PaymentCompleted"]</div>
                 </div>
             </a>
         </div>
@@ -192,7 +192,7 @@
                 </div>
                 <div>
                     <div class="operation-stat-number">@Model.PendingPayments</div>
-                    <div class="operation-stat-label">Ödeme Bekliyor</div>
+                    <div class="operation-stat-label">@Localizer["PaymentPending"]</div>
                 </div>
             </a>
         </div>
@@ -204,7 +204,7 @@
                 </div>
                 <div>
                     <div class="operation-stat-number revenue-number">@Money(Model.TotalRevenue)</div>
-                    <div class="operation-stat-label">Toplam Gelir</div>
+                    <div class="operation-stat-label">@Localizer["TotalRevenue"]</div>
                 </div>
             </div>
         </div>
@@ -219,7 +219,7 @@
 
                 <div class="col-xl-4 col-lg-4">
                     <label class="operation-label">
-                        Arama
+                        @Localizer["Search"]
                     </label>
 
                     <div class="operation-input-wrap">
@@ -229,13 +229,13 @@
                                name="search"
                                id="registrationSearchInput"
                                value="@Model.Search"
-                               placeholder="Ad, soyad, e-posta, kayıt tipi veya işlem ID ara..." />
+                               placeholder="@Localizer["SearchPlaceholder"].Value" />
                     </div>
                 </div>
 
                 <div class="col-xl-3 col-lg-3">
                     <label class="operation-label">
-                        Ödeme Durumu
+                        @Localizer["PaymentStatus"]
                     </label>
 
                     <select name="paymentStatus"
@@ -243,36 +243,36 @@
                             class="operation-select">
                         @if (string.IsNullOrWhiteSpace(Model.PaymentStatus))
                         {
-                            <option value="" selected>Tüm Durumlar</option>
+                            <option value="" selected>@Localizer["AllStatuses"]</option>
                         }
                         else
                         {
-                            <option value="">Tüm Durumlar</option>
+                            <option value="">@Localizer["AllStatuses"]</option>
                         }
 
                         @if (Model.PaymentStatus == "paid")
                         {
-                            <option value="paid" selected>Ödendi</option>
+                            <option value="paid" selected>@Localizer["Paid"]</option>
                         }
                         else
                         {
-                            <option value="paid">Ödendi</option>
+                            <option value="paid">@Localizer["Paid"]</option>
                         }
 
                         @if (Model.PaymentStatus == "pending")
                         {
-                            <option value="pending" selected>Bekliyor</option>
+                            <option value="pending" selected>@Localizer["Pending"]</option>
                         }
                         else
                         {
-                            <option value="pending">Bekliyor</option>
+                            <option value="pending">@Localizer["Pending"]</option>
                         }
                     </select>
                 </div>
 
                 <div class="col-xl-3 col-lg-3">
                     <label class="operation-label">
-                        Kayıt Türü
+                        @Localizer["RegistrationType"]
                     </label>
 
                     <select name="registrationTypeId"
@@ -280,11 +280,11 @@
                             class="operation-select">
                         @if (!Model.RegistrationTypeId.HasValue)
                         {
-                            <option value="" selected>Tüm Kayıt Türleri</option>
+                            <option value="" selected>@Localizer["AllRegistrationTypes"]</option>
                         }
                         else
                         {
-                            <option value="">Tüm Kayıt Türleri</option>
+                            <option value="">@Localizer["AllRegistrationTypes"]</option>
                         }
 
                         @foreach (var type in Model.RegistrationTypes)
@@ -331,11 +331,11 @@
         <div class="operation-main-card-header">
             <div>
                 <h5>
-                    Kayıt Listesi
+                    @Localizer["RegistrationList"]
                 </h5>
 
                 <p>
-                    Seçili kongreye yapılan katılımcı kayıtları ve ödeme detayları.
+                    @Localizer["RegistrationListSubtitle"]
                 </p>
             </div>
 

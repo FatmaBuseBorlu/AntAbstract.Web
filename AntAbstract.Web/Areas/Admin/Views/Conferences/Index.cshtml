@@ -33,13 +33,13 @@
                 <i class="fas fa-calendar-alt"></i>
             </div>
             <div>
-                <h1 class="conf-hero-title">Kongreler</h1>
-                <p class="conf-hero-sub">@Model.TotalCount kongre kayıtlı</p>
+                <h1 class="conf-hero-title">@Localizer["Conferences"]</h1>
+                <p class="conf-hero-sub">@Model.TotalCount @Localizer["ConferenceRegisteredCount"]</p>
             </div>
         </div>
         <a href="@createUrl" class="btn conf-add-btn">
             <i class="fas fa-plus"></i>
-            Yeni Kongre Ekle
+            @Localizer["AddNewConference"]
         </a>
     </div>
 
@@ -47,25 +47,25 @@
     <div class="conf-filter-bar mb-4">
         <a href="@Url.Action("Index", "Conferences", new { area = "Admin", slug, search = Model.Search })"
            class="conf-filter-chip @(string.IsNullOrEmpty(Model.StatusFilter) ? "chip-active" : "")">
-            Tümü
+            @Localizer["All"]
             <span class="chip-count">@Model.TotalCount</span>
         </a>
         <a href="@Url.Action("Index", "Conferences", new { area = "Admin", slug, search = Model.Search, statusFilter = "ongoing" })"
            class="conf-filter-chip @(Model.StatusFilter == "ongoing" ? "chip-active chip-ongoing" : "")">
             <span class="chip-dot dot-green"></span>
-            Devam Ediyor
+            @Localizer["Ongoing"]
             <span class="chip-count">@Model.OngoingCount</span>
         </a>
         <a href="@Url.Action("Index", "Conferences", new { area = "Admin", slug, search = Model.Search, statusFilter = "upcoming" })"
            class="conf-filter-chip @(Model.StatusFilter == "upcoming" ? "chip-active chip-upcoming" : "")">
             <span class="chip-dot dot-blue"></span>
-            Yaklaşan
+            @Localizer["Upcoming"]
             <span class="chip-count">@Model.UpcomingCount</span>
         </a>
         <a href="@Url.Action("Index", "Conferences", new { area = "Admin", slug, search = Model.Search, statusFilter = "past" })"
            class="conf-filter-chip @(Model.StatusFilter == "past" ? "chip-active chip-past" : "")">
             <span class="chip-dot dot-gray"></span>
-            Tamamlandı
+            @Localizer["Completed"]
             <span class="chip-count">@Model.PastCount</span>
         </a>
 
@@ -78,7 +78,7 @@
             <div class="conf-search-wrap">
                 <i class="fas fa-search conf-search-icon"></i>
                 <input type="text" name="search" value="@Model.Search"
-                       class="conf-search-input" placeholder="Kongre ara..." />
+                       class="conf-search-input" placeholder="@Localizer["SearchConference"]" />
                 @if (!string.IsNullOrEmpty(Model.Search))
                 {
                     <a href="@Url.Action("Index", "Conferences", new { area = "Admin", slug, statusFilter = Model.StatusFilter })"
@@ -94,15 +94,15 @@
             <div class="empty-icon">
                 <i class="fas fa-calendar-times"></i>
             </div>
-            <h4>Kongre bulunamadı</h4>
+            <h4>@Localizer["NoConferenceFound"]</h4>
             <p>
                 @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.StatusFilter))
                 {
-                    <text>Arama kriterlerinize uyan kongre yok.</text>
+                    <text>@Localizer["NoSearchResults"]</text>
                 }
                 else
                 {
-                    <text>Henüz kongre eklenmemiş.</text>
+                    <text>@Localizer["NoConferencesYet"]</text>
                 }
             </p>
             <a href="@createUrl" class="btn conf-add-btn mt-2">

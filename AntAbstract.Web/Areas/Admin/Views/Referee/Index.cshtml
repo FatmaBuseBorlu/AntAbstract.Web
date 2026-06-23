@@ -49,7 +49,7 @@
         ? "/Admin/Referee/Delete"
         : $"/{slug}/Admin/Referee/Delete";
 
-    var deleteConfirmText = "Bu kullanıcının Referee / Hakem / Reviewer hakem rollerini kaldırmak istediğinize emin misiniz? Kullanıcı silinmez, sadece hakem yetkileri kaldırılır.";
+    var deleteConfirmText = Localizer.GetString("DeleteConfirmText");
 
     string GetFullName(AntAbstract.Domain.Entities.AppUser user)
     {
@@ -60,7 +60,7 @@
             return fullName;
         }
 
-        return user.Email ?? user.UserName ?? "Hakem";
+        return user.Email ?? user.UserName ?? Localizer.GetString("Referee");
     }
 
     string GetInitial(AntAbstract.Domain.Entities.AppUser user)
@@ -83,15 +83,15 @@
 
             <div>
                 <div class="referee-section-label">
-                    Kongre Operasyonları
+                    @Localizer["ConferenceOperations"]
                 </div>
 
                 <h2 class="referee-page-title">
-                    Hakem Havuzu
+                    @Localizer["PageTitle"]
                 </h2>
 
                 <p class="referee-page-description">
-                    Seçili kongrenin kurumuna bağlı <strong>Referee / Hakem / Reviewer</strong> rolündeki kullanıcıları buradan görüntüleyebilirsiniz.
+                    @Localizer["PageDescription"]
                 </p>
 
                 @if (!string.IsNullOrWhiteSpace(conferenceTitle) || !string.IsNullOrWhiteSpace(slug))

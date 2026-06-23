@@ -6,7 +6,7 @@
 @using AntAbstract.Domain.Entities
 
 @{
-    ViewData["Title"] = "Program / Oturumlar";
+    ViewData["Title"] = Localizer["PageTitle"].Value;
     ViewData["HideSelectedConferenceBar"] = true;
     Layout = "_LayoutDashboard";
 
@@ -134,21 +134,21 @@
 
             <div>
                 <div class="operation-section-label">
-                    Kongre Operasyonları
+                    @Localizer["ConferenceOperations"]
                 </div>
 
                 <h2 class="operation-title">
-                    Program / Oturumlar
+                    @Localizer["ProgramSessions"]
                 </h2>
 
                 <p class="operation-description">
-                    <strong>@conferenceTitle</strong> kongresine ait program akışını, oturumları, salon bilgilerini ve konuşmacı planlamasını buradan yönetebilirsiniz.
+                    <strong>@conferenceTitle</strong> @Localizer["HeaderDescriptionSuffix"]
                 </p>
 
                 <div class="operation-chip-row">
                     <span class="operation-chip operation-chip-primary">
                         <i class="fas fa-calendar-check"></i>
-                        Seçili Kongre
+                        @Localizer["SelectedConference"]
                     </span>
 
                     @if (!string.IsNullOrWhiteSpace(slug))
@@ -161,7 +161,7 @@
 
                     <span class="operation-chip">
                         <i class="fas fa-calendar-days"></i>
-                        @totalSessions oturum
+                        @totalSessions @Localizer["SessionCount"]
                     </span>
                 </div>
             </div>
@@ -171,13 +171,13 @@
             <a href="@backUrl"
                class="btn operation-light-btn">
                 <i class="fas fa-arrow-left"></i>
-                Kongre Akışına Dön
+                @Localizer["BackToConferenceFlow"]
             </a>
 
             <a href="@changeConferenceUrl"
                class="btn operation-outline-btn">
                 <i class="fas fa-exchange-alt"></i>
-                Kongre Değiştir
+                @Localizer["ChangeConference"]
             </a>
 
             @if (!string.IsNullOrWhiteSpace(slug))
@@ -186,14 +186,14 @@
                    target="_blank"
                    class="btn operation-outline-btn">
                     <i class="fas fa-arrow-up-right-from-square"></i>
-                    Siteyi Gör
+                    @Localizer["ViewSite"]
                 </a>
             }
 
             <a href="@createSessionUrl"
                class="btn operation-primary-btn">
                 <i class="fas fa-plus"></i>
-                Yeni Oturum Ekle
+                @Localizer["AddNewSession"]
             </a>
         </div>
     </div>
@@ -212,7 +212,7 @@
                     </div>
 
                     <div class="operation-stat-label">
-                        Toplam Oturum
+                        @Localizer["TotalSessions"]
                     </div>
                 </div>
             </div>
@@ -230,7 +230,7 @@
                     </div>
 
                     <div class="operation-stat-label">
-                        Konuşmacı
+                        @Localizer["Speaker"]
                     </div>
                 </div>
             </div>
@@ -248,7 +248,7 @@
                     </div>
 
                     <div class="operation-stat-label">
-                        Salon
+                        @Localizer["Hall"]
                     </div>
                 </div>
             </div>
@@ -266,7 +266,7 @@
                     </div>
 
                     <div class="operation-stat-label">
-                        Program Günü
+                        @Localizer["ProgramDay"]
                     </div>
                 </div>
             </div>
@@ -279,7 +279,7 @@
 
             <div class="col-xl-5 col-lg-5">
                 <label class="operation-label">
-                    Arama
+                    @Localizer["Search"]
                 </label>
 
                 <div class="operation-input-wrap">
@@ -287,17 +287,17 @@
 
                     <input type="text"
                            id="sessionSearchInput"
-                           placeholder="Oturum adı, salon, konuşmacı veya sunum başlığı ara..." />
+                           placeholder="@Localizer["SearchPlaceholder"].Value" />
                 </div>
             </div>
 
             <div class="col-xl-3 col-lg-3">
                 <label class="operation-label">
-                    Program Günü
+                    @Localizer["ProgramDay"]
                 </label>
 
                 <select id="sessionDayFilter" class="operation-select">
-                    <option value="">Tüm Günler</option>
+                    <option value="">@Localizer["AllDays"]</option>
 
                     @for (int i = 0; i < groupedSessions.Count; i++)
                     {
@@ -350,7 +350,7 @@
                 <a href="@createSessionUrl"
                    class="btn operation-primary-btn">
                     <i class="fas fa-plus"></i>
-                    Yeni Oturum Ekle
+                    @Localizer["AddNewSession"]
                 </a>
             </div>
         </div>

@@ -32,6 +32,14 @@
             ? $"/Admin/Submissions/Details/{id}?conferenceId={Model.ConferenceId}"
             : $"/{slug}/Admin/Submissions/Details/{id}?conferenceId={Model.ConferenceId}";
     }
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
 }
 
 <style>
@@ -564,11 +572,10 @@
             </div>
 
             <div>
-                <div class="inc-hero-kicker">Bildiri Takibi</div>
-                <h3 class="inc-hero-title">Eksik Bildiriler</h3>
+                <div class="inc-hero-kicker">@L("SectionLabel", "Bildiri Takibi")</div>
+                <h3 class="inc-hero-title">@L("PageHeading", "Eksik Bildiriler")</h3>
                 <p class="inc-hero-lead">
-                    Başlatılmış ancak henüz tamamlanmamış bildirileri takip edin.
-                    Eksik alanları tespit edin, yazarlara hatırlatma yapın.
+                    @L("PageLead", "Başlatılmış ancak henüz tamamlanmamış bildirileri takip edin. Eksik alanları tespit edin, yazarlara hatırlatma yapın.")
                 </p>
             </div>
         </div>
@@ -576,7 +583,7 @@
         <div class="inc-hero-actions">
             <a href="@backUrl" class="inc-hero-btn">
                 <i class="fas fa-arrow-left"></i>
-                Kongre Akışına Dön
+                @L("BackToFlowButton", "Kongre Akışına Dön")
             </a>
         </div>
     </div>
@@ -589,7 +596,7 @@
                 </div>
             </div>
             <div class="inc-stat-val">@Model.TotalCount</div>
-            <div class="inc-stat-label">Toplam Eksik Bildiri</div>
+            <div class="inc-stat-label">@L("StatTotalIncomplete", "Toplam Eksik Bildiri")</div>
         </a>
 
         <a href="@FilterUrl("abstract")" class="inc-stat-card @(Model.MissingFilter == "abstract" ? "active" : "")">

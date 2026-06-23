@@ -1,35 +1,15 @@
 ﻿@model AntAbstract.Domain.Entities.SystemParameter
 @using Microsoft.AspNetCore.Mvc.Rendering
-@using System.Globalization
-
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
-    var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
-
     var groups = new List<SelectListItem>
     {
-        new SelectListItem
-        {
-            Text = isEnglish ? "University / Institution" : "Üniversite / Kurum",
-            Value = "University"
-        },
-        new SelectListItem
-        {
-            Text = isEnglish ? "Faculty" : "Fakülte",
-            Value = "Faculty"
-        },
-        new SelectListItem
-        {
-            Text = isEnglish ? "Department / Specialty" : "Bölüm / Uzmanlık",
-            Value = "Department"
-        },
-        new SelectListItem
-        {
-            Text = isEnglish ? "Academic Title" : "Akademik Ünvan",
-            Value = "Title"
-        }
+        new SelectListItem { Text = Localizer.GetString("Group_University"), Value = "University" },
+        new SelectListItem { Text = Localizer.GetString("Group_Faculty"), Value = "Faculty" },
+        new SelectListItem { Text = Localizer.GetString("Group_Department"), Value = "Department" },
+        new SelectListItem { Text = Localizer.GetString("Group_Title"), Value = "Title" }
     };
 }
 
@@ -96,34 +76,34 @@
 
                     <div class="mb-4">
                         <label asp-for="Name" class="form-label fw-bold text-muted small">
-                            Name TR <span class="text-danger">*</span>
+                            @Localizer["NameTrLabel"] <span class="text-danger">*</span>
                         </label>
 
                         <input asp-for="Name"
                                class="form-control bg-light border-0 py-3 fw-bold fs-5"
-                               placeholder="Örn: Ankara Üniversitesi"
+                               placeholder="@Localizer["NameTrPlaceholder"]"
                                required />
 
                         <span asp-validation-for="Name" class="text-danger small"></span>
 
                         <small class="text-muted" style="font-size:0.75rem;">
-                            Türkçe ekranda görünecek resmi ad.
+                            @Localizer["NameTrHelpText"]
                         </small>
                     </div>
 
                     <div class="mb-4">
                         <label asp-for="NameEn" class="form-label fw-bold text-muted small">
-                            Name EN
+                            @Localizer["NameEnLabel"]
                         </label>
 
                         <input asp-for="NameEn"
                                class="form-control bg-light border-0 py-3 fw-bold fs-5"
-                               placeholder="Example: Ankara University" />
+                               placeholder="@Localizer["NameEnPlaceholder"]" />
 
                         <span asp-validation-for="NameEn" class="text-danger small"></span>
 
                         <small class="text-muted" style="font-size:0.75rem;">
-                            İngilizce ekranda gösterilecek karşılık. Boş bırakılırsa Türkçe ad gösterilir.
+                            @Localizer["NameEnHelpText"]
                         </small>
                     </div>
 
@@ -164,32 +144,32 @@
             <div class="card-body p-4">
                 <h6 class="fw-bold text-primary mb-3">
                     <i class="fas fa-lightbulb me-2"></i>
-                    Bilgilendirme
+                    @Localizer["InfoTitle"]
                 </h6>
 
                 <p class="text-dark opacity-75 small mb-3">
-                    Sistem parametreleri kayıt formunda, profil alanlarında ve filtrelerde kullanılır.
+                    @Localizer["InfoText"]
                 </p>
 
                 <ul class="list-unstyled text-dark opacity-75 small mb-0">
                     <li class="mb-2">
                         <i class="fas fa-check text-success me-2"></i>
-                        <strong>Name TR:</strong> Türkçe ekranda gösterilir.
+                        <strong>Name TR:</strong> @Localizer["InfoNameTr"]
                     </li>
 
                     <li class="mb-2">
                         <i class="fas fa-check text-success me-2"></i>
-                        <strong>Name EN:</strong> İngilizce ekranda gösterilir.
+                        <strong>Name EN:</strong> @Localizer["InfoNameEn"]
                     </li>
 
                     <li class="mb-2">
                         <i class="fas fa-check text-success me-2"></i>
-                        <strong>Order:</strong> Listede sıralama için kullanılır.
+                        <strong>Order:</strong> @Localizer["InfoOrder"]
                     </li>
 
                     <li>
                         <i class="fas fa-check text-success me-2"></i>
-                        <strong>Aktif:</strong> Pasif kayıtlar kullanıcıya gösterilmez.
+                        <strong>Aktif:</strong> @Localizer["InfoActive"]
                     </li>
                 </ul>
             </div>

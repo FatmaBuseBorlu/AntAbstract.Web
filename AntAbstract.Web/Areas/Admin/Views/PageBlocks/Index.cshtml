@@ -13,7 +13,7 @@
         ?? ViewContext.RouteData.Values["slug"]?.ToString()
         ?? "";
 
-    var conferenceTitle = ViewBag.ConferenceTitle as string ?? "Seçili Kongre";
+    var conferenceTitle = ViewBag.ConferenceTitle as string ?? Localizer.GetString("ConferenceFallback");
 
     var blocks = Model?
         .OrderBy(x => x.Order)
@@ -29,12 +29,12 @@
     {
         return blockType switch
         {
-            ConferencePageBlockType.Hero => "Ana Karşılama",
-            ConferencePageBlockType.About => "Hakkında / İçerik",
-            ConferencePageBlockType.CallForPapers => "Kongreye Çağrı",
-            ConferencePageBlockType.Topics => "Kongre Konuları",
-            ConferencePageBlockType.Committees => "Bilim Kurulu",
-            ConferencePageBlockType.Fees => "Katılım Ücreti",
+            ConferencePageBlockType.Hero => Localizer.GetString("BlockType_Hero"),
+            ConferencePageBlockType.About => Localizer.GetString("BlockType_About"),
+            ConferencePageBlockType.CallForPapers => Localizer.GetString("BlockType_CallForPapers"),
+            ConferencePageBlockType.Topics => Localizer.GetString("BlockType_Topics"),
+            ConferencePageBlockType.Committees => Localizer.GetString("BlockType_Committees"),
+            ConferencePageBlockType.Fees => Localizer.GetString("BlockType_Fees"),
             _ => blockType.ToString()
         };
     }
@@ -549,15 +549,15 @@
 
             <div>
                 <div class="admin-hero-kicker">
-                    Kongre Sitesi
+                    @Localizer["ConferenceSite"]
                 </div>
 
                 <h3 class="admin-hero-title">
-                    Kongre Site Blokları
+                    @Localizer["PageHeading"]
                 </h3>
 
                 <p class="admin-hero-lead">
-                    <strong>@conferenceTitle</strong> kongresinin web sitesinde görünecek bölümleri buradan yönetebilirsiniz.
+                    @Html.Raw(string.Format(Localizer.GetString("HeroDescription"), $"<strong>{conferenceTitle}</strong>"))
                 </p>
             </div>
         </div>
@@ -569,7 +569,7 @@
                    target="_blank"
                    class="admin-hero-btn admin-hero-btn-light">
                     <i class="fas fa-external-link-alt"></i>
-                    Siteyi Gör
+                    @Localizer["ViewSite"]
                 </a>
             }
         </div>

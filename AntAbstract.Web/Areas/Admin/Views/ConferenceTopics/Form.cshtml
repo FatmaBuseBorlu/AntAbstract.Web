@@ -1,4 +1,3 @@
-﻿@using System.Globalization
 @using AntAbstract.Web.Models.ViewModels.Admin.ConferenceTopics
 
 @model AdminConferenceTopicFormModel
@@ -7,16 +6,10 @@
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
     var slug = Model.Slug ?? "";
-    var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
-
-    string T(string tr, string en)
-    {
-        return isEnglish ? en : tr;
-    }
 
     ViewData["Title"] = Model.Id.HasValue
-        ? T("Bildiri Konusunu Düzenle", "Edit Abstract Topic")
-        : T("Yeni Bildiri Konusu", "Create Abstract Topic");
+        ? Localizer.GetString("EditPageTitle")
+        : Localizer.GetString("CreatePageTitle");
 }
 
 <style>
@@ -65,7 +58,7 @@
             </h3>
 
             <div class="text-muted">
-                @T("Kongre:", "Conference:")
+                @Localizer["ConferenceLabel"]
                 <span class="badge bg-light text-dark border">
                     @Model.ConferenceTitle
                 </span>
@@ -74,7 +67,7 @@
 
         <a class="btn btn-outline-secondary btn-sm" href="@Model.ReturnUrl">
             <i class="fas fa-arrow-left me-1"></i>
-            @T("Geri Dön", "Go Back")
+            @Localizer["BackButton"]
         </a>
     </div>
 
@@ -83,10 +76,7 @@
 
             <div class="info-box mb-4">
                 <i class="fas fa-info-circle me-2 text-primary"></i>
-                @T(
-                "Buraya eklenen konular, yazarın bildiri gönderme formunda seçenek olarak görünecektir.",
-                                "Topics added here will appear as selectable options in the author's abstract submission form."
-                                )
+                @Localizer["InfoBoxText"]
             </div>
 
             <form method="post" action="/@slug/Admin/ConferenceTopics/Save">
@@ -103,25 +93,22 @@
                     <div class="col-12">
                         <div class="form-section-title">
                             <i class="fas fa-language"></i>
-                            <span>@T("Türkçe İçerik", "Turkish Content")</span>
+                            <span>@Localizer["TurkishContentSection"]</span>
                         </div>
                     </div>
 
                     <div class="col-md-12">
                         <label class="form-label fw-semibold">
-                            @T("Konu Adı (TR)", "Topic Name (TR)")
+                            @Localizer["NameTrLabel"]
                             <span class="required-star">*</span>
                         </label>
 
                         <input class="form-control"
                                asp-for="Name"
-                               placeholder="@T("Örn: Kırsal Turizm", "Example: Kırsal Turizm")" />
+                               placeholder="@Localizer["NameTrPlaceholder"]" />
 
                         <div class="form-help-text">
-                            @T(
-                                                        "Türkçe arayüzde görünecek konu adıdır.",
-                                                        "This is the topic name shown in the Turkish interface."
-                                                        )
+                            @Localizer["NameTrHelpText"]
                         </div>
 
                         <span class="text-danger small" asp-validation-for="Name"></span>
@@ -129,19 +116,16 @@
 
                     <div class="col-md-12">
                         <label class="form-label fw-semibold">
-                            @T("Açıklama (TR)", "Description (TR)")
+                            @Localizer["DescriptionTrLabel"]
                         </label>
 
                         <textarea class="form-control"
                                   asp-for="Description"
                                   rows="3"
-                                  placeholder="@T("Örn: Kırsal turizm ve yerel kalkınma üzerine bildiriler.", "Example: Kırsal turizm ve yerel kalkınma üzerine bildiriler.")"></textarea>
+                                  placeholder="@Localizer["DescriptionTrPlaceholder"]"></textarea>
 
                         <div class="form-help-text">
-                            @T(
-                                                        "İsteğe bağlıdır. Adminin konuyu açıklaması için kullanılabilir.",
-                                                        "Optional. It can be used to describe the topic for admins."
-                                                        )
+                            @Localizer["DescriptionTrHelpText"]
                         </div>
 
                         <span class="text-danger small" asp-validation-for="Description"></span>
@@ -150,24 +134,21 @@
                     <div class="col-12 mt-2">
                         <div class="form-section-title">
                             <i class="fas fa-globe"></i>
-                            <span>@T("İngilizce İçerik", "English Content")</span>
+                            <span>@Localizer["EnglishContentSection"]</span>
                         </div>
                     </div>
 
                     <div class="col-md-12">
                         <label class="form-label fw-semibold">
-                            @T("Konu Adı (EN)", "Topic Name (EN)")
+                            @Localizer["NameEnLabel"]
                         </label>
 
                         <input class="form-control"
                                asp-for="NameEn"
-                               placeholder="@T("Örn: Rural Tourism", "Example: Rural Tourism")" />
+                               placeholder="@Localizer["NameEnPlaceholder"]" />
 
                         <div class="form-help-text">
-                            @T(
-                                                        "İngilizce arayüzde görünecek konu adıdır. Boş bırakılırsa Türkçe ad gösterilir.",
-                                                        "This is the topic name shown in the English interface. If left empty, the Turkish name will be shown."
-                                                        )
+                            @Localizer["NameEnHelpText"]
                         </div>
 
                         <span class="text-danger small" asp-validation-for="NameEn"></span>
@@ -175,19 +156,16 @@
 
                     <div class="col-md-12">
                         <label class="form-label fw-semibold">
-                            @T("Açıklama (EN)", "Description (EN)")
+                            @Localizer["DescriptionEnLabel"]
                         </label>
 
                         <textarea class="form-control"
                                   asp-for="DescriptionEn"
                                   rows="3"
-                                  placeholder="@T("Örn: Abstracts on rural tourism and local development.", "Example: Abstracts on rural tourism and local development.")"></textarea>
+                                  placeholder="@Localizer["DescriptionEnPlaceholder"]"></textarea>
 
                         <div class="form-help-text">
-                            @T(
-                                                        "İsteğe bağlıdır.",
-                                                        "Optional."
-                                                        )
+                            @Localizer["DescriptionEnHelpText"]
                         </div>
 
                         <span class="text-danger small" asp-validation-for="DescriptionEn"></span>
@@ -196,13 +174,13 @@
                     <div class="col-12 mt-2">
                         <div class="form-section-title">
                             <i class="fas fa-sliders-h"></i>
-                            <span>@T("Görünürlük ve Sıralama", "Visibility and Ordering")</span>
+                            <span>@Localizer["VisibilitySection"]</span>
                         </div>
                     </div>
 
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">
-                            @T("Sıralama", "Sort Order")
+                            @Localizer["SortOrderLabel"]
                         </label>
 
                         <input class="form-control"
@@ -212,10 +190,7 @@
                                max="9999" />
 
                         <div class="form-help-text">
-                            @T(
-                                                        "Küçük sayı daha üstte görünür. Örn: 0, 1, 2",
-                                                        "Lower numbers appear first. Example: 0, 1, 2"
-                                                        )
+                            @Localizer["SortOrderHelpText"]
                         </div>
 
                         <span class="text-danger small" asp-validation-for="SortOrder"></span>
@@ -229,14 +204,11 @@
                                    role="switch" />
 
                             <label class="form-check-label fw-semibold" asp-for="IsActive">
-                                @T("Aktif olarak göster", "Show as active")
+                                @Localizer["IsActiveLabel"]
                             </label>
 
                             <div class="form-help-text">
-                                @T(
-                                                                "Pasif yapılırsa yazar bildiri gönderirken bu konuyu seçemez.",
-                                                                "If passive, authors cannot select this topic when submitting an abstract."
-                                                                )
+                                @Localizer["IsActiveHelpText"]
                             </div>
                         </div>
                     </div>
@@ -245,12 +217,12 @@
 
                 <div class="d-flex justify-content-end gap-2 mt-4">
                     <a href="@Model.ReturnUrl" class="btn btn-light border">
-                        @T("Vazgeç", "Cancel")
+                        @Localizer["CancelButton"]
                     </a>
 
                     <button class="btn btn-primary px-4" type="submit">
                         <i class="fas fa-save me-1"></i>
-                        @T("Kaydet", "Save")
+                        @Localizer["SaveButton"]
                     </button>
                 </div>
             </form>
