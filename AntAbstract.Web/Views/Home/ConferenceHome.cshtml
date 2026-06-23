@@ -942,6 +942,33 @@
                     <i class="fab fa-linkedin-in"></i>
                 </a>
             </div>
+
+            @{
+                var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.Name;
+                var returnUrl = Context.Request.Path + Context.Request.QueryString;
+            }
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-dark dropdown-toggle d-flex align-items-center gap-1"
+                        type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                        style="border-radius:999px;font-size:.82rem;font-weight:900;padding:6px 14px;border-color:#334155;">
+                    <i class="fas fa-globe"></i>
+                    @(currentCulture.StartsWith("tr", StringComparison.OrdinalIgnoreCase) ? "TR" : "EN")
+                </button>
+                <div class="dropdown-menu dropdown-menu-end" style="min-width:auto;">
+                    <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="culture" value="tr-TR" />
+                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                        <button type="submit" class="dropdown-item small fw-bold @(currentCulture.StartsWith("tr") ? "active" : "")">🇹🇷 Türkçe</button>
+                    </form>
+                    <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="culture" value="en-US" />
+                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                        <button type="submit" class="dropdown-item small fw-bold @(currentCulture.StartsWith("en") ? "active" : "")">🇬🇧 English</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -1444,12 +1471,12 @@
 
             function update() {
                 var diff = deadline - new Date();
-                if (diff <= 0) { el.textContent = 'Son tarih geçti'; return; }
+                if (diff <= 0) { el.textContent = '@Localizer["DeadlinePassed"]'; return; }
                 var d = Math.floor(diff / 86400000);
                 var h = Math.floor((diff % 86400000) / 3600000);
                 var m = Math.floor((diff % 3600000) / 60000);
                 var s = Math.floor((diff % 60000) / 1000);
-                el.textContent = d + ' gün ' + h + ' sa ' + m + ' dk ' + s + ' sn kaldı';
+                el.textContent = d + ' @Localizer["DaysShort"] ' + h + ' @Localizer["HoursShort"] ' + m + ' @Localizer["MinutesShort"] ' + s + ' @Localizer["SecondsLeft"]';
             }
 
             update();

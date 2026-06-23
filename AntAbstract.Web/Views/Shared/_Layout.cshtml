@@ -899,7 +899,7 @@
                                 </a>
                             </li>
 
-                            @if (!string.IsNullOrWhiteSpace(slug))
+                            @if (ViewContext.RouteData.Values.ContainsKey("slug") && !string.IsNullOrWhiteSpace(slug))
                             {
                                 <li class="nav-item">
                                     <a class="nav-link" href="/@slug/Speakers">
