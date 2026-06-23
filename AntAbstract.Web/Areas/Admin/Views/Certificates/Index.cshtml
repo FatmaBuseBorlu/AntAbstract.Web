@@ -112,7 +112,7 @@
                 <input type="hidden" name="conferenceId" value="@qConferenceId" />
             }
             <div class="cert-filter-group">
-                <label class="cert-filter-label">E-posta</label>
+                <label class="cert-filter-label">@Localizer["Email"]</label>
                 <div class="cert-search-wrap">
                     <i class="fas fa-search cert-search-icon"></i>
                     <input type="text" name="userEmail" value="@Context.Request.Query["userEmail"]"
@@ -120,9 +120,9 @@
                 </div>
             </div>
             <div class="cert-filter-group">
-                <label class="cert-filter-label">Tür</label>
+                <label class="cert-filter-label">@Localizer["Type"]</label>
                 <select name="type" class="cert-filter-input cert-filter-select">
-                    <option value="">Tümü</option>
+                    <option value="">@Localizer["All"]</option>
                     @if (selectedType == "Author")
                     {
                         <option value="Author" selected>Yazar</option>
@@ -180,12 +180,12 @@
                 <table class="cert-table">
                     <thead>
                         <tr>
-                            <th>Tür</th>
-                            <th>Kullanıcı</th>
-                            <th>Kongre</th>
+                            <th>@Localizer["Type"]</th>
+                            <th>@Localizer["User"]</th>
+                            <th>@Localizer["Conference"]</th>
                             <th class="text-center">Dosya</th>
-                            <th class="text-center">E-posta</th>
-                            <th class="text-end">İşlemler</th>
+                            <th class="text-center">@Localizer["Email"]</th>
+                            <th class="text-end">@Localizer["Actions"]</th>
                         </tr>
                     </thead>
                     <tbody>
