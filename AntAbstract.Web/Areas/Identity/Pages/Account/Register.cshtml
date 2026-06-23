@@ -41,7 +41,7 @@
 
     var externalLoginInfoText = isEnglish
         ? $"You are continuing with {externalLoginProviderName}. Please complete the missing profile information to finish your registration."
-        : $"{externalLoginProviderName} ile devam ediyorsunuz. Kaydınızı tamamlamak için eksik profil bilgilerinizi doldurunuz.";
+        : $"{externalLoginProviderName} Localizer.GetString("ExternalLoginContinue").Value";
 
     var loginUrl = string.IsNullOrWhiteSpace(incomingReturnUrl)
         ? "/login"
@@ -55,7 +55,7 @@
 
     var congressRegisterBadgeText = isEnglish
         ? "Congress Pre-Registration"
-        : "Kongre Ön Kaydı";
+        : Localizer.GetString("CongressPreRegistration").Value;
 
     var congressRegisterInfoText = isEnglish
         ? "When you complete this form, your system account will be created, your pre-registration for this congress will be opened automatically, and you will be redirected to the abstract submission screen."
