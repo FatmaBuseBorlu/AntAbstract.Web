@@ -10,8 +10,8 @@
 
     string TierLabel(SponsorTier t) => t switch {
         SponsorTier.Platinum => "Platin",
-        SponsorTier.Gold     => "Altın",
-        SponsorTier.Silver   => "Gümüş",
+        SponsorTier.Gold     => Localizer.GetString("Gold").Value,
+        SponsorTier.Silver   => Localizer.GetString("Silver").Value,
         SponsorTier.Bronze   => "Bronz",
         SponsorTier.Partner  => "Partner",
         SponsorTier.Media    => "Medya",
@@ -72,7 +72,7 @@
                                 <th>Logo</th>
                                 <th>Ad</th>
                                 <th>Web Sitesi</th>
-                                <th style="width:70px;">Sıra</th>
+                                <th style="width:70px;">@Localizer["Order"]</th>
                                 <th style="width:80px;">Durum</th>
                                 <th style="width:100px;"></th>
                             </tr>
@@ -102,15 +102,15 @@
                                     </td>
                                     <td class="text-center text-muted">@s.SortOrder</td>
                                     <td>
-                                        @if (s.IsActive) { <span class="badge bg-success">Aktif</span> }
-                                        else             { <span class="badge bg-secondary">Pasif</span> }
+                                        @if (s.IsActive) { <span class="badge bg-success">@Localizer["Active"]</span> }
+                                        else             { <span class="badge bg-secondary">@Localizer["Passive"]</span> }
                                     </td>
                                     <td>
                                         <div class="d-flex gap-1">
                                             <a href="@Url($"/Admin/Sponsors/Edit/{s.Id}?conferenceId={confId}")"
                                                class="btn btn-sm btn-outline-secondary"><i class="fas fa-edit"></i></a>
                                             <form method="post" action="@Url($"/Admin/Sponsors/Delete/{s.Id}")"
-                                                  onsubmit="return confirm('Sponsoru silmek istediğinizden emin misiniz?')">
+                                                  onsubmit="return confirm("@Localizer["ConfirmDelete"]")">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                                     <i class="fas fa-trash"></i>

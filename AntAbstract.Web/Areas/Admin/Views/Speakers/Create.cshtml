@@ -31,23 +31,23 @@
                     <input type="text" name="Title" value="@Model.Title" class="form-control" maxlength="200" placeholder="Prof. Dr., Assoc. Prof., ..." />
                 </div>
                 <div class="col-md-8">
-                    <label class="form-label fw-semibold">Kurum / Üniversite</label>
+                    <label class="form-label fw-semibold">@Localizer["InstitutionUniversity"]</label>
                     <input type="text" name="Institution" value="@Model.Institution" class="form-control" maxlength="300" />
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold">Ülke</label>
+                    <label class="form-label fw-semibold">@Localizer["Country"]</label>
                     <input type="text" name="Country" value="@Model.Country" class="form-control" maxlength="100" />
                 </div>
                 <div class="col-12">
-                    <label class="form-label fw-semibold">Konuşma Başlığı</label>
-                    <input type="text" name="TalkTitle" value="@Model.TalkTitle" class="form-control" maxlength="300" placeholder="Keynote / Davetli Konuşma başlığı" />
+                    <label class="form-label fw-semibold">@Localizer["TalkTitle"]</label>
+                    <input type="text" name="TalkTitle" value="@Model.TalkTitle" class="form-control" maxlength="300" placeholder="@Localizer["TalkTitlePlaceholder"]" />
                 </div>
                 <div class="col-12">
-                    <label class="form-label fw-semibold">Kısa Biyografi</label>
-                    <textarea name="Bio" class="form-control" rows="5" maxlength="3000" placeholder="Konuşmacı hakkında kısa bilgi...">@Model.Bio</textarea>
+                    <label class="form-label fw-semibold">@Localizer["ShortBio"]</label>
+                    <textarea name="Bio" class="form-control" rows="5" maxlength="3000" placeholder="@Localizer["BioPlaceholder"]">@Model.Bio</textarea>
                 </div>
                 <div class="col-md-8">
-                    <label class="form-label fw-semibold">Fotoğraf URL</label>
+                    <label class="form-label fw-semibold">@Localizer["PhotoUrl"]</label>
                     <input type="url" name="PhotoUrl" value="@Model.PhotoUrl" class="form-control" maxlength="500" placeholder="https://..." />
                     <div class="form-text">Harici CDN veya yüklenmiş fotoğrafın URL'si</div>
                 </div>
@@ -56,14 +56,14 @@
                     <input type="url" name="WebsiteUrl" value="@Model.WebsiteUrl" class="form-control" maxlength="200" placeholder="https://..." />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label fw-semibold">Sıralama</label>
+                    <label class="form-label fw-semibold">@Localizer["SortOrder"]</label>
                     <input type="number" name="SortOrder" value="@Model.SortOrder" class="form-control" min="0" />
                 </div>
                 <div class="col-md-3 d-flex align-items-end pb-1">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="IsActive" value="true" id="chkActive" checked />
                         <input type="hidden" name="IsActive" value="false" />
-                        <label class="form-check-label fw-semibold" for="chkActive">Aktif</label>
+                        <label class="form-check-label fw-semibold" for="chkActive">@Localizer["Active"]</label>
                     </div>
                 </div>
             </div>
@@ -72,7 +72,7 @@
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save me-1"></i>Kaydet
                 </button>
-                <a href="/@slug/Admin/Speakers?conferenceId=@confId" class="btn btn-outline-secondary">İptal</a>
+                <a href="/@slug/Admin/Speakers?conferenceId=@confId" class="btn btn-outline-secondary">@Localizer["Cancel"]</a>
             </div>
         </form>
     </div>

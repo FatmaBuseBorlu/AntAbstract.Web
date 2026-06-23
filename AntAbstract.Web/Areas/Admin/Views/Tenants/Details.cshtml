@@ -1,11 +1,11 @@
-﻿@model AntAbstract.Web.Models.ViewModels.Admin.Tenants.TenantDetailViewModel
+@model AntAbstract.Web.Models.ViewModels.Admin.Tenants.TenantDetailViewModel
 
 @{
     var tenant = Model!;
 
     ViewData["Title"] = string.IsNullOrWhiteSpace(tenant.Name)
-        ? "Kurum Detayı"
-        : $"{tenant.Name} - Kurum Detayı";
+        ? Localizer.GetString("PageTitle").Value
+        : $"{tenant.Name} - {Localizer.GetString("PageTitle").Value}";
 
     Layout = "_LayoutDashboard";
 }
@@ -15,11 +15,11 @@
     {
         return role switch
         {
-            "SuperAdmin" => "Süper Admin",
+            "SuperAdmin" => Localizer.GetString("RoleSuperAdmin").Value,
             "Admin" => "Admin",
-            "Author" => "Yazar",
-            "Listener" => "Dinleyici",
-            "Referee" => "Hakem",
+            "Author" => Localizer.GetString("RoleAuthor").Value,
+            "Listener" => Localizer.GetString("RoleListener").Value,
+            "Referee" => Localizer.GetString("RoleReferee").Value,
             _ => role
         };
     }
@@ -49,7 +49,7 @@
                            asp-controller="Tenants"
                            asp-action="Index"
                            class="text-decoration-none">
-                            Kurumlar
+                            @Localizer["BreadcrumbInstitutions"]
                         </a>
                     </li>
 
@@ -66,7 +66,7 @@
 
                 <div>
                     <div class="text-uppercase text-muted fw-bold small mb-1">
-                        Global Sistem
+                        @Localizer["GlobalSystem"]
                     </div>
 
                     <h1 class="page-title mb-1">
@@ -74,7 +74,7 @@
                     </h1>
 
                     <p class="page-subtitle mb-0">
-                        Bu kurumun adminlerini, kullanıcılarını ve bağlı kongrelerini buradan takip edebilirsiniz.
+                        @Localizer["PageSubtitle"]
                     </p>
                 </div>
             </div>
@@ -86,7 +86,7 @@
                asp-action="Index"
                class="btn btn-light border shadow-sm rounded-pill px-4 py-2 fw-bold">
                 <i class="fas fa-arrow-left me-2"></i>
-                Kurum Listesine Dön
+                @Localizer["BackToListButton"]
             </a>
 
             <a asp-area="Admin"
@@ -95,7 +95,7 @@
                asp-route-id="@Model?.Id"
                class="btn btn-warning rounded-pill px-4 py-2 fw-bold text-white">
                 <i class="fas fa-pen-to-square me-2"></i>
-                Düzenle
+                @Localizer["EditButton"]
             </a>
         </div>
     </div>
@@ -110,11 +110,11 @@
 
                 <div>
                     <div class="summary-title">
-                        Kurum Durumu
+                        @Localizer["InstitutionStatus"]
                     </div>
 
                     <div class="summary-value">
-                        Aktif
+                        @Localizer["Active"]
                     </div>
                 </div>
             </div>
@@ -128,7 +128,7 @@
 
                 <div>
                     <div class="summary-title">
-                        Kurum Admini
+                        @Localizer["InstitutionAdmin"]
                     </div>
 
                     <div class="summary-value">
@@ -146,7 +146,7 @@
 
                 <div>
                     <div class="summary-title">
-                        Bağlı Kongre
+                        @Localizer["LinkedConference"]
                     </div>
 
                     <div class="summary-value">
@@ -164,7 +164,7 @@
 
                 <div>
                     <div class="summary-title">
-                        Bağlı Kullanıcı
+                        @Localizer["LinkedUser"]
                     </div>
 
                     <div class="summary-value">
@@ -187,11 +187,11 @@
 
                     <div>
                         <h5 class="modern-card-title mb-1">
-                            Kurum Bilgileri
+                            @Localizer["InfoCardTitle"]
                         </h5>
 
                         <p class="modern-card-text mb-0">
-                            Bu kurumun sistemde kayıtlı temel bilgileri.
+                            @Localizer["InfoCardSubtitle"]
                         </p>
                     </div>
                 </div>
@@ -204,7 +204,7 @@
 
                         <div class="info-box-content">
                             <div class="info-label">
-                                Kurum Adı
+                                @Localizer["NameLabel"]
                             </div>
 
                             <div class="info-value">
@@ -220,7 +220,7 @@
 
                         <div class="info-box-content">
                             <div class="info-label">
-                                URL Adresi
+                                @Localizer["UrlAddressLabel"]
                             </div>
 
                             <div class="info-value">
@@ -235,7 +235,7 @@
                                 else
                                 {
                                     <span class="text-muted">
-                                        Slug tanımlanmamış
+                                        @Localizer["SlugNotDefined"]
                                     </span>
                                 }
                             </div>
@@ -249,11 +249,11 @@
 
                         <div class="info-box-content">
                             <div class="info-label">
-                                Bilimsel Alan
+                                @Localizer["ScientificField"]
                             </div>
 
                             <div class="info-value">
-                                @(tenant.ScientificFieldName ?? "Tanımlanmamış")
+                                @(tenant.ScientificFieldName ?? Localizer.GetString("NotDefined").Value)
                             </div>
                         </div>
                     </div>
@@ -265,11 +265,11 @@
 
                         <div class="info-box-content">
                             <div class="info-label">
-                                Kongre Türü
+                                @Localizer["CongressType"]
                             </div>
 
                             <div class="info-value">
-                                @(tenant.CongressTypeName ?? "Tanımlanmamış")
+                                @(tenant.CongressTypeName ?? Localizer.GetString("NotDefined").Value)
                             </div>
                         </div>
                     </div>
@@ -281,7 +281,7 @@
 
                         <div class="info-box-content">
                             <div class="info-label">
-                                Sistem ID
+                                @Localizer["SystemIdLabel"]
                             </div>
 
                             <div class="info-value system-id">
@@ -302,11 +302,11 @@
 
                     <div>
                         <h5 class="modern-card-title mb-1">
-                            Hızlı İşlemler
+                            @Localizer["QuickActions"]
                         </h5>
 
                         <p class="modern-card-text mb-0">
-                            Bu kurumla ilgili en sık kullanılan işlemler.
+                            @Localizer["QuickActionsSubtitle"]
                         </p>
                     </div>
                 </div>
@@ -325,11 +325,11 @@
 
                         <div class="quick-action-content">
                             <div class="quick-action-title">
-                                Kurum Yöneticisi Ata
+                                @Localizer["AssignManagerAction"]
                             </div>
 
                             <div class="quick-action-desc">
-                                Mevcut kullanıcıyı admin yap veya yeni admin hesabı oluştur.
+                                @Localizer["AssignManagerDesc"]
                             </div>
                         </div>
 
@@ -348,11 +348,11 @@
 
                         <div class="quick-action-content">
                             <div class="quick-action-title">
-                                Kullanıcı / Hakem Bağla
+                                @Localizer["AssignUserAction"]
                             </div>
 
                             <div class="quick-action-desc">
-                                Mevcut kullanıcıyı kuruma bağla veya yeni kullanıcı oluşturup rol ver.
+                                @Localizer["AssignUserDesc"]
                             </div>
                         </div>
 
@@ -370,11 +370,11 @@
 
                         <div class="quick-action-content">
                             <div class="quick-action-title">
-                                Kurum Bilgilerini Düzenle
+                                @Localizer["EditInfoAction"]
                             </div>
 
                             <div class="quick-action-desc">
-                                Kurum adı, slug, logo ve temel bilgileri güncelle.
+                                @Localizer["EditInfoDesc"]
                             </div>
                         </div>
 
@@ -392,11 +392,11 @@
 
                             <div class="quick-action-content">
                                 <div class="quick-action-title">
-                                    Siteyi Görüntüle
+                                    @Localizer["ViewSiteAction"]
                                 </div>
 
                                 <div class="quick-action-desc">
-                                    Kuruma ait public siteyi yeni sekmede aç.
+                                    @Localizer["ViewSiteDesc"]
                                 </div>
                             </div>
 
@@ -414,11 +414,11 @@
 
                             <div class="quick-action-content">
                                 <div class="quick-action-title">
-                                    Kongre Akışına Git
+                                    @Localizer["GoToConferenceFlow"]
                                 </div>
 
                                 <div class="quick-action-desc">
-                                    Bu kuruma bağlı en güncel kongrenin operasyon ekranına geç.
+                                    @Localizer["GoToConferenceFlowDesc"]
                                 </div>
                             </div>
 
@@ -434,11 +434,11 @@
 
                             <div class="quick-action-content">
                                 <div class="quick-action-title">
-                                    Kongre Akışı Yok
+                                    @Localizer["NoConferenceFlow"]
                                 </div>
 
                                 <div class="quick-action-desc">
-                                    Bu kuruma bağlı kongre bulunmadığı için kongre akışı açılamaz.
+                                    @Localizer["NoConferenceFlowDesc"]
                                 </div>
                             </div>
                         </div>
@@ -461,11 +461,11 @@
 
                     <div>
                         <h5 class="modern-card-title mb-1">
-                            Kurum Adminleri
+                            @Localizer["InstitutionAdmins"]
                         </h5>
 
                         <p class="modern-card-text mb-0">
-                            Bu kurumu yönetebilen admin kullanıcılar.
+                            @Localizer["InstitutionAdminsSubtitle"]
                         </p>
                     </div>
                 </div>
@@ -504,11 +504,11 @@
                             <i class="fas fa-user-shield"></i>
 
                             <h6>
-                                Admin atanmamış
+                                @Localizer["NoAdminAssigned"]
                             </h6>
 
                             <p>
-                                Bu kuruma henüz admin kullanıcı atanmamış.
+                                @Localizer["NoAdminAssignedDesc"]
                             </p>
 
                             <a asp-area="Admin"
@@ -518,7 +518,7 @@
                                asp-route-returnUrl="@tenant.AssignManagerReturnUrl"
                                class="btn btn-sm btn-success rounded-pill px-3 fw-bold">
                                 <i class="fas fa-user-plus me-1"></i>
-                                Admin Ata
+                                @Localizer["AssignAdminButton"]
                             </a>
                         </div>
                     }
@@ -535,16 +535,16 @@
 
                     <div>
                         <h5 class="modern-card-title mb-1">
-                            Bağlı Kongreler
+                            @Localizer["LinkedConferences"]
                         </h5>
 
                         <p class="modern-card-text mb-0">
-                            Bu kuruma bağlı kongreler.
+                            @Localizer["LinkedConferencesSubtitle"]
                         </p>
                     </div>
 
                     <a href="/@tenant.Slug/Admin/Conferences/Create" class="btn btn-sm btn-primary">
-                        <i class="fas fa-plus me-1"></i> Kongre Ekle
+                        <i class="fas fa-plus me-1"></i> @Localizer["AddConferenceButton"]
                     </a>
                 </div>
 
@@ -588,15 +588,15 @@
                             <i class="fas fa-calendar-alt"></i>
 
                             <h6>
-                                Kongre yok
+                                @Localizer["NoConference"]
                             </h6>
 
                             <p>
-                                Bu kuruma bağlı kongre bulunmuyor.
+                                @Localizer["NoConferenceDesc"]
                             </p>
 
                             <a href="/@tenant.Slug/Admin/Conferences/Create" class="btn btn-sm btn-primary mt-2">
-                                <i class="fas fa-plus me-1"></i> İlk Kongreyi Ekle
+                                <i class="fas fa-plus me-1"></i> @Localizer["AddFirstConference"]
                             </a>
                         </div>
                     }
@@ -615,11 +615,11 @@
 
                 <div>
                     <h5 class="modern-card-title mb-1">
-                        Bağlı Kullanıcılar
+                        @Localizer["LinkedUsers"]
                     </h5>
 
                     <p class="modern-card-text mb-0">
-                        Bu kuruma bağlı tüm kullanıcılar ve rolleri.
+                        @Localizer["LinkedUsersSubtitle"]
                     </p>
                 </div>
             </div>
@@ -631,7 +631,7 @@
                asp-route-returnUrl="@tenant.AssignManagerReturnUrl"
                class="btn btn-primary rounded-pill px-4 fw-bold add-user-btn">
                 <i class="fas fa-user-plus me-2"></i>
-                Kullanıcı / Hakem Bağla
+                @Localizer["AssignUserAction"]
             </a>
         </div>
 
@@ -643,15 +643,15 @@
                         <thead class="bg-light">
                             <tr>
                                 <th class="ps-4 py-3 text-muted fw-bold small">
-                                    Kullanıcı
+                                    @Localizer["UserTableHeader"]
                                 </th>
 
                                 <th class="py-3 text-muted fw-bold small">
-                                    E-posta
+                                    @Localizer["EmailTableHeader"]
                                 </th>
 
                                 <th class="py-3 text-muted fw-bold small">
-                                    Roller
+                                    @Localizer["RolesTableHeader"]
                                 </th>
                             </tr>
                         </thead>
@@ -699,7 +699,7 @@
                                         else
                                         {
                                             <span class="text-muted small">
-                                                Rol yok
+                                                @Localizer["NoRole"]
                                             </span>
                                         }
                                     </td>
@@ -715,11 +715,11 @@
                     <i class="fas fa-users"></i>
 
                     <h6>
-                        Kullanıcı yok
+                        @Localizer["NoUser"]
                     </h6>
 
                     <p class="mb-3">
-                        Bu kuruma bağlı kullanıcı bulunmuyor.
+                        @Localizer["NoUserDesc"]
                     </p>
 
                     <a asp-area="Admin"
@@ -729,7 +729,7 @@
                        asp-route-returnUrl="@tenant.AssignManagerReturnUrl"
                        class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">
                         <i class="fas fa-user-plus me-1"></i>
-                        Kullanıcı / Hakem Bağla
+                        @Localizer["AssignUserAction"]
                     </a>
                 </div>
             }

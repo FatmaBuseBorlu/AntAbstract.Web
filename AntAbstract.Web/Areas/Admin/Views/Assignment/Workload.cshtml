@@ -88,7 +88,7 @@
     <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
         <div>
             <h4 class="fw-bold mb-1">
-                <i class="fas fa-balance-scale me-2 text-primary"></i>Hakem Yük Dengesi
+                <i class="fas fa-balance-scale me-2 text-primary"></i>
             </h4>
             <p class="text-muted small mb-0">@confTitle</p>
         </div>
@@ -122,7 +122,7 @@
                 </div>
                 <div>
                     <div class="wl-stat-value">@totalReviewed</div>
-                    <div class="wl-stat-label">Tamamlanan</div>
+                    <div class="wl-stat-label"></div>
                 </div>
             </div>
         </div>
@@ -157,12 +157,12 @@
                 <thead>
                     <tr>
                         <th style="min-width:200px;">Hakem</th>
-                        <th style="min-width:180px;">Yük</th>
-                        <th class="text-center" style="min-width:80px;">Atanan</th>
-                        <th class="text-center" style="min-width:90px;">Tamamlandı</th>
-                        <th class="text-center" style="min-width:80px;">Bekleyen</th>
-                        <th class="text-center" style="min-width:110px;">Teklifler</th>
-                        <th class="text-center" style="min-width:90px;">Durum</th>
+                        <th style="min-width:180px;">@Localizer["Load"]</th>
+                        <th class="text-center" style="min-width:80px;">@Localizer["Assigned"]</th>
+                        <th class="text-center" style="min-width:90px;">@Localizer["Completed"]</th>
+                        <th class="text-center" style="min-width:80px;">@Localizer["Pending"]</th>
+                        <th class="text-center" style="min-width:110px;">@Localizer["Bids"]</th>
+                        <th class="text-center" style="min-width:90px;">@Localizer["Status"]</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -171,7 +171,7 @@
                         <tr>
                             <td colspan="7" class="text-center text-muted py-5">
                                 <i class="fas fa-users-slash fa-2x mb-3 d-block"></i>
-                                Bu kongre için hakem bulunamadı.
+                                
                             </td>
                         </tr>
                     }
@@ -194,8 +194,8 @@
                                           : "wl-badge-ok";
 
                         string badgeText = total >= maxLoad ? "Dolu"
-                                         : total == 0       ? "Boşta"
-                                         : total >= maxLoad * 0.7 ? "Yüksek"
+                                         : total == 0       ? Localizer.GetString("Idle").Value
+                                         : total >= maxLoad * 0.7 ? Localizer.GetString("High").Value
                                          : "Normal";
 
                         <tr>
@@ -258,9 +258,9 @@
         </div>
         <div class="card-footer bg-white border-top px-4 py-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
             <span class="text-muted small">
-                Maksimum yük: <strong>@maxLoad bildiri/hakem</strong>
+                : <strong>@maxLoad </strong>
                 &nbsp;·&nbsp; Toplam atama: <strong>@totalAssigned</strong>
-                &nbsp;·&nbsp; Boşta: <strong>@idle hakem</strong>
+                &nbsp;·&nbsp; : <strong>@idle </strong>
             </span>
             <a href="@AssignUrl" class="btn btn-primary btn-sm">
                 <i class="fas fa-user-check me-1"></i> Atama Yap
@@ -270,8 +270,8 @@
 
     <p class="text-muted small mt-3">
         <i class="fas fa-info-circle me-1"></i>
-        <strong>Teklifler</strong>: hakemler bidding aşamasında işaretledi.
-        <span class="wl-bid-chip wl-chip-want ms-1"><i class="fas fa-thumbs-up"></i> İncelemek İstiyorum</span>
-        <span class="wl-bid-chip wl-chip-conflict ms-1"><i class="fas fa-ban"></i> Çıkar Çatışması</span>
+        <strong>@Localizer["Bids"]</strong>: @Localizer["BiddingDescription"]
+        <span class="wl-bid-chip wl-chip-want ms-1"><i class="fas fa-thumbs-up"></i> @Localizer["WantToReview"]</span>
+        <span class="wl-bid-chip wl-chip-conflict ms-1"><i class="fas fa-ban"></i> @Localizer["ConflictOfInterest"]</span>
     </p>
 </div>

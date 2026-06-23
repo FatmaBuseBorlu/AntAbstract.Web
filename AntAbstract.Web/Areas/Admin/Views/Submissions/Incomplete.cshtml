@@ -32,6 +32,14 @@
             ? $"/Admin/Submissions/Details/{id}?conferenceId={Model.ConferenceId}"
             : $"/{slug}/Admin/Submissions/Details/{id}?conferenceId={Model.ConferenceId}";
     }
+
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+        return string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
+    }
 }
 
 <style>
@@ -564,11 +572,10 @@
             </div>
 
             <div>
-                <div class="inc-hero-kicker">Bildiri Takibi</div>
-                <h3 class="inc-hero-title">Eksik Bildiriler</h3>
+                <div class="inc-hero-kicker">@L("SectionLabel", "Bildiri Takibi")</div>
+                <h3 class="inc-hero-title">@L("PageHeading", "Eksik Bildiriler")</h3>
                 <p class="inc-hero-lead">
-                    Başlatılmış ancak henüz tamamlanmamış bildirileri takip edin.
-                    Eksik alanları tespit edin, yazarlara hatırlatma yapın.
+                    @L("PageLead", "Başlatılmış ancak henüz tamamlanmamış bildirileri takip edin. Eksik alanları tespit edin, yazarlara hatırlatma yapın.")
                 </p>
             </div>
         </div>
@@ -576,7 +583,7 @@
         <div class="inc-hero-actions">
             <a href="@backUrl" class="inc-hero-btn">
                 <i class="fas fa-arrow-left"></i>
-                Kongre Akışına Dön
+                @L("BackToFlowButton", "Kongre Akışına Dön")
             </a>
         </div>
     </div>
@@ -589,7 +596,7 @@
                 </div>
             </div>
             <div class="inc-stat-val">@Model.TotalCount</div>
-            <div class="inc-stat-label">Toplam Eksik Bildiri</div>
+            <div class="inc-stat-label">@L("StatTotalIncomplete", "Toplam Eksik Bildiri")</div>
         </a>
 
         <a href="@FilterUrl("abstract")" class="inc-stat-card @(Model.MissingFilter == "abstract" ? "active" : "")">
@@ -629,13 +636,13 @@
             <i class="fas fa-list"></i> Tümü (@Model.TotalCount)
         </a>
         <a href="@FilterUrl("abstract")" class="inc-chip @(Model.MissingFilter == "abstract" ? "chip-active" : "")">
-            <i class="fas fa-align-left"></i> Özet Eksik (@Model.NoAbstractCount)
+            <i class="fas fa-align-left"></i>  (@Model.NoAbstractCount)
         </a>
         <a href="@FilterUrl("file")" class="inc-chip @(Model.MissingFilter == "file" ? "chip-active" : "")">
-            <i class="fas fa-file-xmark"></i> Dosya Eksik (@Model.NoFileCount)
+            <i class="fas fa-file-xmark"></i>  (@Model.NoFileCount)
         </a>
         <a href="@FilterUrl("keywords")" class="inc-chip @(Model.MissingFilter == "keywords" ? "chip-active" : "")">
-            <i class="fas fa-tags"></i> Anahtar Kelime Eksik (@Model.NoKeywordsCount)
+            <i class="fas fa-tags"></i>  (@Model.NoKeywordsCount)
         </a>
         <a href="@FilterUrl("stale")" class="inc-chip @(Model.MissingFilter == "stale" ? "chip-active" : "")">
             <i class="fas fa-clock"></i> 7+ Gün Hareketsiz (@Model.StaleCount)
@@ -650,12 +657,12 @@
                 </div>
                 <div>
                     <h5>Eksik Bildiri Listesi</h5>
-                    <p>Tamamlanmayı bekleyen bildirileri takip edin</p>
+                    <p></p>
                 </div>
             </div>
             <span class="inc-count-badge">
                 <i class="fas fa-layer-group"></i>
-                @Model.FilteredCount kayıt
+                @Model.FilteredCount 
             </span>
         </div>
 
@@ -665,8 +672,8 @@
                 <div class="empty-state-icon">
                     <i class="fas fa-circle-check"></i>
                 </div>
-                <h5>Harika! Eksik bildiri bulunamadı.</h5>
-                <p>Bu kriterlere göre tamamlanmayı bekleyen bildiri bulunmuyor.</p>
+                <h5>Harika! .</h5>
+                <p></p>
             </div>
         }
         else
@@ -676,9 +683,9 @@
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Başlık</th>
-                            <th>Yazar</th>
-                            <th>Eksik Alanlar</th>
+                            <th>@Localizer["Title"]</th>
+                            <th></th>
+                            <th>lar</th>
                             <th>Son Aktivite</th>
                             <th></th>
                         </tr>
@@ -695,10 +702,10 @@
                                 <td>
                                     <div class="submission-title-cell"
                                          title="@row.Title">
-                                        @(string.IsNullOrWhiteSpace(row.Title) ? "(Başlıksız)" : row.Title)
+                                        @(string.IsNullOrWhiteSpace(row.Title) ? "" : row.Title)
                                     </div>
                                     <div style="color:#94a3b8;font-size:0.74rem;margin-top:0.15rem;">
-                                        Oluşturma: @row.CreatedDate.ToString("dd.MM.yyyy")
+                                         @row.CreatedDate.ToString("dd.MM.yyyy")
                                     </div>
                                 </td>
                                 <td>
@@ -755,13 +762,13 @@
                                     }
                                     <span class="days-chip @daysClass">
                                         <i class="fas @daysIcon"></i>
-                                        @days gün önce
+                                        @days 
                                     </span>
                                 </td>
                                 <td>
                                     <a href="@DetailUrl(row.Id)" class="inc-action-btn">
                                         <i class="fas fa-arrow-up-right-from-square"></i>
-                                        İncele
+                                        @Localizer["Review"]
                                     </a>
                                 </td>
                             </tr>
@@ -774,7 +781,7 @@
             {
                 <div class="inc-pagination">
                     <span class="inc-page-info">
-                        @((Model.Page - 1) * Model.PageSize + 1)–@(Math.Min(Model.Page * Model.PageSize, Model.FilteredCount)) / @Model.FilteredCount kayıt
+                        @((Model.Page - 1) * Model.PageSize + 1)–@(Math.Min(Model.Page * Model.PageSize, Model.FilteredCount)) / @Model.FilteredCount 
                     </span>
                     <div class="inc-page-btns">
                         @if (Model.HasPrev)

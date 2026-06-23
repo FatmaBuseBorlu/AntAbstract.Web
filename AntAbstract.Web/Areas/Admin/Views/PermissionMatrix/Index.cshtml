@@ -9,47 +9,47 @@
     var modules = new[]
     {
         // Sistem yönetimi
-        new { Group = "Sistem", Name = "Tenant Yönetimi",       Desc = "Kurum oluşturma/düzenleme",       SA = "full", Ad = "-",      Au = "-",    Re = "-",    Li = "-"    },
-        new { Group = "Sistem", Name = "Kullanıcı Yönetimi",    Desc = "Tüm kullanıcılar, rol atama",     SA = "full", Ad = "-",      Au = "-",    Re = "-",    Li = "-"    },
-        new { Group = "Sistem", Name = "Tüm Kongreler",         Desc = "Platform geneli kongre listesi",  SA = "full", Ad = "-",      Au = "-",    Re = "-",    Li = "-"    },
-        new { Group = "Sistem", Name = "Sistem Raporları",      Desc = "Platform istatistikleri",         SA = "full", Ad = "-",      Au = "-",    Re = "-",    Li = "-"    },
-        new { Group = "Sistem", Name = "E-posta Şablonları",    Desc = "Sistem e-posta şablonları",       SA = "full", Ad = "-",      Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupSystem").Value, Name = Localizer.GetString("PM_TenantMgmt").Value,       Desc = Localizer.GetString("PM_TenantDesc").Value,       SA = "full", Ad = "-",      Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupSystem").Value, Name = Localizer.GetString("PM_UserMgmt").Value,    Desc = Localizer.GetString("PM_UserDesc").Value,     SA = "full", Ad = "-",      Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupSystem").Value, Name = Localizer.GetString("PM_AllConf").Value,         Desc = Localizer.GetString("PM_AllConfDesc").Value,  SA = "full", Ad = "-",      Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupSystem").Value, Name = Localizer.GetString("PM_Stats").Value,      Desc = Localizer.GetString("PM_StatsDesc").Value,         SA = "full", Ad = "-",      Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupSystem").Value, Name = Localizer.GetString("PM_EmailTemplates").Value,    Desc = Localizer.GetString("PM_EmailDesc").Value,       SA = "full", Ad = "-",      Au = "-",    Re = "-",    Li = "-"    },
         // Kongre yönetimi
-        new { Group = "Kongre", Name = "Kongre Yönetimi",       Desc = "Kongre CRUD, ayarlar",            SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
-        new { Group = "Kongre", Name = "Kongre Kurulum Sihirbazı", Desc = "Yeni kongre oluşturma",       SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
-        new { Group = "Kongre", Name = "Kayıt Tipleri",         Desc = "Kayıt tipi yönetimi",            SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
-        new { Group = "Kongre", Name = "Oturum Yönetimi",       Desc = "Program oturumları",             SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
-        new { Group = "Kongre", Name = "Davetli Konuşmacılar",  Desc = "Speaker CRUD",                   SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
-        new { Group = "Kongre", Name = "Sponsorlar",             Desc = "Sponsor CRUD",                   SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
-        new { Group = "Kongre", Name = "Website / Vitrin",      Desc = "Kongre sayfası içerikleri",      SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupConference").Value, Name = Localizer.GetString("PM_ConferenceMgmt").Value,       Desc = Localizer.GetString("PM_ConferenceMgmtDesc").Value,            SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupConference").Value, Name = Localizer.GetString("PM_Wizard").Value, Desc = Localizer.GetString("PM_WizardDesc").Value,       SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupConference").Value, Name = Localizer.GetString("PM_RegTypes").Value,         Desc = Localizer.GetString("PM_RegTypesDesc").Value,            SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupConference").Value, Name = Localizer.GetString("PM_Sessions").Value,       Desc = Localizer.GetString("PM_SessionsDesc").Value,             SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupConference").Value, Name = Localizer.GetString("PM_Speakers").Value,  Desc = "Speaker CRUD",                   SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupConference").Value, Name = Localizer.GetString("PM_Sponsors").Value,             Desc = "Sponsor CRUD",                   SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupConference").Value, Name = Localizer.GetString("PM_Website").Value,      Desc = Localizer.GetString("PM_WebsiteDesc").Value,      SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
         // Bildiri süreci
-        new { Group = "Bildiri", Name = "Bildiri Yönetimi (Admin)", Desc = "Tüm bildirileri görüntüle",  SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
-        new { Group = "Bildiri", Name = "Bildiri Gönderimi",    Desc = "Kendi bildirisini gönder",       SA = "full", Ad = "full",   Au = "own",  Re = "-",    Li = "-"    },
-        new { Group = "Bildiri", Name = "Hakem Atama",          Desc = "Hakeme bildiri ata",             SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
-        new { Group = "Bildiri", Name = "Hakem Değerlendirme",  Desc = "Atanan bildirileri değerlendir", SA = "full", Ad = "read",   Au = "-",    Re = "own",  Li = "-"    },
-        new { Group = "Bildiri", Name = "Karar Yönetimi",       Desc = "Kabul/red kararı",               SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
-        new { Group = "Bildiri", Name = "Bildiri Kitabı",       Desc = "PDF yükleme/yayınlama",          SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupSubmission").Value, Name = Localizer.GetString("PM_SubmissionsAdmin").Value, Desc = Localizer.GetString("PM_AllSubDesc").Value,  SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupSubmission").Value, Name = Localizer.GetString("PM_Submit").Value,    Desc = Localizer.GetString("PM_SubmitDesc").Value,       SA = "full", Ad = "full",   Au = "own",  Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupSubmission").Value, Name = Localizer.GetString("PM_RefAssign").Value,          Desc = Localizer.GetString("PM_RefAssignDesc").Value,             SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupSubmission").Value, Name = Localizer.GetString("PM_Review").Value,  Desc = Localizer.GetString("PM_ReviewDesc").Value, SA = "full", Ad = "read",   Au = "-",    Re = "own",  Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupSubmission").Value, Name = Localizer.GetString("PM_Decision").Value,       Desc = Localizer.GetString("PM_DecisionDesc").Value,               SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupSubmission").Value, Name = Localizer.GetString("PM_ProceedingBook").Value,       Desc = Localizer.GetString("PM_BookDesc").Value,          SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
         // Kayıt & ödeme
-        new { Group = "Kayıt", Name = "Kayıt & Ödeme (Admin)", Desc = "Tüm kayıtları yönet",            SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
-        new { Group = "Kayıt", Name = "Kongre Kaydı (Kullanıcı)", Desc = "Kendisi kayıt yaptır/öde",   SA = "full", Ad = "full",   Au = "own",  Re = "own",  Li = "own"  },
-        new { Group = "Kayıt", Name = "Konaklama Rezervasyonu", Desc = "Otel rezervasyonu yap",         SA = "full", Ad = "full",   Au = "own",  Re = "own",  Li = "own"  },
-        new { Group = "Kayıt", Name = "Finans Raporları",       Desc = "Ödeme & gelir özeti",            SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
-        // Sertifika & Raporlar
-        new { Group = "Diğer", Name = "Sertifika",              Desc = "Sertifika oluşturma/indirme",    SA = "full", Ad = "full",   Au = "own",  Re = "own",  Li = "own"  },
-        new { Group = "Diğer", Name = "Raporlar (Admin)",       Desc = "Kongre raporları",               SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
-        new { Group = "Diğer", Name = "Anket",                  Desc = "Memnuniyet anketi",              SA = "full", Ad = "read",   Au = "own",  Re = "-",    Li = "-"    },
-        new { Group = "Diğer", Name = "Bildirimler",            Desc = "Sistem bildirimleri",            SA = "full", Ad = "full",   Au = "own",  Re = "own",  Li = "own"  },
-        new { Group = "Diğer", Name = "Denetim Günlüğü",       Desc = "Audit log",                      SA = "full", Ad = "read",   Au = "-",    Re = "-",    Li = "-"    },
-        new { Group = "Diğer", Name = "Profil",                 Desc = "Kendi profilini düzenle",        SA = "full", Ad = "full",   Au = "own",  Re = "own",  Li = "own"  },
+        new { Group = Localizer.GetString("PM_GroupRegistration").Value, Name = Localizer.GetString("PM_RegPaymentAdmin").Value, Desc = Localizer.GetString("PM_RegPaymentAdminDesc").Value,            SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupRegistration").Value, Name = Localizer.GetString("PM_RegUser").Value, Desc = Localizer.GetString("PM_RegUserDesc").Value,   SA = "full", Ad = "full",   Au = "own",  Re = "own",  Li = "own"  },
+        new { Group = Localizer.GetString("PM_GroupRegistration").Value, Name = Localizer.GetString("PM_Accommodation").Value, Desc = Localizer.GetString("PM_AccommodationDesc").Value,         SA = "full", Ad = "full",   Au = "own",  Re = "own",  Li = "own"  },
+        new { Group = Localizer.GetString("PM_GroupRegistration").Value, Name = Localizer.GetString("PM_Finance").Value,       Desc = Localizer.GetString("PM_FinanceDesc").Value,            SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        //  & 
+        new { Group = Localizer.GetString("PM_GroupOther").Value, Name = Localizer.GetString("PM_Certificate").Value,              Desc = Localizer.GetString("PM_CertificateDesc").Value,    SA = "full", Ad = "full",   Au = "own",  Re = "own",  Li = "own"  },
+        new { Group = Localizer.GetString("PM_GroupOther").Value, Name = Localizer.GetString("PM_ReportsAdmin").Value,       Desc = Localizer.GetString("PM_ReportsAdminDesc").Value,               SA = "full", Ad = "full",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupOther").Value, Name = Localizer.GetString("PM_Survey").Value,                  Desc = Localizer.GetString("PM_SurveyDesc").Value,              SA = "full", Ad = "read",   Au = "own",  Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupOther").Value, Name = Localizer.GetString("PM_Notifications").Value,            Desc = Localizer.GetString("PM_NotificationsDesc").Value,            SA = "full", Ad = "full",   Au = "own",  Re = "own",  Li = "own"  },
+        new { Group = Localizer.GetString("PM_GroupOther").Value, Name = Localizer.GetString("PM_ActivityLog").Value,       Desc = "Audit log",                      SA = "full", Ad = "read",   Au = "-",    Re = "-",    Li = "-"    },
+        new { Group = Localizer.GetString("PM_GroupOther").Value, Name = Localizer.GetString("PM_Profile").Value,                 Desc = Localizer.GetString("PM_ProfileDesc").Value,        SA = "full", Ad = "full",   Au = "own",  Re = "own",  Li = "own"  },
     };
 
     var groups = modules.Select(m => m.Group).Distinct().ToList();
 
     string Badge(string val) => val switch
     {
-        "full" => "<span class='pm-badge pm-full'>Tam Erişim</span>",
-        "read" => "<span class='pm-badge pm-read'>Görüntüle</span>",
-        "own"  => "<span class='pm-badge pm-own'>Kendisi</span>",
+        "full" => $"<span class='pm-badge pm-full'>{Localizer.GetString("PM_FullAccess").Value}</span>",
+        "read" => $"<span class='pm-badge pm-read'>{Localizer.GetString("PM_ReadOnly").Value}</span>",
+        "own"  => $"<span class='pm-badge pm-own'>{Localizer.GetString("PM_OwnOnly").Value}</span>",
         _      => "<span class='pm-badge pm-none'>—</span>"
     };
 }
@@ -90,23 +90,23 @@
 
     <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
         <div>
-            <h4 class="fw-bold mb-1"><i class="fas fa-shield-alt me-2 text-primary"></i>Yetki Matrisi</h4>
-            <p class="text-muted small mb-0">Rollerin modül bazında erişim hakları. Değişiklik için kaynak kodu güncellenmesi gerekir.</p>
+            <h4 class="fw-bold mb-1"><i class="fas fa-shield-alt me-2 text-primary"></i>@Localizer["PermissionMatrix"]</h4>
+            <p class="text-muted small mb-0">@Localizer["PermissionMatrixDesc"]</p>
         </div>
         @if (isSuperAdmin)
         {
             <a href="/@slug/Admin/Users" class="btn btn-outline-primary btn-sm">
-                <i class="fas fa-users me-1"></i> Kullanıcı Rol Yönetimi
+                <i class="fas fa-users me-1"></i> @Localizer["UserRoleManagement"]
             </a>
         }
     </div>
 
     <!-- Efsane -->
     <div class="pm-legend mb-4">
-        <span class="pm-badge pm-full">Tam Erişim</span> — Görüntüle + Oluştur + Düzenle + Sil
-        <span class="pm-badge pm-read">Görüntüle</span> — Yalnızca okuma
-        <span class="pm-badge pm-own">Kendisi</span> — Yalnızca kendi kayıtları
-        <span class="pm-badge pm-none">—</span> — Erişim yok
+        <span class="pm-badge pm-full">@Localizer["PM_FullAccess"]</span> — @Localizer["LegendFull"]
+        <span class="pm-badge pm-read">@Localizer["PM_ReadOnly"]</span> — @Localizer["LegendRead"]
+        <span class="pm-badge pm-own">@Localizer["PM_OwnOnly"]</span> — @Localizer["LegendOwn"]
+        <span class="pm-badge pm-none">—</span> — @Localizer["LegendNone"]
     </div>
 
     <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
@@ -114,7 +114,7 @@
             <table class="table table-bordered table-hover mb-0 pm-table">
                 <thead>
                     <tr class="table-dark">
-                        <th style="min-width:220px;">Modül</th>
+                        <th style="min-width:220px;">@Localizer["Module"]</th>
                         <th class="pm-role-col"><i class="fas fa-crown me-1 text-warning"></i>SuperAdmin</th>
                         <th class="pm-role-col"><i class="fas fa-user-shield me-1 text-primary"></i>Admin</th>
                         <th class="pm-role-col"><i class="fas fa-pen me-1 text-info"></i>Author</th>
@@ -150,7 +150,7 @@
 
     <p class="text-muted small mt-3">
         <i class="fas fa-info-circle me-1"></i>
-        Bu matris kod tabanlı yetkileri yansıtır. Rol atama için
-        <a href="/@slug/Admin/Users">Kullanıcı Yönetimi</a> sayfasını kullanın.
+        @Localizer["MatrixFootnote"]
+        <a href="/@slug/Admin/Users">@Localizer["UserManagement"]</a>
     </p>
 </div>

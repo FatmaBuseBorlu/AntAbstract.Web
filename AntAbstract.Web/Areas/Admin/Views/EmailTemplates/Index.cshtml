@@ -63,7 +63,7 @@
                                 <i class="fas fa-eye"></i>
                             </a>
                             <form asp-action="TestSend" asp-route-id="@t.Id" method="post" class="d-inline me-1"
-                                  onsubmit="return confirm('Test e-postası kendi adresinize gönderilsin mi?')">
+                                  onsubmit="return confirm("@Localizer["ConfirmTestEmail"]")">
                                 @Html.AntiForgeryToken()
                                 <button type="submit" class="btn btn-sm btn-outline-warning" title="Test Gönder">
                                     <i class="fas fa-paper-plane"></i>

@@ -41,12 +41,12 @@
         ? rawReturnUrl
         : Url.Action("Index", "Tenants", new { area = "Admin" });
 
-    var backButtonText = "Geri Dön";
+    var backButtonText = Localizer.GetString("GoBack").Value;
     var backButtonIcon = "fas fa-arrow-left";
 
     if (normalizedReturnUrl.Contains("conferenceflow"))
     {
-        backButtonText = "Kongre Akışına Dön";
+        backButtonText = Localizer.GetString("BackToConferenceFlow").Value;
         backButtonIcon = "fas fa-stream";
 
         backUrl = conferenceId != Guid.Empty
@@ -59,12 +59,12 @@
     }
     else if (normalizedReturnUrl.Contains("/tenants/details"))
     {
-        backButtonText = "Kurum Detayına Dön";
+        backButtonText = Localizer.GetString("BackToTenantDetails").Value;
         backButtonIcon = "fas fa-building";
     }
     else if (normalizedReturnUrl.Contains("/tenants"))
     {
-        backButtonText = "Kurum Listesine Dön";
+        backButtonText = Localizer.GetString("BackToTenantList").Value;
         backButtonIcon = "fas fa-list";
     }
 }
@@ -339,11 +339,11 @@
         <div>
             <h2 class="tenant-manager-title">
                 <i class="fas fa-user-shield text-success me-2"></i>
-                Kurum Yöneticisi Ata
+                @Localizer["AssignManagerTitle"]
             </h2>
 
             <p class="tenant-manager-lead">
-                <strong>@Model.TenantName</strong> kurumu için admin hesabı oluşturabilir veya mevcut bir kullanıcıyı admin yapabilirsiniz.
+                <strong>@Model.TenantName</strong> 
             </p>
         </div>
 
@@ -384,11 +384,11 @@
 
                                 <span>
                                     <span class="assign-mode-title">
-                                        Mevcut Kullanıcıyı Ata
+                                        
                                     </span>
 
                                     <span class="assign-mode-desc">
-                                        Sistemde kayıtlı bir kullanıcıyı bu kuruma admin yap.
+                                        
                                     </span>
                                 </span>
                             </label>
@@ -407,11 +407,11 @@
 
                                 <span>
                                     <span class="assign-mode-title">
-                                        Yeni Admin Oluştur
+                                        
                                     </span>
 
                                     <span class="assign-mode-desc">
-                                        Yeni kullanıcı oluştur ve bu kuruma admin olarak bağla.
+                                         
                                     </span>
                                 </span>
                             </label>
@@ -421,19 +421,19 @@
                     <div id="existingUserSection" class="manager-form-section">
                         <div class="mb-3">
                             <label asp-for="ExistingUserId" class="manager-label">
-                                Admin Yapılacak Kullanıcı
+                                
                             </label>
 
                             <select asp-for="ExistingUserId"
                                     asp-items="Model.AvailableUsers"
                                     class="form-select manager-form-control">
-                                <option value="">Kullanıcı seçiniz...</option>
+                                <option value="">...</option>
                             </select>
 
                             <span asp-validation-for="ExistingUserId"></span>
 
                             <div class="manager-help">
-                                Listede Süper Admin kullanıcıları gösterilmez. Seçilen kullanıcı bu kuruma bağlanır ve Admin rolü alır.
+                                @Localizer["UserWillBecomeAdmin"]
                             </div>
                         </div>
                     </div>
@@ -442,24 +442,24 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label asp-for="FirstName" class="manager-label">
-                                    Yönetici Adı
+                                    
                                 </label>
 
                                 <input asp-for="FirstName"
                                        class="form-control manager-form-control"
-                                       placeholder="Örn: Ahmet" />
+                                       placeholder="@Localizer["FirstNameExample"]" />
 
                                 <span asp-validation-for="FirstName"></span>
                             </div>
 
                             <div class="col-md-6">
                                 <label asp-for="LastName" class="manager-label">
-                                    Soyadı
+                                    
                                 </label>
 
                                 <input asp-for="LastName"
                                        class="form-control manager-form-control"
-                                       placeholder="Örn: Yılmaz" />
+                                       placeholder="@Localizer["LastNameExample"]" />
 
                                 <span asp-validation-for="LastName"></span>
                             </div>
@@ -471,24 +471,24 @@
 
                                 <input asp-for="Email"
                                        class="form-control manager-form-control"
-                                       placeholder="Örn: yonetici@kurum.edu.tr" />
+                                       placeholder="@Localizer["EmailExample"]" />
 
                                 <span asp-validation-for="Email"></span>
 
                                 <div class="manager-help">
-                                    Yönetici sisteme bu e-posta adresi ile giriş yapacaktır.
+                                    
                                 </div>
                             </div>
 
                             <div class="col-12">
                                 <label asp-for="Password" class="manager-label">
-                                    Giriş Şifresi
+                                    @Localizer["LoginPassword"]
                                 </label>
 
                                 <input asp-for="Password"
                                        type="password"
                                        class="form-control manager-form-control"
-                                       placeholder="En az 6 karakterli şifre belirleyin" />
+                                       placeholder="@Localizer["PasswordPlaceholder"]" />
 
                                 <span asp-validation-for="Password"></span>
                             </div>
@@ -512,32 +512,32 @@
                 </div>
 
                 <h4 class="manager-info-title">
-                    Yetkilendirme Hakkında
+                    
                 </h4>
 
                 <p class="mb-0">
-                    Buradan atanan kullanıcı otomatik olarak <strong>Admin</strong> rolüne sahip olur.
+                    @Localizer["WillHaveAdminRole"]
                 </p>
 
                 <div class="manager-info-list">
                     <div class="manager-info-item success">
                         <i class="fas fa-check-circle"></i>
-                        <span>Kendi kurumuna ait tüm kongreleri görebilir.</span>
+                        <span></span>
                     </div>
 
                     <div class="manager-info-item success">
                         <i class="fas fa-check-circle"></i>
-                        <span>Kendi kurumunun bildirilerini, hakemlerini, kayıtlarını ve programını yönetebilir.</span>
+                        <span></span>
                     </div>
 
                     <div class="manager-info-item danger">
                         <i class="fas fa-times-circle"></i>
-                        <span>Başka kurumlara ait verilere erişemez.</span>
+                        <span></span>
                     </div>
 
                     <div class="manager-info-item danger">
                         <i class="fas fa-times-circle"></i>
-                        <span>Yeni kurum tanımlayamaz veya kurum silemez.</span>
+                        <span></span>
                     </div>
                 </div>
             </div>

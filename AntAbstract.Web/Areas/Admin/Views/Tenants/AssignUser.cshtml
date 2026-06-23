@@ -63,12 +63,12 @@
         ? rawReturnUrl
         : Url.Action("Details", "Tenants", new { area = "Admin", id = Model.TenantId });
 
-    var backButtonText = "Geri Dön";
+    var backButtonText = Localizer.GetString("GoBack").Value;
     var backButtonIcon = "fas fa-arrow-left";
 
     if (normalizedReturnUrl.Contains("conferenceflow"))
     {
-        backButtonText = "Kongre Akışına Dön";
+        backButtonText = Localizer.GetString("BackToConferenceFlow").Value;
         backButtonIcon = "fas fa-stream";
 
         backUrl = conferenceId != Guid.Empty
@@ -81,17 +81,17 @@
     }
     else if (normalizedReturnUrl.Contains("/tenants/details"))
     {
-        backButtonText = "Kurum Detayına Dön";
+        backButtonText = Localizer.GetString("BackToTenantDetails").Value;
         backButtonIcon = "fas fa-building";
     }
     else if (normalizedReturnUrl.Contains("/tenants"))
     {
-        backButtonText = "Kurum Listesine Dön";
+        backButtonText = Localizer.GetString("BackToTenantList").Value;
         backButtonIcon = "fas fa-list";
     }
     else if (normalizedReturnUrl.Contains("/referee"))
     {
-        backButtonText = "Hakem Havuzuna Dön";
+        backButtonText = Localizer.GetString("BackToRefereePool").Value;
         backButtonIcon = "fas fa-user-tie";
     }
 
@@ -390,11 +390,11 @@
         <div>
             <h2 class="tenant-user-title">
                 <i class="fas fa-user-plus text-primary me-2"></i>
-                Kullanıcıyı Kuruma Bağla
+                @Localizer["PageHeading"]
             </h2>
 
             <p class="tenant-user-lead">
-                <strong>@Model.TenantName</strong> kurumu için mevcut bir kullanıcıyı bağlayabilir veya yeni kullanıcı oluşturup rol verebilirsiniz.
+                <strong>@Model.TenantName</strong> @Localizer["PageLeadSuffix"]
             </p>
         </div>
 
@@ -423,19 +423,19 @@
 
                     <div class="mb-4">
                         <label asp-for="SelectedRole" class="tenant-user-label">
-                            Verilecek Rol
+                            @Localizer["RoleToAssign"]
                         </label>
 
                         <select asp-for="SelectedRole"
                                 asp-items="Model.AvailableRoles"
                                 class="form-select tenant-user-form-control">
-                            <option value="">Rol seçiniz...</option>
+                            <option value="">@Localizer["SelectRole"]</option>
                         </select>
 
                         <span asp-validation-for="SelectedRole"></span>
 
                         <div class="tenant-user-help">
-                            Hakem atama ekranında görünmesi için kullanıcıya <strong>Hakem</strong> rolü verilmeli ve kullanıcı bu kuruma bağlanmalıdır.
+                            @Html.Raw(Localizer["RoleHelpText"].Value)
                         </div>
                     </div>
 
@@ -453,11 +453,11 @@
 
                                 <span>
                                     <span class="assign-mode-title">
-                                        Mevcut Kullanıcıyı Bağla
+                                        @Localizer["AssignExistingUser"]
                                     </span>
 
                                     <span class="assign-mode-desc">
-                                        Sistemde kayıtlı bir kullanıcıyı bu kuruma bağla ve seçilen rolü ver.
+                                        @Localizer["AssignExistingUserDesc"]
                                     </span>
                                 </span>
                             </label>
@@ -476,11 +476,11 @@
 
                                 <span>
                                     <span class="assign-mode-title">
-                                        Yeni Kullanıcı Oluştur
+                                        @Localizer["CreateNewUser"]
                                     </span>
 
                                     <span class="assign-mode-desc">
-                                        Yeni hesap oluştur, bu kuruma bağla ve seçilen rolü ver.
+                                        @Localizer["CreateNewUserDesc"]
                                     </span>
                                 </span>
                             </label>
@@ -490,19 +490,19 @@
                     <div id="existingUserSection" class="@existingSectionClass">
                         <div class="mb-3">
                             <label asp-for="ExistingUserId" class="tenant-user-label">
-                                Kuruma Bağlanacak Kullanıcı
+                                @Localizer["ExistingUser"]
                             </label>
 
                             <select asp-for="ExistingUserId"
                                     asp-items="Model.AvailableUsers"
                                     class="form-select tenant-user-form-control">
-                                <option value="">Kullanıcı seçiniz...</option>
+                                <option value="">@Localizer["SelectUser"]</option>
                             </select>
 
                             <span asp-validation-for="ExistingUserId"></span>
 
                             <div class="tenant-user-help">
-                                Listede Süper Admin kullanıcıları gösterilmez. Seçilen kullanıcı bu kuruma bağlanır ve seçilen rolü alır.
+                                @Localizer["ExistingUserHelp"]
                             </div>
                         </div>
                     </div>
@@ -511,53 +511,53 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label asp-for="FirstName" class="tenant-user-label">
-                                    Ad
+                                    @Localizer["FirstName"]
                                 </label>
 
                                 <input asp-for="FirstName"
                                        class="form-control tenant-user-form-control"
-                                       placeholder="Örn: Ayşe" />
+                                       placeholder="@Localizer["FirstNameExample"]" />
 
                                 <span asp-validation-for="FirstName"></span>
                             </div>
 
                             <div class="col-md-6">
                                 <label asp-for="LastName" class="tenant-user-label">
-                                    Soyad
+                                    @Localizer["LastName"]
                                 </label>
 
                                 <input asp-for="LastName"
                                        class="form-control tenant-user-form-control"
-                                       placeholder="Örn: Yılmaz" />
+                                       placeholder="@Localizer["LastNameExample"]" />
 
                                 <span asp-validation-for="LastName"></span>
                             </div>
 
                             <div class="col-12">
                                 <label asp-for="Email" class="tenant-user-label">
-                                    E-posta Adresi
+                                    @Localizer["EmailAddress"]
                                 </label>
 
                                 <input asp-for="Email"
                                        class="form-control tenant-user-form-control"
-                                       placeholder="Örn: kullanici@kurum.edu.tr" />
+                                       placeholder="@Localizer["EmailExample"]" />
 
                                 <span asp-validation-for="Email"></span>
 
                                 <div class="tenant-user-help">
-                                    Kullanıcı sisteme bu e-posta adresi ile giriş yapacaktır.
+                                    @Localizer["EmailHelp"]
                                 </div>
                             </div>
 
                             <div class="col-12">
                                 <label asp-for="Password" class="tenant-user-label">
-                                    Giriş Şifresi
+                                    @Localizer["LoginPassword"]
                                 </label>
 
                                 <input asp-for="Password"
                                        type="password"
                                        class="form-control tenant-user-form-control"
-                                       placeholder="En az 6 karakterli şifre belirleyin" />
+                                       placeholder="@Localizer["PasswordPlaceholder"]" />
 
                                 <span asp-validation-for="Password"></span>
                             </div>
@@ -568,7 +568,7 @@
 
                     <button type="submit" class="tenant-user-submit-btn">
                         <i class="fas fa-user-check"></i>
-                        Kaydet ve Kuruma Bağla
+                        @Localizer["SaveAndAssign"]
                     </button>
                 </form>
             </div>
@@ -581,37 +581,37 @@
                 </div>
 
                 <h4 class="tenant-user-info-title">
-                    Rol Bağlama Hakkında
+                    @Localizer["AboutRoleAssignment"]
                 </h4>
 
                 <p class="mb-0">
-                    Bu ekran, bir kullanıcıyı kuruma bağlamak ve gerekli rolü vermek için kullanılır.
+                    @Localizer["AboutRoleAssignmentDesc"]
                 </p>
 
                 <div class="tenant-user-info-list">
                     <div class="tenant-user-info-item success">
                         <i class="fas fa-check-circle"></i>
-                        <span><strong>Hakem</strong> rolü verilen kullanıcı, aynı kuruma bağlı kongrelerde hakem atama ekranında görünür.</span>
+                        <span>@Localizer["RefereeRoleInfo"]</span>
                     </div>
 
                     <div class="tenant-user-info-item success">
                         <i class="fas fa-check-circle"></i>
-                        <span><strong>Yazar</strong> rolü verilen kullanıcı, bildiri gönderme süreçlerinde kullanılabilir.</span>
+                        <span>@Localizer["AuthorRoleInfo"]</span>
                     </div>
 
                     <div class="tenant-user-info-item success">
                         <i class="fas fa-check-circle"></i>
-                        <span><strong>Dinleyici</strong> rolü verilen kullanıcı, katılımcı/dinleyici işlemlerinde kullanılabilir.</span>
+                        <span>@Localizer["ListenerRoleInfo"]</span>
                     </div>
 
                     <div class="tenant-user-info-item warning">
                         <i class="fas fa-triangle-exclamation"></i>
-                        <span>Bir kullanıcı başka kuruma bağlıysa, bu işlem kullanıcının kurum bağlantısını yeni kurumla değiştirir.</span>
+                        <span>@Localizer["TenantChangeWarning"]</span>
                     </div>
 
                     <div class="tenant-user-info-item danger">
                         <i class="fas fa-times-circle"></i>
-                        <span>Süper Admin kullanıcıları bu ekrandan kuruma bağlanamaz.</span>
+                        <span>@Localizer["SuperAdminWarning"]</span>
                     </div>
                 </div>
             </div>

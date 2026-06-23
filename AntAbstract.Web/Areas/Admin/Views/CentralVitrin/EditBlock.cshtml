@@ -11,7 +11,7 @@
     var aboutContent = ViewBag.AboutContent as AboutBlockContent;
     var conferenceName = ViewBag.ConferenceName as string
                          ?? Model.Conference?.Title
-                         ?? "Kongre";
+                         ?? Localizer.GetString("ConferenceFallback");
 
     var conferenceSlug = ViewBag.ConferenceSlug as string ?? "";
 
@@ -29,12 +29,12 @@
 
         return value switch
         {
-            "Hero" => "Ana Karşılama",
-            "CallForPapers" => "Kongreye Çağrı",
-            "Topics" => "Kongre Konuları",
-            "Committees" => "Bilim Kurulu",
-            "About" => "Hakkında / İçerik",
-            "Fees" => "Katılım Ücreti",
+            "Hero" => Localizer.GetString("BlockType_Hero"),
+            "CallForPapers" => Localizer.GetString("BlockType_CallForPapers"),
+            "Topics" => Localizer.GetString("BlockType_Topics"),
+            "Committees" => Localizer.GetString("BlockType_Committees"),
+            "About" => Localizer.GetString("BlockType_About"),
+            "Fees" => Localizer.GetString("BlockType_Fees"),
             _ => value
         };
     }
@@ -531,20 +531,20 @@
 
             <div>
                 <div class="edit-block-section-label">
-                    İçerik Yönetimi
+                    @Localizer["ContentManagement"]
                 </div>
 
                 <h2 class="edit-block-title">
-                    Vitrin Bloğu Düzenle
+                    @Localizer["PageTitle"]
                 </h2>
 
                 <p class="edit-block-description">
-                    <strong>@Model.Title</strong> bloğunun başlığını, açıklamasını ve yayında olup olmadığını buradan düzenleyebilirsiniz.
+                    @Html.Raw(string.Format(Localizer.GetString("HeroDescription"), $"<strong>{Model.Title}</strong>"))
                 </p>
 
                 <div class="selected-conference-chip">
                     <i class="fas fa-calendar-check"></i>
-                    <span>Seçili Kongre:</span>
+                    <span>@Localizer["SelectedConference"]</span>
                     <strong>@conferenceName</strong>
 
                     @if (!string.IsNullOrWhiteSpace(conferenceSlug))
@@ -562,7 +562,7 @@
                asp-route-conferenceId="@Model.ConferenceId"
                class="btn edit-light-btn">
                 <i class="fas fa-arrow-left"></i>
-                Blok Listesine Dön
+                @Localizer["BackToBlockList"]
             </a>
 
             @if (!string.IsNullOrWhiteSpace(conferenceSlug))
@@ -571,14 +571,14 @@
                    target="_blank"
                    class="btn edit-outline-btn">
                     <i class="fas fa-arrow-up-right-from-square"></i>
-                    Siteyi Gör
+                    @Localizer["ViewSite"]
                 </a>
             }
 
             <a href="@flowUrl"
                class="btn edit-outline-btn">
                 <i class="fas fa-stream"></i>
-                Kongre Akışına Git
+                @Localizer["GoToConferenceFlow"]
             </a>
         </div>
     </div>
@@ -604,11 +604,11 @@
 
                     <div>
                         <div class="edit-card-title">
-                            İçerik Bilgileri
+                            @Localizer["ContentInfo"]
                         </div>
 
                         <p class="edit-card-subtitle">
-                            Bu bilgiler kongre vitrini içinde ilgili bölümde gösterilir.
+                            @Localizer["ContentInfoSubtitle"]
                         </p>
                     </div>
                 </div>
@@ -618,13 +618,13 @@
                     <div class="row g-3 mb-4">
                         <div class="col-md-7">
                             <label asp-for="Title" class="edit-label">
-                                Menüde Görünen Başlık
+                                @Localizer["MenuTitle"]
                                 <span class="text-danger">*</span>
                             </label>
 
                             <input asp-for="Title"
                                    class="form-control edit-form-control"
-                                   placeholder="Örn: Ana Karşılama, Kongre Konuları"
+                                   placeholder="@Localizer["TitlePlaceholder"]"
                                    required />
 
                             <span asp-validation-for="Title" class="text-danger small fw-bold"></span>
@@ -632,7 +632,7 @@
 
                         <div class="col-md-5">
                             <label class="edit-label">
-                                Blok Türü
+                                @Localizer["BlockType"]
                             </label>
 
                             <input type="text"
@@ -641,7 +641,7 @@
                                    readonly />
 
                             <div class="form-text fw-semibold">
-                                Blok türü sistem tarafından belirlenir.
+                                @Localizer["BlockTypeSystemNote"]
                             </div>
                         </div>
                     </div>
@@ -656,17 +656,17 @@
 
                                 <div>
                                     <div class="edit-card-title">
-                                        Detaylı İçerik
+                                        @Localizer["DetailedContent"]
                                     </div>
 
                                     <p class="edit-card-subtitle">
-                                        Bu alan vitrin sayfasındaki açıklama/içerik bölümünde gösterilir.
+                                        @Localizer["DetailedContentSubtitle"]
                                     </p>
                                 </div>
                             </div>
 
                             <label class="edit-label">
-                                İçerik Metni
+                                @Localizer["ContentText"]
                             </label>
 
                             <textarea id="summernote"
@@ -677,13 +677,13 @@
                     {
                         <div class="mb-4">
                             <label asp-for="Subtitle" class="edit-label">
-                                Kısa Açıklama
+                                @Localizer["ShortDescription"]
                             </label>
 
                             <textarea asp-for="Subtitle"
                                       class="form-control edit-form-control"
                                       rows="7"
-                                      placeholder="Bu blok için kısa açıklama yazabilirsiniz."></textarea>
+                                      placeholder="@Localizer["DescriptionPlaceholder"]"></textarea>
 
                             <span asp-validation-for="Subtitle" class="text-danger small fw-bold"></span>
                         </div>
@@ -704,11 +704,11 @@
                                        class="fw-bold text-dark mb-1"
                                        for="activeSwitch"
                                        style="cursor:pointer;">
-                                    Sitede Yayında Göster
+                                    @Localizer["ShowOnSite"]
                                 </label>
 
                                 <div class="text-muted small fw-semibold">
-                                    Kapalı olursa bu blok vitrin sayfasında görünmez.
+                                    
                                 </div>
                             </div>
                         </div>
@@ -716,7 +716,7 @@
                         <button type="submit"
                                 class="save-btn">
                             <i class="fas fa-save"></i>
-                            Değişiklikleri Kaydet
+                            @Localizer["SaveChanges"]
                         </button>
                     </div>
 
@@ -731,11 +731,11 @@
 
                     <div>
                         <div class="edit-card-title">
-                            Blok Özeti
+                            @Localizer["BlockSummary"]
                         </div>
 
                         <p class="edit-card-subtitle">
-                            Bu bölümün sistemdeki genel bilgileri.
+                            
                         </p>
                     </div>
                 </div>
@@ -745,7 +745,7 @@
 
                         <div class="side-info-item">
                             <div class="side-info-label">
-                                Blok Türü
+                                @Localizer["BlockType"]
                             </div>
 
                             <div class="side-info-value">
@@ -766,7 +766,7 @@
                                 {
                                     <span class="status-badge status-active">
                                         <i class="fas fa-check-circle"></i>
-                                        Yayında
+                                        @Localizer["Published"]
                                     </span>
                                 }
                                 else
@@ -781,7 +781,7 @@
 
                         <div class="side-info-item">
                             <div class="side-info-label">
-                                Sıra
+ 
                             </div>
 
                             <div class="side-info-value">
@@ -827,7 +827,7 @@
         <script>
             $(document).ready(function () {
                 $('#summernote').summernote({
-                    placeholder: 'Vitrin sayfasında gösterilecek detaylı içeriği buraya yazın...',
+                    placeholder: '',
                     tabsize: 2,
                     height: 300,
                     toolbar: [

@@ -23,11 +23,11 @@
         <h4 class="fw-bold mb-0">@(string.IsNullOrWhiteSpace(fullName) ? user?.Email : fullName)</h4>
         @if (isLockedOut)
         {
-            <span class="badge bg-danger">Askıya Alındı</span>
+            <span class="badge bg-danger"></span>
         }
         else if (user?.EmailConfirmed == true)
         {
-            <span class="badge bg-success">Aktif</span>
+            <span class="badge bg-success">@Localizer["Active"]</span>
         }
         else
         {
@@ -54,19 +54,19 @@
         <div class="col-lg-7">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-bottom py-3">
-                    <h6 class="fw-bold mb-0"><i class="fas fa-user me-2 text-primary"></i>Hesap Bilgileri</h6>
+                    <h6 class="fw-bold mb-0"><i class="fas fa-user me-2 text-primary"></i></h6>
                 </div>
                 <div class="card-body">
                     <table class="table table-sm table-borderless mb-0">
-                        <tr><th class="text-muted" style="width:40%">Ad Soyad</th><td>@(string.IsNullOrWhiteSpace(fullName) ? "—" : fullName)</td></tr>
-                        <tr><th class="text-muted">E-posta</th><td>@user?.Email</td></tr>
-                        <tr><th class="text-muted">Üniversite</th><td>@(string.IsNullOrWhiteSpace(user?.University) ? "—" : user.University)</td></tr>
-                        <tr><th class="text-muted">Kurum</th><td>@(string.IsNullOrWhiteSpace(user?.Institution) ? "—" : user.Institution)</td></tr>
-                        <tr><th class="text-muted">Şehir</th><td>@(string.IsNullOrWhiteSpace(user?.City) ? "—" : user.City)</td></tr>
-                        <tr><th class="text-muted">E-posta Doğrulandı</th><td>@(user?.EmailConfirmed == true ? "✅ Evet" : "❌ Hayır")</td></tr>
-                        <tr><th class="text-muted">Durum</th><td>@(isLockedOut ? "🔒 Askıya Alındı" : "✅ Aktif")</td></tr>
+                        <tr><th class="text-muted" style="width:40%">@Localizer["FullName"]</th><td>@(string.IsNullOrWhiteSpace(fullName) ? "—" : fullName)</td></tr>
+                        <tr><th class="text-muted">@Localizer["Email"]</th><td>@user?.Email</td></tr>
+                        <tr><th class="text-muted"></th><td>@(string.IsNullOrWhiteSpace(user?.University) ? "—" : user.University)</td></tr>
+                        <tr><th class="text-muted">@Localizer["Institution"]</th><td>@(string.IsNullOrWhiteSpace(user?.Institution) ? "—" : user.Institution)</td></tr>
+                        <tr><th class="text-muted">@Localizer["City"]</th><td>@(string.IsNullOrWhiteSpace(user?.City) ? "—" : user.City)</td></tr>
+                        <tr><th class="text-muted"></th><td>@(user?.EmailConfirmed == true ? "✅ " : "❌ ")</td></tr>
+                        <tr><th class="text-muted">Durum</th><td>@(isLockedOut ? "🔒 " : "✅ Aktif")</td></tr>
                         <tr>
-                            <th class="text-muted">Roller</th>
+                            <th class="text-muted">@Localizer["Roles"]</th>
                             <td>
                                 @if (roles.Any())
                                 {
@@ -112,7 +112,7 @@
             <!-- İşlemler -->
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom py-3">
-                    <h6 class="fw-bold mb-0"><i class="fas fa-tools me-2 text-warning"></i>İşlemler</h6>
+                    <h6 class="fw-bold mb-0"><i class="fas fa-tools me-2 text-warning"></i>@Localizer["Actions"]</h6>
                 </div>
                 <div class="card-body d-flex flex-column gap-2">
 
@@ -148,11 +148,11 @@
                     else
                     {
                         <form asp-action="Lock" asp-route-slug="@slug" method="post"
-                              onsubmit="return confirm('Bu kullanıcıyı askıya almak istediğinizden emin misiniz?');">
+                              onsubmit="return confirm('');">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="userId" value="@user?.Id" />
                             <button type="submit" class="btn btn-outline-warning btn-sm w-100">
-                                <i class="fas fa-ban me-1"></i> Hesabı Askıya Al
+                                <i class="fas fa-ban me-1"></i> Hesabı 
                             </button>
                         </form>
                     }
@@ -182,7 +182,7 @@
                 <div class="modal-body">
                     <div class="alert alert-warning border-0 small mb-3">
                         <i class="fas fa-exclamation-triangle me-1"></i>
-                        Belirlediğiniz yeni şifre kullanıcıya bildirilmelidir.
+                        
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Yeni Şifre</label>
@@ -191,7 +191,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@Localizer["Cancel"]</button>
                     <button type="submit" class="btn btn-danger">
                         <i class="fas fa-key me-1"></i> Şifreyi Sıfırla
                     </button>

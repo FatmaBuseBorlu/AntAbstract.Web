@@ -104,7 +104,7 @@
                         @Localizer["EmailBody"] <span class="text-danger">*</span>
                     </label>
                     <textarea name="body" id="emailBody" class="form-control" rows="10" required
-                              placeholder="&lt;p&gt;Sayın katılımcı,&lt;/p&gt;&#10;&lt;p&gt;...&lt;/p&gt;"></textarea>
+                              placeholder=""></textarea>
                     <div class="form-text">
                         <i class="fas fa-info-circle me-1"></i>
                         @Localizer["HtmlSupportNote"]
@@ -133,7 +133,7 @@
 
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary px-4"
-                            onclick="return confirm('E-posta gönderilsin mi?');">
+                            onclick="return confirm('');">
                         <i class="fas fa-paper-plane me-2"></i>@Localizer["Send"]
                     </button>
                     <button type="reset" class="btn btn-outline-secondary">@Localizer["Clear"]</button>
@@ -183,7 +183,7 @@
                                     @if (b.Status == BroadcastStatus.Pending)
                                     {
                                         <form action="@cancelUrl" method="post" class="d-inline"
-                                              onsubmit="return confirm('Bu zamanlanmış gönderim iptal edilsin mi?');">
+                                              onsubmit="return confirm('');">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="broadcastId" value="@b.Id" />
                                             <button type="submit" class="btn btn-sm btn-outline-danger" title="@Localizer["Cancel"]">
@@ -209,12 +209,12 @@ document.getElementById('previewBtn').addEventListener('click', async function (
     const result       = document.getElementById('previewResult');
 
     if (!conferenceId) {
-        result.textContent = 'Önce bir kongre seçin.';
+        result.textContent = '';
         result.className = 'ms-2 text-warning small';
         return;
     }
 
-    result.textContent = 'Yükleniyor...';
+    result.textContent = '';
     result.className = 'ms-2 text-muted small';
 
     try {
@@ -228,10 +228,10 @@ document.getElementById('previewBtn').addEventListener('click', async function (
             body: `conferenceId=${conferenceId}&group=${group}`
         });
         const data = await resp.json();
-        result.textContent = `${data.count} alıcı bulundu.`;
+        result.textContent = `${data.count} `;
         result.className = `ms-2 ${data.count > 0 ? 'text-success' : 'text-warning'} small fw-semibold`;
     } catch (e) {
-        result.textContent = 'Sorgu başarısız.';
+        result.textContent = '';
         result.className = 'ms-2 text-danger small';
     }
 });

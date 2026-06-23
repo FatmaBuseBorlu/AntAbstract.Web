@@ -14,16 +14,16 @@
     {
         return blockType switch
         {
-            ConferencePageBlockType.Hero => "Ana Karşılama",
-            ConferencePageBlockType.About => "Hakkında / İçerik",
-            ConferencePageBlockType.Topics => "Kongre Konuları",
-            ConferencePageBlockType.ImportantDates => "Önemli Tarihler",
-            ConferencePageBlockType.Fees => "Katılım Ücreti",
+            ConferencePageBlockType.Hero => Localizer.GetString("TypeHero").Value,
+            ConferencePageBlockType.About => Localizer.GetString("TypeAbout").Value,
+            ConferencePageBlockType.Topics => Localizer.GetString("TypeTopics").Value,
+            ConferencePageBlockType.ImportantDates => Localizer.GetString("TypeDates").Value,
+            ConferencePageBlockType.Fees => Localizer.GetString("TypeFees").Value,
             ConferencePageBlockType.Committees => "Bilim Kurulu",
             ConferencePageBlockType.Sponsors => "Sponsorlar",
-            ConferencePageBlockType.Contact => "İletişim",
-            ConferencePageBlockType.FAQ => "Sık Sorulan Sorular",
-            ConferencePageBlockType.CallForPapers => "Kongreye Çağrı",
+            ConferencePageBlockType.Contact => Localizer.GetString("TypeContact").Value,
+            ConferencePageBlockType.FAQ => Localizer.GetString("TypeFAQ").Value,
+            ConferencePageBlockType.CallForPapers => Localizer.GetString("TypeCallForPapers").Value,
             _ => blockType.ToString()
         };
     }
@@ -34,21 +34,21 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
             <div class="text-uppercase text-muted fw-bold small mb-1">
-                Site Bölüm Şablonları
+                @Localizer["SiteSectionTemplates"]
             </div>
 
             <h2 class="fw-bold mb-1 text-dark">
-                Şablon Düzenle
+                
             </h2>
 
             <p class="text-muted mb-0">
-                Bu bölüm şablonunun adını, açıklamasını, sırasını ve durumunu düzenleyebilirsiniz.
+                 
             </p>
         </div>
 
         <a href="/Admin/PageBlocks" class="btn btn-light border rounded-pill px-4">
             <i class="fas fa-arrow-left me-2 text-secondary"></i>
-            Şablon Listesine Dön
+            @Localizer["BackToTemplateList"]
         </a>
     </div>
 
@@ -66,7 +66,7 @@
                     </h4>
 
                     <p class="mb-0 text-white-50">
-                        Bu kayıt sistem genelindeki hazır site bölüm şablonudur.
+                        
                     </p>
                 </div>
             </div>
@@ -88,7 +88,7 @@
 
                     <div class="col-md-3">
                         <label asp-for="Order" class="form-label fw-bold">
-                            Sıra
+                            @Localizer["Order"]
                         </label>
 
                         <input asp-for="Order" class="form-control form-control-modern" />
@@ -98,7 +98,7 @@
 
                     <div class="col-md-9">
                         <label asp-for="BlockType" class="form-label fw-bold">
-                            Blok Tipi
+                            @Localizer["BlockType"]
                         </label>
 
                         <select asp-for="BlockType" class="form-select form-control-modern">
@@ -122,43 +122,43 @@
                         <span asp-validation-for="BlockType" class="text-danger small"></span>
 
                         <div class="form-text">
-                            Aynı blok tipi için sistemde yalnızca bir şablon olabilir.
+                            
                         </div>
                     </div>
 
                     <div class="col-md-6">
                         <label asp-for="NameTr" class="form-label fw-bold">
-                            Türkçe Ad
+                            @Localizer["Turkish"] Ad
                         </label>
 
                         <input asp-for="NameTr"
                                class="form-control form-control-modern"
-                               placeholder="Örn: Sponsorlar" />
+                               placeholder="@Localizer["NameExample"]" />
 
                         <span asp-validation-for="NameTr" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
                         <label asp-for="NameEn" class="form-label fw-bold">
-                            İngilizce Ad
+                            @Localizer["English"] Ad
                         </label>
 
                         <input asp-for="NameEn"
                                class="form-control form-control-modern"
-                               placeholder="Örn: Sponsors" />
+                               placeholder="" />
 
                         <span asp-validation-for="NameEn" class="text-danger small"></span>
                     </div>
 
                     <div class="col-12">
                         <label asp-for="Description" class="form-label fw-bold">
-                            Açıklama
+                            @Localizer["Description"]
                         </label>
 
                         <textarea asp-for="Description"
                                   class="form-control form-control-modern"
                                   rows="4"
-                                  placeholder="Bu şablonun ne işe yaradığını yazabilirsiniz."></textarea>
+                                  placeholder=""></textarea>
 
                         <span asp-validation-for="Description" class="text-danger small"></span>
                     </div>
@@ -167,11 +167,11 @@
                         <div class="switch-card">
                             <div>
                                 <div class="fw-bold text-dark">
-                                    Varsayılan Şablon
+                                    
                                 </div>
 
                                 <div class="text-muted small">
-                                    Yeni kongrelerde temel şablon olarak kullanılabilir.
+                                    
                                 </div>
                             </div>
 
@@ -191,7 +191,7 @@
                                 </div>
 
                                 <div class="text-muted small">
-                                    Pasif olursa sistemde kullanılabilir şablonlar içinde görünmez.
+                                    
                                 </div>
                             </div>
 
@@ -207,13 +207,12 @@
 
                 <div class="d-flex justify-content-end gap-2 mt-4 pt-4 border-top">
                     <a href="/Admin/PageBlocks" class="btn btn-light border rounded-pill px-4">
-                        Vazgeç
+                        @Localizer["Cancel"]
                     </a>
 
                     <button type="submit" class="btn btn-primary rounded-pill px-5">
                         <i class="fas fa-save me-2"></i>
-                        Güncelle
-                    </button>
+                        @Localizer["Update"]                    </button>
                 </div>
 
             </form>

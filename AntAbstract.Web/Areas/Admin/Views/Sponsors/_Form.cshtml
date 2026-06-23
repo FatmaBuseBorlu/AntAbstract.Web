@@ -37,8 +37,8 @@
                         {
                             var label = tier switch {
                                 SponsorTier.Platinum => "Platin",
-                                SponsorTier.Gold     => "Altın",
-                                SponsorTier.Silver   => "Gümüş",
+                                SponsorTier.Gold     => Localizer.GetString("Gold").Value,
+                                SponsorTier.Silver   => Localizer.GetString("Silver").Value,
                                 SponsorTier.Bronze   => "Bronz",
                                 SponsorTier.Partner  => "Partner",
                                 SponsorTier.Media    => "Medya",
@@ -63,7 +63,7 @@
                     <input type="url" name="WebsiteUrl" value="@Model.WebsiteUrl" class="form-control" maxlength="200" placeholder="https://..." />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label fw-semibold">Sıralama</label>
+                    <label class="form-label fw-semibold">@Localizer["SortOrder"]</label>
                     <input type="number" name="SortOrder" value="@Model.SortOrder" class="form-control" min="0" />
                 </div>
                 <div class="col-md-4 d-flex align-items-end pb-1">

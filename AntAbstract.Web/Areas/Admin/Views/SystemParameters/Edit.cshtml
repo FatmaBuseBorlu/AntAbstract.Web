@@ -1,45 +1,25 @@
 ﻿@model AntAbstract.Domain.Entities.SystemParameter
 @using Microsoft.AspNetCore.Mvc.Rendering
-@using System.Globalization
-
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "_LayoutDashboard";
 
-    var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
-
     var groups = new List<SelectListItem>
     {
-        new SelectListItem
-        {
-            Text = isEnglish ? "University / Institution" : "Üniversite / Kurum",
-            Value = "University"
-        },
-        new SelectListItem
-        {
-            Text = isEnglish ? "Faculty" : "Fakülte",
-            Value = "Faculty"
-        },
-        new SelectListItem
-        {
-            Text = isEnglish ? "Department / Specialty" : "Bölüm / Uzmanlık",
-            Value = "Department"
-        },
-        new SelectListItem
-        {
-            Text = isEnglish ? "Academic Title" : "Akademik Ünvan",
-            Value = "Title"
-        }
+        new SelectListItem { Text = Localizer.GetString("Group_University"), Value = "University" },
+        new SelectListItem { Text = Localizer.GetString("Group_Faculty"), Value = "Faculty" },
+        new SelectListItem { Text = Localizer.GetString("Group_Department"), Value = "Department" },
+        new SelectListItem { Text = Localizer.GetString("Group_Title"), Value = "Title" }
     };
 }
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h3 class="fw-bold text-dark mb-0">
-            Sistem Parametresini Düzenle
+            @Localizer["PageTitle"]
         </h3>
 
         <p class="text-muted small mb-0">
-            Türkçe ve İngilizce karşılıkları buradan güncelleyebilirsiniz.
+            @Localizer["PageLead"]
         </p>
     </div>
 
@@ -47,7 +27,7 @@
        asp-route-group="@Model.Group"
        class="btn btn-light shadow-sm rounded-pill fw-bold px-4">
         <i class="fas fa-arrow-left me-2"></i>
-        Listeye Dön
+        @Localizer["BackToListButton"]
     </a>
 </div>
 
@@ -71,7 +51,7 @@
                     <div class="row g-4 mb-4">
                         <div class="col-md-6">
                             <label asp-for="Group" class="form-label fw-bold text-muted small">
-                                Grup
+                                @Localizer["GroupLabel"]
                             </label>
 
                             <select asp-for="Group"
@@ -84,18 +64,18 @@
 
                         <div class="col-md-6">
                             <label asp-for="Order" class="form-label fw-bold text-muted small">
-                                Sıra
+                                @Localizer["OrderLabel"]
                             </label>
 
                             <input asp-for="Order"
                                    type="number"
                                    class="form-control bg-light border-0 py-2"
-                                   placeholder="Örn: 1" />
+                                   placeholder="@Localizer["OrderPlaceholder"]" />
 
                             <span asp-validation-for="Order" class="text-danger small"></span>
 
                             <small class="text-muted" style="font-size:0.75rem;">
-                                Listede hangi sırada görüneceğini belirler.
+                                @Localizer["OrderHelpText"]
                             </small>
                         </div>
                     </div>
@@ -107,13 +87,13 @@
 
                         <input asp-for="Name"
                                class="form-control bg-light border-0 py-3 fw-bold fs-5"
-                               placeholder="Örn: Ankara Üniversitesi"
+                               placeholder="@Localizer["NameTrPlaceholder"]"
                                required />
 
                         <span asp-validation-for="Name" class="text-danger small"></span>
 
                         <small class="text-muted" style="font-size:0.75rem;">
-                            Türkçe ekranda görünecek resmi ad.
+                            @Localizer["NameTrHelpText"]
                         </small>
                     </div>
 
@@ -124,12 +104,12 @@
 
                         <input asp-for="NameEn"
                                class="form-control bg-light border-0 py-3 fw-bold fs-5"
-                               placeholder="Example: Ankara University" />
+                               placeholder="@Localizer["NameEnPlaceholder"]" />
 
                         <span asp-validation-for="NameEn" class="text-danger small"></span>
 
                         <small class="text-muted" style="font-size:0.75rem;">
-                            İngilizce ekranda gösterilecek karşılık. Boş bırakılırsa Türkçe ad gösterilir.
+                            @Localizer["NameEnHelpText"]
                         </small>
                     </div>
 
@@ -144,12 +124,12 @@
                             <label class="form-check-label ms-2 fs-6 text-dark"
                                    for="IsActiveSwitch"
                                    style="cursor: pointer;">
-                                Aktif
+                                @Localizer["IsActiveLabel"]
                             </label>
                         </div>
 
                         <small class="text-muted" style="font-size:0.75rem;">
-                            Pasif yapılırsa kayıt kullanıcı tarafındaki listelerde görünmez.
+                            @Localizer["IsActiveHelpText"]
                         </small>
                     </div>
 
@@ -159,13 +139,13 @@
                         <a asp-action="Index"
                            asp-route-group="@Model.Group"
                            class="btn btn-light rounded-pill px-4 py-2 fw-bold">
-                            Vazgeç
+                            @Localizer["CancelButton"]
                         </a>
 
                         <button type="submit"
                                 class="btn btn-primary rounded-pill px-5 py-2 fw-bold shadow-sm">
                             <i class="fas fa-save me-2"></i>
-                            Güncelle
+                            @Localizer["UpdateButton"]
                         </button>
                     </div>
                 </form>
@@ -180,32 +160,32 @@
             <div class="card-body p-4">
                 <h6 class="fw-bold text-primary mb-3">
                     <i class="fas fa-language me-2"></i>
-                    Çeviri Mantığı
+                    @Localizer["TranslationLogicTitle"]
                 </h6>
 
                 <p class="text-dark opacity-75 small mb-3">
-                    Bu alanlar kayıt formundaki üniversite, fakülte, bölüm ve ünvan listelerinde kullanılır.
+                    @Localizer["TranslationLogicText"]
                 </p>
 
                 <ul class="list-unstyled text-dark opacity-75 small mb-0">
                     <li class="mb-2">
                         <i class="fas fa-check text-success me-2"></i>
-                        <strong>Name TR:</strong> Türkçe dilinde gösterilir.
+                        <strong>Name TR:</strong> @Localizer["NameTrShownText"]
                     </li>
 
                     <li class="mb-2">
                         <i class="fas fa-check text-success me-2"></i>
-                        <strong>Name EN:</strong> İngilizce dilinde gösterilir.
+                        <strong>Name EN:</strong> @Localizer["NameEnShownText"]
                     </li>
 
                     <li class="mb-2">
                         <i class="fas fa-check text-success me-2"></i>
-                        <strong>Veritabanı kaydı:</strong> Kullanıcı seçtiğinde değer olarak Name TR saklanır.
+                        <strong>Veritabanı kaydı:</strong> @Localizer["DatabaseRecordText"]
                     </li>
 
                     <li>
                         <i class="fas fa-check text-success me-2"></i>
-                        <strong>Boş Name EN:</strong> İngilizce ekranda da Türkçe ad gösterilir.
+                        <strong>Boş Name EN:</strong> @Localizer["EmptyNameEnText"]
                     </li>
                 </ul>
             </div>

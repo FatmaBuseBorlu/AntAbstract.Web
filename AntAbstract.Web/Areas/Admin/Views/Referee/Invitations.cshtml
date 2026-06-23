@@ -62,13 +62,13 @@
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th>E-posta</th>
-                                <th>Ad Soyad</th>
-                                <th>Kurum</th>
+                                <th>@Localizer["Email"]</th>
+                                <th>@Localizer["FullName"]</th>
+                                <th>@Localizer["Institution"]</th>
                                 <th>Durum</th>
-                                <th>Gönderilme</th>
-                                <th>Son Geçerlilik</th>
-                                <th>Yanıt</th>
+                                <th>@Localizer["SentDate"]</th>
+                                <th>@Localizer["Expiry"]</th>
+                                <th>@Localizer["Response"]</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -77,9 +77,9 @@
                                 var (badgeClass, badgeText) = inv.Status switch
                                 {
                                     AntAbstract.Domain.Entities.InvitationStatus.Pending  => ("bg-warning text-dark", "Bekliyor"),
-                                    AntAbstract.Domain.Entities.InvitationStatus.Accepted => ("bg-success",          "Kabul Edildi"),
-                                    AntAbstract.Domain.Entities.InvitationStatus.Declined => ("bg-danger",           "Reddedildi"),
-                                    AntAbstract.Domain.Entities.InvitationStatus.Expired  => ("bg-secondary",        "Süresi Doldu"),
+                                    AntAbstract.Domain.Entities.InvitationStatus.Accepted => ("bg-success",          Localizer.GetString("StatusAccepted").Value),
+                                    AntAbstract.Domain.Entities.InvitationStatus.Declined => ("bg-danger",           Localizer.GetString("StatusRejected").Value),
+                                    AntAbstract.Domain.Entities.InvitationStatus.Expired  => ("bg-secondary",        Localizer.GetString("StatusExpired").Value),
                                     _ => ("bg-secondary", "Bilinmiyor")
                                 };
                                 <tr>

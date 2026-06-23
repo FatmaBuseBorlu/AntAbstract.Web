@@ -46,7 +46,7 @@
 
     var publishedDateText = Model.ProceedingBookPublishedDate.HasValue
         ? Model.ProceedingBookPublishedDate.Value.ToString("dd MMMM yyyy HH:mm")
-        : "Henüz yayınlanmadı";
+        : Localizer.GetString("NotPublishedYet");
 
     var proceedingYear = Model.ProceedingBookPublishedDate?.Year ?? DateTime.Now.Year;
 }
@@ -1289,21 +1289,21 @@
 
             <div>
                 <div class="admin-hero-kicker">
-                    Kongre Operasyonları
+                    @Localizer["ConferenceOperations"]
                 </div>
 
                 <h3 class="admin-hero-title">
-                    Bildiri Kitabı Yönetimi
+                    @Localizer["PageTitle"]
                 </h3>
 
                 <p class="admin-hero-lead">
-                    Kongreye ait bildiri kitabı PDF dosyasını yükleyebilir, otomatik oluşturabilir, yayına alabilir veya yayından kaldırabilirsiniz.
+                    @Localizer["PageLead"]
                 </p>
 
                 <div class="admin-chip-row">
                     <span class="admin-chip admin-chip-primary">
                         <i class="fas fa-calendar-check"></i>
-                        Seçili Kongre
+                        @Localizer["SelectedConference"]
                     </span>
 
                     @if (!string.IsNullOrWhiteSpace(slug))
@@ -1316,7 +1316,7 @@
 
                     <span class="admin-chip">
                         <i class="fas @fileStatusIconClass"></i>
-                        @(hasFile ? "PDF yüklü" : "PDF yok")
+                        @(hasFile ? Localizer["PdfUploaded"].Value : Localizer["NoPdf"].Value)
                     </span>
                 </div>
             </div>
@@ -1325,12 +1325,12 @@
         <div class="admin-hero-actions">
             <a href="@backUrl" class="admin-hero-btn admin-hero-btn-light">
                 <i class="fas fa-arrow-left"></i>
-                Kongre Akışına Dön
+                @Localizer["BackToFlowButton"]
             </a>
 
             <a href="@changeConferenceUrl" class="admin-hero-btn admin-hero-btn-light">
                 <i class="fas fa-exchange-alt"></i>
-                Kongre Değiştir
+                @Localizer["ChangeConferenceButton"]
             </a>
 
             @if (!string.IsNullOrWhiteSpace(slug))
@@ -1339,7 +1339,7 @@
                    target="_blank"
                    class="admin-hero-btn admin-hero-btn-primary">
                     <i class="fas fa-arrow-up-right-from-square"></i>
-                    Siteyi Gör
+                    @Localizer["ViewSiteButton"]
                 </a>
             }
         </div>
@@ -1355,11 +1355,11 @@
 
                     <div>
                         <h5 class="admin-card-title">
-                            PDF ve Yayın Ayarları
+                            @Localizer["PdfAndPublishSettings"]
                         </h5>
 
                         <p class="admin-card-subtitle">
-                            Bildiri kitabı dosyasını yükleyin, otomatik oluşturun ve yazar panelinde görünürlüğünü yönetin.
+                            @Localizer["PdfAndPublishSettingsLead"]
                         </p>
                     </div>
                 </div>
@@ -1378,7 +1378,7 @@
 
                     <div>
                         <div class="conference-mini-label">
-                            Seçili Kongre
+                            @Localizer["SelectedConference"]
                         </div>
 
                         <div class="conference-mini-title">
@@ -1395,12 +1395,11 @@
 
                         <div>
                             <div class="admin-action-panel-title">
-                                Sistemden Otomatik Bildiri Kitabı Oluştur
+                                @Localizer["AutoGenerateTitle"]
                             </div>
 
                             <div class="admin-action-panel-text">
-                                Sistem bu kongreye ait kabul edilmiş bildirileri alır ve otomatik PDF bildiri kitabı oluşturur.
-                                Mevcut PDF varsa yeni oluşturulan dosya ile değiştirilir.
+                                @Localizer["AutoGenerateText"]
                             </div>
                         </div>
                     </div>
@@ -1410,7 +1409,7 @@
                             data-bs-toggle="modal"
                             data-bs-target="#generateProceedingBookModal">
                         <i class="fas fa-file-circle-plus"></i>
-                        Otomatik Oluştur
+                        @Localizer["AutoGenerateButton"]
                     </button>
                 </div>
 
@@ -1424,7 +1423,7 @@
 
                             <div class="min-w-0">
                                 <div class="file-status-title">
-                                    Mevcut bildiri kitabı PDF’i yüklü
+                                    @Localizer["ExistingPdfUploaded"]
                                 </div>
 
                                 <div class="file-status-path">
@@ -1438,7 +1437,7 @@
                                target="_blank"
                                class="admin-mini-btn admin-mini-btn-primary">
                                 <i class="fas fa-eye"></i>
-                                Görüntüle
+                                @Localizer["ViewButton"]
                             </a>
 
                             <button type="button"
@@ -1446,7 +1445,7 @@
                                     data-bs-toggle="modal"
                                     data-bs-target="#removeProceedingBookModal">
                                 <i class="fas fa-trash"></i>
-                                Kaldır
+                                @Localizer["RemoveButton"]
                             </button>
                         </div>
                     </div>
@@ -1459,8 +1458,8 @@
                                 </div>
 
                                 <div>
-                                    <strong>Bildiri Kitabı Önizleme</strong>
-                                    <span>PDF dosyasını modern kapak görünümüyle kontrol edebilirsiniz.</span>
+                                    <strong>@Localizer["ProceedingBookPreview"]</strong>
+                                    <span>@Localizer["ProceedingBookPreviewLead"]</span>
                                 </div>
                             </div>
 
@@ -1469,14 +1468,14 @@
                                    target="_blank"
                                    class="admin-mini-btn admin-mini-btn-primary">
                                     <i class="fas fa-up-right-from-square"></i>
-                                    Yeni Sekmede Aç
+                                    @Localizer["OpenInNewTab"]
                                 </a>
 
                                 <a href="@Model.ProceedingBookFilePath"
                                    download
                                    class="admin-mini-btn admin-mini-btn-primary">
                                     <i class="fas fa-download"></i>
-                                    İndir
+                                    @Localizer["DownloadButton"]
                                 </a>
                             </div>
                         </div>
@@ -1486,7 +1485,7 @@
                                 <div class="pdf-cover-art">
                                     <div class="pdf-cover-badge">
                                         <i class="fas fa-file-pdf"></i>
-                                        PDF Bildiri Kitabı
+                                        @Localizer["PdfProceedingBook"]
                                     </div>
 
                                     <div class="pdf-cover-center">
@@ -1495,7 +1494,7 @@
                                         </div>
 
                                         <h4>
-                                            Bildiri Kitabı
+                                            @Localizer["ProceedingBook"]
                                         </h4>
 
                                         <p>
@@ -1512,12 +1511,12 @@
                                 <div class="pdf-cover-meta">
                                     <div class="pdf-cover-meta-item">
                                         <i class="fas fa-calendar-check"></i>
-                                        <span>Yayın tarihi: <strong>@publishedDateText</strong></span>
+                                        <span>@Localizer["PublishDate"]: <strong>@publishedDateText</strong></span>
                                     </div>
 
                                     <div class="pdf-cover-meta-item">
                                         <i class="fas fa-eye"></i>
-                                        <span>@(Model.IsProceedingBookPublished ? "Yazar panelinde görünür" : "Yazar panelinde gizli")</span>
+                                        <span>@(Model.IsProceedingBookPublished ? Localizer.GetString("VisibleToAuthors").Value : Localizer.GetString("HiddenFromAuthors").Value)</span>
                                     </div>
                                 </div>
                             </div>
@@ -1526,7 +1525,7 @@
                                 <div class="pdf-viewer-toolbar">
                                     <div class="pdf-viewer-toolbar-left">
                                         <span class="pdf-live-dot"></span>
-                                        <span>Canlı PDF önizleme</span>
+                                        <span>@Localizer["LivePreview"]</span>
                                     </div>
 
                                     <div class="pdf-modern-actions">
@@ -1534,7 +1533,7 @@
                                            target="_blank"
                                            class="admin-mini-btn admin-mini-btn-primary">
                                             <i class="fas fa-maximize"></i>
-                                            Tam Ekran
+                                            @Localizer["FullScreen"]
                                         </a>
                                     </div>
                                 </div>
@@ -1554,11 +1553,11 @@
                         </div>
 
                         <div class="empty-upload-title">
-                            Henüz PDF yüklenmedi
+                            @Localizer["NoPdfYet"]
                         </div>
 
                         <p class="empty-upload-text">
-                            PDF dosyasını manuel yükleyebilir veya kabul edilmiş bildirilerden otomatik bildiri kitabı oluşturabilirsiniz.
+                            @Localizer["NoPdfDescription"]
                         </p>
                     </div>
                 }
@@ -1578,7 +1577,7 @@
 
                     <div class="mb-4">
                         <label for="ProceedingBookFile" class="form-label-modern">
-                            Yeni PDF Dosyası
+                            @Localizer["NewPdfFile"]
                         </label>
 
                         <div class="file-upload-box">
@@ -1589,8 +1588,8 @@
                                    class="form-control form-control-modern" />
 
                             <div class="file-upload-help">
-                                Sadece PDF dosyası yükleyiniz. Maksimum dosya boyutu 50 MB olarak kontrol edilir.
-                                Yeni PDF yüklerseniz eski dosya otomatik olarak değiştirilecektir.
+                                
+                                
                             </div>
                         </div>
 
@@ -1600,11 +1599,11 @@
                     <div class="admin-switch-card">
                         <div>
                             <div class="admin-switch-title">
-                                Bildiri kitabı yayında olsun
+                                @Localizer["PublishToggle"]
                             </div>
 
                             <div class="admin-switch-text">
-                                Bu seçenek aktif olduğunda yazar panelindeki Bildiri Kitabı ekranında PDF görüntülenir ve indirilebilir.
+                                
                             </div>
                         </div>
 
@@ -1636,12 +1635,12 @@
                     <div class="form-actions">
                         <a href="@backUrl" class="admin-cancel-btn">
                             <i class="fas fa-times"></i>
-                            Vazgeç
+                            @Localizer["Cancel"]
                         </a>
 
                         <button type="submit" class="admin-save-btn">
                             <i class="fas fa-save"></i>
-                            Kaydet
+                            @Localizer["Save"]
                         </button>
                     </div>
                 </form>
@@ -1653,30 +1652,30 @@
             {
                 <div class="status-badge status-published">
                     <i class="fas fa-circle-check"></i>
-                    Yayında
+                    @Localizer["Published"]
                 </div>
             }
             else
             {
                 <div class="status-badge status-draft">
                     <i class="fas fa-clock"></i>
-                    Yayında Değil
+                    @Localizer["NotPublished"]
                 </div>
             }
 
             <h5 class="side-title">
-                Yayın Bilgisi
+                @Localizer["PublishInfo"]
             </h5>
 
             <p class="side-text">
-                Bildiri kitabı yayınlandığında yazar ve katılımcılar ilgili kongre panelinden PDF dosyasına erişebilir.
+                
             </p>
 
             <ul class="info-list">
                 <li>
                     <i class="fas fa-calendar-check"></i>
                     <span>
-                        Yayın Tarihi:
+                        @Localizer["PublishDate"]
                         <strong>@publishedDateText</strong>
                     </span>
                 </li>
@@ -1684,23 +1683,23 @@
                 <li>
                     <i class="fas fa-file-pdf"></i>
                     <span>
-                        Dosya Durumu:
-                        <strong>@(hasFile ? "PDF yüklü" : "PDF yüklenmedi")</strong>
+                        @Localizer["FileStatus"]
+                        <strong>@(hasFile ? Localizer.GetString("PdfUploaded").Value : Localizer.GetString("PdfNotUploaded").Value)</strong>
                     </span>
                 </li>
 
                 <li>
                     <i class="fas fa-eye"></i>
                     <span>
-                        Görünürlük:
-                        <strong>@(Model.IsProceedingBookPublished ? "Yazar panelinde görünür" : "Yazar panelinde gizli")</strong>
+                        
+                        <strong>@(Model.IsProceedingBookPublished ? Localizer.GetString("VisibleToAuthors").Value : Localizer.GetString("HiddenFromAuthors").Value)</strong>
                     </span>
                 </li>
 
                 <li>
                     <i class="fas fa-circle-info"></i>
                     <span>
-                        Yayına almak için manuel PDF yükleyebilir veya otomatik oluşturma seçeneğini kullanabilirsiniz.
+                        
                     </span>
                 </li>
             </ul>
@@ -1722,11 +1721,11 @@
 
                 <div>
                     <h5 class="remove-modal-title" id="generateProceedingBookModalLabel">
-                        Otomatik Bildiri Kitabı Oluştur
+                        
                     </h5>
 
                     <p class="remove-modal-subtitle">
-                        Sistem kabul edilmiş bildirilerden PDF oluşturacak.
+                        @Localizer["GenerateModalSubtitle"]
                     </p>
                 </div>
 
@@ -1738,14 +1737,13 @@
 
             <div class="modal-body remove-modal-body">
                 <p class="mb-3 fw-bold text-secondary">
-                    Bu kongreye ait kabul edilmiş bildirilerden otomatik bildiri kitabı oluşturulsun mu?
+                    @Localizer["GenerateModalBody"]
                 </p>
 
                 <div class="remove-warning">
                     <i class="fas fa-circle-info"></i>
                     <span>
-                        Mevcut PDF varsa yeni oluşturulan dosya ile değiştirilecektir.
-                        Sadece kabul edilmiş bildiriler bildiri kitabına eklenir.
+                        @Localizer["GenerateModalWarning"]
                     </span>
                 </div>
             </div>
@@ -1754,7 +1752,7 @@
                 <button type="button"
                         class="btn remove-cancel-btn"
                         data-bs-dismiss="modal">
-                    Vazgeç
+                    @Localizer["Cancel"]
                 </button>
 
                 <form action="@generateUrl"
@@ -1767,7 +1765,7 @@
                     <button type="submit"
                             class="btn remove-confirm-btn generate-confirm-btn">
                         <i class="fas fa-file-circle-plus me-2"></i>
-                        Evet, Oluştur
+                        @Localizer["YesGenerate"]
                     </button>
                 </form>
             </div>
@@ -1791,11 +1789,11 @@
 
                     <div>
                         <h5 class="remove-modal-title" id="removeProceedingBookModalLabel">
-                            PDF Dosyasını Kaldır
+                            @Localizer["RemovePdfTitle"]
                         </h5>
 
                         <p class="remove-modal-subtitle">
-                            Bu işlem mevcut bildiri kitabını yayından kaldırır.
+                            @Localizer["RemovePdfSubtitle"]
                         </p>
                     </div>
 
@@ -1807,14 +1805,14 @@
 
                 <div class="modal-body remove-modal-body">
                     <p class="mb-3 fw-bold text-secondary">
-                        Mevcut bildiri kitabı PDF dosyasını kaldırmak istediğinize emin misiniz?
+                         @Localizer["RemovePdfConfirm"]
                     </p>
 
                     <div class="remove-warning">
                         <i class="fas fa-circle-info"></i>
                         <span>
-                            PDF dosyası kaldırılırsa bildiri kitabı otomatik olarak yayından kaldırılır.
-                            Yazar panelinde artık görüntülenmez.
+                            
+                            @Localizer["RemovePdfWarning"]
                         </span>
                     </div>
                 </div>
@@ -1823,7 +1821,7 @@
                     <button type="button"
                             class="btn remove-cancel-btn"
                             data-bs-dismiss="modal">
-                        Vazgeç
+                        @Localizer["Cancel"]
                     </button>
 
                     <form action="@removeFileUrl"
@@ -1835,7 +1833,7 @@
 
                         <button type="submit" class="btn remove-confirm-btn">
                             <i class="fas fa-trash me-2"></i>
-                            Evet, Kaldır
+                            @Localizer["YesRemove"]
                         </button>
                     </form>
                 </div>

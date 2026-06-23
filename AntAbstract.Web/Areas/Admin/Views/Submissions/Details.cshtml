@@ -39,13 +39,13 @@
     {
         return status switch
         {
-            SubmissionStatus.New => "Yeni",
-            SubmissionStatus.Pending => "Beklemede",
-            SubmissionStatus.UnderReview => "Hakem Değerlendirmesinde",
-            SubmissionStatus.Accepted => "Kabul Edildi",
-            SubmissionStatus.Rejected => "Reddedildi",
-            SubmissionStatus.RevisionRequired => "Revizyon Gerekli",
-            SubmissionStatus.Presented => "Sunuldu",
+            SubmissionStatus.New => Localizer.GetString("StatusNew").Value,
+            SubmissionStatus.Pending => Localizer.GetString("StatusPending").Value,
+            SubmissionStatus.UnderReview => Localizer.GetString("StatusUnderReview").Value,
+            SubmissionStatus.Accepted => Localizer.GetString("StatusAccepted").Value,
+            SubmissionStatus.Rejected => Localizer.GetString("StatusRejected").Value,
+            SubmissionStatus.RevisionRequired => Localizer.GetString("StatusRevision").Value,
+            SubmissionStatus.Presented => Localizer.GetString("StatusPresented").Value,
             _ => status.ToString()
         };
     }
@@ -69,11 +69,11 @@
     {
         return status switch
         {
-            DoiStatus.None => "Hazırlanmadı",
-            DoiStatus.Ready => "Metadata Hazır",
-            DoiStatus.Assigned => "Atandı",
-            DoiStatus.Failed => "Hatalı",
-            DoiStatus.ConfigMissing => "Ayar Eksik",
+            DoiStatus.None => Localizer.GetString("DoiNone").Value,
+            DoiStatus.Ready => Localizer.GetString("DoiReady").Value,
+            DoiStatus.Assigned => Localizer.GetString("DoiAssigned").Value,
+            DoiStatus.Failed => Localizer.GetString("DoiFailed").Value,
+            DoiStatus.ConfigMissing => Localizer.GetString("DoiConfigMissing").Value,
             _ => status.ToString()
         };
     }
@@ -91,12 +91,12 @@
     }
 
     var authorFullName = Model.Author == null
-        ? "Yazar bilgisi yok"
+        ? Localizer.GetString("NoAuthorInfo").Value
         : $"{Model.Author.FirstName} {Model.Author.LastName}".Trim();
 
     if (string.IsNullOrWhiteSpace(authorFullName))
     {
-        authorFullName = Model.Author?.Email ?? "Yazar bilgisi yok";
+        authorFullName = Model.Author?.Email ?? Localizer.GetString("NoAuthorInfo").Value;
     }
 
     var files = Model.Files?.ToList() ?? new List<SubmissionFile>();
@@ -206,7 +206,7 @@
                             </div>
 
                             <p>
-                                @(string.IsNullOrWhiteSpace(Model.Abstract) ? "Özet bilgisi bulunmuyor." : Model.Abstract)
+                                @(string.IsNullOrWhiteSpace(Model.Abstract) ? " bilgisi bulunmuyor." : Model.Abstract)
                             </p>
                         </div>
 
@@ -236,7 +236,7 @@
                         <div class="mini-empty">
                             <i class="fas fa-user-slash"></i>
                             <strong>@Localizer["NoAuthorInfo"]</strong>
-                            <span>Bu bildiriye ait yazar listesi henüz oluşmamış.</span>
+                            <span></span>
                         </div>
                     }
                     else
@@ -273,17 +273,17 @@
                         <div class="mini-empty">
                             <i class="fas fa-file-circle-xmark"></i>
                             <strong>@Localizer["NoFilesFound"]</strong>
-                            <span>Bu bildiriye ait yüklenmiş dosya yok.</span>
+                            <span></span>
                         </div>
                     }
                     else
                     {
                         string TypeLabel(SubmissionFileType t) => t switch
                             {
-                                SubmissionFileType.FullText => "Tam Metin",
-                                SubmissionFileType.Abstract => "Özet",
+                                SubmissionFileType.FullText => "",
+                                SubmissionFileType.Abstract => "",
                                 SubmissionFileType.Presentation => "Sunum",
-                                SubmissionFileType.Supplementary => "Ek Dosya",
+                                SubmissionFileType.Supplementary => "",
                                 _ => "Dosya"
                             };
                             string TypeIcon(SubmissionFileType t) => t switch
@@ -318,11 +318,11 @@
                                     </span>
                                     <span style="font-weight:800;font-size:0.82rem;color:#334155;">@TypeLabel(group.Key)</span>
                                     <span style="background:#f1f5f9;border-radius:999px;padding:1px 8px;font-size:0.68rem;font-weight:700;color:#64748b;">
-                                        @sortedVersions.Count versiyon
+                                        @sortedVersions.Count 
                                     </span>
                                 </div>
 
-                                @* Son versiyon *@
+                                @* Son  *@
                                 <div class="file-list-item" style="border-left:3px solid @TypeColor(group.Key);">
                                     <div class="file-icon" style="color:@TypeColor(group.Key);">
                                         <i class="fas @TypeIcon(group.Key)"></i>
@@ -339,14 +339,14 @@
                                     </a>
                                 </div>
 
-                                @* Eski versiyonlar *@
+                                @* Eski lar *@
                                 @if (hasMultiple)
                                 {
                                     <div style="margin-top:4px;margin-left:14px;">
                                         <button type="button" class="btn btn-sm btn-link text-muted p-0"
                                                 style="font-size:0.74rem;font-weight:700;text-decoration:none;"
                                                 data-bs-toggle="collapse" data-bs-target="#@collapseId">
-                                            <i class="fas fa-history me-1"></i> Önceki versiyonlar (@(sortedVersions.Count - 1))
+                                            <i class="fas fa-history me-1"></i> Önceki lar (@(sortedVersions.Count - 1))
                                         </button>
                                         <div class="collapse" id="@collapseId">
                                             @foreach (var older in sortedVersions.Skip(1))
@@ -499,7 +499,7 @@
                             @Localizer["NoteToAuthor"] <small class="fw-normal">(isteğe bağlı)</small>
                         </label>
                         <textarea name="adminNote" class="form-control form-control-sm" rows="3"
-                                  placeholder="Karar hakkında yazara iletilecek açıklama..."
+                                  placeholder=""
                                   maxlength="1000">@(Model.AdminDecisionNote ?? "")</textarea>
                         <div class="form-text">Bu not bildiri detayında yazara gösterilecektir.</div>
                     </div>
@@ -516,7 +516,7 @@
                 <div class="side-card mb-4" style="border-color:rgba(245,158,11,0.28);background:linear-gradient(135deg,rgba(245,158,11,0.06),rgba(249,115,22,0.04));">
                     <div class="side-card-header" style="border-color:rgba(245,158,11,0.18);">
                         <div>
-                            <span>Yazar Yanıtı</span>
+                            <span></span>
                             <h5>Rebuttal</h5>
                         </div>
                         <div class="status-icon" style="background:linear-gradient(135deg,#f59e0b,#f97316);">
@@ -544,7 +544,7 @@
                 <div class="side-card mb-4" style="border-color:rgba(99,102,241,0.28);background:linear-gradient(135deg,rgba(99,102,241,0.06),rgba(139,92,246,0.04));">
                     <div class="side-card-header" style="border-color:rgba(99,102,241,0.18);">
                         <div>
-                            <span>Dijital Tanımlayıcı</span>
+                            <span></span>
                             <h5>DOI</h5>
                         </div>
                         <div class="status-icon" style="background:rgba(99,102,241,0.12);color:#6366f1;">
@@ -666,7 +666,7 @@
                     <div class="review-empty">
                         <i class="fas fa-user-clock"></i>
                         <strong>@Localizer["NoAssignment"]</strong>
-                        <span>Bu bildiriye henüz hakem atanmamış.</span>
+                        <span></span>
                     </div>
                 }
                 else
@@ -691,7 +691,7 @@
                                 <div>
                                     <strong>@reviewerName</strong>
                                     <span>
-                                        @(assignment.Review == null ? "Değerlendirme bekliyor" : "Değerlendirildi")
+                                        @(assignment.Review == null ? Localizer.GetString("AwaitingReview").Value : Localizer.GetString("Reviewed").Value)
                                     </span>
                                 </div>
                             </div>
@@ -756,7 +756,7 @@
                     @Localizer["DeleteWarning"]
                 </p>
 
-                <form method="post" action="@deleteUrl" onsubmit="return confirm('Bu bildiriyi silmek istediğinize emin misiniz?');">
+                <form method="post" action="@deleteUrl" onsubmit="return confirm('');">
                     @Html.AntiForgeryToken()
 
                     <input type="hidden" name="id" value="@Model.Id" />

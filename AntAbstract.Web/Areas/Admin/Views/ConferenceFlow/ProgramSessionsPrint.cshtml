@@ -10,7 +10,7 @@
 
     var sessions = Model?.ToList() ?? new List<Session>();
 
-    var conferenceTitle = ViewBag.ConferenceTitle as string ?? "Kongre Programı";
+    var conferenceTitle = ViewBag.ConferenceTitle as string ?? "";
     var slug = ViewBag.Slug as string ?? "";
 
     var conferenceId = ViewBag.ConferenceId is Guid selectedConferenceId
@@ -45,7 +45,7 @@
         var authorName = $"{submission.Author?.FirstName} {submission.Author?.LastName}".Trim();
 
         return string.IsNullOrWhiteSpace(authorName)
-            ? "Yazar belirtilmedi"
+            ? " belirtilmedi"
             : authorName;
     }
 
@@ -490,11 +490,11 @@
     <div class="print-toolbar">
         <div>
             <div class="toolbar-title">
-                Program çıktısı hazır
+                
             </div>
 
             <div class="toolbar-subtitle">
-                Yazdırabilir, PDF olarak kaydedebilir veya program ekranına geri dönebilirsiniz.
+                @Localizer["PrintInstructions"]
             </div>
         </div>
 
@@ -502,12 +502,12 @@
             <button type="button"
                     class="btn btn-primary"
                     onclick="window.print()">
-                PDF Olarak Kaydet / Yazdır
+                PDF Olarak Kaydet / 
             </button>
 
             <a href="@backUrl"
                class="btn">
-                Program Ekranına Dön
+                
             </a>
 
             <button type="button"
@@ -529,7 +529,7 @@
             </h1>
 
             <p class="document-subtitle">
-                Kongre programı, oturum saatleri, salon bilgileri, konuşmacılar ve programa eklenen bildiriler.
+                
             </p>
 
             <div class="meta-row">
@@ -541,7 +541,7 @@
                 }
 
                 <span class="meta-pill">
-                    Oluşturulma: @today
+                    : @today
                 </span>
 
                 <span class="meta-pill">
@@ -557,7 +557,7 @@
                 </div>
 
                 <div class="summary-label">
-                    Toplam Oturum
+                    @Localizer["TotalSessions"]
                 </div>
             </div>
 
@@ -567,7 +567,7 @@
                 </div>
 
                 <div class="summary-label">
-                    Program Günü
+                    
                 </div>
             </div>
 
@@ -577,7 +577,7 @@
                 </div>
 
                 <div class="summary-label">
-                    Programa Ekli Bildiri
+                    Programa Ekli 
                 </div>
             </div>
         </section>
@@ -585,7 +585,7 @@
         @if (!groupedSessions.Any())
         {
             <div class="empty-state">
-                Bu kongre için aktif program oturumu bulunmuyor.
+                
             </div>
         }
         else
@@ -598,7 +598,7 @@
                 <section class="day-section">
                     <div class="day-header">
                         <div class="day-title">
-                            @dayNumber. Gün - @dayGroup.Key.ToString("dd MMMM yyyy")
+                            @dayNumber - @dayGroup.Key.ToString("dd MMMM yyyy")
                         </div>
 
                         <div class="day-count">
@@ -639,18 +639,18 @@
 
                                     <div class="session-meta">
                                         <span>
-                                            Salon: @(string.IsNullOrWhiteSpace(item.Location) ? "Belirtilmedi" : item.Location)
+                                            : @(string.IsNullOrWhiteSpace(item.Location) ? "Belirtilmedi" : item.Location)
                                         </span>
 
                                         @if (!string.IsNullOrWhiteSpace(item.SpeakerName))
                                         {
                                             <span>
-                                                Konuşmacı: @item.SpeakerName
+                                                : @item.SpeakerName
                                             </span>
                                         }
 
                                         <span>
-                                            Bildiri: @submissionCount
+                                            : @submissionCount
                                         </span>
                                     </div>
                                 </div>
@@ -660,7 +660,7 @@
                             {
                                 <div class="submissions">
                                     <div class="submissions-title">
-                                        Programa Eklenen Bildiriler
+                                        Programa Eklenen ler
                                     </div>
 
                                     @foreach (var sub in item.Submissions.OrderBy(x => x.Title))

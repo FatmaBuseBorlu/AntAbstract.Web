@@ -15,9 +15,9 @@
         <div class="card-body">
 
             <div class="mb-3">
-                <label class="form-label fw-semibold">Kongre</label>
+                <label class="form-label fw-semibold">@Localizer["Conference"]</label>
                 <select id="conferenceSelect" class="form-select">
-                    <option value="">-- Kongre Seçin --</option>
+                    <option value=""></option>
                     @foreach (var c in conferences)
                     {
                         var cId = (Guid)c.Id;
@@ -42,7 +42,7 @@
                     </button>
                 </div>
                 <div class="form-text">
-                    Barkod okuyucu veya kamera uygulamasıyla QR kodu tarayın; alan otomatik dolar.
+                    
                 </div>
             </div>
 
@@ -81,8 +81,8 @@
             const token = input.value.trim();
             const confId = confSel.value;
 
-            if (!token) { showResult('warning', 'Lütfen bir QR token girin.'); return; }
-            if (!confId) { showResult('warning', 'Lütfen bir kongre seçin.'); return; }
+            if (!token) { showResult('warning', ''); return; }
+            if (!confId) { showResult('warning', ''); return; }
 
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
@@ -107,7 +107,7 @@
                     showResult('danger', data.message);
                 }
             } catch (err) {
-                showResult('danger', 'Sunucu hatası: ' + err.message);
+                showResult('danger', ' ' + err.message);
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-check me-1"></i> Onayla';

@@ -30,13 +30,13 @@
     {
         return status switch
         {
-            nameof(SubmissionStatus.New) => "Yeni",
-            nameof(SubmissionStatus.Pending) => "Beklemede",
-            nameof(SubmissionStatus.UnderReview) => "Hakem Değerlendirmesinde",
-            nameof(SubmissionStatus.Accepted) => "Kabul Edildi",
-            nameof(SubmissionStatus.Rejected) => "Reddedildi",
-            nameof(SubmissionStatus.RevisionRequired) => "Revizyon Gerekli",
-            nameof(SubmissionStatus.Presented) => "Sunuldu",
+            nameof(SubmissionStatus.New) => Localizer.GetString("StatusNew").Value,
+            nameof(SubmissionStatus.Pending) => Localizer.GetString("StatusPending").Value,
+            nameof(SubmissionStatus.UnderReview) => Localizer.GetString("StatusUnderReview").Value,
+            nameof(SubmissionStatus.Accepted) => Localizer.GetString("StatusAccepted").Value,
+            nameof(SubmissionStatus.Rejected) => Localizer.GetString("StatusRejected").Value,
+            nameof(SubmissionStatus.RevisionRequired) => Localizer.GetString("StatusRevision").Value,
+            nameof(SubmissionStatus.Presented) => Localizer.GetString("StatusPresented").Value,
             _ => string.IsNullOrWhiteSpace(status) ? "Bilinmiyor" : status
         };
     }
@@ -487,7 +487,7 @@
                         </li>
                     </ul>
                     <p class="text-center text-muted small">
-                        @Model.TotalCount bildiriden @((Model.Page - 1) * Model.PageSize + 1)–@Math.Min(Model.Page * Model.PageSize, Model.TotalCount) gösteriliyor
+                        @Model.TotalCount  @((Model.Page - 1) * Model.PageSize + 1)–@Math.Min(Model.Page * Model.PageSize, Model.TotalCount) 
                     </p>
                 </nav>
             }

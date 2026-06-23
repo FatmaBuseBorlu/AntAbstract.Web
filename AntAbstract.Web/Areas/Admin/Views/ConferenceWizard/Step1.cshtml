@@ -7,7 +7,7 @@
 <div class="container-fluid px-4 py-4" style="max-width:780px;">
 
     <div class="mb-4">
-        <h4 class="fw-bold mb-1"><i class="fas fa-magic me-2 text-primary"></i>Yeni Kongre Sihirbazı</h4>
+        <h4 class="fw-bold mb-1"><i class="fas fa-magic me-2 text-primary"></i>@Localizer["ConferenceWizard"]</h4>
         <p class="text-muted small mb-3">Adım adım kongrenizi oluşturun. Her adım kaydedilir.</p>
         @await Html.PartialAsync("_WizardProgress", 1)
     </div>
@@ -26,25 +26,25 @@
                 @Html.AntiForgeryToken()
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Kongre Adı <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold"> <span class="text-danger">*</span></label>
                     <input type="text" name="title" class="form-control form-control-lg"
-                           placeholder="Örn: 5. Uluslararası Tıp Kongresi" required maxlength="300" autofocus />
+                           placeholder="" required maxlength="300" autofocus />
                     <div class="form-text">Kongrenin tam resmi adı. URL slug'ı otomatik oluşturulur.</div>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Açıklama</label>
+                    <label class="form-label fw-semibold">@Localizer["Description"]</label>
                     <textarea name="description" class="form-control" rows="4"
-                              placeholder="Kongre hakkında kısa bir açıklama..."></textarea>
+                              placeholder=""></textarea>
                 </div>
 
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Şehir</label>
+                        <label class="form-label fw-semibold">@Localizer["City"]</label>
                         <input type="text" name="city" class="form-control" placeholder="İstanbul" maxlength="100" />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Ülke</label>
+                        <label class="form-label fw-semibold">@Localizer["Country"]</label>
                         <input type="text" name="country" class="form-control" placeholder="Türkiye" maxlength="100" />
                     </div>
                 </div>
@@ -52,7 +52,7 @@
                 <div class="mb-4">
                     <label class="form-label fw-semibold">Mekan / Venue</label>
                     <input type="text" name="venue" class="form-control"
-                           placeholder="Hilton İstanbul Kongre Merkezi" maxlength="300" />
+                           placeholder="" maxlength="300" />
                 </div>
 
                 <div class="d-flex gap-2 justify-content-between">

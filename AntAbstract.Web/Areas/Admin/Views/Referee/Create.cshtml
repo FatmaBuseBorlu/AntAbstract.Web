@@ -478,15 +478,15 @@
 
             <div>
                 <div class="referee-create-section-label">
-                    Kongre Operasyonları
+                    @Localizer["ConferenceOperations"]
                 </div>
 
                 <h2 class="referee-create-title">
-                    Yeni Hakem Oluştur
+                    
                 </h2>
 
                 <p class="referee-create-description">
-                    Seçili kongrenin kurumuna bağlı yeni bir hakem hesabı oluşturabilirsiniz. Oluşturulan kullanıcıya otomatik olarak <strong>Referee</strong> rolü atanır.
+                    @Localizer["PageDescription"]
                 </p>
 
                 @if (!string.IsNullOrWhiteSpace(conferenceTitle) || !string.IsNullOrWhiteSpace(currentSlug))
@@ -494,10 +494,10 @@
                     <div class="selected-conference-chip">
                         <i class="fas fa-calendar-check"></i>
 
-                        <span>Seçili Kongre:</span>
+                        <span>@Localizer["SelectedConference"]</span>
 
                         <strong>
-                            @(string.IsNullOrWhiteSpace(conferenceTitle) ? "Kongre seçilmedi" : conferenceTitle)
+                            @(string.IsNullOrWhiteSpace(conferenceTitle) ? Localizer.GetString("NoConferenceSelected").Value : conferenceTitle)
                         </strong>
 
                         @if (!string.IsNullOrWhiteSpace(currentSlug))
@@ -513,13 +513,13 @@
             <a href="@flowUrl"
                class="btn create-light-btn">
                 <i class="fas fa-stream"></i>
-                Kongre Akışına Dön
+                
             </a>
 
             <a href="@backUrl"
                class="btn create-outline-btn">
                 <i class="fas fa-arrow-left"></i>
-                Hakem Havuzuna Dön
+                @Localizer["BackToRefereePool"]
             </a>
         </div>
     </div>
@@ -544,11 +544,11 @@
 
                     <div>
                         <div class="create-card-title">
-                            Hakem Bilgileri
+                            
                         </div>
 
                         <p class="create-card-subtitle">
-                            Hakem hesabı için gerekli temel kullanıcı bilgilerini giriniz.
+                            @Localizer["FormCardSubtitle"]
                         </p>
                     </div>
                 </div>
@@ -629,7 +629,7 @@
                         <input asp-for="Password"
                                class="form-control create-form-control"
                                type="password"
-                               placeholder="En az 6 karakter" />
+                               placeholder="@L("PasswordPlaceholder", "En az 6 karakter")" />
 
                         <div class="create-help-text">
                             @L("PasswordHelpText", "Şifre en az 6 karakter olmalıdır. Hakem daha sonra şifresini değiştirebilir.")
@@ -641,11 +641,11 @@
                     <div class="submit-box">
                         <div>
                             <div class="submit-box-title">
-                                Hakem hesabını oluştur
+                                @Localizer["CreateRefereeAccount"]
                             </div>
 
                             <p class="submit-box-text">
-                                Kaydettiğinizde kullanıcı oluşturulur, seçili kuruma bağlanır ve Referee rolü atanır.
+                                @Localizer["SubmitBoxText"]
                             </p>
                         </div>
 
@@ -667,11 +667,11 @@
 
                     <div>
                         <div class="create-card-title">
-                            Oluşturma Özeti
+                            @Localizer["CreationSummary"]
                         </div>
 
                         <p class="create-card-subtitle">
-                            Bu hesabın sistemde nasıl konumlanacağını buradan görebilirsiniz.
+                            @Localizer["CreationSummaryDesc"]
                         </p>
                     </div>
                 </div>
@@ -681,7 +681,7 @@
 
                         <div class="side-info-item">
                             <div class="side-info-label">
-                                Atanacak Rol
+                                @Localizer["RoleToAssign"]
                             </div>
 
                             <div class="side-info-value">
@@ -694,7 +694,7 @@
 
                         <div class="side-info-item">
                             <div class="side-info-label">
-                                Kurum Bağlantısı
+                                @Localizer["InstitutionConnection"]
                             </div>
 
                             <div class="side-info-value">
@@ -702,13 +702,13 @@
                                 {
                                     <span class="tenant-badge">
                                         <i class="fas fa-check-circle"></i>
-                                        Aktif
+                                        @Localizer["Active"]
                                     </span>
                                 }
                                 else
                                 {
                                     <span class="text-muted fw-bold">
-                                        Kurum bilgisi alınamadı
+                                        @Localizer["NoInstitutionInfo"]
                                     </span>
                                 }
                             </div>
@@ -716,11 +716,11 @@
 
                         <div class="side-info-item">
                             <div class="side-info-label">
-                                Seçili Kongre
+                                @Localizer["SelectedConference"]
                             </div>
 
                             <div class="side-info-value">
-                                @(string.IsNullOrWhiteSpace(conferenceTitle) ? "Kongre bilgisi yok" : conferenceTitle)
+                                @(string.IsNullOrWhiteSpace(conferenceTitle) ? Localizer.GetString("NoConferenceInfo").Value : conferenceTitle)
                             </div>
                         </div>
 
@@ -739,7 +739,7 @@
 
                         <div class="info-note">
                             <i class="fas fa-circle-info me-2"></i>
-                            Bu ekrandan oluşturulan kullanıcı gerçek anlamda silinmez. İleride gerekirse Hakem Havuzu ekranından sadece hakem rolü kaldırılır.
+                            @Localizer["InfoNote"]
                         </div>
 
                     </div>

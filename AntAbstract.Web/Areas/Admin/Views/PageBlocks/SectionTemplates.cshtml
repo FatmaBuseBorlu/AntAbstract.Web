@@ -30,8 +30,8 @@
             ConferencePageBlockType.Topics => Localizer.GetString("TypeTopics").Value,
             ConferencePageBlockType.ImportantDates => Localizer.GetString("TypeDates").Value,
             ConferencePageBlockType.Fees => Localizer.GetString("TypeFees").Value,
-            ConferencePageBlockType.Committees => "Bilim Kurulu",
-            ConferencePageBlockType.Sponsors => "Sponsorlar",
+            ConferencePageBlockType.Committees => Localizer.GetString("TypeCommittees").Value,
+            ConferencePageBlockType.Sponsors => Localizer.GetString("TypeSponsors").Value,
             ConferencePageBlockType.Contact => Localizer.GetString("TypeContact").Value,
             ConferencePageBlockType.FAQ => Localizer.GetString("TypeFAQ").Value,
             ConferencePageBlockType.CallForPapers => Localizer.GetString("TypeCallForPapers").Value,
@@ -735,11 +735,11 @@
 
             <div>
                 <div class="admin-hero-kicker">
-                    Global Sistem
+                    @Localizer["GlobalSystem"]
                 </div>
 
                 <h3 class="admin-hero-title">
-                    Site Bölüm Şablonları
+                    @Localizer["SiteSectionTemplates"]
                 </h3>
 
                 <p class="admin-hero-lead">
@@ -832,7 +832,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    Varsayılan
+                    @Localizer["DefaultStat"]
                 </div>
             </div>
         </div>
@@ -848,7 +848,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    Pasif
+                    @Localizer["PassiveStat"]
                 </div>
             </div>
         </div>
@@ -861,19 +861,19 @@
 
             <div class="col-lg-4">
                 <label class="admin-filter-label">
-                    Arama
+                    @Localizer["Search"]
                 </label>
 
                 <input type="text"
                        name="search"
                        value="@search"
                        class="form-control admin-filter-control"
-                       placeholder="Blok tipi, ad veya açıklama ara..." />
+                       placeholder="@Localizer["SearchPlaceholder"]" />
             </div>
 
             <div class="col-lg-3">
                 <label class="admin-filter-label">
-                    Durum
+                    @Localizer["Status"]
                 </label>
 
                 <select name="status" class="form-select admin-filter-control">
@@ -946,12 +946,12 @@
                     <button type="submit"
                             class="admin-filter-btn flex-fill">
                         <i class="fas fa-search"></i>
-                        Filtrele
+                        @Localizer["Filter"]
                     </button>
 
                     <a href="/Admin/PageBlocks"
                        class="admin-reset-btn"
-                       title="Filtreleri temizle">
+                       title="@Localizer["ClearFilters"]">
                         <i class="fas fa-rotate-left"></i>
                     </a>
                 </div>
@@ -968,14 +968,13 @@
                 </h5>
 
                 <p class="section-templates-card-subtitle">
-                    Bu liste sistemde kullanılabilecek hazır kongre sitesi bölümlerini gösterir.
-                    Kongreye özel içerik düzenleme işlemi <strong>Kongre Siteleri</strong> ekranından yapılır.
+                    @Localizer["ListDescription"]
                 </p>
             </div>
 
             <span class="section-templates-card-count">
                 <i class="fas fa-list-ul"></i>
-                @templates.Count kayıt
+                @templates.Count @Localizer["Records"]
             </span>
         </div>
 
@@ -991,7 +990,7 @@
                 </h6>
 
                 <p class="section-templates-empty-text">
-                    Arama veya filtre kriterlerine uygun site bölüm şablonu bulunamadı.
+                    @Localizer["EmptyDescription"]
                 </p>
             </div>
         }
@@ -1002,23 +1001,23 @@
                     <thead>
                         <tr>
                             <th class="ps-4" style="width: 7%;">
-                                Sıra
+                                @Localizer["Order"]
                             </th>
 
                             <th style="width: 28%;">
-                                Şablon
+                                @Localizer["Template"]
                             </th>
 
                             <th style="width: 31%;">
-                                Açıklama
+                                @Localizer["Description"]
                             </th>
 
                             <th class="text-center" style="width: 12%;">
-                                Durum
+                                @Localizer["Status"]
                             </th>
 
                             <th class="pe-4 text-end" style="width: 22%; min-width: 230px;">
-                                İşlemler
+                                @Localizer["Actions"]
                             </th>
                         </tr>
                     </thead>
@@ -1049,13 +1048,13 @@
                                                 {
                                                     <span class="mini-badge badge-default">
                                                         <i class="fas fa-star"></i>
-                                                        Varsayılan
+                                                        @Localizer["Default"]
                                                     </span>
                                                 }
                                                 else
                                                 {
                                                     <span class="mini-badge badge-custom">
-                                                        Özel
+                                                        @Localizer["Custom"]
                                                     </span>
                                                 }
                                             </div>
@@ -1088,14 +1087,14 @@
                                     {
                                         <span class="status-badge status-active">
                                             <i class="fas fa-check-circle"></i>
-                                            Aktif
+                                            @Localizer["Active"]
                                         </span>
                                     }
                                     else
                                     {
                                         <span class="status-badge status-passive">
                                             <i class="fas fa-eye-slash"></i>
-                                            Pasif
+                                            @Localizer["Passive"]
                                         </span>
                                     }
                                 </td>
@@ -1106,7 +1105,7 @@
                                         <a href="/Admin/PageBlocks/EditTemplate/@item.Id"
                                            class="admin-action-btn admin-action-edit">
                                             <i class="fas fa-pen-to-square"></i>
-                                            Düzenle
+                                            @Localizer["Edit"]
                                         </a>
 
                                         <form action="/Admin/PageBlocks/ToggleTemplate/@item.Id"

@@ -1110,7 +1110,7 @@
                                         {
                                             <form asp-area="Admin" asp-controller="Users"
                                                   asp-action="Lock" method="post" class="d-inline"
-                                                  onsubmit="return confirm('Bu kullanıcıyı askıya almak istediğinizden emin misiniz?');">
+                                                  onsubmit="return confirm(Localizer.GetString('ConfirmSuspend').Value);">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="userId" value="@item.UserId" />
                                                 <button type="submit" class="user-action-btn"

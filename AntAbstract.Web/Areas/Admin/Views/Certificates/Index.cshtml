@@ -54,12 +54,12 @@
         @if (bulkConferenceId != Guid.Empty)
         {
             <form asp-action="TriggerBulk" method="post"
-                  onsubmit="return confirm('Tüm katılımcılar için sertifika oluşturulsun mu?');">
+                  onsubmit="return confirm('');">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="conferenceId" value="@bulkConferenceId" />
                 <button type="submit" class="btn cert-bulk-btn">
                     <i class="fas fa-layer-group"></i>
-                    Toplu Sertifika Oluştur
+                    
                 </button>
             </form>
         }
@@ -112,7 +112,7 @@
                 <input type="hidden" name="conferenceId" value="@qConferenceId" />
             }
             <div class="cert-filter-group">
-                <label class="cert-filter-label">E-posta</label>
+                <label class="cert-filter-label">@Localizer["Email"]</label>
                 <div class="cert-search-wrap">
                     <i class="fas fa-search cert-search-icon"></i>
                     <input type="text" name="userEmail" value="@Context.Request.Query["userEmail"]"
@@ -120,9 +120,9 @@
                 </div>
             </div>
             <div class="cert-filter-group">
-                <label class="cert-filter-label">Tür</label>
+                <label class="cert-filter-label">@Localizer["Type"]</label>
                 <select name="type" class="cert-filter-input cert-filter-select">
-                    <option value="">Tümü</option>
+                    <option value="">@Localizer["All"]</option>
                     @if (selectedType == "Author")
                     {
                         <option value="Author" selected>Yazar</option>
@@ -143,11 +143,11 @@
             <div class="cert-filter-group cert-filter-check-group">
                 <label class="cert-check-label">
                     <input type="checkbox" name="onlyMissingFile" value="true" @(onlyMissingFile ? "checked" : "") class="cert-checkbox" />
-                    <span>Dosyası eksik</span>
+                    <span></span>
                 </label>
                 <label class="cert-check-label">
                     <input type="checkbox" name="onlyEmailNotSent" value="true" @(onlyEmailNotSent ? "checked" : "") class="cert-checkbox" />
-                    <span>E-posta gönderilmemiş</span>
+                    <span></span>
                 </label>
             </div>
             <div class="cert-filter-actions">
@@ -166,8 +166,8 @@
     {
         <div class="cert-empty">
             <div class="cert-empty-icon"><i class="fas fa-certificate"></i></div>
-            <h4>Sertifika bulunamadı</h4>
-            <p>Seçili kriterlere uyan sertifika kaydı yok.</p>
+            <h4></h4>
+            <p></p>
         </div>
     }
     else
@@ -180,12 +180,12 @@
                 <table class="cert-table">
                     <thead>
                         <tr>
-                            <th>Tür</th>
-                            <th>Kullanıcı</th>
-                            <th>Kongre</th>
+                            <th>@Localizer["Type"]</th>
+                            <th>@Localizer["User"]</th>
+                            <th>@Localizer["Conference"]</th>
                             <th class="text-center">Dosya</th>
-                            <th class="text-center">E-posta</th>
-                            <th class="text-end">İşlemler</th>
+                            <th class="text-center">@Localizer["Email"]</th>
+                            <th class="text-end">@Localizer["Actions"]</th>
                         </tr>
                     </thead>
                     <tbody>

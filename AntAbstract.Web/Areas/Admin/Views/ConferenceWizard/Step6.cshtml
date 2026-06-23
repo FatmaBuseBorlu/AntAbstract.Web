@@ -10,12 +10,12 @@
 
     var checks = new[]
     {
-        (Label: "Kongre adı ve açıklaması girildi",     Ok: !string.IsNullOrWhiteSpace(Model.Title)),
-        (Label: "Kongre tarihleri belirlendi",           Ok: Model.StartDate != default && Model.EndDate != default),
-        (Label: "En az bir kayıt tipi tanımlandı",      Ok: hasRegTypes),
-        (Label: "Bildiri konuları eklendi",              Ok: hasTopics),
-        (Label: "En az bir ödeme yöntemi aktif",         Ok: hasPayment),
-        (Label: "Şehir / mekan bilgisi girildi",         Ok: !string.IsNullOrWhiteSpace(Model.City) || !string.IsNullOrWhiteSpace(Model.Venue)),
+        (Label: Localizer.GetString("CheckTitle").Value,       Ok: !string.IsNullOrWhiteSpace(Model.Title)),
+        (Label: Localizer.GetString("CheckDates").Value,       Ok: Model.StartDate != default && Model.EndDate != default),
+        (Label: Localizer.GetString("CheckRegTypes").Value,    Ok: hasRegTypes),
+        (Label: Localizer.GetString("CheckTopics").Value,      Ok: hasTopics),
+        (Label: Localizer.GetString("CheckPayment").Value,     Ok: hasPayment),
+        (Label: Localizer.GetString("CheckVenue").Value,       Ok: !string.IsNullOrWhiteSpace(Model.City) || !string.IsNullOrWhiteSpace(Model.Venue)),
     };
     var allPassed = checks.All(c => c.Ok);
 }
@@ -23,7 +23,7 @@
 <div class="container-fluid px-4 py-4" style="max-width:780px;">
 
     <div class="mb-4">
-        <h4 class="fw-bold mb-1"><i class="fas fa-magic me-2 text-primary"></i>Yeni Kongre Sihirbazı</h4>
+        <h4 class="fw-bold mb-1"><i class="fas fa-magic me-2 text-primary"></i>@Localizer["ConferenceWizard"]</h4>
         <p class="text-muted small mb-3">@Model.Title</p>
         @await Html.PartialAsync("_WizardProgress", 6)
     </div>
@@ -34,7 +34,7 @@
              style="border-radius:20px 20px 0 0;">
             <h5 class="fw-bold mb-0">
                 <i class="fas fa-@(allPassed ? "check-circle" : "exclamation-triangle") me-2"></i>
-                @(allPassed ? "Kongre yayına hazır!" : "Eksikler var — yine de yayınlayabilirsiniz")
+                @(allPassed ? Localizer.GetString("ReadyToPublish").Value : Localizer.GetString("HasIssuesCanPublish").Value)
             </h5>
         </div>
         <div class="card-body p-4">
@@ -52,7 +52,7 @@
                 @Html.AntiForgeryToken()
 
                 <hr class="mb-4" />
-                <p class="fw-semibold mb-3">Yayına alırken ne açık olsun?</p>
+                <p class="fw-semibold mb-3">@Localizer["WhatToOpenOnPublish"]</p>
 
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
@@ -60,7 +60,7 @@
                             <input class="form-check-input" type="checkbox" name="openSubmission"
                                    id="subCheck" value="true" checked />
                             <label class="form-check-label fw-semibold" for="subCheck">
-                                <i class="fas fa-file-alt me-1 text-primary"></i> Bildiri Başvurusu Açık
+                                <i class="fas fa-file-alt me-1 text-primary"></i> @Localizer["SubmissionOpen"]
                             </label>
                         </div>
                     </div>
@@ -69,7 +69,7 @@
                             <input class="form-check-input" type="checkbox" name="openRegistration"
                                    id="regCheck" value="true" />
                             <label class="form-check-label fw-semibold" for="regCheck">
-                                <i class="fas fa-user-check me-1 text-success"></i> Kongre Kaydı Açık
+                                <i class="fas fa-user-check me-1 text-success"></i> @Localizer["RegistrationOpen"]
                             </label>
                         </div>
                     </div>
@@ -81,7 +81,7 @@
                     </a>
                     <button type="submit" class="btn btn-@(allPassed ? "success" : "warning text-dark") px-4 fw-bold">
                         <i class="fas fa-rocket me-2"></i>
-                        @(allPassed ? "Kongreyi Yayınla" : "Yine de Yayınla")
+                        @(allPassed ? "" : Localizer.GetString("PublishAnyway").Value)
                     </button>
                 </div>
             </form>

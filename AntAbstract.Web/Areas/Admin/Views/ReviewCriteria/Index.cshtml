@@ -40,7 +40,7 @@
     {
         <div class="alert alert-info">
             <i class="fas fa-info-circle me-2"></i>
-            Henüz kriter tanımlanmamış. Kriter eklemezseniz hakem değerlendirme formu standart 4 alt kriteri (Özgünlük, Metodoloji, Sunum, İlgililik) kullanır.
+            
         </div>
     }
     else
@@ -51,9 +51,9 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-dark">
                         <tr>
-                            <th>Sıra</th>
-                            <th>Kriter Adı</th>
-                            <th>İngilizce</th>
+                            <th>@Localizer["Order"]</th>
+                            <th>@Localizer["CriterionName"]</th>
+                            <th>@Localizer["English"]</th>
                             <th class="text-center">Ağırlık</th>
                             <th class="text-center">Durum</th>
                             <th></th>
@@ -85,11 +85,11 @@
                                 <td class="text-center">
                                     @if (c.IsActive)
                                     {
-                                        <span class="badge bg-success">Aktif</span>
+                                        <span class="badge bg-success">@Localizer["Active"]</span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-secondary">Pasif</span>
+                                        <span class="badge bg-secondary">@Localizer["Passive"]</span>
                                     }
                                 </td>
                                 <td class="text-end">
@@ -97,7 +97,7 @@
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <form method="post" action="@deleteUrl" class="d-inline"
-                                          onsubmit="return confirm('Bu kriteri silmek istediğinize emin misiniz?')">
+                                          onsubmit="return confirm("@Localizer["ConfirmDelete"]")">
                                         @Html.AntiForgeryToken()
                                         <button type="submit" class="btn btn-sm btn-outline-danger">
                                             <i class="fas fa-trash"></i>

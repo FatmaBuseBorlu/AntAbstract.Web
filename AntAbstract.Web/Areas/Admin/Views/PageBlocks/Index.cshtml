@@ -13,7 +13,7 @@
         ?? ViewContext.RouteData.Values["slug"]?.ToString()
         ?? "";
 
-    var conferenceTitle = ViewBag.ConferenceTitle as string ?? "Seçili Kongre";
+    var conferenceTitle = ViewBag.ConferenceTitle as string ?? Localizer.GetString("ConferenceFallback");
 
     var blocks = Model?
         .OrderBy(x => x.Order)
@@ -29,12 +29,12 @@
     {
         return blockType switch
         {
-            ConferencePageBlockType.Hero => "Ana Karşılama",
-            ConferencePageBlockType.About => "Hakkında / İçerik",
-            ConferencePageBlockType.CallForPapers => "Kongreye Çağrı",
-            ConferencePageBlockType.Topics => "Kongre Konuları",
-            ConferencePageBlockType.Committees => "Bilim Kurulu",
-            ConferencePageBlockType.Fees => "Katılım Ücreti",
+            ConferencePageBlockType.Hero => Localizer.GetString("BlockType_Hero"),
+            ConferencePageBlockType.About => Localizer.GetString("BlockType_About"),
+            ConferencePageBlockType.CallForPapers => Localizer.GetString("BlockType_CallForPapers"),
+            ConferencePageBlockType.Topics => Localizer.GetString("BlockType_Topics"),
+            ConferencePageBlockType.Committees => Localizer.GetString("BlockType_Committees"),
+            ConferencePageBlockType.Fees => Localizer.GetString("BlockType_Fees"),
             _ => blockType.ToString()
         };
     }
@@ -549,15 +549,15 @@
 
             <div>
                 <div class="admin-hero-kicker">
-                    Kongre Sitesi
+                    @Localizer["ConferenceSite"]
                 </div>
 
                 <h3 class="admin-hero-title">
-                    Kongre Site Blokları
+                    @Localizer["PageHeading"]
                 </h3>
 
                 <p class="admin-hero-lead">
-                    <strong>@conferenceTitle</strong> kongresinin web sitesinde görünecek bölümleri buradan yönetebilirsiniz.
+                    @Html.Raw(string.Format(Localizer.GetString("HeroDescription"), $"<strong>{conferenceTitle}</strong>"))
                 </p>
             </div>
         </div>
@@ -569,7 +569,7 @@
                    target="_blank"
                    class="admin-hero-btn admin-hero-btn-light">
                     <i class="fas fa-external-link-alt"></i>
-                    Siteyi Gör
+                    @Localizer["ViewSite"]
                 </a>
             }
         </div>
@@ -629,7 +629,7 @@
                 </div>
 
                 <div class="admin-stat-label">
-                    Yayında
+                    @Localizer["Published"]
                 </div>
             </div>
         </div>
@@ -655,17 +655,17 @@
         <div class="page-blocks-card-header">
             <div>
                 <h5 class="page-blocks-card-title">
-                    Blok Listesi
+                    
                 </h5>
 
                 <p class="page-blocks-card-subtitle">
-                    Bloklar sıra numarasına göre kongre sitesinde gösterilir. Gizli bloklar canlı sitede görünmez.
+                    
                 </p>
             </div>
 
             <span class="page-blocks-card-count">
                 <i class="fas fa-list-ul"></i>
-                @blocks.Count kayıt
+                @blocks.Count 
             </span>
         </div>
 
@@ -677,11 +677,11 @@
                 </div>
 
                 <h6 class="page-blocks-empty-title">
-                    Henüz site bloğu bulunmuyor
+                    
                 </h6>
 
                 <p class="page-blocks-empty-text">
-                    Bu kongre için otomatik bloklar oluşturulmamış olabilir.
+                    
                 </p>
             </div>
         }
@@ -692,15 +692,15 @@
                     <thead>
                         <tr>
                             <th class="ps-4" style="width: 10%;">
-                                Sıra
+                                @Localizer["Order"]
                             </th>
 
                             <th style="width: 22%;">
-                                Blok Türü
+                                @Localizer["BlockType"]
                             </th>
 
                             <th style="width: 38%;">
-                                Başlık
+                                @Localizer["Title"]
                             </th>
 
                             <th class="text-center" style="width: 14%;">
@@ -708,7 +708,7 @@
                             </th>
 
                             <th class="pe-4 text-end" style="width: 16%;">
-                                İşlem
+                                @Localizer["Action"]
                             </th>
                         </tr>
                     </thead>
@@ -751,7 +751,7 @@
                                     {
                                         <span class="status-badge status-active">
                                             <i class="fas fa-eye"></i>
-                                            Yayında
+                                            @Localizer["Published"]
                                         </span>
                                     }
                                     else
@@ -767,7 +767,7 @@
                                     <a href="@editUrl"
                                        class="edit-block-btn">
                                         <i class="fas fa-pen-to-square"></i>
-                                        İçeriği Düzenle
+                                        
                                     </a>
                                 </td>
                             </tr>

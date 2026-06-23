@@ -48,7 +48,7 @@
                         </div>
                         <div>
                             <h5 class="modern-card-title mb-1">@Localizer["BasicInfoHeader"]</h5>
-                            <p class="modern-card-text mb-0">Kongrenin adı, tarihi ve konumu.</p>
+                            <p class="modern-card-text mb-0">@Localizer["ConferenceNameDateLocation"]</p>
                         </div>
                     </div>
                     <div class="modern-card-body">
@@ -73,11 +73,11 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-semibold small text-muted">Şehir</label>
+                                <label class="form-label fw-semibold small text-muted">@Localizer["City"]</label>
                                 <input asp-for="City" class="form-control" placeholder="İstanbul" />
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-semibold small text-muted">Ülke</label>
+                                <label class="form-label fw-semibold small text-muted">@Localizer["Country"]</label>
                                 <input asp-for="Country" class="form-control" placeholder="Türkiye" />
                             </div>
                         </div>
@@ -231,20 +231,20 @@
                             <i class="fas fa-calendar-check"></i>
                         </div>
                         <div>
-                            <h5 class="modern-card-title mb-1">Son Başvuru Tarihleri</h5>
-                            <p class="modern-card-text mb-0">Bildiri ve tam metin deadline'ları.</p>
+                            <h5 class="modern-card-title mb-1">@Localizer["DeadlineDates"]</h5>
+                            <p class="modern-card-text mb-0">@Localizer["SubmissionDeadlines"]</p>
                         </div>
                     </div>
                     <div class="modern-card-body">
                         <div class="mb-3">
                             <label class="form-label fw-semibold small text-muted">Özet Son Gönderim</label>
                             <input asp-for="AbstractSubmissionDeadline" type="datetime-local" class="form-control" />
-                            <div class="form-text">Boş bırakırsanız sınır uygulanmaz.</div>
+                            <div class="form-text">@Localizer["NoLimitIfEmpty"]</div>
                         </div>
                         <div class="mb-0">
                             <label class="form-label fw-semibold small text-muted">Tam Metin Son Gönderim</label>
                             <input asp-for="FullTextSubmissionDeadline" type="datetime-local" class="form-control" />
-                            <div class="form-text">Boş bırakırsanız sınır uygulanmaz.</div>
+                            <div class="form-text">@Localizer["NoLimitIfEmpty"]</div>
                         </div>
                     </div>
                 </div>
@@ -255,7 +255,7 @@
                             <i class="fas fa-image"></i>
                         </div>
                         <div>
-                            <h5 class="modern-card-title mb-1">Görsel</h5>
+                            <h5 class="modern-card-title mb-1">@Localizer["Image"]</h5>
                             <p class="modern-card-text mb-0">Logo ve banner (JPG, PNG, WEBP — maks. 5 MB).</p>
                         </div>
                     </div>
@@ -271,7 +271,7 @@
                             <input type="file" name="LogoFile" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.webp" />
                         </div>
                         <div class="mb-0">
-                            <label class="form-label fw-semibold small text-muted">Banner Görseli</label>
+                            <label class="form-label fw-semibold small text-muted">@Localizer["BannerImage"]</label>
                             @if (!string.IsNullOrEmpty(Model.BannerPath))
                             {
                                 <div class="mb-2">
@@ -296,23 +296,23 @@
                     <div class="modern-card-body">
                         <div class="mb-3">
                             <label class="form-label fw-semibold small text-muted">
-                                Maksimum Kayıt Sayısı
-                                <small class="text-muted">(boş = sınırsız)</small>
+                                @Localizer["MaxRegistrations"]
+                                <small class="text-muted"></small>
                             </label>
                             <input asp-for="MaxRegistrations" type="number" min="1" class="form-control" placeholder="Örn: 500" />
                         </div>
                         <div class="form-check form-switch mb-3">
                             <input asp-for="IsSubmissionOpen" class="form-check-input" type="checkbox" role="switch" />
                             <label class="form-check-label fw-medium">
-                                Bildiri Başvuruları Açık
-                                <small class="text-muted d-block">kapatmak için işareti kaldırın</small>
+                                
+                                <small class="text-muted d-block"></small>
                             </label>
                         </div>
                         <div class="form-check form-switch">
                             <input asp-for="IsRegistrationOpen" class="form-check-input" type="checkbox" role="switch" />
                             <label class="form-check-label fw-medium">
-                                Kayıt Açık
-                                <small class="text-muted d-block">kapatmak için işareti kaldırın</small>
+                                
+                                <small class="text-muted d-block"></small>
                             </label>
                         </div>
                     </div>
@@ -329,14 +329,14 @@
                                 <div class="form-check form-switch mb-2">
                                     <input asp-for="IsStripeEnabled" class="form-check-input" type="checkbox" role="switch" />
                                     <label class="form-check-label fw-medium" asp-for="IsStripeEnabled">
-                                        Stripe (Kredi Kartı — Uluslararası)
+                                        
                                         <small class="text-muted d-block">Stripe API anahtarları sunucuda yapılandırılmış olmalıdır.</small>
                                     </label>
                                 </div>
                                 <div class="form-check form-switch mb-2">
                                     <input asp-for="IsPayTREnabled" class="form-check-input" type="checkbox" role="switch" />
                                     <label class="form-check-label fw-medium" asp-for="IsPayTREnabled">
-                                        PayTR (Kredi Kartı — Türkiye)
+                                        
                                         <small class="text-muted d-block">PayTR API anahtarları sunucuda yapılandırılmış olmalıdır.</small>
                                     </label>
                                 </div>
@@ -353,7 +353,7 @@
                         <div id="bank-fields">
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Banka Adı</label>
+                                    <label class="form-label fw-semibold">@Localizer["BankName"]</label>
                                     <input asp-for="BankName" class="form-control" placeholder="Örn: Ziraat Bankası" />
                                 </div>
                                 <div class="col-md-6">
@@ -361,7 +361,7 @@
                                     <input asp-for="BankAccountName" class="form-control" placeholder="Örn: Kongre Organizasyon Derneği" />
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Şube</label>
+                                    <label class="form-label fw-semibold">@Localizer["Branch"]</label>
                                     <input asp-for="BankBranch" class="form-control" placeholder="Örn: Kızılay Şubesi" />
                                 </div>
                                 <div class="col-md-6">

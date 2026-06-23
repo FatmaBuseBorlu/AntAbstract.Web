@@ -5,7 +5,7 @@
     ViewData["HideSelectedConferenceBar"] = true;
     Layout = "_LayoutDashboard";
 
-    var conferenceName = ViewBag.ConferenceName as string ?? "Kongre";
+    var conferenceName = ViewBag.ConferenceName as string ?? Localizer.GetString("ConferenceFallback");
 
     var conferenceId = ViewBag.ConferenceId is Guid selectedConferenceId
         ? selectedConferenceId
@@ -37,12 +37,12 @@
 
         return value switch
         {
-            "Hero" => "Ana Karşılama",
-            "CallForPapers" => "Kongreye Çağrı",
-            "Topics" => "Kongre Konuları",
-            "Committees" => "Bilim Kurulu",
-            "About" => "Hakkında / İçerik",
-            "Fees" => "Katılım Ücreti",
+            "Hero" => Localizer.GetString("BlockType_Hero"),
+            "CallForPapers" => Localizer.GetString("BlockType_CallForPapers"),
+            "Topics" => Localizer.GetString("BlockType_Topics"),
+            "Committees" => Localizer.GetString("BlockType_Committees"),
+            "About" => Localizer.GetString("BlockType_About"),
+            "Fees" => Localizer.GetString("BlockType_Fees"),
             _ => value
         };
     }
@@ -601,20 +601,20 @@
 
             <div>
                 <div class="vitrin-section-label">
-                    İçerik Yönetimi
+                    @Localizer["ContentManagement"]
                 </div>
 
                 <h2 class="vitrin-page-title">
-                    Vitrin Blokları
+                    @Localizer["PageTitle"]
                 </h2>
 
                 <p class="vitrin-page-description">
-                    <strong>@conferenceName</strong> kongresinin vitrin sayfasında görünecek içerik bloklarını buradan yönetebilirsiniz.
+                    @Html.Raw(string.Format(Localizer.GetString("HeroDescription"), $"<strong>{conferenceName}</strong>"))
                 </p>
 
                 <div class="selected-conference-chip">
                     <i class="fas fa-calendar-check"></i>
-                    <span>Seçili Kongre:</span>
+                    <span>@Localizer["SelectedConference"]</span>
                     <strong>@conferenceName</strong>
 
                     @if (!string.IsNullOrWhiteSpace(conferenceSlug))
@@ -631,7 +631,7 @@
                asp-action="Index"
                class="btn vitrin-light-btn">
                 <i class="fas fa-arrow-left"></i>
-                Kongre Sitelerine Dön
+                @Localizer["BackToConferenceSites"]
             </a>
 
             @if (!string.IsNullOrWhiteSpace(conferenceSlug))
@@ -640,14 +640,14 @@
                    target="_blank"
                    class="btn vitrin-outline-btn">
                     <i class="fas fa-arrow-up-right-from-square"></i>
-                    Siteyi Gör
+                    @Localizer["ViewSite"]
                 </a>
             }
 
             <a href="@flowUrl"
                class="btn vitrin-outline-btn">
                 <i class="fas fa-stream"></i>
-                Kongre Akışına Git
+                @Localizer["GoToConferenceFlow"]
             </a>
 
             <a asp-area="Admin"
@@ -656,7 +656,7 @@
                asp-route-conferenceId="@conferenceId"
                class="btn vitrin-primary-btn">
                 <i class="fas fa-plus"></i>
-                Yeni Blok Ekle
+                @Localizer["AddNewBlock"]
             </a>
         </div>
     </div>
@@ -674,7 +674,7 @@
                     </div>
 
                     <div class="vitrin-stat-label">
-                        Toplam Blok
+                        @Localizer["TotalBlocks"]
                     </div>
                 </div>
             </div>
@@ -692,7 +692,7 @@
                     </div>
 
                     <div class="vitrin-stat-label">
-                        Yayında
+                        @Localizer["Published"]
                     </div>
                 </div>
             </div>
@@ -710,7 +710,7 @@
                     </div>
 
                     <div class="vitrin-stat-label">
-                        Gizli
+                        @Localizer["Hidden"]
                     </div>
                 </div>
             </div>
@@ -743,7 +743,7 @@
                 </h5>
 
                 <p>
-                    Bloklar sıra numarasına göre vitrin sayfasında gösterilir. Yayında olmayan bloklar sitede görünmez.
+                    
                 </p>
             </div>
 
@@ -760,11 +760,11 @@
                 </div>
 
                 <h6>
-                    Henüz vitrin bloğu bulunmuyor
+                    
                 </h6>
 
                 <p>
-                    Bu kongre vitrini için yeni blok ekleyebilirsiniz.
+                    
                 </p>
             </div>
         }
@@ -775,15 +775,15 @@
                     <thead>
                         <tr>
                             <th class="ps-4" style="width: 9%;">
-                                Sıra
+                                @Localizer["Order"]
                             </th>
 
                             <th style="width: 24%;">
-                                Blok Türü
+                                @Localizer["BlockType"]
                             </th>
 
                             <th style="width: 39%;">
-                                Menü Başlığı
+                                
                             </th>
 
                             <th class="text-center" style="width: 14%;">
@@ -791,7 +791,7 @@
                             </th>
 
                             <th class="text-end pe-4" style="width: 14%;">
-                                İşlemler
+ 
                             </th>
                         </tr>
                     </thead>
@@ -833,7 +833,7 @@
                                             else
                                             {
                                                 <div class="block-subtitle">
-                                                    Alt başlık girilmedi
+                                                    
                                                 </div>
                                             }
                                         </div>
@@ -845,7 +845,7 @@
                                     {
                                         <span class="block-status-badge block-status-active">
                                             <i class="fas fa-check-circle"></i>
-                                            Yayında
+                                            @Localizer["Published"]
                                         </span>
                                     }
                                     else
@@ -864,7 +864,7 @@
                                            asp-action="EditBlock"
                                            asp-route-id="@block.Id"
                                            class="admin-action-btn admin-action-edit"
-                                           title="Bloğu Düzenle">
+                                           title="">
                                             <i class="fas fa-pen-to-square"></i>
                                         </a>
                                     </div>
