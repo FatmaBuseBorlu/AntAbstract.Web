@@ -1444,12 +1444,12 @@
 
             function update() {
                 var diff = deadline - new Date();
-                if (diff <= 0) { el.textContent = 'Son tarih geçti'; return; }
+                if (diff <= 0) { el.textContent = '@Localizer["DeadlinePassed"]'; return; }
                 var d = Math.floor(diff / 86400000);
                 var h = Math.floor((diff % 86400000) / 3600000);
                 var m = Math.floor((diff % 3600000) / 60000);
                 var s = Math.floor((diff % 60000) / 1000);
-                el.textContent = d + ' gün ' + h + ' sa ' + m + ' dk ' + s + ' sn kaldı';
+                el.textContent = d + ' @Localizer["DaysShort"] ' + h + ' @Localizer["HoursShort"] ' + m + ' @Localizer["MinutesShort"] ' + s + ' @Localizer["SecondsLeft"]';
             }
 
             update();
