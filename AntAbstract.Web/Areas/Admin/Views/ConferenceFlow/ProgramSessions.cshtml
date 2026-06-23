@@ -401,7 +401,7 @@
                                         </div>
 
                                         <div class="session-status @(item.IsActive ? "active" : "passive")">
-                                            @(item.IsActive ? "Aktif" : "Pasif")
+                                            @(item.IsActive ? Localizer.GetString("Active").Value : Localizer.GetString("Passive").Value)
                                         </div>
                                     </div>
 
@@ -414,7 +414,7 @@
                                             @if (item.SortOrder > 0)
                                             {
                                                 <span class="sort-badge">
-                                                    Sıra @item.SortOrder
+                                                    @Localizer["Order"] @item.SortOrder
                                                 </span>
                                             }
                                         </div>
@@ -435,7 +435,7 @@
                                         <div class="session-meta-list">
                                             <span class="session-meta">
                                                 <i class="fas fa-location-dot"></i>
-                                                @(string.IsNullOrWhiteSpace(item.Location) ? "Konum belirtilmedi" : item.Location)
+                                                @(string.IsNullOrWhiteSpace(item.Location) ? Localizer.GetString("NoLocation").Value : item.Location)
                                             </span>
 
                                             @if (!string.IsNullOrWhiteSpace(item.SpeakerName))
@@ -448,7 +448,7 @@
 
                                             <span class="session-meta">
                                                 <i class="fas fa-file-lines"></i>
-                                                @submissionCount bildiri
+                                                @submissionCount @Localizer["Submission"]
                                             </span>
                                         </div>
                                     </div>
@@ -457,13 +457,13 @@
                                         <a href="@manageUrl"
                                            class="btn session-action-btn manage">
                                             <i class="fas fa-list-check"></i>
-                                            Yönet
+                                            @Localizer["Manage"]
                                         </a>
 
                                         <a href="@editUrl"
                                            class="btn session-action-btn edit">
                                             <i class="fas fa-pen"></i>
-                                            Düzenle
+                                            @Localizer["Edit"]
                                         </a>
 
                                         <button type="button"
@@ -473,7 +473,7 @@
                                                 data-session-date="@item.SessionDate.ToString("dd MMMM yyyy")"
                                                 data-session-time="@item.StartTime.ToString(@"hh\:mm") - @item.EndTime.ToString(@"hh\:mm")">
                                             <i class="fas fa-trash"></i>
-                                            Sil
+                                            @Localizer["Delete"]
                                         </button>
                                     </div>
                                 </div>
@@ -489,11 +489,11 @@
                 </div>
 
                 <h4>
-                    Aramaya uygun @Localizer["Sessions"] bulunamadı
+                    @Localizer["NoSearchResults"]
                 </h4>
 
                 <p>
-                    Arama metnini veya gün filtresini değiştirerek tekrar deneyebilirsiniz.
+                    @Localizer["NoSearchResultsDesc"]
                 </p>
             </div>
         }
@@ -503,7 +503,7 @@
                 <div class="timeline-day-card">
                     <div class="timeline-day-header">
                         <span class="timeline-day-badge">
-                            1. Gün
+                            1. @Localizer["Day"]
                         </span>
 
                         <span class="timeline-day-date">
@@ -525,7 +525,7 @@
                 <div class="timeline-day-card">
                     <div class="timeline-day-header">
                         <span class="timeline-day-badge">
-                            2. Gün
+                            2. @Localizer["Day"]
                         </span>
 
                         <span class="timeline-day-date">
