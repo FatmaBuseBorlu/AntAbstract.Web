@@ -46,17 +46,17 @@
 
     if (!isEnglish && ticketName.Contains("Yazar Katılım Ücreti", StringComparison.OrdinalIgnoreCase))
     {
-        ticketName = "Yazar Ön Başvurusu";
+        ticketName = Localizer.GetString("AuthorPreApplication").Value;
     }
 
     if (!isEnglish && ticketName.Contains("Ücreti", StringComparison.OrdinalIgnoreCase))
     {
-        ticketName = ticketName.Replace("Ücreti", "Başvurusu");
+        ticketName = ticketName.Replace(Localizer.GetString("FeeWord").Value, Localizer.GetString("ApplicationWord").Value);
     }
 
     if (!isEnglish && ticketName.Contains("Ücret", StringComparison.OrdinalIgnoreCase))
     {
-        ticketName = ticketName.Replace("Ücret", "Başvuru");
+        ticketName = ticketName.Replace(Localizer.GetString("FeeWordAlt").Value, Localizer.GetString("ApplicationWordAlt").Value);
     }
 
     if (isEnglish &&
