@@ -234,7 +234,7 @@
                 <p>@Localizer["SubmissionListDesc"]</p>
             </div>
             <div class="assignment-list-meta">
-                <div class="assignment-count-pill">@Model.FilteredCount bildiri</div>
+                <div class="assignment-count-pill">@Model.FilteredCount @Localizer["Submissions"]</div>
             </div>
         </div>
 
@@ -244,11 +244,11 @@
                 <div class="empty-icon">
                     <i class="fas fa-file-circle-question"></i>
                 </div>
-                <h4></h4>
-                <p></p>
+                <h4>@Localizer["NoSubmissionsFound"]</h4>
+                <p>@Localizer["NoSubmissionsMessage"]</p>
                 <a href="@baseUrl" class="btn assignment-light-btn">
                     <i class="fas fa-rotate-left me-2"></i>
-                    Filtreleri Temizle
+                    @Localizer["ClearFilters"]
                 </a>
             </div>
         }
@@ -261,8 +261,8 @@
                 <div class="bulk-assignment-toolbar">
                     <div class="bulk-assignment-summary">
                         <span id="bulkSelectedCount">0</span>
-                        <strong></strong>
-                        <small></small>
+                        <strong>@Localizer["SubmissionsSelected"]</strong>
+                        <small>@Localizer["BulkAssignNote"]</small>
                     </div>
 
                     <div class="bulk-assignment-controls">
@@ -270,7 +270,7 @@
                                 class="bulk-reviewer-select"
                                 aria-label="Toplu atanacak hakem"
                                 disabled="@(!Model.BulkReviewers.Any())">
-                            <option value="">Hakem seçin</option>
+                            <option value="">@Localizer["SelectReferee"]</option>
                             @foreach (var reviewer in Model.BulkReviewers)
                             {
                                 var label = string.IsNullOrWhiteSpace(reviewer.Email)
@@ -286,7 +286,7 @@
                                 id="bulkAssignSubmit"
                                 disabled>
                             <i class="fas fa-users-gear me-2"></i>
-                            Seçilenlere Ata
+                            @Localizer["AssignToSelected"]
                         </button>
                     </div>
                 </div>
@@ -295,7 +295,7 @@
                 {
                     <div class="bulk-assignment-warning">
                         <i class="fas fa-triangle-exclamation me-2"></i>
-                        Atanabilir hakem bulunamadı. Hakem rolleri, müsaitlik veya yük limiti kontrol edilmeli.
+                        @Localizer["NoAvailableReferees"]
                     </div>
                 }
 
@@ -309,10 +309,10 @@
                                            class="form-check-input"
                                            aria-label="Tüm bildirileri seç" />
                                 </th>
-                                <th>Bildiri</th>
-                                <th>Yazar</th>
-                                <th>Hakemler</th>
-                                <th>Durum</th>
+                                <th>@Localizer["Submission"]</th>
+                                <th>@Localizer["Author"]</th>
+                                <th>@Localizer["Referees"]</th>
+                                <th>@Localizer["Status"]</th>
                                 <th>@Localizer["Date"]</th>
                                 <th class="text-end">@Localizer["Action"]</th>
                             </tr>
@@ -349,7 +349,7 @@
                                             <div class="author-avatar-sm">
                                                 @(string.IsNullOrWhiteSpace(item.AuthorName) ? "Y" : item.AuthorName.Substring(0, 1).ToUpper())
                                             </div>
-                                            <span>@(string.IsNullOrWhiteSpace(item.AuthorName) ? "Yazar bilgisi yok" : item.AuthorName)</span>
+                                            <span>@(string.IsNullOrWhiteSpace(item.AuthorName) ? Localizer.GetString("NoAuthorInfo").Value : item.AuthorName)</span>
                                         </div>
                                     </td>
 
@@ -415,7 +415,7 @@
                         </li>
                     </ul>
                     <p class="text-center text-muted small">
-                        @Model.FilteredCount bildiride @((Model.Page - 1) * Model.PageSize + 1)–@Math.Min(Model.Page * Model.PageSize, Model.FilteredCount) gösteriliyor
+                        @string.Format(Localizer.GetString("ShowingRange").Value, Model.FilteredCount, (Model.Page - 1) * Model.PageSize + 1, Math.Min(Model.Page * Model.PageSize, Model.FilteredCount))
                     </p>
                 </nav>
             }
