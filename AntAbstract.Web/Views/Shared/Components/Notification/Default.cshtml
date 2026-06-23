@@ -126,6 +126,24 @@
             background: #eef6ff;
             color: #0d6efd;
         }
+
+    /* Dark Mode */
+    [data-theme="dark"] .dropdown-menu {
+        background: #1e293b !important; border-color: #334155 !important;
+    }
+    [data-theme="dark"] .dropdown-menu li { border-color: #334155 !important; }
+    [data-theme="dark"] .dropdown-menu h6 { color: #f1f5f9 !important; }
+    [data-theme="dark"] .notif-item { border-color: #334155 !important; }
+    [data-theme="dark"] .notif-item:hover { background: #0f172a !important; }
+    [data-theme="dark"] .notif-title { color: #f1f5f9 !important; }
+    [data-theme="dark"] .notif-body { color: #94a3b8 !important; }
+    [data-theme="dark"] .notif-time { color: #64748b !important; }
+    [data-theme="dark"] .notif-empty-state { color: #64748b !important; }
+    [data-theme="dark"] .notif-empty-state i { color: #475569 !important; }
+    [data-theme="dark"] .notif-view-all {
+        background: #0f172a !important; color: #94a3b8 !important; border-color: #334155 !important;
+    }
+    [data-theme="dark"] .notif-view-all:hover { background: #1e293b !important; color: #38bdf8 !important; }
 </style>
 
 <div class="dropdown">
@@ -148,9 +166,9 @@
         aria-labelledby="notifDropdownBtn"
         style="width: 340px;">
 
-        <li class="p-3 border-bottom d-flex justify-content-between align-items-center bg-white">
-            <h6 class="fw-bold mb-0 text-dark">
-                Bildirimler
+        <li class="p-3 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0">
+                @Localizer["HeaderTitle"]
             </h6>
 
             @if (unreadCount > 0)
@@ -160,7 +178,7 @@
                         id="markAllReadBtn"
                         class="btn btn-link btn-sm p-0 text-decoration-none text-primary fw-bold"
                         style="font-size: 0.78rem;">
-                    Tümünü Okundu Yap
+                    @Localizer["MarkAllReadButton"]
                 </button>
             }
         </li>
@@ -208,14 +226,14 @@
             {
                 <div class="notif-empty-state" id="notificationEmptyState">
                     <i class="far fa-bell-slash"></i>
-                    <p>Okunmamış bildiriminiz yok.</p>
+                    <p>@Localizer["EmptyStateText"]</p>
                 </div>
             }
         </div>
 
         <li>
             <a href="/Notification/Index" class="notif-view-all">
-                Tümünü Gör
+                @Localizer["ViewAllLink"]
             </a>
         </li>
     </ul>
