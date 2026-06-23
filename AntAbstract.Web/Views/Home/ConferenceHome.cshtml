@@ -942,6 +942,33 @@
                     <i class="fab fa-linkedin-in"></i>
                 </a>
             </div>
+
+            @{
+                var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.Name;
+                var returnUrl = Context.Request.Path + Context.Request.QueryString;
+            }
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-light dropdown-toggle d-flex align-items-center gap-1"
+                        type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                        style="border-radius:999px;font-size:.78rem;font-weight:800;padding:4px 12px;">
+                    <i class="fas fa-globe"></i>
+                    @(currentCulture.StartsWith("tr", StringComparison.OrdinalIgnoreCase) ? "TR" : "EN")
+                </button>
+                <div class="dropdown-menu dropdown-menu-end" style="min-width:auto;">
+                    <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="culture" value="tr-TR" />
+                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                        <button type="submit" class="dropdown-item small fw-bold @(currentCulture.StartsWith("tr") ? "active" : "")">🇹🇷 Türkçe</button>
+                    </form>
+                    <form asp-area="" asp-controller="Language" asp-action="ChangeLanguage" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="culture" value="en-US" />
+                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                        <button type="submit" class="dropdown-item small fw-bold @(currentCulture.StartsWith("en") ? "active" : "")">🇬🇧 English</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
