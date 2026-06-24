@@ -71,27 +71,29 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        padding: 8px 15px;
+        padding: 8px 16px;
         border-radius: 999px;
-        background: rgba(0, 174, 239, 0.10);
+        background: rgba(0, 174, 239, 0.08);
         color: #0284c7;
-        border: 1px solid rgba(0, 174, 239, 0.18);
+        border: 1px solid rgba(0, 174, 239, 0.15);
         font-size: 0.78rem;
         font-weight: 900;
-        letter-spacing: 0.6px;
+        letter-spacing: 0.8px;
         text-transform: uppercase;
     }
 
     .section-title {
         color: #0f172a;
-        font-weight: 900;
-        letter-spacing: -1px;
+        font-weight: 950;
+        letter-spacing: -1.2px;
+        line-height: 1.15;
     }
 
     .section-description {
         color: #64748b;
-        line-height: 1.75;
-        max-width: 720px;
+        line-height: 1.8;
+        max-width: 680px;
+        font-size: 1.02rem;
     }
 
     .hero-modern {
@@ -207,20 +209,21 @@
         align-items: center;
         justify-content: center;
         gap: 10px;
-        padding: 15px 26px;
+        padding: 16px 30px;
         border-radius: 999px;
         background: linear-gradient(135deg, #00aeef, #0284c7);
         color: #ffffff;
         text-decoration: none;
         font-weight: 900;
-        box-shadow: 0 18px 35px rgba(0, 174, 239, 0.24);
-        transition: all 0.22s ease;
+        font-size: 0.95rem;
+        box-shadow: 0 12px 28px rgba(0, 174, 239, 0.22);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
         .primary-pill-btn:hover {
             color: #ffffff;
-            transform: translateY(-2px);
-            box-shadow: 0 22px 45px rgba(0, 174, 239, 0.32);
+            transform: translateY(-3px);
+            box-shadow: 0 20px 45px rgba(0, 174, 239, 0.35);
         }
 
     .secondary-pill-btn {
@@ -228,14 +231,15 @@
         align-items: center;
         justify-content: center;
         gap: 10px;
-        padding: 14px 24px;
+        padding: 15px 28px;
         border-radius: 999px;
         background: #ffffff;
         color: #0f172a;
         text-decoration: none;
         font-weight: 900;
-        border: 1px solid #cbd5e1;
-        transition: all 0.22s ease;
+        font-size: 0.95rem;
+        border: 1.5px solid #e2e8f0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
         .secondary-pill-btn:hover {
@@ -565,42 +569,62 @@
 
     .role-card {
         background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 28px;
-        padding: 28px;
+        border: 1px solid #f1f5f9;
+        border-radius: 24px;
+        padding: 30px;
         height: 100%;
-        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
-        transition: all 0.24s ease;
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
     }
 
+        .role-card::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(135deg, #00aeef, #0284c7);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
         .role-card:hover {
-            transform: translateY(-8px);
-            border-color: rgba(0, 174, 239, 0.35);
-            box-shadow: 0 28px 70px rgba(15, 23, 42, 0.11);
+            transform: translateY(-6px);
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.1);
+            border-color: rgba(0, 174, 239, 0.2);
+        }
+
+        .role-card:hover::after {
+            transform: scaleX(1);
         }
 
     .role-icon {
-        width: 62px;
-        height: 62px;
-        border-radius: 22px;
+        width: 64px;
+        height: 64px;
+        border-radius: 20px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.55rem;
+        font-size: 1.5rem;
         margin-bottom: 22px;
-        background: rgba(0, 174, 239, 0.1);
-        color: #0284c7;
     }
+
+    .col-md-4:nth-child(1) .role-icon { background: rgba(0, 174, 239, 0.1); color: #0284c7; }
+    .col-md-4:nth-child(2) .role-icon { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+    .col-md-4:nth-child(3) .role-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
 
     .role-card h4 {
         color: #0f172a;
         font-weight: 900;
-        margin-bottom: 12px;
+        font-size: 1.1rem;
+        margin-bottom: 10px;
     }
 
     .role-card p {
         color: #64748b;
-        line-height: 1.7;
+        line-height: 1.75;
+        font-size: 0.92rem;
         margin-bottom: 0;
     }
 
@@ -612,19 +636,18 @@
 
     .modern-congress-card {
         background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 28px;
+        border: 1px solid #f1f5f9;
+        border-radius: 24px;
         overflow: hidden;
         height: 100%;
-        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
-        transition: all 0.25s ease;
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
     }
 
         .modern-congress-card:hover {
             transform: translateY(-8px);
-            box-shadow: 0 28px 75px rgba(15, 23, 42, 0.12);
-            border-color: rgba(0, 174, 239, 0.35);
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
         }
 
     .modern-congress-image {
@@ -816,28 +839,83 @@
             pointer-events: none;
         }
 
-    .workflow-card {
+    .workflow-timeline {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        gap: 20px;
+    }
+
+    .workflow-line {
+        position: absolute;
+        top: 24px;
+        left: 40px;
+        right: 40px;
+        height: 2px;
+        background: rgba(255, 255, 255, 0.12);
+        z-index: 1;
+    }
+
+    .workflow-step {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
         position: relative;
         z-index: 2;
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.10);
-        border-radius: 24px;
-        padding: 24px;
-        height: 100%;
-        backdrop-filter: blur(12px);
     }
 
     .workflow-number {
-        width: 44px;
-        height: 44px;
-        border-radius: 16px;
-        background: #00aeef;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #00aeef, #0284c7);
         color: #ffffff;
-        display: inline-flex;
+        display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 900;
-        margin-bottom: 16px;
+        font-size: 1.1rem;
+        box-shadow: 0 8px 24px rgba(0, 174, 239, 0.3);
+        flex-shrink: 0;
+    }
+
+    .workflow-connector {
+        width: 2px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .workflow-card {
+        position: relative;
+        z-index: 2;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        border-radius: 20px;
+        padding: 24px 20px;
+        backdrop-filter: blur(12px);
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+
+        .workflow-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-4px);
+            border-color: rgba(0, 174, 239, 0.25);
+        }
+
+    .workflow-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        background: rgba(0, 174, 239, 0.15);
+        color: #38bdf8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        margin: 0 auto 14px;
     }
 
     .workflow-card h5 {
@@ -852,44 +930,133 @@
         font-size: 0.93rem;
     }
 
-    .feature-card-modern {
+    .proceeding-book-card {
+        border-radius: 20px;
+        overflow: hidden;
+        background: #fff;
+        border: 1px solid #f1f5f9;
         height: 100%;
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 26px;
-        padding: 26px;
-        box-shadow: 0 15px 42px rgba(15, 23, 42, 0.05);
-        transition: all 0.24s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-        .feature-card-modern:hover {
-            transform: translateY(-7px);
-            box-shadow: 0 24px 64px rgba(15, 23, 42, 0.1);
-            border-color: rgba(0,174,239,0.35);
-        }
+    .proceeding-book-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+    }
 
-    .feature-icon-modern {
-        width: 56px;
-        height: 56px;
-        border-radius: 20px;
-        background: rgba(0, 174, 239, 0.10);
-        color: #0284c7;
-        display: inline-flex;
+    .proceeding-book-cover {
+        height: 140px;
+        display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        font-size: 1.35rem;
-        margin-bottom: 18px;
+        color: #fff;
+        gap: 6px;
     }
 
-    .feature-card-modern h5 {
+    .proceeding-book-cover i { font-size: 2rem; opacity: 0.9; }
+    .proceeding-book-cover span { font-size: 1.5rem; font-weight: 950; letter-spacing: -1px; }
+
+    .proceeding-book-info {
+        padding: 18px 20px;
+    }
+
+    .proceeding-book-info h6 {
         color: #0f172a;
         font-weight: 900;
+        font-size: 0.9rem;
+        line-height: 1.35;
+        margin-bottom: 8px;
+    }
+
+    .proceeding-book-info p {
+        color: #94a3b8;
+        font-size: 0.78rem;
         margin-bottom: 10px;
     }
 
-    .feature-card-modern p {
-        color: #64748b;
-        line-height: 1.68;
+    .proceeding-published-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 999px;
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+        font-size: 0.72rem;
+        font-weight: 800;
+    }
+
+    .past-congress-timeline {
+        position: relative;
+        padding-left: 120px;
+    }
+
+    .past-congress-timeline::before {
+        content: "";
+        position: absolute;
+        left: 119px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e2e8f0;
+    }
+
+    .past-congress-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 24px;
+        padding: 16px 0;
+        position: relative;
+        transition: all 0.2s ease;
+    }
+
+    .past-congress-item:hover .past-congress-content {
+        background: #f0f7ff;
+        border-color: rgba(0, 174, 239, 0.25);
+    }
+
+    .past-congress-date {
+        position: absolute;
+        left: -120px;
+        width: 100px;
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    .past-date-year { display: block; font-size: 1.1rem; font-weight: 950; color: #0f172a; }
+    .past-date-month { display: block; font-size: 0.78rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+
+    .past-congress-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #00aeef;
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 2px #e2e8f0;
+        flex-shrink: 0;
+        margin-top: 6px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .past-congress-content {
+        flex: 1;
+        padding: 14px 18px;
+        border-radius: 16px;
+        border: 1px solid #f1f5f9;
+        background: #fff;
+        transition: all 0.2s ease;
+    }
+
+    .past-congress-content h6 {
+        color: #0f172a;
+        font-weight: 900;
+        font-size: 0.92rem;
+        margin-bottom: 4px;
+    }
+
+    .past-congress-content p {
+        color: #94a3b8;
+        font-size: 0.78rem;
         margin-bottom: 0;
     }
 
@@ -1074,6 +1241,193 @@
         letter-spacing: 0.7px;
     }
 
+    /* ── Pricing Section ── */
+    .pricing-section {
+        background: radial-gradient(circle at 20% 80%, rgba(0, 174, 239, 0.06), transparent 40%),
+                    radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.06), transparent 40%),
+                    #f8fafc;
+    }
+
+    .pricing-card {
+        background: #ffffff;
+        border-radius: 24px;
+        border: 1px solid #e2e8f0;
+        padding: 40px 32px;
+        position: relative;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .pricing-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.10);
+        border-color: rgba(0, 174, 239, 0.3);
+    }
+
+    .pricing-card.featured {
+        border: 2px solid #00aeef;
+        box-shadow: 0 16px 48px rgba(0, 174, 239, 0.12);
+    }
+
+    .pricing-card.featured:hover {
+        box-shadow: 0 28px 70px rgba(0, 174, 239, 0.18);
+    }
+
+    .pricing-badge {
+        position: absolute;
+        top: -14px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #00aeef, #0284c7);
+        color: #fff;
+        padding: 6px 20px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .pricing-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        margin-bottom: 20px;
+    }
+
+    .pricing-plan-name {
+        font-size: 1.2rem;
+        font-weight: 900;
+        color: #0f172a;
+        letter-spacing: -0.3px;
+        margin-bottom: 8px;
+    }
+
+    .pricing-plan-desc {
+        font-size: 0.88rem;
+        color: #64748b;
+        line-height: 1.6;
+        margin-bottom: 24px;
+    }
+
+    .pricing-price {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+        margin-bottom: 8px;
+    }
+
+    .pricing-price .amount {
+        font-size: 2.8rem;
+        font-weight: 950;
+        color: #0f172a;
+        letter-spacing: -2px;
+        line-height: 1;
+    }
+
+    .pricing-price .currency {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #64748b;
+    }
+
+    .pricing-per {
+        font-size: 0.8rem;
+        color: #94a3b8;
+        margin-bottom: 28px;
+    }
+
+    .pricing-divider {
+        height: 1px;
+        background: #e2e8f0;
+        margin-bottom: 24px;
+    }
+
+    .pricing-features {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 32px;
+        flex: 1;
+    }
+
+    .pricing-features li {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 7px 0;
+        font-size: 0.88rem;
+        color: #334155;
+        line-height: 1.5;
+    }
+
+    .pricing-features li i {
+        color: #22c55e;
+        font-size: 0.82rem;
+        margin-top: 3px;
+        flex-shrink: 0;
+    }
+
+    .pricing-features li.disabled {
+        color: #cbd5e1;
+    }
+
+    .pricing-features li.disabled i {
+        color: #cbd5e1;
+    }
+
+    .pricing-btn {
+        display: block;
+        width: 100%;
+        padding: 14px;
+        border-radius: 14px;
+        font-weight: 800;
+        font-size: 0.92rem;
+        text-align: center;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: 2px solid #e2e8f0;
+        background: #fff;
+        color: #0f172a;
+    }
+
+    .pricing-btn:hover {
+        border-color: #00aeef;
+        color: #0284c7;
+        background: rgba(0, 174, 239, 0.04);
+    }
+
+    .pricing-btn.featured {
+        background: linear-gradient(135deg, #00aeef, #0284c7);
+        color: #fff;
+        border-color: transparent;
+    }
+
+    .pricing-btn.featured:hover {
+        background: linear-gradient(135deg, #0284c7, #0369a1);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(0, 174, 239, 0.3);
+    }
+
+    .pricing-submissions {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 10px;
+        background: rgba(0, 174, 239, 0.08);
+        color: #0284c7;
+        font-size: 0.78rem;
+        font-weight: 800;
+        margin-bottom: 20px;
+    }
+
     .cta-section {
         background: radial-gradient(circle at top left, rgba(0, 174, 239, 0.16), transparent 30%), linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
     }
@@ -1146,6 +1500,11 @@
         .hero-metric-strip {
             grid-template-columns: 1fr;
         }
+    }
+
+    @@media (max-width: 768px) {
+        .workflow-timeline { flex-direction: column; gap: 1rem; }
+        .workflow-line { display: none; }
     }
 
     @@media (max-width: 576px) {
@@ -1675,117 +2034,46 @@
                 </p>
             </div>
 
-            <div class="row g-4">
-                <div class="col-md-6 col-lg-3">
+            <div class="workflow-timeline">
+                <div class="workflow-line"></div>
+
+                <div class="workflow-step" data-animate data-delay="100">
+                    <div class="workflow-number">1</div>
+                    <div class="workflow-connector"></div>
                     <div class="workflow-card">
-                        <div class="workflow-number">1</div>
+                        <div class="workflow-icon"><i class="fas fa-search"></i></div>
                         <h5>@L("Workflow1Title", "Kongre Seç")</h5>
                         <p>@L("Workflow1Text", "Kullanıcı aktif kongreleri inceler ve ilgili etkinlik sayfasına gider.")</p>
                     </div>
                 </div>
 
-                <div class="col-md-6 col-lg-3">
+                <div class="workflow-step" data-animate data-delay="200">
+                    <div class="workflow-number">2</div>
+                    <div class="workflow-connector"></div>
                     <div class="workflow-card">
-                        <div class="workflow-number">2</div>
+                        <div class="workflow-icon"><i class="fas fa-user-plus"></i></div>
                         <h5>@L("Workflow2Title", "Kayıt Ol")</h5>
                         <p>@L("Workflow2Text", "Katılımcı kayıt türünü seçer, bilgilerini girer ve süreci başlatır.")</p>
                     </div>
                 </div>
 
-                <div class="col-md-6 col-lg-3">
+                <div class="workflow-step" data-animate data-delay="300">
+                    <div class="workflow-number">3</div>
+                    <div class="workflow-connector"></div>
                     <div class="workflow-card">
-                        <div class="workflow-number">3</div>
+                        <div class="workflow-icon"><i class="fas fa-file-upload"></i></div>
                         <h5>@L("Workflow3Title", "Bildiri Gönder")</h5>
                         <p>@L("Workflow3Text", "Yazar bildirisini yükler, konu ve yazar bilgilerini sisteme ekler.")</p>
                     </div>
                 </div>
 
-                <div class="col-md-6 col-lg-3">
+                <div class="workflow-step" data-animate data-delay="400">
+                    <div class="workflow-number">4</div>
+                    <div class="workflow-connector"></div>
                     <div class="workflow-card">
-                        <div class="workflow-number">4</div>
+                        <div class="workflow-icon"><i class="fas fa-check-double"></i></div>
                         <h5>@L("Workflow4Title", "Değerlendirme")</h5>
                         <p>@L("Workflow4Text", "Hakemler bildirileri inceler, sonuçlar ve sertifikalar sistemden takip edilir.")</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="py-5 bg-white">
-        <div class="container py-5">
-            <div class="text-center mb-5">
-                <div class="section-kicker mb-3">
-                    <i class="fas fa-layer-group"></i>
-                    @L("FeaturesLabel", "Özellikler")
-                </div>
-
-                <h2 class="section-title display-6">
-                    @L("FeaturesTitle", "Bilimsel organizasyonlar için güçlü araçlar")
-                </h2>
-
-                <p class="section-description mx-auto">
-                    @L("FeaturesDescription", "AntAbstract yalnızca bir kayıt sistemi değil; kongre yönetimini dijitalleştiren kapsamlı bir yönetim platformudur.")
-                </p>
-            </div>
-
-            <div class="row g-4">
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card-modern">
-                        <div class="feature-icon-modern">
-                            <i class="fas fa-file-signature"></i>
-                        </div>
-                        <h5>@L("FeatureSubmissionTitle", "Bildiri Yönetimi")</h5>
-                        <p>@L("FeatureSubmissionDescription", "Bildiri gönderimi, yazar bilgileri, dosya yükleme ve revizyon süreçleri düzenli şekilde yönetilir.")</p>
-                    </div>
-                </div>
-
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card-modern">
-                        <div class="feature-icon-modern">
-                            <i class="fas fa-user-check"></i>
-                        </div>
-                        <h5>@L("FeatureReviewerTitle", "Hakem Atama")</h5>
-                        <p>@L("FeatureReviewerDescription", "Hakem atamaları, değerlendirme formları ve karar süreçleri panel üzerinden takip edilir.")</p>
-                    </div>
-                </div>
-
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card-modern">
-                        <div class="feature-icon-modern">
-                            <i class="fas fa-credit-card"></i>
-                        </div>
-                        <h5>@L("FeaturePaymentTitle", "Ödeme Takibi")</h5>
-                        <p>@L("FeaturePaymentDescription", "Katılımcı kayıtları ve ödeme durumları yönetim panelinden kolayca kontrol edilir.")</p>
-                    </div>
-                </div>
-
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card-modern">
-                        <div class="feature-icon-modern">
-                            <i class="fas fa-globe"></i>
-                        </div>
-                        <h5>@L("FeatureWebsiteTitle", "Dinamik Web Sitesi")</h5>
-                        <p>@L("FeatureWebsiteDescription", "Her kongre için özel sayfa, içerik blokları, görseller ve çok dilli yapı desteklenir.")</p>
-                    </div>
-                </div>
-
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card-modern">
-                        <div class="feature-icon-modern">
-                            <i class="fas fa-calendar-alt"></i>
-                        </div>
-                        <h5>@L("FeatureProgramTitle", "Program Yönetimi")</h5>
-                        <p>@L("FeatureProgramDescription", "Oturumlar, sunumlar ve kongre programı düzenli şekilde oluşturulabilir.")</p>
-                    </div>
-                </div>
-
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card-modern">
-                        <div class="feature-icon-modern">
-                            <i class="fas fa-award"></i>
-                        </div>
-                        <h5>@L("FeatureCertificateTitle", "Sertifika Sistemi")</h5>
-                        <p>@L("FeatureCertificateDescription", "Yazar ve hakem sertifikaları uygun koşullar sağlandığında sistem tarafından oluşturulur.")</p>
                     </div>
                 </div>
             </div>
@@ -1799,11 +2087,11 @@
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-5">
                 <div>
                     <div class="section-kicker mb-3">@L("ProceedingBooksKicker", "Yayınlar")</div>
-                    <h2 class="section-heading-modern mb-2">@L("ProceedingBooksTitle", "Bildiri Kitapları")</h2>
-                    <p class="section-lead-modern">@L("ProceedingBooksLead", "Geçmiş kongrelerin yayınlanmış bildiri kitaplarına erişin.")</p>
+                    <h2 class="section-title display-6 mb-2">@L("ProceedingBooksTitle", "Bildiri Kitapları")</h2>
+                    <p class="section-description">@L("ProceedingBooksLead", "Geçmiş kongrelerin yayınlanmış bildiri kitaplarına erişin.")</p>
                 </div>
-                <a href="/Proceedings/Index" class="btn btn-outline-primary rounded-pill px-4">
-                    <i class="fas fa-books me-2"></i>@L("AllProceedingBooks", "Tüm Bildiri Kitapları")
+                <a href="/Proceedings/Index" class="primary-pill-btn" style="font-size:.85rem;padding:12px 22px;">
+                    <i class="fas fa-book-open"></i>@L("AllProceedingBooks", "Tüm Bildiri Kitapları")
                 </a>
             </div>
 
@@ -1811,23 +2099,21 @@
                 @foreach (var book in proceedingBooks.Take(4))
                 {
                     var bookUrl = $"/{book.Slug}/Proceedings/Index?conferenceId={book.ConferenceId}";
+                    var colors = new[] { "#0284c7", "#6366f1", "#10b981", "#f59e0b" };
+                    var colorIdx = proceedingBooks.ToList().IndexOf(book) % 4;
                     <div class="col-sm-6 col-lg-3">
                         <a href="@bookUrl" class="text-decoration-none">
-                            <div class="card border-0 rounded-4 shadow-sm h-100" style="transition:transform .2s;background:#fff;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
-                                <div class="card-body p-4">
-                                    <div class="d-flex align-items-center justify-content-center mb-3" style="width:52px;height:52px;background:linear-gradient(135deg,#6f42c1,#d63384);border-radius:16px;">
-                                        <i class="fas fa-book-open text-white fs-5"></i>
-                                    </div>
-                                    <h6 class="fw-900 text-dark mb-1 lh-sm" style="font-size:.9rem;">@book.ConferenceTitle</h6>
-                                    <p class="text-muted mb-2" style="font-size:.78rem;">
-                                        <i class="fas fa-map-marker-alt me-1"></i>@book.Location
-                                    </p>
-                                    <p class="text-muted mb-3" style="font-size:.78rem;">
-                                        <i class="fas fa-calendar me-1"></i>@book.StartDate.ToString("yyyy")
-                                    </p>
+                            <div class="proceeding-book-card">
+                                <div class="proceeding-book-cover" style="background:linear-gradient(135deg, @colors[colorIdx], @(colors[(colorIdx+1)%4]));">
+                                    <i class="fas fa-book-open"></i>
+                                    <span>@book.StartDate.ToString("yyyy")</span>
+                                </div>
+                                <div class="proceeding-book-info">
+                                    <h6>@book.ConferenceTitle</h6>
+                                    <p><i class="fas fa-map-marker-alt me-1"></i>@book.Location</p>
                                     @if (book.PublishedDate.HasValue)
                                     {
-                                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill" style="font-size:.72rem;">
+                                        <span class="proceeding-published-badge">
                                             <i class="fas fa-check-circle me-1"></i>@book.PublishedDate.Value.ToString("MMM yyyy")
                                         </span>
                                     }
@@ -1853,25 +2139,21 @@
                 </div>
             </div>
 
-            <div class="row g-3">
+            <div class="past-congress-timeline">
                 @foreach (var conf in pastCongresses.Take(6))
                 {
                     var confUrl = $"/{conf.Slug}";
-                    <div class="col-sm-6 col-lg-4">
-                        <a href="@confUrl" class="text-decoration-none">
-                            <div class="d-flex align-items-center gap-3 p-3 rounded-4 border bg-light" style="transition:all .2s;" onmouseover="this.style.borderColor='#0d6efd';this.style.background='#f0f4ff'" onmouseout="this.style.borderColor='';this.style.background=''">
-                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px;height:44px;background:rgba(100,116,139,.12);border-radius:14px;">
-                                    <i class="fas fa-calendar-check text-secondary"></i>
-                                </div>
-                                <div class="min-width-0">
-                                    <div class="fw-bold text-dark" style="font-size:.88rem;line-height:1.3;">@conf.Title</div>
-                                    <div class="text-muted" style="font-size:.75rem;">@conf.StartDate.ToString("dd.MM.yyyy") — @conf.EndDate.ToString("dd.MM.yyyy")</div>
-                                    <div class="text-muted" style="font-size:.75rem;"><i class="fas fa-map-marker-alt me-1"></i>@conf.Location</div>
-                                </div>
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary ms-auto flex-shrink-0" style="font-size:.7rem;">@L("Completed", "Tamamlandı")</span>
-                            </div>
-                        </a>
-                    </div>
+                    <a href="@confUrl" class="past-congress-item text-decoration-none">
+                        <div class="past-congress-date">
+                            <span class="past-date-year">@conf.StartDate.ToString("yyyy")</span>
+                            <span class="past-date-month">@conf.StartDate.ToString("MMM")</span>
+                        </div>
+                        <div class="past-congress-dot"></div>
+                        <div class="past-congress-content">
+                            <h6>@conf.Title</h6>
+                            <p><i class="fas fa-map-marker-alt me-1"></i>@conf.Location &nbsp; <i class="fas fa-calendar me-1"></i>@conf.StartDate.ToString("dd.MM.yyyy") — @conf.EndDate.ToString("dd.MM.yyyy")</p>
+                        </div>
+                    </a>
                 }
             </div>
         </div>
@@ -1971,6 +2253,125 @@
                         </div>
                     </div>
                 }
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Pricing / Paketler ── -->
+    <section id="pricing" class="pricing-section py-5">
+        <div class="container py-4">
+            <div class="text-center mb-5">
+                <div class="section-kicker mb-3">
+                    <i class="fas fa-tags"></i> @L("PricingKicker", "Paketler")
+                </div>
+                <h2 class="section-title display-6 mb-2">
+                    @L("PricingTitle", "Kongreniz İçin Doğru Plan")
+                </h2>
+                <p class="section-description mx-auto">
+                    @L("PricingLead", "Her ölçekteki kongre için esnek lisans seçenekleri. Tüm paketlerde teknik destek dahildir.")
+                </p>
+            </div>
+
+            <div class="row g-4 justify-content-center">
+                <!-- Standard -->
+                <div class="col-lg-4 col-md-6" data-animate="fade-up" data-delay="100">
+                    <div class="pricing-card">
+                        <div class="pricing-icon" style="background: rgba(99, 102, 241, 0.1); color: #6366f1;">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <div class="pricing-plan-name">@L("PricingStandardName", "Standard")</div>
+                        <div class="pricing-plan-desc">@L("PricingStandardDesc", "Küçük ve orta ölçekli kongreler için temel paket.")</div>
+                        <div class="pricing-submissions">
+                            <i class="fas fa-file-alt"></i> @L("PricingStandardLimit", "250 bildiriye kadar")
+                        </div>
+                        <div class="pricing-price">
+                            <span class="currency">€</span>
+                            <span class="amount">600</span>
+                        </div>
+                        <div class="pricing-per">@L("PricingPer", "/ kongre başına")</div>
+                        <div class="pricing-divider"></div>
+                        <ul class="pricing-features">
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureRegistration", "Katılımcı kayıt yönetimi")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureSubmission", "Bildiri gönderim sistemi")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureReview", "Hakem değerlendirme süreci")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureCertificate", "Kabul mektupları ve sertifikalar")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureAbstractBook", "Bildiri kitabı oluşturma")</li>
+                            <li class="disabled"><i class="fas fa-times"></i> @L("PricingFeatureProgram", "Online kongre programı")</li>
+                            <li class="disabled"><i class="fas fa-times"></i> @L("PricingFeatureAccommodation", "Konaklama yönetimi")</li>
+                            <li class="disabled"><i class="fas fa-times"></i> @L("PricingFeaturePayment", "Sanal ödeme entegrasyonu")</li>
+                        </ul>
+                        <a href="/contact" class="pricing-btn">
+                            @L("PricingSelectBtn", "Teklif Al") <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Advanced (Featured) -->
+                <div class="col-lg-4 col-md-6" data-animate="fade-up" data-delay="250">
+                    <div class="pricing-card featured">
+                        <div class="pricing-badge">@L("PricingPopularBadge", "En Popüler")</div>
+                        <div class="pricing-icon" style="background: rgba(0, 174, 239, 0.1); color: #00aeef;">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="pricing-plan-name">@L("PricingAdvancedName", "Advanced")</div>
+                        <div class="pricing-plan-desc">@L("PricingAdvancedDesc", "Orta-büyük kongreler için gelişmiş özellikler.")</div>
+                        <div class="pricing-submissions">
+                            <i class="fas fa-file-alt"></i> @L("PricingAdvancedLimit", "500 bildiriye kadar")
+                        </div>
+                        <div class="pricing-price">
+                            <span class="currency">€</span>
+                            <span class="amount">750</span>
+                        </div>
+                        <div class="pricing-per">@L("PricingPer", "/ kongre başına")</div>
+                        <div class="pricing-divider"></div>
+                        <ul class="pricing-features">
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureAllStandard", "Standard'daki tüm özellikler")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureProgram", "Online kongre programı")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureAccommodation", "Konaklama yönetimi")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureService", "Servis modülleri")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureEmail", "Toplu e-posta gönderimi")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureReports", "Detaylı raporlama")</li>
+                            <li class="disabled"><i class="fas fa-times"></i> @L("PricingFeaturePayment", "Sanal ödeme entegrasyonu")</li>
+                            <li class="disabled"><i class="fas fa-times"></i> @L("PricingFeatureDoi", "DOI entegrasyonu")</li>
+                        </ul>
+                        <a href="/contact" class="pricing-btn featured">
+                            @L("PricingSelectBtn", "Teklif Al") <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Premium -->
+                <div class="col-lg-4 col-md-6" data-animate="fade-up" data-delay="400">
+                    <div class="pricing-card">
+                        <div class="pricing-icon" style="background: rgba(234, 179, 8, 0.1); color: #eab308;">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <div class="pricing-plan-name">@L("PricingPremiumName", "Premium")</div>
+                        <div class="pricing-plan-desc">@L("PricingPremiumDesc", "Büyük ölçekli uluslararası kongreler için tam paket.")</div>
+                        <div class="pricing-submissions">
+                            <i class="fas fa-file-alt"></i> @L("PricingPremiumLimit", "1.000+ bildiri")
+                        </div>
+                        <div class="pricing-price">
+                            <span class="currency">€</span>
+                            <span class="amount">900</span>
+                        </div>
+                        <div class="pricing-per">@L("PricingPer", "/ kongre başına")</div>
+                        <div class="pricing-divider"></div>
+                        <ul class="pricing-features">
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureAllAdvanced", "Advanced'daki tüm özellikler")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeaturePayment", "Sanal ödeme entegrasyonu")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureDoi", "DOI entegrasyonu")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeaturePlagiarism", "İntihal kontrolü")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeaturePriority", "Öncelikli teknik destek")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureCustom", "Özel tema ve alan adı")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureApi", "REST API erişimi")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureLiveStream", "Canlı yayın desteği")</li>
+                        </ul>
+                        <a href="/contact" class="pricing-btn">
+                            @L("PricingSelectBtn", "Teklif Al") <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
