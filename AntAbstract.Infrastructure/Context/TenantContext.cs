@@ -1,10 +1,12 @@
-﻿using AntAbstract.Domain.Entities;
+using AntAbstract.Domain.Entities;
 
 namespace AntAbstract.Infrastructure.Context
 {
     public class TenantContext
     {
         public Tenant? Current { get; set; }
+
+        public Conference? CurrentConference { get; set; }
 
         /// <summary>
         /// SuperAdmin veya seeding gibi kasıtlı global erişim bağlamlarında
@@ -14,5 +16,7 @@ namespace AntAbstract.Infrastructure.Context
         public bool IsGlobalContext { get; set; } = false;
 
         public Guid? CurrentTenantId => Current?.Id;
+
+        public Guid? CurrentConferenceId => CurrentConference?.Id;
     }
 }
