@@ -571,8 +571,9 @@
     .congress-hero {
         position: relative;
         overflow: hidden;
-        padding: calc(4rem + 86px) 0 2.1rem;
-        background: radial-gradient(circle at 8% 28%, rgba(0, 174, 239, 0.18), transparent 22%), radial-gradient(circle at 88% 18%, rgba(13, 110, 253, 0.16), transparent 28%), linear-gradient(135deg, #f8fcff 0%, #eef8ff 48%, #e8f3ff 100%);
+        padding: calc(4rem + 86px) 0 2.5rem;
+        background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 35%, #0d1b3e 65%, #071228 100%);
+        color: #ffffff;
         border-bottom-left-radius: 46px;
         border-bottom-right-radius: 46px;
     }
@@ -580,23 +581,23 @@
         .congress-hero::before {
             content: "";
             position: absolute;
-            left: -110px;
-            top: -140px;
-            width: 350px;
-            height: 350px;
-            border-radius: 999px;
-            border: 2px solid rgba(13, 110, 253, 0.10);
+            inset: 0;
+            background:
+                radial-gradient(ellipse 500px 350px at 15% 40%, rgba(0, 174, 239, 0.12), transparent),
+                radial-gradient(ellipse 400px 300px at 85% 30%, rgba(99, 102, 241, 0.1), transparent);
+            pointer-events: none;
         }
 
         .congress-hero::after {
             content: "";
             position: absolute;
-            right: -150px;
-            bottom: -190px;
-            width: 440px;
-            height: 440px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.45);
+            right: -100px;
+            bottom: -120px;
+            width: 350px;
+            height: 350px;
+            border-radius: 50%;
+            background: rgba(0, 174, 239, 0.06);
+            filter: blur(50px);
         }
 
     .congress-hero-decoration {
@@ -637,18 +638,20 @@
         gap: 0.55rem;
         padding: 0.55rem 1rem;
         border-radius: 999px;
-        background: rgba(13, 110, 253, 0.08);
-        color: #0d6efd;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: #38bdf8;
         font-size: 0.86rem;
         font-weight: 900;
         margin-bottom: 1.25rem;
+        backdrop-filter: blur(8px);
     }
 
     .congress-hero-title {
         margin: 0;
-        color: #0f172a;
-        font-size: clamp(2.25rem, 4.5vw, 4rem);
-        font-weight: 900;
+        color: #ffffff;
+        font-size: clamp(2.5rem, 5vw, 4.5rem);
+        font-weight: 950;
         letter-spacing: -0.06em;
         line-height: 1.05;
     }
@@ -656,7 +659,7 @@
     .congress-hero-description {
         margin: 1rem auto 0;
         max-width: 760px;
-        color: #64748b;
+        color: rgba(255, 255, 255, 0.6);
         font-size: 1.12rem;
         font-weight: 500;
         line-height: 1.7;
@@ -669,28 +672,28 @@
         display: flex;
         align-items: center;
         gap: 0.9rem;
-        background: rgba(255, 255, 255, 0.92);
-        border: 1px solid rgba(226, 232, 240, 0.95);
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: 26px;
-        box-shadow: 0 22px 50px rgba(15, 23, 42, 0.10);
+        box-shadow: 0 22px 50px rgba(0, 0, 0, 0.2);
         backdrop-filter: blur(18px);
         -webkit-backdrop-filter: blur(18px);
     }
 
     .congress-search-input-wrap {
         flex: 1;
-        min-height: 58px;
+        min-height: 56px;
         display: flex;
         align-items: center;
         gap: 0.85rem;
         padding: 0 1.1rem;
-        border-radius: 18px;
-        background: #ffffff;
-        border: 1px solid #dbe3ef;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
         .congress-search-input-wrap i {
-            color: #64748b;
+            color: rgba(255, 255, 255, 0.4);
             font-size: 1.1rem;
         }
 
@@ -699,31 +702,31 @@
             border: none;
             outline: none;
             background: transparent;
-            color: #0f172a;
+            color: #ffffff;
             font-size: 1rem;
             font-weight: 600;
         }
 
             .congress-search-input-wrap input::placeholder {
-                color: #94a3b8;
+                color: rgba(255, 255, 255, 0.4);
                 font-weight: 600;
             }
 
     .congress-search-button {
-        min-height: 58px;
-        min-width: 150px;
+        min-height: 56px;
+        min-width: 140px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 0.65rem;
         border: none;
-        border-radius: 18px;
-        background: linear-gradient(135deg, #0d6efd, #00aeef);
+        border-radius: 16px;
+        background: linear-gradient(135deg, #00aeef, #6366f1);
         color: #ffffff;
-        font-size: 0.98rem;
+        font-size: 0.95rem;
         font-weight: 900;
-        box-shadow: 0 16px 32px rgba(13, 110, 253, 0.28);
-        transition: all 0.2s ease;
+        box-shadow: 0 16px 32px rgba(0, 174, 239, 0.3);
+        transition: all 0.25s ease;
     }
 
         .congress-search-button:hover {
@@ -747,19 +750,20 @@
         gap: 0.55rem;
         padding: 0 1rem;
         border-radius: 999px;
-        border: 1px solid #dbe3ef;
-        background: rgba(255, 255, 255, 0.86);
-        color: #334155;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.06);
+        color: rgba(255, 255, 255, 0.7);
         font-size: 0.82rem;
         font-weight: 800;
         transition: all 0.2s ease;
+        cursor: pointer;
     }
 
         .filter-chip:hover,
         .filter-chip.active {
-            border-color: rgba(13, 110, 253, 0.35);
-            background: rgba(13, 110, 253, 0.08);
-            color: #0d6efd;
+            border-color: rgba(0, 174, 239, 0.4);
+            background: rgba(0, 174, 239, 0.15);
+            color: #38bdf8;
         }
 
     .congress-list-section {
