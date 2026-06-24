@@ -681,6 +681,7 @@
 
         var slug =
         ViewContext.RouteData.Values["slug"]?.ToString()
+        ?? Tc.CurrentConference?.Slug
         ?? Tc.Current?.Slug
         ?? Context.Session.GetString("SelectedConferenceSlug")
         ?? "";

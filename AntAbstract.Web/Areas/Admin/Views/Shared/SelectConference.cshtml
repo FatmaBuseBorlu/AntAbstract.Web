@@ -1011,8 +1011,8 @@
 
                     @foreach (var conference in conferences)
                     {
-                        var tenantSlug = conference.Tenant?.Slug ?? "";
-                        var siteUrl = string.IsNullOrWhiteSpace(tenantSlug) ? "#" : $"/{tenantSlug}";
+                        var confSlug = !string.IsNullOrWhiteSpace(conference.Slug) ? conference.Slug : (conference.Tenant?.Slug ?? "");
+                        var siteUrl = string.IsNullOrWhiteSpace(confSlug) ? "#" : $"/{confSlug}";
 
                         <label class="conference-select-card"
                                data-title="@conference.Title"

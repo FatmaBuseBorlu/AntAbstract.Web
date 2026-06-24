@@ -944,18 +944,19 @@
                             var statusText = GetStatusText(item);
                             var statusClass = GetStatusClass(item);
 
-                            var hasTenantSlug = !string.IsNullOrWhiteSpace(item.TenantSlug);
+                            var confSlug = !string.IsNullOrWhiteSpace(item.Slug) ? item.Slug : item.TenantSlug;
+                            var hasSlug = !string.IsNullOrWhiteSpace(confSlug);
 
-                            var siteUrl = hasTenantSlug
-                                ? $"/{item.TenantSlug}"
+                            var siteUrl = hasSlug
+                                ? $"/{confSlug}"
                                 : "#";
 
-                            var flowUrl = hasTenantSlug
-                                ? $"/{item.TenantSlug}/Admin/ConferenceFlow?conferenceId={item.Id}"
+                            var flowUrl = hasSlug
+                                ? $"/{confSlug}/Admin/ConferenceFlow?conferenceId={item.Id}"
                                 : $"/Admin/ConferenceFlow?conferenceId={item.Id}";
 
-                            var editUrl = hasTenantSlug
-                                ? $"/{item.TenantSlug}/Admin/Conferences/Edit/{item.Id}"
+                            var editUrl = hasSlug
+                                ? $"/{confSlug}/Admin/Conferences/Edit/{item.Id}"
                                 : "#";
 
                             var tenantUrl = item.TenantId.HasValue
