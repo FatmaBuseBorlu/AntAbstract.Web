@@ -139,7 +139,7 @@ public sealed class PaymentFlowTests
             Id = Guid.NewGuid(),
             TenantId = Guid.NewGuid(),
             Title = "Test Conf",
-                Slug = "test-conf",
+            Slug = "test-conf",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddDays(1)
         };
