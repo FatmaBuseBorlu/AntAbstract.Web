@@ -1336,6 +1336,193 @@
         letter-spacing: 0.7px;
     }
 
+    /* ── Pricing Section ── */
+    .pricing-section {
+        background: radial-gradient(circle at 20% 80%, rgba(0, 174, 239, 0.06), transparent 40%),
+                    radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.06), transparent 40%),
+                    #f8fafc;
+    }
+
+    .pricing-card {
+        background: #ffffff;
+        border-radius: 24px;
+        border: 1px solid #e2e8f0;
+        padding: 40px 32px;
+        position: relative;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .pricing-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.10);
+        border-color: rgba(0, 174, 239, 0.3);
+    }
+
+    .pricing-card.featured {
+        border: 2px solid #00aeef;
+        box-shadow: 0 16px 48px rgba(0, 174, 239, 0.12);
+    }
+
+    .pricing-card.featured:hover {
+        box-shadow: 0 28px 70px rgba(0, 174, 239, 0.18);
+    }
+
+    .pricing-badge {
+        position: absolute;
+        top: -14px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #00aeef, #0284c7);
+        color: #fff;
+        padding: 6px 20px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .pricing-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        margin-bottom: 20px;
+    }
+
+    .pricing-plan-name {
+        font-size: 1.2rem;
+        font-weight: 900;
+        color: #0f172a;
+        letter-spacing: -0.3px;
+        margin-bottom: 8px;
+    }
+
+    .pricing-plan-desc {
+        font-size: 0.88rem;
+        color: #64748b;
+        line-height: 1.6;
+        margin-bottom: 24px;
+    }
+
+    .pricing-price {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+        margin-bottom: 8px;
+    }
+
+    .pricing-price .amount {
+        font-size: 2.8rem;
+        font-weight: 950;
+        color: #0f172a;
+        letter-spacing: -2px;
+        line-height: 1;
+    }
+
+    .pricing-price .currency {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #64748b;
+    }
+
+    .pricing-per {
+        font-size: 0.8rem;
+        color: #94a3b8;
+        margin-bottom: 28px;
+    }
+
+    .pricing-divider {
+        height: 1px;
+        background: #e2e8f0;
+        margin-bottom: 24px;
+    }
+
+    .pricing-features {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 32px;
+        flex: 1;
+    }
+
+    .pricing-features li {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 7px 0;
+        font-size: 0.88rem;
+        color: #334155;
+        line-height: 1.5;
+    }
+
+    .pricing-features li i {
+        color: #22c55e;
+        font-size: 0.82rem;
+        margin-top: 3px;
+        flex-shrink: 0;
+    }
+
+    .pricing-features li.disabled {
+        color: #cbd5e1;
+    }
+
+    .pricing-features li.disabled i {
+        color: #cbd5e1;
+    }
+
+    .pricing-btn {
+        display: block;
+        width: 100%;
+        padding: 14px;
+        border-radius: 14px;
+        font-weight: 800;
+        font-size: 0.92rem;
+        text-align: center;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: 2px solid #e2e8f0;
+        background: #fff;
+        color: #0f172a;
+    }
+
+    .pricing-btn:hover {
+        border-color: #00aeef;
+        color: #0284c7;
+        background: rgba(0, 174, 239, 0.04);
+    }
+
+    .pricing-btn.featured {
+        background: linear-gradient(135deg, #00aeef, #0284c7);
+        color: #fff;
+        border-color: transparent;
+    }
+
+    .pricing-btn.featured:hover {
+        background: linear-gradient(135deg, #0284c7, #0369a1);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(0, 174, 239, 0.3);
+    }
+
+    .pricing-submissions {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 10px;
+        background: rgba(0, 174, 239, 0.08);
+        color: #0284c7;
+        font-size: 0.78rem;
+        font-weight: 800;
+        margin-bottom: 20px;
+    }
+
     .cta-section {
         background: radial-gradient(circle at top left, rgba(0, 174, 239, 0.16), transparent 30%), linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
     }
@@ -2260,6 +2447,125 @@
                         </div>
                     </div>
                 }
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Pricing / Paketler ── -->
+    <section id="pricing" class="pricing-section py-5">
+        <div class="container py-4">
+            <div class="text-center mb-5">
+                <div class="section-kicker mb-3">
+                    <i class="fas fa-tags"></i> @L("PricingKicker", "Paketler")
+                </div>
+                <h2 class="section-title display-6 mb-2">
+                    @L("PricingTitle", "Kongreniz İçin Doğru Plan")
+                </h2>
+                <p class="section-description mx-auto">
+                    @L("PricingLead", "Her ölçekteki kongre için esnek lisans seçenekleri. Tüm paketlerde teknik destek dahildir.")
+                </p>
+            </div>
+
+            <div class="row g-4 justify-content-center">
+                <!-- Standard -->
+                <div class="col-lg-4 col-md-6" data-animate="fade-up" data-delay="100">
+                    <div class="pricing-card">
+                        <div class="pricing-icon" style="background: rgba(99, 102, 241, 0.1); color: #6366f1;">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <div class="pricing-plan-name">@L("PricingStandardName", "Standard")</div>
+                        <div class="pricing-plan-desc">@L("PricingStandardDesc", "Küçük ve orta ölçekli kongreler için temel paket.")</div>
+                        <div class="pricing-submissions">
+                            <i class="fas fa-file-alt"></i> @L("PricingStandardLimit", "250 bildiriye kadar")
+                        </div>
+                        <div class="pricing-price">
+                            <span class="currency">€</span>
+                            <span class="amount">600</span>
+                        </div>
+                        <div class="pricing-per">@L("PricingPer", "/ kongre başına")</div>
+                        <div class="pricing-divider"></div>
+                        <ul class="pricing-features">
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureRegistration", "Katılımcı kayıt yönetimi")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureSubmission", "Bildiri gönderim sistemi")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureReview", "Hakem değerlendirme süreci")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureCertificate", "Kabul mektupları ve sertifikalar")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureAbstractBook", "Bildiri kitabı oluşturma")</li>
+                            <li class="disabled"><i class="fas fa-times"></i> @L("PricingFeatureProgram", "Online kongre programı")</li>
+                            <li class="disabled"><i class="fas fa-times"></i> @L("PricingFeatureAccommodation", "Konaklama yönetimi")</li>
+                            <li class="disabled"><i class="fas fa-times"></i> @L("PricingFeaturePayment", "Sanal ödeme entegrasyonu")</li>
+                        </ul>
+                        <a href="/contact" class="pricing-btn">
+                            @L("PricingSelectBtn", "Teklif Al") <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Advanced (Featured) -->
+                <div class="col-lg-4 col-md-6" data-animate="fade-up" data-delay="250">
+                    <div class="pricing-card featured">
+                        <div class="pricing-badge">@L("PricingPopularBadge", "En Popüler")</div>
+                        <div class="pricing-icon" style="background: rgba(0, 174, 239, 0.1); color: #00aeef;">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="pricing-plan-name">@L("PricingAdvancedName", "Advanced")</div>
+                        <div class="pricing-plan-desc">@L("PricingAdvancedDesc", "Orta-büyük kongreler için gelişmiş özellikler.")</div>
+                        <div class="pricing-submissions">
+                            <i class="fas fa-file-alt"></i> @L("PricingAdvancedLimit", "500 bildiriye kadar")
+                        </div>
+                        <div class="pricing-price">
+                            <span class="currency">€</span>
+                            <span class="amount">750</span>
+                        </div>
+                        <div class="pricing-per">@L("PricingPer", "/ kongre başına")</div>
+                        <div class="pricing-divider"></div>
+                        <ul class="pricing-features">
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureAllStandard", "Standard'daki tüm özellikler")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureProgram", "Online kongre programı")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureAccommodation", "Konaklama yönetimi")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureService", "Servis modülleri")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureEmail", "Toplu e-posta gönderimi")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureReports", "Detaylı raporlama")</li>
+                            <li class="disabled"><i class="fas fa-times"></i> @L("PricingFeaturePayment", "Sanal ödeme entegrasyonu")</li>
+                            <li class="disabled"><i class="fas fa-times"></i> @L("PricingFeatureDoi", "DOI entegrasyonu")</li>
+                        </ul>
+                        <a href="/contact" class="pricing-btn featured">
+                            @L("PricingSelectBtn", "Teklif Al") <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Premium -->
+                <div class="col-lg-4 col-md-6" data-animate="fade-up" data-delay="400">
+                    <div class="pricing-card">
+                        <div class="pricing-icon" style="background: rgba(234, 179, 8, 0.1); color: #eab308;">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <div class="pricing-plan-name">@L("PricingPremiumName", "Premium")</div>
+                        <div class="pricing-plan-desc">@L("PricingPremiumDesc", "Büyük ölçekli uluslararası kongreler için tam paket.")</div>
+                        <div class="pricing-submissions">
+                            <i class="fas fa-file-alt"></i> @L("PricingPremiumLimit", "1.000+ bildiri")
+                        </div>
+                        <div class="pricing-price">
+                            <span class="currency">€</span>
+                            <span class="amount">900</span>
+                        </div>
+                        <div class="pricing-per">@L("PricingPer", "/ kongre başına")</div>
+                        <div class="pricing-divider"></div>
+                        <ul class="pricing-features">
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureAllAdvanced", "Advanced'daki tüm özellikler")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeaturePayment", "Sanal ödeme entegrasyonu")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureDoi", "DOI entegrasyonu")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeaturePlagiarism", "İntihal kontrolü")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeaturePriority", "Öncelikli teknik destek")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureCustom", "Özel tema ve alan adı")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureApi", "REST API erişimi")</li>
+                            <li><i class="fas fa-check"></i> @L("PricingFeatureLiveStream", "Canlı yayın desteği")</li>
+                        </ul>
+                        <a href="/contact" class="pricing-btn">
+                            @L("PricingSelectBtn", "Teklif Al") <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
