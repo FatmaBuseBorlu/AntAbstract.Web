@@ -96,21 +96,19 @@
 
     .hero-modern {
         position: relative;
-        padding: 160px 0 100px;
+        padding: 155px 0 95px;
         overflow: hidden;
         isolation: isolate;
-        background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 35%, #0d1b3e 65%, #071228 100%);
-        color: #ffffff;
+        background: radial-gradient(circle at 12% 20%, rgba(0, 174, 239, 0.16), transparent 28%), radial-gradient(circle at 84% 16%, rgba(99, 102, 241, 0.14), transparent 30%), radial-gradient(circle at 78% 72%, rgba(34, 197, 94, 0.12), transparent 24%), linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
     }
 
         .hero-modern::before {
             content: "";
             position: absolute;
             inset: 0;
-            background:
-                radial-gradient(ellipse 600px 400px at 15% 50%, rgba(0, 174, 239, 0.15), transparent),
-                radial-gradient(ellipse 500px 350px at 85% 30%, rgba(99, 102, 241, 0.12), transparent),
-                radial-gradient(ellipse 400px 300px at 50% 80%, rgba(16, 185, 129, 0.08), transparent);
+            background-image: linear-gradient(rgba(15, 23, 42, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(15, 23, 42, 0.035) 1px, transparent 1px);
+            background-size: 42px 42px;
+            mask-image: linear-gradient(to bottom, black, transparent 72%);
             pointer-events: none;
         }
 
@@ -119,26 +117,26 @@
         border-radius: 999px;
         pointer-events: none;
         z-index: 0;
-        filter: blur(60px);
-        opacity: 0.4;
-        animation: orbFloat 12s ease-in-out infinite;
+        filter: blur(1px);
+        opacity: 0.72;
+        animation: orbFloat 9s ease-in-out infinite;
     }
 
     .hero-orb-one {
-        width: 350px;
-        height: 350px;
-        top: 60px;
-        right: 5%;
-        background: rgba(0, 174, 239, 0.3);
+        width: 210px;
+        height: 210px;
+        top: 120px;
+        right: 7%;
+        background: radial-gradient(circle, rgba(0, 174, 239, 0.22), rgba(0, 174, 239, 0));
     }
 
     .hero-orb-two {
-        width: 280px;
-        height: 280px;
-        left: 5%;
-        bottom: 40px;
-        background: rgba(99, 102, 241, 0.25);
-        animation-delay: -4s;
+        width: 170px;
+        height: 170px;
+        left: 7%;
+        bottom: 70px;
+        background: radial-gradient(circle, rgba(34, 197, 94, 0.18), rgba(34, 197, 94, 0));
+        animation-delay: -3s;
     }
 
     .hero-content {
@@ -150,50 +148,50 @@
         display: inline-flex;
         align-items: center;
         gap: 10px;
-        padding: 9px 18px;
+        padding: 9px 16px;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        color: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(12px);
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
         font-weight: 800;
         font-size: 0.86rem;
-        margin-bottom: 28px;
+        margin-bottom: 24px;
     }
 
         .hero-badge span {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 4px 10px;
+            padding: 4px 9px;
             border-radius: 999px;
-            background: linear-gradient(135deg, #00aeef, #6366f1);
+            background: #00aeef;
             color: #fff;
             font-size: 0.72rem;
             font-weight: 900;
         }
 
     .hero-title {
-        color: #ffffff;
-        font-size: clamp(2.8rem, 5.5vw, 5rem);
-        line-height: 1.02;
-        letter-spacing: -3px;
+        color: #0f172a;
+        font-size: clamp(2.5rem, 5vw, 4.65rem);
+        line-height: 1.04;
+        letter-spacing: -2.5px;
         font-weight: 950;
-        margin-bottom: 28px;
+        margin-bottom: 24px;
     }
 
         .hero-title .gradient-text {
-            background: linear-gradient(135deg, #00aeef, #38bdf8, #6366f1);
+            background: linear-gradient(135deg, #00aeef, #0284c7);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
     .hero-description {
-        color: rgba(255, 255, 255, 0.65);
-        font-size: 1.15rem;
+        color: #64748b;
+        font-size: 1.13rem;
         line-height: 1.85;
         max-width: 620px;
-        margin-bottom: 38px;
+        margin-bottom: 34px;
     }
 
     .hero-actions {
@@ -209,21 +207,20 @@
         align-items: center;
         justify-content: center;
         gap: 10px;
-        padding: 16px 32px;
+        padding: 15px 26px;
         border-radius: 999px;
-        background: linear-gradient(135deg, #00aeef, #6366f1);
+        background: linear-gradient(135deg, #00aeef, #0284c7);
         color: #ffffff;
         text-decoration: none;
         font-weight: 900;
-        font-size: 0.95rem;
-        box-shadow: 0 20px 40px rgba(0, 174, 239, 0.3);
-        transition: all 0.25s ease;
+        box-shadow: 0 18px 35px rgba(0, 174, 239, 0.24);
+        transition: all 0.22s ease;
     }
 
         .primary-pill-btn:hover {
             color: #ffffff;
-            transform: translateY(-3px);
-            box-shadow: 0 28px 55px rgba(0, 174, 239, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 22px 45px rgba(0, 174, 239, 0.32);
         }
 
     .secondary-pill-btn {
@@ -231,32 +228,29 @@
         align-items: center;
         justify-content: center;
         gap: 10px;
-        padding: 15px 28px;
+        padding: 14px 24px;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.08);
-        color: #ffffff;
+        background: #ffffff;
+        color: #0f172a;
         text-decoration: none;
         font-weight: 900;
-        font-size: 0.95rem;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(8px);
-        transition: all 0.25s ease;
+        border: 1px solid #cbd5e1;
+        transition: all 0.22s ease;
     }
 
         .secondary-pill-btn:hover {
-            color: #ffffff;
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.35);
-            transform: translateY(-3px);
+            color: #0284c7;
+            border-color: rgba(0, 174, 239, 0.45);
+            transform: translateY(-2px);
         }
 
     .hero-trust-row {
         display: flex;
         align-items: center;
         flex-wrap: wrap;
-        gap: 16px;
-        color: rgba(255, 255, 255, 0.6);
-        font-size: 0.88rem;
+        gap: 14px;
+        color: #64748b;
+        font-size: 0.93rem;
         font-weight: 700;
     }
 
@@ -267,7 +261,7 @@
     }
 
         .hero-trust-item i {
-            color: #22c55e;
+            color: #16a34a;
         }
 
     .hero-metric-strip {
@@ -279,18 +273,18 @@
     }
 
     .hero-metric {
-        padding: 16px 18px;
+        padding: 15px 16px;
         border-radius: 20px;
-        background: rgba(255, 255, 255, 0.06);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(12px);
+        background: rgba(255, 255, 255, 0.82);
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
         backdrop-filter: blur(12px);
     }
 
         .hero-metric strong {
             display: block;
-            color: #ffffff;
-            font-size: 1.5rem;
+            color: #0f172a;
+            font-size: 1.45rem;
             line-height: 1;
             font-weight: 950;
             letter-spacing: -0.7px;
@@ -299,7 +293,7 @@
         .hero-metric span {
             display: block;
             margin-top: 6px;
-            color: rgba(255, 255, 255, 0.5);
+            color: #64748b;
             font-size: 0.78rem;
             font-weight: 800;
             line-height: 1.35;
