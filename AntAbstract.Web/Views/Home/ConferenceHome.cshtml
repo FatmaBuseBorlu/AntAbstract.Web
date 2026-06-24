@@ -926,6 +926,13 @@
         <div class="conference-top-title">
             <i class="fas fa-university"></i>
             @Model.Conference.Title
+            @if (!string.IsNullOrWhiteSpace(Model.Conference.ExternalWebsiteUrl))
+            {
+                <a href="@Model.Conference.ExternalWebsiteUrl" target="_blank" rel="noopener"
+                   style="margin-left:12px;font-size:.75rem;font-weight:700;color:#38bdf8;text-decoration:none;">
+                    <i class="fas fa-external-link-alt me-1"></i>@Localizer["ExternalSite"]
+                </a>
+            }
         </div>
 
         <div class="d-flex align-items-center gap-3">
