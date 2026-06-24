@@ -571,6 +571,7 @@ app.Use(async (ctx, next) =>
     var tenantContext = ctx.RequestServices.GetRequiredService<TenantContext>();
 
     tenantContext.Current = await resolver.ResolveAsync(ctx);
+    tenantContext.CurrentConference = await resolver.ResolveConferenceAsync(ctx);
 
     // Slug bulunamazsa (global rota) ve kullanıcı SuperAdmin ise
     // tüm tenant verisine erişime izin ver (güvenli global bağlam).

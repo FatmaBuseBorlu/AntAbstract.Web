@@ -28,7 +28,11 @@ namespace AntAbstract.Domain.Entities
 
         public string? BannerPath { get; set; }
 
-        public string? Slug { get; set; }
+        [Required]
+        [MaxLength(200)]
+        public string Slug { get; set; } = null!;
+
+        public string? ExternalWebsiteUrl { get; set; }
 
         public Guid TenantId { get; set; }
 

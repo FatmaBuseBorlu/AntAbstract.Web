@@ -51,7 +51,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpPost("/{slug}/Admin/ConferenceWizard/Step1")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Step1Post(string slug,
-            string title, string? description, string? city, string? country, string? venue)
+            string title, string? description, string? city, string? country, string? venue, string? externalWebsiteUrl)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -83,6 +83,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 City = city?.Trim(),
                 Country = country?.Trim(),
                 Venue = venue?.Trim(),
+                ExternalWebsiteUrl = externalWebsiteUrl?.Trim(),
                 Slug = confSlug,
                 TenantId = tenant.Id,
                 StartDate = DateTime.Today.AddMonths(3),

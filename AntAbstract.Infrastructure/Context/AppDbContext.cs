@@ -82,6 +82,11 @@ namespace AntAbstract.Infrastructure.Context
 
             ApplyRelatedTenantQueryFilters(builder);
 
+            builder.Entity<Conference>(entity =>
+            {
+                entity.HasIndex(e => e.Slug).IsUnique();
+            });
+
             builder.Entity<Submission>(entity =>
             {
                 entity.HasMany(s => s.ReviewAssignments)

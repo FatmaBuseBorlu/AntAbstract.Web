@@ -164,11 +164,12 @@
 
     string GetSlug(object item)
     {
-        var slug = GetNestedText(item, "Tenant", "", "Slug", "TenantSlug");
+        // Conference.Slug öncelikli (kongre bazlı URL)
+        var slug = GetText(item, "", "Slug", "ConferenceSlug");
 
         if (string.IsNullOrWhiteSpace(slug))
         {
-            slug = GetText(item, "", "Slug", "ConferenceSlug", "TenantSlug");
+            slug = GetNestedText(item, "Tenant", "", "Slug", "TenantSlug");
         }
 
         return slug?.Trim('/') ?? "";

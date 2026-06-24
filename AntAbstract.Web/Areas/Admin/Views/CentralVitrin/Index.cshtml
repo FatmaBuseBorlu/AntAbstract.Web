@@ -936,19 +936,19 @@
                         @foreach (var item in conferences)
                         {
                             var tenantName = item.Tenant?.Name ?? "-";
-                            var tenantSlug = item.Tenant?.Slug;
+                            var confSlug = !string.IsNullOrWhiteSpace(item.Slug) ? item.Slug : item.Tenant?.Slug;
 
                             var statusText = GetStatusText(item);
                             var statusClass = GetStatusClass(item);
 
-                            var hasTenantSlug = !string.IsNullOrWhiteSpace(tenantSlug);
+                            var hasSlug = !string.IsNullOrWhiteSpace(confSlug);
 
-                            var siteUrl = hasTenantSlug
-                                ? $"/{tenantSlug}"
+                            var siteUrl = hasSlug
+                                ? $"/{confSlug}"
                                 : "#";
 
-                            var flowUrl = hasTenantSlug
-                                ? $"/{tenantSlug}/Admin/ConferenceFlow?conferenceId={item.Id}"
+                            var flowUrl = hasSlug
+                                ? $"/{confSlug}/Admin/ConferenceFlow?conferenceId={item.Id}"
                                 : $"/Admin/ConferenceFlow?conferenceId={item.Id}";
 
                             var tenantUrl = item.TenantId != Guid.Empty
@@ -981,7 +981,7 @@
                                     </div>
 
                                     <div class="site-subtitle">
-                                        @(string.IsNullOrWhiteSpace(tenantSlug) ? "-" : "/" + tenantSlug)
+                                        @(string.IsNullOrWhiteSpace(confSlug) ? "-" : "/" + confSlug)
                                     </div>
                                 </td>
 
@@ -996,11 +996,11 @@
                                 </td>
 
                                 <td>
-                                    @if (hasTenantSlug)
+                                    @if (hasSlug)
                                     {
                                         <span class="site-url-pill">
                                             <i class="fas fa-link"></i>
-                                            /@tenantSlug
+                                            /@confSlug
                                         </span>
                                     }
                                     else
@@ -1030,7 +1030,7 @@
                                             <i class="fas fa-pen-to-square"></i>
                                         </a>
 
-                                        @if (hasTenantSlug)
+                                        @if (hasSlug)
                                         {
                                             <a href="@siteUrl"
                                                target="_blank"

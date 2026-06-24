@@ -23,6 +23,7 @@ public sealed class PaymentFlowTests
                 Id = conferenceId,
                 TenantId = tenantId,
                 Title = "Test",
+                Slug = "test",
                 StartDate = DateTime.UtcNow,
                 EndDate = DateTime.UtcNow.AddDays(1)
             });
@@ -100,6 +101,7 @@ public sealed class PaymentFlowTests
                 Id = confId,
                 TenantId = tenantId,
                 Title = "Refund Test",
+                Slug = "refund-test",
                 StartDate = DateTime.UtcNow,
                 EndDate = DateTime.UtcNow.AddDays(1)
             });
@@ -137,6 +139,7 @@ public sealed class PaymentFlowTests
             Id = Guid.NewGuid(),
             TenantId = Guid.NewGuid(),
             Title = "Test Conf",
+                Slug = "test-conf",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddDays(1)
         };

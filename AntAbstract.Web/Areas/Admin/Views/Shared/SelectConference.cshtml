@@ -1011,13 +1011,13 @@
 
                     @foreach (var conference in conferences)
                     {
-                        var tenantSlug = conference.Tenant?.Slug ?? "";
-                        var siteUrl = string.IsNullOrWhiteSpace(tenantSlug) ? "#" : $"/{tenantSlug}";
+                        var confSlug = !string.IsNullOrWhiteSpace(conference.Slug) ? conference.Slug : (conference.Tenant?.Slug ?? "");
+                        var siteUrl = string.IsNullOrWhiteSpace(confSlug) ? "#" : $"/{confSlug}";
 
                         <label class="conference-select-card"
                                data-title="@conference.Title"
-                               data-slug="@tenantSlug"
-                               data-search="@($"{conference.Title} {tenantSlug} {conference.StartDate:dd.MM.yyyy} {conference.EndDate:dd.MM.yyyy}")">
+                               data-slug="@confSlug"
+                               data-search="@($"{conference.Title} {confSlug} {conference.StartDate:dd.MM.yyyy} {conference.EndDate:dd.MM.yyyy}")">
 
                             <input type="radio"
                                    name="conferenceId"
@@ -1048,7 +1048,7 @@
                                 <div class="conference-meta-row">
                                     <span>
                                         <i class="fas fa-link"></i>
-                                        Slug: @(string.IsNullOrWhiteSpace(tenantSlug) ? Localizer["NotSpecified"].Value : tenantSlug)
+                                        Slug: @(string.IsNullOrWhiteSpace(confSlug) ? Localizer["NotSpecified"].Value : confSlug)
                                     </span>
 
                                     <span>
@@ -1059,7 +1059,7 @@
                             </div>
 
                             <div class="conference-site-area">
-                                @if (!string.IsNullOrWhiteSpace(tenantSlug))
+                                @if (!string.IsNullOrWhiteSpace(confSlug))
                                 {
                                     <a href="@siteUrl"
                                        target="_blank"

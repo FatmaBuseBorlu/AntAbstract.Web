@@ -86,23 +86,27 @@ namespace AntAbstract.Web.Controllers
         {
             if (_tenantContext.Current != null)
             {
-                var conferencesQuery = _context.Conferences
-                    .AsNoTracking()
-                    .Include(c => c.Tenant)
-                    .Include(c => c.Registrations)
-                    .Where(c => c.TenantId == _tenantContext.Current.Id);
+                // Kongre bazlı slug: middleware'de resolve edilen kongreyi kullan
+                Conference? currentConference = _tenantContext.CurrentConference;
 
-                Conference? currentConference = null;
-
-                if (conferenceId.HasValue)
+                if (currentConference == null)
                 {
-                    currentConference = await conferencesQuery
-                        .FirstOrDefaultAsync(c => c.Id == conferenceId.Value);
-                }
+                    var conferencesQuery = _context.Conferences
+                        .AsNoTracking()
+                        .Include(c => c.Tenant)
+                        .Include(c => c.Registrations)
+                        .Where(c => c.TenantId == _tenantContext.Current.Id);
 
-                currentConference ??= await conferencesQuery
-                    .OrderByDescending(c => c.StartDate)
-                    .FirstOrDefaultAsync();
+                    if (conferenceId.HasValue)
+                    {
+                        currentConference = await conferencesQuery
+                            .FirstOrDefaultAsync(c => c.Id == conferenceId.Value);
+                    }
+
+                    currentConference ??= await conferencesQuery
+                        .OrderByDescending(c => c.StartDate)
+                        .FirstOrDefaultAsync();
+                }
 
                 if (currentConference == null)
                 {

@@ -15,7 +15,7 @@
                     <span style="font-size:24px">🧾</span>
                 </div>
                 <div>
-                    <h5 class="fw-bold mb-0">Ödeme </h5>
+                    <h5 class="fw-bold mb-0"> </h5>
                     <small class="text-muted">Banka havalesi / EFT dekontu</small>
                 </div>
             </div>
@@ -29,7 +29,7 @@
                             <strong>@(registration.Conference?.Title ?? "-")</strong>
                         </div>
                         <div class="col-6">
-                            <small class="text-muted d-block">Kayıt Türü</small>
+                            <small class="text-muted d-block"></small>
                             <strong>@(registration.RegistrationType?.Name ?? "-")</strong>
                         </div>
                         <div class="col-6">
@@ -37,7 +37,7 @@
                             <strong class="text-success">@registration.Amount.ToString("N2") @(registration.RegistrationType?.Currency ?? "TRY")</strong>
                         </div>
                         <div class="col-6">
-                            <small class="text-muted d-block">Kayıt Tarihi</small>
+                            <small class="text-muted d-block"></small>
                             <strong>@registration.RegistrationDate.ToString("dd.MM.yyyy")</strong>
                         </div>
                     </div>
@@ -60,16 +60,16 @@
                 @Html.AntiForgeryToken()
 
                 <div class="mb-4">
-                    <label class="form-label fw-semibold">Makbuz / Dekont Dosyası</label>
+                    <label class="form-label fw-semibold"></label>
                     <div class="border rounded-3 p-4 text-center" style="border-style:dashed!important;cursor:pointer"
                          onclick="document.getElementById('receiptFile').click()">
                         <span style="font-size:32px">📎</span>
-                        <p class="mb-1 mt-2 fw-semibold">Dosya seçmek için tıklayın</p>
+                        <p class="mb-1 mt-2 fw-semibold"></p>
                         <small class="text-muted">PDF, PNG veya JPG — Maks. 10 MB</small>
-                        <p class="mt-2 mb-0 text-primary small" id="fileNameDisplay">Dosya seçilmedi</p>
+                        <p class="mt-2 mb-0 text-primary small" id="fileNameDisplay"></p>
                     </div>
                     <input type="file" name="receiptFile" id="receiptFile" accept=".pdf,.png,.jpg,.jpeg"
-                           class="d-none" onchange="document.getElementById('fileNameDisplay').textContent = this.files[0]?.name ?? 'Dosya seçilmedi'" />
+                           class="d-none" onchange="document.getElementById('fileNameDisplay').textContent = this.files[0]?.name ?? ''" />
                 </div>
 
                 <div class="alert alert-warning border-0 rounded-3 small">
@@ -78,7 +78,7 @@
                 </div>
 
                 <div class="d-flex gap-2 mt-3">
-                    <a href="javascript:history.back()" class="btn btn-outline-secondary flex-grow-1">İptal</a>
+                    <a href="javascript:history.back()" class="btn btn-outline-secondary flex-grow-1"></a>
                     <button type="submit" class="btn btn-primary flex-grow-1 fw-semibold">
                         📤 
                     </button>

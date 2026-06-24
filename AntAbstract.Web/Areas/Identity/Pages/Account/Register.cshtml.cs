@@ -508,7 +508,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 list.Add(new SelectListItem
                 {
                     Value = OtherValue,
-                    Text = isEnglish ? "Other" : GetText("OtherOption", "Diğer / Other"),
+                    Text = isEnglish ? "Other" : GetText("OtherOption", "Diğer"),
                     Selected = selectedValue == OtherValue
                 });
             }

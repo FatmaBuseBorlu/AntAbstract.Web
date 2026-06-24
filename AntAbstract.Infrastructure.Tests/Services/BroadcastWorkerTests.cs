@@ -25,6 +25,7 @@ public sealed class BroadcastWorkerTests
                 Id = conferenceId,
                 TenantId = tenantId,
                 Title = "Test Conf",
+                Slug = "test-conf",
                 StartDate = DateTime.UtcNow,
                 EndDate = DateTime.UtcNow.AddDays(1)
             });
@@ -81,6 +82,7 @@ public sealed class BroadcastWorkerTests
                 Id = conferenceId,
                 TenantId = tenantId,
                 Title = "Future Conf",
+                Slug = "future-conf",
                 StartDate = DateTime.UtcNow,
                 EndDate = DateTime.UtcNow.AddDays(1)
             });
@@ -120,6 +122,7 @@ public sealed class BroadcastWorkerTests
                 Id = conferenceId,
                 TenantId = tenantId,
                 Title = "Conf",
+                Slug = "conf",
                 StartDate = DateTime.UtcNow,
                 EndDate = DateTime.UtcNow.AddDays(1)
             });
