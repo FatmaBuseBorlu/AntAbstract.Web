@@ -981,7 +981,7 @@
                                     </div>
 
                                     <div class="site-subtitle">
-                                        @(string.IsNullOrWhiteSpace(tenantSlug) ? "-" : "/" + tenantSlug)
+                                        @(string.IsNullOrWhiteSpace(confSlug) ? "-" : "/" + confSlug)
                                     </div>
                                 </td>
 
@@ -996,11 +996,11 @@
                                 </td>
 
                                 <td>
-                                    @if (hasTenantSlug)
+                                    @if (hasSlug)
                                     {
                                         <span class="site-url-pill">
                                             <i class="fas fa-link"></i>
-                                            /@tenantSlug
+                                            /@confSlug
                                         </span>
                                     }
                                     else
@@ -1030,7 +1030,7 @@
                                             <i class="fas fa-pen-to-square"></i>
                                         </a>
 
-                                        @if (hasTenantSlug)
+                                        @if (hasSlug)
                                         {
                                             <a href="@siteUrl"
                                                target="_blank"
