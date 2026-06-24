@@ -1025,6 +1025,136 @@
         margin-bottom: 0;
     }
 
+    .proceeding-book-card {
+        border-radius: 20px;
+        overflow: hidden;
+        background: #fff;
+        border: 1px solid #f1f5f9;
+        height: 100%;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .proceeding-book-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+    }
+
+    .proceeding-book-cover {
+        height: 140px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        gap: 6px;
+    }
+
+    .proceeding-book-cover i { font-size: 2rem; opacity: 0.9; }
+    .proceeding-book-cover span { font-size: 1.5rem; font-weight: 950; letter-spacing: -1px; }
+
+    .proceeding-book-info {
+        padding: 18px 20px;
+    }
+
+    .proceeding-book-info h6 {
+        color: #0f172a;
+        font-weight: 900;
+        font-size: 0.9rem;
+        line-height: 1.35;
+        margin-bottom: 8px;
+    }
+
+    .proceeding-book-info p {
+        color: #94a3b8;
+        font-size: 0.78rem;
+        margin-bottom: 10px;
+    }
+
+    .proceeding-published-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 999px;
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+        font-size: 0.72rem;
+        font-weight: 800;
+    }
+
+    .past-congress-timeline {
+        position: relative;
+        padding-left: 120px;
+    }
+
+    .past-congress-timeline::before {
+        content: "";
+        position: absolute;
+        left: 119px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e2e8f0;
+    }
+
+    .past-congress-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 24px;
+        padding: 16px 0;
+        position: relative;
+        transition: all 0.2s ease;
+    }
+
+    .past-congress-item:hover .past-congress-content {
+        background: #f0f7ff;
+        border-color: rgba(0, 174, 239, 0.25);
+    }
+
+    .past-congress-date {
+        position: absolute;
+        left: -120px;
+        width: 100px;
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    .past-date-year { display: block; font-size: 1.1rem; font-weight: 950; color: #0f172a; }
+    .past-date-month { display: block; font-size: 0.78rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+
+    .past-congress-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #00aeef;
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 2px #e2e8f0;
+        flex-shrink: 0;
+        margin-top: 6px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .past-congress-content {
+        flex: 1;
+        padding: 14px 18px;
+        border-radius: 16px;
+        border: 1px solid #f1f5f9;
+        background: #fff;
+        transition: all 0.2s ease;
+    }
+
+    .past-congress-content h6 {
+        color: #0f172a;
+        font-weight: 900;
+        font-size: 0.92rem;
+        margin-bottom: 4px;
+    }
+
+    .past-congress-content p {
+        color: #94a3b8;
+        font-size: 0.78rem;
+        margin-bottom: 0;
+    }
+
     .latest-submissions-section {
         background: #f8fafc;
     }
@@ -1964,11 +2094,11 @@
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-5">
                 <div>
                     <div class="section-kicker mb-3">@L("ProceedingBooksKicker", "Yayınlar")</div>
-                    <h2 class="section-heading-modern mb-2">@L("ProceedingBooksTitle", "Bildiri Kitapları")</h2>
-                    <p class="section-lead-modern">@L("ProceedingBooksLead", "Geçmiş kongrelerin yayınlanmış bildiri kitaplarına erişin.")</p>
+                    <h2 class="section-title display-6 mb-2">@L("ProceedingBooksTitle", "Bildiri Kitapları")</h2>
+                    <p class="section-description">@L("ProceedingBooksLead", "Geçmiş kongrelerin yayınlanmış bildiri kitaplarına erişin.")</p>
                 </div>
-                <a href="/Proceedings/Index" class="btn btn-outline-primary rounded-pill px-4">
-                    <i class="fas fa-books me-2"></i>@L("AllProceedingBooks", "Tüm Bildiri Kitapları")
+                <a href="/Proceedings/Index" class="primary-pill-btn" style="font-size:.85rem;padding:12px 22px;">
+                    <i class="fas fa-book-open"></i>@L("AllProceedingBooks", "Tüm Bildiri Kitapları")
                 </a>
             </div>
 
@@ -1976,23 +2106,21 @@
                 @foreach (var book in proceedingBooks.Take(4))
                 {
                     var bookUrl = $"/{book.Slug}/Proceedings/Index?conferenceId={book.ConferenceId}";
+                    var colors = new[] { "#0284c7", "#6366f1", "#10b981", "#f59e0b" };
+                    var colorIdx = proceedingBooks.ToList().IndexOf(book) % 4;
                     <div class="col-sm-6 col-lg-3">
                         <a href="@bookUrl" class="text-decoration-none">
-                            <div class="card border-0 rounded-4 shadow-sm h-100" style="transition:transform .2s;background:#fff;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
-                                <div class="card-body p-4">
-                                    <div class="d-flex align-items-center justify-content-center mb-3" style="width:52px;height:52px;background:linear-gradient(135deg,#6f42c1,#d63384);border-radius:16px;">
-                                        <i class="fas fa-book-open text-white fs-5"></i>
-                                    </div>
-                                    <h6 class="fw-900 text-dark mb-1 lh-sm" style="font-size:.9rem;">@book.ConferenceTitle</h6>
-                                    <p class="text-muted mb-2" style="font-size:.78rem;">
-                                        <i class="fas fa-map-marker-alt me-1"></i>@book.Location
-                                    </p>
-                                    <p class="text-muted mb-3" style="font-size:.78rem;">
-                                        <i class="fas fa-calendar me-1"></i>@book.StartDate.ToString("yyyy")
-                                    </p>
+                            <div class="proceeding-book-card">
+                                <div class="proceeding-book-cover" style="background:linear-gradient(135deg, @colors[colorIdx], @(colors[(colorIdx+1)%4]));">
+                                    <i class="fas fa-book-open"></i>
+                                    <span>@book.StartDate.ToString("yyyy")</span>
+                                </div>
+                                <div class="proceeding-book-info">
+                                    <h6>@book.ConferenceTitle</h6>
+                                    <p><i class="fas fa-map-marker-alt me-1"></i>@book.Location</p>
                                     @if (book.PublishedDate.HasValue)
                                     {
-                                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill" style="font-size:.72rem;">
+                                        <span class="proceeding-published-badge">
                                             <i class="fas fa-check-circle me-1"></i>@book.PublishedDate.Value.ToString("MMM yyyy")
                                         </span>
                                     }
@@ -2018,25 +2146,21 @@
                 </div>
             </div>
 
-            <div class="row g-3">
+            <div class="past-congress-timeline">
                 @foreach (var conf in pastCongresses.Take(6))
                 {
                     var confUrl = $"/{conf.Slug}";
-                    <div class="col-sm-6 col-lg-4">
-                        <a href="@confUrl" class="text-decoration-none">
-                            <div class="d-flex align-items-center gap-3 p-3 rounded-4 border bg-light" style="transition:all .2s;" onmouseover="this.style.borderColor='#0d6efd';this.style.background='#f0f4ff'" onmouseout="this.style.borderColor='';this.style.background=''">
-                                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px;height:44px;background:rgba(100,116,139,.12);border-radius:14px;">
-                                    <i class="fas fa-calendar-check text-secondary"></i>
-                                </div>
-                                <div class="min-width-0">
-                                    <div class="fw-bold text-dark" style="font-size:.88rem;line-height:1.3;">@conf.Title</div>
-                                    <div class="text-muted" style="font-size:.75rem;">@conf.StartDate.ToString("dd.MM.yyyy") — @conf.EndDate.ToString("dd.MM.yyyy")</div>
-                                    <div class="text-muted" style="font-size:.75rem;"><i class="fas fa-map-marker-alt me-1"></i>@conf.Location</div>
-                                </div>
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary ms-auto flex-shrink-0" style="font-size:.7rem;">@L("Completed", "Tamamlandı")</span>
-                            </div>
-                        </a>
-                    </div>
+                    <a href="@confUrl" class="past-congress-item text-decoration-none">
+                        <div class="past-congress-date">
+                            <span class="past-date-year">@conf.StartDate.ToString("yyyy")</span>
+                            <span class="past-date-month">@conf.StartDate.ToString("MMM")</span>
+                        </div>
+                        <div class="past-congress-dot"></div>
+                        <div class="past-congress-content">
+                            <h6>@conf.Title</h6>
+                            <p><i class="fas fa-map-marker-alt me-1"></i>@conf.Location &nbsp; <i class="fas fa-calendar me-1"></i>@conf.StartDate.ToString("dd.MM.yyyy") — @conf.EndDate.ToString("dd.MM.yyyy")</p>
+                        </div>
+                    </a>
                 }
             </div>
         </div>
