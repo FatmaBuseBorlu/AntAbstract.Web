@@ -75,51 +75,36 @@
         }
 
         .navbar {
-            padding: 14px 0;
-            background-color: transparent;
-            backdrop-filter: none;
-            border-bottom: 1px solid transparent;
-            transition: all 0.35s ease;
-        }
-
-        .navbar.scrolled {
-            background-color: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            padding: 16px 0;
+            background-color: rgba(255, 255, 255, 0.90);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid rgba(15, 23, 42, 0.06);
-            box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+            transition: all 0.3s ease;
         }
 
         .navbar-brand {
-            font-weight: 900;
-            font-size: 1.5rem;
-            color: #ffffff;
+            font-weight: 800;
+            font-size: 1.6rem;
+            color: #1e293b;
             letter-spacing: -0.5px;
             text-decoration: none;
             white-space: nowrap;
-            transition: color 0.3s ease;
         }
 
-        .navbar.scrolled .navbar-brand { color: #1e293b; }
-        .navbar.scrolled .navbar-brand span { color: var(--primary-color) !important; }
-
         .nav-link {
-            font-weight: 700;
-            color: rgba(255, 255, 255, 0.85) !important;
-            margin: 0 6px;
-            font-size: 0.9rem;
+            font-weight: 600;
+            color: #475569 !important;
+            margin: 0 8px;
+            font-size: 0.95rem;
             transition: all 0.2s;
             position: relative;
             white-space: nowrap;
         }
 
-        .navbar.scrolled .nav-link { color: #475569 !important; }
-
             .nav-link:hover {
-                color: #ffffff !important;
+                color: var(--primary-color) !important;
             }
-
-        .navbar.scrolled .nav-link:hover { color: var(--primary-color) !important; }
 
         .header-actions {
             display: flex;
@@ -139,17 +124,17 @@
             height: 36px;
             min-width: 68px;
             padding: 0 12px;
-            border: 1px solid rgba(255, 255, 255, 0.25);
+            border: 1px solid #dbe3ef;
             border-radius: 999px;
-            background: rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.9);
+            background: #ffffff;
+            color: #475569;
             font-weight: 800;
             font-size: 0.8rem;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
-            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
             transition: all 0.2s ease;
         }
 
@@ -163,14 +148,6 @@
                 margin-left: 2px;
                 font-size: 0.75rem;
             }
-
-        .navbar.scrolled .language-current-btn {
-            background: #ffffff;
-            color: #475569;
-            border-color: #dbe3ef;
-            backdrop-filter: none;
-            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
-        }
 
         .language-menu {
             min-width: 150px;
@@ -1251,18 +1228,5 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
-
-    <script>
-    (function() {
-        var nav = document.querySelector('.navbar');
-        if (!nav) return;
-        function onScroll() {
-            if (window.scrollY > 50) { nav.classList.add('scrolled'); }
-            else { nav.classList.remove('scrolled'); }
-        }
-        window.addEventListener('scroll', onScroll, { passive: true });
-        onScroll();
-    })();
-    </script>
 </body>
 </html>
