@@ -150,6 +150,7 @@ public sealed class SubmissionAccessTests
             Id = Guid.NewGuid(),
             TenantId = tenantId,
             Title = "Conf",
+            Slug = Guid.NewGuid().ToString("N")[..12],
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddDays(1)
         };

@@ -209,6 +209,7 @@ public sealed class DoiAndIdentityTests
                 Id = confId,
                 TenantId = Guid.NewGuid(),
                 Title = "Blind Test",
+                Slug = "blind-test",
                 StartDate = DateTime.UtcNow,
                 EndDate = DateTime.UtcNow.AddDays(1),
                 IsBlindReview = false

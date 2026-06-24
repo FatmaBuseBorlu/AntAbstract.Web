@@ -147,6 +147,7 @@ public sealed class ConferenceCloneTests
             Id = Guid.NewGuid(),
             TenantId = tenant.Id,
             Title = "Kaynak Kongre",
+            Slug = "kaynak-kongre",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddDays(3)
         };

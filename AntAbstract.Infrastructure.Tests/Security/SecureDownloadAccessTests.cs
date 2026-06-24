@@ -263,6 +263,7 @@ public sealed class SecureDownloadAccessTests
             Id = Guid.NewGuid(),
             TenantId = tenantId,
             Title = title,
+            Slug = Guid.NewGuid().ToString("N")[..12],
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddDays(1)
         };
