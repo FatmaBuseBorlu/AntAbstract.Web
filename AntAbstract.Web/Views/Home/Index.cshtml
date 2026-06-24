@@ -839,35 +839,83 @@
             pointer-events: none;
         }
 
-    .workflow-card {
+    .workflow-timeline {
+        display: flex;
+        justify-content: space-between;
         position: relative;
-        z-index: 2;
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.10);
-        border-radius: 24px;
-        padding: 26px;
-        height: 100%;
-        backdrop-filter: blur(12px);
-        transition: all 0.3s ease;
+        gap: 20px;
     }
 
-        .workflow-card:hover {
-            background: rgba(255,255,255,0.1);
-            transform: translateY(-4px);
-            border-color: rgba(0, 174, 239, 0.2);
-        }
+    .workflow-line {
+        position: absolute;
+        top: 24px;
+        left: 40px;
+        right: 40px;
+        height: 2px;
+        background: rgba(255, 255, 255, 0.12);
+        z-index: 1;
+    }
+
+    .workflow-step {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        z-index: 2;
+    }
 
     .workflow-number {
-        width: 44px;
-        height: 44px;
-        border-radius: 16px;
-        background: #00aeef;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #00aeef, #0284c7);
         color: #ffffff;
-        display: inline-flex;
+        display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 900;
-        margin-bottom: 16px;
+        font-size: 1.1rem;
+        box-shadow: 0 8px 24px rgba(0, 174, 239, 0.3);
+        flex-shrink: 0;
+    }
+
+    .workflow-connector {
+        width: 2px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .workflow-card {
+        position: relative;
+        z-index: 2;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        border-radius: 20px;
+        padding: 24px 20px;
+        backdrop-filter: blur(12px);
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+
+        .workflow-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-4px);
+            border-color: rgba(0, 174, 239, 0.25);
+        }
+
+    .workflow-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        background: rgba(0, 174, 239, 0.15);
+        color: #38bdf8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        margin: 0 auto 14px;
     }
 
     .workflow-card h5 {
@@ -882,44 +930,98 @@
         font-size: 0.93rem;
     }
 
-    .feature-card-modern {
-        height: 100%;
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 26px;
-        padding: 26px;
-        box-shadow: 0 15px 42px rgba(15, 23, 42, 0.05);
-        transition: all 0.24s ease;
+    .feature-zigzag { display: flex; flex-direction: column; gap: 3rem; }
+
+    .zigzag-row {
+        display: flex;
+        align-items: center;
+        gap: 3rem;
     }
 
-        .feature-card-modern:hover {
-            transform: translateY(-7px);
-            box-shadow: 0 24px 64px rgba(15, 23, 42, 0.1);
-            border-color: rgba(0,174,239,0.35);
-        }
+    .zigzag-reverse { flex-direction: row-reverse; }
 
-    .feature-icon-modern {
-        width: 56px;
-        height: 56px;
-        border-radius: 20px;
-        background: rgba(0, 174, 239, 0.10);
-        color: #0284c7;
-        display: inline-flex;
+    .zigzag-visual {
+        flex-shrink: 0;
+        display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.35rem;
-        margin-bottom: 18px;
     }
 
-    .feature-card-modern h5 {
+    .zigzag-icon-large {
+        width: 120px;
+        height: 120px;
+        border-radius: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.8rem;
+        transition: transform 0.3s ease;
+    }
+
+    .zigzag-row:hover .zigzag-icon-large { transform: scale(1.08) rotate(3deg); }
+
+    .zigzag-content h4 {
         color: #0f172a;
         font-weight: 900;
+        font-size: 1.25rem;
         margin-bottom: 10px;
     }
 
-    .feature-card-modern p {
+    .zigzag-content p {
         color: #64748b;
-        line-height: 1.68;
+        line-height: 1.75;
+        margin-bottom: 14px;
+        font-size: 0.95rem;
+    }
+
+    .zigzag-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .zigzag-tags span {
+        padding: 5px 14px;
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #475569;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .feature-mini-card {
+        background: #ffffff;
+        border: 1px solid #f1f5f9;
+        border-radius: 20px;
+        padding: 24px;
+        height: 100%;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-align: center;
+    }
+
+    .feature-mini-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    .feature-mini-card i {
+        font-size: 1.6rem;
+        color: #00aeef;
+        margin-bottom: 14px;
+        display: block;
+    }
+
+    .feature-mini-card h6 {
+        color: #0f172a;
+        font-weight: 900;
+        font-size: 0.95rem;
+        margin-bottom: 8px;
+    }
+
+    .feature-mini-card p {
+        color: #94a3b8;
+        font-size: 0.85rem;
+        line-height: 1.65;
         margin-bottom: 0;
     }
 
@@ -1176,6 +1278,14 @@
         .hero-metric-strip {
             grid-template-columns: 1fr;
         }
+    }
+
+    @@media (max-width: 768px) {
+        .zigzag-row, .zigzag-reverse { flex-direction: column; text-align: center; gap: 1.5rem; }
+        .zigzag-icon-large { width: 90px; height: 90px; font-size: 2.2rem; }
+        .zigzag-tags { justify-content: center; }
+        .workflow-timeline { flex-direction: column; gap: 1rem; }
+        .workflow-line { display: none; }
     }
 
     @@media (max-width: 576px) {
@@ -1705,34 +1815,44 @@
                 </p>
             </div>
 
-            <div class="row g-4">
-                <div class="col-md-6 col-lg-3">
+            <div class="workflow-timeline">
+                <div class="workflow-line"></div>
+
+                <div class="workflow-step" data-animate data-delay="100">
+                    <div class="workflow-number">1</div>
+                    <div class="workflow-connector"></div>
                     <div class="workflow-card">
-                        <div class="workflow-number">1</div>
+                        <div class="workflow-icon"><i class="fas fa-search"></i></div>
                         <h5>@L("Workflow1Title", "Kongre Seç")</h5>
                         <p>@L("Workflow1Text", "Kullanıcı aktif kongreleri inceler ve ilgili etkinlik sayfasına gider.")</p>
                     </div>
                 </div>
 
-                <div class="col-md-6 col-lg-3">
+                <div class="workflow-step" data-animate data-delay="200">
+                    <div class="workflow-number">2</div>
+                    <div class="workflow-connector"></div>
                     <div class="workflow-card">
-                        <div class="workflow-number">2</div>
+                        <div class="workflow-icon"><i class="fas fa-user-plus"></i></div>
                         <h5>@L("Workflow2Title", "Kayıt Ol")</h5>
                         <p>@L("Workflow2Text", "Katılımcı kayıt türünü seçer, bilgilerini girer ve süreci başlatır.")</p>
                     </div>
                 </div>
 
-                <div class="col-md-6 col-lg-3">
+                <div class="workflow-step" data-animate data-delay="300">
+                    <div class="workflow-number">3</div>
+                    <div class="workflow-connector"></div>
                     <div class="workflow-card">
-                        <div class="workflow-number">3</div>
+                        <div class="workflow-icon"><i class="fas fa-file-upload"></i></div>
                         <h5>@L("Workflow3Title", "Bildiri Gönder")</h5>
                         <p>@L("Workflow3Text", "Yazar bildirisini yükler, konu ve yazar bilgilerini sisteme ekler.")</p>
                     </div>
                 </div>
 
-                <div class="col-md-6 col-lg-3">
+                <div class="workflow-step" data-animate data-delay="400">
+                    <div class="workflow-number">4</div>
+                    <div class="workflow-connector"></div>
                     <div class="workflow-card">
-                        <div class="workflow-number">4</div>
+                        <div class="workflow-icon"><i class="fas fa-check-double"></i></div>
                         <h5>@L("Workflow4Title", "Değerlendirme")</h5>
                         <p>@L("Workflow4Text", "Hakemler bildirileri inceler, sonuçlar ve sertifikalar sistemden takip edilir.")</p>
                     </div>
@@ -1758,63 +1878,78 @@
                 </p>
             </div>
 
-            <div class="row g-4">
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card-modern">
-                        <div class="feature-icon-modern">
+            <div class="feature-zigzag">
+                <div class="zigzag-row" data-animate>
+                    <div class="zigzag-visual">
+                        <div class="zigzag-icon-large" style="background:rgba(0,174,239,0.08);color:#0284c7;">
                             <i class="fas fa-file-signature"></i>
                         </div>
-                        <h5>@L("FeatureSubmissionTitle", "Bildiri Yönetimi")</h5>
+                    </div>
+                    <div class="zigzag-content">
+                        <h4>@L("FeatureSubmissionTitle", "Bildiri Yönetimi")</h4>
                         <p>@L("FeatureSubmissionDescription", "Bildiri gönderimi, yazar bilgileri, dosya yükleme ve revizyon süreçleri düzenli şekilde yönetilir.")</p>
+                        <div class="zigzag-tags">
+                            <span>@L("TagAbstract", "Özet Gönderimi")</span>
+                            <span>@L("TagFullText", "Tam Metin")</span>
+                            <span>@L("TagRevision", "Revizyon")</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card-modern">
-                        <div class="feature-icon-modern">
+                <div class="zigzag-row zigzag-reverse" data-animate>
+                    <div class="zigzag-visual">
+                        <div class="zigzag-icon-large" style="background:rgba(99,102,241,0.08);color:#6366f1;">
                             <i class="fas fa-user-check"></i>
                         </div>
-                        <h5>@L("FeatureReviewerTitle", "Hakem Atama")</h5>
+                    </div>
+                    <div class="zigzag-content">
+                        <h4>@L("FeatureReviewerTitle", "Hakem Atama")</h4>
                         <p>@L("FeatureReviewerDescription", "Hakem atamaları, değerlendirme formları ve karar süreçleri panel üzerinden takip edilir.")</p>
+                        <div class="zigzag-tags">
+                            <span>@L("TagAssignment", "Otomatik Atama")</span>
+                            <span>@L("TagBlindReview", "Kör Değerlendirme")</span>
+                            <span>@L("TagDecision", "Karar")</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card-modern">
-                        <div class="feature-icon-modern">
+                <div class="zigzag-row" data-animate>
+                    <div class="zigzag-visual">
+                        <div class="zigzag-icon-large" style="background:rgba(16,185,129,0.08);color:#10b981;">
                             <i class="fas fa-credit-card"></i>
                         </div>
-                        <h5>@L("FeaturePaymentTitle", "Ödeme Takibi")</h5>
+                    </div>
+                    <div class="zigzag-content">
+                        <h4>@L("FeaturePaymentTitle", "Ödeme Takibi")</h4>
                         <p>@L("FeaturePaymentDescription", "Katılımcı kayıtları ve ödeme durumları yönetim panelinden kolayca kontrol edilir.")</p>
+                        <div class="zigzag-tags">
+                            <span>Stripe</span>
+                            <span>PayTR</span>
+                            <span>@L("TagBankTransfer", "Havale/EFT")</span>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card-modern">
-                        <div class="feature-icon-modern">
-                            <i class="fas fa-globe"></i>
-                        </div>
-                        <h5>@L("FeatureWebsiteTitle", "Dinamik Web Sitesi")</h5>
+            <div class="row g-3 mt-4">
+                <div class="col-md-4">
+                    <div class="feature-mini-card" data-animate data-delay="100">
+                        <i class="fas fa-globe"></i>
+                        <h6>@L("FeatureWebsiteTitle", "Dinamik Web Sitesi")</h6>
                         <p>@L("FeatureWebsiteDescription", "Her kongre için özel sayfa, içerik blokları, görseller ve çok dilli yapı desteklenir.")</p>
                     </div>
                 </div>
-
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card-modern">
-                        <div class="feature-icon-modern">
-                            <i class="fas fa-calendar-alt"></i>
-                        </div>
-                        <h5>@L("FeatureProgramTitle", "Program Yönetimi")</h5>
+                <div class="col-md-4">
+                    <div class="feature-mini-card" data-animate data-delay="200">
+                        <i class="fas fa-calendar-alt"></i>
+                        <h6>@L("FeatureProgramTitle", "Program Yönetimi")</h6>
                         <p>@L("FeatureProgramDescription", "Oturumlar, sunumlar ve kongre programı düzenli şekilde oluşturulabilir.")</p>
                     </div>
                 </div>
-
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card-modern">
-                        <div class="feature-icon-modern">
-                            <i class="fas fa-award"></i>
-                        </div>
-                        <h5>@L("FeatureCertificateTitle", "Sertifika Sistemi")</h5>
+                <div class="col-md-4">
+                    <div class="feature-mini-card" data-animate data-delay="300">
+                        <i class="fas fa-award"></i>
+                        <h6>@L("FeatureCertificateTitle", "Sertifika Sistemi")</h6>
                         <p>@L("FeatureCertificateDescription", "Yazar ve hakem sertifikaları uygun koşullar sağlandığında sistem tarafından oluşturulur.")</p>
                     </div>
                 </div>
