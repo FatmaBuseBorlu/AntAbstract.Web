@@ -100,8 +100,9 @@
             transition: color 0.3s ease;
         }
 
+        .navbar-brand .brand-highlight { color: #38bdf8; transition: color 0.3s ease; }
         .navbar.scrolled .navbar-brand { color: #1e293b; }
-        .navbar.scrolled .navbar-brand span { color: var(--primary-color) !important; }
+        .navbar.scrolled .navbar-brand .brand-highlight { color: var(--primary-color); }
 
         .nav-link {
             font-weight: 700;
@@ -918,7 +919,7 @@
             <nav class="navbar navbar-expand-lg fixed-top">
                 <div class="container">
                     <a class="navbar-brand" href="/">
-                        ANT<span style="color: var(--primary-color);">ABSTRACT</span>
+                        ANT<span class="brand-highlight">ABSTRACT</span>
                     </a>
 
                     <button class="navbar-toggler border-0"
@@ -1289,8 +1290,10 @@
     (function() {
         var nav = document.querySelector('.navbar');
         if (!nav) return;
+        var hasHero = document.querySelector('.hero-modern, .congress-hero, .conference-hero');
+        if (!hasHero) { nav.classList.add('scrolled'); return; }
         function onScroll() {
-            if (window.scrollY > 50) { nav.classList.add('scrolled'); }
+            if (window.scrollY > 60) { nav.classList.add('scrolled'); }
             else { nav.classList.remove('scrolled'); }
         }
         window.addEventListener('scroll', onScroll, { passive: true });
