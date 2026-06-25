@@ -49,7 +49,8 @@
             {
                 <div class="alert alert-danger border-0 rounded-3 mb-3">
                     <i class="fas fa-exclamation-triangle me-1"></i>
-                    <strong></strong>
+                    <strong>@L("NoRecoveryCodesTitle", "Hiç kurtarma kodunuz kalmadı.")</strong>
+                    @L("NoRecoveryCodesWarning", "Hesabınıza erişimi kaybetmemek için")
                     <a asp-page="./GenerateRecoveryCodes" class="alert-link">@L("GenerateNewCodes", "Yeni kodlar oluşturun")</a>.
                 </div>
             }
@@ -57,7 +58,8 @@
             {
                 <div class="alert alert-warning border-0 rounded-3 mb-3">
                     <i class="fas fa-exclamation-circle me-1"></i>
-                    <strong>@Model.RecoveryCodesLeft </strong>
+                    <strong>@L("LowRecoveryCodesTitle", "Az kurtarma kodunuz kaldı.")</strong>
+                    @string.Format(L("LowRecoveryCodesWarning", "Kalan kod sayısı: {0}."), Model.RecoveryCodesLeft)
                     <a asp-page="./GenerateRecoveryCodes" class="alert-link">@L("GenerateNewCodes", "Yeni kodlar oluşturun")</a>.
                 </div>
             }
@@ -87,7 +89,7 @@
             <div class="alert alert-warning border-0 rounded-3 d-flex align-items-center gap-2 mb-4">
                 <i class="fas fa-shield-halved fs-5"></i>
                 <div>
-                    <strong></strong>
+                    <strong>@L("TwoFANotActive", "2FA Aktif Değil")</strong>
                     <span class="text-muted ms-1">— @L("PasswordOnlyDescription", "Hesabınız sadece şifre ile korunuyor.")</span>
                 </div>
             </div>
@@ -99,7 +101,7 @@
                 <i class="fas fa-mobile-alt fa-3x text-primary mb-3 d-block"></i>
                 <h6 class="fw-bold">@L("AddAuthenticatorTitle", "Authenticator Uygulaması Ekleyin")</h6>
                 <p class="text-muted small mb-3">
-                    
+                    @L("AddAuthenticatorDescription", "Girişlerde tek kullanımlık doğrulama kodu istemek için hesabınızı bir authenticator uygulamasına bağlayın.")
                 </p>
                 <a asp-page="./EnableAuthenticator" class="btn btn-primary px-4">
                     <i class="fas fa-plus me-1"></i> @L("AddAuthenticatorButton", "Authenticator Ekle")
@@ -110,7 +112,7 @@
                 <i class="fas fa-check-circle fa-3x text-success mb-3 d-block"></i>
                 <h6 class="fw-bold">@L("AuthenticatorConnected", "Authenticator Bağlı")</h6>
                 <p class="text-muted small mb-3">
-                    
+                    @L("AuthenticatorConnectedDescription", "Authenticator anahtarınız hazır. Gerekirse yeniden yapılandırabilir veya kurtarma kodlarınızı yenileyebilirsiniz.")
                 </p>
                 <a asp-page="./EnableAuthenticator" class="btn btn-outline-primary px-4">
                     <i class="fas fa-cog me-1"></i> @L("ReconfigureButton", "Yeniden Yapılandır")
@@ -122,8 +124,8 @@
     {
         <div class="alert alert-danger border-0 rounded-3">
             <i class="fas fa-cookie-bite me-1"></i>
-            <strong></strong>
-            
+            <strong>@L("PrivacyPolicyNotAcceptedTitle", "Gizlilik ve çerez politikası kabul edilmedi.")</strong>
+            @L("PrivacyPolicyNotAcceptedText", "İki faktörlü doğrulamayı etkinleştirebilmek için önce politikayı kabul etmelisiniz.")
         </div>
     }
 }

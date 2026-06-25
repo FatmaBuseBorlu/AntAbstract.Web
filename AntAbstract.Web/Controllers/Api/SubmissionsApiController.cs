@@ -1,5 +1,6 @@
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
+using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,10 +16,14 @@ namespace AntAbstract.Web.Controllers.Api
     public class SubmissionsApiController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IAdminTenantAccessService _tenantAccess;
 
-        public SubmissionsApiController(AppDbContext context)
+        public SubmissionsApiController(
+            AppDbContext context,
+            IAdminTenantAccessService tenantAccess)
         {
             _context = context;
+            _tenantAccess = tenantAccess;
         }
 
         [HttpGet]
@@ -71,7 +76,7 @@ namespace AntAbstract.Web.Controllers.Api
             if (submission == null) return NotFound(new { error = "Bildiri bulunamadı." });
 
             var isOwner = submission.AuthorId == userId;
-            var isAdmin = User.IsInRole("SuperAdmin") || User.IsInRole("Admin");
+            var isAdmin = await CanAccessSubmissionAsAdminAsync(submission);
 
             if (!isOwner && !isAdmin)
                 return Forbid();
@@ -122,6 +127,13 @@ namespace AntAbstract.Web.Controllers.Api
             Guid conferenceId,
             [FromQuery] string? status = null)
         {
+            var canAccessConference = await CanAccessConferenceAsync(conferenceId);
+            if (!canAccessConference.HasValue)
+                return NotFound(new { error = "Kongre bulunamadı." });
+
+            if (!canAccessConference.Value)
+                return Forbid();
+
             var query = _context.Submissions
                 .IgnoreQueryFilters()
                 .AsNoTracking()
@@ -154,6 +166,40 @@ namespace AntAbstract.Web.Controllers.Api
                 .ToListAsync();
 
             return Ok(new { conferenceId, count = submissions.Count, data = submissions });
+        }
+
+        private async Task<bool> CanAccessSubmissionAsAdminAsync(Submission submission)
+        {
+            if (_tenantAccess.IsSuperAdmin(User))
+                return true;
+
+            if (!User.IsInRole("Admin"))
+                return false;
+
+            var adminTenantId = await _tenantAccess.GetAdminTenantIdAsync(User);
+            return adminTenantId.HasValue && submission.TenantId == adminTenantId.Value;
+        }
+
+        private async Task<bool?> CanAccessConferenceAsync(Guid conferenceId)
+        {
+            var tenantId = await _context.Conferences
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .Where(c => c.Id == conferenceId)
+                .Select(c => (Guid?)c.TenantId)
+                .FirstOrDefaultAsync();
+
+            if (!tenantId.HasValue)
+                return null;
+
+            if (_tenantAccess.IsSuperAdmin(User))
+                return true;
+
+            if (!User.IsInRole("Admin"))
+                return false;
+
+            var adminTenantId = await _tenantAccess.GetAdminTenantIdAsync(User);
+            return adminTenantId.HasValue && adminTenantId.Value == tenantId.Value;
         }
     }
 }

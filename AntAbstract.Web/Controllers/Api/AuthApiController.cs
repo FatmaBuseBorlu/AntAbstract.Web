@@ -54,6 +54,9 @@ namespace AntAbstract.Web.Controllers.Api
                 return Unauthorized(new { error = "Geçersiz e-posta veya şifre." });
             }
 
+            if (await _userManager.GetTwoFactorEnabledAsync(user))
+                return TwoFactorRequired();
+
             var token = await GenerateJwtAsync(user);
             var roles = await _userManager.GetRolesAsync(user);
 
@@ -84,8 +87,20 @@ namespace AntAbstract.Web.Controllers.Api
             if (user == null)
                 return Unauthorized();
 
+            if (await _userManager.GetTwoFactorEnabledAsync(user))
+                return TwoFactorRequired();
+
             var token = await GenerateJwtAsync(user);
             return Ok(new { token, expiresIn = 86400 });
+        }
+
+        private ObjectResult TwoFactorRequired()
+        {
+            return StatusCode(403, new
+            {
+                requiresTwoFactor = true,
+                error = "İki faktörlü doğrulama gerekli. Lütfen web giriş ekranından devam edin."
+            });
         }
 
         private async Task<string> GenerateJwtAsync(AppUser user)
